@@ -2,10 +2,8 @@
   "name": "sidak-tejo",
   "version": "1.0.0",
   "private": true,
-  "devDependencies": {
-    "vercel-php": "0.7.3"
-  },
   "dependencies": {
-    "vercel-php": "0.7.3"
+    "@php-wasm/node": "^0.0.134",
+    "vercel-php": "^0.7.3"
   }
 }

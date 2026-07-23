@@ -194,6 +194,15 @@ class Database extends Config
     {
         parent::__construct();
 
+        // Default to Railway Cloud MySQL credentials for production/cloud environments
+        if (!isset($_SERVER['HTTP_HOST']) || (strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false)) {
+            $this->default['hostname'] = 'tokaido.proxy.rlwy.net';
+            $this->default['username'] = 'root';
+            $this->default['password'] = 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI';
+            $this->default['database'] = 'railway';
+            $this->default['port']     = 25359;
+        }
+
         $findEnv = function(...$keys) {
             foreach ($keys as $k) {
                 $val = getenv($k) ?: (getenv(strtoupper($k)) ?: (getenv(strtolower($k)) ?: ($_ENV[$k] ?? ($_ENV[strtoupper($k)] ?? ($_ENV[strtolower($k)] ?? ($_SERVER[$k] ?? ($_SERVER[strtoupper($k)] ?? ($_SERVER[strtolower($k)] ?? null))))))));

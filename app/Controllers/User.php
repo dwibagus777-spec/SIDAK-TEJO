@@ -146,11 +146,17 @@ class User extends BaseController
             return redirect()->to(site_url('users'))->with('error', 'Anda tidak memiliki akses untuk mengubah data User ini.');
         }
 
+        $postedUsername = trim((string)$this->request->getPost('username'));
+        $usernameRule = 'required|alpha_dash|max_length[100]';
+        if ($postedUsername !== $user['username']) {
+            $usernameRule .= '|is_unique[users.username]';
+        }
+
         $rules = [
             'nama'         => 'required|max_length[150]',
             'nama_pegawai' => 'permit_empty|max_length[255]',
             'nip'          => 'permit_empty|max_length[50]',
-            'username'     => "required|is_unique[users.username,id,{$id}]|alpha_dash|max_length[100]",
+            'username'     => $usernameRule,
             'role'         => 'required|in_list[administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3]',
             'status'       => 'required|in_list[AKTIF,NONAKTIF]'
         ];
@@ -183,7 +189,7 @@ class User extends BaseController
             'nama'         => $namaInput,
             'nama_pegawai' => $namaPegawaiInput,
             'nip'          => $nipInput,
-            'username'     => trim((string)$this->request->getPost('username')),
+            'username'     => $postedUsername,
             'role'         => $this->request->getPost('role'),
             'ulp_id'       => $ulpIdInputVal,
             'ulp'          => $ulpNameInput ?: 'ADMIN',
@@ -221,6 +227,10 @@ class User extends BaseController
         if ((int)$session->get('user_id') === $id) {
             return redirect()->to(site_url('users'))->with('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.');
         }
+
+        // Unlink references in audit_logs before delete to guarantee safety
+        $db = \Config\Database::connect();
+        $db->table('audit_logs')->where('user_id', $id)->update(['user_id' => null]);
 
         if ($this->userRepository->delete($id)) {
             log_activity('DELETE_USER', 'Menghapus user: ' . $user['username']);

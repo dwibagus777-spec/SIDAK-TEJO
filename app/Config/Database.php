@@ -230,6 +230,30 @@ class Database extends Config
             } else {
                 $this->default['port'] = 25359;
             }
+
+            // Automatic failover configuration if internal connection fails
+            $this->default['failover'] = [
+                [
+                    'DSN'          => '',
+                    'hostname'     => 'tokaido.proxy.rlwy.net',
+                    'username'     => 'root',
+                    'password'     => 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI',
+                    'database'     => 'railway',
+                    'DBDriver'     => 'MySQLi',
+                    'DBPrefix'     => '',
+                    'pConnect'     => false,
+                    'DBDebug'      => true,
+                    'charset'      => 'utf8mb4',
+                    'DBCollat'     => 'utf8mb4_general_ci',
+                    'swapPre'      => '',
+                    'encrypt'      => false,
+                    'compress'     => false,
+                    'strictOn'     => false,
+                    'port'         => 25359,
+                    'numberNative' => false,
+                    'foundRows'    => false,
+                ]
+            ];
         } else {
             if ($getHost) { $this->default['hostname'] = $getHost; }
             if ($getUser) { $this->default['username'] = $getUser; }

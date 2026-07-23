@@ -1,0 +1,5 @@
+HTTP_HOST: localhost
+baseURL resolved: http://localhost/SIDAK%20TEJO/public/
+getenv('app.baseURL'): 
+$_ENV['app.baseURL']: not set
+$_SERVER['app.baseURL']: not set

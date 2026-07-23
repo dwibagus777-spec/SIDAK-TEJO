@@ -1,0 +1,44 @@
+name: sidaktejo_mobile
+description: "Aplikasi Mobile SIDAK TEJO PLN Sidoarjo untuk Input Temuan, Temuan Terdekat, dan Identifikasi Gangguan."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Styling
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+
+  # API & Utilities
+  http: ^1.2.0
+  shared_preferences: ^2.2.0
+  intl: ^0.19.0
+
+  # Hardware Access & Geolocation
+  geolocator: ^11.0.0
+  image_picker: ^1.0.7
+  camera: ^0.10.5+9
+
+  # OpenStreetMap (Free alternative to Leaflet)
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+
+  # Voice & Speech Recognition
+  speech_to_text: ^6.6.0
+  permission_handler: ^11.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/img/

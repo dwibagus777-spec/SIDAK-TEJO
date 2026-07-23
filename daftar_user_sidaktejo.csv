@@ -1,0 +1,35 @@
+NO,NAMA LENGKAP,USERNAME,PASSWORD DEFAULT,ROLE,ULP,STATUS,KETERANGAN
+1,Administrator,admin,admin123,administrator,(Semua ULP),AKTIF,Akses penuh sistem - GANTI PASSWORD SEGERA
+2,Tim PDKB Sidoarjo,pdkb_sda,admin123,pdkb,(Semua ULP),AKTIF,Tim PDKB lintas ULP
+3,HAR Crane Sidoarjo,harcrane_sda,admin123,har_crane,(Semua ULP),AKTIF,Tim HAR Crane lintas ULP
+4,Admin ULP Sidoarjo Kota,admin_ulp_sda,admin123,admin_ulp,ULP Sidoarjo Kota,AKTIF,Admin ULP Sidoarjo Kota
+5,Inspeksi Sidoarjo Kota,inspeksi_sda,admin123,inspeksi,ULP Sidoarjo Kota,AKTIF,Petugas Inspeksi Sidoarjo Kota
+6,HAR Konstruksi Sidoarjo Kota,harkons_sda,admin123,har_gardu,ULP Sidoarjo Kota,AKTIF,HAR Konstruksi Sidoarjo Kota
+7,HAR ROW Sidoarjo Kota,harrow_sda,admin123,har_row,ULP Sidoarjo Kota,AKTIF,HAR ROW Sidoarjo Kota
+8,Yantek Sidoarjo Kota,yantek_sda,admin123,yantek,ULP Sidoarjo Kota,AKTIF,Yantek Sidoarjo Kota
+9,Admin ULP Krian,admin_ulp_krn,admin123,admin_ulp,ULP Krian,AKTIF,Admin ULP Krian
+10,Inspeksi Krian,inspeksi_krn,admin123,inspeksi,ULP Krian,AKTIF,Petugas Inspeksi Krian
+11,HAR Konstruksi Krian,harkons_krn,admin123,har_gardu,ULP Krian,AKTIF,HAR Konstruksi Krian
+12,HAR ROW Krian,harrow_krn,admin123,har_row,ULP Krian,AKTIF,HAR ROW Krian
+13,Yantek Krian,yantek_krn,admin123,yantek,ULP Krian,AKTIF,Yantek Krian
+14,Admin ULP Porong,admin_ulp_prg,admin123,admin_ulp,ULP Porong,AKTIF,Admin ULP Porong
+15,Inspeksi Porong,inspeksi_prg,admin123,inspeksi,ULP Porong,AKTIF,Petugas Inspeksi Porong
+16,HAR Konstruksi Porong,harkons_prg,admin123,har_gardu,ULP Porong,AKTIF,HAR Konstruksi Porong
+17,HAR ROW Porong,harrow_prg,admin123,har_row,ULP Porong,AKTIF,HAR ROW Porong
+18,Yantek Porong,yantek_prg,admin123,yantek,ULP Porong,AKTIF,Yantek Porong
+,,,,,,,,
+KETERANGAN ROLE:,,,,,,,,
+administrator = Akses penuh sistem (super admin),,,,,,,,
+admin_ulp = Admin per ULP (data terbatas ULP sendiri),,,,,,,,
+inspeksi = Input temuan lapangan,,,,,,,,
+pdkb = Tim PDKB (akses lintas ULP - read only),,,,,,,,
+har_gardu = HAR Konstruksi/Gardu per ULP,,,,,,,,
+har_row = HAR ROW per ULP,,,,,,,,
+har_crane = HAR Crane (akses lintas ULP),,,,,,,,
+yantek = Yantek per ULP,,,,,,,,
+,,,,,,,,
+CATATAN KEAMANAN:,,,,,,,,
+"Password default semua user adalah: admin123",,,,,,,,
+"WAJIB diganti setelah login pertama melalui menu Pengaturan -> Profil",,,,,,,,
+"Administrator WAJIB mengganti password pertama kali login",,,,,,,,
+"URL Sistem: https://domain-hosting-anda.com/public",,,,,,,,

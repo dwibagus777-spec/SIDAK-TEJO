@@ -462,23 +462,29 @@ class Temuan extends BaseController
 
     public function delete(int $id)
     {
-        $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
+        try {
+            $session = session();
+            $role = strtolower((string)$session->get('user_role'));
+            $userUlpId = $session->get('user_ulp_id');
 
-        // Batasi ULP
-        if ($role === 'admin_ulp' && $userUlpId !== null) {
-            $temuan = $this->temuanRepository->find($id);
-            if (!$temuan || (int)$temuan['ulp_id'] !== (int)$userUlpId) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data ini.']);
+            // Batasi ULP jika admin_ulp
+            if ($role === 'admin_ulp' && $userUlpId !== null) {
+                $temuan = $this->temuanRepository->find($id);
+                if (!$temuan || (int)$temuan['ulp_id'] !== (int)$userUlpId) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan ULP lain.']);
+                }
             }
-        }
 
-        if ($this->temuanService->deleteTemuan($id)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Temuan berhasil dihapus (Soft Delete).']);
-        }
+            if ($this->temuanService->deleteTemuan($id)) {
+                log_activity('DELETE_TEMUAN', 'Menghapus temuan ID: ' . $id);
+                return $this->response->setJSON(['success' => true, 'message' => 'Temuan berhasil dihapus (Soft Delete).']);
+            }
 
-        return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus temuan.']);
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus temuan dari database.']);
+        } catch (\Throwable $e) {
+            log_message('error', 'Delete Temuan Error: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
     }
 
     // --- AJAX Cascades ---

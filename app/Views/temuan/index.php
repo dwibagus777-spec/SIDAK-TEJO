@@ -666,17 +666,24 @@
     function confirmDelete(id) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: "Data temuan ini akan dihapus secara soft-delete!",
+            text: "Data temuan ini akan dihapus dari sistem!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal',
-            background: '#1e1e1e',
-            color: '#e0e0e0'
+            cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Menghapus Temuan...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
                 $.ajax({
                     url: "<?= site_url('temuan/delete/') ?>" + id,
                     type: "GET",
@@ -687,32 +694,32 @@
                                 title: 'Terhapus!',
                                 text: response.message,
                                 icon: 'success',
-                                background: '#1e1e1e',
-                                color: '#e0e0e0'
+                                timer: 1500,
+                                showConfirmButton: false
                             }).then(() => {
-                                $('#table-temuan').DataTable().ajax.reload(null, false);
+                                if ($.fn.DataTable.isDataTable('#table-temuan')) {
+                                    $('#table-temuan').DataTable().ajax.reload(null, false);
+                                } else {
+                                    window.location.reload();
+                                }
                             });
                         } else {
                             Swal.fire({
                                 title: 'Gagal!',
                                 text: (response && response.message) ? response.message : 'Gagal menghapus data temuan.',
-                                icon: 'error',
-                                background: '#1e1e1e',
-                                color: '#e0e0e0'
+                                icon: 'error'
                             });
                         }
                     },
                     error: function(xhr) {
-                        let msg = 'Gagal menghapus data temuan.';
+                        let msg = 'Gagal menghapus data temuan dari server.';
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             msg = xhr.responseJSON.message;
                         }
                         Swal.fire({
                             title: 'Gagal!',
                             text: msg,
-                            icon: 'error',
-                            background: '#1e1e1e',
-                            color: '#e0e0e0'
+                            icon: 'error'
                         });
                     }
                 });

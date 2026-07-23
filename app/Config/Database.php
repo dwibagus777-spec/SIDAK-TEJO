@@ -194,11 +194,19 @@ class Database extends Config
     {
         parent::__construct();
 
-        $getHost = getenv('database_default_hostname') ?: ($_ENV['database_default_hostname'] ?? ($_SERVER['database_default_hostname'] ?? null));
-        $getUser = getenv('database_default_username') ?: ($_ENV['database_default_username'] ?? ($_SERVER['database_default_username'] ?? null));
-        $getPass = getenv('database_default_password') ?: ($_ENV['database_default_password'] ?? ($_SERVER['database_default_password'] ?? null));
-        $getDb   = getenv('database_default_database') ?: ($_ENV['database_default_database'] ?? ($_SERVER['database_default_database'] ?? null));
-        $getPort = getenv('database_default_port') ?: ($_ENV['database_default_port'] ?? ($_SERVER['database_default_port'] ?? null));
+        $findEnv = function(...$keys) {
+            foreach ($keys as $k) {
+                $val = getenv($k) ?: (getenv(strtoupper($k)) ?: (getenv(strtolower($k)) ?: ($_ENV[$k] ?? ($_ENV[strtoupper($k)] ?? ($_ENV[strtolower($k)] ?? ($_SERVER[$k] ?? ($_SERVER[strtoupper($k)] ?? ($_SERVER[strtolower($k)] ?? null))))))));
+                if ($val !== null && $val !== '') { return $val; }
+            }
+            return null;
+        };
+
+        $getHost = $findEnv('database_default_hostname', 'MYSQLHOST', 'MYSQL_HOST', 'DB_HOST');
+        $getUser = $findEnv('database_default_username', 'MYSQLUSER', 'MYSQL_USER', 'DB_USER');
+        $getPass = $findEnv('database_default_password', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS');
+        $getDb   = $findEnv('database_default_database', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME');
+        $getPort = $findEnv('database_default_port', 'MYSQLPORT', 'MYSQL_PORT', 'DB_PORT');
 
         if ($getHost) { $this->default['hostname'] = $getHost; }
         if ($getUser) { $this->default['username'] = $getUser; }

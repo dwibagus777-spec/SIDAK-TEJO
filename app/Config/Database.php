@@ -210,11 +210,17 @@ class Database extends Config
 
         // On cloud/production (Railway), connect directly to Railway Cloud MySQL Proxy
         if (!isset($_SERVER['HTTP_HOST']) || (strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false)) {
-            $this->default['hostname'] = $getHost ?: 'tokaido.proxy.rlwy.net';
-            $this->default['username'] = $getUser ?: 'root';
-            $this->default['password'] = ($getPass !== null && $getPass !== '') ? $getPass : 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI';
-            $this->default['database'] = $getDb ?: 'railway';
-            $this->default['port']     = $getPort ? (int)$getPort : 25359;
+            $this->default['hostname'] = 'tokaido.proxy.rlwy.net';
+            $this->default['username'] = 'root';
+            $this->default['password'] = 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI';
+            $this->default['database'] = 'railway';
+            $this->default['port']     = 25359;
+
+            if (getenv('FORCE_DB_HOST')) { $this->default['hostname'] = getenv('FORCE_DB_HOST'); }
+            if (getenv('FORCE_DB_USER')) { $this->default['username'] = getenv('FORCE_DB_USER'); }
+            if (getenv('FORCE_DB_PASS')) { $this->default['password'] = getenv('FORCE_DB_PASS'); }
+            if (getenv('FORCE_DB_NAME')) { $this->default['database'] = getenv('FORCE_DB_NAME'); }
+            if (getenv('FORCE_DB_PORT')) { $this->default['port']     = (int)getenv('FORCE_DB_PORT'); }
         } else {
             if ($getHost) { $this->default['hostname'] = $getHost; }
             if ($getUser) { $this->default['username'] = $getUser; }

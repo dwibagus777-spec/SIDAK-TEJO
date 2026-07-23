@@ -1,5 +1,8 @@
 <?php
 
+// Set working directory to project root
+chdir(dirname(__DIR__));
+
 // Enable full error display for debugging on Vercel
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');

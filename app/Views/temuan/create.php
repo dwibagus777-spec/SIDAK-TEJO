@@ -207,11 +207,31 @@
                         </div>
                     </div>
 
-                    <!-- Upload Foto -->
+                    <!-- Upload Foto (Pilihan Galeri / Berkas & Kamera Direct) -->
                     <div class="form-group mb-3">
-                        <label for="foto">Unggah Foto Temuan (Minimal 1, Maksimal 10) <span class="text-danger">*</span></label>
-                        <input type="file" name="foto[]" id="foto" class="form-control border-secondary" multiple accept="image/png, image/jpeg, image/jpg, image/webp" required>
-                        <small class="form-text text-muted">Format berkas: JPG, JPEG, PNG, WEBP. Maksimal 10 foto.</small>
+                        <label class="font-weight-bold">Unggah Foto Temuan (Minimal 1, Maksimal 10) <span class="text-danger">*</span></label>
+                        
+                        <div class="p-3 border rounded bg-light shadow-sm">
+                            <div class="row g-2 mb-2">
+                                <div class="col-sm-6 col-12 mb-2 mb-sm-0">
+                                    <button type="button" class="btn btn-outline-primary btn-block py-2 font-weight-bold shadow-sm" id="btn-pick-gallery">
+                                        <i class="fas fa-folder-open text-primary mr-1"></i> 📁 Pilih dari Galeri / Berkas
+                                    </button>
+                                </div>
+                                <div class="col-sm-6 col-12">
+                                    <button type="button" class="btn btn-outline-success btn-block py-2 font-weight-bold shadow-sm" id="btn-pick-camera">
+                                        <i class="fas fa-camera text-success mr-1"></i> 📷 Ambil Foto via Kamera
+                                    </button>
+                                </div>
+                            </div>
+
+                            <input type="file" name="foto[]" id="foto" class="d-none" multiple accept="image/*" required>
+                            <input type="file" id="foto_camera" class="d-none" multiple accept="image/*" capture="environment">
+
+                            <div id="file-selection-info" class="small text-muted mt-2">
+                                <i class="fas fa-info-circle mr-1"></i> Format berkas: JPG, JPEG, PNG, WEBP. Bisa memilih dari Galeri atau ambil langsung via Kamera.
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Pratinjau Foto Upload -->
@@ -359,49 +379,88 @@
             });
         }
 
-        $('#foto').change(function() {
+        // Store for accumulating files from both Galeri & Kamera
+        let createPhotoStore = new DataTransfer();
+
+        $('#btn-pick-gallery').click(function() {
+            $('#foto').trigger('click');
+        });
+
+        $('#btn-pick-camera').click(function() {
+            $('#foto_camera').trigger('click');
+        });
+
+        function renderPhotoPreviews() {
             const container = $('#preview-container');
             container.empty();
-            
-            const files = this.files;
-            if (files.length < 1) return;
-            if (files.length > 10) {
-                Toast.fire({
-                    icon: 'error',
-                    title: 'Maksimal upload 10 foto.'
-                });
-                this.value = ''; // Reset input
-                return;
+            const count = createPhotoStore.files.length;
+
+            if (count > 0) {
+                $('#file-selection-info').html('<span class="badge bg-success text-white p-2" style="font-size:12px;"><i class="fas fa-check-circle mr-1"></i> ' + count + ' foto dipilih dan siap diunggah</span>');
+            } else {
+                $('#file-selection-info').html('<i class="fas fa-info-circle mr-1"></i> Format berkas: JPG, JPEG, PNG, WEBP. Bisa memilih dari Galeri atau ambil langsung via Kamera.');
             }
 
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                
-                // Client-side format verification
-                const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-                if (!allowed.includes(file.type)) {
-                    Toast.fire({
-                        icon: 'error',
-                        title: 'Format berkas tidak diizinkan! (Hanya JPG, JPEG, PNG, WEBP)'
-                    });
-                    this.value = '';
-                    container.empty();
-                    return;
-                }
+            // Sync store files to hidden input #foto
+            const fileInput = document.getElementById('foto');
+            if (fileInput) {
+                fileInput.files = createPhotoStore.files;
+            }
 
+            for (let i = 0; i < count; i++) {
+                const file = createPhotoStore.files[i];
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const html = `
                         <div class="col-md-3 col-6 mb-3 position-relative animate__animated animate__fadeIn">
-                            <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 8px; overflow: hidden; height: 100px; display: flex; align-items: center; justify-content: center;">
+                            <div class="img-thumbnail bg-dark p-1" style="border-color: #3d3d3d; border-radius: 8px; overflow: hidden; height: 110px; display: flex; align-items: center; justify-content: center; position: relative;">
                                 <img src="${e.target.result}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                <button type="button" class="btn btn-danger btn-sm btn-remove-item position-absolute" data-index="${i}" style="top: 4px; right: 4px; border-radius: 50%; width: 24px; height: 24px; padding: 0; line-height: 24px; font-size: 11px;" title="Hapus foto ini">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                         </div>
                     `;
                     container.append(html);
-                }
+                };
                 reader.readAsDataURL(file);
             }
+        }
+
+        function handleIncomingFiles(incomingFiles) {
+            const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            for (let i = 0; i < incomingFiles.length; i++) {
+                const f = incomingFiles[i];
+                if (!allowed.includes(f.type)) {
+                    Toast.fire({ icon: 'error', title: 'Format berkas "' + f.name + '" tidak diizinkan!' });
+                    continue;
+                }
+                if (createPhotoStore.files.length >= 10) {
+                    Toast.fire({ icon: 'warning', title: 'Maksimal upload 10 foto.' });
+                    break;
+                }
+                createPhotoStore.items.add(f);
+            }
+            renderPhotoPreviews();
+        }
+
+        $('#foto, #foto_camera').change(function() {
+            if (this.files && this.files.length > 0) {
+                handleIncomingFiles(this.files);
+                this.value = '';
+            }
+        });
+
+        $(document).on('click', '.btn-remove-item', function() {
+            const idx = $(this).data('index');
+            const newStore = new DataTransfer();
+            for (let i = 0; i < createPhotoStore.files.length; i++) {
+                if (i !== idx) {
+                    newStore.items.add(createPhotoStore.files[i]);
+                }
+            }
+            createPhotoStore = newStore;
+            renderPhotoPreviews();
         });
 
         // Intercept form submit to compress all images

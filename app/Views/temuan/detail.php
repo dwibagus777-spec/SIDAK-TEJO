@@ -257,19 +257,40 @@
                             <textarea name="komentar" id="komentar" class="form-control" rows="3" placeholder="Contoh: Sedang dilakukan perapian isolator tumpu..." required></textarea>
                         </div>
 
+                        <!-- Foto Sebelum -->
                         <div class="form-group mb-3">
-                            <label for="foto_sebelum" class="small">Foto Sebelum Pekerjaan (Opsional)</label>
-                            <input type="file" name="foto_sebelum" id="foto_sebelum" class="form-control border-secondary form-control-sm" accept="image/*">
+                            <label class="small font-weight-bold">Foto Sebelum Pekerjaan (Opsional)</label>
+                            <div class="btn-group w-100 mb-1" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-dual-gallery" data-target="#foto_sebelum">📁 Berkas</button>
+                                <button type="button" class="btn btn-sm btn-outline-success btn-dual-camera" data-target="#foto_sebelum_cam">📷 Kamera</button>
+                            </div>
+                            <input type="file" name="foto_sebelum" id="foto_sebelum" class="d-none" accept="image/*">
+                            <input type="file" id="foto_sebelum_cam" class="d-none" accept="image/*" capture="environment">
+                            <div class="file-name-preview small text-muted text-truncate" id="preview_name_foto_sebelum">Belum ada foto</div>
                         </div>
 
+                        <!-- Foto Proses -->
                         <div class="form-group mb-3">
-                            <label for="foto_proses" class="small">Foto Proses Pekerjaan (Opsional)</label>
-                            <input type="file" name="foto_proses" id="foto_proses" class="form-control border-secondary form-control-sm" accept="image/*">
+                            <label class="small font-weight-bold">Foto Proses Pekerjaan (Opsional)</label>
+                            <div class="btn-group w-100 mb-1" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-dual-gallery" data-target="#foto_proses">📁 Berkas</button>
+                                <button type="button" class="btn btn-sm btn-outline-success btn-dual-camera" data-target="#foto_proses_cam">📷 Kamera</button>
+                            </div>
+                            <input type="file" name="foto_proses" id="foto_proses" class="d-none" accept="image/*">
+                            <input type="file" id="foto_proses_cam" class="d-none" accept="image/*" capture="environment">
+                            <div class="file-name-preview small text-muted text-truncate" id="preview_name_foto_proses">Belum ada foto</div>
                         </div>
 
+                        <!-- Foto Sesudah -->
                         <div class="form-group mb-3">
-                            <label for="foto_sesudah" class="small">Foto Sesudah Pekerjaan (Opsional)</label>
-                            <input type="file" name="foto_sesudah" id="foto_sesudah" class="form-control border-secondary form-control-sm" accept="image/*">
+                            <label class="small font-weight-bold">Foto Sesudah Pekerjaan (Opsional)</label>
+                            <div class="btn-group w-100 mb-1" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-dual-gallery" data-target="#foto_sesudah">📁 Berkas</button>
+                                <button type="button" class="btn btn-sm btn-outline-success btn-dual-camera" data-target="#foto_sesudah_cam">📷 Kamera</button>
+                            </div>
+                            <input type="file" name="foto_sesudah" id="foto_sesudah" class="d-none" accept="image/*">
+                            <input type="file" id="foto_sesudah_cam" class="d-none" accept="image/*" capture="environment">
+                            <div class="file-name-preview small text-muted text-truncate" id="preview_name_foto_sesudah">Belum ada foto</div>
                         </div>
 
                     </div>
@@ -439,7 +460,33 @@
             L.marker([lat, lng], { icon: customIcon }).addTo(map)
                 .bindPopup('<b>' + nomorTemuan + '</b><br><small><?= esc($temuan['alamat']) ?></small>')
                 .openPopup();
-        }
+        // Dual Photo triggers (Berkas / Kamera)
+        $(document).on('click', '.btn-dual-gallery', function() {
+            const target = $(this).data('target');
+            $(target).trigger('click');
+        });
+
+        $(document).on('click', '.btn-dual-camera', function() {
+            const target = $(this).data('target');
+            $(target).trigger('click');
+        });
+
+        $(document).on('change', '#foto_sebelum, #foto_sebelum_cam, #foto_proses, #foto_proses_cam, #foto_sesudah, #foto_sesudah_cam', function() {
+            if (this.files && this.files.length > 0) {
+                const f = this.files[0];
+                let fieldId = this.id.replace('_cam', '');
+                
+                if (this.id.endsWith('_cam')) {
+                    const mainInput = document.getElementById(fieldId);
+                    if (mainInput) {
+                        const dt = new DataTransfer();
+                        dt.items.add(f);
+                        mainInput.files = dt.files;
+                    }
+                }
+                $('#preview_name_' + fieldId).html('<span class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i> ' + f.name + '</span>');
+            }
+        });
     });
 </script>
 <?= $this->endSection() ?>

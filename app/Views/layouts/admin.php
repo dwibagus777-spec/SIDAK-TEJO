@@ -1182,9 +1182,83 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         }
                     }
                 };
-            } else {
-                $('#global-voice-container').addClass('d-none');
-            }
+        // Universal Dual Photo Upload Enhancer (Choose File & Camera Direct)
+        function initDualUploadEnhancer() {
+            $('input[type="file"]').each(function() {
+                const $input = $(this);
+                const accept = $input.attr('accept') || '';
+                // Skip if already enhanced, already hidden, or not an image/photo input
+                if ($input.hasClass('d-none') || $input.data('dual-enhanced') || (!accept.includes('image') && accept !== '*' && accept !== '')) return;
+                if ($input.attr('id') === 'file-temuan' || $input.attr('id') === 'file-penyulang' || $input.attr('id') === 'file-ulp' || $input.attr('id') === 'file-user' || $input.attr('id') === 'file-section') return; // Skip CSV imports
+                
+                $input.data('dual-enhanced', true);
+                
+                const inputId = $input.attr('id') || 'file_input_' + Math.random().toString(36).substr(2, 9);
+                $input.attr('id', inputId);
+                $input.addClass('d-none');
+
+                const isMultiple = $input.prop('multiple');
+                const camId = inputId + '_camera_auto';
+
+                // Create twin camera input with capture attribute
+                const $camInput = $('<input>', {
+                    type: 'file',
+                    id: camId,
+                    class: 'd-none',
+                    accept: accept || 'image/*',
+                    capture: 'environment'
+                });
+                if (isMultiple) $camInput.prop('multiple', true);
+
+                $camInput.insertAfter($input);
+
+                // Create styled action buttons
+                const $btnContainer = $(`
+                    <div class="upload-dual-wrapper my-2">
+                        <div class="btn-group w-100 shadow-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary btn-auto-gallery py-2 font-weight-bold">
+                                <i class="fas fa-folder-open text-primary mr-1"></i> 📁 Pilih Berkas / Galeri
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-auto-camera py-2 font-weight-bold">
+                                <i class="fas fa-camera text-success mr-1"></i> 📷 Ambil Foto Kamera
+                            </button>
+                        </div>
+                        <div class="auto-file-status small text-muted mt-1">
+                            <i class="fas fa-info-circle mr-1"></i> Belum ada foto dipilih
+                        </div>
+                    </div>
+                `).insertAfter($camInput);
+
+                $btnContainer.find('.btn-auto-gallery').click(function() { $input.trigger('click'); });
+                $btnContainer.find('.btn-auto-camera').click(function() { $camInput.trigger('click'); });
+
+                function updateStatus(files) {
+                    if (!files || files.length === 0) {
+                        $btnContainer.find('.auto-file-status').html('<i class="fas fa-info-circle mr-1"></i> Belum ada foto dipilih');
+                    } else if (files.length === 1) {
+                        $btnContainer.find('.auto-file-status').html('<span class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i> ' + files[0].name + '</span>');
+                    } else {
+                        $btnContainer.find('.auto-file-status').html('<span class="badge bg-success text-white p-1" style="font-size:11px;"><i class="fas fa-check-circle mr-1"></i> ' + files.length + ' foto terpilih</span>');
+                    }
+                }
+
+                $input.on('change', function() { updateStatus(this.files); });
+                $camInput.on('change', function() {
+                    if (this.files && this.files.length > 0) {
+                        const dt = new DataTransfer();
+                        for (let i = 0; i < this.files.length; i++) {
+                            dt.items.add(this.files[i]);
+                        }
+                        $input[0].files = dt.files;
+                        $input.trigger('change');
+                    }
+                });
+            });
+        }
+
+        initDualUploadEnhancer();
+        $(document).ajaxComplete(function() {
+            setTimeout(initDualUploadEnhancer, 300);
         });
     </script>
     <?= $this->renderSection('scripts') ?>

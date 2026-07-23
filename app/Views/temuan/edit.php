@@ -251,11 +251,31 @@
                     </div>
                     <?php endif; ?>
 
-                    <!-- Upload Foto Tambahan (Opsional) -->
+                    <!-- Upload Foto Tambahan (Pilihan Galeri / Berkas & Kamera Direct) -->
                     <div class="form-group mb-3">
-                        <label for="foto"><i class="fas fa-cloud-upload-alt mr-1"></i> Tambah Foto Baru (Opsional, Maks 10)</label>
-                        <input type="file" name="foto[]" id="foto" class="form-control border-secondary" multiple accept="image/png, image/jpeg, image/jpg, image/webp">
-                        <small class="form-text text-muted">Foto baru akan ditambahkan ke foto yang sudah ada. Format: JPG, JPEG, PNG, WEBP.</small>
+                        <label class="font-weight-bold"><i class="fas fa-camera text-primary mr-1"></i> Tambah Foto Baru (Opsional, Maks 10)</label>
+                        
+                        <div class="p-3 border rounded bg-light shadow-sm">
+                            <div class="row g-2 mb-2">
+                                <div class="col-sm-6 col-12 mb-2 mb-sm-0">
+                                    <button type="button" class="btn btn-outline-primary btn-block py-2 font-weight-bold shadow-sm" id="btn-pick-gallery">
+                                        <i class="fas fa-folder-open text-primary mr-1"></i> 📁 Pilih dari Galeri / Berkas
+                                    </button>
+                                </div>
+                                <div class="col-sm-6 col-12">
+                                    <button type="button" class="btn btn-outline-success btn-block py-2 font-weight-bold shadow-sm" id="btn-pick-camera">
+                                        <i class="fas fa-camera text-success mr-1"></i> 📷 Ambil Foto via Kamera
+                                    </button>
+                                </div>
+                            </div>
+
+                            <input type="file" name="foto[]" id="foto" class="d-none" multiple accept="image/*">
+                            <input type="file" id="foto_camera" class="d-none" multiple accept="image/*" capture="environment">
+
+                            <div id="file-selection-info" class="small text-muted mt-2">
+                                <i class="fas fa-info-circle mr-1"></i> Foto baru akan ditambahkan ke foto yang sudah ada. Format: JPG, JPEG, PNG, WEBP.
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Pratinjau Foto Upload Baru -->
@@ -350,38 +370,87 @@
         // Re-init select2 after AJAX load
         // (Dropdowns are already pre-populated from PHP, but keep cascading for changes)
 
-        // --- 2. MULTI-PHOTO UPLOAD PREVIEW ---
-        $('#foto').change(function() {
+        // --- 2. MULTI-PHOTO UPLOAD PREVIEW (GALERI & KAMERA DIRECT) ---
+        let editPhotoStore = new DataTransfer();
+
+        $('#btn-pick-gallery').click(function() {
+            $('#foto').trigger('click');
+        });
+
+        $('#btn-pick-camera').click(function() {
+            $('#foto_camera').trigger('click');
+        });
+
+        function renderEditPhotoPreviews() {
             const container = $('#preview-container');
             container.empty();
-            const files = this.files;
-            if (files.length < 1) return;
-            if (files.length > 10) {
-                Toast.fire({ icon: 'error', title: 'Maksimal upload 10 foto tambahan.' });
-                this.value = '';
-                return;
+            const count = editPhotoStore.files.length;
+
+            if (count > 0) {
+                $('#file-selection-info').html('<span class="badge bg-success text-white p-2" style="font-size:12px;"><i class="fas fa-check-circle mr-1"></i> ' + count + ' foto baru dipilih dan siap ditambahkan</span>');
+            } else {
+                $('#file-selection-info').html('<i class="fas fa-info-circle mr-1"></i> Foto baru akan ditambahkan ke foto yang sudah ada. Format: JPG, JPEG, PNG, WEBP.');
             }
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-                if (!allowed.includes(file.type)) {
-                    Toast.fire({ icon: 'error', title: 'Format berkas tidak diizinkan!' });
-                    this.value = '';
-                    container.empty();
-                    return;
-                }
+
+            const fileInput = document.getElementById('foto');
+            if (fileInput) {
+                fileInput.files = editPhotoStore.files;
+            }
+
+            for (let i = 0; i < count; i++) {
+                const file = editPhotoStore.files[i];
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    container.append(`
+                    const html = `
                         <div class="col-md-3 col-6 mb-3 position-relative animate__animated animate__fadeIn">
-                            <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 8px; overflow: hidden; height: 100px; display: flex; align-items: center; justify-content: center;">
+                            <div class="img-thumbnail bg-dark p-1" style="border-color: #3d3d3d; border-radius: 8px; overflow: hidden; height: 110px; display: flex; align-items: center; justify-content: center; position: relative;">
                                 <img src="${e.target.result}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                <button type="button" class="btn btn-danger btn-sm btn-remove-edit-item position-absolute" data-index="${i}" style="top: 4px; right: 4px; border-radius: 50%; width: 24px; height: 24px; padding: 0; line-height: 24px; font-size: 11px;" title="Hapus foto ini">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                         </div>
-                    `);
+                    `;
+                    container.append(html);
                 };
                 reader.readAsDataURL(file);
             }
+        }
+
+        function handleEditIncomingFiles(incomingFiles) {
+            const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            for (let i = 0; i < incomingFiles.length; i++) {
+                const f = incomingFiles[i];
+                if (!allowed.includes(f.type)) {
+                    Toast.fire({ icon: 'error', title: 'Format berkas "' + f.name + '" tidak diizinkan!' });
+                    continue;
+                }
+                if (editPhotoStore.files.length >= 10) {
+                    Toast.fire({ icon: 'warning', title: 'Maksimal upload 10 foto tambahan.' });
+                    break;
+                }
+                editPhotoStore.items.add(f);
+            }
+            renderEditPhotoPreviews();
+        }
+
+        $('#foto, #foto_camera').change(function() {
+            if (this.files && this.files.length > 0) {
+                handleEditIncomingFiles(this.files);
+                this.value = '';
+            }
+        });
+
+        $(document).on('click', '.btn-remove-edit-item', function() {
+            const idx = $(this).data('index');
+            const newStore = new DataTransfer();
+            for (let i = 0; i < editPhotoStore.files.length; i++) {
+                if (i !== idx) {
+                    newStore.items.add(editPhotoStore.files[i]);
+                }
+            }
+            editPhotoStore = newStore;
+            renderEditPhotoPreviews();
         });
 
         // --- 3. GEOLOCATION & LEAFLET SELECTOR MAP ---

@@ -298,17 +298,52 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-2">
+                        <!-- Foto Sebelum -->
+                        <div class="col-md-4 mb-3">
                             <label class="form-label small font-weight-bold">Foto Sebelum</label>
-                            <input type="file" name="foto_sebelum" class="form-control form-control-sm" accept="image/*">
+                            <div class="btn-group w-100 mb-1" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-dual-gallery" data-target="#foto_sebelum">
+                                    📁 Berkas
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success btn-dual-camera" data-target="#foto_sebelum_cam">
+                                    📷 Kamera
+                                </button>
+                            </div>
+                            <input type="file" name="foto_sebelum" id="foto_sebelum" class="d-none" accept="image/*">
+                            <input type="file" id="foto_sebelum_cam" class="d-none" accept="image/*" capture="environment">
+                            <div class="file-name-preview small text-muted text-truncate" id="preview_name_foto_sebelum">Belum ada foto</div>
                         </div>
-                        <div class="col-md-4 mb-2">
+
+                        <!-- Foto Proses -->
+                        <div class="col-md-4 mb-3">
                             <label class="form-label small font-weight-bold">Foto Proses</label>
-                            <input type="file" name="foto_proses" class="form-control form-control-sm" accept="image/*">
+                            <div class="btn-group w-100 mb-1" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-dual-gallery" data-target="#foto_proses">
+                                    📁 Berkas
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success btn-dual-camera" data-target="#foto_proses_cam">
+                                    📷 Kamera
+                                </button>
+                            </div>
+                            <input type="file" name="foto_proses" id="foto_proses" class="d-none" accept="image/*">
+                            <input type="file" id="foto_proses_cam" class="d-none" accept="image/*" capture="environment">
+                            <div class="file-name-preview small text-muted text-truncate" id="preview_name_foto_proses">Belum ada foto</div>
                         </div>
-                        <div class="col-md-4 mb-2">
+
+                        <!-- Foto Sesudah -->
+                        <div class="col-md-4 mb-3">
                             <label class="form-label small font-weight-bold">Foto Sesudah</label>
-                            <input type="file" name="foto_sesudah" class="form-control form-control-sm" accept="image/*">
+                            <div class="btn-group w-100 mb-1" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-dual-gallery" data-target="#foto_sesudah">
+                                    📁 Berkas
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success btn-dual-camera" data-target="#foto_sesudah_cam">
+                                    📷 Kamera
+                                </button>
+                            </div>
+                            <input type="file" name="foto_sesudah" id="foto_sesudah" class="d-none" accept="image/*">
+                            <input type="file" id="foto_sesudah_cam" class="d-none" accept="image/*" capture="environment">
+                            <div class="file-name-preview small text-muted text-truncate" id="preview_name_foto_sesudah">Belum ada foto</div>
                         </div>
                     </div>
                 </div>
@@ -587,14 +622,46 @@
             $('#form-update-status').attr('action', '<?= site_url('temuan/tindak-lanjut/') ?>' + id);
             $('#update-nomor-temuan').val(nomor);
             
-            // Reset input values
+            // Reset input values & previews
             $('#status_progress').val('');
             $('#komentar').val('');
             $('#form-update-status').find('input[type="file"]').val('');
+            $('.file-name-preview').html('<span class="text-muted">Belum ada foto</span>');
 
             // Show custom Modal
             $('#modal-update-status').addClass('active');
             $('body').css('overflow', 'hidden');
+        });
+
+        // Dual Photo triggers (Berkas / Kamera)
+        $(document).on('click', '.btn-dual-gallery', function() {
+            const target = $(this).data('target');
+            $(target).trigger('click');
+        });
+
+        $(document).on('click', '.btn-dual-camera', function() {
+            const target = $(this).data('target');
+            $(target).trigger('click');
+        });
+
+        // Update preview file name when user selects file from Gallery or Kamera
+        $(document).on('change', '#foto_sebelum, #foto_sebelum_cam, #foto_proses, #foto_proses_cam, #foto_sesudah, #foto_sesudah_cam', function() {
+            if (this.files && this.files.length > 0) {
+                const f = this.files[0];
+                let fieldId = this.id.replace('_cam', '');
+                
+                // Sync file from camera to main input if camera was clicked
+                if (this.id.endsWith('_cam')) {
+                    const mainInput = document.getElementById(fieldId);
+                    if (mainInput) {
+                        const dt = new DataTransfer();
+                        dt.items.add(f);
+                        mainInput.files = dt.files;
+                    }
+                }
+                
+                $('#preview_name_' + fieldId).html('<span class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i> ' + f.name + '</span>');
+            }
         });
 
         // Close update status modal

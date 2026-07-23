@@ -168,6 +168,8 @@
             background: none;
             border: none;
             font-weight: 600;
+        }
+
         @keyframes tickerAnimation {
             0% { transform: translate3d(0, 0, 0); }
             100% { transform: translate3d(-100%, 0, 0); }
@@ -196,12 +198,12 @@
         </div>
         
         <!-- Running Motivational Ticker Mobile -->
-        <div class="mt-3 p-2 rounded-3 d-flex align-items-center" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.25);">
+        <div class="mt-3 p-2 rounded-3 d-flex align-items-center" style="background: rgba(255,255,255,0.18); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; overflow: hidden;">
             <i class="fas fa-bullhorn text-warning me-2" style="font-size: 13px; flex-shrink: 0;"></i>
-            <div style="overflow: hidden; white-space: nowrap; flex-grow: 1;">
-                <div class="d-inline-block font-weight-bold" style="display: inline-block; padding-left: 100%; animation: tickerAnimation 20s linear infinite; font-size: 11px; color: #ffffff;">
+            <div style="overflow: hidden; flex-grow: 1; display: flex; align-items: center;">
+                <marquee scrollamount="4" behavior="scroll" direction="left" style="font-size: 11px; font-weight: 700; color: #ffffff; margin: 0; line-height: 1.2;">
                     <?= esc(get_daily_announcement()) ?>
-                </div>
+                </marquee>
             </div>
         </div>
     </div>

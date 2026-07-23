@@ -78,7 +78,11 @@ class Filters extends BaseFilters
             'csrf' => [
                 'except' => [
                     'api/*',
-                    'setting/update-announcement'
+                    'setting/update-announcement',
+                    'temuan/delete/*',
+                    'users/delete/*',
+                    'temuan/ajax-*',
+                    'temuan/ajax-datatables'
                 ]
             ],
             // 'invalidchars',

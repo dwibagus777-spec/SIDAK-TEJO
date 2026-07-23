@@ -4949,3 +4949,4 @@
 2026-07-23 09:10:03 - HOST: localhost - URI: /SIDAK%20TEJO/public/index.php?debugbar
 2026-07-23 09:10:03 - HOST: localhost - URI: /SIDAK%20TEJO/public/index.php?debugbar_time=1784772603.328354
 2026-07-23 09:10:03 - HOST: localhost - URI: /SIDAK%20TEJO/public/index.php/__hot-reload
+2026-07-23 10:03:57 - HOST: localhost - URI: /SIDAK%20TEJO/public/index.php/dashboard

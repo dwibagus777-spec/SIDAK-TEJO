@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@php-wasm/node": "^0.0.134",
+    "@php-wasm/node": "latest",
     "vercel-php": "^0.7.3"
   }
 }

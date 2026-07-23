@@ -1256,6 +1256,21 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             });
         }
 
+        $.ajaxSetup({
+            statusCode: {
+                401: function() {
+                    Swal.fire({
+                        title: 'Sesi Berakhir!',
+                        text: 'Sesi login Anda telah habis. Silakan login kembali.',
+                        icon: 'warning',
+                        confirmButtonText: 'Ke Halaman Login'
+                    }).then(() => {
+                        window.location.href = '<?= site_url('login') ?>';
+                    });
+                }
+            }
+        });
+
         initDualUploadEnhancer();
         $(document).ajaxComplete(function() {
             setTimeout(initDualUploadEnhancer, 300);

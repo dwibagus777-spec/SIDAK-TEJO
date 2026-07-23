@@ -554,11 +554,17 @@
                     $(this).find('.btn-zoom-to').click();
                 });
             },
-            error: function() {
+            error: function(xhr, status, error) {
+                console.error("AJAX Error:", status, error, xhr);
+                let errorMsg = 'Gagal mengambil data dari server.';
+                if (xhr.status === 401 || xhr.status === 403 || (xhr.responseText && xhr.responseText.includes('login'))) {
+                    errorMsg = 'Sesi Anda telah berakhir. Silakan <a href="<?= site_url('auth/login') ?>" class="text-warning font-weight-bold">Login Kembali</a>.';
+                }
                 $('#list-temuan-terdekat').html(
                     '<div class="text-center py-5 text-danger">' +
                     '<i class="fas fa-circle-exclamation fa-3x mb-3"></i>' +
-                    '<p class="mb-0 font-weight-bold">Gagal mengambil data dari server.</p>' +
+                    '<p class="mb-2 font-weight-bold">' + errorMsg + '</p>' +
+                    '<button onclick="searchNearbyFindings()" class="btn btn-sm btn-outline-light mt-2"><i class="fas fa-rotate-right me-1"></i> Coba Lagi</button>' +
                     '</div>'
                 );
             }

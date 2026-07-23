@@ -219,7 +219,7 @@ class Database extends Config
         if (!isset($_SERVER['HTTP_HOST']) || (strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false)) {
             $this->default['hostname'] = $getHost ?: 'mysql.railway.internal';
             $this->default['username'] = $getUser ?: 'root';
-            $this->default['password'] = ($getPass !== null && $getPass !== '') ? $getPass : 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI';
+            $this->default['password'] = ($getPass !== null && $getPass !== '') ? $getPass : 'mdHhnrBwvreraXsIHEKlSEdVnWJBUoed';
             $this->default['database'] = $getDb ?: 'railway';
             $this->default['port']     = $getPort ? (int)$getPort : 3306;
             
@@ -227,9 +227,9 @@ class Database extends Config
             $this->default['failover'] = [
                 [
                     'DSN'          => '',
-                    'hostname'     => 'tokaido.proxy.rlwy.net',
+                    'hostname'     => 'altaria.proxy.rlwy.net',
                     'username'     => 'root',
-                    'password'     => 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI',
+                    'password'     => 'mdHhnrBwvreraXsIHEKlSEdVnWJBUoed',
                     'database'     => $getDb ?: 'railway',
                     'DBDriver'     => 'MySQLi',
                     'DBPrefix'     => '',
@@ -241,7 +241,7 @@ class Database extends Config
                     'encrypt'      => false,
                     'compress'     => false,
                     'strictOn'     => false,
-                    'port'         => 25359,
+                    'port'         => 48116,
                     'numberNative' => false,
                     'foundRows'    => false,
                 ]

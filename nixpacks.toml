@@ -1,0 +1,6 @@
+[providers]
+php = "php"
+
+[variables]
+NIXPACKS_PHP_EXTENSIONS = "intl, gd, zip, mysqli, pdo_mysql, mbstring"
+NIXPACKS_PHP_ROOT_DIR = "public"

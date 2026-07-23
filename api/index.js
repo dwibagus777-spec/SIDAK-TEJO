@@ -2,8 +2,12 @@ const path = require('path');
 
 module.exports = async (req, res) => {
     try {
-        const { loadNodeRuntime } = require('@php-wasm/node');
+        const { loadNodeRuntime, useHostFilesystem } = require('@php-wasm/node');
         const php = await loadNodeRuntime();
+
+        if (typeof useHostFilesystem === 'function') {
+            try { useHostFilesystem(php); } catch(e) {}
+        }
 
         const appPath = path.join(__dirname, 'app.php');
         
@@ -14,7 +18,7 @@ module.exports = async (req, res) => {
                 $_SERVER['HTTP_HOST'] = '${req.headers.host || 'sidak-tejo.vercel.app'}';
                 $_SERVER['SCRIPT_NAME'] = '/index.php';
                 $_SERVER['SCRIPT_FILENAME'] = '${appPath}';
-                require '${appPath}';
+                require_once '${appPath}';
             `
         });
 

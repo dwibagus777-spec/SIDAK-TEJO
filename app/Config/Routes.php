@@ -96,7 +96,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('store', 'User::store');
         $routes->get('edit/(:num)', 'User::edit/$1');
         $routes->post('update/(:num)', 'User::update/$1');
-        $routes->get('delete/(:num)', 'User::delete/$1');
+        $routes->match(['get', 'post'], 'delete/(:num)', 'User::delete/$1');
         $routes->post('reset-password/(:num)', 'User::resetPassword/$1');
     });
 

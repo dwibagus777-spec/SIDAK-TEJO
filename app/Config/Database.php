@@ -231,14 +231,36 @@ class Database extends Config
                 $this->default['port'] = 25359;
             }
 
-            // Automatic failover configuration if internal connection fails
+            // Multi-strategy failover chain for Railway MySQL
             $this->default['failover'] = [
+                // Strategy 1: Railway internal host with password
+                [
+                    'DSN'          => '',
+                    'hostname'     => 'mysql.railway.internal',
+                    'username'     => 'root',
+                    'password'     => 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI',
+                    'database'     => $getDb ?: 'railway',
+                    'DBDriver'     => 'MySQLi',
+                    'DBPrefix'     => '',
+                    'pConnect'     => false,
+                    'DBDebug'      => true,
+                    'charset'      => 'utf8mb4',
+                    'DBCollat'     => 'utf8mb4_general_ci',
+                    'swapPre'      => '',
+                    'encrypt'      => false,
+                    'compress'     => false,
+                    'strictOn'     => false,
+                    'port'         => 3306,
+                    'numberNative' => false,
+                    'foundRows'    => false,
+                ],
+                // Strategy 2: External Railway Proxy
                 [
                     'DSN'          => '',
                     'hostname'     => 'tokaido.proxy.rlwy.net',
                     'username'     => 'root',
                     'password'     => 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI',
-                    'database'     => 'railway',
+                    'database'     => $getDb ?: 'railway',
                     'DBDriver'     => 'MySQLi',
                     'DBPrefix'     => '',
                     'pConnect'     => false,
@@ -250,6 +272,27 @@ class Database extends Config
                     'compress'     => false,
                     'strictOn'     => false,
                     'port'         => 25359,
+                    'numberNative' => false,
+                    'foundRows'    => false,
+                ],
+                // Strategy 3: Railway internal host with unescaped password
+                [
+                    'DSN'          => '',
+                    'hostname'     => 'mysql.railway.internal',
+                    'username'     => 'root',
+                    'password'     => 'ryK0OXBsIFtXpgPSLlxTHIvNGybulMI',
+                    'database'     => $getDb ?: 'railway',
+                    'DBDriver'     => 'MySQLi',
+                    'DBPrefix'     => '',
+                    'pConnect'     => false,
+                    'DBDebug'      => true,
+                    'charset'      => 'utf8mb4',
+                    'DBCollat'     => 'utf8mb4_general_ci',
+                    'swapPre'      => '',
+                    'encrypt'      => false,
+                    'compress'     => false,
+                    'strictOn'     => false,
+                    'port'         => 3306,
                     'numberNative' => false,
                     'foundRows'    => false,
                 ]

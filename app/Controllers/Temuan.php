@@ -538,18 +538,19 @@ class Temuan extends BaseController
         
         $db = \Config\Database::connect();
         
-        $sql = "SELECT t.*, p.nama_penyulang, s.nama_section, u.nama_ulp,
-                    (6371 * acos(
-                        cos(radians(?)) * cos(radians(t.latitude)) * cos(radians(t.longitude) - radians(?)) + 
-                        sin(radians(?)) * sin(radians(t.latitude))
-                    )) AS distance_km
-                FROM temuan t
-                LEFT JOIN penyulang p ON t.penyulang_id = p.id
-                LEFT JOIN sections s ON t.section_id = s.id
-                LEFT JOIN ulps u ON t.ulp_id = u.id
-                WHERE t.latitude IS NOT NULL 
-                  AND t.longitude IS NOT NULL
-                  AND t.deleted_at IS NULL";
+        $sql = "SELECT * FROM (
+                    SELECT t.*, p.nama_penyulang, s.nama_section, u.nama_ulp,
+                        (6371 * acos(
+                            cos(radians(?)) * cos(radians(t.latitude)) * cos(radians(t.longitude) - radians(?)) + 
+                            sin(radians(?)) * sin(radians(t.latitude))
+                        )) AS distance_km
+                    FROM temuan t
+                    LEFT JOIN penyulang p ON t.penyulang_id = p.id
+                    LEFT JOIN sections s ON t.section_id = s.id
+                    LEFT JOIN ulps u ON t.ulp_id = u.id
+                    WHERE t.latitude IS NOT NULL 
+                      AND t.longitude IS NOT NULL
+                      AND t.deleted_at IS NULL";
                   
         $params = [$lat, $lng, $lat];
 
@@ -565,7 +566,8 @@ class Temuan extends BaseController
             $params[] = $scoping['jenis_temuan'];
         }
 
-        $sql .= " HAVING distance_km <= ?
+        $sql .= ") AS sub_temuan
+                  WHERE distance_km <= ?
                   ORDER BY distance_km ASC
                   LIMIT 50";
         $params[] = $radius;

@@ -215,13 +215,37 @@ class Database extends Config
         $getDb   = $findEnv('database_default_database', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME');
         $getPort = $findEnv('database_default_port', 'MYSQLPORT', 'MYSQL_PORT', 'DB_PORT');
 
-        // On cloud/production (Railway), use proven Railway MySQL host altaria.proxy.rlwy.net:48116
+        // On cloud/production (Railway), preference goes to internal Railway MySQL for maximum speed (0.1ms latency)
         if (!isset($_SERVER['HTTP_HOST']) || (strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false)) {
-            $this->default['hostname'] = 'altaria.proxy.rlwy.net';
-            $this->default['username'] = 'root';
-            $this->default['password'] = 'mdHhnrBwvreraXsIHEKlSEdVnWJBUoed';
-            $this->default['database'] = 'railway';
-            $this->default['port']     = 48116;
+            $this->default['hostname'] = $getHost ?: 'mysql.railway.internal';
+            $this->default['username'] = $getUser ?: 'root';
+            $this->default['password'] = ($getPass !== null && $getPass !== '') ? $getPass : 'mdHhnrBwvreraXsIHEKlSEdVnWJBUoed';
+            $this->default['database'] = $getDb ?: 'railway';
+            $this->default['port']     = $getPort ? (int)$getPort : 3306;
+            
+            // Failover to public proxy if internal DNS is not available
+            $this->default['failover'] = [
+                [
+                    'DSN'          => '',
+                    'hostname'     => 'altaria.proxy.rlwy.net',
+                    'username'     => 'root',
+                    'password'     => 'mdHhnrBwvreraXsIHEKlSEdVnWJBUoed',
+                    'database'     => $getDb ?: 'railway',
+                    'DBDriver'     => 'MySQLi',
+                    'DBPrefix'     => '',
+                    'pConnect'     => false,
+                    'DBDebug'      => true,
+                    'charset'      => 'utf8mb4',
+                    'DBCollat'     => 'utf8mb4_general_ci',
+                    'swapPre'      => '',
+                    'encrypt'      => false,
+                    'compress'     => false,
+                    'strictOn'     => false,
+                    'port'         => 48116,
+                    'numberNative' => false,
+                    'foundRows'    => false,
+                ]
+            ];
         } else {
             if ($getHost) { $this->default['hostname'] = $getHost; }
             if ($getUser) { $this->default['username'] = $getUser; }

@@ -22,9 +22,11 @@ class App extends BaseConfig
     {
         parent::__construct();
 
-        // Dynamically detect protocol, host, port, and subfolder for local requests
-        if (isset($_SERVER['HTTP_HOST']) && (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false)) {
-            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+        if (isset($_SERVER['HTTP_HOST'])) {
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            if (isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+                $protocol = $_SERVER['HTTP_X_FORWARDED_PROTO'];
+            }
             $host = $_SERVER['HTTP_HOST'];
             $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
             $subFolder = '/';
@@ -33,19 +35,10 @@ class App extends BaseConfig
             } elseif (strpos($scriptName, '/index.php') !== false) {
                 $subFolder = substr($scriptName, 0, strpos($scriptName, '/index.php'));
             }
-            // URL encode spaces to make it a valid URL for CodeIgniter's validator
             $subFolder = str_replace(' ', '%20', $subFolder);
             
             $this->baseURL = $protocol . '://' . $host . rtrim($subFolder, '/') . '/';
         }
-
-        // Diagnostic output logger
-        $out = "HTTP_HOST: " . ($_SERVER['HTTP_HOST'] ?? 'not set') . "\n";
-        $out .= "baseURL resolved: " . $this->baseURL . "\n";
-        $out .= "getenv('app.baseURL'): " . getenv('app.baseURL') . "\n";
-        $out .= "\$_ENV['app.baseURL']: " . ($_ENV['app.baseURL'] ?? 'not set') . "\n";
-        $out .= "\$_SERVER['app.baseURL']: " . ($_SERVER['app.baseURL'] ?? 'not set') . "\n";
-        file_put_contents(dirname(dirname(__DIR__)) . '/test_output.txt', $out);
     }
 
     /**

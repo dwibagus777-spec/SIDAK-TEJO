@@ -1,5 +1,4 @@
 <?php
-file_put_contents(dirname(__DIR__) . '/request_log.txt', date('Y-m-d H:i:s') . ' - HOST: ' . ($_SERVER['HTTP_HOST'] ?? 'none') . ' - URI: ' . ($_SERVER['REQUEST_URI'] ?? 'none') . "\n", FILE_APPEND);
 
 use CodeIgniter\Boot;
 use Config\Paths;

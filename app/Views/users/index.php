@@ -127,7 +127,50 @@
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = "<?= site_url('users/delete/') ?>" + id;
+                Swal.fire({
+                    title: 'Menghapus User...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: "<?= site_url('users/delete/') ?>" + id,
+                    type: "GET",
+                    dataType: "JSON",
+                    success: function(response) {
+                        if (response && response.success) {
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: response.message,
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Gagal!',
+                                text: (response && response.message) ? response.message : 'Gagal menghapus User.',
+                                icon: 'error'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Gagal menghapus User dari server.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            title: 'Gagal!',
+                            text: msg,
+                            icon: 'error'
+                        });
+                    }
+                });
             }
         });
     }

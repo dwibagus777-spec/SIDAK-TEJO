@@ -211,33 +211,58 @@ class User extends BaseController
 
     public function delete(int $id)
     {
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            return redirect()->to(site_url('users'))->with('error', 'User tidak ditemukan.');
+        try {
+            $user = $this->userRepository->find($id);
+            if (!$user) {
+                if ($this->request->isAJAX()) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'User tidak ditemukan.']);
+                }
+                return redirect()->to(site_url('users'))->with('error', 'User tidak ditemukan.');
+            }
+
+            $session = session();
+            $role = strtolower((string)$session->get('user_role'));
+            $userUlpId = $session->get('user_ulp_id');
+
+            if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== (int)$user['ulp_id']) {
+                if ($this->request->isAJAX()) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data User ini.']);
+                }
+                return redirect()->to(site_url('users'))->with('error', 'Anda tidak memiliki hak akses untuk menghapus data User ini.');
+            }
+
+            if ((int)$session->get('user_id') === $id) {
+                if ($this->request->isAJAX()) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.']);
+                }
+                return redirect()->to(site_url('users'))->with('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.');
+            }
+
+            // Unlink references in audit_logs and temuan before delete to guarantee safety
+            $db = \Config\Database::connect();
+            $db->table('audit_logs')->where('user_id', $id)->update(['user_id' => null]);
+            $db->table('temuan')->where('created_by', $id)->update(['created_by' => null]);
+            $db->table('temuan')->where('updated_by', $id)->update(['updated_by' => null]);
+
+            if ($this->userRepository->delete($id)) {
+                log_activity('DELETE_USER', 'Menghapus user: ' . $user['username']);
+                if ($this->request->isAJAX()) {
+                    return $this->response->setJSON(['success' => true, 'message' => 'User berhasil dihapus.']);
+                }
+                return redirect()->to(site_url('users'))->with('success', 'User berhasil dihapus.');
+            }
+
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus User dari database.']);
+            }
+            return redirect()->to(site_url('users'))->with('error', 'Gagal menghapus User.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Delete User Error: ' . $e->getMessage());
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+            return redirect()->to(site_url('users'))->with('error', 'Error: ' . $e->getMessage());
         }
-
-        $session = session();
-        $role = strtolower((string)$session->get('user_role'));
-        $userUlpId = $session->get('user_ulp_id');
-
-        if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== (int)$user['ulp_id']) {
-            return redirect()->to(site_url('users'))->with('error', 'Anda tidak memiliki hak akses untuk menghapus data User ini.');
-        }
-
-        if ((int)$session->get('user_id') === $id) {
-            return redirect()->to(site_url('users'))->with('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.');
-        }
-
-        // Unlink references in audit_logs before delete to guarantee safety
-        $db = \Config\Database::connect();
-        $db->table('audit_logs')->where('user_id', $id)->update(['user_id' => null]);
-
-        if ($this->userRepository->delete($id)) {
-            log_activity('DELETE_USER', 'Menghapus user: ' . $user['username']);
-            return redirect()->to(site_url('users'))->with('success', 'User berhasil dihapus.');
-        }
-
-        return redirect()->to(site_url('users'))->with('error', 'Gagal menghapus User.');
     }
 
     public function resetPassword(int $id)

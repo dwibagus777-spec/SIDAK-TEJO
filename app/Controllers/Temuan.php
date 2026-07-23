@@ -522,69 +522,76 @@ class Temuan extends BaseController
 
     public function ajaxTerdekat()
     {
-        $scoping = get_user_role_scoping();
+        try {
+            $scoping = get_user_role_scoping();
 
-        $lat = $this->request->getGet('latitude');
-        $lng = $this->request->getGet('longitude');
-        $radius = $this->request->getGet('radius'); // in meters
-        
-        if (empty($lat) || empty($lng)) {
+            $lat = $this->request->getGet('latitude');
+            $lng = $this->request->getGet('longitude');
+            $radius = $this->request->getGet('radius'); // in meters
+            
+            if (empty($lat) || empty($lng)) {
+                return $this->response->setJSON([]);
+            }
+            
+            $lat = (float)$lat;
+            $lng = (float)$lng;
+            $radius = (float)($radius ?: 1000) / 1000; // convert to km
+            
+            $db = \Config\Database::connect();
+            
+            $sql = "SELECT * FROM (
+                        SELECT t.*, p.nama_penyulang, s.nama_section, u.nama_ulp,
+                            (6371 * acos(
+                                LEAST(1.0, GREATEST(-1.0, 
+                                    cos(radians(?)) * cos(radians(t.latitude)) * cos(radians(t.longitude) - radians(?)) + 
+                                    sin(radians(?)) * sin(radians(t.latitude))
+                                ))
+                            )) AS distance_km
+                        FROM temuan t
+                        LEFT JOIN penyulang p ON t.penyulang_id = p.id
+                        LEFT JOIN sections s ON t.section_id = s.id
+                        LEFT JOIN ulps u ON t.ulp_id = u.id
+                        WHERE t.latitude IS NOT NULL 
+                          AND t.longitude IS NOT NULL
+                          AND t.deleted_at IS NULL";
+                      
+            $params = [$lat, $lng, $lat];
+
+            // Apply ULP restriction if restricted
+            if ($scoping['ulp_id'] !== null) {
+                $sql .= " AND t.ulp_id = ?";
+                $params[] = (int)$scoping['ulp_id'];
+            }
+
+            // Apply category restriction (e.g. har_row -> ROW)
+            if ($scoping['jenis_temuan'] !== null) {
+                $sql .= " AND t.jenis_temuan = ?";
+                $params[] = $scoping['jenis_temuan'];
+            }
+
+            $sql .= ") AS sub_temuan
+                      WHERE distance_km <= ?
+                      ORDER BY distance_km ASC
+                      LIMIT 50";
+            $params[] = $radius;
+                      
+            $query = $db->query($sql, $params);
+            $results = $query->getResultArray();
+            
+            foreach ($results as &$row) {
+                $distMeters = $row['distance_km'] * 1000;
+                if ($distMeters < 1000) {
+                    $row['distance_text'] = round($distMeters) . ' m';
+                } else {
+                    $row['distance_text'] = round($row['distance_km'], 2) . ' km';
+                }
+            }
+            
+            return $this->response->setJSON($results);
+        } catch (\Throwable $e) {
+            log_message('error', 'ajaxTerdekat Error: ' . $e->getMessage());
             return $this->response->setJSON([]);
         }
-        
-        $lat = (float)$lat;
-        $lng = (float)$lng;
-        $radius = (float)($radius ?: 1000) / 1000; // convert to km
-        
-        $db = \Config\Database::connect();
-        
-        $sql = "SELECT * FROM (
-                    SELECT t.*, p.nama_penyulang, s.nama_section, u.nama_ulp,
-                        (6371 * acos(
-                            cos(radians(?)) * cos(radians(t.latitude)) * cos(radians(t.longitude) - radians(?)) + 
-                            sin(radians(?)) * sin(radians(t.latitude))
-                        )) AS distance_km
-                    FROM temuan t
-                    LEFT JOIN penyulang p ON t.penyulang_id = p.id
-                    LEFT JOIN sections s ON t.section_id = s.id
-                    LEFT JOIN ulps u ON t.ulp_id = u.id
-                    WHERE t.latitude IS NOT NULL 
-                      AND t.longitude IS NOT NULL
-                      AND t.deleted_at IS NULL";
-                  
-        $params = [$lat, $lng, $lat];
-
-        // Apply ULP restriction if restricted
-        if ($scoping['ulp_id'] !== null) {
-            $sql .= " AND t.ulp_id = ?";
-            $params[] = (int)$scoping['ulp_id'];
-        }
-
-        // Apply category restriction (e.g. har_row -> ROW)
-        if ($scoping['jenis_temuan'] !== null) {
-            $sql .= " AND t.jenis_temuan = ?";
-            $params[] = $scoping['jenis_temuan'];
-        }
-
-        $sql .= ") AS sub_temuan
-                  WHERE distance_km <= ?
-                  ORDER BY distance_km ASC
-                  LIMIT 50";
-        $params[] = $radius;
-                  
-        $query = $db->query($sql, $params);
-        $results = $query->getResultArray();
-        
-        foreach ($results as &$row) {
-            $distMeters = $row['distance_km'] * 1000;
-            if ($distMeters < 1000) {
-                $row['distance_text'] = round($distMeters) . ' m';
-            } else {
-                $row['distance_text'] = round($row['distance_km'], 2) . ' km';
-            }
-        }
-        
-        return $this->response->setJSON($results);
     }
 
     public function updatePekerjaan()

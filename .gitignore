@@ -83,8 +83,7 @@ php_errors.log
 
 #-------------------------
 # Composer
-#-------------------------
-vendor/
+# vendor/ included for Vercel deployment
 
 #-------------------------
 # IDE / Development Files

@@ -51,27 +51,6 @@ class Database extends Config
         ],
     ];
 
-    public function __construct()
-    {
-        parent::__construct();
-
-        if (env('database_default_hostname')) {
-            $this->default['hostname'] = env('database_default_hostname');
-        }
-        if (env('database_default_username')) {
-            $this->default['username'] = env('database_default_username');
-        }
-        if (env('database_default_password')) {
-            $this->default['password'] = env('database_default_password');
-        }
-        if (env('database_default_database')) {
-            $this->default['database'] = env('database_default_database');
-        }
-        if (env('database_default_port')) {
-            $this->default['port'] = (int)env('database_default_port');
-        }
-    }
-
     //    /**
     //     * Sample database connection for SQLite3.
     //     *
@@ -214,6 +193,22 @@ class Database extends Config
     public function __construct()
     {
         parent::__construct();
+
+        if (env('database_default_hostname')) {
+            $this->default['hostname'] = env('database_default_hostname');
+        }
+        if (env('database_default_username')) {
+            $this->default['username'] = env('database_default_username');
+        }
+        if (env('database_default_password')) {
+            $this->default['password'] = env('database_default_password');
+        }
+        if (env('database_default_database')) {
+            $this->default['database'] = env('database_default_database');
+        }
+        if (env('database_default_port')) {
+            $this->default['port'] = (int)env('database_default_port');
+        }
 
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that

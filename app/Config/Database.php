@@ -209,50 +209,22 @@ class Database extends Config
         $getPort = $findEnv('database_default_port', 'DB_PORT');
 
         // Check Railway injected environment variables
-        $getHost = $findEnv('database_default_hostname', 'DB_HOST', 'MYSQLHOST', 'MYSQL_HOST');
-        $getUser = $findEnv('database_default_username', 'DB_USER', 'MYSQLUSER', 'MYSQL_USER');
-        $getPass = $findEnv('database_default_password', 'DB_PASS', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD');
-        $getDb   = $findEnv('database_default_database', 'DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE');
-        $getPort = $findEnv('database_default_port', 'DB_PORT', 'MYSQLPORT', 'MYSQL_PORT');
+        $getHost = $findEnv('database_default_hostname', 'MYSQLHOST', 'MYSQL_HOST', 'DB_HOST');
+        $getUser = $findEnv('database_default_username', 'MYSQLUSER', 'MYSQL_USER', 'DB_USER');
+        $getPass = $findEnv('database_default_password', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS');
+        $getDb   = $findEnv('database_default_database', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME');
+        $getPort = $findEnv('database_default_port', 'MYSQLPORT', 'MYSQL_PORT', 'DB_PORT');
 
-        // If host is an internal 100.64.x.x IP or railway.internal, route to public proxy host
-        if ($getHost && (strpos($getHost, '100.64.') !== false || strpos($getHost, 'railway.internal') !== false)) {
-            $getHost = 'tokaido.proxy.rlwy.net';
-            $getPort = 25359;
-        }
-
-        // On cloud/production (Railway), preference goes to Railway injected env, then fallback to Proxy
+        // On cloud/production (Railway), preference goes to Railway injected env
         if (!isset($_SERVER['HTTP_HOST']) || (strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false)) {
-            $this->default['hostname'] = $getHost ?: 'tokaido.proxy.rlwy.net';
+            $this->default['hostname'] = $getHost ?: 'mysql.railway.internal';
             $this->default['username'] = $getUser ?: 'root';
             $this->default['password'] = ($getPass !== null && $getPass !== '') ? $getPass : 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI';
             $this->default['database'] = $getDb ?: 'railway';
-            $this->default['port']     = $getPort ? (int)$getPort : 25359;
+            $this->default['port']     = $getPort ? (int)$getPort : 3306;
             
-            // Multi-strategy failover chain for Railway MySQL
+            // Multi-strategy failover chain if primary connection requires backup
             $this->default['failover'] = [
-                // Strategy 1: Railway internal host with password
-                [
-                    'DSN'          => '',
-                    'hostname'     => 'mysql.railway.internal',
-                    'username'     => 'root',
-                    'password'     => 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI',
-                    'database'     => $getDb ?: 'railway',
-                    'DBDriver'     => 'MySQLi',
-                    'DBPrefix'     => '',
-                    'pConnect'     => false,
-                    'DBDebug'      => true,
-                    'charset'      => 'utf8mb4',
-                    'DBCollat'     => 'utf8mb4_general_ci',
-                    'swapPre'      => '',
-                    'encrypt'      => false,
-                    'compress'     => false,
-                    'strictOn'     => false,
-                    'port'         => 3306,
-                    'numberNative' => false,
-                    'foundRows'    => false,
-                ],
-                // Strategy 2: External Railway Proxy
                 [
                     'DSN'          => '',
                     'hostname'     => 'tokaido.proxy.rlwy.net',
@@ -270,27 +242,6 @@ class Database extends Config
                     'compress'     => false,
                     'strictOn'     => false,
                     'port'         => 25359,
-                    'numberNative' => false,
-                    'foundRows'    => false,
-                ],
-                // Strategy 3: Railway internal host with unescaped password
-                [
-                    'DSN'          => '',
-                    'hostname'     => 'mysql.railway.internal',
-                    'username'     => 'root',
-                    'password'     => 'ryK0OXBsIFtXpgPSLlxTHIvNGybulMI',
-                    'database'     => $getDb ?: 'railway',
-                    'DBDriver'     => 'MySQLi',
-                    'DBPrefix'     => '',
-                    'pConnect'     => false,
-                    'DBDebug'      => true,
-                    'charset'      => 'utf8mb4',
-                    'DBCollat'     => 'utf8mb4_general_ci',
-                    'swapPre'      => '',
-                    'encrypt'      => false,
-                    'compress'     => false,
-                    'strictOn'     => false,
-                    'port'         => 3306,
                     'numberNative' => false,
                     'foundRows'    => false,
                 ]

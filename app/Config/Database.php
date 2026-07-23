@@ -215,15 +215,17 @@ class Database extends Config
         $getDb   = $findEnv('database_default_database', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME');
         $getPort = $findEnv('database_default_port', 'MYSQLPORT', 'MYSQL_PORT', 'DB_PORT');
 
-        // On cloud/production (Railway), preference goes to internal Railway MySQL for maximum speed (0.1ms latency)
-        if (!isset($_SERVER['HTTP_HOST']) || (strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false)) {
+        // On cloud/production (Railway), preference goes to Railway Private Network (mysql.railway.internal:3306) for 100x faster <1ms latency
+        $isCloud = getenv('RAILWAY_ENVIRONMENT') || getenv('PORT') || (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false);
+        
+        if ($isCloud) {
             $this->default['hostname'] = $getHost ?: 'mysql.railway.internal';
             $this->default['username'] = $getUser ?: 'root';
             $this->default['password'] = ($getPass !== null && $getPass !== '') ? $getPass : 'mdHhnrBwvreraXsIHEKlSEdVnWJBUoed';
             $this->default['database'] = $getDb ?: 'railway';
             $this->default['port']     = $getPort ? (int)$getPort : 3306;
             
-            // Failover to public proxy if internal DNS is not available
+            // Failover to public proxy if internal DNS is temporarily resolving
             $this->default['failover'] = [
                 [
                     'DSN'          => '',

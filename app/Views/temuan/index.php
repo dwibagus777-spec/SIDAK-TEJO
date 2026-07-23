@@ -680,8 +680,9 @@
                 $.ajax({
                     url: "<?= site_url('temuan/delete/') ?>" + id,
                     type: "GET",
+                    dataType: "JSON",
                     success: function(response) {
-                        if (response.success) {
+                        if (response && response.success) {
                             Swal.fire({
                                 title: 'Terhapus!',
                                 text: response.message,
@@ -689,17 +690,30 @@
                                 background: '#1e1e1e',
                                 color: '#e0e0e0'
                             }).then(() => {
-                                $('#table-temuan').DataTable().ajax.reload();
+                                $('#table-temuan').DataTable().ajax.reload(null, false);
                             });
                         } else {
                             Swal.fire({
                                 title: 'Gagal!',
-                                text: response.message,
+                                text: (response && response.message) ? response.message : 'Gagal menghapus data temuan.',
                                 icon: 'error',
                                 background: '#1e1e1e',
                                 color: '#e0e0e0'
                             });
                         }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Gagal menghapus data temuan.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            title: 'Gagal!',
+                            text: msg,
+                            icon: 'error',
+                            background: '#1e1e1e',
+                            color: '#e0e0e0'
+                        });
                     }
                 });
             }

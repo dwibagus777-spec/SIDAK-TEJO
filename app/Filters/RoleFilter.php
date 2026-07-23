@@ -12,13 +12,16 @@ class RoleFilter implements FilterInterface
     {
         $session = session();
         if (!$session->get('logged_in')) {
+            if ($request->isAJAX()) {
+                return service('response')->setJSON(['success' => false, 'message' => 'Sesi Anda telah berakhir. Silakan login kembali.'])->setStatusCode(401);
+            }
             return redirect()->to(site_url('login'))->with('error', 'Silakan login terlebih dahulu.');
         }
 
-        $role = $session->get('user_role');
+        $role = strtolower((string)$session->get('user_role'));
 
-        // Administrator memiliki akses ke semua halaman
-        if ($role === 'administrator') {
+        // Administrator & Admin Pusat memiliki akses ke semua fitur
+        if (in_array($role, ['administrator', 'admin', 'admin_pusat'])) {
             return;
         }
 
@@ -26,13 +29,17 @@ class RoleFilter implements FilterInterface
             return;
         }
 
-        // normalisasi argumen ke huruf kecil
+        // Normalisasi argumen ke huruf kecil
         $allowedRoles = array_map('strtolower', $arguments);
 
-        if (!in_array(strtolower($role), $allowedRoles)) {
+        if (!in_array($role, $allowedRoles)) {
             // Catat log percobaan akses ilegal
             log_activity('UNAUTHORIZED_ACCESS_ATTEMPT', 'Mencoba mengakses rute: ' . $request->getPath());
             
+            if ($request->isAJAX()) {
+                return service('response')->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk aksi ini.'])->setStatusCode(403);
+            }
+
             return redirect()->to(site_url('dashboard'))->with('error', 'Anda tidak memiliki hak akses untuk membuka halaman tersebut.');
         }
     }

@@ -44,13 +44,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('temuan/terdekat', 'Temuan::terdekat');
     $routes->get('temuan/ajax-terdekat', 'Temuan::ajaxTerdekat');
     $routes->get('temuan/ajax-detail/(:num)', 'Temuan::ajaxDetail/$1');
-    $routes->get('temuan/create', 'Temuan::create', ['filter' => 'role:administrator,admin_ulp,inspeksi']);
-    $routes->post('temuan/store', 'Temuan::store', ['filter' => 'role:administrator,admin_ulp,inspeksi']);
+    $routes->get('temuan/create', 'Temuan::create', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('temuan/store', 'Temuan::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/detail/(:num)', 'Temuan::detail/$1');
-    $routes->post('temuan/tindak-lanjut/(:num)', 'Temuan::tindakLanjut/$1', ['filter' => 'role:administrator,admin_ulp,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek']);
-    $routes->get('temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin_ulp']);
-    $routes->get('temuan/edit/(:num)', 'Temuan::edit/$1', ['filter' => 'role:administrator,admin_ulp']);
-    $routes->post('temuan/update/(:num)', 'Temuan::update/$1', ['filter' => 'role:administrator,admin_ulp']);
+    $routes->post('temuan/tindak-lanjut/(:num)', 'Temuan::tindakLanjut/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->get('temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->get('temuan/edit/(:num)', 'Temuan::edit/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('temuan/update/(:num)', 'Temuan::update/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/update-pekerjaan', 'Temuan::updatePekerjaan');
     $routes->post('temuan/ajax-update-pekerjaan', 'Temuan::ajaxUpdatePekerjaan');
     
@@ -60,7 +60,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('temuan/ajax-datatables', 'Temuan::ajaxDataTables');
 
     // Master Data ULP (Admin & Admin ULP saja)
-    $routes->group('ulps', ['filter' => 'role:administrator'], function ($routes) {
+    $routes->group('ulps', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp'], function ($routes) {
         $routes->get('/', 'Ulp::index');
         $routes->get('create', 'Ulp::create');
         $routes->post('store', 'Ulp::store');
@@ -70,7 +70,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     });
 
     // Master Data Penyulang (Admin & Admin ULP)
-    $routes->group('penyulang', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
+    $routes->group('penyulang', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp'], function ($routes) {
         $routes->get('/', 'Penyulang::index');
         $routes->get('create', 'Penyulang::create');
         $routes->post('store', 'Penyulang::store');
@@ -80,7 +80,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     });
 
     // Master Data Section (Admin & Admin ULP)
-    $routes->group('sections', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
+    $routes->group('sections', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp'], function ($routes) {
         $routes->get('/', 'Section::index');
         $routes->get('create', 'Section::create');
         $routes->post('store', 'Section::store');
@@ -90,7 +90,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     });
 
     // Master Data User (Admin & Admin ULP)
-    $routes->group('users', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
+    $routes->group('users', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp'], function ($routes) {
         $routes->get('/', 'User::index');
         $routes->get('create', 'User::create');
         $routes->post('store', 'User::store');
@@ -134,7 +134,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('identifikasi/export-ppt', 'Identifikasi::exportPpt');
 
     // Eviden Lapangan (Kubikel & Trafo) - HAR Gardu, PDKB, Admin ULP & Admin
-    $routes->group('eviden', ['filter' => 'role:administrator,admin_ulp,har_gardu,har_konstruksi,pdkb'], function ($routes) {
+    $routes->group('eviden', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,har_gardu,har_konstruksi,har_row,har_crane,pdkb,yantek,inspeksi,supervisor_ulp,supervisor_up3'], function ($routes) {
         // Kubikel
         $routes->get('kubikel', 'Eviden::kubikel');
         $routes->get('kubikel/create', 'Eviden::kubikelCreate');

@@ -209,11 +209,17 @@ class Database extends Config
         $getPort = $findEnv('database_default_port', 'DB_PORT');
 
         // Check Railway injected environment variables
-        $getHost = $findEnv('database_default_hostname', 'MYSQLHOST', 'MYSQL_HOST', 'DB_HOST');
-        $getUser = $findEnv('database_default_username', 'MYSQLUSER', 'MYSQL_USER', 'DB_USER');
-        $getPass = $findEnv('database_default_password', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS');
-        $getDb   = $findEnv('database_default_database', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME');
-        $getPort = $findEnv('database_default_port', 'MYSQLPORT', 'MYSQL_PORT', 'DB_PORT');
+        $getHost = $findEnv('database_default_hostname', 'DB_HOST', 'MYSQLHOST', 'MYSQL_HOST');
+        $getUser = $findEnv('database_default_username', 'DB_USER', 'MYSQLUSER', 'MYSQL_USER');
+        $getPass = $findEnv('database_default_password', 'DB_PASS', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD');
+        $getDb   = $findEnv('database_default_database', 'DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE');
+        $getPort = $findEnv('database_default_port', 'DB_PORT', 'MYSQLPORT', 'MYSQL_PORT');
+
+        // If host is an internal 100.64.x.x IP or railway.internal, route to public proxy host
+        if ($getHost && (strpos($getHost, '100.64.') !== false || strpos($getHost, 'railway.internal') !== false)) {
+            $getHost = 'tokaido.proxy.rlwy.net';
+            $getPort = 25359;
+        }
 
         // On cloud/production (Railway), preference goes to Railway injected env, then fallback to Proxy
         if (!isset($_SERVER['HTTP_HOST']) || (strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false)) {
@@ -221,16 +227,8 @@ class Database extends Config
             $this->default['username'] = $getUser ?: 'root';
             $this->default['password'] = ($getPass !== null && $getPass !== '') ? $getPass : 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI';
             $this->default['database'] = $getDb ?: 'railway';
+            $this->default['port']     = $getPort ? (int)$getPort : 25359;
             
-            // If internal host is used (e.g. mysql.railway.internal or 100.64.x.x), default internal port is 3306
-            if ($getPort) {
-                $this->default['port'] = (int)$getPort;
-            } else if ($getHost && (strpos($getHost, 'railway.internal') !== false || strpos($getHost, '100.64.') !== false)) {
-                $this->default['port'] = 3306;
-            } else {
-                $this->default['port'] = 25359;
-            }
-
             // Multi-strategy failover chain for Railway MySQL
             $this->default['failover'] = [
                 // Strategy 1: Railway internal host with password

@@ -575,6 +575,15 @@
                     }
                     historyHtml += '</div>';
 
+                    let prioBg = '#64748b';
+                    if (temuan.prioritas === 'HIGH') prioBg = '#ea580c';
+                    if (temuan.prioritas === 'EMERGENCY') prioBg = '#dc2626';
+                    if (temuan.prioritas === 'MEDIUM') prioBg = '#2563eb';
+
+                    let jenisBadge = `<span class="badge text-white font-weight-bold px-2 py-1" style="background-color: #475569 !important; color: #ffffff !important; font-size: 0.78rem;">${temuan.jenis_temuan || '-'}</span>`;
+                    let prioBadge = `<span class="badge text-white font-weight-bold px-2 py-1" style="background-color: ${prioBg} !important; color: #ffffff !important; font-size: 0.78rem;">${temuan.prioritas}</span>`;
+                    let potensiBadge = `<span class="badge text-white font-weight-bold px-2 py-1" style="background-color: #0284c7 !important; color: #ffffff !important; font-size: 0.78rem;">${temuan.potensi_gangguan}</span>`;
+
                     $('#detail-content').html(`
                         <div class="row">
                             <div class="col-md-6 border-right pr-md-4">
@@ -584,10 +593,10 @@
                                     <tr><td style="color:#64748b; font-weight:600;">ULP</td><td style="color:#0f172a;">: ${temuan.nama_ulp || '-'}</td></tr>
                                     <tr><td style="color:#64748b; font-weight:600;">Penyulang</td><td style="color:#0f172a;">: ${temuan.nama_penyulang || '-'}</td></tr>
                                     <tr><td style="color:#64748b; font-weight:600;">Section</td><td style="color:#0f172a;">: ${temuan.nama_section || '-'}</td></tr>
-                                    <tr><td style="color:#64748b; font-weight:600;">Jenis Temuan</td><td style="color:#0f172a;">: <span class="badge bg-secondary">${temuan.jenis_temuan || '-'}</span></td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Jenis Temuan</td><td style="color:#0f172a;">: ${jenisBadge}</td></tr>
                                     <tr><td style="color:#64748b; font-weight:600;">Pelaksana</td><td style="color:#0f172a;">: ${temuan.pelaksana || '-'}</td></tr>
-                                    <tr><td style="color:#64748b; font-weight:600;">Prioritas</td><td style="color:#0f172a;">: <span class="badge bg-dark">${temuan.prioritas}</span></td></tr>
-                                    <tr><td style="color:#64748b; font-weight:600;">Potensi Gangguan</td><td style="color:#0f172a;">: <span class="badge bg-info text-dark">${temuan.potensi_gangguan}</span></td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Prioritas</td><td style="color:#0f172a;">: ${prioBadge}</td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Potensi Gangguan</td><td style="color:#0f172a;">: ${potensiBadge}</td></tr>
                                     <tr><td style="color:#64748b; font-weight:600;">SLA & Status</td><td style="color:#0f172a;">: ${sla.badge_html}</td></tr>
                                     <tr><td style="color:#64748b; font-weight:600;">Tanggal Temuan</td><td style="color:#0f172a;">: ${temuan.tanggal_temuan || '-'}</td></tr>
                                     <tr><td style="color:#64748b; font-weight:600;">Alamat / Lokasi</td><td style="color:#0f172a;">: ${temuan.alamat || '-'}</td></tr>

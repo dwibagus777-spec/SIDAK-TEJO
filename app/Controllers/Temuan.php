@@ -462,6 +462,8 @@ class Temuan extends BaseController
 
     public function delete(int $id)
     {
+        // Selalu return JSON
+        $this->response->setContentType('application/json');
         try {
             $db = \Config\Database::connect();
             $temuan = $db->table('temuan')->where('id', $id)->where('deleted_at IS NULL')->get()->getRowArray();
@@ -478,18 +480,13 @@ class Temuan extends BaseController
                 return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan ULP lain.']);
             }
 
-            // Perform soft delete directly via query
-            $deleted = $db->table('temuan')->where('id', $id)->update(['deleted_at' => date('Y-m-d H:i:s')]);
-
-            if ($deleted) {
-                log_activity('DELETE_TEMUAN', 'Menghapus temuan: ' . $temuan['nomor_temuan']);
-                return $this->response->setJSON(['success' => true, 'message' => 'Temuan ' . $temuan['nomor_temuan'] . ' berhasil dihapus.']);
-            }
-
-            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus temuan dari database.']);
+            // Soft delete langsung via query
+            $db->table('temuan')->where('id', $id)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+            log_activity('DELETE_TEMUAN', 'Menghapus temuan: ' . $temuan['nomor_temuan']);
+            return $this->response->setJSON(['success' => true, 'message' => 'Temuan ' . esc($temuan['nomor_temuan']) . ' berhasil dihapus.']);
         } catch (\Throwable $e) {
             log_message('error', 'Delete Temuan Error: ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            return $this->response->setJSON(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }
     }
 

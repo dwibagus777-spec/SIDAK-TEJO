@@ -211,14 +211,13 @@ class User extends BaseController
 
     public function delete(int $id)
     {
+        // Selalu return JSON - dipanggil via AJAX dari browser
+        $this->response->setContentType('application/json');
         try {
             $db = \Config\Database::connect();
             $user = $db->table('users')->where('id', $id)->get()->getRowArray();
             if (!$user) {
-                if ($this->request->isAJAX()) {
-                    return $this->response->setJSON(['success' => false, 'message' => 'User tidak ditemukan.']);
-                }
-                return redirect()->to(site_url('users'))->with('error', 'User tidak ditemukan.');
+                return $this->response->setJSON(['success' => false, 'message' => 'User tidak ditemukan.']);
             }
 
             $session = session();
@@ -226,45 +225,25 @@ class User extends BaseController
             $userUlpId = $session->get('user_ulp_id');
 
             if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== (int)$user['ulp_id']) {
-                if ($this->request->isAJAX()) {
-                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data User ini.']);
-                }
-                return redirect()->to(site_url('users'))->with('error', 'Anda tidak memiliki hak akses untuk menghapus data User ini.');
+                return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data User ini.']);
             }
 
             if ((int)$session->get('user_id') === $id) {
-                if ($this->request->isAJAX()) {
-                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.']);
-                }
-                return redirect()->to(site_url('users'))->with('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.');
+                return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.']);
             }
 
-            // Unlink all possible foreign references in all tables before delete to guarantee 100% clean deletion
+            // Unlink foreign references
             $db->table('audit_logs')->where('user_id', $id)->update(['user_id' => null]);
             $db->table('temuan')->where('created_by', $id)->update(['created_by' => null]);
             $db->table('temuan')->where('updated_by', $id)->update(['updated_by' => null]);
 
-            // Execute delete query directly
-            $deleted = $db->table('users')->where('id', $id)->delete();
-
-            if ($deleted) {
-                log_activity('DELETE_USER', 'Menghapus user: ' . $user['username']);
-                if ($this->request->isAJAX()) {
-                    return $this->response->setJSON(['success' => true, 'message' => 'User ' . $user['username'] . ' berhasil dihapus dari sistem.']);
-                }
-                return redirect()->to(site_url('users'))->with('success', 'User berhasil dihapus.');
-            }
-
-            if ($this->request->isAJAX()) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus User dari database.']);
-            }
-            return redirect()->to(site_url('users'))->with('error', 'Gagal menghapus User.');
+            // Hapus langsung via query
+            $db->table('users')->where('id', $id)->delete();
+            log_activity('DELETE_USER', 'Menghapus user: ' . $user['username']);
+            return $this->response->setJSON(['success' => true, 'message' => 'User ' . esc($user['username']) . ' berhasil dihapus dari sistem.']);
         } catch (\Throwable $e) {
             log_message('error', 'Delete User Error: ' . $e->getMessage());
-            if ($this->request->isAJAX()) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
-            }
-            return redirect()->to(site_url('users'))->with('error', 'Error: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }
     }
 

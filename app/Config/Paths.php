@@ -57,7 +57,7 @@ class Paths
 
     public function __construct()
     {
-        if (isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL']) || getenv('VERCEL') || (DIRECTORY_SEPARATOR === '/' && is_writable('/tmp'))) {
+        if (isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL']) || getenv('VERCEL')) {
             $this->writableDirectory = '/tmp';
         }
     }

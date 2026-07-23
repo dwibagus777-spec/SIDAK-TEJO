@@ -51,7 +51,7 @@ class TemuanModel extends Model
             $builder->where('ulp_id', $ulpId);
         }
 
-        $builder->groupBy(['created_by_name', 'created_by_nip']);
+        $builder->groupBy(['created_by', 'created_by_name', 'created_by_nip']);
         $builder->orderBy('total_input', 'DESC');
         $builder->limit(10);
 
@@ -80,7 +80,7 @@ class TemuanModel extends Model
             $builder->where('ulp_id', $ulpId);
         }
 
-        $builder->groupBy(['updated_by_name', 'updated_by_nip']);
+        $builder->groupBy(['updated_by', 'updated_by_name', 'updated_by_nip']);
         $builder->orderBy('total_update', 'DESC');
         $builder->limit(10);
 

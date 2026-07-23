@@ -409,12 +409,12 @@
                 { "data": 0 }, // Nomor
                 { "data": 1 }, // Penyulang
                 { "data": 2 }, // Section
-                { "data": 3 }, // Jenis
-                { "data": 4, "orderable": false }, // Foto
-                { "data": 5 }, // Prioritas
+                { "data": 3, "render": function(data){ return data; } }, // Jenis
+                { "data": 4, "orderable": false, "render": function(data){ return data; } }, // Foto
+                { "data": 5, "render": function(data){ return data; } }, // Prioritas
                 { "data": 6 }, // Tanggal
-                { "data": 7 }, // Status
-                { "data": 8, "orderable": false } // Aksi
+                { "data": 7, "render": function(data){ return data; } }, // Status
+                { "data": 8, "orderable": false, "render": function(data){ return data; } } // Aksi
             ],
             "order": [[6, "desc"]], // Default order by Tanggal (column index 6)
             "responsive": true,

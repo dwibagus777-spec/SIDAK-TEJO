@@ -249,35 +249,32 @@ class Temuan extends BaseController
      */
     public function ajaxDetail(int $id)
     {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setStatusCode(403)->setJSON(['error' => 'Forbidden']);
+        try {
+            $session = session();
+            $role = strtolower((string)$session->get('user_role'));
+
+            // Detail temuan bersifat READ-ONLY, sehingga diizinkan untuk dibaca seluruh user
+            $temuan = $this->temuanRepository->getDetail($id, null);
+            if (!$temuan) {
+                return $this->response->setStatusCode(404)->setJSON(['success' => false, 'error' => 'Data temuan tidak ditemukan.']);
+            }
+
+            $sla     = get_sla_status($temuan['prioritas'], $temuan['tanggal_temuan'], $temuan['status'], $temuan['tanggal_selesai']);
+            $history = $this->tindakLanjutRepository->getHistoryByTemuan($id);
+
+            return $this->response->setJSON([
+                'success'   => true,
+                'temuan'    => $temuan,
+                'sla'       => $sla,
+                'history'   => $history,
+                'canEdit'   => in_array($role, ['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek']),
+                'editUrl'   => site_url('temuan/edit/' . $id),
+                'detailUrl' => site_url('temuan/detail/' . $id),
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'ajaxDetail Error: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON(['success' => false, 'error' => $e->getMessage()]);
         }
-
-        $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
-
-        $ulpIdFilter = null;
-        if ($role !== 'administrator' && $role !== 'har_crane' && $userUlpId !== null) {
-            $ulpIdFilter = (int)$userUlpId;
-        }
-
-        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter);
-        if (!$temuan) {
-            return $this->response->setStatusCode(404)->setJSON(['error' => 'Tidak ditemukan']);
-        }
-
-        $sla     = get_sla_status($temuan['prioritas'], $temuan['tanggal_temuan'], $temuan['status'], $temuan['tanggal_selesai']);
-        $history = $this->tindakLanjutRepository->getHistoryByTemuan($id);
-
-        return $this->response->setJSON([
-            'temuan'  => $temuan,
-            'sla'     => $sla,
-            'history' => $history,
-            'canEdit' => check_role(['administrator', 'admin_ulp']),
-            'editUrl' => site_url('temuan/edit/' . $id),
-            'detailUrl' => site_url('temuan/detail/' . $id),
-        ]);
     }
 
     /**

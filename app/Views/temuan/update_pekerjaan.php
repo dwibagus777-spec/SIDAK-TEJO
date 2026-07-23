@@ -604,6 +604,16 @@
                             </div>
                         </div>
                     `);
+                },
+                error: function(xhr) {
+                    $('#detail-loading').addClass('d-none');
+                    $('#detail-content').removeClass('d-none').html(`
+                        <div class="text-center py-4 text-danger">
+                            <i class="fas fa-circle-exclamation fa-2x mb-2"></i>
+                            <p class="font-weight-bold">Gagal memuat rincian data temuan.</p>
+                            <button type="button" class="btn btn-sm btn-outline-light mt-1" onclick="$('.btn-detail-modal[data-id=${id}]').click()"><i class="fas fa-rotate-right mr-1"></i> Coba Lagi</button>
+                        </div>
+                    `);
                 }
             });
         });

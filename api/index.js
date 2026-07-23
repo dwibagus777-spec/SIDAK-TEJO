@@ -6,27 +6,42 @@ module.exports = (req, res) => {
     try {
         const phpAppPath = path.join(__dirname, 'app.php');
         
-        // Search for pre-compiled PHP binary from node_modules (vercel-php) or system
         let phpCmd = null;
-        const candidatePaths = [
-            path.join(__dirname, '../node_modules/vercel-php/bin/php'),
-            path.join(__dirname, '../node_modules/vercel-php/native/php'),
-            path.join(__dirname, '../node_modules/vercel-php/php'),
-            '/tmp/php',
-            '/var/task/node_modules/vercel-php/bin/php',
-            '/usr/bin/php',
-            '/usr/local/bin/php',
-            '/opt/bin/php'
+        
+        // Deep search for any php or php-cgi binary file in node_modules or system
+        const searchDirs = [
+            path.join(__dirname, '../node_modules'),
+            '/tmp',
+            '/opt',
+            '/usr/bin',
+            '/usr/local/bin'
         ];
 
-        for (const p of candidatePaths) {
-            if (fs.existsSync(p)) {
-                phpCmd = p;
-                break;
+        for (const dir of searchDirs) {
+            if (fs.existsSync(dir)) {
+                try {
+                    const findPhp = (currentDir, depth = 0) => {
+                        if (depth > 6 || phpCmd) return;
+                        const items = fs.readdirSync(currentDir);
+                        for (const item of items) {
+                            const fullPath = path.join(currentDir, item);
+                            try {
+                                const stat = fs.statSync(fullPath);
+                                if (stat.isFile() && (item === 'php' || item === 'php-cgi')) {
+                                    phpCmd = fullPath;
+                                    return;
+                                } else if (stat.isDirectory() && !item.startsWith('.')) {
+                                    findPhp(fullPath, depth + 1);
+                                }
+                            } catch (e) {}
+                        }
+                    };
+                    findPhp(dir);
+                } catch (e) {}
             }
+            if (phpCmd) break;
         }
 
-        // If no binary file path found, fallback to 'php' command
         if (!phpCmd) {
             phpCmd = 'php';
         }
@@ -43,7 +58,7 @@ module.exports = (req, res) => {
             SCRIPT_FILENAME: phpAppPath
         };
 
-        const output = execSync(`${phpCmd} "${phpAppPath}"`, {
+        const output = execSync(`"${phpCmd}" "${phpAppPath}"`, {
             env,
             maxBuffer: 15 * 1024 * 1024
         });
@@ -55,32 +70,11 @@ module.exports = (req, res) => {
         const stdout = err.stdout ? err.stdout.toString() : '';
         const msg = err.message || '';
         
-        // Find installed php files in node_modules for diagnostics if needed
-        let foundBinaries = [];
-        try {
-            const nmPath = path.join(__dirname, '../node_modules');
-            if (fs.existsSync(nmPath)) {
-                const findFiles = (dir) => {
-                    const files = fs.readdirSync(dir);
-                    for (const f of files) {
-                        const full = path.join(dir, f);
-                        if (f === 'php' || f.endsWith('/php')) {
-                            foundBinaries.push(full);
-                        } else if (fs.statSync(full).isDirectory() && !full.includes('.git') && dir.split(path.sep).length < 6) {
-                            try { findFiles(full); } catch(e) {}
-                        }
-                    }
-                };
-                findFiles(nmPath);
-            }
-        } catch (e) {}
-
         res.setHeader('Content-Type', 'text/html; charset=UTF-8');
         return res.status(200).send(`
             <div style="font-family:sans-serif; padding:20px; background:#fff0f0; border:2px solid red; margin:20px; border-radius:8px;">
-                <h2 style="color:red;">Serverless Bridge PHP Locator Debugger:</h2>
+                <h2 style="color:red;">Serverless Bridge Deep PHP Finder Debugger:</h2>
                 <p><b>Error Message:</b> ${msg}</p>
-                <p><b>Found Binary Candidates in node_modules:</b> ${foundBinaries.join(', ') || 'None found'}</p>
                 <p><b>STDERR:</b> ${stderr}</p>
                 <p><b>STDOUT:</b> ${stdout}</p>
             </div>

@@ -3,7 +3,7 @@ const path = require('path');
 
 module.exports = (req, res) => {
     try {
-        const indexPath = path.join(__dirname, 'index.php');
+        const phpAppPath = path.join(__dirname, 'app.php');
         const phpCmd = process.env.PHP_BINARY || 'php';
 
         const env = {
@@ -15,10 +15,10 @@ module.exports = (req, res) => {
             HTTP_USER_AGENT: req.headers['user-agent'] || '',
             HTTP_ACCEPT: req.headers['accept'] || '',
             SCRIPT_NAME: '/index.php',
-            SCRIPT_FILENAME: indexPath
+            SCRIPT_FILENAME: phpAppPath
         };
 
-        const output = execSync(`${phpCmd} "${indexPath}"`, {
+        const output = execSync(`${phpCmd} "${phpAppPath}"`, {
             env,
             maxBuffer: 15 * 1024 * 1024
         });

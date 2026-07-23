@@ -194,21 +194,17 @@ class Database extends Config
     {
         parent::__construct();
 
-        if (env('database_default_hostname')) {
-            $this->default['hostname'] = env('database_default_hostname');
-        }
-        if (env('database_default_username')) {
-            $this->default['username'] = env('database_default_username');
-        }
-        if (env('database_default_password')) {
-            $this->default['password'] = env('database_default_password');
-        }
-        if (env('database_default_database')) {
-            $this->default['database'] = env('database_default_database');
-        }
-        if (env('database_default_port')) {
-            $this->default['port'] = (int)env('database_default_port');
-        }
+        $getHost = getenv('database_default_hostname') ?: ($_ENV['database_default_hostname'] ?? ($_SERVER['database_default_hostname'] ?? null));
+        $getUser = getenv('database_default_username') ?: ($_ENV['database_default_username'] ?? ($_SERVER['database_default_username'] ?? null));
+        $getPass = getenv('database_default_password') ?: ($_ENV['database_default_password'] ?? ($_SERVER['database_default_password'] ?? null));
+        $getDb   = getenv('database_default_database') ?: ($_ENV['database_default_database'] ?? ($_SERVER['database_default_database'] ?? null));
+        $getPort = getenv('database_default_port') ?: ($_ENV['database_default_port'] ?? ($_SERVER['database_default_port'] ?? null));
+
+        if ($getHost) { $this->default['hostname'] = $getHost; }
+        if ($getUser) { $this->default['username'] = $getUser; }
+        if ($getPass !== null && $getPass !== '') { $this->default['password'] = $getPass; }
+        if ($getDb)   { $this->default['database'] = $getDb; }
+        if ($getPort) { $this->default['port']     = (int)$getPort; }
 
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that

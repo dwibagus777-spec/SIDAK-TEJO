@@ -194,39 +194,28 @@ class Database extends Config
     {
         parent::__construct();
 
-        // Default to Railway Cloud MySQL credentials for production/cloud environments
+        $findEnv = function(...$keys) {
+            foreach ($keys as $k) {
+                $val = getenv($k) ?: (getenv(strtoupper($k)) ?: (getenv(strtolower($k)) ?: ($_ENV[$k] ?? ($_ENV[strtoupper($k)] ?? ($_ENV[strtolower($k)] ?? ($_SERVER[$k] ?? ($_SERVER[strtoupper($k)] ?? ($_SERVER[strtolower($k)] ?? null))))))));
+                if ($val !== null && $val !== '') { return $val; }
+            }
+            return null;
+        };
+
+        $getHost = $findEnv('database_default_hostname', 'DB_HOST');
+        $getUser = $findEnv('database_default_username', 'DB_USER');
+        $getPass = $findEnv('database_default_password', 'DB_PASS');
+        $getDb   = $findEnv('database_default_database', 'DB_NAME');
+        $getPort = $findEnv('database_default_port', 'DB_PORT');
+
+        // On cloud/production (Railway), connect directly to Railway Cloud MySQL Proxy
         if (!isset($_SERVER['HTTP_HOST']) || (strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false)) {
-            $this->default['hostname'] = 'tokaido.proxy.rlwy.net';
-            $this->default['username'] = 'root';
-            $this->default['password'] = 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI';
-            $this->default['database'] = 'railway';
-            $this->default['port']     = 25359;
-        }
-
-        // Support Railway MYSQL_URL or DATABASE_URL
-        $dbUrl = getenv('MYSQL_URL') ?: (getenv('DATABASE_URL') ?: ($_ENV['MYSQL_URL'] ?? ($_ENV['DATABASE_URL'] ?? ($_SERVER['MYSQL_URL'] ?? ($_SERVER['DATABASE_URL'] ?? null)))));
-        if ($dbUrl) {
-            $parsed = parse_url($dbUrl);
-            if (!empty($parsed['host'])) { $this->default['hostname'] = $parsed['host']; }
-            if (!empty($parsed['user'])) { $this->default['username'] = urldecode($parsed['user']); }
-            if (isset($parsed['pass']))  { $this->default['password'] = urldecode($parsed['pass']); }
-            if (!empty($parsed['path'])) { $this->default['database'] = ltrim($parsed['path'], '/'); }
-            if (!empty($parsed['port'])) { $this->default['port']     = (int)$parsed['port']; }
+            $this->default['hostname'] = $getHost ?: 'tokaido.proxy.rlwy.net';
+            $this->default['username'] = $getUser ?: 'root';
+            $this->default['password'] = ($getPass !== null && $getPass !== '') ? $getPass : 'ryK0OXBsIFwtXpgPSLlxTHIvNGybulMI';
+            $this->default['database'] = $getDb ?: 'railway';
+            $this->default['port']     = $getPort ? (int)$getPort : 25359;
         } else {
-            $findEnv = function(...$keys) {
-                foreach ($keys as $k) {
-                    $val = getenv($k) ?: (getenv(strtoupper($k)) ?: (getenv(strtolower($k)) ?: ($_ENV[$k] ?? ($_ENV[strtoupper($k)] ?? ($_ENV[strtolower($k)] ?? ($_SERVER[$k] ?? ($_SERVER[strtoupper($k)] ?? ($_SERVER[strtolower($k)] ?? null))))))));
-                    if ($val !== null && $val !== '') { return $val; }
-                }
-                return null;
-            };
-
-            $getHost = $findEnv('database_default_hostname', 'MYSQLHOST', 'MYSQL_HOST', 'DB_HOST');
-            $getUser = $findEnv('database_default_username', 'MYSQLUSER', 'MYSQL_USER', 'DB_USER');
-            $getPass = $findEnv('database_default_password', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS');
-            $getDb   = $findEnv('database_default_database', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME');
-            $getPort = $findEnv('database_default_port', 'MYSQLPORT', 'MYSQL_PORT', 'DB_PORT');
-
             if ($getHost) { $this->default['hostname'] = $getHost; }
             if ($getUser) { $this->default['username'] = $getUser; }
             if ($getPass !== null && $getPass !== '') { $this->default['password'] = $getPass; }

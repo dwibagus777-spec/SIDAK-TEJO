@@ -1,5 +1,6 @@
 <?php
 
+// Trigger auto redeploy for Vercel Node 20.x environment
 // Set working directory to project root
 chdir(dirname(__DIR__));
 

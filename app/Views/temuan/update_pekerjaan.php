@@ -555,49 +555,50 @@
                             if (h.foto_sesudah) progressPhotos += `<img src="<?= base_url() ?>/${h.foto_sesudah}" style="height:50px; max-width: 80px; object-fit:cover; margin-right:5px; border-radius:4px; cursor:pointer;" onclick="openLightbox('<?= base_url() ?>/${h.foto_sesudah}')" title="Foto Sesudah">`;
 
                             historyHtml += `
-                                <div>
-                                    <i class="fas fa-circle-info bg-secondary"></i>
-                                    <div class="timeline-item bg-dark border-secondary text-white">
-                                        <span class="time text-muted"><i class="far fa-clock mr-1"></i>${h.created_at}</span>
-                                        <h4 class="timeline-header font-weight-bold" style="font-size:0.95rem;">Oleh: ${h.pelaksana}</h4>
-                                        <div class="timeline-body small" style="line-height:1.4;">
-                                            Status: ${progBadge}<br>
-                                            Komentar: <span class="italic text-light font-weight-bold">"${h.komentar}"</span>
-                                            ${progressPhotos ? '<div class="mt-2">' + progressPhotos + '</div>' : ''}
+                                <div class="mb-3">
+                                    <div class="timeline-item bg-light border rounded p-3 text-dark">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="font-weight-bold text-primary" style="font-size:0.95rem;"><i class="fas fa-user-gear mr-1"></i> ${h.pelaksana || 'Petugas'}</span>
+                                            <span class="small text-muted"><i class="far fa-clock mr-1"></i>${h.created_at}</span>
+                                        </div>
+                                        <div class="small text-dark" style="line-height:1.5;">
+                                            <div class="mb-1">Status: ${progBadge}</div>
+                                            <div>Catatan: <span class="font-weight-bold text-dark">"${h.komentar || '-'}"</span></div>
+                                            ${progressPhotos ? '<div class="mt-2 pt-2 border-top">' + progressPhotos + '</div>' : ''}
                                         </div>
                                     </div>
                                 </div>
                             `;
                         });
                     } else {
-                        historyHtml += '<div class="text-center py-3 text-secondary small">Belum ada histori tindak lanjut.</div>';
+                        historyHtml += '<div class="text-center py-4 text-muted small"><i class="fas fa-folder-open fa-2x mb-2 d-block text-secondary"></i>Belum ada histori tindak lanjut.</div>';
                     }
                     historyHtml += '</div>';
 
                     $('#detail-content').html(`
                         <div class="row">
-                            <div class="col-md-6 border-right border-secondary">
-                                <h6 class="font-weight-bold text-info"><i class="fas fa-circle-info mr-1"></i> Informasi Temuan</h6>
-                                <table class="table table-sm table-borderless text-white small">
-                                    <tr><td style="width:140px;">No Temuan</td><td>: <b>${temuan.nomor_temuan}</b></td></tr>
-                                    <tr><td>ULP</td><td>: ${temuan.nama_ulp}</td></tr>
-                                    <tr><td>Penyulang</td><td>: ${temuan.nama_penyulang}</td></tr>
-                                    <tr><td>Section</td><td>: ${temuan.nama_section}</td></tr>
-                                    <tr><td>Jenis Temuan</td><td>: ${temuan.jenis_temuan}</td></tr>
-                                    <tr><td>Pelaksana</td><td>: ${temuan.pelaksana}</td></tr>
-                                    <tr><td>Prioritas</td><td>: <span class="badge bg-secondary">${temuan.prioritas}</span></td></tr>
-                                    <tr><td>Potensi Gangguan</td><td>: <span class="badge bg-info text-dark">${temuan.potensi_gangguan}</span></td></tr>
-                                    <tr><td>SLA & Status</td><td>: ${sla.badge_html}</td></tr>
-                                    <tr><td>Tanggal Temuan</td><td>: ${temuan.tanggal_temuan}</td></tr>
-                                    <tr><td>Alamat / Lokasi</td><td>: ${temuan.alamat}</td></tr>
-                                    <tr><td>Detail Kerusakan</td><td>: <span class="text-warning font-weight-bold">${temuan.detail_temuan}</span></td></tr>
-                                    <tr><td>Kebutuhan Material</td><td>: ${temuan.material}</td></tr>
+                            <div class="col-md-6 border-right pr-md-4">
+                                <h6 class="font-weight-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-clipboard-list mr-1"></i> Informasi Temuan</h6>
+                                <table class="table table-sm table-borderless text-dark small" style="line-height:1.6;">
+                                    <tr><td style="width:140px; color:#64748b; font-weight:600;">No Temuan</td><td style="color:#0f172a;">: <b class="text-primary">${temuan.nomor_temuan}</b></td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">ULP</td><td style="color:#0f172a;">: ${temuan.nama_ulp || '-'}</td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Penyulang</td><td style="color:#0f172a;">: ${temuan.nama_penyulang || '-'}</td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Section</td><td style="color:#0f172a;">: ${temuan.nama_section || '-'}</td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Jenis Temuan</td><td style="color:#0f172a;">: <span class="badge bg-secondary">${temuan.jenis_temuan || '-'}</span></td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Pelaksana</td><td style="color:#0f172a;">: ${temuan.pelaksana || '-'}</td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Prioritas</td><td style="color:#0f172a;">: <span class="badge bg-dark">${temuan.prioritas}</span></td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Potensi Gangguan</td><td style="color:#0f172a;">: <span class="badge bg-info text-dark">${temuan.potensi_gangguan}</span></td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">SLA & Status</td><td style="color:#0f172a;">: ${sla.badge_html}</td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Tanggal Temuan</td><td style="color:#0f172a;">: ${temuan.tanggal_temuan || '-'}</td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Alamat / Lokasi</td><td style="color:#0f172a;">: ${temuan.alamat || '-'}</td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Detail Kerusakan</td><td style="color:#d97706; font-weight:700;">: ${temuan.detail_temuan || '-'}</td></tr>
+                                    <tr><td style="color:#64748b; font-weight:600;">Kebutuhan Material</td><td style="color:#0f172a;">: ${temuan.material || '-'}</td></tr>
                                 </table>
-                                <h6 class="font-weight-bold text-info mt-3"><i class="fas fa-camera mr-1"></i> Galeri Foto Temuan</h6>
+                                <h6 class="font-weight-bold text-primary border-bottom pb-2 mt-4 mb-3"><i class="fas fa-images mr-1"></i> Galeri Foto Temuan</h6>
                                 ${photosHtml}
                             </div>
-                            <div class="col-md-6 pl-md-4">
-                                <h6 class="font-weight-bold text-info"><i class="fas fa-clock-rotate-left mr-1"></i> Histori Tindak Lanjut</h6>
+                            <div class="col-md-6 pl-md-4 mt-3 mt-md-0">
+                                <h6 class="font-weight-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-clock-rotate-left mr-1"></i> Histori Tindak Lanjut</h6>
                                 <div style="max-height: 450px; overflow-y: auto;">
                                     ${historyHtml}
                                 </div>

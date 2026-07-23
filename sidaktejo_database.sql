@@ -349,6 +349,8 @@ CREATE TABLE `temuan` (
   `foto` text DEFAULT NULL,
   `status` varchar(20) NOT NULL DEFAULT 'BELUM',
   `created_by` int(11) unsigned DEFAULT NULL,
+  `created_by_name` varchar(100) DEFAULT NULL,
+  `created_by_nip` varchar(50) DEFAULT NULL,
   `updated_by` int(11) unsigned DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,

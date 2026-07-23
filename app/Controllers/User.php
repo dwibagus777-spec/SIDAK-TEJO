@@ -212,7 +212,8 @@ class User extends BaseController
     public function delete(int $id)
     {
         try {
-            $user = $this->userRepository->find($id);
+            $db = \Config\Database::connect();
+            $user = $db->table('users')->where('id', $id)->get()->getRowArray();
             if (!$user) {
                 if ($this->request->isAJAX()) {
                     return $this->response->setJSON(['success' => false, 'message' => 'User tidak ditemukan.']);
@@ -238,16 +239,18 @@ class User extends BaseController
                 return redirect()->to(site_url('users'))->with('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.');
             }
 
-            // Unlink references in audit_logs and temuan before delete to guarantee safety
-            $db = \Config\Database::connect();
+            // Unlink all possible foreign references in all tables before delete to guarantee 100% clean deletion
             $db->table('audit_logs')->where('user_id', $id)->update(['user_id' => null]);
             $db->table('temuan')->where('created_by', $id)->update(['created_by' => null]);
             $db->table('temuan')->where('updated_by', $id)->update(['updated_by' => null]);
 
-            if ($this->userRepository->delete($id)) {
+            // Execute delete query directly
+            $deleted = $db->table('users')->where('id', $id)->delete();
+
+            if ($deleted) {
                 log_activity('DELETE_USER', 'Menghapus user: ' . $user['username']);
                 if ($this->request->isAJAX()) {
-                    return $this->response->setJSON(['success' => true, 'message' => 'User berhasil dihapus.']);
+                    return $this->response->setJSON(['success' => true, 'message' => 'User ' . $user['username'] . ' berhasil dihapus dari sistem.']);
                 }
                 return redirect()->to(site_url('users'))->with('success', 'User berhasil dihapus.');
             }

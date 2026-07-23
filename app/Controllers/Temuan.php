@@ -87,7 +87,7 @@ class Temuan extends BaseController
             $btnDetail = '<button type="button" class="btn btn-sm btn-info text-white btn-detail-modal" data-id="' . $row['id'] . '" title="Lihat Detail & Foto"><i class="fas fa-eye"></i></button>';
             
             $btnDelete = '';
-            if (check_role(['administrator', 'admin_ulp'])) {
+            if (check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek', 'supervisor_ulp', 'supervisor_up3'])) {
                 $btnDelete = ' <a href="javascript:void(0)" onclick="confirmDelete(' . $row['id'] . ')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>';
             }
 
@@ -463,21 +463,27 @@ class Temuan extends BaseController
     public function delete(int $id)
     {
         try {
+            $db = \Config\Database::connect();
+            $temuan = $db->table('temuan')->where('id', $id)->where('deleted_at IS NULL')->get()->getRowArray();
+            if (!$temuan) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Data temuan tidak ditemukan atau sudah dihapus.']);
+            }
+
             $session = session();
             $role = strtolower((string)$session->get('user_role'));
             $userUlpId = $session->get('user_ulp_id');
 
             // Batasi ULP jika admin_ulp
-            if ($role === 'admin_ulp' && $userUlpId !== null) {
-                $temuan = $this->temuanRepository->find($id);
-                if (!$temuan || (int)$temuan['ulp_id'] !== (int)$userUlpId) {
-                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan ULP lain.']);
-                }
+            if ($role === 'admin_ulp' && $userUlpId !== null && (int)$temuan['ulp_id'] !== (int)$userUlpId) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan ULP lain.']);
             }
 
-            if ($this->temuanService->deleteTemuan($id)) {
-                log_activity('DELETE_TEMUAN', 'Menghapus temuan ID: ' . $id);
-                return $this->response->setJSON(['success' => true, 'message' => 'Temuan berhasil dihapus (Soft Delete).']);
+            // Perform soft delete directly via query
+            $deleted = $db->table('temuan')->where('id', $id)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+
+            if ($deleted) {
+                log_activity('DELETE_TEMUAN', 'Menghapus temuan: ' . $temuan['nomor_temuan']);
+                return $this->response->setJSON(['success' => true, 'message' => 'Temuan ' . $temuan['nomor_temuan'] . ' berhasil dihapus.']);
             }
 
             return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus temuan dari database.']);

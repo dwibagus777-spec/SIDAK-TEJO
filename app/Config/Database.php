@@ -203,25 +203,36 @@ class Database extends Config
             $this->default['port']     = 25359;
         }
 
-        $findEnv = function(...$keys) {
-            foreach ($keys as $k) {
-                $val = getenv($k) ?: (getenv(strtoupper($k)) ?: (getenv(strtolower($k)) ?: ($_ENV[$k] ?? ($_ENV[strtoupper($k)] ?? ($_ENV[strtolower($k)] ?? ($_SERVER[$k] ?? ($_SERVER[strtoupper($k)] ?? ($_SERVER[strtolower($k)] ?? null))))))));
-                if ($val !== null && $val !== '') { return $val; }
-            }
-            return null;
-        };
+        // Support Railway MYSQL_URL or DATABASE_URL
+        $dbUrl = getenv('MYSQL_URL') ?: (getenv('DATABASE_URL') ?: ($_ENV['MYSQL_URL'] ?? ($_ENV['DATABASE_URL'] ?? ($_SERVER['MYSQL_URL'] ?? ($_SERVER['DATABASE_URL'] ?? null)))));
+        if ($dbUrl) {
+            $parsed = parse_url($dbUrl);
+            if (!empty($parsed['host'])) { $this->default['hostname'] = $parsed['host']; }
+            if (!empty($parsed['user'])) { $this->default['username'] = urldecode($parsed['user']); }
+            if (isset($parsed['pass']))  { $this->default['password'] = urldecode($parsed['pass']); }
+            if (!empty($parsed['path'])) { $this->default['database'] = ltrim($parsed['path'], '/'); }
+            if (!empty($parsed['port'])) { $this->default['port']     = (int)$parsed['port']; }
+        } else {
+            $findEnv = function(...$keys) {
+                foreach ($keys as $k) {
+                    $val = getenv($k) ?: (getenv(strtoupper($k)) ?: (getenv(strtolower($k)) ?: ($_ENV[$k] ?? ($_ENV[strtoupper($k)] ?? ($_ENV[strtolower($k)] ?? ($_SERVER[$k] ?? ($_SERVER[strtoupper($k)] ?? ($_SERVER[strtolower($k)] ?? null))))))));
+                    if ($val !== null && $val !== '') { return $val; }
+                }
+                return null;
+            };
 
-        $getHost = $findEnv('database_default_hostname', 'MYSQLHOST', 'MYSQL_HOST', 'DB_HOST');
-        $getUser = $findEnv('database_default_username', 'MYSQLUSER', 'MYSQL_USER', 'DB_USER');
-        $getPass = $findEnv('database_default_password', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS');
-        $getDb   = $findEnv('database_default_database', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME');
-        $getPort = $findEnv('database_default_port', 'MYSQLPORT', 'MYSQL_PORT', 'DB_PORT');
+            $getHost = $findEnv('database_default_hostname', 'MYSQLHOST', 'MYSQL_HOST', 'DB_HOST');
+            $getUser = $findEnv('database_default_username', 'MYSQLUSER', 'MYSQL_USER', 'DB_USER');
+            $getPass = $findEnv('database_default_password', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS');
+            $getDb   = $findEnv('database_default_database', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME');
+            $getPort = $findEnv('database_default_port', 'MYSQLPORT', 'MYSQL_PORT', 'DB_PORT');
 
-        if ($getHost) { $this->default['hostname'] = $getHost; }
-        if ($getUser) { $this->default['username'] = $getUser; }
-        if ($getPass !== null && $getPass !== '') { $this->default['password'] = $getPass; }
-        if ($getDb)   { $this->default['database'] = $getDb; }
-        if ($getPort) { $this->default['port']     = (int)$getPort; }
+            if ($getHost) { $this->default['hostname'] = $getHost; }
+            if ($getUser) { $this->default['username'] = $getUser; }
+            if ($getPass !== null && $getPass !== '') { $this->default['password'] = $getPass; }
+            if ($getDb)   { $this->default['database'] = $getDb; }
+            if ($getPort) { $this->default['port']     = (int)$getPort; }
+        }
 
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that

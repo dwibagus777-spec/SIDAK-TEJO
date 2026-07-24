@@ -433,17 +433,20 @@
         const lng = parseFloat($('#input-lng').val());
         const radius = parseInt($('#input-radius').val());
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const qParam = urlParams.get('penyulang') || urlParams.get('q') || '';
+
         $('#list-temuan-terdekat').html(
             '<div class="text-center py-5 text-muted">' +
             '<div class="spinner-border text-primary mb-3" role="status"></div>' +
-            '<p>Mencari temuan terdekat...</p>' +
+            '<p>Mencari temuan terdekat' + (qParam ? ' untuk "' + qParam + '"' : '') + '...</p>' +
             '</div>'
         );
 
         $.ajax({
             url: '<?= site_url('temuan/ajax-terdekat') ?>',
             type: 'GET',
-            data: { latitude: lat, longitude: lng, radius: radius },
+            data: { latitude: lat, longitude: lng, radius: radius, q: qParam },
             dataType: 'JSON',
             success: function(data) {
                 // Clear existing markers
@@ -451,7 +454,7 @@
                 $('#list-temuan-terdekat').empty();
 
                 const count = data.length;
-                $('#count-results').text(count + ' Temuan');
+                $('#count-results').text(count + ' Temuan' + (qParam ? ' (' + qParam + ')' : ''));
 
                 if (count === 0) {
                     $('#list-temuan-terdekat').html(

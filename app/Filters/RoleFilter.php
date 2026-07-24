@@ -38,7 +38,10 @@ class RoleFilter implements FilterInterface
 
         if (!in_array($role, $allowedRoles)) {
             // Catat log percobaan akses ilegal
-            log_activity('UNAUTHORIZED_ACCESS_ATTEMPT', 'Mencoba mengakses rute: ' . $request->getPath());
+            helper('app');
+            if (function_exists('log_activity')) {
+                log_activity('UNAUTHORIZED_ACCESS_ATTEMPT', 'Mencoba mengakses rute: ' . $request->getPath());
+            }
             
             if ($isJsonRequest) {
                 return service('response')->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk aksi ini.'])->setStatusCode(403);

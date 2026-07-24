@@ -598,6 +598,11 @@ class Temuan extends BaseController
             $lng = (float)$lng;
             $radius = (float)($radius ?: 1000) / 1000; // convert to km
             
+            $q = trim((string)($this->request->getGet('q') ?: $this->request->getGet('penyulang')));
+            if (!empty($q)) {
+                $radius = 200; // Auto-expand radius for search query
+            }
+
             $db = \Config\Database::connect();
             
             $sql = "SELECT * FROM (
@@ -618,6 +623,16 @@ class Temuan extends BaseController
                       
             $params = [$lat, $lng, $lat];
 
+            if (!empty($q)) {
+                $sql .= " AND (p.nama_penyulang LIKE ? OR s.nama_section LIKE ? OR t.nomor_temuan LIKE ? OR t.detail_temuan LIKE ? OR t.jenis_temuan LIKE ?)";
+                $like = '%' . $q . '%';
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+            }
+
             // Apply ULP restriction if restricted
             if ($scoping['ulp_id'] !== null) {
                 $sql .= " AND t.ulp_id = ?";
@@ -633,7 +648,7 @@ class Temuan extends BaseController
             $sql .= ") AS sub_temuan
                       WHERE distance_km <= ?
                       ORDER BY distance_km ASC
-                      LIMIT 50";
+                      LIMIT 100";
             $params[] = $radius;
                       
             $query = $db->query($sql, $params);

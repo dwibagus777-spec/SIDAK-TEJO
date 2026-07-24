@@ -114,7 +114,7 @@
                 <div class="row">
                     <!-- 1. Filter ULP -->
                     <div class="col-md-2 form-group mb-2">
-                        <label class="small font-weight-bold">ULP</label>
+                        <label for="filter_ulp_id" class="small font-weight-bold">ULP</label>
                         <?php if ($isRestricted): ?>
                             <select id="filter_ulp_id" class="form-control form-control-sm" disabled autocomplete="off">
                                 <option value="<?= $ulps[0]['id'] ?>"><?= esc($ulps[0]['nama_ulp']) ?></option>
@@ -131,7 +131,7 @@
 
                     <!-- 2. Filter Penyulang -->
                     <div class="col-md-2 form-group mb-2">
-                        <label class="small font-weight-bold">Penyulang</label>
+                        <label for="filter_penyulang_id" class="small font-weight-bold">Penyulang</label>
                         <select id="filter_penyulang_id" class="form-control form-control-sm select2" autocomplete="off">
                             <option value="">-- Semua Penyulang --</option>
                             <?php foreach ($penyulangs as $p): ?>
@@ -142,7 +142,7 @@
 
                     <!-- Filter Section -->
                     <div class="col-md-2 form-group mb-2">
-                        <label class="small font-weight-bold">Section</label>
+                        <label for="filter_section_id" class="small font-weight-bold">Section</label>
                         <select id="filter_section_id" class="form-control form-control-sm select2" autocomplete="off">
                             <option value="">-- Semua Section --</option>
                         </select>
@@ -150,7 +150,7 @@
 
                     <!-- 3. Filter Pelaksana -->
                     <div class="col-md-2 form-group mb-2">
-                        <label class="small font-weight-bold">Pelaksana</label>
+                        <label for="filter_pelaksana" class="small font-weight-bold">Pelaksana</label>
                         <select id="filter_pelaksana" class="form-control form-control-sm select2">
                             <option value="">-- Semua Pelaksana --</option>
                             <option value="PDKB">PDKB</option>
@@ -164,7 +164,7 @@
 
                     <!-- 4. Filter Prioritas -->
                     <div class="col-md-2 form-group mb-2">
-                        <label class="small font-weight-bold">Prioritas</label>
+                        <label for="filter_prioritas" class="small font-weight-bold">Prioritas</label>
                         <select id="filter_prioritas" class="form-control form-control-sm select2">
                             <option value="">-- Semua Prioritas --</option>
                             <option value="EMERGENCY">EMERGENCY</option>
@@ -175,7 +175,7 @@
 
                     <!-- 5. Filter Status -->
                     <div class="col-md-1 form-group mb-2">
-                        <label class="small font-weight-bold">Status</label>
+                        <label for="filter_status" class="small font-weight-bold">Status</label>
                         <select id="filter_status" class="form-control form-control-sm select2">
                             <option value="">-- Semua --</option>
                             <option value="BELUM">BELUM</option>
@@ -185,11 +185,11 @@
 
                     <!-- 6. Filter Tanggal Awal & Akhir -->
                     <div class="col-md-2 form-group mb-2">
-                        <label class="small font-weight-bold">Tgl Input (Awal)</label>
+                        <label for="filter_start_date" class="small font-weight-bold">Tgl Input (Awal)</label>
                         <input type="date" id="filter_start_date" class="form-control form-control-sm">
                     </div>
                     <div class="col-md-2 form-group mb-2">
-                        <label class="small font-weight-bold">Tgl Input (Akhir)</label>
+                        <label for="filter_end_date" class="small font-weight-bold">Tgl Input (Akhir)</label>
                         <input type="date" id="filter_end_date" class="form-control form-control-sm">
                     </div>
 

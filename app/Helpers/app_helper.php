@@ -56,12 +56,17 @@ if (!function_exists('check_role')) {
             return false;
         }
 
-        $userRole = $session->get('user_role');
-        if (is_array($allowedRoles)) {
-            return in_array($userRole, $allowedRoles);
+        $userRole = strtolower(trim((string)$session->get('user_role')));
+        if (empty($userRole)) {
+            return false;
         }
 
-        return $userRole === $allowedRoles;
+        if (is_array($allowedRoles)) {
+            $allowed = array_map(function($r) { return strtolower(trim((string)$r)); }, $allowedRoles);
+            return in_array($userRole, $allowed, true);
+        }
+
+        return $userRole === strtolower(trim((string)$allowedRoles));
     }
 }
 

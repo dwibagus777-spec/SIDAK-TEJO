@@ -698,11 +698,7 @@
                                 timer: 1500,
                                 showConfirmButton: false
                             }).then(() => {
-                                if ($.fn.DataTable.isDataTable('#table-temuan')) {
-                                    $('#table-temuan').DataTable().ajax.reload(null, false);
-                                } else {
-                                    window.location.reload();
-                                }
+                                window.location.reload();
                             });
                         } else {
                             Swal.fire({

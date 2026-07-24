@@ -127,20 +127,7 @@
             cancelButtonText: 'Batal'
         }).then(function(result) {
             if (result.isConfirmed) {
-                // Gunakan form POST biasa - paling reliable tanpa masalah AJAX/CORS/CSRF
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = "<?= site_url('users/delete/') ?>" + id;
-                form.style.display = 'none';
-
-                var csrf = document.createElement('input');
-                csrf.type = 'hidden';
-                csrf.name = '<?= csrf_token() ?>';
-                csrf.value = '<?= csrf_hash() ?>';
-                form.appendChild(csrf);
-
-                document.body.appendChild(form);
-                form.submit();
+                window.location.href = "<?= site_url('users/delete/') ?>" + id;
             }
         });
     }

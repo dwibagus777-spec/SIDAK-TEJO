@@ -1,6 +1,6 @@
 <?php
 $session = session();
-$viewMode = $session->get('view_mode');
+$viewMode = $session->get('view_mode') ?: ($_COOKIE['view_mode'] ?? null);
 $agent = \Config\Services::request()->getUserAgent();
 $isMobileMode = ($viewMode === 'mobile' || ($agent->isMobile() && $viewMode !== 'desktop'));
 
@@ -832,6 +832,26 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                                 <span class="nav-link-title">Identifikasi Gangguan</span>
                             </a>
                         </li>
+
+                        <!-- Ganti Versi Layout -->
+                        <li class="nav-item mt-3 border-top pt-2">
+                            <a class="nav-link text-info font-weight-bold" href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-mobile-screen-button"></i>
+                                </span>
+                                <span class="nav-link-title">Ganti Versi Mobile</span>
+                            </a>
+                        </li>
+
+                        <!-- Logout / Keluar -->
+                        <li class="nav-item">
+                            <a class="nav-link text-danger font-weight-bold" href="<?= site_url('logout') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-power-off"></i>
+                                </span>
+                                <span class="nav-link-title">Keluar (Logout)</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -839,8 +859,8 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 
         <!-- Main Content Area -->
         <div class="page-wrapper d-flex flex-column" style="min-height: 100vh;">
-            <!-- Top Navbar Header (Desktop Only) -->
-            <header class="navbar navbar-expand-md navbar-light d-none d-lg-flex d-print-none navbar-top-wrapper" style="border-bottom: 1px solid rgba(0, 0, 0, 0.08); background-color: #ffffff; padding: 0.6rem 1.5rem;">
+            <!-- Top Navbar Header -->
+            <header class="navbar navbar-expand navbar-light d-flex d-print-none navbar-top-wrapper" style="border-bottom: 1px solid rgba(0, 0, 0, 0.08); background-color: #ffffff; padding: 0.6rem 1.5rem;">
                 <div class="container-xl justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
                         <!-- Mobile toggle view for desktop -->

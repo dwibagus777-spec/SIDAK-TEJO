@@ -23,7 +23,7 @@ class Dashboard extends BaseController
         $ulpId = $session->get('user_ulp_id');
 
         // Check if user forced a specific view mode ('mobile' or 'desktop')
-        $viewMode = $session->get('view_mode');
+        $viewMode = $session->get('view_mode') ?: ($_COOKIE['view_mode'] ?? null);
 
         $agent = $this->request->getUserAgent();
         $isMobile = $agent->isMobile();
@@ -98,21 +98,19 @@ class Dashboard extends BaseController
         $session = session();
         $agent = $this->request->getUserAgent();
         $isMobile = $agent->isMobile();
-        $currentMode = $session->get('view_mode');
+        $currentMode = $session->get('view_mode') ?: ($_COOKIE['view_mode'] ?? null);
 
-        if (empty($currentMode)) {
-            $newMode = $isMobile ? 'desktop' : 'mobile';
+        if ($currentMode === 'desktop') {
+            $newMode = 'mobile';
+        } elseif ($currentMode === 'mobile') {
+            $newMode = 'desktop';
         } else {
-            $newMode = ($currentMode === 'mobile') ? 'desktop' : 'mobile';
+            $newMode = $isMobile ? 'desktop' : 'mobile';
         }
 
         $session->set('view_mode', $newMode);
+        setcookie('view_mode', $newMode, time() + (86400 * 30), '/');
 
-        $targetUrl = site_url('dashboard');
-        
-        echo "<!DOCTYPE html><html><head><title>Redirecting...</title>";
-        echo "<script>window.location.replace(" . json_encode($targetUrl) . ");</script>";
-        echo "</head><body>Redirecting to <a href=\"" . esc($targetUrl) . "\">" . esc($targetUrl) . "</a>...</body></html>";
-        exit;
+        return redirect()->to(site_url('dashboard'));
     }
 }

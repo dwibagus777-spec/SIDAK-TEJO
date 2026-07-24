@@ -323,22 +323,23 @@ class TemuanService
                 mkdir($fullPath, 0777, true);
             }
 
-            // Ambil foto lama dan gabungkan dengan baru
-            $existingPhotos = json_decode($temuan['foto'], true) ?: [];
+            // Process upload for each new file
             $newNames = [];
             foreach ($newFiles as $file) {
                 if ($file->isValid() && !$file->hasMoved()) {
                     $uploaded = $this->uploadFotoFile($file, $uploadDir);
                     $newNames[] = $uploaded['name'];
-                    // Update uploadDir & foto_path if cloudinary used
                     if ($uploaded['path'] === 'cloudinary') {
-                        $data['foto_path'] = 'cloudinary';
+                        $uploadDir = 'cloudinary';
                     }
                 }
             }
 
-            $allPhotos = array_merge($existingPhotos, $newNames);
-            $data['foto'] = json_encode($allPhotos);
+            // Gantikan foto lama dengan foto baru yang diunggah
+            if (!empty($newNames)) {
+                $data['foto'] = json_encode($newNames);
+                $data['foto_path'] = $uploadDir;
+            }
         }
 
         $result = $this->temuanRepository->update($id, $data);

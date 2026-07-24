@@ -43,7 +43,7 @@
                                     </td>
                                     <td>
                                         <a href="<?= site_url('ulps/edit/' . $ulp['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
-                                        <a href="javascript:void(0)" onclick="confirmDelete(<?= $ulp['id'] ?>)" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
+                                        <a href="<?= site_url('ulps/delete/' . $ulp['id']) ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus ULP <?= esc(addslashes($ulp['nama_ulp']), 'js') ?>?');" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

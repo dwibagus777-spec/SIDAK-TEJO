@@ -50,7 +50,7 @@
                                     </td>
                                     <td>
                                         <a href="<?= site_url('penyulang/edit/' . $penyulang['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
-                                        <a href="javascript:void(0)" onclick="confirmDelete(<?= $penyulang['id'] ?>)" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
+                                        <a href="<?= site_url('penyulang/delete/' . $penyulang['id']) ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus penyulang <?= esc(addslashes($penyulang['nama_penyulang']), 'js') ?>?');" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

@@ -48,7 +48,7 @@
                                     </td>
                                     <td>
                                         <a href="<?= site_url('sections/edit/' . $section['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
-                                        <a href="javascript:void(0)" onclick="confirmDelete(<?= $section['id'] ?>)" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
+                                        <a href="<?= site_url('sections/delete/' . $section['id']) ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus section <?= esc(addslashes($section['nama_section']), 'js') ?>?');" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

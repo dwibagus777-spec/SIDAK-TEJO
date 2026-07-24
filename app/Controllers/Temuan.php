@@ -88,7 +88,7 @@ class Temuan extends BaseController
             
             $btnDelete = '';
             if (check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek', 'supervisor_ulp', 'supervisor_up3'])) {
-                $btnDelete = ' <a href="javascript:void(0)" onclick="confirmDelete(' . $row['id'] . ')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>';
+                $btnDelete = ' <button type="button" class="btn btn-sm btn-danger btn-delete-temuan" data-id="' . $row['id'] . '" title="Hapus"><i class="fas fa-trash"></i></button>';
             }
 
             $actions = $btnDetail . $btnDelete;

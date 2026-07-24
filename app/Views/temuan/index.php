@@ -661,6 +661,12 @@
                 $('body').css('overflow', '');
             }
         }
+    $(document).on('click', '.btn-delete-temuan', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        if (id) {
+            confirmDelete(id);
+        }
     });
 
     function confirmDelete(id) {

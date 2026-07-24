@@ -48,7 +48,7 @@
                                     </td>
                                     <td>
                                         <a href="<?= site_url('sections/edit/' . $section['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
-                                        <a href="javascript:void(0)" onclick="confirmDelete(<?= $section['id'] ?>)" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
+                                        <button type="button" class="btn btn-sm btn-danger btn-delete-section" data-id="<?= $section['id'] ?>"><i class="fas fa-trash mr-1"></i> Hapus</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -71,6 +71,14 @@
                 "url": "<?= base_url('plugins/datatables/id.json') ?>"
             }
         });
+    });
+
+    $(document).on('click', '.btn-delete-section', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        if (id) {
+            confirmDelete(id);
+        }
     });
 
     function confirmDelete(id) {

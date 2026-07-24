@@ -43,7 +43,7 @@
                                     </td>
                                     <td>
                                         <a href="<?= site_url('ulps/edit/' . $ulp['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
-                                        <a href="javascript:void(0)" onclick="confirmDelete(<?= $ulp['id'] ?>)" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
+                                        <button type="button" class="btn btn-sm btn-danger btn-delete-ulp" data-id="<?= $ulp['id'] ?>"><i class="fas fa-trash mr-1"></i> Hapus</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -66,6 +66,14 @@
                 "url": "<?= base_url('plugins/datatables/id.json') ?>"
             }
         });
+    });
+
+    $(document).on('click', '.btn-delete-ulp', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        if (id) {
+            confirmDelete(id);
+        }
     });
 
     function confirmDelete(id) {

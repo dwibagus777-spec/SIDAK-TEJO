@@ -58,7 +58,7 @@
                                         </button>
                                         <a href="<?= site_url('users/edit/' . $user['id']) ?>" class="btn btn-xs btn-warning text-dark me-1" title="Ubah User"><i class="fas fa-edit"></i></a>
                                         <?php if ((int)session()->get('user_id') !== (int)$user['id']): ?>
-                                            <a href="javascript:void(0)" onclick="confirmDelete(<?= $user['id'] ?>)" class="btn btn-xs btn-danger" title="Hapus User"><i class="fas fa-trash"></i></a>
+                                            <button type="button" class="btn btn-xs btn-danger btn-delete-user" data-id="<?= $user['id'] ?>" title="Hapus User"><i class="fas fa-trash"></i></button>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -113,7 +113,13 @@
                 form.submit();
             }
         });
-    }
+    $(document).on('click', '.btn-delete-user', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        if (id) {
+            confirmDelete(id);
+        }
+    });
 
     function confirmDelete(id) {
         Swal.fire({

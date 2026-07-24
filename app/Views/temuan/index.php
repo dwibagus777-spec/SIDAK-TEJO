@@ -673,65 +673,22 @@
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Ya, hapus!',
             cancelButtonText: 'Batal'
-        }).then((result) => {
+        }).then(function(result) {
             if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Menghapus Temuan...',
-                    text: 'Mohon tunggu sebentar',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
+                // Gunakan form POST biasa - paling reliable tanpa masalah AJAX/CORS/CSRF
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "<?= site_url('temuan/delete/') ?>" + id;
+                form.style.display = 'none';
 
-                var deleteUrl = "<?= site_url('temuan/delete/') ?>" + id;
-                
-                fetch(deleteUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    },
-                    body: '<?= csrf_token() ?>=<?= csrf_hash() ?>',
-                    credentials: 'same-origin'
-                })
-                .then(function(response) {
-                    if (!response.ok && response.status !== 200) {
-                        return response.json().catch(() => ({})).then(function(data) {
-                            throw { status: response.status, message: (data && data.message) ? data.message : 'HTTP Error ' + response.status };
-                        });
-                    }
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (data && data.success) {
-                        Swal.fire({
-                            title: 'Terhapus!',
-                            text: data.message,
-                            icon: 'success',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            window.location.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Gagal!',
-                            text: (data && data.message) ? data.message : 'Gagal menghapus data temuan.',
-                            icon: 'error'
-                        });
-                    }
-                })
-                .catch(function(err) {
-                    var msg = 'Gagal menghapus data temuan dari server.';
-                    if (err && err.message) msg = err.message;
-                    Swal.fire({
-                        title: 'Gagal!',
-                        text: msg + (err && err.status ? ' (HTTP ' + err.status + ')' : ''),
-                        icon: 'error'
-                    });
-                });
+                var csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '<?= csrf_token() ?>';
+                csrf.value = '<?= csrf_hash() ?>';
+                form.appendChild(csrf);
+
+                document.body.appendChild(form);
+                form.submit();
             }
         });
     }

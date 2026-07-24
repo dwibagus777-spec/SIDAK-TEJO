@@ -140,7 +140,6 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
                         if (is_string($temuan['foto']) && empty($photos) && !empty($temuan['foto'])) {
                             $photos = [$temuan['foto']];
                         }
-                        $rawPath = trim($temuan['foto_path'] ?: 'uploads/temuan/', '/');
 
                         if (empty($photos)): ?>
                             <div class="col-12">
@@ -149,11 +148,7 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
                         <?php else:
                             foreach ($photos as $photo):
                                 if (empty($photo)) continue;
-                                if (strpos($photo, '/') !== false) {
-                                    $filePath = base_url(trim($photo, '/'));
-                                } else {
-                                    $filePath = base_url($rawPath . '/' . trim($photo, '/'));
-                                }
+                                $filePath = get_photo_url($photo, $temuan['foto_path'] ?? 'foto/');
                         ?>
                             <div class="col-md-4 col-6 mb-3 px-1 animate__animated animate__fadeIn">
                                 <div class="img-thumbnail bg-dark" style="border-color: #cbd5e1; border-radius: 12px; overflow: hidden; height: 160px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1);" onclick="openPhotoModal('<?= $filePath ?>')">

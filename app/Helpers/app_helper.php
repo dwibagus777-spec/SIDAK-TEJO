@@ -298,3 +298,40 @@ if (!function_exists('get_daily_announcement')) {
         return "⚡ Tetap Utamakan K3 & Keselamatan Kerja! Semangat Petugas Inspeksi & HAR PLN UP3 Sidoarjo! Bekerja Keras, Pulang Selamat! ⚡";
     }
 }
+
+if (!function_exists('get_photo_url')) {
+    /**
+     * Resolve robust URL for any photo filename & foto_path combination
+     */
+    function get_photo_url(?string $photoName, ?string $fotoPath = 'foto/'): string
+    {
+        if (empty($photoName)) return '';
+        
+        $photoName = trim($photoName, '/');
+        
+        if (str_starts_with($photoName, 'http://') || str_starts_with($photoName, 'https://')) {
+            return $photoName;
+        }
+        
+        if (str_starts_with($photoName, 'foto/') || str_starts_with($photoName, 'uploads/')) {
+            return base_url($photoName);
+        }
+        
+        $dir = !empty($fotoPath) ? rtrim($fotoPath, '/') . '/' : 'foto/';
+        
+        if (file_exists(FCPATH . $dir . $photoName)) {
+            return base_url($dir . $photoName);
+        }
+        if (file_exists(FCPATH . $photoName)) {
+            return base_url($photoName);
+        }
+        if (file_exists(FCPATH . 'foto/' . $photoName)) {
+            return base_url('foto/' . $photoName);
+        }
+        if (file_exists(FCPATH . 'uploads/temuan/' . $photoName)) {
+            return base_url('uploads/temuan/' . $photoName);
+        }
+        
+        return base_url($dir . $photoName);
+    }
+}

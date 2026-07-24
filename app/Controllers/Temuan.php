@@ -103,39 +103,15 @@ class Temuan extends BaseController
             // Foto Column (Render small thumbnail)
             $fotoHtml = '<span class="text-muted small">Tidak ada</span>';
             $photos = json_decode($row['foto'] ?? '', true) ?: [];
-            
-            // Auto-repair foto_path if points to uploads/
-            if (!empty($row['foto_path']) && str_contains($row['foto_path'], 'uploads/')) {
-                $oldPath = FCPATH . trim($row['foto_path'], '/');
-                $newDir = FCPATH . 'foto/';
-                if (!is_dir($newDir)) @mkdir($newDir, 0777, true);
-                
-                if (!empty($photos)) {
-                    foreach ($photos as $pName) {
-                        $srcFile = $oldPath . '/' . $pName;
-                        $dstFile = $newDir . $pName;
-                        if (file_exists($srcFile) && !file_exists($dstFile)) {
-                            @copy($srcFile, $dstFile);
-                        }
-                    }
-                }
-                $db = \Config\Database::connect();
-                $db->table('temuan')->where('id', $row['id'])->update(['foto_path' => 'foto/']);
-                $row['foto_path'] = 'foto/';
+            if (is_string($row['foto'] ?? null) && empty($photos) && !empty($row['foto'])) {
+                $photos = [$row['foto']];
             }
 
-            if (!empty($photos)) {
-                $rawPath = !empty($row['foto_path']) ? trim($row['foto_path'], '/') . '/' : 'foto/';
-                $fullDiskPath = FCPATH . $rawPath . $photos[0];
-                $photoUrl = base_url($rawPath . $photos[0]);
-                
-                if (file_exists($fullDiskPath)) {
-                    $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" onerror="this.onerror=null; this.parentElement.innerHTML=\'<span class=&quot;text-muted small&quot;>Tidak ada foto</span>\';" title="Klik untuk memperbesar">';
-                    if (count($photos) > 1) {
-                        $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
-                    }
-                } else {
-                    $fotoHtml = '<span class="text-muted small"><i class="fas fa-image text-secondary mr-1"></i>Tidak ada</span>';
+            if (!empty($photos) && !empty($photos[0])) {
+                $photoUrl = get_photo_url($photos[0], $row['foto_path'] ?? 'foto/');
+                $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" onerror="this.onerror=null; this.parentElement.innerHTML=\'<span class=&quot;text-muted small&quot;>Tidak ada foto</span>\';" title="Klik untuk memperbesar">';
+                if (count($photos) > 1) {
+                    $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
                 }
             }
 

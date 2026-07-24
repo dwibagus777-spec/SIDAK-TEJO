@@ -218,8 +218,9 @@ class TemuanService
                 }
             }
 
-            $uploadDir = $temuan['foto_path'];
+            $uploadDir = !empty($temuan['foto_path']) ? rtrim($temuan['foto_path'], '/') . '/' : 'foto/';
             $fullPath  = FCPATH . $uploadDir;
+            $data['foto_path'] = $uploadDir;
 
             if (!is_dir($fullPath)) {
                 mkdir($fullPath, 0777, true);

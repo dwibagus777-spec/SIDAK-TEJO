@@ -249,11 +249,11 @@
                         <label><i class="fas fa-images mr-1 text-info"></i> Foto Temuan Saat Ini (<?= count($existingPhotos) ?> foto)</label>
                         <div class="row px-2 mt-1">
                             <?php foreach ($existingPhotos as $photo):
-                                $filePath = base_url($temuan['foto_path'] . $photo);
+                                $filePath = get_photo_url($photo, $temuan['foto_path'] ?? 'foto/');
                             ?>
                             <div class="col-md-2 col-4 mb-2 px-1">
-                                <div class="img-thumbnail bg-dark text-center" style="border-color: #444; border-radius: 8px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center;">
-                                    <img src="<?= $filePath ?>" style="max-height: 100%; max-width: 100%; object-fit: cover;">
+                                <div class="img-thumbnail bg-dark text-center" style="border-color: #cbd5e1; border-radius: 8px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="<?= $filePath ?>" style="max-height: 100%; max-width: 100%; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-muted small\'><i class=\'fas fa-image-slash\'></i></span>';">
                                 </div>
                             </div>
                             <?php endforeach; ?>

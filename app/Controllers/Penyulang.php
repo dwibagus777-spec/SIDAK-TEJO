@@ -84,7 +84,8 @@ class Penyulang extends BaseController
         }
 
         // === CEK DUPLIKAT (Jangan sampai double) ===
-        $existing = $this->penyulangRepository->where('nama_penyulang', trim($this->request->getPost('nama_penyulang')))
+        $existing = $this->penyulangRepository->getModel()
+                                              ->where('nama_penyulang', trim($this->request->getPost('nama_penyulang')))
                                               ->where('ulp_id', $ulpIdInput)
                                               ->first();
         if ($existing) {
@@ -180,7 +181,8 @@ class Penyulang extends BaseController
         }
 
         // === CEK DUPLIKAT (Jangan sampai double) ===
-        $existing = $this->penyulangRepository->where('nama_penyulang', trim($this->request->getPost('nama_penyulang')))
+        $existing = $this->penyulangRepository->getModel()
+                                              ->where('nama_penyulang', trim($this->request->getPost('nama_penyulang')))
                                               ->where('ulp_id', $ulpIdInput)
                                               ->where('id !=', $id)
                                               ->first();

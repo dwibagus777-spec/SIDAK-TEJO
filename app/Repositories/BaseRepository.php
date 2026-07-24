@@ -45,4 +45,9 @@ abstract class BaseRepository
     {
         return $this->model;
     }
+
+    public function __call(string $name, array $arguments)
+    {
+        return $this->model->$name(...$arguments);
+    }
 }

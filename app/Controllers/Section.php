@@ -82,7 +82,8 @@ class Section extends BaseController
         }
 
         // === CEK DUPLIKAT (Jangan sampai double) ===
-        $existing = $this->sectionRepository->where('nama_section', trim($this->request->getPost('nama_section')))
+        $existing = $this->sectionRepository->getModel()
+                                            ->where('nama_section', trim($this->request->getPost('nama_section')))
                                             ->where('penyulang_id', $penyulangIdInput)
                                             ->first();
         if ($existing) {
@@ -180,7 +181,8 @@ class Section extends BaseController
         }
 
         // === CEK DUPLIKAT (Jangan sampai double) ===
-        $existing = $this->sectionRepository->where('nama_section', trim($this->request->getPost('nama_section')))
+        $existing = $this->sectionRepository->getModel()
+                                            ->where('nama_section', trim($this->request->getPost('nama_section')))
                                             ->where('penyulang_id', $penyulangIdInput)
                                             ->where('id !=', $id)
                                             ->first();

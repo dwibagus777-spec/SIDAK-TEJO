@@ -11,27 +11,22 @@ class Session extends BaseConfig
 {
     /**
      * Session Driver
-     * Gunakan DatabaseHandler di Railway agar session tidak hilang saat restart container.
-     * Gunakan FileHandler di lokal/development.
-     *
-     * @var class-string<BaseHandler>
+     * DatabaseHandler untuk Production/Railway agar session tersimpan di MySQL & tidak reset saat redeploy.
      */
     public string $driver = DatabaseHandler::class;
 
     /**
      * Session Cookie Name
      */
-    public string $cookieName = 'sidaktejo_sess';
+    public string $cookieName = 'sidaktejo_session';
 
     /**
-     * Session Expiration - 8 jam (28800 detik)
+     * Session Expiration - 24 jam (86400 detik)
      */
-    public int $expiration = 28800;
+    public int $expiration = 86400;
 
     /**
-     * Session Save Path
-     * Untuk DatabaseHandler: nama tabel di database
-     * Untuk FileHandler: path direktori writable
+     * Session Save Path (nama tabel database)
      */
     public string $savePath = 'ci_sessions';
 
@@ -43,7 +38,7 @@ class Session extends BaseConfig
     /**
      * Session Time to Update (seconds)
      */
-    public int $timeToUpdate = 400;
+    public int $timeToUpdate = 300;
 
     /**
      * Session Regenerate Destroy
@@ -52,7 +47,6 @@ class Session extends BaseConfig
 
     /**
      * Session Database Group
-     * Gunakan koneksi database default
      */
     public ?string $DBGroup = 'default';
 
@@ -70,15 +64,21 @@ class Session extends BaseConfig
     {
         parent::__construct();
 
-        // Di lokal / non-Railway: fallback ke FileHandler supaya tetap bisa development
-        $isRailway = getenv('RAILWAY_ENVIRONMENT') !== false || getenv('RAILWAY_PROJECT_ID') !== false;
-        $isCloud   = $isRailway || (getenv('PORT') && !in_array(getenv('PORT'), ['80', '443', '8080']));
+        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+        $isLocal = (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false);
+        $isCli = (php_sapi_name() === 'cli');
 
-        if (!$isCloud) {
-            // Lokal: pakai FileHandler
+        if ($isLocal && !$isCli) {
+            // Development lokal (XAMPP)
             $this->driver   = FileHandler::class;
             $this->savePath = WRITEPATH . 'session';
             $this->DBGroup  = null;
+        } else {
+            // Cloud / Railway Production
+            $this->driver   = DatabaseHandler::class;
+            $this->savePath = 'ci_sessions';
+            $this->DBGroup  = 'default';
         }
     }
 }
+

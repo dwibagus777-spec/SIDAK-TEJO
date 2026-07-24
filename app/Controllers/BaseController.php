@@ -41,7 +41,31 @@ abstract class BaseController extends Controller
         // Caution: Do not edit this line.
         parent::initController($request, $response, $logger);
 
-        // Preload any models, libraries, etc, here.
-        // $this->session = service('session');
+        // Auto-heal ci_sessions table structure if using DatabaseHandler
+        try {
+            static $sessionsChecked = false;
+            if (!$sessionsChecked) {
+                $sessionsChecked = true;
+                $db = \Config\Database::connect();
+                if ($db->tableExists('ci_sessions')) {
+                    $keys = $db->query("SHOW KEYS FROM ci_sessions WHERE Key_name = 'PRIMARY'")->getResultArray();
+                    if (empty($keys)) {
+                        $db->query("ALTER TABLE `ci_sessions` ADD PRIMARY KEY (`id`, `ip_address`)");
+                    }
+                } else {
+                    $db->query("CREATE TABLE IF NOT EXISTS `ci_sessions` (
+                        `id` varchar(128) NOT NULL,
+                        `ip_address` varchar(45) NOT NULL,
+                        `timestamp` int(10) unsigned DEFAULT 0 NOT NULL,
+                        `data` blob NOT NULL,
+                        PRIMARY KEY (`id`, `ip_address`),
+                        KEY `ci_sessions_timestamp` (`timestamp`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore temporary connection failures
+        }
     }
 }
+

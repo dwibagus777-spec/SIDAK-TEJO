@@ -11,8 +11,12 @@ class RoleFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         $session = session();
+        $isJsonRequest = $request->isAJAX()
+            || str_contains((string)$request->getHeaderLine('X-Requested-With'), 'XMLHttpRequest')
+            || str_contains((string)$request->getHeaderLine('Accept'), 'application/json');
+
         if (!$session->get('logged_in')) {
-            if ($request->isAJAX()) {
+            if ($isJsonRequest) {
                 return service('response')->setJSON(['success' => false, 'message' => 'Sesi Anda telah berakhir. Silakan login kembali.'])->setStatusCode(401);
             }
             return redirect()->to(site_url('login'))->with('error', 'Silakan login terlebih dahulu.');
@@ -36,7 +40,7 @@ class RoleFilter implements FilterInterface
             // Catat log percobaan akses ilegal
             log_activity('UNAUTHORIZED_ACCESS_ATTEMPT', 'Mencoba mengakses rute: ' . $request->getPath());
             
-            if ($request->isAJAX()) {
+            if ($isJsonRequest) {
                 return service('response')->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk aksi ini.'])->setStatusCode(403);
             }
 

@@ -12,7 +12,12 @@ class AuthFilter implements FilterInterface
     {
         if (!session()->get('logged_in')) {
             $path = (string)$request->getUri()->getPath();
-            if ($request->isAJAX() || str_contains($path, 'ajax') || str_contains($path, 'api')) {
+            $isJsonRequest = $request->isAJAX() 
+                || str_contains($path, 'ajax') 
+                || str_contains($path, 'api')
+                || str_contains((string)$request->getHeaderLine('X-Requested-With'), 'XMLHttpRequest')
+                || str_contains((string)$request->getHeaderLine('Accept'), 'application/json');
+            if ($isJsonRequest) {
                 return service('response')
                     ->setStatusCode(401)
                     ->setJSON([

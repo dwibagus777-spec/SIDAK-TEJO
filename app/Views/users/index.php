@@ -136,41 +136,53 @@
                     }
                 });
 
-                $.ajax({
-                    url: "<?= site_url('users/delete/') ?>" + id,
-                    type: "POST",
-                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
-                    dataType: "JSON",
-                    success: function(response) {
-                        if (response && response.success) {
-                            Swal.fire({
-                                title: 'Terhapus!',
-                                text: response.message,
-                                icon: 'success',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                title: 'Gagal!',
-                                text: (response && response.message) ? response.message : 'Gagal menghapus User.',
-                                icon: 'error'
-                            });
-                        }
+                var deleteUrl = "<?= site_url('users/delete/') ?>" + id;
+
+                fetch(deleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
                     },
-                    error: function(xhr) {
-                        let msg = 'Gagal menghapus User dari server.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            msg = xhr.responseJSON.message;
-                        }
+                    body: '<?= csrf_token() ?>=<?= csrf_hash() ?>',
+                    credentials: 'same-origin'
+                })
+                .then(function(response) {
+                    if (!response.ok && response.status !== 200) {
+                        return response.json().catch(() => ({})).then(function(data) {
+                            throw { status: response.status, message: (data && data.message) ? data.message : 'HTTP Error ' + response.status };
+                        });
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data && data.success) {
+                        Swal.fire({
+                            title: 'Terhapus!',
+                            text: data.message,
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
                         Swal.fire({
                             title: 'Gagal!',
-                            text: msg,
+                            text: (data && data.message) ? data.message : 'Gagal menghapus User.',
                             icon: 'error'
                         });
                     }
+                })
+                .catch(function(err) {
+                    var msg = 'Gagal menghapus User dari server.';
+                    if (err && err.message) msg = err.message;
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: msg + (err && err.status ? ' (HTTP ' + err.status + ')' : ''),
+                        icon: 'error'
+                    });
                 });
             }
         });

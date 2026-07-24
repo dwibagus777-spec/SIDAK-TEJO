@@ -223,25 +223,22 @@ class TemuanService
         $progressData['temuan_id'] = $temuanId;
         $progressData['tanggal'] = date('Y-m-d H:i:s');
 
-        // Handle foto_sebelum (opsional, defaults to current temuan photo if first time)
+        // Handle foto_sebelum (opsional)
         if (isset($uploadFiles['foto_sebelum']) && $uploadFiles['foto_sebelum']->isValid() && !$uploadFiles['foto_sebelum']->hasMoved()) {
-            $nameSebelum = $uploadFiles['foto_sebelum']->getRandomName();
-            $uploadFiles['foto_sebelum']->move($fullPath, $nameSebelum);
-            $progressData['foto_sebelum'] = $uploadDir . $nameSebelum;
+            $uploaded = $this->uploadFotoFile($uploadFiles['foto_sebelum'], $uploadDir);
+            $progressData['foto_sebelum'] = $uploaded['path'] === 'cloudinary' ? $uploaded['name'] : $uploadDir . $uploaded['name'];
         }
 
         // Handle foto_proses (opsional)
         if (isset($uploadFiles['foto_proses']) && $uploadFiles['foto_proses']->isValid() && !$uploadFiles['foto_proses']->hasMoved()) {
-            $nameProses = $uploadFiles['foto_proses']->getRandomName();
-            $uploadFiles['foto_proses']->move($fullPath, $nameProses);
-            $progressData['foto_proses'] = $uploadDir . $nameProses;
+            $uploaded = $this->uploadFotoFile($uploadFiles['foto_proses'], $uploadDir);
+            $progressData['foto_proses'] = $uploaded['path'] === 'cloudinary' ? $uploaded['name'] : $uploadDir . $uploaded['name'];
         }
 
         // Handle foto_sesudah (opsional)
         if (isset($uploadFiles['foto_sesudah']) && $uploadFiles['foto_sesudah']->isValid() && !$uploadFiles['foto_sesudah']->hasMoved()) {
-            $nameSesudah = $uploadFiles['foto_sesudah']->getRandomName();
-            $uploadFiles['foto_sesudah']->move($fullPath, $nameSesudah);
-            $progressData['foto_sesudah'] = $uploadDir . $nameSesudah;
+            $uploaded = $this->uploadFotoFile($uploadFiles['foto_sesudah'], $uploadDir);
+            $progressData['foto_sesudah'] = $uploaded['path'] === 'cloudinary' ? $uploaded['name'] : $uploadDir . $uploaded['name'];
         }
 
         // Simpan progress history

@@ -206,27 +206,27 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
                                         
                                         <!-- Progress Photos -->
                                         <div class="row">
-                                            <?php if ($h['foto_sebelum']): ?>
+                                            <?php if ($h['foto_sebelum']): $urlSeb = get_photo_url($h['foto_sebelum']); ?>
                                                 <div class="col-md-4 col-6 mb-2">
                                                     <span class="text-xs text-muted d-block">Sebelum</span>
-                                                    <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 4px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= base_url($h['foto_sebelum']) ?>')">
-                                                        <img src="<?= base_url($h['foto_sebelum']) ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                                    <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 4px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= $urlSeb ?>')">
+                                                        <img src="<?= $urlSeb ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
                                                     </div>
                                                 </div>
                                             <?php endif; ?>
-                                            <?php if ($h['foto_proses']): ?>
+                                            <?php if ($h['foto_proses']): $urlPro = get_photo_url($h['foto_proses']); ?>
                                                 <div class="col-md-4 col-6 mb-2">
                                                     <span class="text-xs text-muted d-block">Proses</span>
-                                                    <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 4px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= base_url($h['foto_proses']) ?>')">
-                                                        <img src="<?= base_url($h['foto_proses']) ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                                    <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 4px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= $urlPro ?>')">
+                                                        <img src="<?= $urlPro ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
                                                     </div>
                                                 </div>
                                             <?php endif; ?>
-                                            <?php if ($h['foto_sesudah']): ?>
+                                            <?php if ($h['foto_sesudah']): $urlSes = get_photo_url($h['foto_sesudah']); ?>
                                                 <div class="col-md-4 col-6 mb-2">
                                                     <span class="text-xs text-muted d-block">Sesudah</span>
-                                                    <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 4px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= base_url($h['foto_sesudah']) ?>')">
-                                                        <img src="<?= base_url($h['foto_sesudah']) ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                                    <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 4px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= $urlSes ?>')">
+                                                        <img src="<?= $urlSes ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
                                                     </div>
                                                 </div>
                                             <?php endif; ?>

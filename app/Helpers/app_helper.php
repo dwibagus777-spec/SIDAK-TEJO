@@ -318,7 +318,7 @@ if (!function_exists('get_photo_url')) {
         }
         
         $dir = !empty($fotoPath) ? rtrim($fotoPath, '/') . '/' : 'foto/';
-        
+
         if (file_exists(FCPATH . $dir . $photoName)) {
             return base_url($dir . $photoName);
         }
@@ -331,7 +331,8 @@ if (!function_exists('get_photo_url')) {
         if (file_exists(FCPATH . 'uploads/temuan/' . $photoName)) {
             return base_url('uploads/temuan/' . $photoName);
         }
-        
-        return base_url($dir . $photoName);
+
+        // Returns empty string for dead local files (wiped by Railway deployment) so view skips them cleanly
+        return '';
     }
 }

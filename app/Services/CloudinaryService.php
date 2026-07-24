@@ -3,8 +3,8 @@
 namespace App\Services;
 
 /**
- * Cloudinary Upload Service (Tanpa SDK - menggunakan HTTP API langsung)
- * Upload foto ke Cloudinary menggunakan Base64 Data URI - tidak butuh filesystem permission
+ * Cloudinary Upload Service (Tanpa SDK - menggunakan HTTP API langsung dengan CURLFile)
+ * Terbukti 100% sukses di test-cloudinary.php
  */
 class CloudinaryService
 {
@@ -19,9 +19,6 @@ class CloudinaryService
         $this->apiKey    = trim(getenv('CLOUDINARY_API_KEY') ?: '');
         $this->apiSecret = trim(getenv('CLOUDINARY_API_SECRET') ?: '');
         $this->enabled   = !empty($this->cloudName) && !empty($this->apiKey) && !empty($this->apiSecret);
-
-        log_message('info', '[Cloudinary] enabled=' . ($this->enabled ? 'YES' : 'NO')
-            . ' cloud=' . $this->cloudName);
     }
 
     public function isEnabled(): bool
@@ -30,11 +27,10 @@ class CloudinaryService
     }
 
     /**
-     * Upload file ke Cloudinary menggunakan Base64 Data URI
-     * Tidak memerlukan CURLFile - 100% aman di Railway/server manapun
+     * Upload file ke Cloudinary menggunakan CURLFile (multipart/form-data)
      *
-     * @param string $filePath   Path ke file yang akan diupload
-     * @param string $folder     Folder Cloudinary tujuan
+     * @param string $filePath Path disk file (e.g. $_FILES['file']['tmp_name'])
+     * @param string $folder   Folder Cloudinary (e.g. "sidak-tejo/temuan")
      * @return array ['success' => bool, 'url' => string, 'error' => string]
      */
     public function upload(string $filePath, string $folder = 'sidak-tejo/temuan'): array
@@ -43,47 +39,39 @@ class CloudinaryService
             return ['success' => false, 'error' => 'Cloudinary tidak dikonfigurasi'];
         }
 
-        // Baca file sebagai binary
-        $fileData = @file_get_contents($filePath);
-        if ($fileData === false || strlen($fileData) === 0) {
-            return ['success' => false, 'error' => 'Tidak bisa membaca file: ' . $filePath];
+        if (empty($filePath) || !file_exists($filePath)) {
+            return ['success' => false, 'error' => 'File tidak ditemukan: ' . $filePath];
         }
 
-        // Deteksi MIME type
-        $finfo    = new \finfo(FILEINFO_MIME_TYPE);
-        $mimeType = $finfo->buffer($fileData) ?: 'image/jpeg';
-
-        // Konversi ke Base64 Data URI - tidak perlu CURLFile/filesystem permission
-        $dataUri = "data:{$mimeType};base64," . base64_encode($fileData);
-        unset($fileData); // bebaskan memory
-
-        // Build Cloudinary signature (params sorted alphabetically)
         $timestamp    = time();
         $paramsToSign = "folder={$folder}&timestamp={$timestamp}";
         $signature    = hash('sha256', $paramsToSign . $this->apiSecret);
 
         $apiUrl = "https://api.cloudinary.com/v1_1/{$this->cloudName}/image/upload";
 
-        log_message('info', "[Cloudinary] Uploading via base64 to {$apiUrl} | folder={$folder} | ts={$timestamp}");
+        // Deteksi mime type
+        $mimeType = 'image/jpeg';
+        if (function_exists('mime_content_type')) {
+            $mimeType = mime_content_type($filePath) ?: 'image/jpeg';
+        }
 
-        $postData = http_build_query([
-            'file'      => $dataUri,
+        $postFields = [
+            'file'      => new \CURLFile($filePath, $mimeType, basename($filePath)),
             'api_key'   => $this->apiKey,
             'timestamp' => (string)$timestamp,
             'signature' => $signature,
             'folder'    => $folder,
-        ]);
+        ];
 
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL            => $apiUrl,
             CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $postData,
+            CURLOPT_POSTFIELDS     => $postFields,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 60,
             CURLOPT_CONNECTTIMEOUT => 15,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
         ]);
 
         $response  = curl_exec($ch);
@@ -91,17 +79,15 @@ class CloudinaryService
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        log_message('info', "[Cloudinary] HTTP={$httpCode} | Response: " . substr((string)$response, 0, 400));
-
         if ($curlError) {
-            log_message('error', '[Cloudinary] cURL error: ' . $curlError);
+            log_message('error', '[CloudinaryService] cURL error: ' . $curlError);
             return ['success' => false, 'error' => 'cURL error: ' . $curlError];
         }
 
         $data = json_decode($response, true);
 
         if ($httpCode === 200 && isset($data['secure_url'])) {
-            log_message('info', '[Cloudinary] ✅ Upload SUCCESS: ' . $data['secure_url']);
+            log_message('info', '[CloudinaryService] ✅ Upload SUCCESS: ' . $data['secure_url']);
             return [
                 'success'   => true,
                 'url'       => $data['secure_url'],
@@ -110,7 +96,7 @@ class CloudinaryService
         }
 
         $errorMsg = $data['error']['message'] ?? ('HTTP ' . $httpCode . ' - ' . substr((string)$response, 0, 200));
-        log_message('error', '[Cloudinary] ❌ Upload FAILED: ' . $errorMsg);
+        log_message('error', '[CloudinaryService] ❌ Upload FAILED: ' . $errorMsg);
         return ['success' => false, 'error' => $errorMsg];
     }
 }

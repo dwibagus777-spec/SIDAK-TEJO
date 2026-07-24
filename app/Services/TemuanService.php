@@ -80,14 +80,16 @@ class TemuanService
 
         if ($this->cloudinary->isEnabled()) {
             // === CLOUDINARY PATH ===
-            // Get PHP's original temp file path directly - no move(), no filesystem write needed
+            // Get PHP's original temp file path directly (e.g. /tmp/php...)
             $phpTempPath = $file->getTempName();
+            if (empty($phpTempPath) || !file_exists($phpTempPath)) {
+                $phpTempPath = $file->getRealPath();
+            }
 
             log_message('info', '[uploadFotoFile] PHP temp: ' . $phpTempPath
-                . ' | exists: ' . (file_exists($phpTempPath) ? 'YES (' . filesize($phpTempPath) . 'B)' : 'NO'));
+                . ' | exists: ' . (!empty($phpTempPath) && file_exists($phpTempPath) ? 'YES (' . filesize($phpTempPath) . 'B)' : 'NO'));
 
             if (!empty($phpTempPath) && file_exists($phpTempPath)) {
-                // Upload directly from PHP temp file (base64 in CloudinaryService, no disk write)
                 $result = $this->cloudinary->upload($phpTempPath, 'sidak-tejo/temuan');
 
                 if ($result['success']) {
@@ -97,9 +99,8 @@ class TemuanService
 
                 log_message('error', '[uploadFotoFile] ❌ Cloudinary FAILED: ' . ($result['error'] ?? '?'));
             } else {
-                log_message('error', '[uploadFotoFile] ❌ getTempName() kosong/tidak ada: ' . $phpTempPath);
+                log_message('error', '[uploadFotoFile] ❌ Temp file tidak dapat ditemukan: ' . $phpTempPath);
             }
-            // Fall through to local storage as last resort
         }
 
         // === LOCAL STORAGE (no Cloudinary / fallback) ===

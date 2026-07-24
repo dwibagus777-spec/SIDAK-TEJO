@@ -464,7 +464,20 @@
             "responsive": true,
             "autoWidth": false,
             "language": {
-                "url": "<?= base_url('plugins/datatables/id.json') ?>"
+                "processing": "Memuat data...",
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "infoFiltered": "(disaring dari _MAX_ total entri)",
+                "zeroRecords": "Tidak ditemukan data yang sesuai",
+                "emptyTable": "Tidak ada data yang tersedia pada tabel ini",
+                "paginate": {
+                    "first": "Pertama",
+                    "previous": "Sebelumnya",
+                    "next": "Selanjutnya",
+                    "last": "Terakhir"
+                }
             }
         });
 
@@ -480,7 +493,7 @@
             const penyulangSelect = $('#filter_penyulang_id');
             const sectionSelect = $('#filter_section_id');
             
-            penyulangSelect.empty().append('<option value="">-- Semua Penyulang --</option>').trigger('change.select2');
+            penyulangSelect.empty().append('<option value="">-- Semua Penyulang --</option>');
             sectionSelect.empty().append('<option value="">-- Semua Section --</option>').trigger('change.select2');
             
             if (ulpId) {
@@ -495,6 +508,11 @@
                         penyulangSelect.trigger('change.select2');
                     }
                 });
+            } else {
+                <?php foreach ($penyulangs as $p): ?>
+                    penyulangSelect.append('<option value="<?= $p['id'] ?>"><?= esc($p['nama_penyulang'], 'js') ?></option>');
+                <?php endforeach; ?>
+                penyulangSelect.trigger('change.select2');
             }
         });
         <?php endif; ?>

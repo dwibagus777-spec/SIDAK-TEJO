@@ -238,6 +238,10 @@ class Temuan extends BaseController
         $res = $this->temuanService->createTemuan($data, $files);
 
         if ($res['success']) {
+            $insertedId = $res['id'] ?? null;
+            if ($insertedId) {
+                return redirect()->to(site_url('temuan/detail/' . $insertedId))->with('success', $res['message'] . ' Berhasil dialihkan ke Detail Temuan.');
+            }
             return redirect()->to(site_url('temuan'))->with('success', $res['message']);
         }
 

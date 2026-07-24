@@ -338,6 +338,9 @@
                 </div>
             </div>
             <div class="modal-footer" style="background:#12122a; border-top:1px solid #2d2d4e;">
+                <a id="modal-btn-wa" href="#" target="_blank" class="btn btn-success btn-sm font-weight-bold shadow-sm" style="background-color: #25D366; border-color: #25D366; color: #ffffff;">
+                    <i class="fab fa-whatsapp me-1" style="font-size: 14px;"></i> Share ke WA
+                </a>
                 <a id="modal-btn-detail" href="#" class="btn btn-outline-info btn-sm">
                     <i class="fas fa-external-link-alt mr-1"></i> Buka Halaman Detail
                 </a>
@@ -610,8 +613,22 @@
                     $('#md-history-list').html('<p class="text-muted small">Belum ada tindak lanjut.</p>');
                 }
 
+                // WhatsApp Share Button
+                const waText = `🚨 *TEMUAN INSPEKSI - SIDAK TEJO* 🚨\n\n` +
+                               `📌 *Nomor Temuan*: ${t.nomor_temuan}\n` +
+                               `📍 *ULP*: ${t.nama_ulp || '-'}\n` +
+                               `⚡ *Penyulang*: ${t.nama_penyulang || '-'}\n` +
+                               `📍 *Section*: ${t.nama_section || '-'}\n` +
+                               `🔴 *Jenis Temuan*: ${t.jenis_temuan || '-'}\n` +
+                               `⚠️ *Prioritas*: ${t.prioritas || '-'}\n` +
+                               `🔧 *Pelaksana*: ${t.pelaksana || '-'}\n` +
+                               `📝 *Detail*: ${t.detail_temuan || '-'}\n` +
+                               `📍 *Alamat*: ${t.alamat || '-'}\n\n` +
+                               `🔗 *Lihat Detail*: ${window.location.origin}<?= site_url('temuan/detail/') ?>${id}`;
+                $('#modal-btn-wa').attr('href', 'https://api.whatsapp.com/send?text=' + encodeURIComponent(waText));
+
                 // Footer buttons
-                $('#modal-btn-detail').attr('href', res.detailUrl);
+                $('#modal-btn-detail').attr('href', res.detailUrl || ('<?= site_url('temuan/detail/') ?>' + id));
                 if (res.canEdit) {
                     $('#modal-btn-edit').attr('href', res.editUrl).removeClass('d-none');
                 }

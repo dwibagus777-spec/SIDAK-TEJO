@@ -9,16 +9,35 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+<?php
+$waMsg = "🚨 *TEMUAN INSPEKSI - SIDAK TEJO* 🚨\n\n" .
+         "📌 *Nomor Temuan*: " . $temuan['nomor_temuan'] . "\n" .
+         "📍 *ULP*: " . $temuan['nama_ulp'] . "\n" .
+         "⚡ *Penyulang*: " . $temuan['nama_penyulang'] . "\n" .
+         "📍 *Section*: " . $temuan['nama_section'] . "\n" .
+         "🔴 *Jenis Temuan*: " . $temuan['jenis_temuan'] . "\n" .
+         "⚠️ *Prioritas*: " . $temuan['prioritas'] . "\n" .
+         "🔧 *Pelaksana*: " . $temuan['pelaksana'] . "\n" .
+         "📝 *Detail*: " . $temuan['detail_temuan'] . "\n" .
+         "📍 *Alamat*: " . $temuan['alamat'] . "\n\n" .
+         "🔗 *Lihat Detail*: " . site_url('temuan/detail/' . $temuan['id']);
+$waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
+?>
 <div class="row">
     <!-- Kolom Utama: Data Temuan -->
     <div class="col-lg-8 col-12">
         <div class="card card-outline card-primary">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title">
-                    <i class="fas fa-circle-info text-primary mr-1"></i> 
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px;">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-circle-info text-primary me-1"></i> 
                     Nomor Temuan: <span class="font-weight-bold text-primary font-monospace"><?= esc($temuan['nomor_temuan']) ?></span>
                 </h3>
-                <span class="ml-auto"><?= $sla['badge_html'] ?></span>
+                <div class="d-flex align-items-center ms-auto" style="gap: 8px;">
+                    <a href="<?= $waUrl ?>" target="_blank" class="btn btn-success btn-sm font-weight-bold shadow-sm" style="background-color: #25D366; border-color: #25D366; color: #ffffff; border-radius: 6px;">
+                        <i class="fab fa-whatsapp me-1" style="font-size: 15px;"></i> Share ke WA
+                    </a>
+                    <span><?= $sla['badge_html'] ?></span>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row">

@@ -15,9 +15,9 @@ class CloudinaryService
 
     public function __construct()
     {
-        $this->cloudName = trim(getenv('CLOUDINARY_CLOUD_NAME') ?: '');
-        $this->apiKey    = trim(getenv('CLOUDINARY_API_KEY') ?: '');
-        $this->apiSecret = trim(getenv('CLOUDINARY_API_SECRET') ?: '');
+        $this->cloudName = trim(function_exists('env') ? (env('CLOUDINARY_CLOUD_NAME') ?: getenv('CLOUDINARY_CLOUD_NAME') ?: ($_ENV['CLOUDINARY_CLOUD_NAME'] ?? '')) : (getenv('CLOUDINARY_CLOUD_NAME') ?: ($_ENV['CLOUDINARY_CLOUD_NAME'] ?? '')));
+        $this->apiKey    = trim(function_exists('env') ? (env('CLOUDINARY_API_KEY') ?: getenv('CLOUDINARY_API_KEY') ?: ($_ENV['CLOUDINARY_API_KEY'] ?? '')) : (getenv('CLOUDINARY_API_KEY') ?: ($_ENV['CLOUDINARY_API_KEY'] ?? '')));
+        $this->apiSecret = trim(function_exists('env') ? (env('CLOUDINARY_API_SECRET') ?: getenv('CLOUDINARY_API_SECRET') ?: ($_ENV['CLOUDINARY_API_SECRET'] ?? '')) : (getenv('CLOUDINARY_API_SECRET') ?: ($_ENV['CLOUDINARY_API_SECRET'] ?? '')));
         $this->enabled   = !empty($this->cloudName) && !empty($this->apiKey) && !empty($this->apiSecret);
     }
 

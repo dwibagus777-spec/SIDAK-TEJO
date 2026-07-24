@@ -348,18 +348,25 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             max-width: 60%;
         }
 
-        /* Mobile Smooth Horizontal Table Touch Scroll Fix */
-        @media (max-width: 768px) {
-            .table-responsive {
-                display: block !important;
-                width: 100% !important;
-                overflow-x: auto !important;
-                -webkit-overflow-scrolling: touch !important;
-                touch-action: pan-x pan-y !important;
+        @media (max-width: 576px) {
+            .stats-card {
+                padding: 12px 10px !important;
+                min-height: 95px !important;
+                margin-bottom: 12px !important;
             }
-            .table-responsive > table,
-            .table-responsive > .table {
-                min-width: 750px !important;
+            .stats-card h3 {
+                font-size: 1.35rem !important;
+            }
+            .stats-card p {
+                font-size: 0.65rem !important;
+                letter-spacing: 0.2px !important;
+                line-height: 1.2 !important;
+                word-break: break-word !important;
+            }
+            .stats-card .icon {
+                font-size: 26px !important;
+                top: 8px !important;
+                right: 8px !important;
             }
         }
 
@@ -860,17 +867,17 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         <!-- Main Content Area -->
         <div class="page-wrapper d-flex flex-column" style="min-height: 100vh;">
             <!-- Top Navbar Header -->
-            <header class="navbar navbar-expand navbar-light d-flex d-print-none navbar-top-wrapper" style="border-bottom: 1px solid rgba(0, 0, 0, 0.08); background-color: #ffffff; padding: 0.6rem 1.5rem;">
-                <div class="container-xl justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
+            <header class="navbar navbar-expand navbar-light d-flex d-print-none navbar-top-wrapper" style="border-bottom: 1px solid rgba(0, 0, 0, 0.08); background-color: #ffffff; padding: 0.5rem 1rem;">
+                <div class="container-xl d-flex justify-content-between align-items-center flex-nowrap" style="gap: 8px;">
+                    <div class="d-flex align-items-center flex-shrink-0">
                         <!-- Mobile toggle view for desktop -->
-                        <a href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>" class="btn btn-outline-primary btn-sm px-2 py-1" style="font-size: 11px; font-weight: 600; border-radius: 4px;">
+                        <a href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>" class="btn btn-outline-primary btn-sm px-2 py-1" style="font-size: 11px; font-weight: 700; border-radius: 4px; white-space: nowrap;">
                             <i class="fas fa-mobile-screen-button me-1"></i> Versi Mobile
                         </a>
                     </div>
 
-                    <!-- RUNNING TICKER MOTIVATIONAL ANNOUNCEMENT (CENTER HEADER) -->
-                    <div class="header-ticker-container flex-grow-1 mx-4 d-flex align-items-center" style="max-width: 55%; overflow: hidden; background: linear-gradient(90deg, #004D4F 0%, #007275 100%); border-radius: 20px; padding: 4px 14px; box-shadow: 0 2px 6px rgba(0,77,79,0.15);">
+                    <!-- RUNNING TICKER MOTIVATIONAL ANNOUNCEMENT (CENTER HEADER - DESKTOP ONLY) -->
+                    <div class="header-ticker-container flex-grow-1 mx-3 d-none d-md-flex align-items-center" style="max-width: 50%; overflow: hidden; background: linear-gradient(90deg, #004D4F 0%, #007275 100%); border-radius: 20px; padding: 4px 14px; box-shadow: 0 2px 6px rgba(0,77,79,0.15);">
                         <i class="fas fa-bullhorn text-warning me-2 animate__animated animate__pulse animate__infinite" style="font-size: 12px; flex-shrink: 0;"></i>
                         <span class="badge bg-warning text-dark font-weight-bold me-2 px-2" style="font-size: 10px; border-radius: 10px; flex-shrink: 0;">MOTIVASI:</span>
                         <div class="ticker-wrapper flex-grow-1" style="overflow: hidden; white-space: nowrap; position: relative;">
@@ -880,20 +887,20 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         </div>
                     </div>
 
-                    <div class="navbar-nav flex-row align-items-center">
-                        <div class="nav-item me-3">
-                            <span class="fw-bold text-dark">
+                    <div class="navbar-nav flex-row align-items-center flex-shrink-0" style="gap: 6px;">
+                        <div class="nav-item me-2 d-none d-sm-block">
+                            <span class="fw-bold text-dark" style="font-size: 0.8rem;">
                                 <i class="fas fa-user-circle me-1" style="color: #005eb8;"></i> <?= esc(session()->get('user_name')) ?> 
                                 <span class="badge bg-blue-lt ms-1" style="font-size: 10px; font-weight: 700;"><?= esc(get_role_label(session()->get('user_role'))) ?></span>
                             </span>
                         </div>
-                        <div class="nav-item me-2">
-                            <a class="btn btn-outline-primary btn-sm px-2 py-1" href="<?= site_url('change-password') ?>" title="Ganti Password Saya" style="font-size: 11px; font-weight: 600; border-radius: 4px;">
-                                <i class="fas fa-key me-1"></i> Ganti Password
+                        <div class="nav-item">
+                            <a class="btn btn-outline-primary btn-sm px-2 py-1" href="<?= site_url('change-password') ?>" title="Ganti Password Saya" style="font-size: 11px; font-weight: 600; border-radius: 4px; white-space: nowrap;">
+                                <i class="fas fa-key"></i> <span class="d-none d-md-inline ms-1">Ganti Password</span>
                             </a>
                         </div>
                         <div class="nav-item">
-                            <a class="btn btn-outline-danger btn-icon-only rounded-circle" href="<?= site_url('logout') ?>" title="Keluar" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+                            <a class="btn btn-outline-danger btn-icon-only rounded-circle" href="<?= site_url('logout') ?>" title="Keluar" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">
                                 <i class="fas fa-power-off"></i>
                             </a>
                         </div>

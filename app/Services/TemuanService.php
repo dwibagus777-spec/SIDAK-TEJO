@@ -74,38 +74,68 @@ class TemuanService
         return $sourcePath;
     }
 
-    private function uploadFotoFile(\CodeIgniter\Files\File $file, string $localDir = 'foto/'): array
+    private function uploadFotoFile(\CodeIgniter\HTTP\Files\UploadedFile $file, string $localDir = 'foto/'): array
     {
         $newName = $file->getRandomName();
-        $fullLocalPath = FCPATH . $localDir;
 
-        // Always save to local disk first (as temp or permanent fallback)
+        // When Cloudinary is enabled: write to /tmp/ first (always writable on any server/Railway)
+        // When Cloudinary disabled: write directly to public/foto/ for local serving
+        if ($this->cloudinary->isEnabled()) {
+            $tmpDir  = sys_get_temp_dir() . DIRECTORY_SEPARATOR;
+            $tmpPath = $tmpDir . $newName;
+
+            // Move uploaded file to /tmp/
+            $file->move($tmpDir, $newName);
+
+            if (!file_exists($tmpPath)) {
+                log_message('error', '[uploadFotoFile] File move to /tmp/ FAILED: ' . $tmpPath);
+                // Fallback to local public dir
+                $publicDir = FCPATH . $localDir;
+                if (!is_dir($publicDir)) mkdir($publicDir, 0777, true);
+                $file->move($publicDir, $newName);
+                return ['name' => $newName, 'path' => $localDir];
+            }
+
+            log_message('info', '[uploadFotoFile] File saved to tmp: ' . $tmpPath . ' (' . filesize($tmpPath) . ' bytes)');
+
+            // Compress before upload
+            $uploadPath = $this->compressImage($tmpPath, 80);
+
+            // Upload to Cloudinary
+            $result = $this->cloudinary->upload($uploadPath, 'sidak-tejo/temuan');
+
+            // Cleanup temp files
+            if ($uploadPath !== $tmpPath && file_exists($uploadPath)) @unlink($uploadPath);
+            if (file_exists($tmpPath)) @unlink($tmpPath);
+
+            if ($result['success']) {
+                log_message('info', '[uploadFotoFile] Cloudinary OK: ' . $result['url']);
+                return ['name' => $result['url'], 'path' => 'cloudinary'];
+            }
+
+            log_message('error', '[uploadFotoFile] Cloudinary FAILED: ' . ($result['error'] ?? 'unknown'));
+            // Cloudinary failed - file already deleted from /tmp, return placeholder
+            return ['name' => 'upload_failed_' . $newName, 'path' => 'cloudinary_error'];
+        }
+
+        // === LOCAL STORAGE (non-Railway / no Cloudinary) ===
+        $fullLocalPath = FCPATH . $localDir;
         if (!is_dir($fullLocalPath)) {
             mkdir($fullLocalPath, 0777, true);
         }
         $file->move($fullLocalPath, $newName);
         $diskPath = $fullLocalPath . $newName;
 
-        // Try Cloudinary upload if configured
-        if ($this->cloudinary->isEnabled()) {
-            // Kompres gambar sebelum upload agar tidak timeout karena file besar
-            $uploadPath = $this->compressImage($diskPath, 80);
-            $result = $this->cloudinary->upload($uploadPath, 'sidak-tejo/temuan');
-
-            // Hapus file kompresi temp jika berbeda dari original
-            if ($uploadPath !== $diskPath && file_exists($uploadPath)) {
-                @unlink($uploadPath);
-            }
-
-            if ($result['success']) {
-                // Store full Cloudinary URL as the photo identifier
-                return ['name' => $result['url'], 'path' => 'cloudinary'];
-            }
-            log_message('warning', 'Cloudinary upload gagal: ' . ($result['error'] ?? 'unknown') . ' - menggunakan penyimpanan lokal');
+        // Compress local file
+        $compressed = $this->compressImage($diskPath, 80);
+        if ($compressed !== $diskPath && file_exists($compressed)) {
+            // Replace original with compressed version
+            @rename($compressed, $diskPath);
         }
 
         return ['name' => $newName, 'path' => $localDir];
     }
+
 
     /**
      * Simpan Temuan Baru beserta Unggahan Foto

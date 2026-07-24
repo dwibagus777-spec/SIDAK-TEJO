@@ -434,6 +434,19 @@
                     d.status = $('#filter_status').val();
                     d.start_date = $('#filter_start_date').val();
                     d.end_date = $('#filter_end_date').val();
+                },
+                "error": function(xhr) {
+                    if (xhr.status === 401) {
+                        Swal.fire({
+                            title: 'Sesi Berakhir',
+                            text: 'Sesi login Anda telah berakhir. Silakan login kembali untuk melanjutkan.',
+                            icon: 'warning',
+                            confirmButtonText: 'Login Kembali',
+                            confirmButtonColor: '#005eb8'
+                        }).then(() => {
+                            window.location.href = "<?= site_url('login') ?>";
+                        });
+                    }
                 }
             },
             "columns": [

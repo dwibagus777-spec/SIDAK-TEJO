@@ -210,7 +210,7 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
                                                 <div class="col-md-4 col-6 mb-2">
                                                     <span class="text-xs text-muted d-block">Sebelum</span>
                                                     <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 4px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= $urlSeb ?>')">
-                                                        <img src="<?= $urlSeb ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                                        <img src="<?= $urlSeb ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-muted small p-1 text-center\'><i class=\'fas fa-image-slash\'></i></span>';">
                                                     </div>
                                                 </div>
                                             <?php endif; ?>
@@ -218,7 +218,7 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
                                                 <div class="col-md-4 col-6 mb-2">
                                                     <span class="text-xs text-muted d-block">Proses</span>
                                                     <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 4px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= $urlPro ?>')">
-                                                        <img src="<?= $urlPro ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                                        <img src="<?= $urlPro ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-muted small p-1 text-center\'><i class=\'fas fa-image-slash\'></i></span>';">
                                                     </div>
                                                 </div>
                                             <?php endif; ?>
@@ -226,7 +226,7 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
                                                 <div class="col-md-4 col-6 mb-2">
                                                     <span class="text-xs text-muted d-block">Sesudah</span>
                                                     <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 4px; overflow: hidden; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= $urlSes ?>')">
-                                                        <img src="<?= $urlSes ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                                        <img src="<?= $urlSes ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-muted small p-1 text-center\'><i class=\'fas fa-image-slash\'></i></span>';">
                                                     </div>
                                                 </div>
                                             <?php endif; ?>

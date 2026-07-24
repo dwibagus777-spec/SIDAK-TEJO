@@ -253,25 +253,34 @@ class Eviden extends BaseController
 
     public function kubikelDelete(int $id)
     {
-        $kubikel = $this->kubikelModel->find($id);
-        if (!$kubikel) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Data tidak ditemukan.']);
-        }
-
-        $fotos = $this->fotoModel->where('id_parent', $id)->where('kategori', 'KUBIKEL')->findAll();
-        foreach ($fotos as $f) {
-            if (file_exists(FCPATH . 'foto/' . $f['nama_file'])) {
-                @unlink(FCPATH . 'foto/' . $f['nama_file']);
+        log_message('info', "[DELETE_EVIDEN_KUBIKEL] Controller dipanggil | ID Received: {$id} | Method: " . $this->request->getMethod());
+        try {
+            $kubikel = $this->kubikelModel->find($id);
+            if (!$kubikel) {
+                log_message('warning', "[DELETE_EVIDEN_KUBIKEL] Data tidak ditemukan | ID: {$id}");
+                return $this->response->setJSON(['success' => false, 'message' => 'Data tidak ditemukan.']);
             }
-            $this->fotoModel->delete($f['id_foto']);
-        }
 
-        if ($this->kubikelModel->delete($id)) {
-            log_activity('DELETE_EVIDEN_KUBIKEL', 'Menghapus data eviden kubikel ID: ' . $id);
-            return $this->response->setJSON(['success' => true, 'message' => 'Data eviden kubikel berhasil dihapus.']);
-        }
+            $fotos = $this->fotoModel->where('id_parent', $id)->where('kategori', 'KUBIKEL')->findAll();
+            foreach ($fotos as $f) {
+                if (file_exists(FCPATH . 'foto/' . $f['nama_file'])) {
+                    @unlink(FCPATH . 'foto/' . $f['nama_file']);
+                }
+                $this->fotoModel->delete($f['id_foto']);
+            }
 
-        return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus data.']);
+            if ($this->kubikelModel->delete($id)) {
+                log_activity('DELETE_EVIDEN_KUBIKEL', 'Menghapus data eviden kubikel ID: ' . $id);
+                log_message('info', "[DELETE_EVIDEN_KUBIKEL] Berhasil dihapus | ID: {$id}");
+                return $this->response->setJSON(['success' => true, 'message' => 'Data eviden kubikel berhasil dihapus.']);
+            }
+
+            log_message('error', "[DELETE_EVIDEN_KUBIKEL_FAIL] Gagal menghapus ID: {$id}");
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus data.']);
+        } catch (\Throwable $e) {
+            log_message('error', "[DELETE_EVIDEN_KUBIKEL_EXCEPTION] " . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
     }
 
     // ==========================================

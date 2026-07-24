@@ -141,7 +141,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('kubikel/store', 'Eviden::kubikelStore');
         $routes->get('kubikel/edit/(:num)', 'Eviden::kubikelEdit/$1');
         $routes->post('kubikel/update/(:num)', 'Eviden::kubikelUpdate/$1');
-        $routes->get('kubikel/delete/(:num)', 'Eviden::kubikelDelete/$1');
+        $routes->match(['get', 'post'], 'kubikel/delete/(:num)', 'Eviden::kubikelDelete/$1');
 
         // Trafo
         $routes->get('trafo', 'Eviden::trafo');
@@ -149,7 +149,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('trafo/store', 'Eviden::trafoStore');
         $routes->get('trafo/edit/(:num)', 'Eviden::trafoEdit/$1');
         $routes->post('trafo/update/(:num)', 'Eviden::trafoUpdate/$1');
-        $routes->get('trafo/delete/(:num)', 'Eviden::trafoDelete/$1');
+        $routes->match(['get', 'post'], 'trafo/delete/(:num)', 'Eviden::trafoDelete/$1');
 
         // Management Trafo
         $routes->get('management', 'Eviden::management');
@@ -157,10 +157,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('management/store', 'Eviden::managementStore');
         $routes->get('management/edit/(:num)', 'Eviden::managementEdit/$1');
         $routes->post('management/update/(:num)', 'Eviden::managementUpdate/$1');
-        $routes->get('management/delete/(:num)', 'Eviden::managementDelete/$1');
+        $routes->match(['get', 'post'], 'management/delete/(:num)', 'Eviden::managementDelete/$1');
 
         // Delete Single Photo
-        $routes->get('delete-foto/(:num)', 'Eviden::deleteFoto/$1');
+        $routes->match(['get', 'post'], 'delete-foto/(:num)', 'Eviden::deleteFoto/$1');
 
         // Dynamic AJAX gallery & CSV export
         $routes->get('ajax-get-fotos', 'Eviden::ajaxGetFotos');

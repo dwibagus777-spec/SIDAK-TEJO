@@ -1185,6 +1185,32 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             }
         });
 
+        // Global DataTables Accessibility Fix (Fix <label for="..."> and missing id/name)
+        $(document).on('init.dt', function (e, settings) {
+            var api = new $.fn.dataTable.Api(settings);
+            var $table = $(api.table().node());
+            var tableId = $table.attr('id') || 'dt_' + Math.random().toString(36).substr(2, 5);
+            var $wrapper = $table.closest('.dataTables_wrapper');
+            
+            var $searchContainer = $wrapper.find('.dataTables_filter');
+            var $searchInput = $searchContainer.find('input');
+            var $searchLabel = $searchContainer.find('label');
+            if ($searchInput.length && $searchLabel.length) {
+                var sId = tableId + '_search_input';
+                $searchInput.attr('id', sId).attr('name', sId);
+                $searchLabel.attr('for', sId);
+            }
+            
+            var $lengthContainer = $wrapper.find('.dataTables_length');
+            var $lengthSelect = $lengthContainer.find('select');
+            var $lengthLabel = $lengthContainer.find('label');
+            if ($lengthSelect.length && $lengthLabel.length) {
+                var lId = tableId + '_length_select';
+                $lengthSelect.attr('id', lId).attr('name', lId);
+                $lengthLabel.attr('for', lId);
+            }
+        });
+
         $.ajaxSetup({
             statusCode: {
                 401: function() {

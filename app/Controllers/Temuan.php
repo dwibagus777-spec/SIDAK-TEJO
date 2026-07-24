@@ -462,31 +462,63 @@ class Temuan extends BaseController
 
     public function delete(int $id)
     {
-        // Selalu return JSON
-        $this->response->setContentType('application/json');
+        $isAjax = $this->request->isAJAX() || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest' || str_contains($this->request->getHeaderLine('Accept'), 'json');
+        
+        log_message('info', "[DELETE_TEMUAN] Controller dipanggil | ID Received: {$id} | Method: " . $this->request->getMethod());
+
         try {
             $db = \Config\Database::connect();
             $temuan = $db->table('temuan')->where('id', $id)->where('deleted_at IS NULL')->get()->getRowArray();
+            
             if (!$temuan) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Data temuan tidak ditemukan atau sudah dihapus.']);
+                log_message('warning', "[DELETE_TEMUAN] Data tidak ditemukan atau sudah terhapus | ID: {$id}");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Data temuan tidak ditemukan atau sudah dihapus.']);
+                }
+                return redirect()->to(site_url('temuan'))->with('error', 'Data temuan tidak ditemukan.');
             }
 
             $session = session();
             $role = strtolower((string)$session->get('user_role'));
             $userUlpId = $session->get('user_ulp_id');
 
-            // Batasi ULP jika admin_ulp
             if ($role === 'admin_ulp' && $userUlpId !== null && (int)$temuan['ulp_id'] !== (int)$userUlpId) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan ULP lain.']);
+                log_message('warning', "[DELETE_TEMUAN] Akses ditolak untuk role admin_ulp | User ULP: {$userUlpId} | Temuan ULP: {$temuan['ulp_id']}");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan ULP lain.']);
+                }
+                return redirect()->to(site_url('temuan'))->with('error', 'Anda tidak memiliki hak akses.');
             }
 
-            // Soft delete langsung via query
-            $db->table('temuan')->where('id', $id)->update(['deleted_at' => date('Y-m-d H:i:s')]);
-            log_activity('DELETE_TEMUAN', 'Menghapus temuan: ' . $temuan['nomor_temuan']);
-            return $this->response->setJSON(['success' => true, 'message' => 'Temuan ' . esc($temuan['nomor_temuan']) . ' berhasil dihapus.']);
+            // Eksekusi Soft Delete Query
+            $now = date('Y-m-d H:i:s');
+            $db->table('temuan')->where('id', $id)->update(['deleted_at' => $now]);
+            $affectedRows = $db->affectedRows();
+
+            log_message('info', "[DELETE_TEMUAN] Query UPDATE executed | ID: {$id} | Affected Rows: {$affectedRows}");
+
+            if ($affectedRows > 0) {
+                log_activity('DELETE_TEMUAN', 'Menghapus temuan: ' . $temuan['nomor_temuan']);
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => true, 'message' => 'Temuan ' . esc($temuan['nomor_temuan']) . ' berhasil dihapus.']);
+                }
+                return redirect()->to(site_url('temuan'))->with('success', 'Temuan ' . esc($temuan['nomor_temuan']) . ' berhasil dihapus.');
+            }
+
+            $dbError = $db->error();
+            log_message('error', "[DELETE_TEMUAN_FAIL] DB Error Code: {$dbError['code']} | DB Error Msg: {$dbError['message']} | ID: {$id}");
+
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus data dari database. Error Code: ' . $dbError['code']]);
+            }
+            return redirect()->to(site_url('temuan'))->with('error', 'Gagal menghapus data.');
+
         } catch (\Throwable $e) {
-            log_message('error', 'Delete Temuan Error: ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+            log_message('error', "[DELETE_TEMUAN_EXCEPTION] " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+            }
+            return redirect()->to(site_url('temuan'))->with('error', 'Server error: ' . $e->getMessage());
         }
     }
 

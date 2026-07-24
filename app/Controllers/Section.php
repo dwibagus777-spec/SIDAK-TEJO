@@ -211,23 +211,50 @@ class Section extends BaseController
 
     public function delete(int $id)
     {
-        $sectionDetail = $this->sectionRepository->findWithPenyulangAndUlp($id);
-        if (!$sectionDetail) {
-            return redirect()->to(site_url('sections'))->with('error', 'Section tidak ditemukan.');
+        $isAjax = $this->request->isAJAX() || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest' || str_contains($this->request->getHeaderLine('Accept'), 'json');
+        log_message('info', "[DELETE_SECTION] Controller dipanggil | ID Received: {$id} | Method: " . $this->request->getMethod());
+
+        try {
+            $sectionDetail = $this->sectionRepository->findWithPenyulangAndUlp($id);
+            if (!$sectionDetail) {
+                log_message('warning', "[DELETE_SECTION] Section tidak ditemukan | ID: {$id}");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Section tidak ditemukan.']);
+                }
+                return redirect()->to(site_url('sections'))->with('error', 'Section tidak ditemukan.');
+            }
+
+            $session = session();
+            $role = strtolower((string)$session->get('user_role'));
+            $userUlpId = $session->get('user_ulp_id');
+
+            if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== (int)$sectionDetail['ulp_id']) {
+                log_message('warning', "[DELETE_SECTION] Akses ditolak role admin_ulp | ID: {$id}");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data Section ini.']);
+                }
+                return redirect()->to(site_url('sections'))->with('error', 'Anda tidak memiliki hak akses.');
+            }
+
+            if ($this->masterDataService->deleteSection($id)) {
+                log_message('info', "[DELETE_SECTION] Section ID: {$id} berhasil dihapus.");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => true, 'message' => 'Master Section berhasil dihapus.']);
+                }
+                return redirect()->to(site_url('sections'))->with('success', 'Master Section berhasil dihapus.');
+            }
+
+            log_message('error', "[DELETE_SECTION_FAIL] Gagal menghapus Section ID: {$id}");
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus Section.']);
+            }
+            return redirect()->to(site_url('sections'))->with('error', 'Gagal menghapus Section.');
+        } catch (\Throwable $e) {
+            log_message('error', "[DELETE_SECTION_EXCEPTION] " . $e->getMessage());
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal: Data Section ini masih terhubung dengan Temuan.']);
+            }
+            return redirect()->to(site_url('sections'))->with('error', 'Gagal: Data Section ini masih terhubung dengan Temuan.');
         }
-
-        $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
-
-        if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== (int)$sectionDetail['ulp_id']) {
-            return redirect()->to(site_url('sections'))->with('error', 'Anda tidak memiliki hak akses untuk menghapus data Section ini.');
-        }
-
-        if ($this->masterDataService->deleteSection($id)) {
-            return redirect()->to(site_url('sections'))->with('success', 'Master Section berhasil dihapus.');
-        }
-
-        return redirect()->to(site_url('sections'))->with('error', 'Gagal menghapus Section.');
     }
 }

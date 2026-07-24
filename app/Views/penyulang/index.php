@@ -78,18 +78,44 @@
     function confirmDelete(id) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: "Data Penyulang ini akan dihapus secara permanen!",
+            text: "Data Penyulang ini akan dihapus dari sistem!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal',
-            background: '#1e1e1e',
-            color: '#e0e0e0'
+            cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = "<?= site_url('penyulang/delete/') ?>" + id;
+                Swal.fire({
+                    title: 'Menghapus Penyulang...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                $.ajax({
+                    url: "<?= site_url('penyulang/delete/') ?>" + id,
+                    type: "POST",
+                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
+                    dataType: "JSON",
+                    success: function(res) {
+                        if (res && res.success) {
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: res.message,
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => { window.location.reload(); });
+                        } else {
+                            Swal.fire({ title: 'Gagal!', text: (res && res.message) ? res.message : 'Gagal menghapus Penyulang.', icon: 'error' });
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Gagal menghapus Penyulang dari server.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        Swal.fire({ title: 'Gagal!', text: msg, icon: 'error' });
+                    }
+                });
             }
         });
     }

@@ -211,13 +211,20 @@ class User extends BaseController
 
     public function delete(int $id)
     {
-        // Selalu return JSON - dipanggil via AJAX dari browser
-        $this->response->setContentType('application/json');
+        $isAjax = $this->request->isAJAX() || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest' || str_contains($this->request->getHeaderLine('Accept'), 'json');
+
+        log_message('info', "[DELETE_USER] Controller dipanggil | ID Received: {$id} | Method: " . $this->request->getMethod());
+
         try {
             $db = \Config\Database::connect();
             $user = $db->table('users')->where('id', $id)->get()->getRowArray();
+            
             if (!$user) {
-                return $this->response->setJSON(['success' => false, 'message' => 'User tidak ditemukan.']);
+                log_message('warning', "[DELETE_USER] User tidak ditemukan | ID: {$id}");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'User tidak ditemukan.']);
+                }
+                return redirect()->to(site_url('users'))->with('error', 'User tidak ditemukan.');
             }
 
             $session = session();
@@ -225,11 +232,19 @@ class User extends BaseController
             $userUlpId = $session->get('user_ulp_id');
 
             if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== (int)$user['ulp_id']) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data User ini.']);
+                log_message('warning', "[DELETE_USER] Akses ditolak untuk role admin_ulp | User ULP: {$userUlpId} | Target ULP: {$user['ulp_id']}");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data User ini.']);
+                }
+                return redirect()->to(site_url('users'))->with('error', 'Anda tidak memiliki hak akses.');
             }
 
             if ((int)$session->get('user_id') === $id) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.']);
+                log_message('warning', "[DELETE_USER] Percobaan hapus akun sendiri | User ID: {$id}");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.']);
+                }
+                return redirect()->to(site_url('users'))->with('error', 'Anda tidak dapat menghapus akun sendiri.');
             }
 
             // Unlink foreign references
@@ -237,13 +252,34 @@ class User extends BaseController
             $db->table('temuan')->where('created_by', $id)->update(['created_by' => null]);
             $db->table('temuan')->where('updated_by', $id)->update(['updated_by' => null]);
 
-            // Hapus langsung via query
+            // Eksekusi Hapus User
             $db->table('users')->where('id', $id)->delete();
-            log_activity('DELETE_USER', 'Menghapus user: ' . $user['username']);
-            return $this->response->setJSON(['success' => true, 'message' => 'User ' . esc($user['username']) . ' berhasil dihapus dari sistem.']);
+            $affectedRows = $db->affectedRows();
+
+            log_message('info', "[DELETE_USER] Query DELETE executed | ID: {$id} | Affected Rows: {$affectedRows}");
+
+            if ($affectedRows > 0) {
+                log_activity('DELETE_USER', 'Menghapus user: ' . $user['username']);
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => true, 'message' => 'User ' . esc($user['username']) . ' berhasil dihapus dari sistem.']);
+                }
+                return redirect()->to(site_url('users'))->with('success', 'User ' . esc($user['username']) . ' berhasil dihapus.');
+            }
+
+            $dbError = $db->error();
+            log_message('error', "[DELETE_USER_FAIL] DB Error Code: {$dbError['code']} | DB Error Msg: {$dbError['message']} | ID: {$id}");
+
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus User. Error Code: ' . $dbError['code']]);
+            }
+            return redirect()->to(site_url('users'))->with('error', 'Gagal menghapus User.');
+
         } catch (\Throwable $e) {
-            log_message('error', 'Delete User Error: ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+            log_message('error', "[DELETE_USER_EXCEPTION] " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+            }
+            return redirect()->to(site_url('users'))->with('error', 'Server error: ' . $e->getMessage());
         }
     }
 

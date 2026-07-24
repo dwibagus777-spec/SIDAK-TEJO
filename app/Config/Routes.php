@@ -48,7 +48,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('temuan/store', 'Temuan::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/detail/(:num)', 'Temuan::detail/$1');
     $routes->post('temuan/tindak-lanjut/(:num)', 'Temuan::tindakLanjut/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
-    $routes->get('temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->match(['get', 'post'], 'temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/edit/(:num)', 'Temuan::edit/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->post('temuan/update/(:num)', 'Temuan::update/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/update-pekerjaan', 'Temuan::updatePekerjaan');
@@ -66,7 +66,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('store', 'Ulp::store');
         $routes->get('edit/(:num)', 'Ulp::edit/$1');
         $routes->post('update/(:num)', 'Ulp::update/$1');
-        $routes->get('delete/(:num)', 'Ulp::delete/$1');
+        $routes->match(['get', 'post'], 'delete/(:num)', 'Ulp::delete/$1');
     });
 
     // Master Data Penyulang (Admin & Admin ULP)
@@ -76,7 +76,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('store', 'Penyulang::store');
         $routes->get('edit/(:num)', 'Penyulang::edit/$1');
         $routes->post('update/(:num)', 'Penyulang::update/$1');
-        $routes->get('delete/(:num)', 'Penyulang::delete/$1');
+        $routes->match(['get', 'post'], 'delete/(:num)', 'Penyulang::delete/$1');
     });
 
     // Master Data Section (Admin & Admin ULP)
@@ -86,7 +86,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('store', 'Section::store');
         $routes->get('edit/(:num)', 'Section::edit/$1');
         $routes->post('update/(:num)', 'Section::update/$1');
-        $routes->get('delete/(:num)', 'Section::delete/$1');
+        $routes->match(['get', 'post'], 'delete/(:num)', 'Section::delete/$1');
     });
 
     // Master Data User (Admin & Admin ULP)

@@ -138,7 +138,8 @@
 
                 $.ajax({
                     url: "<?= site_url('users/delete/') ?>" + id,
-                    type: "GET",
+                    type: "POST",
+                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
                     dataType: "JSON",
                     success: function(response) {
                         if (response && response.success) {

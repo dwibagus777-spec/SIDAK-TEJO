@@ -99,10 +99,29 @@ class Ulp extends BaseController
 
     public function delete(int $id)
     {
-        if ($this->masterDataService->deleteUlp($id)) {
-            return redirect()->to(site_url('ulps'))->with('success', 'Master ULP berhasil dihapus.');
-        }
+        $isAjax = $this->request->isAJAX() || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest' || str_contains($this->request->getHeaderLine('Accept'), 'json');
+        log_message('info', "[DELETE_ULP] Controller dipanggil | ID Received: {$id} | Method: " . $this->request->getMethod());
 
-        return redirect()->to(site_url('ulps'))->with('error', 'Gagal menghapus ULP.');
+        try {
+            if ($this->masterDataService->deleteUlp($id)) {
+                log_message('info', "[DELETE_ULP] ULP ID: {$id} berhasil dihapus.");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => true, 'message' => 'Master ULP berhasil dihapus.']);
+                }
+                return redirect()->to(site_url('ulps'))->with('success', 'Master ULP berhasil dihapus.');
+            }
+
+            log_message('error', "[DELETE_ULP_FAIL] Gagal menghapus ULP ID: {$id}");
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus ULP. Data mungkin masih digunakan.']);
+            }
+            return redirect()->to(site_url('ulps'))->with('error', 'Gagal menghapus ULP. Data mungkin masih digunakan.');
+        } catch (\Throwable $e) {
+            log_message('error', "[DELETE_ULP_EXCEPTION] " . $e->getMessage());
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal: Data ULP ini masih terhubung dengan Penyulang/User/Temuan.']);
+            }
+            return redirect()->to(site_url('ulps'))->with('error', 'Gagal: Data ULP ini masih terhubung dengan Penyulang/User/Temuan.');
+        }
     }
 }

@@ -213,23 +213,50 @@ class Penyulang extends BaseController
 
     public function delete(int $id)
     {
-        $penyulang = $this->penyulangRepository->find($id);
-        if (!$penyulang) {
-            return redirect()->to(site_url('penyulang'))->with('error', 'Penyulang tidak ditemukan.');
+        $isAjax = $this->request->isAJAX() || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest' || str_contains($this->request->getHeaderLine('Accept'), 'json');
+        log_message('info', "[DELETE_PENYULANG] Controller dipanggil | ID Received: {$id} | Method: " . $this->request->getMethod());
+
+        try {
+            $penyulang = $this->penyulangRepository->find($id);
+            if (!$penyulang) {
+                log_message('warning', "[DELETE_PENYULANG] Penyulang tidak ditemukan | ID: {$id}");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Penyulang tidak ditemukan.']);
+                }
+                return redirect()->to(site_url('penyulang'))->with('error', 'Penyulang tidak ditemukan.');
+            }
+
+            $session = session();
+            $role = strtolower((string)$session->get('user_role'));
+            $userUlpId = $session->get('user_ulp_id');
+
+            if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== (int)$penyulang['ulp_id']) {
+                log_message('warning', "[DELETE_PENYULANG] Akses ditolak role admin_ulp | ID: {$id}");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data Penyulang ini.']);
+                }
+                return redirect()->to(site_url('penyulang'))->with('error', 'Anda tidak memiliki hak akses.');
+            }
+
+            if ($this->masterDataService->deletePenyulang($id)) {
+                log_message('info', "[DELETE_PENYULANG] Penyulang ID: {$id} berhasil dihapus.");
+                if ($isAjax) {
+                    return $this->response->setJSON(['success' => true, 'message' => 'Master Penyulang berhasil dihapus.']);
+                }
+                return redirect()->to(site_url('penyulang'))->with('success', 'Master Penyulang berhasil dihapus.');
+            }
+
+            log_message('error', "[DELETE_PENYULANG_FAIL] Gagal menghapus Penyulang ID: {$id}");
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus Penyulang.']);
+            }
+            return redirect()->to(site_url('penyulang'))->with('error', 'Gagal menghapus Penyulang.');
+        } catch (\Throwable $e) {
+            log_message('error', "[DELETE_PENYULANG_EXCEPTION] " . $e->getMessage());
+            if ($isAjax) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal: Data Penyulang ini masih terhubung dengan Section/Temuan.']);
+            }
+            return redirect()->to(site_url('penyulang'))->with('error', 'Gagal: Data Penyulang ini masih terhubung dengan Section/Temuan.');
         }
-
-        $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
-
-        if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== (int)$penyulang['ulp_id']) {
-            return redirect()->to(site_url('penyulang'))->with('error', 'Anda tidak memiliki hak akses untuk menghapus data Penyulang ini.');
-        }
-
-        if ($this->masterDataService->deletePenyulang($id)) {
-            return redirect()->to(site_url('penyulang'))->with('success', 'Master Penyulang berhasil dihapus.');
-        }
-
-        return redirect()->to(site_url('penyulang'))->with('error', 'Gagal menghapus Penyulang.');
     }
 }

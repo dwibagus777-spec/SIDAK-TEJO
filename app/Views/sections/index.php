@@ -109,9 +109,17 @@
                         }
                     },
                     error: function(xhr) {
-                        let msg = 'Gagal menghapus Section dari server.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
-                        Swal.fire({ title: 'Gagal!', text: msg, icon: 'error' });
+                        // Fallback submit via Native HTML Form POST
+                        let form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = "<?= site_url('sections/delete/') ?>" + id;
+                        let inputCsrf = document.createElement('input');
+                        inputCsrf.type = 'hidden';
+                        inputCsrf.name = "<?= csrf_token() ?>";
+                        inputCsrf.value = "<?= csrf_hash() ?>";
+                        form.appendChild(inputCsrf);
+                        document.body.appendChild(form);
+                        form.submit();
                     }
                 });
             }

@@ -47,14 +47,10 @@
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <form id="delete-form-section-<?= $section['id'] ?>" action="<?= site_url('sections/delete/' . $section['id']) ?>" method="post" class="d-inline">
-                                            <?= csrf_field() ?>
-                                            <button type="button" onclick="confirmDeleteForm('delete-form-section-<?= $section['id'] ?>')" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-trash mr-1"></i> Hapus
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
+                                        <a href="<?= site_url('sections/edit/' . $section['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
+                                        <button type="button" onclick="executeDelete('<?= site_url('sections/delete/' . $section['id']) ?>')" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</button>
+                                     </td>
+                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -63,6 +59,11 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden Global Form for Delete POST (Outside Table) -->
+<form id="global-delete-form-sections" action="" method="post" style="display: none;">
+    <?= csrf_field() ?>
+</form>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -77,10 +78,10 @@
         });
     });
 
-    window.confirmDeleteForm = function(formId, itemName) {
+    window.executeDelete = function(targetUrl) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: (itemName || 'Data') + ' akan dihapus dari sistem!',
+            text: 'Data Section ini akan dihapus dari sistem!',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -90,13 +91,16 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Menghapus...',
+                    title: 'Menghapus Section...',
                     text: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
-                var f = document.getElementById(formId);
-                if (f) f.submit();
+                var f = document.getElementById('global-delete-form-sections');
+                if (f) {
+                    f.action = targetUrl;
+                    f.submit();
+                }
             }
         });
     };

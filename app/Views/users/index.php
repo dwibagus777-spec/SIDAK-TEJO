@@ -58,12 +58,9 @@
                                         </button>
                                         <a href="<?= site_url('users/edit/' . $user['id']) ?>" class="btn btn-xs btn-warning text-dark me-1" title="Ubah User"><i class="fas fa-edit"></i></a>
                                         <?php if ((int)session()->get('user_id') !== (int)$user['id']): ?>
-                                            <form id="delete-form-user-<?= $user['id'] ?>" action="<?= site_url('users/delete/' . $user['id']) ?>" method="post" class="d-inline">
-                                                <?= csrf_field() ?>
-                                                <button type="button" onclick="confirmDeleteForm('delete-form-user-<?= $user['id'] ?>')" class="btn btn-xs btn-danger" title="Hapus User">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" onclick="executeDelete('<?= site_url('users/delete/' . $user['id']) ?>')" class="btn btn-xs btn-danger" title="Hapus User">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -75,6 +72,11 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden Global Form for Delete POST (Outside Table) -->
+<form id="global-delete-form-users" action="" method="post" style="display: none;">
+    <?= csrf_field() ?>
+</form>
 
 <!-- Hidden Form for Reset Password POST -->
 <form id="form-reset-password" action="" method="post" style="display: none;">
@@ -120,10 +122,10 @@
         });
     }
 
-    window.confirmDeleteForm = function(formId, itemName) {
+    window.executeDelete = function(targetUrl) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: (itemName || 'Data') + ' akan dihapus dari sistem!',
+            text: 'Data User ini akan dihapus dari sistem!',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -133,13 +135,16 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Menghapus...',
+                    title: 'Menghapus User...',
                     text: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
-                var f = document.getElementById(formId);
-                if (f) f.submit();
+                var f = document.getElementById('global-delete-form-users');
+                if (f) {
+                    f.action = targetUrl;
+                    f.submit();
+                }
             }
         });
     };

@@ -49,14 +49,10 @@
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <form id="delete-form-penyulang-<?= $penyulang['id'] ?>" action="<?= site_url('penyulang/delete/' . $penyulang['id']) ?>" method="post" class="d-inline">
-                                            <?= csrf_field() ?>
-                                            <button type="button" onclick="confirmDeleteForm('delete-form-penyulang-<?= $penyulang['id'] ?>')" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-trash mr-1"></i> Hapus
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
+                                        <a href="<?= site_url('penyulang/edit/' . $penyulang['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
+                                        <button type="button" onclick="executeDelete('<?= site_url('penyulang/delete/' . $penyulang['id']) ?>')" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</button>
+                                     </td>
+                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -65,6 +61,11 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden Global Form for Delete POST (Outside Table) -->
+<form id="global-delete-form-penyulang" action="" method="post" style="display: none;">
+    <?= csrf_field() ?>
+</form>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -79,10 +80,10 @@
         });
     });
 
-    window.confirmDeleteForm = function(formId, itemName) {
+    window.executeDelete = function(targetUrl) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: (itemName || 'Data') + ' akan dihapus dari sistem!',
+            text: 'Data Penyulang ini akan dihapus dari sistem!',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -92,13 +93,16 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Menghapus...',
+                    title: 'Menghapus Penyulang...',
                     text: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
-                var f = document.getElementById(formId);
-                if (f) f.submit();
+                var f = document.getElementById('global-delete-form-penyulang');
+                if (f) {
+                    f.action = targetUrl;
+                    f.submit();
+                }
             }
         });
     };

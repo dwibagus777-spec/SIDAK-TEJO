@@ -365,10 +365,41 @@
     </div>
 </div>
 
+<!-- Hidden Global Form for Delete POST (Outside Table) -->
+<form id="global-delete-form-temuan" action="" method="post" style="display: none;">
+    <?= csrf_field() ?>
+</form>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
+    window.executeDelete = function(targetUrl) {
+        Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: 'Data temuan ini akan dihapus dari sistem!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Menghapus Temuan...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                var f = document.getElementById('global-delete-form-temuan');
+                if (f) {
+                    f.action = targetUrl;
+                    f.submit();
+                }
+            }
+        });
+    };
+
     $(function () {
         // 1. Ambil URL parameters untuk pre-populate filter dari dashboard redirect
         const urlParams = new URLSearchParams(window.location.search);
@@ -660,31 +691,6 @@
             } else {
                 $('body').css('overflow', '');
             }
-        }
     });
-
-    window.confirmDeleteForm = function(formId, itemName) {
-        Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: (itemName || 'Data') + ' akan dihapus dari sistem!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Menghapus...',
-                    text: 'Mohon tunggu sebentar',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
-                var f = document.getElementById(formId);
-                if (f) f.submit();
-            }
-        });
-    };
 </script>
 <?= $this->endSection() ?>

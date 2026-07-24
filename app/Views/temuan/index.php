@@ -365,41 +365,10 @@
     </div>
 </div>
 
-<!-- Hidden Global Form for Delete POST (Outside Table) -->
-<form id="global-delete-form-temuan" action="" method="post" style="display: none;">
-    <?= csrf_field() ?>
-</form>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-    window.executeDelete = function(targetUrl) {
-        Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: 'Data temuan ini akan dihapus dari sistem!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Menghapus Temuan...',
-                    text: 'Mohon tunggu sebentar',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
-                var f = document.getElementById('global-delete-form-temuan');
-                if (f) {
-                    f.action = targetUrl;
-                    f.submit();
-                }
-            }
-        });
-    };
-
     $(function () {
         // 1. Ambil URL parameters untuk pre-populate filter dari dashboard redirect
         const urlParams = new URLSearchParams(window.location.search);
@@ -423,7 +392,7 @@
             "serverSide": true,
             "ajax": {
                 "url": "<?= site_url('temuan/ajax-datatables') ?>",
-                "type": "GET",
+                "type": "POST",
                 "data": function(d) {
                     d.<?= csrf_token() ?> = "<?= csrf_hash() ?>";
                     d.ulp_id = $('#filter_ulp_id').val();
@@ -434,19 +403,6 @@
                     d.status = $('#filter_status').val();
                     d.start_date = $('#filter_start_date').val();
                     d.end_date = $('#filter_end_date').val();
-                },
-                "error": function(xhr) {
-                    if (xhr.status === 401) {
-                        Swal.fire({
-                            title: 'Sesi Berakhir',
-                            text: 'Sesi login Anda telah berakhir. Silakan login kembali untuk melanjutkan.',
-                            icon: 'warning',
-                            confirmButtonText: 'Login Kembali',
-                            confirmButtonColor: '#005eb8'
-                        }).then(() => {
-                            window.location.href = "<?= site_url('login') ?>";
-                        });
-                    }
                 }
             },
             "columns": [
@@ -464,20 +420,7 @@
             "responsive": true,
             "autoWidth": false,
             "language": {
-                "processing": "Memuat data...",
-                "search": "Cari:",
-                "lengthMenu": "Tampilkan _MENU_ entri",
-                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
-                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
-                "infoFiltered": "(disaring dari _MAX_ total entri)",
-                "zeroRecords": "Tidak ditemukan data yang sesuai",
-                "emptyTable": "Tidak ada data yang tersedia pada tabel ini",
-                "paginate": {
-                    "first": "Pertama",
-                    "previous": "Sebelumnya",
-                    "next": "Selanjutnya",
-                    "last": "Terakhir"
-                }
+                "url": "<?= base_url('plugins/datatables/id.json') ?>"
             }
         });
 
@@ -493,7 +436,7 @@
             const penyulangSelect = $('#filter_penyulang_id');
             const sectionSelect = $('#filter_section_id');
             
-            penyulangSelect.empty().append('<option value="">-- Semua Penyulang --</option>');
+            penyulangSelect.empty().append('<option value="">-- Semua Penyulang --</option>').trigger('change.select2');
             sectionSelect.empty().append('<option value="">-- Semua Section --</option>').trigger('change.select2');
             
             if (ulpId) {
@@ -508,13 +451,11 @@
                         penyulangSelect.trigger('change.select2');
                     }
                 });
-            } else {
-                <?php foreach ($penyulangs as $p): ?>
-                    penyulangSelect.append('<option value="<?= $p['id'] ?>"><?= esc($p['nama_penyulang'], 'js') ?></option>');
-                <?php endforeach; ?>
-                penyulangSelect.trigger('change.select2');
             }
         });
+        
+        // Sync ULP filter dropdown values on load to prevent browser cache mismatch
+        $('#filter_ulp_id').trigger('change.select2');
         <?php endif; ?>
  
         // Cascade Penyulang -> Section
@@ -719,6 +660,68 @@
             } else {
                 $('body').css('overflow', '');
             }
+        }
     });
+
+    function confirmDelete(id) {
+        Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: "Data temuan ini akan dihapus dari sistem!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Menghapus Temuan...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: "<?= site_url('temuan/delete/') ?>" + id,
+                    type: "POST",
+                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
+                    dataType: "JSON",
+                    success: function(response) {
+                        if (response && response.success) {
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: response.message,
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Gagal!',
+                                text: (response && response.message) ? response.message : 'Gagal menghapus data temuan.',
+                                icon: 'error'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Gagal menghapus data temuan dari server.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            title: 'Gagal!',
+                            text: msg,
+                            icon: 'error'
+                        });
+                    }
+                });
+            }
+        });
+    }
 </script>
 <?= $this->endSection() ?>

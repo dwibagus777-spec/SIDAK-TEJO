@@ -50,9 +50,9 @@
                                     </td>
                                     <td>
                                         <a href="<?= site_url('penyulang/edit/' . $penyulang['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
-                                        <button type="button" onclick="executeDelete('<?= site_url('penyulang/delete/' . $penyulang['id']) ?>')" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</button>
-                                     </td>
-                                 </tr>
+                                        <a href="javascript:void(0)" onclick="confirmDelete(<?= $penyulang['id'] ?>)" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -61,11 +61,6 @@
         </div>
     </div>
 </div>
-
-<!-- Hidden Global Form for Delete POST (Outside Table) -->
-<form id="global-delete-form-penyulang" action="" method="post" style="display: none;">
-    <?= csrf_field() ?>
-</form>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -80,10 +75,10 @@
         });
     });
 
-    window.executeDelete = function(targetUrl) {
+    function confirmDelete(id) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: 'Data Penyulang ini akan dihapus dari sistem!',
+            text: "Data Penyulang ini akan dihapus dari sistem!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -94,17 +89,35 @@
             if (result.isConfirmed) {
                 Swal.fire({
                     title: 'Menghapus Penyulang...',
-                    text: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
-                var f = document.getElementById('global-delete-form-penyulang');
-                if (f) {
-                    f.action = targetUrl;
-                    f.submit();
-                }
+                $.ajax({
+                    url: "<?= site_url('penyulang/delete/') ?>" + id,
+                    type: "POST",
+                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
+                    dataType: "JSON",
+                    success: function(res) {
+                        if (res && res.success) {
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: res.message,
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => { window.location.reload(); });
+                        } else {
+                            Swal.fire({ title: 'Gagal!', text: (res && res.message) ? res.message : 'Gagal menghapus Penyulang.', icon: 'error' });
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Gagal menghapus Penyulang dari server.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        Swal.fire({ title: 'Gagal!', text: msg, icon: 'error' });
+                    }
+                });
             }
         });
-    };
+    }
 </script>
 <?= $this->endSection() ?>

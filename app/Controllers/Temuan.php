@@ -57,7 +57,7 @@ class Temuan extends BaseController
     {
         $scoping = get_user_role_scoping();
 
-        $postData = array_merge($this->request->getGet(), $this->request->getPost());
+        $postData = $this->request->getPost();
         $result = $this->temuanRepository->getDataTables($postData, $scoping['ulp_id'], $scoping['jenis_temuan']);
 
         // Format data sebelum dikirim kembali
@@ -88,7 +88,7 @@ class Temuan extends BaseController
             
             $btnDelete = '';
             if (check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek', 'supervisor_ulp', 'supervisor_up3'])) {
-                $btnDelete = ' <button type="button" onclick="executeDelete(\'' . site_url('temuan/delete/' . $row['id']) . '\')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></button>';
+                $btnDelete = ' <a href="javascript:void(0)" onclick="confirmDelete(' . $row['id'] . ')" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>';
             }
 
             $actions = $btnDetail . $btnDelete;

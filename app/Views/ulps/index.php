@@ -43,9 +43,9 @@
                                     </td>
                                     <td>
                                         <a href="<?= site_url('ulps/edit/' . $ulp['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
-                                        <button type="button" onclick="executeDelete('<?= site_url('ulps/delete/' . $ulp['id']) ?>')" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</button>
-                                     </td>
-                                 </tr>
+                                        <a href="javascript:void(0)" onclick="confirmDelete(<?= $ulp['id'] ?>)" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -54,11 +54,6 @@
         </div>
     </div>
 </div>
-
-<!-- Hidden Global Form for Delete POST (Outside Table) -->
-<form id="global-delete-form-ulps" action="" method="post" style="display: none;">
-    <?= csrf_field() ?>
-</form>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -73,10 +68,10 @@
         });
     });
 
-    window.executeDelete = function(targetUrl) {
+    function confirmDelete(id) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: 'Data ULP ini akan dihapus dari sistem!',
+            text: "Data ULP ini akan dihapus dari sistem!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -87,17 +82,35 @@
             if (result.isConfirmed) {
                 Swal.fire({
                     title: 'Menghapus ULP...',
-                    text: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
-                var f = document.getElementById('global-delete-form-ulps');
-                if (f) {
-                    f.action = targetUrl;
-                    f.submit();
-                }
+                $.ajax({
+                    url: "<?= site_url('ulps/delete/') ?>" + id,
+                    type: "POST",
+                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
+                    dataType: "JSON",
+                    success: function(res) {
+                        if (res && res.success) {
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: res.message,
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => { window.location.reload(); });
+                        } else {
+                            Swal.fire({ title: 'Gagal!', text: (res && res.message) ? res.message : 'Gagal menghapus ULP.', icon: 'error' });
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Gagal menghapus ULP dari server.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        Swal.fire({ title: 'Gagal!', text: msg, icon: 'error' });
+                    }
+                });
             }
         });
-    };
+    }
 </script>
 <?= $this->endSection() ?>

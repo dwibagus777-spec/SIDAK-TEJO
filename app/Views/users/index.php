@@ -58,9 +58,7 @@
                                         </button>
                                         <a href="<?= site_url('users/edit/' . $user['id']) ?>" class="btn btn-xs btn-warning text-dark me-1" title="Ubah User"><i class="fas fa-edit"></i></a>
                                         <?php if ((int)session()->get('user_id') !== (int)$user['id']): ?>
-                                            <button type="button" onclick="executeDelete('<?= site_url('users/delete/' . $user['id']) ?>')" class="btn btn-xs btn-danger" title="Hapus User">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            <a href="javascript:void(0)" onclick="confirmDelete(<?= $user['id'] ?>)" class="btn btn-xs btn-danger" title="Hapus User"><i class="fas fa-trash"></i></a>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -72,11 +70,6 @@
         </div>
     </div>
 </div>
-
-<!-- Hidden Global Form for Delete POST (Outside Table) -->
-<form id="global-delete-form-users" action="" method="post" style="display: none;">
-    <?= csrf_field() ?>
-</form>
 
 <!-- Hidden Form for Reset Password POST -->
 <form id="form-reset-password" action="" method="post" style="display: none;">
@@ -122,10 +115,10 @@
         });
     }
 
-    window.executeDelete = function(targetUrl) {
+    function confirmDelete(id) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: 'Data User ini akan dihapus dari sistem!',
+            text: "User ini akan dihapus dari sistem!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -138,15 +131,49 @@
                     title: 'Menghapus User...',
                     text: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
                 });
-                var f = document.getElementById('global-delete-form-users');
-                if (f) {
-                    f.action = targetUrl;
-                    f.submit();
-                }
+
+                $.ajax({
+                    url: "<?= site_url('users/delete/') ?>" + id,
+                    type: "POST",
+                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
+                    dataType: "JSON",
+                    success: function(response) {
+                        if (response && response.success) {
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: response.message,
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Gagal!',
+                                text: (response && response.message) ? response.message : 'Gagal menghapus User.',
+                                icon: 'error'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Gagal menghapus User dari server.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            title: 'Gagal!',
+                            text: msg,
+                            icon: 'error'
+                        });
+                    }
+                });
             }
         });
-    };
+    }
 </script>
 <?= $this->endSection() ?>

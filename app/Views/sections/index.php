@@ -49,7 +49,7 @@
                                     <td>
                                         <form id="delete-form-section-<?= $section['id'] ?>" action="<?= site_url('sections/delete/' . $section['id']) ?>" method="post" class="d-inline">
                                             <?= csrf_field() ?>
-                                            <button type="button" onclick="confirmDeleteForm('delete-form-section-<?= $section['id'] ?>', 'Section <?= esc($section['nama_section'], 'js') ?>')" class="btn btn-sm btn-danger">
+                                            <button type="button" onclick="confirmDeleteForm('delete-form-section-<?= $section['id'] ?>')" class="btn btn-sm btn-danger">
                                                 <i class="fas fa-trash mr-1"></i> Hapus
                                             </button>
                                         </form>

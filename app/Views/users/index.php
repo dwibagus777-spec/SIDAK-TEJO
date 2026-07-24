@@ -60,7 +60,7 @@
                                         <?php if ((int)session()->get('user_id') !== (int)$user['id']): ?>
                                             <form id="delete-form-user-<?= $user['id'] ?>" action="<?= site_url('users/delete/' . $user['id']) ?>" method="post" class="d-inline">
                                                 <?= csrf_field() ?>
-                                                <button type="button" onclick="confirmDeleteForm('delete-form-user-<?= $user['id'] ?>', 'User <?= esc($user['username'], 'js') ?>')" class="btn btn-xs btn-danger" title="Hapus User">
+                                                <button type="button" onclick="confirmDeleteForm('delete-form-user-<?= $user['id'] ?>')" class="btn btn-xs btn-danger" title="Hapus User">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>

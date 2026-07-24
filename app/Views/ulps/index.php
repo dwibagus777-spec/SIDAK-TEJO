@@ -44,7 +44,7 @@
                                     <td>
                                         <form id="delete-form-ulp-<?= $ulp['id'] ?>" action="<?= site_url('ulps/delete/' . $ulp['id']) ?>" method="post" class="d-inline">
                                             <?= csrf_field() ?>
-                                            <button type="button" onclick="confirmDeleteForm('delete-form-ulp-<?= $ulp['id'] ?>', 'ULP <?= esc($ulp['nama_ulp'], 'js') ?>')" class="btn btn-sm btn-danger">
+                                            <button type="button" onclick="confirmDeleteForm('delete-form-ulp-<?= $ulp['id'] ?>')" class="btn btn-sm btn-danger">
                                                 <i class="fas fa-trash mr-1"></i> Hapus
                                             </button>
                                         </form>

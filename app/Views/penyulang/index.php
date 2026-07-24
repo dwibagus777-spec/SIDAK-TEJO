@@ -51,7 +51,7 @@
                                     <td>
                                         <form id="delete-form-penyulang-<?= $penyulang['id'] ?>" action="<?= site_url('penyulang/delete/' . $penyulang['id']) ?>" method="post" class="d-inline">
                                             <?= csrf_field() ?>
-                                            <button type="button" onclick="confirmDeleteForm('delete-form-penyulang-<?= $penyulang['id'] ?>', 'Penyulang <?= esc($penyulang['nama_penyulang'], 'js') ?>')" class="btn btn-sm btn-danger">
+                                            <button type="button" onclick="confirmDeleteForm('delete-form-penyulang-<?= $penyulang['id'] ?>')" class="btn btn-sm btn-danger">
                                                 <i class="fas fa-trash mr-1"></i> Hapus
                                             </button>
                                         </form>

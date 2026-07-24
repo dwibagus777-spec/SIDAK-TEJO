@@ -336,11 +336,11 @@
             });
 
             // 1. FILTER PENYULANG / JENIS / ULP / CARI
-            if (speechResult.includes('penyulang') || speechResult.includes('jenis') || speechResult.includes('ulp') || speechResult.startsWith('cari ') || speechResult.includes('filter') || speechResult.includes('saring')) {
+            if (speechResult.includes('penyulang') || speechResult.includes('jenis') || speechResult.includes('ulp') || speechResult.includes('cari') || speechResult.includes('tampilkan') || speechResult.includes('lihat') || speechResult.includes('filter') || speechResult.includes('saring')) {
                 e.preventDefault(); // Hentikan redirect global agar tetap di halaman terdekat
                 let cleanKeyword = speechResult
-                    .replace(/^(filter|saring|cari|temukan)\s*/i, '')
-                    .replace(/^(penyulang|jenis|ulp)\s*/i, '')
+                    .replace(/\b(tolong|mohon|coba|tampilkan|lihat|buka|cari|temukan|filter|saring)\b/gi, '')
+                    .replace(/\b(penyulang|jenis\s+temuan|jenis|ulp|section|temuan)\b/gi, '')
                     .trim();
                 
                 if (cleanKeyword) {

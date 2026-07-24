@@ -1388,7 +1388,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 // 2. FILTER TEMUAN BERDASARKAN PENYULANG
                 if (text.includes('penyulang')) {
                     let parts = text.split('penyulang');
-                    let penyulangName = parts[1] ? parts[1].replace(/^(data|tabel|temuan|master)\s*/i, '').trim() : '';
+                    let penyulangName = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
                     if (penyulangName) {
                         showVoiceToast('Menyaring Penyulang: "' + penyulangName + '"...', 'info', 'Menyaring penyulang ' + penyulangName);
                         setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(penyulangName), 800);
@@ -1399,7 +1399,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 // 3. FILTER TEMUAN BERDASARKAN JENIS
                 if (text.includes('jenis')) {
                     let parts = text.split('jenis');
-                    let jenisName = parts[1] ? parts[1].replace(/^(temuan|data)\s*/i, '').trim() : '';
+                    let jenisName = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
                     if (jenisName) {
                         showVoiceToast('Menyaring Jenis Temuan: "' + jenisName + '"...', 'info', 'Menyaring jenis temuan ' + jenisName);
                         setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(jenisName), 800);
@@ -1410,7 +1410,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 // 4. FILTER TEMUAN BERDASARKAN ULP
                 if (text.includes('ulp') && !text.includes('master ulp') && !text.includes('data ulp')) {
                     let parts = text.split('ulp');
-                    let ulpName = parts[1] ? parts[1].trim() : '';
+                    let ulpName = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
                     if (ulpName) {
                         showVoiceToast('Menyaring ULP: "' + ulpName + '"...', 'info', 'Menyaring ULP ' + ulpName);
                         setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(ulpName), 800);

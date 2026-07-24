@@ -133,20 +133,37 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
                 </div>
 
                 <div class="mb-3">
-                    <h6 class="font-weight-bold"><i class="fas fa-images text-secondary mr-1"></i> Foto Temuan Lapangan:</h6>
+                    <h6 class="font-weight-bold"><i class="fas fa-images text-secondary me-1"></i> Foto Temuan Lapangan:</h6>
                     <div class="row px-2">
                         <?php 
                         $photos = json_decode($temuan['foto'], true) ?: [];
-                        $uploadPath = $temuan['foto_path'];
-                        foreach ($photos as $photo):
-                            $filePath = base_url($uploadPath . $photo);
+                        if (is_string($temuan['foto']) && empty($photos) && !empty($temuan['foto'])) {
+                            $photos = [$temuan['foto']];
+                        }
+                        $rawPath = trim($temuan['foto_path'] ?: 'uploads/temuan/', '/');
+
+                        if (empty($photos)): ?>
+                            <div class="col-12">
+                                <p class="text-muted italic"><i class="fas fa-info-circle me-1"></i> Tidak ada foto temuan yang diunggah.</p>
+                            </div>
+                        <?php else:
+                            foreach ($photos as $photo):
+                                if (empty($photo)) continue;
+                                if (strpos($photo, '/') !== false) {
+                                    $filePath = base_url(trim($photo, '/'));
+                                } else {
+                                    $filePath = base_url($rawPath . '/' . trim($photo, '/'));
+                                }
                         ?>
-                            <div class="col-md-3 col-6 mb-3 px-1 animate__animated animate__fadeIn">
-                                <div class="img-thumbnail bg-dark" style="border-color: #3d3d3d; border-radius: 8px; overflow: hidden; height: 120px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openPhotoModal('<?= $filePath ?>')">
-                                    <img src="<?= $filePath ?>" style="max-height: 100%; max-width: 100%; object-fit: cover;">
+                            <div class="col-md-4 col-6 mb-3 px-1 animate__animated animate__fadeIn">
+                                <div class="img-thumbnail bg-dark" style="border-color: #cbd5e1; border-radius: 12px; overflow: hidden; height: 160px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1);" onclick="openPhotoModal('<?= $filePath ?>')">
+                                    <img src="<?= $filePath ?>" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-muted small p-2 text-center\'><i class=\'fas fa-image-slash d-block mb-1 fs-5\'></i> Tidak dapat memuat foto</span>';">
                                 </div>
                             </div>
-                        <?php endforeach; ?>
+                        <?php 
+                            endforeach;
+                        endif; 
+                        ?>
                     </div>
                 </div>
 

@@ -524,5 +524,227 @@
 
     <!-- SweetAlert2 JS (Failsafe) -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(function() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = null;
+            let isListening = false;
+
+            if (SpeechRecognition) {
+                try {
+                    recognition = new SpeechRecognition();
+                    recognition.lang = 'id-ID';
+                    recognition.interimResults = false;
+
+                    recognition.onstart = function() {
+                        isListening = true;
+                        $('#btn-global-mic').addClass('listening');
+                        $('#global-voice-bubble').removeClass('d-none');
+                        $('#global-voice-text').text('Mendengarkan...');
+                    };
+
+                    recognition.onerror = function(event) {
+                        isListening = false;
+                        $('#btn-global-mic').removeClass('listening');
+                        $('#global-voice-bubble').addClass('d-none');
+                        if (event.error === 'not-allowed') {
+                            const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+                            const msg = isHttp 
+                                ? 'Fitur Suara membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP (bukan HTTPS). Harap aktifkan SSL/HTTPS pada server.' 
+                                : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara.';
+                            Swal.fire({ icon: 'warning', title: 'Akses Mikrofon Ditolak', text: msg, confirmButtonColor: '#005eb8' });
+                        }
+                    };
+
+                    recognition.onend = function() {
+                        isListening = false;
+                        $('#btn-global-mic').removeClass('listening');
+                    };
+
+                    recognition.onresult = function(event) {
+                        const resultText = event.results[0][0].transcript.toLowerCase().trim();
+                        $('#global-voice-bubble').removeClass('d-none');
+                        $('#global-voice-text').html('<i class="fas fa-quote-left mr-1"></i> "' + resultText + '"');
+                        
+                        setTimeout(function() { $('#global-voice-bubble').addClass('d-none'); }, 3500);
+                        processVoiceCommandMobile(resultText);
+                    };
+                } catch(err) {
+                    console.error('SpeechRecognition init error:', err);
+                }
+            }
+
+            $(document).on('click', '#btn-global-mic', function(e) {
+                e.preventDefault();
+                if (!recognition) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Fitur Perintah Suara',
+                        text: 'Peramban ini belum mendukung Speech Recognition. Disarankan memakai Google Chrome terbaru.',
+                        confirmButtonColor: '#005eb8'
+                    });
+                    return;
+                }
+
+                if (!isListening) {
+                    try { recognition.start(); } catch(err) {
+                        try { recognition.stop(); setTimeout(() => recognition.start(), 150); } catch(ex){}
+                    }
+                } else {
+                    try { recognition.stop(); } catch(err){}
+                }
+            });
+
+            function processVoiceCommandMobile(text) {
+                function speakAiFeedback(msg) {
+                    if ('speechSynthesis' in window) {
+                        try {
+                            window.speechSynthesis.cancel();
+                            const utterance = new SpeechSynthesisUtterance(msg);
+                            utterance.lang = 'id-ID';
+                            utterance.rate = 1.0;
+                            window.speechSynthesis.speak(utterance);
+                        } catch(e) {}
+                    }
+                }
+
+                function showVoiceToast(msg, icon, aiSpeak) {
+                    if (aiSpeak) speakAiFeedback(aiSpeak);
+                    Swal.fire({
+                        toast: true,
+                        position: 'top',
+                        icon: icon || 'info',
+                        title: '🎤 AI Voice Assistant',
+                        text: '"' + text + '" → ' + msg,
+                        showConfirmButton: false,
+                        timer: 3500,
+                        timerProgressBar: true
+                    });
+                }
+
+                text = text.toLowerCase().trim();
+
+                // 1. TEMUAN TERDEKAT / PETA
+                if (text.includes('terdekat') || text.includes('peta') || text.includes('gps')) {
+                    let penyulangMatch = '';
+                    if (text.includes('penyulang')) {
+                        let parts = text.split('penyulang');
+                        penyulangMatch = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
+                    }
+                    showVoiceToast('Membuka Temuan Terdekat' + (penyulangMatch ? ' (' + penyulangMatch + ')' : ''), 'success', 'Membuka peta temuan terdekat');
+                    let targetUrl = '<?= site_url("temuan/terdekat") ?>';
+                    if (penyulangMatch) {
+                        targetUrl += '?penyulang=' + encodeURIComponent(penyulangMatch);
+                    }
+                    setTimeout(() => window.location.href = targetUrl, 800);
+                    return true;
+                }
+
+                // 2. FILTER TEMUAN BERDASARKAN PENYULANG
+                if (text.includes('penyulang')) {
+                    let parts = text.split('penyulang');
+                    let penyulangName = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
+                    if (penyulangName) {
+                        showVoiceToast('Menyaring Penyulang: "' + penyulangName + '"...', 'info', 'Menyaring penyulang ' + penyulangName);
+                        setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(penyulangName), 800);
+                        return true;
+                    }
+                }
+
+                // 3. FILTER TEMUAN BERDASARKAN JENIS
+                if (text.includes('jenis')) {
+                    let parts = text.split('jenis');
+                    let jenisName = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
+                    if (jenisName) {
+                        showVoiceToast('Menyaring Jenis Temuan: "' + jenisName + '"...', 'info', 'Menyaring jenis temuan ' + jenisName);
+                        setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(jenisName), 800);
+                        return true;
+                    }
+                }
+
+                // 4. FILTER TEMUAN BERDASARKAN ULP
+                if (text.includes('ulp') && !text.includes('master ulp') && !text.includes('data ulp')) {
+                    let parts = text.split('ulp');
+                    let ulpName = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
+                    if (ulpName) {
+                        showVoiceToast('Menyaring ULP: "' + ulpName + '"...', 'info', 'Menyaring ULP ' + ulpName);
+                        setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(ulpName), 800);
+                        return true;
+                    }
+                }
+
+                // 5. INPUT / TAMBAH TEMUAN
+                if (text.includes('input') || text.includes('tambah temuan') || text.includes('buat temuan') || text === 'tambah') {
+                    showVoiceToast('Membuka Input Temuan Baru', 'success', 'Membuka form input temuan baru');
+                    setTimeout(() => window.location.href = '<?= site_url("temuan/create") ?>', 800);
+                    return true;
+                }
+
+                // 6. UPDATE PEKERJAAN / PROGRES
+                if (text.includes('update') || text.includes('progres') || text.includes('tindak lanjut') || text.includes('pekerjaan')) {
+                    showVoiceToast('Membuka Update Pekerjaan', 'success', 'Membuka update pekerjaan');
+                    setTimeout(() => window.location.href = '<?= site_url("temuan/update-pekerjaan") ?>', 800);
+                    return true;
+                }
+
+                // 7. EVIDEN (KUBIKEL, TRAFO, SAKLAR, MANAGEMENT)
+                if (text.includes('kubikel')) {
+                    showVoiceToast('Membuka Eviden Kubikel', 'success', 'Membuka eviden kubikel');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/kubikel") ?>', 800);
+                    return true;
+                }
+                if (text.includes('trafo')) {
+                    showVoiceToast('Membuka Eviden Trafo', 'success', 'Membuka eviden trafo');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/trafo") ?>', 800);
+                    return true;
+                }
+                if (text.includes('saklar')) {
+                    showVoiceToast('Membuka Eviden Saklar', 'success', 'Membuka eviden saklar');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/saklar") ?>', 800);
+                    return true;
+                }
+                if (text.includes('management') || text.includes('manajemen')) {
+                    showVoiceToast('Membuka Eviden Management', 'success', 'Membuka eviden manajemen');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/management") ?>', 800);
+                    return true;
+                }
+
+                // 8. LAPORAN
+                if (text.includes('laporan') || text.includes('rekap')) {
+                    showVoiceToast('Membuka Pusat Laporan', 'success', 'Membuka pusat laporan temuan');
+                    setTimeout(() => window.location.href = '<?= site_url("laporan/temuan") ?>', 800);
+                    return true;
+                }
+
+                // 9. DASHBOARD
+                if (text.includes('dashboard') || text.includes('beranda') || text.includes('home')) {
+                    showVoiceToast('Membuka Dashboard', 'success', 'Membuka dashboard');
+                    setTimeout(() => window.location.href = '<?= site_url("dashboard") ?>', 800);
+                    return true;
+                }
+
+                // 10. LOGOUT
+                if (text.includes('keluar') || text.includes('logout')) {
+                    showVoiceToast('Proses Keluar Sistem...', 'warning', 'Proses keluar dari sistem');
+                    setTimeout(() => window.location.href = '<?= site_url("logout") ?>', 800);
+                    return true;
+                }
+
+                // 11. CARI KEYWORD
+                if (text.includes('cari') || text.includes('tampilkan') || text.includes('lihat')) {
+                    let cleanKw = text.replace(/\b(tolong|mohon|coba|tampilkan|lihat|buka|cari|temukan|filter|saring)\b/gi, '').trim();
+                    if (cleanKw) {
+                        showVoiceToast('Mencari "' + cleanKw + '"...', 'info', 'Mencari ' + cleanKw);
+                        setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(cleanKw), 800);
+                        return true;
+                    }
+                }
+
+                // 12. FALLBACK
+                showVoiceToast('Perintah kurang jelas. Silakan berikan perintah yang sesuai (Penyulang / Jenis Temuan / Terdekat)', 'warning', 'Perintah kurang jelas. Silakan sebutkan nama penyulang, jenis temuan, atau temuan terdekat.');
+                return false;
+            }
+        });
+    </script>
 </body>
 </html>

@@ -79,7 +79,7 @@
                     <div class="row">
                         <!-- Filter ULP -->
                         <div class="col-md-3 form-group mb-2">
-                            <label class="small font-weight-bold">Unit ULP</label>
+                            <label for="filter_ulp_id" class="small font-weight-bold">Unit ULP</label>
                             <select name="ulp_id" id="filter_ulp_id" class="form-control form-control-sm select2">
                                 <option value="">-- Semua ULP --</option>
                                 <?php foreach ($ulps as $u): ?>
@@ -89,7 +89,7 @@
                         </div>
                         <!-- Filter Penyulang -->
                         <div class="col-md-3 form-group mb-2">
-                            <label class="small font-weight-bold">Penyulang</label>
+                            <label for="filter_penyulang_id" class="small font-weight-bold">Penyulang</label>
                             <select name="penyulang_id" id="filter_penyulang_id" class="form-control form-control-sm select2">
                                 <option value="">-- Semua Penyulang --</option>
                                 <?php foreach ($penyulangs as $p): ?>
@@ -99,13 +99,13 @@
                         </div>
                         <!-- Tanggal Mulai -->
                         <div class="col-md-2 form-group mb-2">
-                            <label class="small font-weight-bold">Tanggal Mulai</label>
-                            <input type="date" name="tgl_mulai" class="form-control form-control-sm" value="<?= esc($filterTglMulai) ?>">
+                            <label for="filter_tgl_mulai" class="small font-weight-bold">Tanggal Mulai</label>
+                            <input type="date" id="filter_tgl_mulai" name="tgl_mulai" class="form-control form-control-sm" value="<?= esc($filterTglMulai) ?>">
                         </div>
                         <!-- Tanggal Selesai -->
                         <div class="col-md-2 form-group mb-2">
-                            <label class="small font-weight-bold">Tanggal Selesai</label>
-                            <input type="date" name="tgl_selesai" class="form-control form-control-sm" value="<?= esc($filterTglSelesai) ?>">
+                            <label for="filter_tgl_selesai" class="small font-weight-bold">Tanggal Selesai</label>
+                            <input type="date" id="filter_tgl_selesai" name="tgl_selesai" class="form-control form-control-sm" value="<?= esc($filterTglSelesai) ?>">
                         </div>
                         <!-- Tombol Aksi Filter -->
                         <div class="col-md-2 form-group mb-2 d-flex align-items-end" style="gap: 6px;">

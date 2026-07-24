@@ -1091,98 +1091,151 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <script>
         $(function() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SpeechRecognition) {
-                const recognition = new SpeechRecognition();
-                recognition.lang = 'id-ID';
-                recognition.interimResults = false;
-                
-                let isListening = false;
-                
+            if (!SpeechRecognition) {
                 $('#btn-global-mic').click(function(e) {
                     e.preventDefault();
-                    if (!isListening) {
-                        try {
-                            recognition.start();
-                        } catch(err) {
-                            console.error(err);
-                        }
-                    } else {
-                        recognition.stop();
-                    }
-                });
-                
-                recognition.onstart = function() {
-                    isListening = true;
-                    $('#btn-global-mic').addClass('listening');
-                    $('#global-voice-bubble').removeClass('d-none');
-                    $('#global-voice-text').text('Mendengarkan...');
-                };
-                
-                recognition.onerror = function(event) {
-                    isListening = false;
-                    $('#btn-global-mic').removeClass('listening');
-                    $('#global-voice-bubble').addClass('d-none');
-                    if (event.error === 'not-allowed') {
-                        const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
-                        const msg = isHttp 
-                            ? 'Fitur Suara membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP (bukan HTTPS). Harap aktifkan SSL/HTTPS pada server.' 
-                            : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara.';
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Akses Mikrofon Ditolak',
-                            text: msg,
-                            confirmButtonColor: '#005eb8'
-                        });
-                    }
-                };
-                
-                recognition.onend = function() {
-                    isListening = false;
-                    $('#btn-global-mic').removeClass('listening');
-                };
-                
-                recognition.onresult = function(event) {
-                    const resultText = event.results[0][0].transcript.toLowerCase();
-                    $('#global-voice-bubble').removeClass('d-none');
-                    $('#global-voice-text').html('<i class="fas fa-quote-left mr-1"></i> "' + resultText + '"');
-                    
-                    setTimeout(function() {
-                        $('#global-voice-bubble').addClass('d-none');
-                    }, 3500);
-                    
-                    const voiceEvent = new CustomEvent('appVoiceCommand', {
-                        detail: { transcript: resultText },
-                        cancelable: true
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Fitur Perintah Suara',
+                        text: 'Peramban Web ini belum mendukung Speech Recognition. Disarankan menggunakan Google Chrome versi terbaru.',
+                        confirmButtonColor: '#005eb8'
                     });
-                    const isHandled = !window.dispatchEvent(voiceEvent);
-                    if (isHandled) {
-                        return; // Handled by page-level listener
-                    }
-
-                    // Global Navigation Commands
-                    if (resultText.includes('terdekat') || resultText.includes('dekat') || resultText.includes('peta')) {
-                        window.location.href = '<?= site_url("temuan/terdekat?gps=true") ?>';
-                    }
-                    else if (resultText.includes('input') || resultText.includes('tambah') || resultText.includes('buat temuan')) {
-                        window.location.href = '<?= site_url("temuan/create") ?>';
-                    }
-                    else if (resultText.includes('data temuan') || resultText.includes('daftar temuan') || resultText.includes('lihat temuan')) {
-                        window.location.href = '<?= site_url("temuan") ?>';
-                    }
-                    else if (resultText.includes('dashboard') || resultText.includes('beranda') || resultText.includes('home')) {
-                        window.location.href = '<?= site_url("dashboard") ?>';
-                    }
-                    else if (resultText.includes('eviden') || resultText.includes('kubikel') || resultText.includes('trafo')) {
-                        window.location.href = '<?= site_url("eviden/kubikel") ?>';
-                    }
-                    else if (resultText.includes('cari') || resultText.includes('temukan')) {
-                        const keyword = resultText.replace('cari', '').replace('temukan', '').trim();
-                        if (keyword) {
-                            window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(keyword);
-                        }
-                    }
-                };
+                });
+                return;
             }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.interimResults = false;
+            
+            let isListening = false;
+            
+            $('#btn-global-mic').click(function(e) {
+                e.preventDefault();
+                if (!isListening) {
+                    try {
+                        recognition.start();
+                    } catch(err) {
+                        console.error('Speech recognition start error:', err);
+                        try {
+                            recognition.stop();
+                            setTimeout(function() { recognition.start(); }, 150);
+                        } catch(e) {}
+                    }
+                } else {
+                    try {
+                        recognition.stop();
+                    } catch(err) {}
+                }
+            });
+            
+            recognition.onstart = function() {
+                isListening = true;
+                $('#btn-global-mic').addClass('listening');
+                $('#global-voice-bubble').removeClass('d-none');
+                $('#global-voice-text').text('Mendengarkan...');
+            };
+            
+            recognition.onerror = function(event) {
+                isListening = false;
+                $('#btn-global-mic').removeClass('listening');
+                $('#global-voice-bubble').addClass('d-none');
+                if (event.error === 'not-allowed') {
+                    const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+                    const msg = isHttp 
+                        ? 'Fitur Suara membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP (bukan HTTPS). Harap aktifkan SSL/HTTPS pada server.' 
+                        : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara.';
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Akses Mikrofon Ditolak',
+                        text: msg,
+                        confirmButtonColor: '#005eb8'
+                    });
+                }
+            };
+            
+            recognition.onend = function() {
+                isListening = false;
+                $('#btn-global-mic').removeClass('listening');
+            };
+            
+            recognition.onresult = function(event) {
+                const resultText = event.results[0][0].transcript.toLowerCase().trim();
+                $('#global-voice-bubble').removeClass('d-none');
+                $('#global-voice-text').html('<i class="fas fa-quote-left mr-1"></i> "' + resultText + '"');
+                
+                setTimeout(function() {
+                    $('#global-voice-bubble').addClass('d-none');
+                }, 3500);
+                
+                const voiceEvent = new CustomEvent('appVoiceCommand', {
+                    detail: { transcript: resultText },
+                    cancelable: true
+                });
+                const isHandled = !window.dispatchEvent(voiceEvent);
+                if (isHandled) {
+                    return; // Handled by page-level listener
+                }
+
+                // Global Comprehensive Voice Commands for ALL Features
+                if (resultText.includes('terdekat') || resultText.includes('peta') || resultText.includes('dekat')) {
+                    window.location.href = '<?= site_url("temuan/terdekat?gps=true") ?>';
+                }
+                else if (resultText.includes('input') || resultText.includes('tambah temuan') || resultText.includes('buat temuan')) {
+                    window.location.href = '<?= site_url("temuan/create") ?>';
+                }
+                else if (resultText.includes('update') || resultText.includes('pekerjaan') || resultText.includes('progres')) {
+                    window.location.href = '<?= site_url("temuan/update-pekerjaan") ?>';
+                }
+                else if (resultText.includes('data temuan') || resultText.includes('daftar temuan') || resultText.includes('temuan')) {
+                    window.location.href = '<?= site_url("temuan") ?>';
+                }
+                else if (resultText.includes('dashboard') || resultText.includes('beranda') || resultText.includes('utama')) {
+                    window.location.href = '<?= site_url("dashboard") ?>';
+                }
+                else if (resultText.includes('kubikel')) {
+                    window.location.href = '<?= site_url("eviden/kubikel") ?>';
+                }
+                else if (resultText.includes('trafo')) {
+                    window.location.href = '<?= site_url("eviden/trafo") ?>';
+                }
+                else if (resultText.includes('eviden')) {
+                    window.location.href = '<?= site_url("eviden/kubikel") ?>';
+                }
+                else if (resultText.includes('user') || resultText.includes('pengguna')) {
+                    window.location.href = '<?= site_url("users") ?>';
+                }
+                else if (resultText.includes('ulp')) {
+                    window.location.href = '<?= site_url("ulps") ?>';
+                }
+                else if (resultText.includes('penyulang')) {
+                    window.location.href = '<?= site_url("penyulang") ?>';
+                }
+                else if (resultText.includes('section')) {
+                    window.location.href = '<?= site_url("sections") ?>';
+                }
+                else if (resultText.includes('import') || resultText.includes('excel')) {
+                    window.location.href = '<?= site_url("import") ?>';
+                }
+                else if (resultText.includes('laporan') || resultText.includes('rekap')) {
+                    window.location.href = '<?= site_url("laporan/temuan") ?>';
+                }
+                else if (resultText.includes('gangguan') || resultText.includes('identifikasi')) {
+                    window.location.href = '<?= site_url("identifikasi") ?>';
+                }
+                else if (resultText.includes('password') || resultText.includes('sandi')) {
+                    window.location.href = '<?= site_url("change-password") ?>';
+                }
+                else if (resultText.includes('keluar') || resultText.includes('logout')) {
+                    window.location.href = '<?= site_url("logout") ?>';
+                }
+                else if (resultText.includes('cari') || resultText.includes('temukan')) {
+                    const keyword = resultText.replace('cari', '').replace('temukan', '').trim();
+                    if (keyword) {
+                        window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(keyword);
+                    }
+                }
+            };
         });
 
         // Global DataTables Accessibility Fix (Fix <label for="..."> and missing id/name)

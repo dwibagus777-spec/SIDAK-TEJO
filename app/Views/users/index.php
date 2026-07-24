@@ -113,6 +113,8 @@
                 form.submit();
             }
         });
+    }
+
     $(document).on('click', '.btn-delete-user', function (e) {
         e.preventDefault();
         const id = $(this).data('id');

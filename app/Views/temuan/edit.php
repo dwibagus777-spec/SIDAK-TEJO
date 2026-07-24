@@ -331,41 +331,51 @@
 
         function loadPenyulang(ulpId, selectedId) {
             if (!ulpId) {
-                $('#penyulang_id').html('<option value="">-- Pilih ULP Dahulu --</option>');
-                $('#section_id').html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                $('#penyulang_id').html('<option value="">-- Pilih ULP Dahulu --</option>').trigger('change');
+                $('#section_id').html('<option value="">-- Pilih Penyulang Dahulu --</option>').trigger('change');
                 return;
             }
-            $('#penyulang_id').html('<option value="">Sedang memuat...</option>');
+            $('#penyulang_id').html('<option value="">Sedang memuat...</option>').trigger('change');
             $.ajax({
                 url: "<?= site_url('temuan/ajax-penyulang/') ?>" + ulpId,
                 type: "GET", dataType: "json",
                 success: function(data) {
                     let html = '<option value="">-- Pilih Penyulang --</option>';
-                    data.forEach(function(item) {
-                        const sel = item.id == selectedId ? 'selected' : '';
-                        html += `<option value="${item.id}" ${sel}>${item.nama_penyulang}</option>`;
-                    });
-                    $('#penyulang_id').html(html);
+                    if (Array.isArray(data)) {
+                        data.forEach(function(item) {
+                            const sel = item.id == selectedId ? 'selected' : '';
+                            html += `<option value="${item.id}" ${sel}>${item.nama_penyulang}</option>`;
+                        });
+                    }
+                    $('#penyulang_id').html(html).trigger('change');
+                },
+                error: function() {
+                    $('#penyulang_id').html('<option value="">Gagal memuat penyulang</option>').trigger('change');
                 }
             });
         }
 
         function loadSection(penyulangId, selectedId) {
             if (!penyulangId) {
-                $('#section_id').html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                $('#section_id').html('<option value="">-- Pilih Penyulang Dahulu --</option>').trigger('change');
                 return;
             }
-            $('#section_id').html('<option value="">Sedang memuat...</option>');
+            $('#section_id').html('<option value="">Sedang memuat...</option>').trigger('change');
             $.ajax({
                 url: "<?= site_url('temuan/ajax-section/') ?>" + penyulangId,
                 type: "GET", dataType: "json",
                 success: function(data) {
                     let html = '<option value="">-- Pilih Section --</option>';
-                    data.forEach(function(item) {
-                        const sel = item.id == selectedId ? 'selected' : '';
-                        html += `<option value="${item.id}" ${sel}>${item.nama_section}</option>`;
-                    });
-                    $('#section_id').html(html);
+                    if (Array.isArray(data)) {
+                        data.forEach(function(item) {
+                            const sel = item.id == selectedId ? 'selected' : '';
+                            html += `<option value="${item.id}" ${sel}>${item.nama_section}</option>`;
+                        });
+                    }
+                    $('#section_id').html(html).trigger('change');
+                },
+                error: function() {
+                    $('#section_id').html('<option value="">Gagal memuat section</option>').trigger('change');
                 }
             });
         }

@@ -484,9 +484,6 @@
                 });
             }
         });
-        
-        // Sync ULP filter dropdown values on load to prevent browser cache mismatch
-        $('#filter_ulp_id').trigger('change.select2');
         <?php endif; ?>
  
         // Cascade Penyulang -> Section

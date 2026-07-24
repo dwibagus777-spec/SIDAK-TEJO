@@ -628,18 +628,18 @@
         });
     });
 
-    function formatTgl(str) {
+    window.formatTgl = function(str) {
         if (!str) return '-';
         const d = new Date(str);
         if (isNaN(d)) return str;
         return ('0'+d.getDate()).slice(-2) + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + d.getFullYear();
-    }
+    };
 
-    function openLightbox(url) {
+    window.openLightbox = function(url) {
         $('#lightbox-img').attr('src', url);
         $('#modalFotoLightbox').css('display', 'flex');
         $('body').css('overflow', 'hidden');
-    }
+    };
 
     // Failsafe manual close handler for custom CSS modal backdrop
     $(document).on('click', '.btn-custom-close', function () {

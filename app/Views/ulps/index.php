@@ -42,8 +42,12 @@
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <a href="<?= site_url('ulps/edit/' . $ulp['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
-                                        <button type="button" class="btn btn-sm btn-danger btn-delete-ulp" data-id="<?= $ulp['id'] ?>"><i class="fas fa-trash mr-1"></i> Hapus</button>
+                                        <form id="delete-form-ulp-<?= $ulp['id'] ?>" action="<?= site_url('ulps/delete/' . $ulp['id']) ?>" method="post" class="d-inline">
+                                            <?= csrf_field() ?>
+                                            <button type="button" onclick="confirmDeleteForm('delete-form-ulp-<?= $ulp['id'] ?>', 'ULP <?= esc($ulp['nama_ulp'], 'js') ?>')" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash mr-1"></i> Hapus
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -68,19 +72,10 @@
         });
     });
 
-    $(document).on('click', '.btn-delete-ulp', function (e) {
-        e.preventDefault();
-        const id = $(this).data('id');
-        if (id) {
-            confirmDelete(id);
-        }
-    });
-
-    window.confirmDelete = function(id) {
-        if (!id) return;
+    window.confirmDeleteForm = function(formId, itemName) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: "Data ULP ini akan dihapus dari sistem!",
+            text: (itemName || 'Data') + ' akan dihapus dari sistem!',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -90,44 +85,15 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Menghapus ULP...',
+                    title: 'Menghapus...',
+                    text: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
-                $.ajax({
-                    url: "<?= site_url('ulps/delete/') ?>" + id,
-                    type: "POST",
-                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
-                    dataType: "JSON",
-                    success: function(res) {
-                        if (res && res.success) {
-                            Swal.fire({
-                                title: 'Terhapus!',
-                                text: res.message,
-                                icon: 'success',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => { window.location.reload(); });
-                        } else {
-                            Swal.fire({ title: 'Gagal!', text: (res && res.message) ? res.message : 'Gagal menghapus ULP.', icon: 'error' });
-                        }
-                    },
-                    error: function(xhr) {
-                        // Fallback submit via Native HTML Form POST
-                        let form = document.createElement('form');
-                        form.method = 'POST';
-                        form.action = "<?= site_url('ulps/delete/') ?>" + id;
-                        let inputCsrf = document.createElement('input');
-                        inputCsrf.type = 'hidden';
-                        inputCsrf.name = "<?= csrf_token() ?>";
-                        inputCsrf.value = "<?= csrf_hash() ?>";
-                        form.appendChild(inputCsrf);
-                        document.body.appendChild(form);
-                        form.submit();
-                    }
-                });
+                var f = document.getElementById(formId);
+                if (f) f.submit();
             }
         });
-    }
+    };
 </script>
 <?= $this->endSection() ?>

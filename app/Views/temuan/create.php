@@ -226,14 +226,14 @@
                         <div class="p-3 border rounded bg-light shadow-sm">
                             <div class="row g-2 mb-2">
                                 <div class="col-sm-6 col-12 mb-2 mb-sm-0">
-                                    <button type="button" class="btn btn-outline-primary btn-block py-2 font-weight-bold shadow-sm" id="btn-pick-gallery">
+                                    <label for="foto" class="btn btn-outline-primary btn-block w-100 py-2 font-weight-bold shadow-sm mb-0 text-center" style="cursor: pointer;">
                                         <i class="fas fa-folder-open text-primary mr-1"></i> 📁 Pilih dari Galeri / Berkas
-                                    </button>
+                                    </label>
                                 </div>
                                 <div class="col-sm-6 col-12">
-                                    <button type="button" class="btn btn-outline-success btn-block py-2 font-weight-bold shadow-sm" id="btn-pick-camera">
+                                    <label for="foto_camera" class="btn btn-outline-success btn-block w-100 py-2 font-weight-bold shadow-sm mb-0 text-center" style="cursor: pointer;">
                                         <i class="fas fa-camera text-success mr-1"></i> 📷 Ambil Foto via Kamera
-                                    </button>
+                                    </label>
                                 </div>
                             </div>
 

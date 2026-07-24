@@ -348,6 +348,22 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             max-width: 60%;
         }
 
+        /* Mobile Smooth Horizontal Table Touch Scroll Fix */
+        @media (max-width: 768px) {
+            .table-responsive {
+                display: block !important;
+                width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                touch-action: pan-x pan-y !important;
+            }
+            .table-responsive > table,
+            .table-responsive > .table,
+            #table-temuan {
+                min-width: 750px !important;
+            }
+        }
+
         @media (max-width: 576px) {
             .stats-card {
                 padding: 12px 10px !important;

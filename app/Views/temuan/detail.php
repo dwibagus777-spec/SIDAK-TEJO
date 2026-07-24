@@ -10,6 +10,14 @@
 
 <?= $this->section('content') ?>
 <?php
+$lat = $temuan['latitude'];
+$lng = $temuan['longitude'];
+if (!empty($lat) && !empty($lng)) {
+    $sharelokUrl = "https://www.google.com/maps?q={$lat},{$lng}";
+} else {
+    $sharelokUrl = "https://www.google.com/maps/search/?api=1&query=" . urlencode($temuan['alamat'] . ", Sidoarjo");
+}
+
 $waMsg = "🚨 *TEMUAN INSPEKSI - SIDAK TEJO* 🚨\n\n" .
          "📌 *Nomor Temuan*: " . $temuan['nomor_temuan'] . "\n" .
          "📍 *ULP*: " . $temuan['nama_ulp'] . "\n" .
@@ -19,7 +27,8 @@ $waMsg = "🚨 *TEMUAN INSPEKSI - SIDAK TEJO* 🚨\n\n" .
          "⚠️ *Prioritas*: " . $temuan['prioritas'] . "\n" .
          "🔧 *Pelaksana*: " . $temuan['pelaksana'] . "\n" .
          "📝 *Detail*: " . $temuan['detail_temuan'] . "\n" .
-         "📍 *Alamat*: " . $temuan['alamat'] . "\n\n" .
+         "📍 *Alamat*: " . $temuan['alamat'] . "\n" .
+         "🗺️ *Sharelok (Google Maps)*: " . $sharelokUrl . "\n\n" .
          "🔗 *Lihat Detail*: " . site_url('temuan/detail/' . $temuan['id']);
 $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
 ?>
@@ -373,7 +382,10 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<!-- QR Code Library client-side (Lokal) -->
+<!-- Leaflet & QR Code Library CDNs -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script src="<?= base_url('plugins/qrious.min.js') ?>"></script>
 <script>
     // ============================================================
@@ -414,9 +426,10 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
         document.getElementById('lb-img').style.transform = 'scale(1)';
     }
 
-    // Klik di luar gambar untuk tutup
-    document.getElementById('photo-lightbox').addEventListener('click', function(e) {
-        if (e.target === this || e.target === document.getElementById('lb-img-container')) {
+    // Klik luar gambar untuk tutup
+    document.addEventListener('click', function(e) {
+        var lb = document.getElementById('photo-lightbox');
+        if (e.target === lb) {
             closeLightbox();
         }
     });
@@ -431,7 +444,7 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
     // ============================================================
     $(function() {
 
-        // --- 1. QR CODE: link ke Google Maps jika ada koordinat, jika tidak ke detail temuan ---
+        // --- 1. QR CODE ---
         const nomorTemuan = "<?= esc($temuan['nomor_temuan']) ?>";
         const latVal = <?= $temuan['latitude']  !== null ? $temuan['latitude']  : 'null' ?>;
         const lngVal = <?= $temuan['longitude'] !== null ? $temuan['longitude'] : 'null' ?>;
@@ -441,44 +454,61 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
             qrValue = 'https://www.google.com/maps?q=' + latVal + ',' + lngVal;
         }
 
-        new QRious({
-            element: document.getElementById('qr-code-canvas'),
-            value: qrValue,
-            size: 160,
-            background: '#ffffff',
-            foreground: '#121212',
-            level: 'H'
-        });
+        if (document.getElementById('qr-code-canvas') && typeof QRious !== 'undefined') {
+            try {
+                new QRious({
+                    element: document.getElementById('qr-code-canvas'),
+                    value: qrValue,
+                    size: 160,
+                    background: '#ffffff',
+                    foreground: '#121212',
+                    level: 'H'
+                });
+            } catch(e) { console.error('QR Generator Error:', e); }
+        }
 
         $('#btn-download-qr').click(function() {
             const canvas = document.getElementById('qr-code-canvas');
-            const a = document.createElement('a');
-            a.href = canvas.toDataURL('image/png');
-            a.download = 'QR_' + nomorTemuan + '.png';
-            a.click();
+            if (canvas) {
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL('image/png');
+                a.download = 'QR_' + nomorTemuan + '.png';
+                a.click();
+            }
         });
 
         // --- 2. LEAFLET MAP ---
         const lat = <?= $temuan['latitude']  !== null ? $temuan['latitude']  : 'null' ?>;
         const lng = <?= $temuan['longitude'] !== null ? $temuan['longitude'] : 'null' ?>;
+        const defaultLat = lat ? lat : -7.4478;
+        const defaultLng = lng ? lng : 112.7183;
 
-        if (lat && lng) {
-            const map = L.map('detail-map').setView([lat, lng], 15);
+        if ($('#detail-map').length > 0 && typeof L !== 'undefined') {
+            const map = L.map('detail-map').setView([defaultLat, defaultLng], lat ? 15 : 12);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                attribution: '&copy; OpenStreetMap',
                 maxZoom: 20
             }).addTo(map);
 
             const customIcon = L.icon({
                 iconUrl: '<?= base_url('assets/img/logo_sidak.png') ?>',
-                iconSize: [40, 40],
-                iconAnchor: [20, 40],
-                popupAnchor: [0, -42]
+                iconSize: [36, 36],
+                iconAnchor: [18, 36],
+                popupAnchor: [0, -38]
             });
 
-            L.marker([lat, lng], { icon: customIcon }).addTo(map)
-                .bindPopup('<b>' + nomorTemuan + '</b><br><small><?= esc($temuan['alamat']) ?></small>')
-                .openPopup();
+            if (lat && lng) {
+                L.marker([lat, lng], { icon: customIcon }).addTo(map)
+                    .bindPopup('<b>' + nomorTemuan + '</b><br><small><?= esc($temuan['alamat']) ?></small>')
+                    .openPopup();
+            } else {
+                L.marker([defaultLat, defaultLng], { icon: customIcon }).addTo(map)
+                    .bindPopup('<b>' + nomorTemuan + ' (Lokasi ULP/Sidoarjo)</b><br><small><?= esc($temuan['alamat']) ?></small>');
+            }
+
+            setTimeout(function() { map.invalidateSize(); }, 400);
+        }
+
         // Dual Photo triggers (Berkas / Kamera)
         $(document).on('click', '.btn-dual-gallery', function() {
             const target = $(this).data('target');

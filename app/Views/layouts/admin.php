@@ -1367,165 +1367,103 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 
                 text = text.toLowerCase().trim();
 
-                // 1. TEMUAN TERDEKAT / PETA
-                if (text.includes('terdekat') || text.includes('peta') || text.includes('gps')) {
-                    let penyulangMatch = '';
-                    if (text.includes('penyulang')) {
-                        let parts = text.split('penyulang');
-                        penyulangMatch = parts[1] ? parts[1].trim() : '';
-                    }
-                    showVoiceToast('Membuka Temuan Terdekat' + (penyulangMatch ? ' (' + penyulangMatch + ')' : ''), 'success', 'Membuka peta temuan terdekat');
-                    let targetUrl = '<?= site_url("temuan/terdekat") ?>';
-                    if (penyulangMatch) {
-                        targetUrl += '?penyulang=' + encodeURIComponent(penyulangMatch);
-                    } else if (text.includes('gps')) {
-                        targetUrl += '?gps=true';
-                    }
-                    setTimeout(() => window.location.href = targetUrl, 800);
-                    return true;
-                }
+                // Clean filler words: "tolong", "mohon", "coba", "tampilkan", "lihat", "buka", "cari", "temukan", "filter", "saring", "data", "tabel", "daftar"
+                let rawTokens = text.replace(/\b(tolong|mohon|coba|tampilkan|lihat|buka|cari|temukan|filter|saring|data|tabel|daftar)\b/gi, '').trim();
 
-                // 2. FILTER TEMUAN BERDASARKAN PENYULANG
-                if (text.includes('penyulang')) {
-                    let parts = text.split('penyulang');
-                    let penyulangName = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
-                    if (penyulangName) {
-                        showVoiceToast('Menyaring Penyulang: "' + penyulangName + '"...', 'info', 'Menyaring penyulang ' + penyulangName);
-                        setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(penyulangName), 800);
-                        return true;
-                    }
-                }
-
-                // 3. FILTER TEMUAN BERDASARKAN JENIS
-                if (text.includes('jenis')) {
-                    let parts = text.split('jenis');
-                    let jenisName = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
-                    if (jenisName) {
-                        showVoiceToast('Menyaring Jenis Temuan: "' + jenisName + '"...', 'info', 'Menyaring jenis temuan ' + jenisName);
-                        setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(jenisName), 800);
-                        return true;
-                    }
-                }
-
-                // 4. FILTER TEMUAN BERDASARKAN ULP
-                if (text.includes('ulp') && !text.includes('master ulp') && !text.includes('data ulp')) {
-                    let parts = text.split('ulp');
-                    let ulpName = parts[1] ? parts[1].replace(/\b(data|tabel|temuan|master|tampilkan|lihat|buka|cari|saring|filter)\b/gi, '').trim() : '';
-                    if (ulpName) {
-                        showVoiceToast('Menyaring ULP: "' + ulpName + '"...', 'info', 'Menyaring ULP ' + ulpName);
-                        setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(ulpName), 800);
-                        return true;
-                    }
-                }
-
-                // 5. INPUT / TAMBAH TEMUAN
-                if (text.includes('input') || text.includes('tambah temuan') || text.includes('buat temuan') || text === 'tambah') {
-                    showVoiceToast('Membuka Input Temuan Baru', 'success', 'Membuka form input temuan baru');
-                    setTimeout(() => window.location.href = '<?= site_url("temuan/create") ?>', 800);
-                    return true;
-                }
-
-                // 6. UPDATE PEKERJAAN / PROGRES
-                if (text.includes('update') || text.includes('progres') || text.includes('tindak lanjut') || text.includes('pekerjaan')) {
-                    showVoiceToast('Membuka Update Pekerjaan', 'success', 'Membuka update pekerjaan');
-                    setTimeout(() => window.location.href = '<?= site_url("temuan/update-pekerjaan") ?>', 800);
-                    return true;
-                }
-
-                // 7. EVIDEN (KUBIKEL, TRAFO, SAKLAR, MANAGEMENT)
-                if (text.includes('kubikel')) {
-                    showVoiceToast('Membuka Eviden Kubikel', 'success', 'Membuka eviden kubikel');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/kubikel") ?>', 800);
-                    return true;
-                }
-                if (text.includes('trafo')) {
-                    showVoiceToast('Membuka Eviden Trafo', 'success', 'Membuka eviden trafo');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/trafo") ?>', 800);
-                    return true;
-                }
-                if (text.includes('saklar')) {
-                    showVoiceToast('Membuka Eviden Saklar', 'success', 'Membuka eviden saklar');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/saklar") ?>', 800);
-                    return true;
-                }
-                if (text.includes('management') || text.includes('manajemen')) {
-                    showVoiceToast('Membuka Eviden Management', 'success', 'Membuka eviden manajemen');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/management") ?>', 800);
-                    return true;
-                }
-                if (text.includes('eviden')) {
-                    showVoiceToast('Membuka Eviden Lapangan', 'success', 'Membuka eviden foto');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/kubikel") ?>', 800);
-                    return true;
-                }
-
-                // 8. LAPORAN / REKAP
-                if (text.includes('laporan') || text.includes('rekap') || text.includes('pusat laporan')) {
-                    showVoiceToast('Membuka Pusat Laporan', 'success', 'Membuka pusat laporan temuan');
-                    setTimeout(() => window.location.href = '<?= site_url("laporan/temuan") ?>', 800);
-                    return true;
-                }
-
-                // 9. DASHBOARD / BERANDA
-                if (text.includes('dashboard') || text.includes('beranda') || text.includes('home') || text.includes('awal')) {
+                // 1. DIRECT NAVIGATION INTENTS
+                if (rawTokens === 'dashboard' || rawTokens === 'beranda' || rawTokens === 'home' || rawTokens === 'awal') {
                     showVoiceToast('Membuka Dashboard', 'success', 'Membuka dashboard');
                     setTimeout(() => window.location.href = '<?= site_url("dashboard") ?>', 800);
                     return true;
                 }
-
-                // 10. MASTER DATA
-                if (text.includes('master user') || text.includes('data user') || text.includes('pengguna') || text === 'user') {
+                if (rawTokens === 'input' || rawTokens === 'input temuan' || rawTokens === 'tambah' || rawTokens === 'tambah temuan' || rawTokens === 'buat temuan') {
+                    showVoiceToast('Membuka Input Temuan Baru', 'success', 'Membuka form input temuan baru');
+                    setTimeout(() => window.location.href = '<?= site_url("temuan/create") ?>', 800);
+                    return true;
+                }
+                if (rawTokens === 'update' || rawTokens === 'update pekerjaan' || rawTokens === 'progres' || rawTokens === 'tindak lanjut') {
+                    showVoiceToast('Membuka Update Pekerjaan', 'success', 'Membuka update pekerjaan');
+                    setTimeout(() => window.location.href = '<?= site_url("temuan/update-pekerjaan") ?>', 800);
+                    return true;
+                }
+                if (rawTokens === 'laporan' || rawTokens === 'rekap' || rawTokens === 'pusat laporan') {
+                    showVoiceToast('Membuka Pusat Laporan', 'success', 'Membuka pusat laporan temuan');
+                    setTimeout(() => window.location.href = '<?= site_url("laporan/temuan") ?>', 800);
+                    return true;
+                }
+                if (rawTokens === 'keluar' || rawTokens === 'logout') {
+                    showVoiceToast('Proses Keluar Sistem...', 'warning', 'Proses keluar dari sistem');
+                    setTimeout(() => window.location.href = '<?= site_url("logout") ?>', 800);
+                    return true;
+                }
+                if (rawTokens === 'kubikel') {
+                    showVoiceToast('Membuka Eviden Kubikel', 'success', 'Membuka eviden kubikel');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/kubikel") ?>', 800);
+                    return true;
+                }
+                if (rawTokens === 'trafo') {
+                    showVoiceToast('Membuka Eviden Trafo', 'success', 'Membuka eviden trafo');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/trafo") ?>', 800);
+                    return true;
+                }
+                if (rawTokens === 'saklar') {
+                    showVoiceToast('Membuka Eviden Saklar', 'success', 'Membuka eviden saklar');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/saklar") ?>', 800);
+                    return true;
+                }
+                if (rawTokens === 'management' || rawTokens === 'manajemen') {
+                    showVoiceToast('Membuka Eviden Management', 'success', 'Membuka eviden manajemen');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/management") ?>', 800);
+                    return true;
+                }
+                if (rawTokens === 'eviden') {
+                    showVoiceToast('Membuka Eviden Lapangan', 'success', 'Membuka eviden foto');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/kubikel") ?>', 800);
+                    return true;
+                }
+                if (rawTokens === 'master user' || rawTokens === 'user' || rawTokens === 'pengguna') {
                     showVoiceToast('Membuka Master User', 'success', 'Membuka master user');
                     setTimeout(() => window.location.href = '<?= site_url("users") ?>', 800);
                     return true;
                 }
-                if (text.includes('master ulp') || text.includes('data ulp')) {
+                if (rawTokens === 'master ulp') {
                     showVoiceToast('Membuka Master ULP', 'success', 'Membuka master ULP');
                     setTimeout(() => window.location.href = '<?= site_url("ulps") ?>', 800);
                     return true;
                 }
-                if (text.includes('master penyulang') || text.includes('data penyulang')) {
+                if (rawTokens === 'master penyulang') {
                     showVoiceToast('Membuka Master Penyulang', 'success', 'Membuka master penyulang');
                     setTimeout(() => window.location.href = '<?= site_url("penyulang") ?>', 800);
                     return true;
                 }
-                if (text.includes('master section') || text.includes('data section')) {
+                if (rawTokens === 'master section') {
                     showVoiceToast('Membuka Master Section', 'success', 'Membuka master section');
                     setTimeout(() => window.location.href = '<?= site_url("sections") ?>', 800);
                     return true;
                 }
 
-                // 11. DATA TEMUAN
-                if (text === 'temuan' || text === 'data temuan' || text === 'daftar temuan' || text === 'tabel temuan') {
-                    showVoiceToast('Membuka Data Temuan', 'success', 'Membuka data temuan');
-                    setTimeout(() => window.location.href = '<?= site_url("temuan") ?>', 800);
-                    return true;
-                }
-
-                // 12. LOGOUT & UBAH PASSWORD
-                if (text.includes('keluar') || text.includes('logout')) {
-                    showVoiceToast('Proses Keluar Sistem...', 'warning', 'Proses keluar dari sistem');
-                    setTimeout(() => window.location.href = '<?= site_url("logout") ?>', 800);
-                    return true;
-                }
-                if (text.includes('password') || text.includes('sandi')) {
-                    showVoiceToast('Membuka Ubah Password', 'success', 'Membuka ubah password');
-                    setTimeout(() => window.location.href = '<?= site_url("change-password") ?>', 800);
-                    return true;
-                }
-
-                // 13. PENCARIAN AUTOMATIS
-                if (text.startsWith('cari ') || text.startsWith('temukan ')) {
-                    let keyword = text.replace('cari', '').replace('temukan', '').trim();
-                    if (keyword) {
-                        showVoiceToast('Mencari "' + keyword + '"...', 'info', 'Mencari ' + keyword);
-                        setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(keyword), 800);
-                        return true;
+                // 2. TEMUAN TERDEKAT / PETA (Handles "terdekat", "peta", "gps")
+                if (text.includes('terdekat') || text.includes('peta') || text.includes('gps')) {
+                    let mapQuery = rawTokens.replace(/\b(terdekat|peta|map|gps|lokasi)\b/gi, '').replace(/\b(penyulang|jenis\s+temuan|jenis|ulp|section|temuan)\b/gi, '').trim();
+                    showVoiceToast('Membuka Temuan Terdekat' + (mapQuery ? ' ("' + mapQuery + '")' : ''), 'success', 'Membuka peta temuan terdekat' + (mapQuery ? ' ' + mapQuery : ''));
+                    let targetUrl = '<?= site_url("temuan/terdekat") ?>';
+                    if (mapQuery) {
+                        targetUrl += '?q=' + encodeURIComponent(mapQuery);
                     }
+                    setTimeout(() => window.location.href = targetUrl, 800);
+                    return true;
                 }
 
-                // 14. FALLBACK UNRECOGNIZED SPEECH
-                showVoiceToast('Perintah kurang jelas. Silahkan berikan perintah yang sesuai.', 'warning', 'Perintah kurang jelas. Silakan sebutkan nama penyulang, jenis temuan, atau temuan terdekat.');
+                // 3. SMART SEARCH & FILTER INTENTS (Extracts search query for "penyulang jenggolo", "jenis row", "jenggolo", etc.)
+                let searchTarget = rawTokens.replace(/\b(penyulang|jenis\s+temuan|jenis|ulp|section|temuan)\b/gi, '').trim();
+                if (searchTarget.length > 0) {
+                    showVoiceToast('Menyaring Temuan: "' + searchTarget + '"...', 'info', 'Menyaring temuan ' + searchTarget);
+                    setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(searchTarget), 800);
+                    return true;
+                }
+
+                // 4. FALLBACK UNRECOGNIZED SPEECH
+                showVoiceToast('Perintah kurang jelas. Silakan sebutkan nama penyulang, jenis temuan, atau temuan terdekat.', 'warning', 'Perintah kurang jelas. Silakan sebutkan nama penyulang, jenis temuan, atau temuan terdekat.');
                 return false;
             }
         });

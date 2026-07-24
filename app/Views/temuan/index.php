@@ -375,6 +375,7 @@
     $(function () {
         // 1. Ambil URL parameters untuk pre-populate filter dari dashboard redirect
         const urlParams = new URLSearchParams(window.location.search);
+        const urlQ = urlParams.get('q') || urlParams.get('query') || urlParams.get('penyulang') || urlParams.get('jenis') || urlParams.get('search') || '';
         const urlPelaksana = urlParams.get('pelaksana');
         const urlPrioritas = urlParams.get('prioritas');
         const urlStatus = urlParams.get('status');
@@ -393,6 +394,9 @@
         const table = $('#table-temuan').DataTable({
             "processing": true,
             "serverSide": true,
+            "search": {
+                "search": urlQ
+            },
             "ajax": {
                 "url": "<?= site_url('temuan/ajax-datatables') ?>",
                 "type": "POST",
@@ -406,6 +410,10 @@
                     d.status = $('#filter_status').val();
                     d.start_date = $('#filter_start_date').val();
                     d.end_date = $('#filter_end_date').val();
+                    if (urlQ && (!d.search || !d.search.value)) {
+                        if (!d.search) d.search = {};
+                        d.search.value = urlQ;
+                    }
                 }
             },
             "columns": [

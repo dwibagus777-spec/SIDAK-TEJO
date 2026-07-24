@@ -430,17 +430,26 @@
     }
 
     function filterListByKeyword(keyword) {
+        if (!keyword) {
+            $('.temuan-card').removeClass('d-none');
+            $('#count-results').text($('.temuan-card').length + ' Temuan (Total)');
+            return;
+        }
+        
+        const terms = keyword.toLowerCase().split(/\s+/).filter(t => t.length > 0);
         let countVisible = 0;
+        
         $('.temuan-card').each(function() {
             const cardText = $(this).text().toLowerCase();
-            if (cardText.includes(keyword)) {
+            const matchesAll = terms.every(term => cardText.includes(term));
+            if (matchesAll) {
                 $(this).removeClass('d-none');
                 countVisible++;
             } else {
                 $(this).addClass('d-none');
             }
         });
-        $('#count-results').text(countVisible + ' Temuan (Terfilter)');
+        $('#count-results').text(countVisible + ' Temuan (Terfilter: "' + keyword + '")');
     }
 
     // 3. SEARCH AJAX FINDINGS

@@ -126,10 +126,16 @@ class Temuan extends BaseController
 
             if (!empty($photos)) {
                 $rawPath = !empty($row['foto_path']) ? trim($row['foto_path'], '/') . '/' : 'foto/';
+                $fullDiskPath = FCPATH . $rawPath . $photos[0];
                 $photoUrl = base_url($rawPath . $photos[0]);
-                $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" title="Klik untuk memperbesar">';
-                if (count($photos) > 1) {
-                    $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
+                
+                if (file_exists($fullDiskPath)) {
+                    $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" onerror="this.onerror=null; this.parentElement.innerHTML=\'<span class=&quot;text-muted small&quot;>Tidak ada foto</span>\';" title="Klik untuk memperbesar">';
+                    if (count($photos) > 1) {
+                        $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
+                    }
+                } else {
+                    $fotoHtml = '<span class="text-muted small"><i class="fas fa-image text-secondary mr-1"></i>Tidak ada</span>';
                 }
             }
 
@@ -759,13 +765,20 @@ class Temuan extends BaseController
                 $detailKerusakan = '<span title="' . esc($row['detail_temuan'] ?? '') . '">' . mb_strimwidth($detailKerusakan, 0, 50, '...') . '</span>';
             }
 
-            $fotoHtml = '<span class="text-muted small">Tidak ada</span>';
+            $fotoHtml = '<span class="text-muted small"><i class="fas fa-image text-secondary mr-1"></i>Tidak ada</span>';
             $photos = json_decode($row['foto'] ?? '', true) ?: [];
-            if (!empty($photos) && !empty($row['foto_path'])) {
-                $photoUrl = base_url($row['foto_path'] . $photos[0]);
-                $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" title="Klik untuk memperbesar">';
-                if (count($photos) > 1) {
-                    $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
+            if (!empty($photos)) {
+                $rawPath = !empty($row['foto_path']) ? trim($row['foto_path'], '/') . '/' : 'foto/';
+                $fullDiskPath = FCPATH . $rawPath . $photos[0];
+                $photoUrl = base_url($rawPath . $photos[0]);
+                
+                if (file_exists($fullDiskPath)) {
+                    $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" onerror="this.onerror=null; this.parentElement.innerHTML=\'<span class=&quot;text-muted small&quot;>Tidak ada foto</span>\';" title="Klik untuk memperbesar">';
+                    if (count($photos) > 1) {
+                        $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
+                    }
+                } else {
+                    $fotoHtml = '<span class="text-muted small"><i class="fas fa-image text-secondary mr-1"></i>Tidak ada</span>';
                 }
             }
 

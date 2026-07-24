@@ -657,27 +657,25 @@
             $(e.target).css('display', 'none');
             if ($('#modalDetailTemuan').css('display') === 'flex') {
                 $('body').css('overflow', 'hidden');
-            } else {
-                $('body').css('overflow', '');
-            }
         }
     });
+});
 
-    function confirmDelete(id) {
-        Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: "Data temuan ini akan dihapus dari sistem!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal'
-        }).then(function(result) {
-            if (result.isConfirmed) {
-                window.location.href = "<?= site_url('temuan/delete/') ?>" + id;
-            }
-        });
-    }
+window.confirmDelete = function(id) {
+    Swal.fire({
+        title: 'Apakah Anda yakin?',
+        text: "Data temuan ini akan dihapus dari sistem!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            window.location.href = "<?= site_url('temuan/delete/') ?>" + id;
+        }
+    });
+};
 </script>
 <?= $this->endSection() ?>

@@ -90,7 +90,7 @@
         });
     });
 
-    function promptResetPassword(id, username) {
+    window.promptResetPassword = function(id, username) {
         Swal.fire({
             title: 'Reset Password User',
             text: 'Masukkan password baru untuk user "' + username + '":',
@@ -113,9 +113,9 @@
                 form.submit();
             }
         });
-    }
+    };
 
-    function confirmDelete(id) {
+    window.confirmDelete = function(id) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
             text: "User ini akan dihapus dari sistem!",
@@ -130,6 +130,6 @@
                 window.location.href = "<?= site_url('users/delete/') ?>" + id;
             }
         });
-    }
+    };
 </script>
 <?= $this->endSection() ?>

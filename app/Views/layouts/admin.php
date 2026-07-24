@@ -1182,6 +1182,9 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         }
                     }
                 };
+            }
+        });
+
         // Universal Dual Photo Upload Enhancer (Choose File & Camera Direct)
         function initDualUploadEnhancer() {
             $('input[type="file"]').each(function() {

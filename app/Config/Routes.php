@@ -57,7 +57,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // AJAX data loading
     $routes->get('temuan/ajax-penyulang/(:num)', 'Temuan::ajaxGetPenyulang/$1');
     $routes->get('temuan/ajax-section/(:num)', 'Temuan::ajaxGetSection/$1');
-    $routes->post('temuan/ajax-datatables', 'Temuan::ajaxDataTables');
+    $routes->match(['GET', 'POST'], 'temuan/ajax-datatables', 'Temuan::ajaxDataTables');
 
     // Master Data ULP (Admin & Admin ULP saja)
     $routes->group('ulps', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp'], function ($routes) {

@@ -423,7 +423,7 @@
             "serverSide": true,
             "ajax": {
                 "url": "<?= site_url('temuan/ajax-datatables') ?>",
-                "type": "POST",
+                "type": "GET",
                 "data": function(d) {
                     d.<?= csrf_token() ?> = "<?= csrf_hash() ?>";
                     d.ulp_id = $('#filter_ulp_id').val();

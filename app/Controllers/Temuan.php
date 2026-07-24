@@ -57,7 +57,7 @@ class Temuan extends BaseController
     {
         $scoping = get_user_role_scoping();
 
-        $postData = $this->request->getPost();
+        $postData = array_merge($this->request->getGet(), $this->request->getPost());
         $result = $this->temuanRepository->getDataTables($postData, $scoping['ulp_id'], $scoping['jenis_temuan']);
 
         // Format data sebelum dikirim kembali

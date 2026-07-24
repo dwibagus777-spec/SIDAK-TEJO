@@ -479,5 +479,237 @@
             });
         }
     </script>
+
+    <!-- Floating Voice Assistant (Mobile Dashboard) -->
+    <style>
+        #global-voice-container {
+            position: fixed !important;
+            bottom: 25px !important;
+            right: 18px !important;
+            z-index: 99999 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+        }
+        #btn-global-mic.listening {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+            border-color: #fca5a5 !important;
+            animation: pulseMicAnimationMobile 1.2s infinite;
+        }
+        @keyframes pulseMicAnimationMobile {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+    <div id="global-voice-container">
+        <div id="global-voice-bubble" class="shadow-sm d-none animate__animated animate__fadeInRight" 
+             style="background: #0f172a; color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 8px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: bold; white-space: nowrap; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
+            <i class="fas fa-circle-notch fa-spin mr-1"></i> <span id="global-voice-text">Mendengarkan...</span>
+        </div>
+        
+        <button type="button" id="btn-global-mic" class="btn btn-primary" title="Perintah Suara"
+                style="width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; border: 2px solid rgba(255,255,255,0.25); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important; background: linear-gradient(135deg, #005eb8 0%, #003f8a 100%) !important;">
+            <i class="fas fa-microphone" id="global-mic-icon"></i>
+        </button>
+    </div>
+
+    <!-- SweetAlert2 JS (Failsafe) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(function() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                $('#btn-global-mic').click(function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Fitur Perintah Suara',
+                        text: 'Peramban Web ini belum mendukung Speech Recognition. Disarankan menggunakan Google Chrome versi terbaru.',
+                        confirmButtonColor: '#005eb8'
+                    });
+                });
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.interimResults = false;
+            
+            let isListening = false;
+            
+            $('#btn-global-mic').click(function(e) {
+                e.preventDefault();
+                if (!isListening) {
+                    try {
+                        recognition.start();
+                    } catch(err) {
+                        try {
+                            recognition.stop();
+                            setTimeout(function() { recognition.start(); }, 150);
+                        } catch(e) {}
+                    }
+                } else {
+                    try {
+                        recognition.stop();
+                    } catch(err) {}
+                }
+            });
+            
+            recognition.onstart = function() {
+                isListening = true;
+                $('#btn-global-mic').addClass('listening');
+                $('#global-voice-bubble').removeClass('d-none');
+                $('#global-voice-text').text('Mendengarkan...');
+            };
+            
+            recognition.onerror = function(event) {
+                isListening = false;
+                $('#btn-global-mic').removeClass('listening');
+                $('#global-voice-bubble').addClass('d-none');
+                if (event.error === 'not-allowed') {
+                    const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+                    const msg = isHttp 
+                        ? 'Fitur Suara membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP (bukan HTTPS). Harap aktifkan SSL/HTTPS pada server.' 
+                        : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara.';
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Akses Mikrofon Ditolak',
+                        text: msg,
+                        confirmButtonColor: '#005eb8'
+                    });
+                }
+            };
+            
+            recognition.onend = function() {
+                isListening = false;
+                $('#btn-global-mic').removeClass('listening');
+            };
+            
+            recognition.onresult = function(event) {
+                const resultText = event.results[0][0].transcript.toLowerCase().trim();
+                $('#global-voice-bubble').removeClass('d-none');
+                $('#global-voice-text').html('<i class="fas fa-quote-left mr-1"></i> "' + resultText + '"');
+                
+                setTimeout(function() {
+                    $('#global-voice-bubble').addClass('d-none');
+                }, 3500);
+                
+                processVoiceCommand(resultText);
+            };
+
+            function processVoiceCommand(text) {
+                function showVoiceToast(msg, icon) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top',
+                        icon: icon || 'info',
+                        title: '🎤 Perintah Suara',
+                        text: '"' + text + '" → ' + msg,
+                        showConfirmButton: false,
+                        timer: 2500,
+                        timerProgressBar: true
+                    });
+                }
+
+                if (text.includes('dashboard') || text.includes('beranda') || text.includes('utama') || text.includes('home')) {
+                    showVoiceToast('Membuka Dashboard', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("dashboard") ?>', 600);
+                    return true;
+                }
+                if (text.includes('input temuan') || text.includes('tambah temuan') || text.includes('buat temuan') || text.includes('input data') || text === 'input' || text === 'tambah') {
+                    showVoiceToast('Membuka Input Temuan Baru', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("temuan/create") ?>', 600);
+                    return true;
+                }
+                if (text.includes('update pekerjaan') || text.includes('update progres') || text.includes('update temuan') || text.includes('pekerjaan') || text.includes('progres')) {
+                    showVoiceToast('Membuka Update Pekerjaan', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("temuan/update-pekerjaan") ?>', 600);
+                    return true;
+                }
+                if (text.includes('terdekat') || text.includes('peta') || text.includes('gps') || text.includes('dekat')) {
+                    showVoiceToast('Membuka Temuan Terdekat', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("temuan/terdekat?gps=true") ?>', 600);
+                    return true;
+                }
+                if (text.includes('kubikel') || text.includes('eviden kubikel')) {
+                    showVoiceToast('Membuka Eviden Kubikel', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/kubikel") ?>', 600);
+                    return true;
+                }
+                if (text.includes('trafo') || text.includes('eviden trafo')) {
+                    showVoiceToast('Membuka Eviden Trafo', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/trafo") ?>', 600);
+                    return true;
+                }
+                if (text.includes('eviden') || text.includes('bukti lapangan')) {
+                    showVoiceToast('Membuka Eviden Lapangan', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden/kubikel") ?>', 600);
+                    return true;
+                }
+                if (text.includes('laporan temuan') || text.includes('laporan') || text.includes('rekap') || text.includes('pusat laporan')) {
+                    showVoiceToast('Membuka Pusat Laporan', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("laporan/temuan") ?>', 600);
+                    return true;
+                }
+                if (text.includes('master user') || text.includes('data user') || text.includes('pengguna') || text.includes('user')) {
+                    showVoiceToast('Membuka Master User', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("users") ?>', 600);
+                    return true;
+                }
+                if (text.includes('master ulp') || text.includes('data ulp') || text.includes('ulp')) {
+                    showVoiceToast('Membuka Master ULP', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("ulps") ?>', 600);
+                    return true;
+                }
+                if (text.includes('master penyulang') || text.includes('data penyulang') || text.includes('penyulang')) {
+                    showVoiceToast('Membuka Master Penyulang', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("penyulang") ?>', 600);
+                    return true;
+                }
+                if (text.includes('master section') || text.includes('data section') || text.includes('section')) {
+                    showVoiceToast('Membuka Master Section', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("sections") ?>', 600);
+                    return true;
+                }
+                if (text.includes('data temuan') || text.includes('daftar temuan') || text.includes('tabel temuan') || text.includes('temuan')) {
+                    showVoiceToast('Membuka Data Temuan', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("temuan") ?>', 600);
+                    return true;
+                }
+                if (text.includes('import') || text.includes('excel') || text.includes('unggah data')) {
+                    showVoiceToast('Membuka Import Excel', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("import") ?>', 600);
+                    return true;
+                }
+                if (text.includes('gangguan') || text.includes('identifikasi') || text.includes('analisis')) {
+                    showVoiceToast('Membuka Identifikasi Gangguan', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("identifikasi") ?>', 600);
+                    return true;
+                }
+                if (text.includes('password') || text.includes('sandi') || text.includes('ganti password')) {
+                    showVoiceToast('Membuka Ubah Password', 'success');
+                    setTimeout(() => window.location.href = '<?= site_url("change-password") ?>', 600);
+                    return true;
+                }
+                if (text.includes('keluar') || text.includes('logout') || text.includes('log out')) {
+                    showVoiceToast('Proses Keluar Sistem...', 'warning');
+                    setTimeout(() => window.location.href = '<?= site_url("logout") ?>', 600);
+                    return true;
+                }
+                if (text.includes('cari') || text.includes('temukan')) {
+                    const keyword = text.replace('cari', '').replace('temukan', '').trim();
+                    if (keyword) {
+                        showVoiceToast('Mencari "' + keyword + '"...', 'info');
+                        setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(keyword), 600);
+                        return true;
+                    }
+                }
+
+                showVoiceToast('Perintah tidak dikenali. Ucapkan nama menu seperti "Input Temuan", "Data User", dll.', 'question');
+                return false;
+            }
+        });
+    </script>
 </body>
 </html>

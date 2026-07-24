@@ -16,7 +16,7 @@
                 <h3 class="card-title"><i class="fas fa-plus mr-1"></i> Form Temuan Baru</h3>
             </div>
             <!-- enctype="multipart/form-data" is required for file uploads -->
-            <form action="<?= site_url('temuan/store') ?>" method="post" enctype="multipart/form-data">
+            <form id="form-create-temuan" action="<?= site_url('temuan/store') ?>" method="post" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <div class="card-body">
                     
@@ -225,7 +225,7 @@
                                 </div>
                             </div>
 
-                            <input type="file" name="foto[]" id="foto" class="d-none" multiple accept="image/*" required>
+                            <input type="file" name="foto[]" id="foto" class="d-none" multiple accept="image/*">
                             <input type="file" id="foto_camera" class="d-none" multiple accept="image/*" capture="environment">
 
                             <div id="file-selection-info" class="small text-muted mt-2">
@@ -447,7 +447,9 @@
         $('#foto, #foto_camera').change(function() {
             if (this.files && this.files.length > 0) {
                 handleIncomingFiles(this.files);
-                this.value = '';
+                if (this.id === 'foto_camera') {
+                    this.value = '';
+                }
             }
         });
 
@@ -463,28 +465,42 @@
             renderPhotoPreviews();
         });
 
-        // Intercept form submit to compress all images
-        $('form').has('#foto').submit(async function(e) {
-            const fileInput = document.getElementById('foto');
-            if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+        // Intercept form submit to compress all images & validate photo selection
+        $('#form-create-temuan').submit(async function(e) {
+            if (createPhotoStore.files.length === 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Foto Belum Dipilih',
+                    text: 'Harap unggah minimal 1 foto temuan sebelum menyimpan!',
+                    confirmButtonColor: '#005eb8'
+                });
+                return false;
+            }
 
             const btnSubmit = $('#btn-submit');
-            if (btnSubmit.data('compressed')) return; // already compressed
+            if (btnSubmit.data('compressed')) {
+                return true; // Already processed compression, proceed with native submit
+            }
 
             e.preventDefault();
             btnSubmit.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Mengompres foto & menyimpan...');
 
             try {
                 const dt = new DataTransfer();
-                for (let i = 0; i < fileInput.files.length; i++) {
-                    const compressed = await compressSingleImage(fileInput.files[i]);
+                for (let i = 0; i < createPhotoStore.files.length; i++) {
+                    const compressed = await compressSingleImage(createPhotoStore.files[i]);
                     dt.items.add(compressed);
                 }
-                fileInput.files = dt.files;
+                const fileInput = document.getElementById('foto');
+                if (fileInput) {
+                    fileInput.files = dt.files;
+                }
+
                 btnSubmit.data('compressed', true);
                 this.submit();
             } catch(err) {
-                console.error(err);
+                console.error('Photo compression error:', err);
                 btnSubmit.data('compressed', true);
                 this.submit();
             }

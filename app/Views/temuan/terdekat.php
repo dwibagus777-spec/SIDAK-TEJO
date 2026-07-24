@@ -323,7 +323,7 @@
 
         // 4. VOICE COMMANDS LISTENER (Dispatched from global mic in admin layout)
         window.addEventListener('appVoiceCommand', function(e) {
-            const speechResult = e.detail ? e.detail.transcript : '';
+            const speechResult = e.detail ? e.detail.transcript.toLowerCase().trim() : '';
             if (!speechResult) return;
             
             console.log('Voice Command Received in Terdekat page:', speechResult);
@@ -335,15 +335,37 @@
                 timerProgressBar: true
             });
 
+            // 1. FILTER PENYULANG / JENIS / ULP / CARI
+            if (speechResult.includes('penyulang') || speechResult.includes('jenis') || speechResult.includes('ulp') || speechResult.startsWith('cari ') || speechResult.includes('filter') || speechResult.includes('saring')) {
+                e.preventDefault(); // Hentikan redirect global agar tetap di halaman terdekat
+                let cleanKeyword = speechResult
+                    .replace(/^(filter|saring|cari|temukan)\s*/i, '')
+                    .replace(/^(penyulang|jenis|ulp)\s*/i, '')
+                    .trim();
+                
+                if (cleanKeyword) {
+                    Toast.fire({
+                        icon: 'info',
+                        title: 'Menyaring temuan terdekat: "' + cleanKeyword + '"'
+                    });
+                    filterListByKeyword(cleanKeyword);
+                }
+                return;
+            }
+
+            // 2. GPS LOKASI SAYA
             if (speechResult.includes('gps') || speechResult.includes('lokasi saya') || speechResult.includes('koordinat saya')) {
                 e.preventDefault();
                 Toast.fire({
                     icon: 'success',
-                    title: 'Melacak GPS...'
+                    title: 'Melacak GPS lokasi saya...'
                 });
                 $('#btn-gps').click();
+                return;
             }
-            else if (speechResult.includes('radius') || speechResult.includes('jarak')) {
+
+            // 3. UBAH RADIUS JARAK
+            if (speechResult.includes('radius') || speechResult.includes('jarak')) {
                 let numMatch = speechResult.match(/\d+/);
                 if (numMatch) {
                     e.preventDefault();
@@ -372,19 +394,12 @@
                         title: 'Mengubah radius ke ' + selectElement.find('option:selected').text()
                     });
                 }
+                return;
             }
-            else if (speechResult.includes('filter') || speechResult.includes('saring')) {
-                const cleanKeyword = speechResult.replace('filter', '').replace('saring', '').trim();
-                if (cleanKeyword && typeof filterListByKeyword === 'function') {
-                    e.preventDefault();
-                    Toast.fire({
-                        icon: 'success',
-                        title: 'Menyaring temuan: "' + cleanKeyword + '"'
-                    });
-                    filterListByKeyword(cleanKeyword);
-                }
-            }
-            else if (speechResult.includes('reset') || speechResult.includes('ulang')) {
+
+            // 4. RESET PENCARIAN (Cek kata utuh "reset" / "ulang", cegah "penyulang")
+            const words = speechResult.split(/\s+/);
+            if (words.includes('reset') || (words.includes('ulang') && !speechResult.includes('penyulang'))) {
                 e.preventDefault();
                 Toast.fire({
                     icon: 'info',
@@ -393,6 +408,7 @@
                 $('#input-radius').val('500').trigger('change');
                 $('.temuan-card').removeClass('d-none');
                 searchNearbyFindings();
+                return;
             }
         });
 

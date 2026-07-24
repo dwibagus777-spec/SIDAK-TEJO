@@ -484,12 +484,20 @@
     <style>
         #global-voice-container {
             position: fixed !important;
-            bottom: 25px !important;
+            bottom: 30px !important;
             right: 18px !important;
-            z-index: 99999 !important;
+            z-index: 999999 !important;
             display: flex !important;
             align-items: center !important;
             gap: 8px !important;
+            pointer-events: auto !important;
+            touch-action: manipulation !important;
+        }
+        #btn-global-mic {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            touch-action: manipulation !important;
+            -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
         }
         #btn-global-mic.listening {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
@@ -509,7 +517,7 @@
         </div>
         
         <button type="button" id="btn-global-mic" class="btn btn-primary" title="Perintah Suara"
-                style="width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; border: 2px solid rgba(255,255,255,0.25); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important; background: linear-gradient(135deg, #005eb8 0%, #003f8a 100%) !important;">
+                style="width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.45rem; border: 2px solid rgba(255,255,255,0.25); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45) !important; background: linear-gradient(135deg, #005eb8 0%, #003f8a 100%) !important;">
             <i class="fas fa-microphone" id="global-mic-icon"></i>
         </button>
     </div>
@@ -519,27 +527,80 @@
     <script>
         $(function() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                $('#btn-global-mic').click(function(e) {
-                    e.preventDefault();
+            let recognition = null;
+            let isListening = false;
+
+            if (SpeechRecognition) {
+                try {
+                    recognition = new SpeechRecognition();
+                    recognition.lang = 'id-ID';
+                    recognition.interimResults = false;
+
+                    recognition.onstart = function() {
+                        isListening = true;
+                        $('#btn-global-mic').addClass('listening');
+                        $('#global-voice-bubble').removeClass('d-none');
+                        $('#global-voice-text').text('Mendengarkan...');
+                    };
+
+                    recognition.onerror = function(event) {
+                        isListening = false;
+                        $('#btn-global-mic').removeClass('listening');
+                        $('#global-voice-bubble').addClass('d-none');
+                        if (event.error === 'not-allowed') {
+                            const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+                            const msg = isHttp 
+                                ? 'Fitur Suara membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP (bukan HTTPS). Harap aktifkan SSL/HTTPS pada server.' 
+                                : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara.';
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Akses Mikrofon Ditolak',
+                                text: msg,
+                                confirmButtonColor: '#005eb8'
+                            });
+                        }
+                    };
+
+                    recognition.onend = function() {
+                        isListening = false;
+                        $('#btn-global-mic').removeClass('listening');
+                    };
+
+                    recognition.onresult = function(event) {
+                        const resultText = event.results[0][0].transcript.toLowerCase().trim();
+                        $('#global-voice-bubble').removeClass('d-none');
+                        $('#global-voice-text').html('<i class="fas fa-quote-left mr-1"></i> "' + resultText + '"');
+                        
+                        setTimeout(function() {
+                            $('#global-voice-bubble').addClass('d-none');
+                        }, 3500);
+                        
+                        processVoiceCommand(resultText);
+                    };
+                } catch(err) {
+                    console.error('SpeechRecognition init error:', err);
+                }
+            }
+
+            let lastMicTap = 0;
+            $(document).on('click touchstart', '#btn-global-mic', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const now = Date.now();
+                if (now - lastMicTap < 400) return;
+                lastMicTap = now;
+
+                if (!recognition) {
                     Swal.fire({
                         icon: 'info',
                         title: 'Fitur Perintah Suara',
                         text: 'Peramban Web ini belum mendukung Speech Recognition. Disarankan menggunakan Google Chrome versi terbaru.',
                         confirmButtonColor: '#005eb8'
                     });
-                });
-                return;
-            }
+                    return;
+                }
 
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'id-ID';
-            recognition.interimResults = false;
-            
-            let isListening = false;
-            
-            $('#btn-global-mic').click(function(e) {
-                e.preventDefault();
                 if (!isListening) {
                     try {
                         recognition.start();
@@ -547,7 +608,7 @@
                         try {
                             recognition.stop();
                             setTimeout(function() { recognition.start(); }, 150);
-                        } catch(e) {}
+                        } catch(ex) {}
                     }
                 } else {
                     try {
@@ -555,48 +616,6 @@
                     } catch(err) {}
                 }
             });
-            
-            recognition.onstart = function() {
-                isListening = true;
-                $('#btn-global-mic').addClass('listening');
-                $('#global-voice-bubble').removeClass('d-none');
-                $('#global-voice-text').text('Mendengarkan...');
-            };
-            
-            recognition.onerror = function(event) {
-                isListening = false;
-                $('#btn-global-mic').removeClass('listening');
-                $('#global-voice-bubble').addClass('d-none');
-                if (event.error === 'not-allowed') {
-                    const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
-                    const msg = isHttp 
-                        ? 'Fitur Suara membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP (bukan HTTPS). Harap aktifkan SSL/HTTPS pada server.' 
-                        : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara.';
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Akses Mikrofon Ditolak',
-                        text: msg,
-                        confirmButtonColor: '#005eb8'
-                    });
-                }
-            };
-            
-            recognition.onend = function() {
-                isListening = false;
-                $('#btn-global-mic').removeClass('listening');
-            };
-            
-            recognition.onresult = function(event) {
-                const resultText = event.results[0][0].transcript.toLowerCase().trim();
-                $('#global-voice-bubble').removeClass('d-none');
-                $('#global-voice-text').html('<i class="fas fa-quote-left mr-1"></i> "' + resultText + '"');
-                
-                setTimeout(function() {
-                    $('#global-voice-bubble').addClass('d-none');
-                }, 3500);
-                
-                processVoiceCommand(resultText);
-            };
 
             function processVoiceCommand(text) {
                 function showVoiceToast(msg, icon) {

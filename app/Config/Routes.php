@@ -48,7 +48,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('temuan/store', 'Temuan::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/detail/(:num)', 'Temuan::detail/$1');
     $routes->post('temuan/tindak-lanjut/(:num)', 'Temuan::tindakLanjut/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
-    $routes->match(['get', 'post'], 'temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->match(['GET', 'POST'], 'temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/edit/(:num)', 'Temuan::edit/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->post('temuan/update/(:num)', 'Temuan::update/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/update-pekerjaan', 'Temuan::updatePekerjaan');
@@ -66,7 +66,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('store', 'Ulp::store');
         $routes->get('edit/(:num)', 'Ulp::edit/$1');
         $routes->post('update/(:num)', 'Ulp::update/$1');
-        $routes->match(['get', 'post'], 'delete/(:num)', 'Ulp::delete/$1');
+        $routes->match(['GET', 'POST'], 'delete/(:num)', 'Ulp::delete/$1');
     });
 
     // Master Data Penyulang (Admin & Admin ULP)
@@ -76,7 +76,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('store', 'Penyulang::store');
         $routes->get('edit/(:num)', 'Penyulang::edit/$1');
         $routes->post('update/(:num)', 'Penyulang::update/$1');
-        $routes->match(['get', 'post'], 'delete/(:num)', 'Penyulang::delete/$1');
+        $routes->match(['GET', 'POST'], 'delete/(:num)', 'Penyulang::delete/$1');
     });
 
     // Master Data Section (Admin & Admin ULP)
@@ -86,7 +86,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('store', 'Section::store');
         $routes->get('edit/(:num)', 'Section::edit/$1');
         $routes->post('update/(:num)', 'Section::update/$1');
-        $routes->match(['get', 'post'], 'delete/(:num)', 'Section::delete/$1');
+        $routes->match(['GET', 'POST'], 'delete/(:num)', 'Section::delete/$1');
     });
 
     // Master Data User (Admin & Admin ULP)
@@ -96,7 +96,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('store', 'User::store');
         $routes->get('edit/(:num)', 'User::edit/$1');
         $routes->post('update/(:num)', 'User::update/$1');
-        $routes->match(['get', 'post'], 'delete/(:num)', 'User::delete/$1');
+        $routes->match(['GET', 'POST'], 'delete/(:num)', 'User::delete/$1');
         $routes->post('reset-password/(:num)', 'User::resetPassword/$1');
     });
 
@@ -141,7 +141,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('kubikel/store', 'Eviden::kubikelStore');
         $routes->get('kubikel/edit/(:num)', 'Eviden::kubikelEdit/$1');
         $routes->post('kubikel/update/(:num)', 'Eviden::kubikelUpdate/$1');
-        $routes->match(['get', 'post'], 'kubikel/delete/(:num)', 'Eviden::kubikelDelete/$1');
+        $routes->match(['GET', 'POST'], 'kubikel/delete/(:num)', 'Eviden::kubikelDelete/$1');
 
         // Trafo
         $routes->get('trafo', 'Eviden::trafo');
@@ -149,7 +149,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('trafo/store', 'Eviden::trafoStore');
         $routes->get('trafo/edit/(:num)', 'Eviden::trafoEdit/$1');
         $routes->post('trafo/update/(:num)', 'Eviden::trafoUpdate/$1');
-        $routes->match(['get', 'post'], 'trafo/delete/(:num)', 'Eviden::trafoDelete/$1');
+        $routes->match(['GET', 'POST'], 'trafo/delete/(:num)', 'Eviden::trafoDelete/$1');
 
         // Management Trafo
         $routes->get('management', 'Eviden::management');
@@ -157,10 +157,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('management/store', 'Eviden::managementStore');
         $routes->get('management/edit/(:num)', 'Eviden::managementEdit/$1');
         $routes->post('management/update/(:num)', 'Eviden::managementUpdate/$1');
-        $routes->match(['get', 'post'], 'management/delete/(:num)', 'Eviden::managementDelete/$1');
+        $routes->match(['GET', 'POST'], 'management/delete/(:num)', 'Eviden::managementDelete/$1');
 
         // Delete Single Photo
-        $routes->match(['get', 'post'], 'delete-foto/(:num)', 'Eviden::deleteFoto/$1');
+        $routes->match(['GET', 'POST'], 'delete-foto/(:num)', 'Eviden::deleteFoto/$1');
 
         // Dynamic AJAX gallery & CSV export
         $routes->get('ajax-get-fotos', 'Eviden::ajaxGetFotos');

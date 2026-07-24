@@ -81,6 +81,13 @@ class Filters extends BaseFilters
                     'setting/update-announcement',
                     'temuan/delete/*',
                     'users/delete/*',
+                    'ulps/delete/*',
+                    'penyulang/delete/*',
+                    'sections/delete/*',
+                    'eviden/kubikel/delete/*',
+                    'eviden/trafo/delete/*',
+                    'eviden/management/delete/*',
+                    'eviden/delete-foto/*',
                     'temuan/ajax-*',
                     'temuan/ajax-datatables'
                 ]

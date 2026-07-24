@@ -67,7 +67,7 @@ class TemuanRepository extends BaseRepository
         $builder = $db->table('temuan')
             ->select('temuan.id, temuan.nomor_temuan, temuan.jenis_temuan, temuan.pelaksana, 
                       temuan.prioritas, temuan.potensi_gangguan, temuan.tanggal_temuan, temuan.status, 
-                      temuan.detail_temuan, temuan.foto, temuan.foto_path,
+                      temuan.detail_temuan, temuan.foto, temuan.foto_path, temuan.created_at,
                       ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section')
             ->join('ulps', 'ulps.id = temuan.ulp_id')
             ->join('penyulang', 'penyulang.id = temuan.penyulang_id')

@@ -226,7 +226,7 @@
                                 <th>Jenis Temuan</th>
                                 <th>Foto</th>
                                 <th>Prioritas</th>
-                                <th>Tanggal</th>
+                                <th>Tanggal & Jam</th>
                                 <th>Status/SLA</th>
                                 <th style="width: 100px;">Aksi</th>
                             </tr>
@@ -614,8 +614,13 @@
                 }
 
                 // WhatsApp Share Button
+                const tglJamText = t.created_at ? formatTgl(t.created_at) : (t.tanggal_temuan ? formatTgl(t.tanggal_temuan) : '-');
+                const mapsQuery = (t.latitude && t.longitude) ? (t.latitude + ',' + t.longitude) : encodeURIComponent((t.alamat || '') + ', Sidoarjo');
+                const sharelokLink = 'https://www.google.com/maps/search/?api=1&query=' + mapsQuery;
+
                 const waText = `🚨 *TEMUAN INSPEKSI - SIDAK TEJO* 🚨\n\n` +
                                `📌 *Nomor Temuan*: ${t.nomor_temuan}\n` +
+                               `📅 *Tanggal & Jam*: ${tglJamText}\n` +
                                `📍 *ULP*: ${t.nama_ulp || '-'}\n` +
                                `⚡ *Penyulang*: ${t.nama_penyulang || '-'}\n` +
                                `📍 *Section*: ${t.nama_section || '-'}\n` +
@@ -623,7 +628,8 @@
                                `⚠️ *Prioritas*: ${t.prioritas || '-'}\n` +
                                `🔧 *Pelaksana*: ${t.pelaksana || '-'}\n` +
                                `📝 *Detail*: ${t.detail_temuan || '-'}\n` +
-                               `📍 *Alamat*: ${t.alamat || '-'}\n\n` +
+                               `📍 *Alamat*: ${t.alamat || '-'}\n` +
+                               `🗺️ *Sharelok (Google Maps)*: ${sharelokLink}\n\n` +
                                `🔗 *Lihat Detail*: ${window.location.origin}<?= site_url('temuan/detail/') ?>${id}`;
                 $('#modal-btn-wa').attr('href', 'https://api.whatsapp.com/send?text=' + encodeURIComponent(waText));
 
@@ -650,7 +656,10 @@
         if (!str) return '-';
         const d = new Date(str);
         if (isNaN(d)) return str;
-        return ('0'+d.getDate()).slice(-2) + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + d.getFullYear();
+        const dateStr = ('0'+d.getDate()).slice(-2) + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + d.getFullYear();
+        const hrs = ('0'+d.getHours()).slice(-2);
+        const mins = ('0'+d.getMinutes()).slice(-2);
+        return dateStr + ' ' + hrs + ':' + mins + ' WIB';
     };
 
     window.openLightbox = function(url) {

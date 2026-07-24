@@ -146,7 +146,7 @@ class Temuan extends BaseController
                 $row['jenis_temuan'],
                 $fotoHtml,
                 $prioBadge,
-                date('d-m-Y', strtotime($row['tanggal_temuan'])),
+                date('d-m-Y H:i', strtotime(!empty($row['created_at']) ? $row['created_at'] : $row['tanggal_temuan'])) . ' WIB',
                 $statusBadge,
                 $actions
             ];
@@ -803,7 +803,7 @@ class Temuan extends BaseController
                 $row['jenis_temuan'],
                 $fotoHtml,
                 $prioBadge,
-                date('d-m-Y', strtotime($row['tanggal_temuan'])),
+                date('d-m-Y H:i', strtotime(!empty($row['created_at']) ? $row['created_at'] : $row['tanggal_temuan'])) . ' WIB',
                 $statusBadge,
                 $actions
             ];

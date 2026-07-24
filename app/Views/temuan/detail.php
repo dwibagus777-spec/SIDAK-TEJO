@@ -18,8 +18,11 @@ if (!empty($lat) && !empty($lng)) {
     $sharelokUrl = "https://www.google.com/maps/search/?api=1&query=" . urlencode($temuan['alamat'] . ", Sidoarjo");
 }
 
+$tglJamFormatted = date('d-m-Y H:i', strtotime(!empty($temuan['created_at']) ? $temuan['created_at'] : $temuan['tanggal_temuan'])) . ' WIB';
+
 $waMsg = "🚨 *TEMUAN INSPEKSI - SIDAK TEJO* 🚨\n\n" .
          "📌 *Nomor Temuan*: " . $temuan['nomor_temuan'] . "\n" .
+         "📅 *Tanggal & Jam*: " . $tglJamFormatted . "\n" .
          "📍 *ULP*: " . $temuan['nama_ulp'] . "\n" .
          "⚡ *Penyulang*: " . $temuan['nama_penyulang'] . "\n" .
          "📍 *Section*: " . $temuan['nama_section'] . "\n" .
@@ -93,8 +96,8 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
                                 <td>: <?= $temuan['noga'] ? esc($temuan['noga']) : '<span class="text-muted small">Tidak ada</span>' ?></td>
                             </tr>
                             <tr>
-                                <th>Tanggal Temuan</th>
-                                <td>: <?= date('d-m-Y', strtotime($temuan['tanggal_temuan'])) ?></td>
+                                <th>Tanggal & Jam Temuan</th>
+                                <td>: <span class="font-weight-bold text-primary"><?= date('d-m-Y H:i', strtotime(!empty($temuan['created_at']) ? $temuan['created_at'] : $temuan['tanggal_temuan'])) ?> WIB</span></td>
                             </tr>
                         </table>
                     </div>

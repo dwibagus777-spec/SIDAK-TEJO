@@ -78,57 +78,69 @@ class TemuanService
     {
         $newName = $file->getRandomName();
 
+        // 1. Log Received File Info
+        log_message('info', sprintf(
+            '[FILE_RECEIVED] Name: %s | TempPath: %s | Size: %d bytes | MIME: %s | ErrorCode: %d | IsValid: %s',
+            $file->getName(),
+            $file->getTempName() ?: 'EMPTY',
+            $file->getSize(),
+            $file->getClientMimeType(),
+            $file->getError(),
+            $file->isValid() ? 'YES' : 'NO'
+        ));
+
+        if (!$file->isValid()) {
+            $errStr = $file->getErrorString() . ' (Code: ' . $file->getError() . ')';
+            log_message('error', '[FILE_VALIDATION_ERROR] ' . $errStr);
+            return ['name' => '', 'path' => 'error', 'error' => $errStr];
+        }
+
+        // 2. Process Cloudinary Upload if Enabled
         if ($this->cloudinary->isEnabled()) {
-            // === CLOUDINARY PATH ===
-            // Get PHP's original temp file path directly (e.g. /tmp/php...)
             $phpTempPath = $file->getTempName();
             if (empty($phpTempPath) || !file_exists($phpTempPath)) {
                 $phpTempPath = $file->getRealPath();
             }
 
-            log_message('info', '[uploadFotoFile] PHP temp: ' . $phpTempPath
-                . ' | exists: ' . (!empty($phpTempPath) && file_exists($phpTempPath) ? 'YES (' . filesize($phpTempPath) . 'B)' : 'NO'));
-
             if (!empty($phpTempPath) && file_exists($phpTempPath)) {
                 $result = $this->cloudinary->upload($phpTempPath, 'sidak-tejo/temuan');
 
                 if ($result['success']) {
-                    log_message('info', '[uploadFotoFile] ✅ Cloudinary OK: ' . $result['url']);
-                    return ['name' => $result['url'], 'path' => 'cloudinary'];
+                    log_message('info', '[UPLOAD_SUCCESS] Cloudinary URL: ' . $result['url']);
+                    return ['name' => $result['url'], 'path' => 'cloudinary', 'error' => ''];
                 }
 
-                log_message('error', '[uploadFotoFile] ❌ Cloudinary FAILED: ' . ($result['error'] ?? '?'));
-            } else {
-                log_message('error', '[uploadFotoFile] ❌ Temp file tidak dapat ditemukan: ' . $phpTempPath);
+                $err = 'Cloudinary Upload Gagal: ' . ($result['error'] ?? 'Unknown Error');
+                log_message('error', '[UPLOAD_FAIL] ' . $err);
+                return ['name' => '', 'path' => 'error', 'error' => $err];
             }
+
+            $err = 'Temp file upload tidak dapat dibaca dari server.';
+            log_message('error', '[UPLOAD_FAIL] ' . $err);
+            return ['name' => '', 'path' => 'error', 'error' => $err];
         }
 
-        // === LOCAL STORAGE (no Cloudinary / fallback) ===
+        // 3. Fallback Local Storage
         $fullLocalPath = FCPATH . $localDir;
         if (!is_dir($fullLocalPath)) {
             mkdir($fullLocalPath, 0777, true);
         }
         $file->move($fullLocalPath, $newName);
 
-        // Compress local file
-        $diskPath  = $fullLocalPath . $newName;
+        $diskPath = $fullLocalPath . $newName;
         $compressed = $this->compressImage($diskPath, 80);
         if ($compressed !== $diskPath && file_exists($compressed)) {
-            // Replace original with compressed version
             @rename($compressed, $diskPath);
         }
 
-        return ['name' => $newName, 'path' => $localDir];
+        return ['name' => $newName, 'path' => $localDir, 'error' => ''];
     }
-
 
     /**
      * Simpan Temuan Baru beserta Unggahan Foto
      */
     public function createTemuan(array $data, ?array $files): array
     {
-
-        // 1. Generate nomor temuan otomatis
         $nomorTemuan = $this->temuanRepository->generateNomorTemuan();
         $session = session();
         $data['nomor_temuan'] = $nomorTemuan;
@@ -137,11 +149,15 @@ class TemuanService
         $data['created_by_name'] = $session->get('nama_pegawai') ?: $session->get('user_name');
         $data['created_by_nip'] = $session->get('nip') ?: '';
 
-        // 2. Validasi file upload (Minimal 1, Maksimal 10)
+        log_message('info', sprintf('[CREATE_TEMUAN_START] Nomor: %s | Files Count: %d', $nomorTemuan, count($files ?? [])));
+
+        // Validasi file upload
         if (empty($files) || count($files) === 0 || !$files[0]->isValid()) {
+            $errDetail = (!empty($files) && isset($files[0])) ? $files[0]->getErrorString() : 'File foto kosong.';
+            log_message('warning', '[CREATE_TEMUAN_VALIDATION_FAIL] ' . $errDetail);
             return [
                 'success' => false,
-                'message' => 'Unggah foto minimal 1 foto.'
+                'message' => 'Unggah foto minimal 1 foto. Detail: ' . $errDetail
             ];
         }
 
@@ -152,48 +168,61 @@ class TemuanService
             ];
         }
 
-        // Validasi format file
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
         foreach ($files as $file) {
             if ($file->isValid()) {
-                $ext = $file->getExtension();
-                if (!in_array(strtolower($ext), $allowedExtensions)) {
+                $ext = strtolower($file->getExtension() ?: pathinfo($file->getName(), PATHINFO_EXTENSION));
+                if (!in_array($ext, $allowedExtensions)) {
                     return [
                         'success' => false,
-                        'message' => 'Format file tidak diizinkan. Hanya jpg, jpeg, png, webp.'
+                        'message' => 'Format file "' . $file->getName() . '" tidak diizinkan. Hanya jpg, jpeg, png, webp.'
                     ];
                 }
             }
         }
 
-        // 3. Upload foto (Cloudinary jika dikonfigurasi, atau simpan ke disk lokal)
+        // Upload foto
         $uploadedNames = [];
         $uploadDir = 'foto/';
 
         foreach ($files as $file) {
             if ($file->isValid() && !$file->hasMoved()) {
                 $uploaded = $this->uploadFotoFile($file, $uploadDir);
+                if ($uploaded['path'] === 'error' || empty($uploaded['name'])) {
+                    return [
+                        'success' => false,
+                        'message' => 'Gagal mengunggah foto: ' . ($uploaded['error'] ?? 'Terjadi kesalahan.')
+                    ];
+                }
                 $uploadedNames[] = $uploaded['name'];
                 $uploadDir = $uploaded['path'] === 'cloudinary' ? 'cloudinary' : $uploaded['path'];
             }
         }
 
-        // Simpan nama-nama berkas (URL Cloudinary atau filename lokal) sebagai JSON
+        if (empty($uploadedNames)) {
+            return [
+                'success' => false,
+                'message' => 'Tidak ada foto yang berhasil terunggah.'
+            ];
+        }
+
         $data['foto'] = json_encode($uploadedNames);
         $data['foto_path'] = $uploadDir;
 
-        // 4. Masukkan ke database
+        log_message('info', sprintf('[DB_INSERT_TEMUAN] Nomor: %s | Foto JSON: %s', $nomorTemuan, $data['foto']));
+
         $insertId = $this->temuanRepository->insert($data);
 
         if ($insertId) {
             log_activity('CREATE_TEMUAN', 'Menambahkan temuan baru: ' . $nomorTemuan);
             return [
                 'success' => true,
-                'message' => 'Temuan berhasil disimpan.',
-                'id' => $insertId
+                'message' => 'Temuan berhasil disimpan ke Cloudinary.',
+                'id'      => $insertId
             ];
         }
 
+        log_message('error', '[DB_INSERT_FAIL] Gagal insert ke tabel temuan.');
         return [
             'success' => false,
             'message' => 'Gagal menyimpan temuan ke database.'

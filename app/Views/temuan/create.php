@@ -477,8 +477,14 @@
             renderPhotoPreviews();
         });
 
-        // Intercept form submit to compress all images & validate photo selection
-        $('#form-create-temuan').submit(async function(e) {
+        // Ensure photo selection validation and material JSON sync before submit
+        $('#form-create-temuan').submit(function(e) {
+            // Sync files from createPhotoStore to input #foto
+            const fileInput = document.getElementById('foto');
+            if (fileInput && createPhotoStore.files.length > 0) {
+                fileInput.files = createPhotoStore.files;
+            }
+
             if (createPhotoStore.files.length === 0) {
                 e.preventDefault();
                 Swal.fire({
@@ -490,32 +496,25 @@
                 return false;
             }
 
+            // Sync material list to hidden field
+            let materialItems = [];
+            $('.material-item-row').each(function() {
+                const nama = $(this).find('.input-nama-material').val().trim();
+                const qty = $(this).find('.input-jumlah-material').val().trim();
+                if (nama !== '') {
+                    materialItems.push(qty ? `- ${qty} ${nama}` : `- ${nama}`);
+                }
+            });
+            if (materialItems.length > 0) {
+                $('#material-hidden-field').val(materialItems.join("\n"));
+            } else {
+                $('#material-hidden-field').val('Tidak ada spesifikasi material');
+            }
+
             const btnSubmit = $('#btn-submit');
-            if (btnSubmit.data('compressed')) {
-                return true; // Already processed compression, proceed with native submit
-            }
-
-            e.preventDefault();
-            btnSubmit.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Mengompres foto & menyimpan...');
-
-            try {
-                const dt = new DataTransfer();
-                for (let i = 0; i < createPhotoStore.files.length; i++) {
-                    const compressed = await compressSingleImage(createPhotoStore.files[i]);
-                    dt.items.add(compressed);
-                }
-                const fileInput = document.getElementById('foto');
-                if (fileInput) {
-                    fileInput.files = dt.files;
-                }
-
-                btnSubmit.data('compressed', true);
-                this.submit();
-            } catch(err) {
-                console.error('Photo compression error:', err);
-                btnSubmit.data('compressed', true);
-                this.submit();
-            }
+            btnSubmit.html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan ke Cloudinary...');
+            // Allow native form submission to proceed with multipart payload intact
+            return true;
         });
 
         // --- 3. GEOLOCATION & LEAFLET SELECTOR MAP ---

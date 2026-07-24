@@ -81,7 +81,8 @@
         }
     });
 
-    function confirmDelete(id) {
+    window.confirmDelete = function(id) {
+        if (!id) return;
         Swal.fire({
             title: 'Apakah Anda yakin?',
             text: "Data Section ini akan dihapus dari sistem!",

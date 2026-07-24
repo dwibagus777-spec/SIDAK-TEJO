@@ -657,9 +657,11 @@
             $(e.target).css('display', 'none');
             if ($('#modalDetailTemuan').css('display') === 'flex') {
                 $('body').css('overflow', 'hidden');
+            } else {
+                $('body').css('overflow', '');
+            }
         }
     });
-});
 
 window.confirmDelete = function(id) {
     Swal.fire({

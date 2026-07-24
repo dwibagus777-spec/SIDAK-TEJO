@@ -663,19 +663,10 @@
         }
     });
 
-    $(document).on('click', '.btn-delete-temuan', function (e) {
-        e.preventDefault();
-        const id = $(this).data('id');
-        if (id) {
-            confirmDelete(id);
-        }
-    });
-
-    window.confirmDelete = function(id) {
-        if (!id) return;
+    window.confirmDeleteForm = function(formId, itemName) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: "Data temuan ini akan dihapus dari sistem!",
+            text: (itemName || 'Data') + ' akan dihapus dari sistem!',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -685,54 +676,15 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Menghapus Temuan...',
+                    title: 'Menghapus...',
                     text: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
+                    didOpen: () => { Swal.showLoading(); }
                 });
-
-                $.ajax({
-                    url: "<?= site_url('temuan/delete/') ?>" + id,
-                    type: "POST",
-                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
-                    dataType: "JSON",
-                    success: function(response) {
-                        if (response && response.success) {
-                            Swal.fire({
-                                title: 'Terhapus!',
-                                text: response.message,
-                                icon: 'success',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                title: 'Gagal!',
-                                text: (response && response.message) ? response.message : 'Gagal menghapus data temuan.',
-                                icon: 'error'
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        // Fallback submit via Native HTML Form POST
-                        let form = document.createElement('form');
-                        form.method = 'POST';
-                        form.action = "<?= site_url('temuan/delete/') ?>" + id;
-                        let inputCsrf = document.createElement('input');
-                        inputCsrf.type = 'hidden';
-                        inputCsrf.name = "<?= csrf_token() ?>";
-                        inputCsrf.value = "<?= csrf_hash() ?>";
-                        form.appendChild(inputCsrf);
-                        document.body.appendChild(form);
-                        form.submit();
-                    }
-                });
+                var f = document.getElementById(formId);
+                if (f) f.submit();
             }
         });
-    }
+    };
 </script>
 <?= $this->endSection() ?>

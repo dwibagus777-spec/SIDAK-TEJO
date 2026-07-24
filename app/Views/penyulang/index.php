@@ -49,8 +49,12 @@
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <a href="<?= site_url('penyulang/edit/' . $penyulang['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
-                                        <button type="button" class="btn btn-sm btn-danger btn-delete-penyulang" data-id="<?= $penyulang['id'] ?>"><i class="fas fa-trash mr-1"></i> Hapus</button>
+                                        <form id="delete-form-penyulang-<?= $penyulang['id'] ?>" action="<?= site_url('penyulang/delete/' . $penyulang['id']) ?>" method="post" class="d-inline">
+                                            <?= csrf_field() ?>
+                                            <button type="button" onclick="confirmDeleteForm('delete-form-penyulang-<?= $penyulang['id'] ?>', 'Penyulang <?= esc($penyulang['nama_penyulang'], 'js') ?>')" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash mr-1"></i> Hapus
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -75,19 +79,10 @@
         });
     });
 
-    $(document).on('click', '.btn-delete-penyulang', function (e) {
-        e.preventDefault();
-        const id = $(this).data('id');
-        if (id) {
-            confirmDelete(id);
-        }
-    });
-
-    window.confirmDelete = function(id) {
-        if (!id) return;
+    window.confirmDeleteForm = function(formId, itemName) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: "Data Penyulang ini akan dihapus dari sistem!",
+            text: (itemName || 'Data') + ' akan dihapus dari sistem!',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -97,44 +92,15 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Menghapus Penyulang...',
+                    title: 'Menghapus...',
+                    text: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
-                $.ajax({
-                    url: "<?= site_url('penyulang/delete/') ?>" + id,
-                    type: "POST",
-                    data: { "<?= csrf_token() ?>": "<?= csrf_hash() ?>" },
-                    dataType: "JSON",
-                    success: function(res) {
-                        if (res && res.success) {
-                            Swal.fire({
-                                title: 'Terhapus!',
-                                text: res.message,
-                                icon: 'success',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => { window.location.reload(); });
-                        } else {
-                            Swal.fire({ title: 'Gagal!', text: (res && res.message) ? res.message : 'Gagal menghapus Penyulang.', icon: 'error' });
-                        }
-                    },
-                    error: function(xhr) {
-                        // Fallback submit via Native HTML Form POST
-                        let form = document.createElement('form');
-                        form.method = 'POST';
-                        form.action = "<?= site_url('penyulang/delete/') ?>" + id;
-                        let inputCsrf = document.createElement('input');
-                        inputCsrf.type = 'hidden';
-                        inputCsrf.name = "<?= csrf_token() ?>";
-                        inputCsrf.value = "<?= csrf_hash() ?>";
-                        form.appendChild(inputCsrf);
-                        document.body.appendChild(form);
-                        form.submit();
-                    }
-                });
+                var f = document.getElementById(formId);
+                if (f) f.submit();
             }
         });
-    }
+    };
 </script>
 <?= $this->endSection() ?>

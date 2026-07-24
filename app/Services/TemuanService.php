@@ -9,11 +9,42 @@ class TemuanService
 {
     private TemuanRepository $temuanRepository;
     private TindakLanjutRepository $tindakLanjutRepository;
+    private CloudinaryService $cloudinary;
 
     public function __construct()
     {
         $this->temuanRepository = new TemuanRepository();
         $this->tindakLanjutRepository = new TindakLanjutRepository();
+        $this->cloudinary = new CloudinaryService();
+    }
+
+    /**
+     * Upload file to Cloudinary if configured, otherwise save to local disk
+     * Returns URL (Cloudinary) or filename (local) + updated foto_path
+     */
+    private function uploadFotoFile(\CodeIgniter\Files\File $file, string $localDir = 'foto/'): array
+    {
+        $newName = $file->getRandomName();
+        $fullLocalPath = FCPATH . $localDir;
+
+        // Always save to local disk first (as temp or permanent fallback)
+        if (!is_dir($fullLocalPath)) {
+            mkdir($fullLocalPath, 0777, true);
+        }
+        $file->move($fullLocalPath, $newName);
+        $diskPath = $fullLocalPath . $newName;
+
+        // Try Cloudinary upload if configured
+        if ($this->cloudinary->isEnabled()) {
+            $result = $this->cloudinary->upload($diskPath, 'sidak-tejo/temuan');
+            if ($result['success']) {
+                // Store full Cloudinary URL as the photo identifier
+                return ['name' => $result['url'], 'path' => 'cloudinary'];
+            }
+            log_message('warning', 'Cloudinary upload gagal: ' . ($result['error'] ?? 'unknown'). ' - menggunakan penyimpanan lokal');
+        }
+
+        return ['name' => $newName, 'path' => $localDir];
     }
 
     /**
@@ -60,24 +91,19 @@ class TemuanService
             }
         }
 
-        // 3. Pindahkan file foto ke direktori public/foto/
+        // 3. Upload foto (Cloudinary jika dikonfigurasi, atau simpan ke disk lokal)
         $uploadedNames = [];
         $uploadDir = 'foto/';
-        $fullPath = FCPATH . $uploadDir;
-
-        if (!is_dir($fullPath)) {
-            mkdir($fullPath, 0777, true);
-        }
 
         foreach ($files as $file) {
             if ($file->isValid() && !$file->hasMoved()) {
-                $newName = $file->getRandomName();
-                $file->move($fullPath, $newName);
-                $uploadedNames[] = $newName;
+                $uploaded = $this->uploadFotoFile($file, $uploadDir);
+                $uploadedNames[] = $uploaded['name'];
+                $uploadDir = $uploaded['path'] === 'cloudinary' ? 'cloudinary' : $uploaded['path'];
             }
         }
 
-        // Simpan nama-nama berkas sebagai JSON
+        // Simpan nama-nama berkas (URL Cloudinary atau filename lokal) sebagai JSON
         $data['foto'] = json_encode($uploadedNames);
         $data['foto_path'] = $uploadDir;
 
@@ -231,9 +257,12 @@ class TemuanService
             $newNames = [];
             foreach ($newFiles as $file) {
                 if ($file->isValid() && !$file->hasMoved()) {
-                    $newName = $file->getRandomName();
-                    $file->move($fullPath, $newName);
-                    $newNames[] = $newName;
+                    $uploaded = $this->uploadFotoFile($file, $uploadDir);
+                    $newNames[] = $uploaded['name'];
+                    // Update uploadDir & foto_path if cloudinary used
+                    if ($uploaded['path'] === 'cloudinary') {
+                        $data['foto_path'] = 'cloudinary';
+                    }
                 }
             }
 

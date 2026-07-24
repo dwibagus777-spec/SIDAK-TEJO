@@ -22,6 +22,58 @@ class TemuanService
      * Upload file to Cloudinary if configured, otherwise save to local disk
      * Returns URL (Cloudinary) or filename (local) + updated foto_path
      */
+    /**
+     * Kompres gambar sebelum upload ke Cloudinary
+     * Menghasilkan file JPEG berkualitas rendah untuk menghemat bandwidth
+     */
+    private function compressImage(string $sourcePath, int $quality = 75): string
+    {
+        if (!function_exists('imagecreatefromjpeg')) {
+            return $sourcePath; // GD tidak tersedia, skip kompresi
+        }
+
+        $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        $image = null;
+
+        try {
+            if ($ext === 'jpg' || $ext === 'jpeg') {
+                $image = @imagecreatefromjpeg($sourcePath);
+            } elseif ($ext === 'png') {
+                $image = @imagecreatefrompng($sourcePath);
+            } elseif ($ext === 'webp') {
+                $image = @imagecreatefromwebp($sourcePath);
+            }
+
+            if (!$image) return $sourcePath;
+
+            // Resize jika terlalu besar (max 1920px wide)
+            $w = imagesx($image);
+            $h = imagesy($image);
+            if ($w > 1920) {
+                $newW = 1920;
+                $newH = (int)($h * 1920 / $w);
+                $resized = imagecreatetruecolor($newW, $newH);
+                imagecopyresampled($resized, $image, 0, 0, 0, 0, $newW, $newH, $w, $h);
+                imagedestroy($image);
+                $image = $resized;
+            }
+
+            $compressedPath = $sourcePath . '.compressed.jpg';
+            imagejpeg($image, $compressedPath, $quality);
+            imagedestroy($image);
+
+            // Hanya gunakan yang dikompres jika lebih kecil
+            if (file_exists($compressedPath) && filesize($compressedPath) < filesize($sourcePath)) {
+                return $compressedPath;
+            }
+            @unlink($compressedPath);
+        } catch (\Throwable $e) {
+            log_message('warning', '[compressImage] Error: ' . $e->getMessage());
+        }
+
+        return $sourcePath;
+    }
+
     private function uploadFotoFile(\CodeIgniter\Files\File $file, string $localDir = 'foto/'): array
     {
         $newName = $file->getRandomName();
@@ -36,12 +88,20 @@ class TemuanService
 
         // Try Cloudinary upload if configured
         if ($this->cloudinary->isEnabled()) {
-            $result = $this->cloudinary->upload($diskPath, 'sidak-tejo/temuan');
+            // Kompres gambar sebelum upload agar tidak timeout karena file besar
+            $uploadPath = $this->compressImage($diskPath, 80);
+            $result = $this->cloudinary->upload($uploadPath, 'sidak-tejo/temuan');
+
+            // Hapus file kompresi temp jika berbeda dari original
+            if ($uploadPath !== $diskPath && file_exists($uploadPath)) {
+                @unlink($uploadPath);
+            }
+
             if ($result['success']) {
                 // Store full Cloudinary URL as the photo identifier
                 return ['name' => $result['url'], 'path' => 'cloudinary'];
             }
-            log_message('warning', 'Cloudinary upload gagal: ' . ($result['error'] ?? 'unknown'). ' - menggunakan penyimpanan lokal');
+            log_message('warning', 'Cloudinary upload gagal: ' . ($result['error'] ?? 'unknown') . ' - menggunakan penyimpanan lokal');
         }
 
         return ['name' => $newName, 'path' => $localDir];

@@ -15,10 +15,15 @@ class CloudinaryService
 
     public function __construct()
     {
-        $this->cloudName = getenv('CLOUDINARY_CLOUD_NAME') ?: '';
-        $this->apiKey    = getenv('CLOUDINARY_API_KEY') ?: '';
-        $this->apiSecret = getenv('CLOUDINARY_API_SECRET') ?: '';
+        // Railway uses actual env vars (not .env file), so getenv() is correct
+        $this->cloudName = trim(getenv('CLOUDINARY_CLOUD_NAME') ?: '');
+        $this->apiKey    = trim(getenv('CLOUDINARY_API_KEY') ?: '');
+        $this->apiSecret = trim(getenv('CLOUDINARY_API_SECRET') ?: '');
         $this->enabled   = !empty($this->cloudName) && !empty($this->apiKey) && !empty($this->apiSecret);
+
+        log_message('info', '[CloudinaryService] enabled=' . ($this->enabled ? 'YES' : 'NO') 
+            . ' cloud=' . $this->cloudName 
+            . ' key=' . substr($this->apiKey, 0, 6) . '...');
     }
 
     public function isEnabled(): bool
@@ -27,10 +32,8 @@ class CloudinaryService
     }
 
     /**
-     * Upload file ke Cloudinary
-     * @param string $filePath Path disk file yang akan diupload
-     * @param string $folder Folder di Cloudinary (e.g. "sidak-tejo/temuan")
-     * @return array ['success' => bool, 'url' => string, 'public_id' => string, 'error' => string]
+     * Upload file ke Cloudinary via signed upload API
+     * Signature harus dibuat dengan params SORTED alphabetically
      */
     public function upload(string $filePath, string $folder = 'sidak-tejo/temuan'): array
     {
@@ -42,39 +45,50 @@ class CloudinaryService
             return ['success' => false, 'error' => 'File tidak ditemukan: ' . $filePath];
         }
 
-        $timestamp  = time();
+        $timestamp = time();
+
+        // CRITICAL: Params must be sorted alphabetically for correct signature
         $paramsToSign = "folder={$folder}&timestamp={$timestamp}";
-        $signature  = hash('sha256', $paramsToSign . $this->apiSecret);
+        $signature = hash('sha256', $paramsToSign . $this->apiSecret);
 
-        $url = "https://api.cloudinary.com/v1_1/{$this->cloudName}/image/upload";
+        $apiUrl = "https://api.cloudinary.com/v1_1/{$this->cloudName}/image/upload";
 
+        // Use CURLFile to post actual binary file
         $postFields = [
             'file'      => new \CURLFile($filePath),
             'api_key'   => $this->apiKey,
-            'timestamp' => $timestamp,
+            'timestamp' => (string)$timestamp,
             'signature' => $signature,
             'folder'    => $folder,
         ];
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $apiUrl,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $postFields,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 60,
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_SSL_VERIFYPEER => false, // Required on some Railway environments
+        ]);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error    = curl_error($ch);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
-        if ($error) {
-            return ['success' => false, 'error' => 'cURL error: ' . $error];
+        log_message('info', "[CloudinaryService] HTTP={$httpCode} | Response: " . substr($response, 0, 300));
+
+        if ($curlError) {
+            log_message('error', '[CloudinaryService] cURL error: ' . $curlError);
+            return ['success' => false, 'error' => 'cURL error: ' . $curlError];
         }
 
         $data = json_decode($response, true);
 
         if ($httpCode === 200 && isset($data['secure_url'])) {
+            log_message('info', '[CloudinaryService] Upload SUCCESS: ' . $data['secure_url']);
             return [
                 'success'   => true,
                 'url'       => $data['secure_url'],
@@ -82,7 +96,8 @@ class CloudinaryService
             ];
         }
 
-        $errorMsg = $data['error']['message'] ?? ('HTTP ' . $httpCode . ' - ' . $response);
+        $errorMsg = $data['error']['message'] ?? ('HTTP ' . $httpCode . ' - ' . substr($response, 0, 200));
+        log_message('error', '[CloudinaryService] Upload FAILED: ' . $errorMsg);
         return ['success' => false, 'error' => $errorMsg];
     }
 }

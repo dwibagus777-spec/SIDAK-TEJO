@@ -32,6 +32,12 @@ if (version_compare(PHP_VERSION, $minPhpVersion, '<')) {
 // Path to the front controller (this file)
 define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
 
+// Raw trace log for delete requests
+if (isset($_SERVER['REQUEST_URI']) && str_contains(strtolower($_SERVER['REQUEST_URI']), 'delete')) {
+    $rawLog = date('Y-m-d H:i:s') . " | RAW_INDEX_PHP | URI: " . $_SERVER['REQUEST_URI'] . " | Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN') . " | RemoteIP: " . ($_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN') . " | POST: " . json_encode($_POST) . "\n";
+    file_put_contents(__DIR__ . '/debug_trace.txt', $rawLog, FILE_APPEND);
+}
+
 // Ensure the current directory is pointing to the front controller's directory
 if (getcwd() . DIRECTORY_SEPARATOR !== FCPATH) {
     chdir(FCPATH);

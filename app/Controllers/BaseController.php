@@ -41,6 +41,16 @@ abstract class BaseController extends Controller
         // Caution: Do not edit this line.
         parent::initController($request, $response, $logger);
 
+        // Trace log all delete requests for debugging
+        try {
+            $uriStr = (string)$request->getUri();
+            if (str_contains(strtolower($uriStr), 'delete')) {
+                $traceFile = FCPATH . 'debug_trace.txt';
+                $entry = date('Y-m-d H:i:s') . " | URI: " . $uriStr . " | Method: " . $request->getMethod() . " | IP: " . $request->getIPAddress() . " | POST: " . json_encode($_POST) . " | UserID: " . (session()->get('user_id') ?? 'NONE') . " | UserRole: " . (session()->get('user_role') ?? 'NONE') . "\n";
+                file_put_contents($traceFile, $entry, FILE_APPEND);
+            }
+        } catch (\Throwable $e) {}
+
         // Auto-heal ci_sessions table structure if using DatabaseHandler
         try {
             static $sessionsChecked = false;

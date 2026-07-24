@@ -526,62 +526,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(function() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            let recognition = null;
-            let isListening = false;
-
-            if (SpeechRecognition) {
-                try {
-                    recognition = new SpeechRecognition();
-                    recognition.lang = 'id-ID';
-                    recognition.interimResults = false;
-
-                    recognition.onstart = function() {
-                        isListening = true;
-                        $('#btn-global-mic').addClass('listening');
-                        $('#global-voice-bubble').removeClass('d-none');
-                        $('#global-voice-text').text('Mendengarkan...');
-                    };
-
-                    recognition.onerror = function(event) {
-                        isListening = false;
-                        $('#btn-global-mic').removeClass('listening');
-                        $('#global-voice-bubble').addClass('d-none');
-                        if (event.error === 'not-allowed') {
-                            const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
-                            const msg = isHttp 
-                                ? 'Fitur Suara membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP (bukan HTTPS). Harap aktifkan SSL/HTTPS pada server.' 
-                                : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara.';
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'Akses Mikrofon Ditolak',
-                                text: msg,
-                                confirmButtonColor: '#005eb8'
-                            });
-                        }
-                    };
-
-                    recognition.onend = function() {
-                        isListening = false;
-                        $('#btn-global-mic').removeClass('listening');
-                    };
-
-                    recognition.onresult = function(event) {
-                        const resultText = event.results[0][0].transcript.toLowerCase().trim();
-                        $('#global-voice-bubble').removeClass('d-none');
-                        $('#global-voice-text').html('<i class="fas fa-quote-left mr-1"></i> "' + resultText + '"');
-                        
-                        setTimeout(function() {
-                            $('#global-voice-bubble').addClass('d-none');
-                        }, 3500);
-                        
-                        processVoiceCommand(resultText);
-                    };
-                } catch(err) {
-                    console.error('SpeechRecognition init error:', err);
-                }
-            }
-
+            // Forward mobile mic click to global voice engine in admin layout if available
             let lastMicTap = 0;
             $(document).on('click touchstart', '#btn-global-mic', function(e) {
                 e.preventDefault();
@@ -591,29 +536,8 @@
                 if (now - lastMicTap < 400) return;
                 lastMicTap = now;
 
-                if (!recognition) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Fitur Perintah Suara',
-                        text: 'Peramban Web ini belum mendukung Speech Recognition. Disarankan menggunakan Google Chrome versi terbaru.',
-                        confirmButtonColor: '#005eb8'
-                    });
-                    return;
-                }
-
-                if (!isListening) {
-                    try {
-                        recognition.start();
-                    } catch(err) {
-                        try {
-                            recognition.stop();
-                            setTimeout(function() { recognition.start(); }, 150);
-                        } catch(ex) {}
-                    }
-                } else {
-                    try {
-                        recognition.stop();
-                    } catch(err) {}
+                if (typeof window.triggerGlobalVoiceMic === 'function') {
+                    window.triggerGlobalVoiceMic();
                 }
             });
 

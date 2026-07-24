@@ -164,14 +164,25 @@
                         </div>
                     </div>
 
-                    <!-- Material -->
-                    <div class="form-group mb-3">
-                        <label for="material">Material <span class="text-danger">*</span></label>
-                        <textarea name="material" id="material" class="form-control <?= ($validation && $validation->hasError('material')) ? 'is-invalid' : '' ?>"
-                                  rows="2" placeholder="Sebutkan material yang dibutuhkan" required><?= old('material', esc($temuan['material'])) ?></textarea>
-                        <?php if ($validation && $validation->hasError('material')): ?>
-                            <div class="invalid-feedback"><?= $validation->getError('material') ?></div>
-                        <?php endif; ?>
+                    <!-- Material Dibutuhkan (Dynamic Repeater UI) -->
+                    <div class="form-group mb-4 p-3 rounded" style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
+                                <i class="fas fa-screwdriver-wrench text-primary me-1"></i> Material Dibutuhkan / Pohon <small class="text-muted">(Opsional)</small>
+                            </label>
+                        </div>
+                        
+                        <div id="material-repeater-container" class="mb-2">
+                            <!-- Items added dynamically -->
+                        </div>
+
+                        <!-- Pill Add Button matching user screenshot -->
+                        <div class="text-center mt-2">
+                            <button type="button" id="btn-add-material" class="btn btn-outline-primary w-100 py-2 rounded-pill font-weight-bold" style="border-width: 2px; font-size: 14px; box-shadow: 0 2px 6px rgba(0, 94, 184, 0.08);">
+                                <i class="fas fa-plus-circle me-1"></i> Tambah Material
+                            </button>
+                        </div>
+                        <input type="hidden" name="material" id="material-hidden-field" value="<?= esc($temuan['material']) ?>">
                     </div>
 
                     <!-- Detail Temuan -->
@@ -514,6 +525,73 @@
                 );
             } else {
                 Toast.fire({ icon: 'error', title: 'Browser tidak mendukung Geolocation.' });
+            }
+        });
+
+        // ============================================================
+        // MATERIAL REPEATER JS (Custom Add & Remove Row UI)
+        // ============================================================
+        function addMaterialRow(nama = '', jumlah = '') {
+            const rowHtml = `
+                <div class="material-item-row card mb-2 p-2 shadow-sm border-0 animate__animated animate__fadeIn" style="background: #ffffff; border-radius: 12px; border-left: 4px solid #005eb8 !important;">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-6 col-md-7">
+                            <label class="small text-muted font-weight-bold mb-1">Nama Material / Pohon</label>
+                            <input type="text" class="form-control form-control-sm input-nama-material" value="${nama}" placeholder="Contoh: Isolator Tumpu / Pohon Mangga">
+                        </div>
+                        <div class="col-4 col-md-4">
+                            <label class="small text-muted font-weight-bold mb-1">Jumlah</label>
+                            <input type="text" class="form-control form-control-sm input-jumlah-material" value="${jumlah}" placeholder="Contoh: 2 buah / 5 m">
+                        </div>
+                        <div class="col-2 col-md-1 text-end">
+                            <label class="small d-block mb-1">&nbsp;</label>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-material border-0" title="Hapus"><i class="fas fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#material-repeater-container').append(rowHtml);
+        }
+
+        // Pre-fill existing materials if present
+        const existingMaterialText = $('#material-hidden-field').val().trim();
+        if (existingMaterialText && existingMaterialText !== 'Tidak ada spesifikasi material') {
+            const lines = existingMaterialText.split('\n');
+            lines.forEach(line => {
+                let cleanLine = line.replace(/^- \s*/, '').trim();
+                if (cleanLine) {
+                    let match = cleanLine.match(/^(\d+\s*(?:buah|pcs|set|m|meter|batang|unit)?)\s+(.*)$/i);
+                    if (match) {
+                        addMaterialRow(match[2].trim(), match[1].trim());
+                    } else {
+                        addMaterialRow(cleanLine, '');
+                    }
+                }
+            });
+        }
+
+        $('#btn-add-material').click(function() {
+            addMaterialRow();
+        });
+
+        $(document).on('click', '.btn-remove-material', function() {
+            $(this).closest('.material-item-row').remove();
+        });
+
+        $('form').on('submit', function() {
+            let materialItems = [];
+            $('.material-item-row').each(function() {
+                const nama = $(this).find('.input-nama-material').val().trim();
+                const qty = $(this).find('.input-jumlah-material').val().trim();
+                if (nama !== '') {
+                    materialItems.push(qty ? `- ${qty} ${nama}` : `- ${nama}`);
+                }
+            });
+
+            if (materialItems.length > 0) {
+                $('#material-hidden-field').val(materialItems.join("\n"));
+            } else {
+                $('#material-hidden-field').val('Tidak ada spesifikasi material');
             }
         });
 

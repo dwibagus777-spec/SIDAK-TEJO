@@ -189,10 +189,10 @@ class Temuan extends BaseController
             'potensi_gangguan' => 'required|in_list[DGR,OCR,OCRDGR]',
             'konduktor'        => 'required|max_length[100]',
             'noga'             => 'permit_empty|max_length[100]',
-            'material'         => 'required',
+            'material'         => 'permit_empty',
             'detail_temuan'    => 'required',
             'alamat'           => 'required',
-            'tanggal_temuan'   => 'required|valid_date[Y-m-d]',
+            'tanggal_temuan'   => 'required',
         ];
 
         // Custom validation error message
@@ -205,6 +205,11 @@ class Temuan extends BaseController
                 'ulps' => $ulps,
                 'validation' => $this->validator
             ]);
+        }
+
+        $materialInput = trim($this->request->getPost('material') ?? '');
+        if (empty($materialInput)) {
+            $materialInput = 'Tidak ada spesifikasi material';
         }
 
         $ulpIdInput = (int)$this->request->getPost('ulp_id');
@@ -223,7 +228,7 @@ class Temuan extends BaseController
             'potensi_gangguan' => $this->request->getPost('potensi_gangguan'),
             'konduktor'        => trim($this->request->getPost('konduktor')),
             'noga'             => trim($this->request->getPost('noga')) ?: null,
-            'material'         => trim($this->request->getPost('material')),
+            'material'         => $materialInput,
             'detail_temuan'    => trim($this->request->getPost('detail_temuan')),
             'alamat'           => trim($this->request->getPost('alamat')),
             'latitude'         => $this->request->getPost('latitude') !== '' ? (float)$this->request->getPost('latitude') : null,
@@ -441,10 +446,10 @@ class Temuan extends BaseController
             'potensi_gangguan' => 'required|in_list[DGR,OCR,OCRDGR]',
             'konduktor'        => 'required|max_length[100]',
             'noga'             => 'permit_empty|max_length[100]',
-            'material'         => 'required',
+            'material'         => 'permit_empty',
             'detail_temuan'    => 'required',
             'alamat'           => 'required',
-            'tanggal_temuan'   => 'required|valid_date[Y-m-d]',
+            'tanggal_temuan'   => 'required',
         ];
 
         if (!$this->validate($rules)) {
@@ -464,8 +469,19 @@ class Temuan extends BaseController
             ]);
         }
 
+        $materialInput = trim($this->request->getPost('material') ?? '');
+        if (empty($materialInput)) {
+            $materialInput = 'Tidak ada spesifikasi material';
+        }
+
+        $ulpIdInput = (int)$this->request->getPost('ulp_id');
+        if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== $ulpIdInput) {
+            return redirect()->to(site_url("temuan/edit/{$id}"))->with('error', 'Anda hanya diizinkan memilih ULP Anda.');
+        }
+
+        // Kumpulkan data update
         $data = [
-            'ulp_id'           => (int)$this->request->getPost('ulp_id'),
+            'ulp_id'           => $ulpIdInput,
             'penyulang_id'     => (int)$this->request->getPost('penyulang_id'),
             'section_id'       => (int)$this->request->getPost('section_id'),
             'jenis_temuan'     => $this->request->getPost('jenis_temuan'),
@@ -474,7 +490,7 @@ class Temuan extends BaseController
             'potensi_gangguan' => $this->request->getPost('potensi_gangguan'),
             'konduktor'        => trim($this->request->getPost('konduktor')),
             'noga'             => trim($this->request->getPost('noga')) ?: null,
-            'material'         => trim($this->request->getPost('material')),
+            'material'         => $materialInput,
             'detail_temuan'    => trim($this->request->getPost('detail_temuan')),
             'alamat'           => trim($this->request->getPost('alamat')),
             'latitude'         => $this->request->getPost('latitude') !== '' ? (float)$this->request->getPost('latitude') : null,

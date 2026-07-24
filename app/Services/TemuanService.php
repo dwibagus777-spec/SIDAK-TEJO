@@ -60,9 +60,9 @@ class TemuanService
             }
         }
 
-        // 3. Pindahkan file foto ke direktori public/uploads/temuan/{nomor_temuan}/
+        // 3. Pindahkan file foto ke direktori public/foto/
         $uploadedNames = [];
-        $uploadDir = 'uploads/temuan/' . str_replace('-', '_', $nomorTemuan) . '/';
+        $uploadDir = 'foto/';
         $fullPath = FCPATH . $uploadDir;
 
         if (!is_dir($fullPath)) {
@@ -100,9 +100,9 @@ class TemuanService
     }
 
     /**
-     * Tambahkan progress tindak lanjut (Riwayat Tindak Lanjut)
+     * Update Progres Pekerjaan (Tindak Lanjut / SLA Progress)
      */
-    public function addTindakLanjut(int $temuanId, array $progressData, ?array $uploadFiles): array
+    public function updateTemuanPekerjaan(int $temuanId, array $progressData, array $uploadFiles): array
     {
         $temuan = $this->temuanRepository->find($temuanId);
         if (!$temuan) {
@@ -113,7 +113,7 @@ class TemuanService
         }
 
         $nomorTemuan = $temuan['nomor_temuan'];
-        $uploadDir = 'uploads/temuan/' . str_replace('-', '_', $nomorTemuan) . '/tindak_lanjut/';
+        $uploadDir = 'foto/';
         $fullPath = FCPATH . $uploadDir;
 
         if (!is_dir($fullPath)) {

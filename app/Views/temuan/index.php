@@ -569,8 +569,9 @@
 
                 if (photos.length > 0) {
                     $('#md-no-foto').addClass('d-none');
+                    const cleanPath = fotoPath ? (fotoPath.endsWith('/') ? fotoPath : fotoPath + '/') : 'foto/';
                     photos.forEach(function (p) {
-                        const url = '<?= base_url() ?>' + fotoPath + p;
+                        const url = '<?= base_url() ?>' + cleanPath + p;
                         $('#md-foto-grid').append(
                             '<div class="col-6 col-md-4 mb-2 px-1">' +
                             '<div style="height:120px;overflow:hidden;border-radius:6px;cursor:pointer;background:#0d0d1a;border:1px solid #2d2d4e;" ' +

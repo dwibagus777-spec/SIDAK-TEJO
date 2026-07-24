@@ -103,8 +103,30 @@ class Temuan extends BaseController
             // Foto Column (Render small thumbnail)
             $fotoHtml = '<span class="text-muted small">Tidak ada</span>';
             $photos = json_decode($row['foto'] ?? '', true) ?: [];
-            if (!empty($photos) && !empty($row['foto_path'])) {
-                $photoUrl = base_url($row['foto_path'] . $photos[0]);
+            
+            // Auto-repair foto_path if points to uploads/
+            if (!empty($row['foto_path']) && str_contains($row['foto_path'], 'uploads/')) {
+                $oldPath = FCPATH . trim($row['foto_path'], '/');
+                $newDir = FCPATH . 'foto/';
+                if (!is_dir($newDir)) @mkdir($newDir, 0777, true);
+                
+                if (!empty($photos)) {
+                    foreach ($photos as $pName) {
+                        $srcFile = $oldPath . '/' . $pName;
+                        $dstFile = $newDir . $pName;
+                        if (file_exists($srcFile) && !file_exists($dstFile)) {
+                            @copy($srcFile, $dstFile);
+                        }
+                    }
+                }
+                $db = \Config\Database::connect();
+                $db->table('temuan')->where('id', $row['id'])->update(['foto_path' => 'foto/']);
+                $row['foto_path'] = 'foto/';
+            }
+
+            if (!empty($photos)) {
+                $rawPath = !empty($row['foto_path']) ? trim($row['foto_path'], '/') . '/' : 'foto/';
+                $photoUrl = base_url($rawPath . $photos[0]);
                 $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" title="Klik untuk memperbesar">';
                 if (count($photos) > 1) {
                     $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';

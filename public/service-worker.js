@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sidak-tejo-v3';
-const MAPS_CACHE_NAME = 'sidak-tejo-maps-v2';
+const CACHE_NAME = 'sidak-tejo-v4';
+const MAPS_CACHE_NAME = 'sidak-tejo-maps-v3';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -35,6 +35,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
 
+    // Do NOT intercept navigation (page HTML requests like /temuan/create)
+    // Let browser handle page navigation directly to avoid stale cache or broken responses
+    if (event.request.mode === 'navigate') {
+        return;
+    }
+
     // Cache strategy for Map Tiles
     if (url.includes('basemaps.cartocdn.com') || url.includes('openstreetmap.org') || url.includes('raw.githubusercontent.com/pointhi/leaflet-color-markers')) {
         event.respondWith(
@@ -45,7 +51,9 @@ self.addEventListener('fetch', (event) => {
                     }
                     
                     return fetch(event.request).then((networkResponse) => {
-                        cache.put(event.request, networkResponse.clone());
+                        if (networkResponse && networkResponse.status === 200) {
+                            cache.put(event.request, networkResponse.clone());
+                        }
                         return networkResponse;
                     }).catch(() => {
                         return new Response('', { status: 408, statusText: 'Offline Map Tile' });
@@ -66,7 +74,7 @@ self.addEventListener('fetch', (event) => {
 
                 return caches.open(CACHE_NAME).then((cache) => {
                     return fetch(event.request).then((networkResponse) => {
-                        if (networkResponse.status === 200) {
+                        if (networkResponse && networkResponse.status === 200) {
                             cache.put(event.request, networkResponse.clone());
                         }
                         return networkResponse;
@@ -83,25 +91,27 @@ self.addEventListener('fetch', (event) => {
     if (url.includes('/dist/')) {
         event.respondWith(
             fetch(event.request).then((networkResponse) => {
-                if (networkResponse.status === 200) {
+                if (networkResponse && networkResponse.status === 200) {
                     const responseClone = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(event.request, responseClone);
                     });
                 }
                 return networkResponse;
-            }).catch(() => {
-                return caches.match(event.request);
+            }).catch(async () => {
+                const cached = await caches.match(event.request);
+                return cached || new Response('', { status: 503, statusText: 'Offline' });
             })
         );
         return;
     }
 
-    // Default network-first falling back to cache for other GET requests
+    // Default network-first falling back to cache for other GET requests (images, css, js)
     if (event.request.method === 'GET') {
         event.respondWith(
-            fetch(event.request).catch(() => {
-                return caches.match(event.request);
+            fetch(event.request).catch(async () => {
+                const cached = await caches.match(event.request);
+                return cached || new Response('', { status: 503, statusText: 'Offline' });
             })
         );
     }

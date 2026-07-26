@@ -1008,11 +1008,12 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             $('#loading-spinner').fadeOut(100);
         });
 
-        // Register Service Worker for caching maps & assets
+        // Register Service Worker for caching maps & assets with auto-update
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>')
+                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=4')
                     .then(function(registration) {
+                        registration.update();
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     }, function(err) {
                         console.log('ServiceWorker registration failed: ', err);

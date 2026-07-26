@@ -7,8 +7,10 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // --- Rute Terbuka (Public Routes) ---
+$routes->get('export_railway_db.php', 'DbExport::index');
 $routes->get('export-live-db', 'DbExport::index');
 $routes->get('download-db', 'DbExport::index');
+
 
 
 $routes->get('/login', 'Auth::login');

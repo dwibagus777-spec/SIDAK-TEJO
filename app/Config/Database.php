@@ -202,59 +202,17 @@ class Database extends Config
             return null;
         };
 
-        $getHost = $findEnv('database_default_hostname', 'DB_HOST');
-        $getUser = $findEnv('database_default_username', 'DB_USER');
-        $getPass = $findEnv('database_default_password', 'DB_PASS');
-        $getDb   = $findEnv('database_default_database', 'DB_NAME');
-        $getPort = $findEnv('database_default_port', 'DB_PORT');
+        $getHost = $findEnv('DB_HOST', 'MYSQLHOST', 'MYSQL_HOST', 'database_default_hostname');
+        $getUser = $findEnv('DB_USER', 'MYSQLUSER', 'MYSQL_USER', 'database_default_username');
+        $getPass = $findEnv('DB_PASS', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'database_default_password');
+        $getDb   = $findEnv('DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'database_default_database');
+        $getPort = $findEnv('DB_PORT', 'MYSQLPORT', 'MYSQL_PORT', 'database_default_port');
 
-        // Check Railway injected environment variables
-        $getHost = $findEnv('database_default_hostname', 'MYSQLHOST', 'MYSQL_HOST', 'DB_HOST');
-        $getUser = $findEnv('database_default_username', 'MYSQLUSER', 'MYSQL_USER', 'DB_USER');
-        $getPass = $findEnv('database_default_password', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS');
-        $getDb   = $findEnv('database_default_database', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME');
-        $getPort = $findEnv('database_default_port', 'MYSQLPORT', 'MYSQL_PORT', 'DB_PORT');
-
-        // On cloud/production (Railway), preference goes to Railway Private Network (mysql.railway.internal:3306) for 100x faster <1ms latency
-        $isCloud = getenv('RAILWAY_ENVIRONMENT') || getenv('PORT') || (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false);
-        
-        if ($isCloud) {
-            $this->default['hostname'] = $getHost ?: 'mysql.railway.internal';
-            $this->default['username'] = $getUser ?: 'root';
-            $this->default['password'] = ($getPass !== null && $getPass !== '') ? $getPass : 'mdHhnrBwvreraXsIHEKlSEdVnWJBUoed';
-            $this->default['database'] = $getDb ?: 'railway';
-            $this->default['port']     = $getPort ? (int)$getPort : 3306;
-            
-            // Failover to public proxy if internal DNS is temporarily resolving
-            $this->default['failover'] = [
-                [
-                    'DSN'          => '',
-                    'hostname'     => 'altaria.proxy.rlwy.net',
-                    'username'     => 'root',
-                    'password'     => 'mdHhnrBwvreraXsIHEKlSEdVnWJBUoed',
-                    'database'     => $getDb ?: 'railway',
-                    'DBDriver'     => 'MySQLi',
-                    'DBPrefix'     => '',
-                    'pConnect'     => false,
-                    'DBDebug'      => true,
-                    'charset'      => 'utf8mb4',
-                    'DBCollat'     => 'utf8mb4_general_ci',
-                    'swapPre'      => '',
-                    'encrypt'      => false,
-                    'compress'     => false,
-                    'strictOn'     => false,
-                    'port'         => 48116,
-                    'numberNative' => false,
-                    'foundRows'    => false,
-                ]
-            ];
-        } else {
-            if ($getHost) { $this->default['hostname'] = $getHost; }
-            if ($getUser) { $this->default['username'] = $getUser; }
-            if ($getPass !== null && $getPass !== '') { $this->default['password'] = $getPass; }
-            if ($getDb)   { $this->default['database'] = $getDb; }
-            if ($getPort) { $this->default['port']     = (int)$getPort; }
-        }
+        if ($getHost) { $this->default['hostname'] = $getHost; }
+        if ($getUser) { $this->default['username'] = $getUser; }
+        if ($getPass !== null && $getPass !== '') { $this->default['password'] = $getPass; }
+        if ($getDb)   { $this->default['database'] = $getDb; }
+        if ($getPort) { $this->default['port']     = (int)$getPort; }
 
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that

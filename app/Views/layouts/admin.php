@@ -911,6 +911,11 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                             </span>
                         </div>
                         <div class="nav-item">
+                            <a class="btn btn-warning text-dark btn-sm px-2 py-1 font-weight-bold" href="<?= site_url('login?export_db=1') ?>" target="_blank" title="Export Database Live Railway" style="font-size: 11px; border-radius: 4px; white-space: nowrap;">
+                                <i class="fas fa-database me-1"></i> <span class="d-none d-md-inline">Export DB Live</span>
+                            </a>
+                        </div>
+                        <div class="nav-item">
                             <a class="btn btn-outline-primary btn-sm px-2 py-1" href="<?= site_url('change-password') ?>" title="Ganti Password Saya" style="font-size: 11px; font-weight: 600; border-radius: 4px; white-space: nowrap;">
                                 <i class="fas fa-key"></i> <span class="d-none d-md-inline ms-1">Ganti Password</span>
                             </a>
@@ -1003,10 +1008,14 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <?php endforeach; ?>
 
     <script>
-        // Sembunyikan spinner pemuatan setelah halaman selesai dimuat
+        // Sembunyikan spinner pemuatan
+        $(document).ready(function() {
+            $('#loading-spinner').fadeOut(100);
+        });
         $(window).on('load', function() {
             $('#loading-spinner').fadeOut(100);
         });
+        setTimeout(function() { $('#loading-spinner').fadeOut(100); }, 300);
 
         // Register Service Worker for caching maps & assets with auto-update
         if ('serviceWorker' in navigator) {

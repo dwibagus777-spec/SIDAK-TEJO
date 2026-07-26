@@ -7,7 +7,14 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // --- Rute Terbuka (Public Routes) ---
-$routes->get('/', 'Auth::login');
+$routes->get('download-db', function() {
+    $path = FCPATH . 'sidaktejo.sql';
+    if (!file_exists($path)) {
+        $path = ROOTPATH . 'sidaktejo.sql';
+    }
+    return service('response')->download($path, null);
+});
+
 $routes->get('/login', 'Auth::login');
 $routes->post('/login', 'Auth::login');
 $routes->get('/logout', 'Auth::logout');

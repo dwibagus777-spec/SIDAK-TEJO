@@ -1,10 +1,7 @@
-DirectoryIndex public/index.php
+DirectoryIndex public/index.php index.php
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    Options +FollowSymLinks
-
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
-

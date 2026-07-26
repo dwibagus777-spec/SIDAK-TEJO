@@ -7,13 +7,9 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // --- Rute Terbuka (Public Routes) ---
-$routes->get('download-db', function() {
-    $path = FCPATH . 'sidaktejo.sql';
-    if (!file_exists($path)) {
-        $path = ROOTPATH . 'sidaktejo.sql';
-    }
-    return service('response')->download($path, null);
-});
+$routes->get('export-live-db', 'DbExport::index');
+$routes->get('download-db', 'DbExport::index');
+
 
 $routes->get('/login', 'Auth::login');
 $routes->post('/login', 'Auth::login');

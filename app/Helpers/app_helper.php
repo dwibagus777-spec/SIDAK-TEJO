@@ -4,7 +4,7 @@ use App\Models\AuditLogModel;
 
 if (!function_exists('log_activity')) {
     /**
-     * Catat aktivitas pengguna ke tabel audit_logs
+     * Catat aktivitas pengguna ke Log File CodeIgniter 4 dan Tabel Audit Log Database
      *
      * @param string $activity
      * @param string|null $detail
@@ -19,24 +19,27 @@ if (!function_exists('log_activity')) {
 
         $request = \Config\Services::request();
         $ip = $request->getIPAddress();
-        $userAgent = $request->getUserAgent()->getAgentString();
+        $userAgent = (string)$request->getUserAgent();
 
-        $auditLogModel = new AuditLogModel();
-        
+        // 1. Catat ke File Log CodeIgniter 4 (writable/logs/)
+        log_message('info', "[AUDIT] User: {$username} ({$role}) | IP: {$ip} | Action: {$activity} | Detail: " . ($detail ?? 'N/A'));
+
+        // 2. Catat ke Database AuditLogModel
         try {
+            $auditLogModel = new AuditLogModel();
             $auditLogModel->insert([
-                'user_id' => $userId,
-                'username' => $username,
-                'role' => $role,
+                'user_id'    => $userId,
+                'username'  => $username,
+                'role'      => $role,
                 'aktivitas' => $activity,
-                'detail' => $detail,
-                'ip_address' => $ip,
-                'user_agent' => $userAgent,
-                'created_at' => date('Y-m-d H:i:s')
+                'detail'    => $detail,
+                'ip_address'=> $ip,
+                'user_agent'=> $userAgent,
+                'created_at'=> date('Y-m-d H:i:s')
             ]);
             return true;
-        } catch (\Exception $e) {
-            log_message('error', 'Gagal menulis audit log: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            log_message('error', '[AUDIT_DB_FAIL] Gagal menulis audit log ke DB: ' . $e->getMessage());
             return false;
         }
     }

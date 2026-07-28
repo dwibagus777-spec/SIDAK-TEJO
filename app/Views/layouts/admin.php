@@ -32,21 +32,6 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script>
-        window.addEventListener('error', function(e) {
-            var errData = {
-                message: e.message,
-                filename: e.filename,
-                lineno: e.lineno,
-                colno: e.colno,
-                stack: e.error ? e.error.stack : ''
-            };
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '<?= base_url('log_js_error.php') ?>', true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify(errData));
-        });
-    </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="SIDAK TEJO - Sistem Inspeksi Jaringan Operasi Sidoarjo - Tema Tabler Modern">
@@ -1008,14 +993,10 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <?php endforeach; ?>
 
     <script>
-        // Sembunyikan spinner pemuatan
-        $(document).ready(function() {
-            $('#loading-spinner').fadeOut(100);
+        // Sembunyikan spinner pemuatan (Clean & Consolidated)
+        $(function() {
+            $('#loading-spinner').fadeOut(150);
         });
-        $(window).on('load', function() {
-            $('#loading-spinner').fadeOut(100);
-        });
-        setTimeout(function() { $('#loading-spinner').fadeOut(100); }, 300);
 
         // Register Service Worker for caching maps & assets with auto-update
         if ('serviceWorker' in navigator) {

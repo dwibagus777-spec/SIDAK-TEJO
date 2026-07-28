@@ -9,15 +9,36 @@ class SystemSearchProvider implements SearchProviderInterface
 {
     public function searchSystemData(string $query, array $filters = [], int $limit = 5): array
     {
+        try {
+            $factory = new \App\Services\SemanticSearch\SemanticSearchFactory();
+            $hybridSearch = $factory->makeHybridSearchService();
+            $hybridResults = $hybridSearch->search($query, $filters, $limit);
+
+            if (!empty($hybridResults)) {
+                $formatted = [];
+                foreach ($hybridResults as $res) {
+                    $formatted[] = [
+                        'type'        => $res['type'] ?? 'RECORD',
+                        'id'          => $res['id'] ?? 0,
+                        'title'       => $res['title'] ?? 'Hasil Pencarian',
+                        'description' => $res['content'] ?? ($res['payload']['content'] ?? ''),
+                        'score'       => $res['rrf_score'] ?? ($res['score'] ?? 1.0)
+                    ];
+                }
+                return $formatted;
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', 'Hybrid Semantic Search fallback: ' . $e->getMessage());
+        }
+
+        // Direct SQL Fallback
         $db = Database::connect();
         $results = [];
-
         $queryClean = trim($query);
         if (empty($queryClean)) {
             return [];
         }
 
-        // Search Temuan
         $builder = $db->table('temuan')
             ->select('temuan.id, temuan.nomor_temuan, temuan.jenis_temuan, temuan.detail_temuan, temuan.alamat, temuan.status, temuan.prioritas, ulps.nama_ulp')
             ->join('ulps', 'ulps.id = temuan.ulp_id', 'left')

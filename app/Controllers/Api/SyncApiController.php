@@ -163,4 +163,34 @@ class SyncApiController extends BaseController
             ]);
         }
     }
+
+    /**
+     * GET /api/sync
+     * Returns server metadata & master tables for mobile offline DB seed
+     */
+    public function getSyncMeta(): ResponseInterface
+    {
+        try {
+            $db = Database::connect();
+            $ulps       = $db->table('ulps')->get()->getResultArray();
+            $penyulangs = $db->table('penyulang')->where('status', 'AKTIF')->get()->getResultArray();
+            $sections   = $db->table('sections')->where('status', 'AKTIF')->get()->getResultArray();
+
+            return $this->response->setStatusCode(200)->setJSON([
+                'success'     => true,
+                'server_time' => date('Y-m-d H:i:s'),
+                'master'      => [
+                    'ulps'       => $ulps,
+                    'penyulangs' => $penyulangs,
+                    'sections'   => $sections
+                ],
+                'message'     => 'Metadata master offline sync berhasil dimuat.'
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'success' => false,
+                'error'   => $e->getMessage()
+            ]);
+        }
+    }
 }

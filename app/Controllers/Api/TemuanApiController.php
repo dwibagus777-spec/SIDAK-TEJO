@@ -240,4 +240,95 @@ class TemuanApiController extends BaseApiController
 
         return $this->respondError('Gagal memperbarui status pekerjaan.', 500);
     }
+
+    /**
+     * GET /api/history
+     */
+    public function history()
+    {
+        $user = $this->getJwtUser();
+        $db = \Config\Database::connect();
+        
+        $logs = $db->table('tindak_lanjut tl')
+            ->select('tl.*, t.nomor_temuan, t.jenis_temuan, u.nama_ulp')
+            ->join('temuan t', 't.id = tl.temuan_id', 'left')
+            ->join('ulps u', 'u.id = t.ulp_id', 'left')
+            ->orderBy('tl.id', 'DESC')
+            ->limit(50)
+            ->get()->getResultArray();
+
+        return $this->respondSuccess($logs, 'Riwayat tindak lanjut temuan.');
+    }
+
+    /**
+     * GET /api/dashboard
+     */
+    public function dashboard()
+    {
+        $user = $this->getJwtUser();
+        $role = $user['role'] ?? 'inspeksi';
+        $ulpId = $user['ulp_id'] ?? null;
+
+        $stats = $this->temuanRepository->getComprehensiveAnalytics($role, $ulpId);
+        return $this->respondSuccess($stats, 'Data dashboard overview.');
+    }
+
+    /**
+     * GET /api/chart
+     */
+    public function chart()
+    {
+        $user = $this->getJwtUser();
+        $role = $user['role'] ?? 'inspeksi';
+        $ulpId = $user['ulp_id'] ?? null;
+
+        $stats = $this->temuanRepository->getComprehensiveAnalytics($role, $ulpId);
+        return $this->respondSuccess([
+            'temuan_vs_realisasi' => [
+                'total_temuan' => $stats['total_temuan'],
+                'total_realisasi' => $stats['total_realisasi']
+            ],
+            'temuan_mingguan'   => $stats['temuan_mingguan'],
+            'realisasi_harian'  => $stats['realisasi_harian'],
+            'temuan_bulanan'    => $stats['temuan_bulanan'],
+            'realisasi_bulanan' => $stats['realisasi_bulanan'],
+            'status_breakdown'  => $stats['status_breakdown'],
+            'prioritas_breakdown'=> $stats['prioritas_breakdown'],
+            'jenis_breakdown'   => $stats['jenis_breakdown'],
+            'sla'               => $stats['sla']
+        ], 'Data grafik analitik real-time.');
+    }
+
+    /**
+     * GET /api/notifikasi
+     */
+    public function notifikasi()
+    {
+        $user = $this->getJwtUser();
+        $userUlp = $user['ulp_id'] ?? null;
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('temuan')
+            ->select('id, nomor_temuan, prioritas, status, detail_temuan, created_at')
+            ->where('deleted_at IS NULL')
+            ->where('status !=', 'SELESAI');
+
+        if ($userUlp) {
+            $builder->where('ulp_id', $userUlp);
+        }
+
+        $items = $builder->orderBy('id', 'DESC')->limit(20)->get()->getResultArray();
+        $notifications = [];
+        foreach ($items as $r) {
+            $notifications[] = [
+                'id'         => $r['id'],
+                'title'      => "Temuan {$r['nomor_temuan']} [{$r['prioritas']}]",
+                'message'    => $r['detail_temuan'],
+                'type'       => $r['prioritas'] === 'EMERGENCY' ? 'danger' : 'warning',
+                'created_at' => $r['created_at']
+            ];
+        }
+
+        return $this->respondSuccess($notifications, 'Daftar notifikasi temuan aktif.');
+    }
 }

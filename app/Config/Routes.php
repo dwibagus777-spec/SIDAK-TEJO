@@ -228,7 +228,46 @@ $routes->group('api/v1', function ($routes) {
         // Machine Learning & AI Integration REST API
         $routes->get('ai/dataset', 'Api\AiApiController::dataset');
         $routes->get('ai/summary', 'Api\AiApiController::summary');
+        // AI Assistant REST API
+        $routes->post('ai/query', 'Api\AiApiController::query');
     });
+});
+
+// --- Clean REST API Endpoints (/api/...) ---
+$routes->group('api', function ($routes) {
+    // 1. POST /api/login
+    $routes->post('login', 'Api\AuthController::login');
+    
+    // 2. GET /api/sync
+    $routes->get('sync', 'Api\SyncApiController::getSyncMeta');
+
+    // 3. GET /api/user
+    $routes->get('user', 'Api\AuthController::me');
+
+    // 4. GET /api/temuan
+    $routes->get('temuan', 'Api\TemuanApiController::index');
+
+    // 5. POST /api/temuan
+    $routes->post('temuan', 'Api\TemuanApiController::create');
+
+    // 6. PUT /api/temuan/{id}
+    $routes->put('temuan/(:num)', 'Api\TemuanApiController::update/$1');
+    $routes->post('temuan/(:num)', 'Api\TemuanApiController::update/$1');
+
+    // 7. DELETE /api/temuan/{id}
+    $routes->delete('temuan/(:num)', 'Api\TemuanApiController::delete/$1');
+
+    // 8. GET /api/history
+    $routes->get('history', 'Api\TemuanApiController::history');
+
+    // 9. GET /api/dashboard
+    $routes->get('dashboard', 'Api\TemuanApiController::dashboard');
+
+    // 10. GET /api/chart
+    $routes->get('chart', 'Api\TemuanApiController::chart');
+
+    // 11. GET /api/notifikasi
+    $routes->get('notifikasi', 'Api\TemuanApiController::notifikasi');
 });
 
 // --- Rute REST API Legacy (Kompatibilitas Sistem PLN) ---

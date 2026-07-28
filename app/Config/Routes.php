@@ -7,17 +7,21 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // --- Rute Terbuka (Public Routes) ---
+$routes->get('/', 'Auth::login');
+$routes->get('', 'Auth::login');
+$routes->get('login', 'Auth::login');
+$routes->get('/login', 'Auth::login');
+$routes->post('/login', 'Auth::login');
+$routes->post('login', 'Auth::login');
+$routes->get('/logout', 'Auth::logout');
+$routes->get('logout', 'Auth::logout');
+$routes->get('auth/logout', 'Auth::logout');
+$routes->post('auth/logout', 'Auth::logout');
+
 $routes->get('export_railway_db.php', 'DbExport::index');
 $routes->get('export-live-db', 'DbExport::index');
 $routes->get('download-db', 'DbExport::index');
 
-
-
-$routes->get('/login', 'Auth::login');
-$routes->post('/login', 'Auth::login');
-$routes->get('/logout', 'Auth::logout');
-$routes->get('auth/logout', 'Auth::logout');
-$routes->post('auth/logout', 'Auth::logout');
 
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {

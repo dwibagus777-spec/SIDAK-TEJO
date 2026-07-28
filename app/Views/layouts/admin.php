@@ -1491,6 +1491,9 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         });
 
         $.ajaxSetup({
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             statusCode: {
                 401: function() {
                     Swal.fire({

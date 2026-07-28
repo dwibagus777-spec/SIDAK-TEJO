@@ -385,7 +385,9 @@
         // Show loading
         loadingEl.classList.remove('d-none');
 
-        fetch(ajaxUrl + '?ulp_id=' + ulpId)
+        fetch(ajaxUrl + '?ulp_id=' + ulpId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
             .then(res => res.json())
             .then(data => {
                 loadingEl.classList.add('d-none');

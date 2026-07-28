@@ -397,10 +397,8 @@ $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<!-- Leaflet & QR Code Library CDNs -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<!-- Leaflet CSS & JS sudah dimuat oleh layout admin.php dari plugins/ lokal -->
+<!-- QR Code Library (lokal) -->
 <script src="<?= base_url('plugins/qrious.min.js') ?>"></script>
 <script>
     // ============================================================

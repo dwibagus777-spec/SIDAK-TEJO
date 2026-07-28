@@ -242,7 +242,19 @@
 
                     <!-- Foto yang sudah ada -->
                     <?php
-                    $existingPhotos = json_decode($temuan['foto'], true) ?: [];
+                    $existingPhotos = [];
+                    if (!empty($temuan['foto'])) {
+                        if (is_array($temuan['foto'])) {
+                            $existingPhotos = $temuan['foto'];
+                        } else {
+                            $decoded = json_decode($temuan['foto'], true);
+                            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                $existingPhotos = $decoded;
+                            } else {
+                                $existingPhotos = array_filter(array_map('trim', explode(',', (string)$temuan['foto'])));
+                            }
+                        }
+                    }
                     if (!empty($existingPhotos)):
                     ?>
                     <div class="form-group mb-3">
@@ -475,14 +487,24 @@
         });
 
         // --- 3. GEOLOCATION & LEAFLET SELECTOR MAP ---
-        const initLat = <?= $temuan['latitude'] !== null ? $temuan['latitude'] : '-7.4478' ?>;
-        const initLng = <?= $temuan['longitude'] !== null ? $temuan['longitude'] : '112.7183' ?>;
+        if (typeof L !== 'undefined' && L.Icon && L.Icon.Default) {
+            L.Icon.Default.imagePath = '<?= base_url('plugins/images/') ?>/';
+        }
+
+        const initLat = <?= $temuan['latitude'] !== null ? (float)$temuan['latitude'] : '-7.4478' ?>;
+        const initLng = <?= $temuan['longitude'] !== null ? (float)$temuan['longitude'] : '112.7183' ?>;
 
         const map = L.map('selector-map').setView([initLat, initLng], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 20
         }).addTo(map);
+
+        setTimeout(function() {
+            if (map) {
+                map.invalidateSize();
+            }
+        }, 300);
 
         const customIcon = L.icon({
             iconUrl: '<?= base_url('assets/img/logo_sidak.png') ?>',

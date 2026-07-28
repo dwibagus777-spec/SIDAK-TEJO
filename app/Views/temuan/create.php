@@ -528,6 +528,10 @@
         });
 
         // --- 3. GEOLOCATION & LEAFLET SELECTOR MAP ---
+        if (typeof L !== 'undefined' && L.Icon && L.Icon.Default) {
+            L.Icon.Default.imagePath = '<?= base_url('plugins/images/') ?>/';
+        }
+
         const defaultLat = -7.4478;
         const defaultLng = 112.7183;
 
@@ -538,6 +542,12 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 20
         }).addTo(map);
+
+        setTimeout(function() {
+            if (map) {
+                map.invalidateSize();
+            }
+        }, 300);
 
         const customIcon = L.icon({
             iconUrl: '<?= base_url('assets/img/logo_sidak.png') ?>',

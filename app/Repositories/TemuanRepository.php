@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\TemuanModel;
+use CodeIgniter\Database\BaseBuilder;
 
 class TemuanRepository extends BaseRepository
 {
@@ -12,8 +13,86 @@ class TemuanRepository extends BaseRepository
     }
 
     /**
-     * Dapatkan nomor temuan berikutnya berdasarkan tahun
-     * Contoh: STJ-2026-000001
+     * Helper Query Builder Terpusat: Join ULP, Penyulang, & Section
+     */
+    protected function getJoinedBuilder(bool $includeUsers = false): BaseBuilder
+    {
+        $builder = $this->getBuilder('temuan')
+            ->join('ulps', 'ulps.id = temuan.ulp_id')
+            ->join('penyulang', 'penyulang.id = temuan.penyulang_id')
+            ->join('sections', 'sections.id = temuan.section_id');
+
+        if ($includeUsers) {
+            $builder->join('users c', 'c.id = temuan.created_by', 'left')
+                    ->join('users u', 'u.id = temuan.updated_by', 'left');
+        }
+
+        return $builder;
+    }
+
+    /**
+     * Helper Filter Terpusat untuk Temuan
+     */
+    protected function applyTemuanFilters(BaseBuilder $builder, array $filters, ?int $ulpIdFilter = null, ?string $jenisTemuanFilter = null): BaseBuilder
+    {
+        $builder->where('temuan.deleted_at IS NULL');
+
+        if ($ulpIdFilter !== null) {
+            $builder->where('temuan.ulp_id', $ulpIdFilter);
+        } elseif (!empty($filters['ulp_id'])) {
+            $builder->where('temuan.ulp_id', (int)$filters['ulp_id']);
+        }
+
+        if ($jenisTemuanFilter !== null) {
+            $builder->where('temuan.jenis_temuan', $jenisTemuanFilter);
+        } elseif (!empty($filters['jenis_temuan'])) {
+            $builder->where('temuan.jenis_temuan', $filters['jenis_temuan']);
+        }
+
+        if (!empty($filters['pelaksana'])) {
+            $builder->where('temuan.pelaksana', $filters['pelaksana']);
+        }
+
+        if (!empty($filters['prioritas'])) {
+            $builder->where('temuan.prioritas', $filters['prioritas']);
+        }
+
+        if (!empty($filters['potensi_gangguan'])) {
+            $builder->where('temuan.potensi_gangguan', $filters['potensi_gangguan']);
+        }
+
+        if (!empty($filters['penyulang_id'])) {
+            $builder->where('temuan.penyulang_id', (int)$filters['penyulang_id']);
+        }
+
+        if (!empty($filters['section_id'])) {
+            $builder->where('temuan.section_id', (int)$filters['section_id']);
+        }
+
+        if (!empty($filters['tanggal_awal'])) {
+            $builder->where('temuan.tanggal_temuan >=', $filters['tanggal_awal']);
+        }
+
+        if (!empty($filters['tanggal_akhir'])) {
+            $builder->where('temuan.tanggal_temuan <=', $filters['tanggal_akhir']);
+        }
+
+        if (!empty($filters['status'])) {
+            $statusVal = strtoupper($filters['status']);
+            if ($statusVal === 'BELUM SELESAI') {
+                $builder->where('temuan.status !=', 'SELESAI');
+            } elseif ($statusVal === 'SUDAH SELESAI' || $statusVal === 'SELESAI') {
+                $builder->where('temuan.status', 'SELESAI');
+            } else {
+                $builder->where('temuan.status', $statusVal);
+            }
+        }
+
+        return $builder;
+    }
+
+    /**
+     * Dapatkan nomor temuan berikutnya berdasarkan tahun (Contoh: STJ-2026-000001)
      */
     public function generateNomorTemuan(): string
     {
@@ -26,14 +105,8 @@ class TemuanRepository extends BaseRepository
             ->orderBy('id', 'DESC')
             ->first();
 
-        if ($lastTemuan) {
-            $lastNum = (int) substr($lastTemuan['nomor_temuan'], -6);
-            $nextNum = $lastNum + 1;
-        } else {
-            $nextNum = 1;
-        }
-
-        return $prefix . str_pad((string) $nextNum, 6, '0', STR_PAD_LEFT);
+        $nextNum = $lastTemuan ? ((int)substr($lastTemuan['nomor_temuan'], -6)) + 1 : 1;
+        return $prefix . str_pad((string)$nextNum, 6, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -41,86 +114,39 @@ class TemuanRepository extends BaseRepository
      */
     public function getDetail(int $id, ?int $ulpIdFilter = null): ?array
     {
-        $builder = $this->model
+        $builder = $this->getJoinedBuilder(true)
             ->select('temuan.*, ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section, 
                       c.nama as creator_name, u.nama as updater_name')
-            ->join('ulps', 'ulps.id = temuan.ulp_id')
-            ->join('penyulang', 'penyulang.id = temuan.penyulang_id')
-            ->join('sections', 'sections.id = temuan.section_id')
-            ->join('users c', 'c.id = temuan.created_by', 'left')
-            ->join('users u', 'u.id = temuan.updated_by', 'left')
             ->where('temuan.id', $id);
 
         if ($ulpIdFilter !== null) {
             $builder->where('temuan.ulp_id', $ulpIdFilter);
         }
 
-        return $builder->first();
+        return $builder->get()->getRowArray();
     }
 
     /**
-     * Query Server-Side DataTables untuk Temuan
+     * Query Server-Side DataTables untuk Temuan (Hostinger MySQL Optimized)
      */
     public function getDataTables(array $postData, ?int $ulpIdFilter = null, ?string $jenisTemuanFilter = null): array
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('temuan')
+        $builder = $this->getJoinedBuilder(false)
             ->select('temuan.id, temuan.nomor_temuan, temuan.jenis_temuan, temuan.pelaksana, 
                       temuan.prioritas, temuan.potensi_gangguan, temuan.tanggal_temuan, temuan.status, 
                       temuan.detail_temuan, temuan.foto, temuan.foto_path, temuan.created_at,
-                      ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section')
-            ->join('ulps', 'ulps.id = temuan.ulp_id')
-            ->join('penyulang', 'penyulang.id = temuan.penyulang_id')
-            ->join('sections', 'sections.id = temuan.section_id')
-            ->where('temuan.deleted_at IS NULL');
+                      ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section');
 
-        if ($ulpIdFilter !== null) {
-            $builder->where('temuan.ulp_id', $ulpIdFilter);
-        } elseif (!empty($postData['ulp_id'])) {
-            $builder->where('temuan.ulp_id', (int)$postData['ulp_id']);
-        }
+        $this->applyTemuanFilters($builder, $postData, $ulpIdFilter, $jenisTemuanFilter);
 
-        if ($jenisTemuanFilter !== null) {
-            $builder->where('temuan.jenis_temuan', $jenisTemuanFilter);
-        } elseif (!empty($postData['jenis_temuan'])) {
-            $builder->where('temuan.jenis_temuan', $postData['jenis_temuan']);
-        }
-
-        if (!empty($postData['pelaksana'])) {
-            $builder->where('temuan.pelaksana', $postData['pelaksana']);
-        }
-
-        if (!empty($postData['prioritas'])) {
-            $builder->where('temuan.prioritas', $postData['prioritas']);
-        }
-
-        if (!empty($postData['status'])) {
-            $statusVal = strtoupper($postData['status']);
-            if ($statusVal === 'BELUM SELESAI') {
-                $builder->where('temuan.status !=', 'SELESAI');
-            } elseif ($statusVal === 'SUDAH SELESAI' || $statusVal === 'SELESAI') {
-                $builder->where('temuan.status', 'SELESAI');
-            } else {
-                $builder->where('temuan.status', $statusVal);
-            }
-        }
-
-        if (!empty($postData['penyulang_id'])) {
-            $builder->where('temuan.penyulang_id', (int)$postData['penyulang_id']);
-        }
-
-        if (!empty($postData['section_id'])) {
-            $builder->where('temuan.section_id', (int)$postData['section_id']);
-        }
-
-        // Count Total
-        $baseTotalQuery = $db->table('temuan')->where('deleted_at IS NULL');
+        // Count Total Records (Unfiltered Base Count)
+        $baseTotalQuery = $this->getBuilder('temuan')->where('deleted_at IS NULL');
         if ($ulpIdFilter !== null) {
             $baseTotalQuery->where('ulp_id', $ulpIdFilter);
         }
         $totalRecords = $baseTotalQuery->countAllResults();
 
-        // Search
+        // Search Filter
         $searchValue = $postData['search']['value'] ?? '';
         if ($searchValue !== '') {
             $builder->groupStart()
@@ -135,10 +161,10 @@ class TemuanRepository extends BaseRepository
                 ->groupEnd();
         }
 
-        // Count Filtered
+        // Count Filtered Records
         $totalFiltered = $builder->countAllResults(false);
 
-        // Order
+        // Order & Pagination
         $orderColumnIdx = $postData['order'][0]['column'] ?? 0;
         $orderDir = $postData['order'][0]['dir'] ?? 'desc';
         
@@ -147,7 +173,7 @@ class TemuanRepository extends BaseRepository
             1 => 'penyulang.nama_penyulang',
             2 => 'sections.nama_section',
             3 => 'temuan.jenis_temuan',
-            4 => 'temuan.id', // for foto
+            4 => 'temuan.id',
             5 => 'temuan.prioritas',
             6 => 'temuan.tanggal_temuan',
             7 => 'temuan.status',
@@ -156,20 +182,17 @@ class TemuanRepository extends BaseRepository
         $orderColumn = $columnsMap[$orderColumnIdx] ?? 'temuan.id';
         $builder->orderBy($orderColumn, $orderDir);
 
-        // Limit
-        $start = $postData['start'] ?? 0;
-        $length = $postData['length'] ?? 10;
+        $start = (int)($postData['start'] ?? 0);
+        $length = (int)($postData['length'] ?? 10);
         if ($length != -1) {
             $builder->limit($length, $start);
         }
 
-        $data = $builder->get()->getResultArray();
-
         return [
-            'draw' => intval($postData['draw'] ?? 0),
-            'recordsTotal' => $totalRecords,
+            'draw'            => (int)($postData['draw'] ?? 0),
+            'recordsTotal'    => $totalRecords,
             'recordsFiltered' => $totalFiltered,
-            'data' => $data
+            'data'            => $builder->get()->getResultArray()
         ];
     }
 
@@ -178,55 +201,12 @@ class TemuanRepository extends BaseRepository
      */
     public function getFilteredTemuan(array $filters, ?int $ulpIdFilter = null): array
     {
-        $builder = $this->model
-            ->select('temuan.*, ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section')
-            ->join('ulps', 'ulps.id = temuan.ulp_id')
-            ->join('penyulang', 'penyulang.id = temuan.penyulang_id')
-            ->join('sections', 'sections.id = temuan.section_id');
+        $builder = $this->getJoinedBuilder(false)
+            ->select('temuan.*, ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section');
 
-        if ($ulpIdFilter !== null) {
-            $builder->where('temuan.ulp_id', $ulpIdFilter);
-        } elseif (!empty($filters['ulp_id'])) {
-            $builder->where('temuan.ulp_id', $filters['ulp_id']);
-        }
+        $this->applyTemuanFilters($builder, $filters, $ulpIdFilter, null);
 
-        if (!empty($filters['tanggal_awal'])) {
-            $builder->where('temuan.tanggal_temuan >=', $filters['tanggal_awal']);
-        }
-
-        if (!empty($filters['tanggal_akhir'])) {
-            $builder->where('temuan.tanggal_temuan <=', $filters['tanggal_akhir']);
-        }
-
-        if (!empty($filters['penyulang_id'])) {
-            $builder->where('temuan.penyulang_id', $filters['penyulang_id']);
-        }
-
-        if (!empty($filters['section_id'])) {
-            $builder->where('temuan.section_id', $filters['section_id']);
-        }
-
-        if (!empty($filters['pelaksana'])) {
-            $builder->where('temuan.pelaksana', $filters['pelaksana']);
-        }
-
-        if (!empty($filters['prioritas'])) {
-            $builder->where('temuan.prioritas', $filters['prioritas']);
-        }
-
-        if (!empty($filters['jenis_temuan'])) {
-            $builder->where('temuan.jenis_temuan', $filters['jenis_temuan']);
-        }
-
-        if (!empty($filters['potensi_gangguan'])) {
-            $builder->where('temuan.potensi_gangguan', $filters['potensi_gangguan']);
-        }
-
-        if (!empty($filters['status'])) {
-            $builder->where('temuan.status', $filters['status']);
-        }
-
-        return $builder->orderBy('temuan.tanggal_temuan', 'DESC')->findAll();
+        return $builder->orderBy('temuan.tanggal_temuan', 'DESC')->get()->getResultArray();
     }
 
     /**
@@ -234,7 +214,7 @@ class TemuanRepository extends BaseRepository
      */
     public function getIdentifikasiGangguan(int $penyulangId, string $potensiGangguan, ?string $jenisTemuanFilter = null): array
     {
-        $builder = $this->model
+        $builder = $this->getBuilder('temuan')
             ->select('temuan.*, sections.nama_section')
             ->join('sections', 'sections.id = temuan.section_id')
             ->where('temuan.penyulang_id', $penyulangId)
@@ -245,7 +225,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.jenis_temuan', $jenisTemuanFilter);
         }
 
-        return $builder->orderBy('temuan.id', 'DESC')->findAll();
+        return $builder->orderBy('temuan.id', 'DESC')->get()->getResultArray();
     }
 
     /**
@@ -253,7 +233,7 @@ class TemuanRepository extends BaseRepository
      */
     public function getRankingSectionsForIdentifikasi(int $penyulangId, string $potensiGangguan, ?string $jenisTemuanFilter = null): array
     {
-        $builder = $this->model
+        $builder = $this->getBuilder('temuan')
             ->select('sections.nama_section, COUNT(temuan.id) as total_temuan')
             ->join('sections', 'sections.id = temuan.section_id')
             ->where('temuan.penyulang_id', $penyulangId)
@@ -266,66 +246,64 @@ class TemuanRepository extends BaseRepository
 
         return $builder->groupBy('temuan.section_id')
             ->orderBy('total_temuan', 'DESC')
-            ->findAll();
+            ->get()->getResultArray();
     }
 
     /**
-     * Statistik Umum Dashboard (Card Counters)
+     * Statistik Umum Dashboard (Single Query Hostinger MySQL Aggregation Optimization)
+     * Mengganti 12 query terpisah menjadi 1 QUERY TUNGGAL untuk kecepatan maksimal
      */
     public function getDashboardStats(?int $ulpIdFilter = null, ?string $roleFilter = null): array
     {
         $cacheKey = "dashboard_stats_" . ($ulpIdFilter ?? 'all') . "_" . ($roleFilter ?? 'all');
         return cache()->remember($cacheKey, 600, function() use ($ulpIdFilter, $roleFilter) {
-            $db = \Config\Database::connect();
-            
-            $baseQuery = $db->table('temuan')->where('deleted_at IS NULL');
-            
+            $builder = $this->getBuilder('temuan')->where('deleted_at IS NULL');
+
             if ($ulpIdFilter !== null) {
-                $baseQuery->where('ulp_id', $ulpIdFilter);
+                $builder->where('ulp_id', $ulpIdFilter);
             }
 
-            // PDKB can only see their assigned work
-            if ($roleFilter === 'pdkb') {
-                $baseQuery->where('pelaksana', 'PDKB');
-            } elseif ($roleFilter === 'har_gardu') {
-                $baseQuery->where('pelaksana', 'HAR GARDU');
-            } elseif ($roleFilter === 'har_konstruksi') {
-                $baseQuery->where('pelaksana', 'HAR KONSTRUKSI');
-            } elseif ($roleFilter === 'har_row') {
-                $baseQuery->where('pelaksana', 'HAR ROW');
-            } elseif ($roleFilter === 'yantek') {
-                $baseQuery->where('pelaksana', 'YANTEK');
+            $roleMap = [
+                'pdkb'           => 'PDKB',
+                'har_gardu'      => 'HAR GARDU',
+                'har_konstruksi' => 'HAR KONSTRUKSI',
+                'har_row'        => 'HAR ROW',
+                'yantek'         => 'YANTEK'
+            ];
+            if ($roleFilter && isset($roleMap[$roleFilter])) {
+                $builder->where('pelaksana', $roleMap[$roleFilter]);
             }
 
-            $totalTemuan = (clone $baseQuery)->countAllResults();
-            
-            $pdkb = (clone $baseQuery)->where('pelaksana', 'PDKB')->countAllResults();
-            $harGardu = (clone $baseQuery)->where('pelaksana', 'HAR GARDU')->countAllResults();
-            $harKonstruksi = (clone $baseQuery)->where('pelaksana', 'HAR KONSTRUKSI')->countAllResults();
-            $harRow = (clone $baseQuery)->where('pelaksana', 'HAR ROW')->countAllResults();
-            $harCrane = (clone $baseQuery)->where('pelaksana', 'HAR CRANE')->countAllResults();
-            $yantek = (clone $baseQuery)->where('pelaksana', 'YANTEK')->countAllResults();
+            $builder->select("
+                COUNT(*) AS total,
+                SUM(CASE WHEN pelaksana = 'PDKB' THEN 1 ELSE 0 END) AS pdkb,
+                SUM(CASE WHEN pelaksana = 'HAR GARDU' THEN 1 ELSE 0 END) AS har_gardu,
+                SUM(CASE WHEN pelaksana = 'HAR KONSTRUKSI' THEN 1 ELSE 0 END) AS har_konstruksi,
+                SUM(CASE WHEN pelaksana = 'HAR ROW' THEN 1 ELSE 0 END) AS har_row,
+                SUM(CASE WHEN pelaksana = 'HAR CRANE' THEN 1 ELSE 0 END) AS har_crane,
+                SUM(CASE WHEN pelaksana = 'YANTEK' THEN 1 ELSE 0 END) AS yantek,
+                SUM(CASE WHEN prioritas = 'EMERGENCY' THEN 1 ELSE 0 END) AS emergency,
+                SUM(CASE WHEN prioritas = 'HIGH' THEN 1 ELSE 0 END) AS high,
+                SUM(CASE WHEN prioritas = 'MEDIUM' THEN 1 ELSE 0 END) AS medium,
+                SUM(CASE WHEN status = 'BELUM' THEN 1 ELSE 0 END) AS belum,
+                SUM(CASE WHEN status = 'SELESAI' THEN 1 ELSE 0 END) AS selesai
+            ");
 
-            $emergency = (clone $baseQuery)->where('prioritas', 'EMERGENCY')->countAllResults();
-            $high = (clone $baseQuery)->where('prioritas', 'HIGH')->countAllResults();
-            $medium = (clone $baseQuery)->where('prioritas', 'MEDIUM')->countAllResults();
-
-            $belum = (clone $baseQuery)->where('status', 'BELUM')->countAllResults();
-            $selesai = (clone $baseQuery)->where('status', 'SELESAI')->countAllResults();
+            $row = $builder->get()->getRowArray() ?: [];
 
             return [
-                'total' => $totalTemuan,
-                'pdkb' => $pdkb,
-                'har_gardu' => $harGardu,
-                'har_konstruksi' => $harKonstruksi,
-                'har_row' => $harRow,
-                'har_crane' => $harCrane,
-                'yantek' => $yantek,
-                'emergency' => $emergency,
-                'high' => $high,
-                'medium' => $medium,
-                'belum' => $belum,
-                'selesai' => $selesai
+                'total'          => (int)($row['total'] ?? 0),
+                'pdkb'           => (int)($row['pdkb'] ?? 0),
+                'har_gardu'      => (int)($row['har_gardu'] ?? 0),
+                'har_konstruksi' => (int)($row['har_konstruksi'] ?? 0),
+                'har_row'        => (int)($row['har_row'] ?? 0),
+                'har_crane'      => (int)($row['har_crane'] ?? 0),
+                'yantek'         => (int)($row['yantek'] ?? 0),
+                'emergency'      => (int)($row['emergency'] ?? 0),
+                'high'           => (int)($row['high'] ?? 0),
+                'medium'         => (int)($row['medium'] ?? 0),
+                'belum'          => (int)($row['belum'] ?? 0),
+                'selesai'        => (int)($row['selesai'] ?? 0)
             ];
         });
     }
@@ -335,8 +313,7 @@ class TemuanRepository extends BaseRepository
      */
     public function getMonthlyStats(?int $ulpIdFilter = null): array
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('temuan')
+        $builder = $this->getBuilder('temuan')
             ->select("DATE_FORMAT(tanggal_temuan, '%Y-%m') as bulan, COUNT(id) as total")
             ->where('deleted_at IS NULL');
 
@@ -344,13 +321,11 @@ class TemuanRepository extends BaseRepository
             $builder->where('ulp_id', $ulpIdFilter);
         }
 
-        $result = $builder->groupBy("bulan")
+        return $builder->groupBy("bulan")
             ->orderBy("bulan", "ASC")
             ->limit(12)
             ->get()
             ->getResultArray();
-
-        return $result;
     }
 
     /**
@@ -358,8 +333,7 @@ class TemuanRepository extends BaseRepository
      */
     public function getUlpStats(?int $ulpIdFilter = null): array
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('temuan')
+        $builder = $this->getBuilder('temuan')
             ->select('ulps.nama_ulp, COUNT(temuan.id) as total')
             ->join('ulps', 'ulps.id = temuan.ulp_id')
             ->where('temuan.deleted_at IS NULL');
@@ -378,8 +352,7 @@ class TemuanRepository extends BaseRepository
      */
     public function getPenyulangStats(?int $ulpIdFilter = null): array
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('temuan')
+        $builder = $this->getBuilder('temuan')
             ->select('penyulang.nama_penyulang, COUNT(temuan.id) as total')
             ->join('penyulang', 'penyulang.id = temuan.penyulang_id')
             ->where('temuan.deleted_at IS NULL')
@@ -401,8 +374,7 @@ class TemuanRepository extends BaseRepository
      */
     public function getPelaksanaStats(?int $ulpIdFilter = null): array
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('temuan')
+        $builder = $this->getBuilder('temuan')
             ->select('pelaksana, COUNT(id) as total')
             ->where('deleted_at IS NULL');
 
@@ -420,8 +392,7 @@ class TemuanRepository extends BaseRepository
      */
     public function getPrioritasStats(?int $ulpIdFilter = null): array
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('temuan')
+        $builder = $this->getBuilder('temuan')
             ->select('prioritas, COUNT(id) as total')
             ->where('deleted_at IS NULL');
 
@@ -439,8 +410,7 @@ class TemuanRepository extends BaseRepository
      */
     public function getPotensiGangguanStats(?int $ulpIdFilter = null): array
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('temuan')
+        $builder = $this->getBuilder('temuan')
             ->select('potensi_gangguan, COUNT(id) as total')
             ->where('deleted_at IS NULL');
 
@@ -461,7 +431,8 @@ class TemuanRepository extends BaseRepository
         $builder = $this->model
             ->select('id, nomor_temuan, prioritas, status, latitude, longitude, alamat, detail_temuan')
             ->where('latitude IS NOT NULL')
-            ->where('longitude IS NOT NULL');
+            ->where('longitude IS NOT NULL')
+            ->where('deleted_at IS NULL');
 
         if ($ulpIdFilter !== null) {
             $builder->where('ulp_id', $ulpIdFilter);

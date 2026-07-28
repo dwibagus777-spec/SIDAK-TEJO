@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use CodeIgniter\Model;
+use CodeIgniter\Database\BaseBuilder;
 
 abstract class BaseRepository
 {
@@ -25,25 +26,36 @@ abstract class BaseRepository
 
     public function insert(array $data)
     {
-        \Config\Services::cache()->clean();
+        $this->clearCache();
         return $this->model->insert($data);
     }
 
     public function update(int $id, array $data): bool
     {
-        \Config\Services::cache()->clean();
+        $this->clearCache();
         return $this->model->update($id, $data);
     }
 
     public function delete(int $id): bool
     {
-        \Config\Services::cache()->clean();
+        $this->clearCache();
         return $this->model->delete($id);
     }
 
     public function getModel(): Model
     {
         return $this->model;
+    }
+
+    protected function getBuilder(?string $table = null): BaseBuilder
+    {
+        $db = \Config\Database::connect();
+        return $table ? $db->table($table) : $this->model->builder();
+    }
+
+    protected function clearCache(): void
+    {
+        \Config\Services::cache()->clean();
     }
 
     public function __call(string $name, array $arguments)

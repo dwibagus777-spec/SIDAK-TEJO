@@ -3,12 +3,20 @@
 namespace App\Repositories;
 
 use App\Models\PenyulangModel;
+use CodeIgniter\Database\BaseBuilder;
 
 class PenyulangRepository extends BaseRepository
 {
     public function __construct()
     {
         parent::__construct(new PenyulangModel());
+    }
+
+    protected function getJoinedWithUlp(): BaseBuilder
+    {
+        return $this->getBuilder('penyulang')
+            ->select('penyulang.*, ulps.nama_ulp')
+            ->join('ulps', 'ulps.id = penyulang.ulp_id');
     }
 
     public function getActivePenyulangsByUlp(int $ulpId): array
@@ -24,20 +32,16 @@ class PenyulangRepository extends BaseRepository
 
     public function getAllWithUlp(): array
     {
-        return $this->model
-            ->select('penyulang.*, ulps.nama_ulp')
-            ->join('ulps', 'ulps.id = penyulang.ulp_id')
+        return $this->getJoinedWithUlp()
             ->orderBy('penyulang.id', 'DESC')
-            ->findAll();
+            ->get()->getResultArray();
     }
 
     public function findWithUlp(int $id): ?array
     {
-        return $this->model
-            ->select('penyulang.*, ulps.nama_ulp')
-            ->join('ulps', 'ulps.id = penyulang.ulp_id')
+        return $this->getJoinedWithUlp()
             ->where('penyulang.id', $id)
-            ->first();
+            ->get()->getRowArray();
     }
 
     public function getActivePenyulangs(): array

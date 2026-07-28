@@ -3,14 +3,17 @@
 namespace App\Controllers;
 
 use App\Services\AuthService;
+use App\Repositories\UserRepository;
 
 class Auth extends BaseController
 {
     private AuthService $authService;
+    private UserRepository $userRepository;
 
     public function __construct()
     {
         $this->authService = new AuthService();
+        $this->userRepository = new UserRepository();
     }
 
     public function login()
@@ -128,8 +131,7 @@ class Auth extends BaseController
             }
 
             $userId = (int) $session->get('user_id');
-            $userRepo = new \App\Repositories\UserRepository();
-            $user = $userRepo->find($userId);
+            $user = $this->userRepository->find($userId);
 
             if (!$user || !password_verify($this->request->getPost('current_password'), $user['password'])) {
                 return view('auth/change_password', [
@@ -138,7 +140,7 @@ class Auth extends BaseController
             }
 
             $newHash = password_hash($this->request->getPost('new_password'), PASSWORD_DEFAULT);
-            $userRepo->update($userId, ['password' => $newHash]);
+            $this->userRepository->update($userId, ['password' => $newHash]);
 
             log_activity('CHANGE_PASSWORD', 'User ' . $user['username'] . ' mengubah password-nya sendiri.');
 

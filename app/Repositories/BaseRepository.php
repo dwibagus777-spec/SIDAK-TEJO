@@ -24,7 +24,7 @@ abstract class BaseRepository
         return $this->model->findAll();
     }
 
-    public function insert(array $data)
+    public function insert(array $data): int|string|bool
     {
         $this->clearCache();
         return $this->model->insert($data);

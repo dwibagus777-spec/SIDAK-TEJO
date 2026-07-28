@@ -22,6 +22,9 @@ $routes->get('export_railway_db.php', 'DbExport::index');
 $routes->get('export-live-db', 'DbExport::index');
 $routes->get('download-db', 'DbExport::index');
 
+// Rute Cron Job Otomatis Harian Backup (Hostinger Compatible)
+$routes->match(['get', 'post'], 'backup/cron', 'Backup::cron');
+
 
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {
@@ -35,6 +38,15 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('change-password', 'Auth::changePassword');
     $routes->get('setting/announcement', 'Setting::index');
     $routes->match(['get', 'post'], 'setting/update-announcement', 'Setting::updateAnnouncement');
+
+    // Manajemen Backup & Restore Sistem (Admin)
+    $routes->group('backup', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
+        $routes->get('/', 'Backup::index');
+        $routes->get('create', 'Backup::create');
+        $routes->get('download/(:segment)', 'Backup::download/$1');
+        $routes->post('restore', 'Backup::restore');
+        $routes->get('delete/(:segment)', 'Backup::delete/$1');
+    });
 
     // Import CSV (Admin saja)
     $routes->group('import', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {

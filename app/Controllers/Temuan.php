@@ -28,7 +28,14 @@ class Temuan extends BaseController
         $this->tindakLanjutRepository = new TindakLanjutRepository();
     }
 
-    public function index()
+    // ==========================================
+    // PRIVATE HELPER METHODS (SOLID REFACTORING)
+    // ==========================================
+
+    /**
+     * Dapatkan ULP dan Penyulang ter-scope berdasarkan role user
+     */
+    private function getScopedUlpsAndPenyulangs(): array
     {
         $session = session();
         $role = $session->get('user_role');
@@ -43,9 +50,130 @@ class Temuan extends BaseController
             $penyulangs = $this->penyulangRepository->getActivePenyulangs();
         }
 
+        return [$ulps, $penyulangs, $isRestricted];
+    }
+
+    /**
+     * Rules validasi form input temuan
+     */
+    private function getTemuanFormRules(): array
+    {
+        return [
+            'ulp_id'           => 'required|is_not_unique[ulps.id]',
+            'penyulang_id'     => 'required|is_not_unique[penyulang.id]',
+            'section_id'       => 'required|is_not_unique[sections.id]',
+            'jenis_temuan'     => 'required|in_list[KONSTRUKSI,HOTSPOT,ROW]',
+            'pelaksana'        => 'required|in_list[PDKB,HAR GARDU,HAR GTT,HAR KONSTRUKSI,HAR ROW,HAR CRANE]',
+            'prioritas'        => 'required|in_list[EMERGENCY,HIGH,MEDIUM]',
+            'potensi_gangguan' => 'required|in_list[DGR,OCR,OCRDGR]',
+            'konduktor'        => 'required|max_length[100]',
+            'noga'             => 'permit_empty|max_length[100]',
+            'material'         => 'permit_empty',
+            'detail_temuan'    => 'required',
+            'alamat'           => 'required',
+            'tanggal_temuan'   => 'required',
+        ];
+    }
+
+    /**
+     * Format data baris untuk DataTables
+     */
+    private function formatDataTablesRow(array $row, string $role, bool $includeUpdateBtn = false): array
+    {
+        // Prioritas Badge
+        $prio = strtoupper($row['prioritas']);
+        $prioBadge = '<span class="badge bg-secondary">' . $prio . '</span>';
+        if ($prio === 'EMERGENCY') {
+            $prioBadge = '<span class="badge bg-danger animate__animated animate__flash animate__infinite">' . $prio . '</span>';
+        } elseif ($prio === 'HIGH') {
+            $prioBadge = '<span class="badge bg-warning text-dark">' . $prio . '</span>';
+        } elseif ($prio === 'MEDIUM') {
+            $prioBadge = '<span class="badge bg-primary">' . $prio . '</span>';
+        }
+
+        // SLA & Status Badge
+        $sla = get_sla_status($row['prioritas'], $row['tanggal_temuan'], $row['status']);
+        $statusBadge = $sla['badge_html'];
+
+        // Tombol Aksi
+        $btnDetail = '<button type="button" class="btn btn-sm btn-info text-white btn-detail-modal" data-id="' . $row['id'] . '" title="Lihat Detail & Foto"><i class="fas fa-eye"></i></button>';
+        
+        $actions = $btnDetail;
+
+        if ($includeUpdateBtn) {
+            $canTindakLanjut = in_array($role, ['administrator', 'admin_ulp', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek']);
+            if ($canTindakLanjut) {
+                $actions .= ' <button type="button" class="btn btn-sm btn-warning text-dark btn-update-status" data-id="' . $row['id'] . '" data-nomor="' . $row['nomor_temuan'] . '" title="Update Progress/Pekerjaan"><i class="fas fa-edit"></i></button>';
+            }
+        } else {
+            if (check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek', 'supervisor_ulp', 'supervisor_up3'])) {
+                $deleteUrl = site_url('temuan/delete/' . $row['id']);
+                $actions .= ' <a href="' . $deleteUrl . '" onclick="return confirm(\'Apakah Anda yakin ingin menghapus temuan ' . esc(addslashes($row['nomor_temuan']), 'attr') . '?\');" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>';
+            }
+        }
+
+        // Foto Column Thumbnail
+        $fotoHtml = '<span class="text-muted small">Tidak ada</span>';
+        $photos = json_decode($row['foto'] ?? '', true) ?: [];
+        if (is_string($row['foto'] ?? null) && empty($photos) && !empty($row['foto'])) {
+            $photos = [$row['foto']];
+        }
+
+        if (!empty($photos) && !empty($photos[0])) {
+            $photoUrl = get_photo_url($photos[0], $row['foto_path'] ?? 'foto/');
+            $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" onerror="this.onerror=null; this.parentElement.innerHTML=\'<span class=&quot;text-muted small&quot;>Tidak ada foto</span>\';" title="Klik untuk memperbesar">';
+            if (count($photos) > 1) {
+                $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
+            }
+        }
+
+        return [
+            $row['nomor_temuan'],
+            $row['nama_penyulang'],
+            $row['nama_section'],
+            $row['jenis_temuan'],
+            $fotoHtml,
+            $prioBadge,
+            date('d-m-Y H:i', strtotime(!empty($row['created_at']) ? $row['created_at'] : $row['tanggal_temuan'])) . ' WIB',
+            $statusBadge,
+            $actions
+        ];
+    }
+
+    /**
+     * Ekstrak file upload yang valid dari request
+     */
+    private function extractUploadFiles(array $keys): array
+    {
+        $uploadFiles = [];
+        foreach ($keys as $key) {
+            $file = $this->request->getFile($key);
+            if ($file && $file->isValid() && !$file->hasMoved()) {
+                $uploadFiles[$key] = $file;
+            }
+        }
+        return $uploadFiles;
+    }
+
+    /**
+     * Respon JSON Standar untuk AJAX
+     */
+    private function jsonResponse(array $data, int $statusCode = 200)
+    {
+        return $this->response->setStatusCode($statusCode)->setJSON($data);
+    }
+
+    // ==========================================
+    // PUBLIC CONTROLLER ACTIONS
+    // ==========================================
+
+    public function index()
+    {
+        [$ulps, $penyulangs, $isRestricted] = $this->getScopedUlpsAndPenyulangs();
+
         return view('temuan/index', [
-            'ulps' => $ulps,
-            'penyulangs' => $penyulangs,
+            'ulps'         => $ulps,
+            'penyulangs'   => $penyulangs,
             'isRestricted' => $isRestricted
         ]);
     }
@@ -56,81 +184,18 @@ class Temuan extends BaseController
     public function ajaxDataTables()
     {
         $scoping = get_user_role_scoping();
+        $role = (string)session()->get('user_role');
 
         $postData = $this->request->getPost();
         $result = $this->temuanRepository->getDataTables($postData, $scoping['ulp_id'], $scoping['jenis_temuan']);
 
-        // Format data sebelum dikirim kembali
         $formattedData = [];
         foreach ($result['data'] as $row) {
-            
-            // Prioritas Badge
-            $prio = strtoupper($row['prioritas']);
-            $prioBadge = '<span class="badge bg-secondary">' . $prio . '</span>';
-            if ($prio === 'EMERGENCY') {
-                $prioBadge = '<span class="badge bg-danger animate__animated animate__flash animate__infinite">' . $prio . '</span>';
-            } elseif ($prio === 'HIGH') {
-                $prioBadge = '<span class="badge bg-warning text-dark">' . $prio . '</span>';
-            } elseif ($prio === 'MEDIUM') {
-                $prioBadge = '<span class="badge bg-primary">' . $prio . '</span>';
-            }
-
-            // Potensi Gangguan Badge
-            $pot = strtoupper($row['potensi_gangguan']);
-            $potBadge = '<span class="badge bg-info text-dark">' . $pot . '</span>';
-
-            // SLA & Status Badge
-            $sla = get_sla_status($row['prioritas'], $row['tanggal_temuan'], $row['status']);
-            $statusBadge = $sla['badge_html'];
-
-            // Tombol Aksi - gunakan modal AJAX (lebih cepat dari pindah halaman)
-            $btnDetail = '<button type="button" class="btn btn-sm btn-info text-white btn-detail-modal" data-id="' . $row['id'] . '" title="Lihat Detail & Foto"><i class="fas fa-eye"></i></button>';
-            
-            $btnDelete = '';
-            if (check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek', 'supervisor_ulp', 'supervisor_up3'])) {
-                $deleteUrl = site_url('temuan/delete/' . $row['id']);
-                $btnDelete = ' <a href="' . $deleteUrl . '" onclick="return confirm(\'Apakah Anda yakin ingin menghapus temuan ' . esc(addslashes($row['nomor_temuan']), 'attr') . '?\');" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>';
-            }
-
-            $actions = $btnDetail . $btnDelete;
-
-            // Detail Kerusakan (truncated for neatness)
-            $detailKerusakan = esc($row['detail_temuan'] ?? '');
-            if (mb_strlen($detailKerusakan) > 50) {
-                $detailKerusakan = '<span title="' . esc($row['detail_temuan'] ?? '') . '">' . mb_strimwidth($detailKerusakan, 0, 50, '...') . '</span>';
-            }
-
-            // Foto Column (Render small thumbnail)
-            $fotoHtml = '<span class="text-muted small">Tidak ada</span>';
-            $photos = json_decode($row['foto'] ?? '', true) ?: [];
-            if (is_string($row['foto'] ?? null) && empty($photos) && !empty($row['foto'])) {
-                $photos = [$row['foto']];
-            }
-
-            if (!empty($photos) && !empty($photos[0])) {
-                $photoUrl = get_photo_url($photos[0], $row['foto_path'] ?? 'foto/');
-                $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" onerror="this.onerror=null; this.parentElement.innerHTML=\'<span class=&quot;text-muted small&quot;>Tidak ada foto</span>\';" title="Klik untuk memperbesar">';
-                if (count($photos) > 1) {
-                    $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
-                }
-            }
-
-            $formattedData[] = [
-                $row['nomor_temuan'],
-                $row['nama_penyulang'],
-                $row['nama_section'],
-                $row['jenis_temuan'],
-                $fotoHtml,
-                $prioBadge,
-                date('d-m-Y H:i', strtotime(!empty($row['created_at']) ? $row['created_at'] : $row['tanggal_temuan'])) . ' WIB',
-                $statusBadge,
-                $actions
-            ];
+            $formattedData[] = $this->formatDataTablesRow($row, $role, false);
         }
 
         $result['data'] = $formattedData;
-
-        return $this->response->setJSON($result);
+        return $this->jsonResponse($result);
     }
 
     public function create()
@@ -154,31 +219,13 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
 
-        // Validasi input
-        $rules = [
-            'ulp_id'           => 'required|is_not_unique[ulps.id]',
-            'penyulang_id'     => 'required|is_not_unique[penyulang.id]',
-            'section_id'       => 'required|is_not_unique[sections.id]',
-            'jenis_temuan'     => 'required|in_list[KONSTRUKSI,HOTSPOT,ROW]',
-            'pelaksana'        => 'required|in_list[PDKB,HAR GARDU,HAR GTT,HAR KONSTRUKSI,HAR ROW,HAR CRANE]',
-            'prioritas'        => 'required|in_list[EMERGENCY,HIGH,MEDIUM]',
-            'potensi_gangguan' => 'required|in_list[DGR,OCR,OCRDGR]',
-            'konduktor'        => 'required|max_length[100]',
-            'noga'             => 'permit_empty|max_length[100]',
-            'material'         => 'permit_empty',
-            'detail_temuan'    => 'required',
-            'alamat'           => 'required',
-            'tanggal_temuan'   => 'required',
-        ];
-
-        // Custom validation error message
-        if (!$this->validate($rules)) {
+        if (!$this->validate($this->getTemuanFormRules())) {
             $ulps = ($role === 'admin_ulp' && $userUlpId !== null) 
                 ? [$this->ulpRepository->find($userUlpId)] 
                 : $this->ulpRepository->getActiveUlps();
 
             return view('temuan/create', [
-                'ulps' => $ulps,
+                'ulps'       => $ulps,
                 'validation' => $this->validator
             ]);
         }
@@ -193,7 +240,6 @@ class Temuan extends BaseController
             return redirect()->to(site_url('temuan/create'))->with('error', 'Anda hanya diizinkan menginput temuan untuk ULP Anda.');
         }
 
-        // Kumpulkan data temuan
         $data = [
             'ulp_id'           => $ulpIdInput,
             'penyulang_id'     => (int)$this->request->getPost('penyulang_id'),
@@ -212,10 +258,7 @@ class Temuan extends BaseController
             'tanggal_temuan'   => $this->request->getPost('tanggal_temuan'),
         ];
 
-        // Ambil file foto (multi-upload)
         $files = $this->request->getFileMultiple('foto');
-
-        // Panggil Service
         $res = $this->temuanService->createTemuan($data, $files);
 
         if ($res['success']) {
@@ -245,10 +288,7 @@ class Temuan extends BaseController
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses ke data tersebut.');
         }
 
-        // Hitung SLA status
         $sla = get_sla_status($temuan['prioritas'], $temuan['tanggal_temuan'], $temuan['status'], $temuan['tanggal_selesai']);
-
-        // Ambil histori progress tindak lanjut
         $history = $this->tindakLanjutRepository->getHistoryByTemuan($id);
 
         return view('temuan/detail', [
@@ -259,7 +299,7 @@ class Temuan extends BaseController
     }
 
     /**
-     * AJAX endpoint untuk modal detail cepat di halaman index
+     * AJAX endpoint untuk modal detail cepat
      */
     public function ajaxDetail(int $id)
     {
@@ -267,16 +307,15 @@ class Temuan extends BaseController
             $session = session();
             $role = strtolower((string)$session->get('user_role'));
 
-            // Detail temuan bersifat READ-ONLY, sehingga diizinkan untuk dibaca seluruh user
             $temuan = $this->temuanRepository->getDetail($id, null);
             if (!$temuan) {
-                return $this->response->setStatusCode(404)->setJSON(['success' => false, 'error' => 'Data temuan tidak ditemukan.']);
+                return $this->jsonResponse(['success' => false, 'error' => 'Data temuan tidak ditemukan.'], 404);
             }
 
             $sla     = get_sla_status($temuan['prioritas'], $temuan['tanggal_temuan'], $temuan['status'], $temuan['tanggal_selesai']);
             $history = $this->tindakLanjutRepository->getHistoryByTemuan($id);
 
-            return $this->response->setJSON([
+            return $this->jsonResponse([
                 'success'   => true,
                 'temuan'    => $temuan,
                 'sla'       => $sla,
@@ -287,7 +326,7 @@ class Temuan extends BaseController
             ]);
         } catch (\Throwable $e) {
             log_message('error', 'ajaxDetail Error: ' . $e->getMessage());
-            return $this->response->setStatusCode(500)->setJSON(['success' => false, 'error' => $e->getMessage()]);
+            return $this->jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -310,7 +349,7 @@ class Temuan extends BaseController
         $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter);
         if (!$temuan) {
             if ($isAjax) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Temuan tidak ditemukan atau Anda tidak memiliki akses.']);
+                return $this->jsonResponse(['success' => false, 'message' => 'Temuan tidak ditemukan atau Anda tidak memiliki akses.']);
             }
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses.');
         }
@@ -322,7 +361,7 @@ class Temuan extends BaseController
 
         if (!$this->validate($rules)) {
             if ($isAjax) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Status dan komentar tindak lanjut wajib diisi.']);
+                return $this->jsonResponse(['success' => false, 'message' => 'Status dan komentar tindak lanjut wajib diisi.']);
             }
             return redirect()->to(site_url('temuan/detail/' . $id))->with('error', 'Status dan komentar tindak lanjut wajib diisi.');
         }
@@ -333,27 +372,12 @@ class Temuan extends BaseController
             'pelaksana'       => $session->get('user_name') ?: 'Petugas'
         ];
 
-        $uploadFiles = [];
-        
-        $fotoSebelum = $this->request->getFile('foto_sebelum');
-        if ($fotoSebelum && $fotoSebelum->isValid()) {
-            $uploadFiles['foto_sebelum'] = $fotoSebelum;
-        }
+        $uploadFiles = $this->extractUploadFiles(['foto_sebelum', 'foto_proses', 'foto_sesudah']);
 
-        $fotoProses = $this->request->getFile('foto_proses');
-        if ($fotoProses && $fotoProses->isValid()) {
-            $uploadFiles['foto_proses'] = $fotoProses;
-        }
-
-        $fotoSesudah = $this->request->getFile('foto_sesudah');
-        if ($fotoSesudah && $fotoSesudah->isValid()) {
-            $uploadFiles['foto_sesudah'] = $fotoSesudah;
-        }
-
-        $res = $this->temuanService->addTindakLanjut($id, $progressData, $uploadFiles);
+        $res = $this->temuanService->updateTemuanPekerjaan($id, $progressData, $uploadFiles);
 
         if ($isAjax) {
-            return $this->response->setJSON($res);
+            return $this->jsonResponse($res);
         }
 
         if ($res['success']) {
@@ -383,7 +407,6 @@ class Temuan extends BaseController
             ? [$this->ulpRepository->find($userUlpId)]
             : $this->ulpRepository->getActiveUlps();
 
-        // Ambil penyulang & section yang sudah terpilih untuk pre-populate
         $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
         $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
 
@@ -411,24 +434,7 @@ class Temuan extends BaseController
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses.');
         }
 
-        // Validasi input
-        $rules = [
-            'ulp_id'           => 'required|is_not_unique[ulps.id]',
-            'penyulang_id'     => 'required|is_not_unique[penyulang.id]',
-            'section_id'       => 'required|is_not_unique[sections.id]',
-            'jenis_temuan'     => 'required|in_list[KONSTRUKSI,HOTSPOT,ROW]',
-            'pelaksana'        => 'required|in_list[PDKB,HAR GARDU,HAR GTT,HAR KONSTRUKSI,HAR ROW,HAR CRANE]',
-            'prioritas'        => 'required|in_list[EMERGENCY,HIGH,MEDIUM]',
-            'potensi_gangguan' => 'required|in_list[DGR,OCR,OCRDGR]',
-            'konduktor'        => 'required|max_length[100]',
-            'noga'             => 'permit_empty|max_length[100]',
-            'material'         => 'permit_empty',
-            'detail_temuan'    => 'required',
-            'alamat'           => 'required',
-            'tanggal_temuan'   => 'required',
-        ];
-
-        if (!$this->validate($rules)) {
+        if (!$this->validate($this->getTemuanFormRules())) {
             $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
                 ? [$this->ulpRepository->find($userUlpId)]
                 : $this->ulpRepository->getActiveUlps();
@@ -455,7 +461,6 @@ class Temuan extends BaseController
             return redirect()->to(site_url("temuan/edit/{$id}"))->with('error', 'Anda hanya diizinkan memilih ULP Anda.');
         }
 
-        // Kumpulkan data update
         $data = [
             'ulp_id'           => $ulpIdInput,
             'penyulang_id'     => (int)$this->request->getPost('penyulang_id'),
@@ -474,7 +479,6 @@ class Temuan extends BaseController
             'tanggal_temuan'   => $this->request->getPost('tanggal_temuan'),
         ];
 
-        // Cek apakah ada foto baru yang diupload
         $newFiles = $this->request->getFileMultiple('foto');
         $res = $this->temuanService->updateTemuan($id, $data, $newFiles);
 
@@ -498,7 +502,7 @@ class Temuan extends BaseController
             if (!$temuan) {
                 log_message('warning', "[DELETE_TEMUAN] Data tidak ditemukan atau sudah terhapus | ID: {$id}");
                 if ($isAjax) {
-                    return $this->response->setJSON(['success' => false, 'message' => 'Data temuan tidak ditemukan atau sudah dihapus.']);
+                    return $this->jsonResponse(['success' => false, 'message' => 'Data temuan tidak ditemukan atau sudah dihapus.']);
                 }
                 return redirect()->to(site_url('temuan'))->with('error', 'Data temuan tidak ditemukan.');
             }
@@ -510,12 +514,11 @@ class Temuan extends BaseController
             if ($role === 'admin_ulp' && $userUlpId !== null && (int)$temuan['ulp_id'] !== (int)$userUlpId) {
                 log_message('warning', "[DELETE_TEMUAN] Akses ditolak untuk role admin_ulp | User ULP: {$userUlpId} | Temuan ULP: {$temuan['ulp_id']}");
                 if ($isAjax) {
-                    return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan ULP lain.']);
+                    return $this->jsonResponse(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan ULP lain.']);
                 }
                 return redirect()->to(site_url('temuan'))->with('error', 'Anda tidak memiliki hak akses.');
             }
 
-            // Eksekusi Soft Delete Query
             $now = date('Y-m-d H:i:s');
             $db->table('temuan')->where('id', $id)->update(['deleted_at' => $now]);
             $affectedRows = $db->affectedRows();
@@ -525,7 +528,7 @@ class Temuan extends BaseController
             if ($affectedRows > 0) {
                 log_activity('DELETE_TEMUAN', 'Menghapus temuan: ' . $temuan['nomor_temuan']);
                 if ($isAjax) {
-                    return $this->response->setJSON(['success' => true, 'message' => 'Temuan ' . esc($temuan['nomor_temuan']) . ' berhasil dihapus.']);
+                    return $this->jsonResponse(['success' => true, 'message' => 'Temuan ' . esc($temuan['nomor_temuan']) . ' berhasil dihapus.']);
                 }
                 return redirect()->to(site_url('temuan'))->with('success', 'Temuan ' . esc($temuan['nomor_temuan']) . ' berhasil dihapus.');
             }
@@ -534,14 +537,14 @@ class Temuan extends BaseController
             log_message('error', "[DELETE_TEMUAN_FAIL] DB Error Code: {$dbError['code']} | DB Error Msg: {$dbError['message']} | ID: {$id}");
 
             if ($isAjax) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus data dari database. Error Code: ' . $dbError['code']]);
+                return $this->jsonResponse(['success' => false, 'message' => 'Gagal menghapus data dari database. Error Code: ' . $dbError['code']]);
             }
             return redirect()->to(site_url('temuan'))->with('error', 'Gagal menghapus data.');
 
         } catch (\Throwable $e) {
             log_message('error', "[DELETE_TEMUAN_EXCEPTION] " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
             if ($isAjax) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+                return $this->jsonResponse(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
             }
             return redirect()->to(site_url('temuan'))->with('error', 'Server error: ' . $e->getMessage());
         }
@@ -552,33 +555,22 @@ class Temuan extends BaseController
     public function ajaxGetPenyulang(int $ulpId)
     {
         $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($ulpId);
-        return $this->response->setJSON($penyulangs);
+        return $this->jsonResponse($penyulangs);
     }
 
     public function ajaxGetSection(int $penyulangId)
     {
         $sections = $this->sectionRepository->getActiveSectionsByPenyulang($penyulangId);
-        return $this->response->setJSON($sections);
+        return $this->jsonResponse($sections);
     }
 
     public function terdekat()
     {
-        $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
-        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'har_crane', 'pdkb', 'inspeksi']));
-
-        if ($isRestricted) {
-            $ulps = [$this->ulpRepository->find($userUlpId)];
-            $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($userUlpId);
-        } else {
-            $ulps = $this->ulpRepository->getActiveUlps();
-            $penyulangs = $this->penyulangRepository->getActivePenyulangs();
-        }
+        [$ulps, $penyulangs, $isRestricted] = $this->getScopedUlpsAndPenyulangs();
 
         return view('temuan/terdekat', [
-            'ulps' => $ulps,
-            'penyulangs' => $penyulangs,
+            'ulps'         => $ulps,
+            'penyulangs'   => $penyulangs,
             'isRestricted' => $isRestricted
         ]);
     }
@@ -590,19 +582,19 @@ class Temuan extends BaseController
 
             $lat = $this->request->getGet('latitude');
             $lng = $this->request->getGet('longitude');
-            $radius = $this->request->getGet('radius'); // in meters
+            $radius = $this->request->getGet('radius');
             
             if (empty($lat) || empty($lng)) {
-                return $this->response->setJSON([]);
+                return $this->jsonResponse([]);
             }
             
             $lat = (float)$lat;
             $lng = (float)$lng;
-            $radius = (float)($radius ?: 1000) / 1000; // convert to km
+            $radius = (float)($radius ?: 1000) / 1000;
             
             $q = trim((string)($this->request->getGet('q') ?: $this->request->getGet('penyulang')));
             if (!empty($q)) {
-                $radius = 200; // Auto-expand radius for search query
+                $radius = 200;
             }
 
             $db = \Config\Database::connect();
@@ -635,13 +627,11 @@ class Temuan extends BaseController
                 $params[] = $like;
             }
 
-            // Apply ULP restriction if restricted
             if ($scoping['ulp_id'] !== null) {
                 $sql .= " AND t.ulp_id = ?";
                 $params[] = (int)$scoping['ulp_id'];
             }
 
-            // Apply category restriction (e.g. har_row -> ROW)
             if ($scoping['jenis_temuan'] !== null) {
                 $sql .= " AND t.jenis_temuan = ?";
                 $params[] = $scoping['jenis_temuan'];
@@ -665,44 +655,32 @@ class Temuan extends BaseController
                 }
             }
             
-            return $this->response->setJSON($results);
+            return $this->jsonResponse($results);
         } catch (\Throwable $e) {
             log_message('error', 'ajaxTerdekat Error: ' . $e->getMessage());
-            return $this->response->setJSON([]);
+            return $this->jsonResponse([]);
         }
     }
 
     public function updatePekerjaan()
     {
-        $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
-        
-        $unrestrictedRoles = ['administrator', 'har_crane', 'pdkb', 'inspeksi'];
-        $isRestricted = ($userUlpId !== null && !in_array($role, $unrestrictedRoles));
-
-        if ($isRestricted) {
-            $ulps = [$this->ulpRepository->find($userUlpId)];
-            $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($userUlpId);
-        } else {
-            $ulps = $this->ulpRepository->getActiveUlps();
-            $penyulangs = $this->penyulangRepository->getActivePenyulangs();
-        }
+        [$ulps, $penyulangs, $isRestricted] = $this->getScopedUlpsAndPenyulangs();
+        $role = session()->get('user_role');
 
         $rolePelaksanaMap = [
-            'pdkb' => 'PDKB',
-            'har_gardu' => 'HAR GARDU',
-            'har_row' => 'HAR ROW',
-            'har_crane' => 'HAR CRANE',
+            'pdkb'           => 'PDKB',
+            'har_gardu'      => 'HAR GARDU',
+            'har_row'        => 'HAR ROW',
+            'har_crane'      => 'HAR CRANE',
             'har_konstruksi' => 'HAR KONSTRUKSI',
-            'yantek' => 'YANTEK'
+            'yantek'         => 'YANTEK'
         ];
-        $lockedPelaksana = isset($rolePelaksanaMap[$role]) ? $rolePelaksanaMap[$role] : null;
+        $lockedPelaksana = $rolePelaksanaMap[$role] ?? null;
 
         return view('temuan/update_pekerjaan', [
-            'ulps' => $ulps,
-            'penyulangs' => $penyulangs,
-            'isRestricted' => $isRestricted,
+            'ulps'            => $ulps,
+            'penyulangs'      => $penyulangs,
+            'isRestricted'    => $isRestricted,
             'lockedPelaksana' => $lockedPelaksana
         ]);
     }
@@ -710,7 +688,7 @@ class Temuan extends BaseController
     public function ajaxUpdatePekerjaan()
     {
         $session = session();
-        $role = $session->get('user_role');
+        $role = (string)$session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
 
         $ulpIdFilter = null;
@@ -721,14 +699,13 @@ class Temuan extends BaseController
 
         $postData = $this->request->getPost();
 
-        // Inject pelaksana filter
         $rolePelaksanaMap = [
-            'pdkb' => 'PDKB',
-            'har_gardu' => 'HAR GARDU',
-            'har_row' => 'HAR ROW',
-            'har_crane' => 'HAR CRANE',
+            'pdkb'           => 'PDKB',
+            'har_gardu'      => 'HAR GARDU',
+            'har_row'        => 'HAR ROW',
+            'har_crane'      => 'HAR CRANE',
             'har_konstruksi' => 'HAR KONSTRUKSI',
-            'yantek' => 'YANTEK'
+            'yantek'         => 'YANTEK'
         ];
         if (isset($rolePelaksanaMap[$role])) {
             $postData['pelaksana'] = $rolePelaksanaMap[$role];
@@ -736,66 +713,12 @@ class Temuan extends BaseController
 
         $result = $this->temuanRepository->getDataTables($postData, $ulpIdFilter);
 
-        // Format data
         $formattedData = [];
         foreach ($result['data'] as $row) {
-            
-            $prio = strtoupper($row['prioritas']);
-            $prioBadge = '<span class="badge bg-secondary">' . $prio . '</span>';
-            if ($prio === 'EMERGENCY') {
-                $prioBadge = '<span class="badge bg-danger animate__animated animate__flash animate__infinite">' . $prio . '</span>';
-            } elseif ($prio === 'HIGH') {
-                $prioBadge = '<span class="badge bg-warning text-dark">' . $prio . '</span>';
-            } elseif ($prio === 'MEDIUM') {
-                $prioBadge = '<span class="badge bg-primary">' . $prio . '</span>';
-            }
-
-            $pot = strtoupper($row['potensi_gangguan']);
-            $potBadge = '<span class="badge bg-info text-dark">' . $pot . '</span>';
-
-            $sla = get_sla_status($row['prioritas'], $row['tanggal_temuan'], $row['status']);
-            $statusBadge = $sla['badge_html'];
-
-            $detailKerusakan = esc($row['detail_temuan'] ?? '');
-            if (mb_strlen($detailKerusakan) > 50) {
-                $detailKerusakan = '<span title="' . esc($row['detail_temuan'] ?? '') . '">' . mb_strimwidth($detailKerusakan, 0, 50, '...') . '</span>';
-            }
-
-            $fotoHtml = '<span class="text-muted small"><i class="fas fa-image text-secondary mr-1"></i>Tidak ada</span>';
-            $photos = json_decode($row['foto'] ?? '', true) ?: [];
-            if (!empty($photos)) {
-                $photoUrl = get_photo_url($photos[0], $row['foto_path'] ?? 'foto/');
-                $fotoHtml = '<img src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" onerror="this.onerror=null; this.parentElement.innerHTML=\'<span class=&quot;text-muted small&quot;>Tidak ada foto</span>\';" title="Klik untuk memperbesar">';
-                if (count($photos) > 1) {
-                    $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
-                }
-            }
-
-            $btnDetail = '<button type="button" class="btn btn-sm btn-info text-white btn-detail-modal" data-id="' . $row['id'] . '" title="Lihat Detail & Foto"><i class="fas fa-eye"></i></button>';
-            
-            $canTindakLanjut = in_array($role, ['administrator', 'admin_ulp', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek']);
-            $btnUpdate = '';
-            if ($canTindakLanjut) {
-                $btnUpdate = ' <button type="button" class="btn btn-sm btn-warning text-dark btn-update-status" data-id="' . $row['id'] . '" data-nomor="' . $row['nomor_temuan'] . '" title="Update Progress/Pekerjaan"><i class="fas fa-edit"></i></button>';
-            }
-
-            $actions = $btnDetail . $btnUpdate;
-
-            $formattedData[] = [
-                $row['nomor_temuan'],
-                $row['nama_penyulang'],
-                $row['nama_section'],
-                $row['jenis_temuan'],
-                $fotoHtml,
-                $prioBadge,
-                date('d-m-Y H:i', strtotime(!empty($row['created_at']) ? $row['created_at'] : $row['tanggal_temuan'])) . ' WIB',
-                $statusBadge,
-                $actions
-            ];
+            $formattedData[] = $this->formatDataTablesRow($row, $role, true);
         }
 
         $result['data'] = $formattedData;
-
-        return $this->response->setJSON($result);
+        return $this->jsonResponse($result);
     }
 }

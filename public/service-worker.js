@@ -1,11 +1,15 @@
-const CACHE_NAME = 'sidak-tejo-v5';
-const MAPS_CACHE_NAME = 'sidak-tejo-maps-v4';
+const CACHE_NAME = 'sidak-tejo-v7';
+const MAPS_CACHE_NAME = 'sidak-tejo-maps-v5';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
-    '/plugins/leaflet.js',
-    '/plugins/leaflet.css',
-    '/assets/img/logo_sidak.png'
+    'plugins/leaflet.js',
+    'plugins/leaflet.css',
+    'plugins/bootstrap/css/bootstrap.min.css',
+    'plugins/fontawesome-free/css/all.min.css',
+    'assets/fonts/fonts.css',
+    'assets/img/logo_sidak.png',
+    'assets/img/no-image.png'
 ];
 
 self.addEventListener('install', (event) => {

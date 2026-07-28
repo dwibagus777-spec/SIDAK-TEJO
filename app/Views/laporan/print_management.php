@@ -46,7 +46,7 @@
 <body onload="window.print()">
 
     <div class="header">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/9/97/Logo_PLN.png" alt="PLN Logo">
+        <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="PLN Logo">
         <div class="header-text">
             <h2>PT PLN (PERSERO) UID JAWA TIMUR</h2>
             <h3>UP3 SIDOARJO - ULP SIDOARJO KOTA</h3>

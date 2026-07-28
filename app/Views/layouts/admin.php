@@ -1006,7 +1006,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         // Register Service Worker for caching maps & assets with auto-update
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=6')
+                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=7')
                     .then(function(registration) {
                         registration.update();
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);

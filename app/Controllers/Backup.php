@@ -66,8 +66,8 @@ class Backup extends BaseController
         }
 
         $file = $this->request->getFile('backup_zip');
-        if (!$file || !$file->isValid()) {
-            return redirect()->to(site_url('backup'))->with('error', 'Pilih berkas ZIP backup yang valid.');
+        if (!$file || !$file->isValid() || strtolower($file->getClientExtension()) !== 'zip') {
+            return redirect()->to(site_url('backup'))->with('error', 'Pilih berkas ZIP backup yang valid (.zip).');
         }
 
         $tempPath = WRITEPATH . 'backups/uploaded_restore_' . time() . '.zip';

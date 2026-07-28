@@ -9,22 +9,16 @@ class TemuanService
 {
     private TemuanRepository $temuanRepository;
     private TindakLanjutRepository $tindakLanjutRepository;
-    private CloudinaryService $cloudinary;
 
     public function __construct()
     {
         $this->temuanRepository = new TemuanRepository();
         $this->tindakLanjutRepository = new TindakLanjutRepository();
-        $this->cloudinary = new CloudinaryService();
     }
 
     /**
-     * Upload file to Cloudinary if configured, otherwise save to local disk
-     * Returns URL (Cloudinary) or filename (local) + updated foto_path
-     */
-    /**
-     * Kompres gambar sebelum upload ke Cloudinary
-     * Menghasilkan file JPEG berkualitas rendah untuk menghemat bandwidth
+     * Kompres gambar lokal
+     * Menghasilkan file JPEG berkualitas baik untuk menghemat ruang disk
      */
     private function compressImage(string $sourcePath, int $quality = 75): string
     {
@@ -74,7 +68,10 @@ class TemuanService
         return $sourcePath;
     }
 
-    private function uploadFotoFile(\CodeIgniter\HTTP\Files\UploadedFile $file, string $localDir = 'foto/'): array
+    /**
+     * Upload file foto langsung ke storage lokal public/foto/
+     */
+    private function uploadFotoFile(\CodeIgniter\HTTP\Files\UploadedFile $file): array
     {
         $newName = $file->getRandomName();
 
@@ -95,45 +92,22 @@ class TemuanService
             return ['name' => '', 'path' => 'error', 'error' => $errStr];
         }
 
-        // 2. Process Cloudinary Upload if Enabled
-        if ($this->cloudinary->isEnabled()) {
-            $phpTempPath = $file->getTempName();
-            if (empty($phpTempPath) || !file_exists($phpTempPath)) {
-                $phpTempPath = $file->getRealPath();
-            }
-
-            if (!empty($phpTempPath) && file_exists($phpTempPath)) {
-                $result = $this->cloudinary->upload($phpTempPath, 'sidak-tejo/temuan');
-
-                if ($result['success']) {
-                    log_message('info', '[UPLOAD_SUCCESS] Cloudinary URL: ' . $result['url']);
-                    return ['name' => $result['url'], 'path' => 'cloudinary', 'error' => ''];
-                }
-
-                $err = 'Cloudinary Upload Gagal: ' . ($result['error'] ?? 'Unknown Error');
-                log_message('error', '[UPLOAD_FAIL] ' . $err);
-                return ['name' => '', 'path' => 'error', 'error' => $err];
-            }
-
-            $err = 'Temp file upload tidak dapat dibaca dari server.';
-            log_message('error', '[UPLOAD_FAIL] ' . $err);
-            return ['name' => '', 'path' => 'error', 'error' => $err];
-        }
-
-        // 3. Fallback Local Storage
-        $fullLocalPath = FCPATH . $localDir;
+        // 2. Simpan file menggunakan $file->move(FCPATH . 'foto/', $newName)
+        $fullLocalPath = FCPATH . 'foto/';
         if (!is_dir($fullLocalPath)) {
             mkdir($fullLocalPath, 0777, true);
         }
+
         $file->move($fullLocalPath, $newName);
 
+        // 3. Kompres gambar di penyimpanan lokal
         $diskPath = $fullLocalPath . $newName;
         $compressed = $this->compressImage($diskPath, 80);
         if ($compressed !== $diskPath && file_exists($compressed)) {
             @rename($compressed, $diskPath);
         }
 
-        return ['name' => $newName, 'path' => $localDir, 'error' => ''];
+        return ['name' => $newName, 'path' => 'foto/', 'error' => ''];
     }
 
     /**
@@ -181,13 +155,12 @@ class TemuanService
             }
         }
 
-        // Upload foto
+        // Upload foto ke lokal public/foto/
         $uploadedNames = [];
-        $uploadDir = 'foto/';
 
         foreach ($files as $file) {
             if ($file->isValid() && !$file->hasMoved()) {
-                $uploaded = $this->uploadFotoFile($file, $uploadDir);
+                $uploaded = $this->uploadFotoFile($file);
                 if ($uploaded['path'] === 'error' || empty($uploaded['name'])) {
                     return [
                         'success' => false,
@@ -195,7 +168,6 @@ class TemuanService
                     ];
                 }
                 $uploadedNames[] = $uploaded['name'];
-                $uploadDir = $uploaded['path'] === 'cloudinary' ? 'cloudinary' : $uploaded['path'];
             }
         }
 
@@ -206,8 +178,11 @@ class TemuanService
             ];
         }
 
+        // Kolom foto berisi JSON array nama file: ["abc.jpg","def.jpg"]
         $data['foto'] = json_encode($uploadedNames);
-        $data['foto_path'] = $uploadDir;
+
+        // Kolom foto_path selalu berisi "foto/"
+        $data['foto_path'] = 'foto/';
 
         log_message('info', sprintf('[DB_INSERT_TEMUAN] Nomor: %s | Foto JSON: %s', $nomorTemuan, $data['foto']));
 
@@ -217,7 +192,7 @@ class TemuanService
             log_activity('CREATE_TEMUAN', 'Menambahkan temuan baru: ' . $nomorTemuan);
             return [
                 'success' => true,
-                'message' => 'Temuan berhasil disimpan ke Cloudinary.',
+                'message' => 'Temuan berhasil disimpan.',
                 'id'      => $insertId
             ];
         }
@@ -255,20 +230,26 @@ class TemuanService
 
         // Handle foto_sebelum (opsional)
         if (isset($uploadFiles['foto_sebelum']) && $uploadFiles['foto_sebelum']->isValid() && !$uploadFiles['foto_sebelum']->hasMoved()) {
-            $uploaded = $this->uploadFotoFile($uploadFiles['foto_sebelum'], $uploadDir);
-            $progressData['foto_sebelum'] = $uploaded['path'] === 'cloudinary' ? $uploaded['name'] : $uploadDir . $uploaded['name'];
+            $uploaded = $this->uploadFotoFile($uploadFiles['foto_sebelum']);
+            if (!empty($uploaded['name'])) {
+                $progressData['foto_sebelum'] = 'foto/' . $uploaded['name'];
+            }
         }
 
         // Handle foto_proses (opsional)
         if (isset($uploadFiles['foto_proses']) && $uploadFiles['foto_proses']->isValid() && !$uploadFiles['foto_proses']->hasMoved()) {
-            $uploaded = $this->uploadFotoFile($uploadFiles['foto_proses'], $uploadDir);
-            $progressData['foto_proses'] = $uploaded['path'] === 'cloudinary' ? $uploaded['name'] : $uploadDir . $uploaded['name'];
+            $uploaded = $this->uploadFotoFile($uploadFiles['foto_proses']);
+            if (!empty($uploaded['name'])) {
+                $progressData['foto_proses'] = 'foto/' . $uploaded['name'];
+            }
         }
 
         // Handle foto_sesudah (opsional)
         if (isset($uploadFiles['foto_sesudah']) && $uploadFiles['foto_sesudah']->isValid() && !$uploadFiles['foto_sesudah']->hasMoved()) {
-            $uploaded = $this->uploadFotoFile($uploadFiles['foto_sesudah'], $uploadDir);
-            $progressData['foto_sesudah'] = $uploaded['path'] === 'cloudinary' ? $uploaded['name'] : $uploadDir . $uploaded['name'];
+            $uploaded = $this->uploadFotoFile($uploadFiles['foto_sesudah']);
+            if (!empty($uploaded['name'])) {
+                $progressData['foto_sesudah'] = 'foto/' . $uploaded['name'];
+            }
         }
 
         // Simpan progress history
@@ -316,8 +297,8 @@ class TemuanService
     }
 
     /**
-     * Update Data Temuan (tanpa menghapus foto lama)
-     * Foto baru akan di-append ke daftar foto yang ada
+     * Update Data Temuan
+     * Foto baru akan menggantikan foto lama
      */
     public function updateTemuan(int $id, array $data, ?array $newFiles): array
     {
@@ -326,10 +307,9 @@ class TemuanService
             return ['success' => false, 'message' => 'Temuan tidak ditemukan.'];
         }
 
-
         $data['updated_by'] = session()->get('user_id');
 
-        // Jika ada file foto baru yang diunggah, tambahkan ke daftar yang ada
+        // Jika ada file foto baru yang diunggah, simpan ke foto/
         $hasNewFiles = !empty($newFiles) && isset($newFiles[0]) && $newFiles[0]->isValid();
         if ($hasNewFiles) {
             if (count($newFiles) > 10) {
@@ -345,30 +325,20 @@ class TemuanService
                 }
             }
 
-            $uploadDir = !empty($temuan['foto_path']) ? rtrim($temuan['foto_path'], '/') . '/' : 'foto/';
-            $fullPath  = FCPATH . $uploadDir;
-            $data['foto_path'] = $uploadDir;
-
-            if (!is_dir($fullPath)) {
-                mkdir($fullPath, 0777, true);
-            }
-
             // Process upload for each new file
             $newNames = [];
             foreach ($newFiles as $file) {
                 if ($file->isValid() && !$file->hasMoved()) {
-                    $uploaded = $this->uploadFotoFile($file, $uploadDir);
-                    $newNames[] = $uploaded['name'];
-                    if ($uploaded['path'] === 'cloudinary') {
-                        $uploadDir = 'cloudinary';
+                    $uploaded = $this->uploadFotoFile($file);
+                    if (!empty($uploaded['name'])) {
+                        $newNames[] = $uploaded['name'];
                     }
                 }
             }
 
-            // Gantikan foto lama dengan foto baru yang diunggah
             if (!empty($newNames)) {
                 $data['foto'] = json_encode($newNames);
-                $data['foto_path'] = $uploadDir;
+                $data['foto_path'] = 'foto/';
             }
         }
 

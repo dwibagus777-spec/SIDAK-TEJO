@@ -18,7 +18,7 @@ class TemuanService
     }
 
     /**
-     * Kompres gambar di penyimpanan lokal (GD Library)
+     * Kompresi Gambar Lokal Menggunakan GD Library
      */
     private function compressImage(string $sourcePath, int $quality = 75): string
     {
@@ -27,27 +27,29 @@ class TemuanService
         }
 
         @ini_set('memory_limit', '256M');
-        $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
         $image = null;
 
         try {
-            if ($ext === 'jpg' || $ext === 'jpeg') {
+            if ($extension === 'jpg' || $extension === 'jpeg') {
                 $image = @imagecreatefromjpeg($sourcePath);
-            } elseif ($ext === 'png') {
+            } elseif ($extension === 'png') {
                 $image = @imagecreatefrompng($sourcePath);
-            } elseif ($ext === 'webp') {
+            } elseif ($extension === 'webp') {
                 $image = @imagecreatefromwebp($sourcePath);
             }
 
-            if (!$image) return $sourcePath;
+            if (!$image) {
+                return $sourcePath;
+            }
 
-            $w = imagesx($image);
-            $h = imagesy($image);
-            if ($w > 1920) {
-                $newW = 1920;
-                $newH = (int)($h * 1920 / $w);
-                $resized = imagecreatetruecolor($newW, $newH);
-                imagecopyresampled($resized, $image, 0, 0, 0, 0, $newW, $newH, $w, $h);
+            $width = imagesx($image);
+            $height = imagesy($image);
+            if ($width > 1920) {
+                $newWidth = 1920;
+                $newHeight = (int)($height * 1920 / $width);
+                $resized = imagecreatetruecolor($newWidth, $newHeight);
+                imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
                 imagedestroy($image);
                 $image = $resized;
             }
@@ -63,55 +65,46 @@ class TemuanService
             if (file_exists($compressedPath) && filesize($compressedPath) < filesize($sourcePath)) {
                 return $compressedPath;
             }
+
             @unlink($compressedPath);
         } catch (\Throwable $e) {
-            log_message('warning', '[compressImage] Error: ' . $e->getMessage());
+            log_message('warning', '[compressImage] Gagal kompresi: ' . $e->getMessage());
         }
 
         return $sourcePath;
     }
 
     /**
-     * Upload single photo file directly to public/foto/
+     * Mengunggah Berkas Foto Tunggal Ke Folder public/foto/
      */
     private function uploadPhoto(UploadedFile $file): array
     {
-        $newName = $file->getRandomName();
-
-        log_message('info', sprintf(
-            '[FILE_RECEIVED] Name: %s | TempPath: %s | Size: %d bytes | MIME: %s | ErrorCode: %d | IsValid: %s',
-            $file->getName(),
-            $file->getTempName() ?: 'EMPTY',
-            $file->getSize(),
-            $file->getClientMimeType(),
-            $file->getError(),
-            $file->isValid() ? 'YES' : 'NO'
-        ));
+        $generatedName = $file->getRandomName();
 
         if (!$file->isValid()) {
-            $errStr = $file->getErrorString() . ' (Code: ' . $file->getError() . ')';
-            log_message('error', '[FILE_VALIDATION_ERROR] ' . $errStr);
-            return ['name' => '', 'path' => 'error', 'error' => $errStr];
+            $errorMessage = $file->getErrorString() . ' (Code: ' . $file->getError() . ')';
+            log_message('error', '[uploadPhoto] Validasi gagal: ' . $errorMessage);
+            return ['name' => '', 'path' => 'error', 'error' => $errorMessage];
         }
 
-        $fullLocalPath = FCPATH . 'foto/';
-        if (!is_dir($fullLocalPath)) {
-            mkdir($fullLocalPath, 0777, true);
+        $destinationDir = FCPATH . 'foto/';
+        if (!is_dir($destinationDir)) {
+            mkdir($destinationDir, 0777, true);
         }
 
-        $file->move($fullLocalPath, $newName);
+        $file->move($destinationDir, $generatedName);
 
-        $diskPath = $fullLocalPath . $newName;
+        $diskPath = $destinationDir . $generatedName;
         $compressed = $this->compressImage($diskPath, 80);
         if ($compressed !== $diskPath && file_exists($compressed)) {
             @rename($compressed, $diskPath);
         }
 
-        return ['name' => $newName, 'path' => 'foto/', 'error' => ''];
+        return ['name' => $generatedName, 'path' => 'foto/', 'error' => ''];
     }
 
     /**
-     * Validasi berkas foto (jumlah & ekstensi)
+     * Validasi Batasan Jumlah & Ekstensi Berkas Foto
      */
     private function validatePhotos(?array $files, bool $required = true): ?string
     {
@@ -141,7 +134,7 @@ class TemuanService
     }
 
     /**
-     * Upload multiple photo files
+     * Pengunggahan Jamak Berkas Foto (Multiple Upload)
      */
     private function uploadMultiplePhotos(?array $files, bool $required = true): array
     {
@@ -181,7 +174,7 @@ class TemuanService
     }
 
     /**
-     * Simpan Temuan Baru beserta Unggahan Foto
+     * Membuat Temuan Baru Beserta Pengunggahan Foto
      */
     public function createTemuan(array $data, ?array $files): array
     {
@@ -192,8 +185,6 @@ class TemuanService
         $data['created_by'] = $session->get('user_id');
         $data['created_by_name'] = $session->get('nama_pegawai') ?: $session->get('user_name');
         $data['created_by_nip'] = $session->get('nip') ?: '';
-
-        log_message('info', sprintf('[CREATE_TEMUAN_START] Nomor: %s | Files Count: %d', $nomorTemuan, count($files ?? [])));
 
         $uploadResult = $this->uploadMultiplePhotos($files, true);
         if (!$uploadResult['success']) {
@@ -206,8 +197,6 @@ class TemuanService
         $data['foto'] = json_encode($uploadResult['names']);
         $data['foto_path'] = 'foto/';
 
-        log_message('info', sprintf('[DB_INSERT_TEMUAN] Nomor: %s | Foto JSON: %s', $nomorTemuan, $data['foto']));
-
         $insertId = $this->temuanRepository->insert($data);
 
         if ($insertId) {
@@ -219,7 +208,7 @@ class TemuanService
             ];
         }
 
-        log_message('error', '[DB_INSERT_FAIL] Gagal insert ke tabel temuan.');
+        log_message('error', '[createTemuan] Gagal insert ke database.');
         return [
             'success' => false,
             'message' => 'Gagal menyimpan temuan ke database.'
@@ -227,7 +216,7 @@ class TemuanService
     }
 
     /**
-     * Update Progres Pekerjaan (Tindak Lanjut / SLA Progress)
+     * Memperbarui Progres Pekerjaan (Tindak Lanjut)
      */
     public function updateTemuanPekerjaan(int $temuanId, array $progressData, array $uploadFiles): array
     {
@@ -240,15 +229,10 @@ class TemuanService
         }
 
         $nomorTemuan = $temuan['nomor_temuan'];
-        $uploadDir = FCPATH . 'foto/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-
         $progressData['temuan_id'] = $temuanId;
         $progressData['tanggal'] = date('Y-m-d H:i:s');
 
-        // Handle foto_sebelum, foto_proses, foto_sesudah (opsional)
+        // Pengunggahan foto_sebelum, foto_proses, foto_sesudah
         foreach (['foto_sebelum', 'foto_proses', 'foto_sesudah'] as $key) {
             if (isset($uploadFiles[$key]) && $uploadFiles[$key]->isValid() && !$uploadFiles[$key]->hasMoved()) {
                 $uploaded = $this->uploadPhoto($uploadFiles[$key]);
@@ -258,43 +242,39 @@ class TemuanService
             }
         }
 
-        // Simpan progress history
+        // Simpan histori tindak lanjut
         $this->tindakLanjutRepository->insert($progressData);
 
-        // Update tabel utama temuan
+        // Update status & metadata pengguna di tabel temuan utama
         $session = session();
-        $updateTemuan = [];
-        $updateTemuan['updated_by'] = $session->get('user_id');
-        $updateTemuan['updated_by_name'] = $session->get('nama_pegawai') ?: $session->get('user_name');
-        $updateTemuan['updated_by_nip'] = $session->get('nip') ?: '';
+        $updatePayload = [
+            'updated_by'      => $session->get('user_id'),
+            'updated_by_name' => $session->get('nama_pegawai') ?: $session->get('user_name'),
+            'updated_by_nip'  => $session->get('nip') ?: ''
+        ];
 
-        if (isset($progressData['status_progress']) && $progressData['status_progress'] === 'SELESAI') {
-            $updateTemuan['status'] = 'SELESAI';
-            $updateTemuan['tanggal_selesai'] = date('Y-m-d');
-            $updateTemuan['tindak_lanjut'] = $progressData['komentar'];
-            $this->temuanRepository->update($temuanId, $updateTemuan);
-
+        $statusProgress = $progressData['status_progress'] ?? 'PROSES';
+        if ($statusProgress === 'SELESAI') {
+            $updatePayload['status'] = 'SELESAI';
+            $updatePayload['tanggal_selesai'] = date('Y-m-d');
+            $updatePayload['tindak_lanjut'] = $progressData['komentar'];
             log_activity('UPDATE_TEMUAN_STATUS', 'Temuan ' . $nomorTemuan . ' diselesaikan oleh ' . $progressData['pelaksana']);
-        } elseif (isset($progressData['status_progress']) && $progressData['status_progress'] === 'BUTUH PADAM') {
-            $updateTemuan['status'] = 'BUTUH PADAM';
-            $updateTemuan['pelaksana'] = 'HAR KONSTRUKSI';
-            $updateTemuan['catatan_tindak_lanjut'] = $progressData['komentar'];
-            $this->temuanRepository->update($temuanId, $updateTemuan);
-
+        } elseif ($statusProgress === 'BUTUH PADAM') {
+            $updatePayload['status'] = 'BUTUH PADAM';
+            $updatePayload['pelaksana'] = 'HAR KONSTRUKSI';
+            $updatePayload['catatan_tindak_lanjut'] = $progressData['komentar'];
             log_activity('UPDATE_TEMUAN_STATUS', 'Temuan ' . $nomorTemuan . ' diset BUTUH PADAM (dialihkan ke HAR KONSTRUKSI) oleh ' . $progressData['pelaksana']);
-        } elseif (isset($progressData['status_progress']) && $progressData['status_progress'] === 'TERKENDALA') {
-            $updateTemuan['status'] = 'TERKENDALA';
-            $updateTemuan['catatan_tindak_lanjut'] = $progressData['komentar'];
-            $this->temuanRepository->update($temuanId, $updateTemuan);
-
+        } elseif ($statusProgress === 'TERKENDALA') {
+            $updatePayload['status'] = 'TERKENDALA';
+            $updatePayload['catatan_tindak_lanjut'] = $progressData['komentar'];
             log_activity('UPDATE_TEMUAN_STATUS', 'Temuan ' . $nomorTemuan . ' diset TERKENDALA oleh ' . $progressData['pelaksana']);
         } else {
-            $updateTemuan['status'] = 'PROSES';
-            $updateTemuan['catatan_tindak_lanjut'] = $progressData['komentar'];
-            $this->temuanRepository->update($temuanId, $updateTemuan);
-
+            $updatePayload['status'] = 'PROSES';
+            $updatePayload['catatan_tindak_lanjut'] = $progressData['komentar'];
             log_activity('UPDATE_TEMUAN_PROGRESS', 'Menambahkan progress untuk temuan: ' . $nomorTemuan);
         }
+
+        $this->temuanRepository->update($temuanId, $updatePayload);
 
         return [
             'success' => true,
@@ -303,7 +283,7 @@ class TemuanService
     }
 
     /**
-     * Update Data Temuan
+     * Memperbarui Data Temuan
      */
     public function updateTemuan(int $id, array $data, ?array $newFiles): array
     {
@@ -338,7 +318,7 @@ class TemuanService
     }
 
     /**
-     * Hapus Temuan (Soft Delete)
+     * Menghapus Data Temuan (Soft Delete)
      */
     public function deleteTemuan(int $id): bool
     {

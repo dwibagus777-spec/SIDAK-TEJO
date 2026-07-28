@@ -22,6 +22,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Dashboard
     $routes->get('dashboard', 'Dashboard::index');
     $routes->get('dashboard/toggle-view', 'Dashboard::toggleView');
+    $routes->get('dashboard/analytics-data', 'Dashboard::analyticsData');
 
     // Self Service Change Password & Announcement Ticker
     $routes->get('change-password', 'Auth::changePassword');

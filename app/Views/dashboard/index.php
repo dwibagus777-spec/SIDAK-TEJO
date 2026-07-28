@@ -457,77 +457,152 @@
     </div>
 </div>
 
-<!-- Grafik Analitik -->
+<!-- Real-time Analytics Dashboard Widgets (13 Responsive Charts) -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="font-weight-bold text-dark mb-0"><i class="fas fa-chart-pie text-primary mr-2"></i> Analitik Real-time</h4>
+    <div>
+        <span class="badge bg-success text-white px-3 py-2 me-2" id="live-indicator"><i class="fas fa-circle-dot fa-spin mr-1"></i> Live Auto-Refresh</span>
+        <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" id="btn-refresh-analytics">
+            <i class="fas fa-sync-alt mr-1"></i> Refresh Data
+        </button>
+    </div>
+</div>
+
+<!-- Row 1: Temuan vs Realisasi & SLA Performance -->
 <div class="row">
-    <!-- Temuan per Bulan -->
-    <div class="col-md-6">
-        <div class="card card-modern">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark"><i class="fas fa-chart-line text-info mr-1"></i> Tren Temuan per Bulan</h3>
+    <div class="col-lg-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
+            <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center">
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-balance-scale text-primary mr-2"></i> 1. Temuan vs Realisasi Selesai</h3>
             </div>
             <div class="card-body">
-                <canvas id="chartBulanan" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                <canvas id="chartTemuanVsRealisasi" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
             </div>
         </div>
     </div>
-    <!-- Temuan per ULP -->
-    <div class="col-md-6">
-        <div class="card card-modern">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark"><i class="fas fa-chart-pie text-success mr-1"></i> Temuan per ULP</h3>
+    <div class="col-lg-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
+            <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center">
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-clock text-warning mr-2"></i> 7. Performance SLA (Tuntas vs Overdue)</h3>
             </div>
             <div class="card-body">
-                <canvas id="chartUlp" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                <canvas id="chartSla" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Row 2: Tren Mingguan (Input vs Realisasi) -->
 <div class="row">
-    <!-- Temuan per Penyulang -->
-    <div class="col-md-6">
-        <div class="card card-modern">
+    <div class="col-lg-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
             <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark"><i class="fas fa-chart-bar text-warning mr-1"></i> Top 10 Penyulang (Temuan Belum Dieksekusi)</h3>
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-chart-line text-info mr-2"></i> 3. Temuan Mingguan (7 Hari Terakhir)</h3>
             </div>
             <div class="card-body">
-                <canvas id="chartPenyulang" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                <canvas id="chartTemuanMingguan" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
             </div>
         </div>
     </div>
-    <!-- Temuan per Pelaksana -->
-    <div class="col-md-6">
-        <div class="card card-modern">
+    <div class="col-lg-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
             <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark"><i class="fas fa-users-cog text-teal mr-1"></i> Temuan per Pelaksana</h3>
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-check-double text-success mr-2"></i> 5. Realisasi Harian (7 Hari Terakhir)</h3>
             </div>
             <div class="card-body">
-                <canvas id="chartPelaksana" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                <canvas id="chartRealisasiHarian" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Row 3: Tren Bulanan (Temuan vs Realisasi) -->
 <div class="row">
-    <!-- Temuan berdasarkan Prioritas -->
-    <div class="col-md-6">
-        <div class="card card-modern">
+    <div class="col-lg-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
             <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark"><i class="fas fa-star text-danger mr-1"></i> Temuan Berdasarkan Prioritas</h3>
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-calendar-alt text-primary mr-2"></i> 4. Temuan Bulanan (12 Bulan)</h3>
             </div>
             <div class="card-body">
-                <canvas id="chartPrioritas" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                <canvas id="chartTemuanBulanan" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
             </div>
         </div>
     </div>
-    <!-- Temuan berdasarkan Potensi Gangguan -->
-    <div class="col-md-6">
-        <div class="card card-modern">
+    <div class="col-lg-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
             <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark"><i class="fas fa-triangle-exclamation text-orange mr-1"></i> Temuan Berdasarkan Potensi Gangguan</h3>
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-calendar-check text-teal mr-2"></i> 6. Realisasi Bulanan (12 Bulan)</h3>
             </div>
             <div class="card-body">
-                <canvas id="chartPotensiGangguan" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                <canvas id="chartRealisasiBulanan" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 4: Prioritas, Status, Jenis Temuan -->
+<div class="row">
+    <div class="col-lg-4 col-md-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
+            <div class="card-header border-bottom bg-transparent">
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-triangle-exclamation text-danger mr-2"></i> 8. Breakdown Prioritas</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chartPrioritas" style="min-height: 230px; height: 230px; max-height: 230px; width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
+            <div class="card-header border-bottom bg-transparent">
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-list-check text-purple mr-2"></i> 9. Breakdown Status</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chartStatus" style="min-height: 230px; height: 230px; max-height: 230px; width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-12 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
+            <div class="card-header border-bottom bg-transparent">
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-tags text-indigo mr-2"></i> 13. Jenis Temuan</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chartJenisTemuan" style="min-height: 230px; height: 230px; max-height: 230px; width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 5: Pelaksana, ULP, Penyulang -->
+<div class="row">
+    <div class="col-lg-4 col-md-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
+            <div class="card-header border-bottom bg-transparent">
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-users-gear text-teal mr-2"></i> 10. Pelaksana Pekerjaan</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chartPelaksana" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
+            <div class="card-header border-bottom bg-transparent">
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-building-user text-success mr-2"></i> 11. Distribusi per ULP</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chartUlp" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-12 col-12 mb-4">
+        <div class="card card-modern h-100 shadow-sm">
+            <div class="card-header border-bottom bg-transparent">
+                <h3 class="card-title text-dark mb-0"><i class="fas fa-bolt text-warning mr-2"></i> 12. Top 10 Penyulang</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chartPenyulang" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
             </div>
         </div>
     </div>
@@ -538,120 +613,177 @@
 <?= $this->section('scripts') ?>
 <script>
     $(function() {
-
-        // --- 2. CHART.JS CONFIGURATIONS - Light Mode Settings ---
         Chart.defaults.color = '#495057';
         Chart.defaults.borderColor = '#e9ecef';
 
-        // Grafik 1: Tren Bulanan
-        const monthlyData = <?= json_encode($monthlyData) ?>;
-        new Chart(document.getElementById('chartBulanan'), {
-            type: 'line',
-            data: {
-                labels: monthlyData.map(d => d.bulan),
-                datasets: [{
-                    label: 'Jumlah Temuan',
-                    data: monthlyData.map(d => d.total),
-                    backgroundColor: 'rgba(0, 123, 255, 0.15)',
-                    borderColor: '#007bff',
-                    borderWidth: 2,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
+        let chartInstances = {};
+
+        function createOrUpdateChart(chartId, type, data, options) {
+            const ctx = document.getElementById(chartId);
+            if (!ctx) return;
+
+            if (chartInstances[chartId]) {
+                chartInstances[chartId].destroy();
             }
+
+            chartInstances[chartId] = new Chart(ctx, {
+                type: type,
+                data: data,
+                options: Object.assign({ responsive: true, maintainAspectRatio: false }, options || {})
+            });
+        }
+
+        function loadRealtimeAnalytics() {
+            $.ajax({
+                url: "<?= site_url('dashboard/analytics-data') ?>",
+                type: "GET",
+                dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(res) {
+                    if (!res || !res.data) return;
+                    const d = res.data;
+
+                    // 1. Temuan vs Realisasi
+                    createOrUpdateChart('chartTemuanVsRealisasi', 'bar', {
+                        labels: ['Total Temuan Input', 'Total Realisasi Selesai'],
+                        datasets: [{
+                            label: 'Jumlah Record',
+                            data: [d.total_temuan, d.total_realisasi],
+                            backgroundColor: ['#005eb8', '#059669']
+                        }]
+                    });
+
+                    // 7. SLA Performance
+                    createOrUpdateChart('chartSla', 'doughnut', {
+                        labels: ['Sesuai SLA', 'Melewati SLA (Overdue)'],
+                        datasets: [{
+                            data: [d.sla.met, d.sla.overdue],
+                            backgroundColor: ['#059669', '#dc2626']
+                        }]
+                    });
+
+                    // 3. Temuan Mingguan
+                    createOrUpdateChart('chartTemuanMingguan', 'line', {
+                        labels: d.temuan_mingguan.labels,
+                        datasets: [{
+                            label: 'Temuan Harian',
+                            data: d.temuan_mingguan.data,
+                            borderColor: '#0284c7',
+                            backgroundColor: 'rgba(2, 132, 199, 0.15)',
+                            fill: true, tension: 0.3
+                        }]
+                    });
+
+                    // 5. Realisasi Harian
+                    createOrUpdateChart('chartRealisasiHarian', 'bar', {
+                        labels: d.realisasi_harian.labels,
+                        datasets: [{
+                            label: 'Realisasi Harian',
+                            data: d.realisasi_harian.data,
+                            backgroundColor: '#10b981'
+                        }]
+                    });
+
+                    // 4. Temuan Bulanan
+                    createOrUpdateChart('chartTemuanBulanan', 'line', {
+                        labels: d.temuan_bulanan.labels,
+                        datasets: [{
+                            label: 'Temuan per Bulan',
+                            data: d.temuan_bulanan.data,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                            fill: true, tension: 0.3
+                        }]
+                    });
+
+                    // 6. Realisasi Bulanan
+                    createOrUpdateChart('chartRealisasiBulanan', 'line', {
+                        labels: d.realisasi_bulanan.labels,
+                        datasets: [{
+                            label: 'Realisasi per Bulan',
+                            data: d.realisasi_bulanan.data,
+                            borderColor: '#14b8a6',
+                            backgroundColor: 'rgba(20, 184, 166, 0.15)',
+                            fill: true, tension: 0.3
+                        }]
+                    });
+
+                    // 8. Prioritas Breakdown
+                    createOrUpdateChart('chartPrioritas', 'doughnut', {
+                        labels: ['EMERGENCY', 'HIGH', 'MEDIUM'],
+                        datasets: [{
+                            data: [d.prioritas_breakdown.EMERGENCY, d.prioritas_breakdown.HIGH, d.prioritas_breakdown.MEDIUM],
+                            backgroundColor: ['#dc2626', '#f97316', '#0284c7']
+                        }]
+                    });
+
+                    // 9. Status Breakdown
+                    createOrUpdateChart('chartStatus', 'doughnut', {
+                        labels: ['BELUM', 'PROSES', 'SELESAI', 'TERKENDALA'],
+                        datasets: [{
+                            data: [d.status_breakdown.BELUM, d.status_breakdown.PROSES, d.status_breakdown.SELESAI, d.status_breakdown.TERKENDALA],
+                            backgroundColor: ['#e11d48', '#f59e0b', '#10b981', '#8b5cf6']
+                        }]
+                    });
+
+                    // 13. Jenis Temuan
+                    createOrUpdateChart('chartJenisTemuan', 'pie', {
+                        labels: ['KONSTRUKSI', 'HOTSPOT', 'ROW'],
+                        datasets: [{
+                            data: [d.jenis_breakdown.KONSTRUKSI, d.jenis_breakdown.HOTSPOT, d.jenis_breakdown.ROW],
+                            backgroundColor: ['#6366f1', '#ef4444', '#84cc16']
+                        }]
+                    });
+
+                    // 10. Pelaksana Breakdown
+                    createOrUpdateChart('chartPelaksana', 'bar', {
+                        labels: d.pelaksana_raw.map(r => r.pelaksana || 'Lainnya'),
+                        datasets: [{
+                            label: 'Total Temuan',
+                            data: d.pelaksana_raw.map(r => r.total),
+                            backgroundColor: '#8b5cf6'
+                        }]
+                    });
+
+                    // 11. ULP Breakdown
+                    createOrUpdateChart('chartUlp', 'pie', {
+                        labels: d.ulp_raw.map(r => r.nama_ulp),
+                        datasets: [{
+                            data: d.ulp_raw.map(r => r.total),
+                            backgroundColor: ['#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                        }]
+                    });
+
+                    // 12. Penyulang Breakdown
+                    createOrUpdateChart('chartPenyulang', 'bar', {
+                        labels: d.penyulang_raw.map(r => r.nama_penyulang),
+                        datasets: [{
+                            label: 'Total Temuan',
+                            data: d.penyulang_raw.map(r => r.total),
+                            backgroundColor: '#f59e0b'
+                        }]
+                    }, { indexAxis: 'y' });
+                },
+                error: function(xhr, status, err) {
+                    console.error('Error fetching analytics:', err);
+                }
+            });
+        }
+
+        // Initial Load
+        loadRealtimeAnalytics();
+
+        // Manual Refresh Trigger
+        $('#btn-refresh-analytics').click(function() {
+            $(this).html('<i class="fas fa-spinner fa-spin mr-1"></i> Refreshing...');
+            loadRealtimeAnalytics();
+            setTimeout(() => {
+                $(this).html('<i class="fas fa-sync-alt mr-1"></i> Refresh Data');
+            }, 800);
         });
 
-        // Grafik 2: Temuan per ULP
-        const ulpData = <?= json_encode($ulpData) ?>;
-        new Chart(document.getElementById('chartUlp'), {
-            type: 'pie',
-            data: {
-                labels: ulpData.map(d => d.nama_ulp),
-                datasets: [{
-                    data: ulpData.map(d => d.total),
-                    backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#dc3545', '#6f42c1', '#e83e8c']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-
-        // Grafik 3: Temuan per Penyulang
-        const penyulangData = <?= json_encode($penyulangData) ?>;
-        new Chart(document.getElementById('chartPenyulang'), {
-            type: 'bar',
-            data: {
-                labels: penyulangData.map(d => d.nama_penyulang),
-                datasets: [{
-                    label: 'Temuan',
-                    data: penyulangData.map(d => d.total),
-                    backgroundColor: '#ffc107'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y'
-            }
-        });
-
-        // Grafik 4: Temuan per Pelaksana
-        const pelaksanaData = <?= json_encode($pelaksanaData) ?>;
-        new Chart(document.getElementById('chartPelaksana'), {
-            type: 'bar',
-            data: {
-                labels: pelaksanaData.map(d => d.pelaksana),
-                datasets: [{
-                    label: 'Temuan',
-                    data: pelaksanaData.map(d => d.total),
-                    backgroundColor: '#6f42c1'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-
-        // Grafik 5: Prioritas
-        const prioritasData = <?= json_encode($prioritasData) ?>;
-        new Chart(document.getElementById('chartPrioritas'), {
-            type: 'doughnut',
-            data: {
-                labels: prioritasData.map(d => d.prioritas),
-                datasets: [{
-                    data: prioritasData.map(d => d.total),
-                    backgroundColor: ['#dc3545', '#fd7e14', '#007bff'] // Red, Orange, Blue
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-
-        // Grafik 6: Potensi Gangguan
-        const potensiGangguanData = <?= json_encode($potensiGangguanData) ?>;
-        new Chart(document.getElementById('chartPotensiGangguan'), {
-            type: 'polarArea',
-            data: {
-                labels: potensiGangguanData.map(d => d.potensi_gangguan),
-                datasets: [{
-                    data: potensiGangguanData.map(d => d.total),
-                    backgroundColor: ['rgba(220, 53, 69, 0.7)', 'rgba(0, 123, 255, 0.7)', 'rgba(40, 167, 69, 0.7)']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
+        // Auto Refresh every 30 seconds
+        setInterval(loadRealtimeAnalytics, 30000);
     });
 </script>
 <?= $this->endSection() ?>

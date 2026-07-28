@@ -113,4 +113,27 @@ class Dashboard extends BaseController
 
         return redirect()->to(site_url('dashboard'));
     }
+
+    /**
+     * Real-time AJAX endpoint for role-scoped dashboard charts & analytics
+     */
+    public function analyticsData()
+    {
+        $session = session();
+        $role = strtolower((string)$session->get('user_role'));
+        $ulpId = $session->get('user_ulp_id');
+
+        $ulpIdFilter = null;
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($ulpId)) {
+            $ulpIdFilter = (int)$ulpId;
+        }
+
+        $analytics = $this->temuanRepository->getComprehensiveAnalytics($role, $ulpIdFilter);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'success'   => true,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'data'      => $analytics
+        ]);
+    }
 }

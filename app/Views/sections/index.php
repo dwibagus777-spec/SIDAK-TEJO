@@ -14,10 +14,12 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title"><i class="fas fa-network-wired text-primary mr-1"></i> Daftar Section</h3>
+                <?php if (check_role(['administrator', 'admin_ulp'])): ?>
                 <div class="ml-auto d-flex" style="gap: 8px;">
                     <a href="<?= site_url('import/export-section') ?>" class="btn btn-success btn-sm"><i class="fas fa-download mr-1"></i> Download CSV</a>
                     <a href="<?= site_url('sections/create') ?>" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Tambah Section</a>
                 </div>
+                <?php endif; ?>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -29,7 +31,9 @@
                                 <th>Nama Penyulang</th>
                                 <th>Nama ULP</th>
                                 <th>Status</th>
-                                <th style="width: 150px;">Aksi</th>
+                                <?php if (check_role(['administrator', 'admin_ulp'])): ?>
+                                    <th style="width: 150px;">Aksi</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -46,10 +50,12 @@
                                             <span class="badge bg-danger">NONAKTIF</span>
                                         <?php endif; ?>
                                     </td>
+                                    <?php if (check_role(['administrator', 'admin_ulp'])): ?>
                                     <td>
                                         <a href="<?= site_url('sections/edit/' . $section['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
                                         <a href="<?= site_url('sections/delete/' . $section['id']) ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus section <?= esc(addslashes($section['nama_section']), 'js') ?>?');" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
                                     </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

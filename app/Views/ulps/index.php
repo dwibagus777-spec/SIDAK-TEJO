@@ -14,7 +14,9 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title"><i class="fas fa-network-wired text-primary mr-1"></i> Daftar ULP</h3>
-                <a href="<?= site_url('ulps/create') ?>" class="btn btn-primary btn-sm ml-auto"><i class="fas fa-plus mr-1"></i> Tambah ULP</a>
+                <?php if (check_role(['administrator'])): ?>
+                    <a href="<?= site_url('ulps/create') ?>" class="btn btn-primary btn-sm ml-auto"><i class="fas fa-plus mr-1"></i> Tambah ULP</a>
+                <?php endif; ?>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -25,7 +27,9 @@
                                 <th>Kode ULP</th>
                                 <th>Nama ULP</th>
                                 <th>Status</th>
-                                <th style="width: 150px;">Aksi</th>
+                                <?php if (check_role(['administrator'])): ?>
+                                    <th style="width: 150px;">Aksi</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -41,10 +45,12 @@
                                             <span class="badge bg-danger">NONAKTIF</span>
                                         <?php endif; ?>
                                     </td>
+                                    <?php if (check_role(['administrator'])): ?>
                                     <td>
                                         <a href="<?= site_url('ulps/edit/' . $ulp['id']) ?>" class="btn btn-sm btn-warning text-dark"><i class="fas fa-edit mr-1"></i> Ubah</a>
                                         <a href="<?= site_url('ulps/delete/' . $ulp['id']) ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus ULP <?= esc(addslashes($ulp['nama_ulp']), 'js') ?>?');" class="btn btn-sm btn-danger"><i class="fas fa-trash mr-1"></i> Hapus</a>
                                     </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

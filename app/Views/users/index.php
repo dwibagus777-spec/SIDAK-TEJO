@@ -14,7 +14,9 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title"><i class="fas fa-users text-primary me-1"></i> Daftar User</h3>
-                <a href="<?= site_url('users/create') ?>" class="btn btn-primary btn-sm ms-auto"><i class="fas fa-plus me-1"></i> Tambah User</a>
+                <?php if (check_role(['administrator', 'admin_ulp'])): ?>
+                    <a href="<?= site_url('users/create') ?>" class="btn btn-primary btn-sm ms-auto"><i class="fas fa-plus me-1"></i> Tambah User</a>
+                <?php endif; ?>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -28,7 +30,9 @@
                                 <th>Relasi ULP</th>
                                 <th>Status</th>
                                 <th>Last Login</th>
-                                <th style="width: 180px;">Aksi</th>
+                                <?php if (check_role(['administrator', 'admin_ulp'])): ?>
+                                    <th style="width: 180px;">Aksi</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -52,6 +56,7 @@
                                         <?php endif; ?>
                                     </td>
                                     <td><?= $user['last_login'] ? date('d-m-Y H:i', strtotime($user['last_login'])) : '<span class="text-muted small">Belum pernah</span>' ?></td>
+                                    <?php if (check_role(['administrator', 'admin_ulp'])): ?>
                                     <td>
                                         <button onclick="promptResetPassword(<?= $user['id'] ?>, '<?= esc($user['username'], 'js') ?>')" class="btn btn-xs btn-info text-white me-1" title="Reset Password User">
                                             <i class="fas fa-key"></i>
@@ -61,6 +66,7 @@
                                             <a href="<?= site_url('users/delete/' . $user['id']) ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus user <?= esc(addslashes($user['username']), 'js') ?>?');" class="btn btn-xs btn-danger" title="Hapus User"><i class="fas fa-trash"></i></a>
                                         <?php endif; ?>
                                     </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

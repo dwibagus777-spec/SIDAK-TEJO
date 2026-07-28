@@ -19,10 +19,11 @@ $routes->match(['get', 'post'], 'backup/cron', 'Backup::cron');
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {
     
-    // Dashboard
+    // Dashboard & Session Keep-Alive
     $routes->get('dashboard', 'Dashboard::index');
     $routes->get('dashboard/toggle-view', 'Dashboard::toggleView');
     $routes->get('dashboard/analytics-data', 'Dashboard::analyticsData');
+    $routes->get('auth/ping', 'Auth::ping');
 
     // Self Service Change Password & Announcement Ticker
     $routes->get('change-password', 'Auth::changePassword');

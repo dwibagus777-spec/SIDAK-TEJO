@@ -21,40 +21,26 @@ class Cookie extends BaseConfig
      * Cookie Expires Timestamp
      * --------------------------------------------------------------------------
      *
-     * Default expires timestamp for cookies. Setting this to `0` will mean the
-     * cookie will not have the `Expires` attribute and will behave as a session
-     * cookie.
+     * Default expires timestamp for cookies (28800 seconds = 8 hours).
      *
      * @var DateTimeInterface|int|string
      */
-    public $expires = 0;
+    public $expires = 28800;
 
     /**
-     * --------------------------------------------------------------------------
      * Cookie Path
-     * --------------------------------------------------------------------------
-     *
-     * Typically will be a forward slash.
      */
     public string $path = '/';
 
     /**
-     * --------------------------------------------------------------------------
      * Cookie Domain
-     * --------------------------------------------------------------------------
-     *
-     * Set to `.your-domain.com` for site-wide cookies.
      */
     public string $domain = '';
 
     /**
-     * --------------------------------------------------------------------------
-     * Cookie Secure
-     * --------------------------------------------------------------------------
-     *
-     * Cookie will only be set if a secure HTTPS connection exists.
+     * Cookie Secure - Enabled for HTTPS
      */
-    public bool $secure = false;
+    public bool $secure = true;
 
     /**
      * --------------------------------------------------------------------------

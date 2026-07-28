@@ -554,6 +554,16 @@
                 </span>
             </div>
 
+            <!-- Ingat Saya (30 Hari Token) Task 13 -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="remember_me" checked style="cursor: pointer;">
+                    <label class="form-check-label text-dark font-weight-bold small ms-1" for="remember_me" style="cursor: pointer; font-size: 13px;">
+                        Ingat Saya (Aktif 30 Hari)
+                    </label>
+                </div>
+            </div>
+
             <!-- Submit -->
             <button type="submit" class="btn-login-modern" id="btn-submit">
                 <i class="fas fa-sign-in-alt"></i>

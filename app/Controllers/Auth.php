@@ -87,10 +87,11 @@ class Auth extends BaseController
                 ]);
             }
 
-            $username = $this->request->getPost('username');
-            $password = $this->request->getPost('password');
+            $username   = $this->request->getPost('username');
+            $password   = $this->request->getPost('password');
+            $rememberMe = (bool)$this->request->getPost('remember_me');
 
-            $res = $this->authService->login($username, $password);
+            $res = $this->authService->login($username, $password, $rememberMe);
 
             if ($res['success']) {
                 return redirect()->to(site_url('dashboard'));
@@ -108,6 +109,27 @@ class Auth extends BaseController
     {
         $this->authService->logout();
         return redirect()->to(site_url('login'))->with('success', 'Anda telah berhasil logout.');
+    }
+
+    /**
+     * GET /auth/ping
+     * Ultra lightweight session keep-alive ping (0 DB queries, 0 heavy logs)
+     */
+    public function ping()
+    {
+        $session = session();
+        if ($session->get('logged_in')) {
+            $session->set('last_activity', time());
+            return $this->response->setStatusCode(200)->setJSON([
+                'status' => true,
+                'time'   => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        return $this->response->setStatusCode(401)->setJSON([
+            'status'  => false,
+            'message' => 'Session expired'
+        ]);
     }
 
     public function changePassword()

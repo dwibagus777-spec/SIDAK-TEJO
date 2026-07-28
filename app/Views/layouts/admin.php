@@ -1496,17 +1496,63 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             },
             statusCode: {
                 401: function() {
-                    Swal.fire({
-                        title: 'Sesi Berakhir!',
-                        text: 'Sesi login Anda telah habis. Silakan login kembali.',
-                        icon: 'warning',
-                        confirmButtonText: 'Ke Halaman Login'
-                    }).then(() => {
-                        window.location.href = '<?= site_url('login') ?>';
-                    });
+                    if (navigator.onLine) {
+                        Swal.fire({
+                            title: 'Sesi Berakhir!',
+                            text: 'Sesi login Anda telah habis setelah 8 jam tidak aktif. Silakan login kembali.',
+                            icon: 'warning',
+                            confirmButtonColor: '#005eb8',
+                            confirmButtonText: '<i class="fas fa-right-to-bracket mr-1"></i> Login Kembali'
+                        }).then(() => {
+                            window.location.href = '<?= site_url('login') ?>';
+                        });
+                    }
                 }
             }
         });
+
+        // ============================================================
+        // ENTERPRISE SESSION MANAGEMENT - AUTO KEEP-ALIVE & RESILIENCE
+        // ============================================================
+        function sendSessionKeepAlivePing() {
+            if (!navigator.onLine) return; // Do not touch session when offline
+
+            $.ajax({
+                url: "<?= site_url('auth/ping') ?>",
+                type: "GET",
+                dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(res) {
+                    // Session successfully extended
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401 && navigator.onLine) {
+                        Swal.fire({
+                            title: 'Sesi Telah Berakhir',
+                            text: 'Sesi Anda telah berakhir setelah 8 jam tidak aktif. Silakan login kembali.',
+                            icon: 'info',
+                            confirmButtonColor: '#005eb8',
+                            confirmButtonText: '<i class="fas fa-right-to-bracket mr-1"></i> Login Kembali'
+                        }).then(() => {
+                            window.location.href = '<?= site_url("login") ?>';
+                        });
+                    }
+                }
+            });
+        }
+
+        // Auto ping every 60 seconds
+        setInterval(sendSessionKeepAlivePing, 60000);
+
+        // Instant ping on tab focus, screen unlock, or online reconnect (Tasks 7 & 8)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                sendSessionKeepAlivePing();
+            }
+        });
+
+        window.addEventListener('focus', sendSessionKeepAlivePing);
+        window.addEventListener('online', sendSessionKeepAlivePing);
     </script>
     <?= $this->renderSection('scripts') ?>
 </body>

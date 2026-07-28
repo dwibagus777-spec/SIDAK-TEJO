@@ -20,7 +20,7 @@ class AuthService
      * @param string $password
      * @return array [success => bool, message => string]
      */
-    public function login(string $username, string $password): array
+    public function login(string $username, string $password, bool $rememberMe = false): array
     {
         $user = $this->userRepository->findByUsername($username);
 
@@ -49,6 +49,17 @@ class AuthService
         // Update last login
         $this->userRepository->updateLastLogin($user['id']);
 
+        // Handle "Ingat Saya" (Remember Me 30 Hari Token)
+        if ($rememberMe) {
+            $token = bin2hex(random_bytes(32));
+            try {
+                $this->userRepository->update($user['id'], ['remember_token' => $token]);
+                setcookie('sidaktejo_remember', $token, time() + (30 * 86400), '/', '', true, true);
+            } catch (\Throwable $e) {
+                log_message('error', 'Failed to save remember token: ' . $e->getMessage());
+            }
+        }
+
         // Set session
         $session = session();
         $session->set([
@@ -60,7 +71,8 @@ class AuthService
             'user_ulp_id'  => $user['ulp_id'],
             'ulp_id'       => $user['ulp_id'],
             'user_ulp'     => $user['ulp'] ?? '',
-            'logged_in'    => true
+            'logged_in'    => true,
+            'last_activity'=> time()
         ]);
 
         // Catat Audit Log
@@ -78,9 +90,16 @@ class AuthService
     public function logout(): void
     {
         $session = session();
-        if ($session->has('user_id')) {
+        $userId = $session->get('user_id');
+
+        if ($userId) {
             log_activity('LOGOUT', 'User logout dari sistem.');
+            try {
+                $this->userRepository->update($userId, ['remember_token' => null]);
+            } catch (\Throwable $e) {}
         }
+
+        setcookie('sidaktejo_remember', '', time() - 3600, '/', '', true, true);
         $session->destroy();
     }
 

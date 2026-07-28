@@ -18,6 +18,9 @@ class Ulp extends BaseController
 
     public function index()
     {
+        if (!check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp'])) {
+            return redirect()->to(site_url('dashboard'))->with('error', 'Akses ditolak.');
+        }
         $ulps = $this->ulpRepository->findAll();
         return view('ulps/index', ['ulps' => $ulps]);
     }

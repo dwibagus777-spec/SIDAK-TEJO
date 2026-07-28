@@ -18,6 +18,9 @@ class User extends BaseController
 
     public function index()
     {
+        if (!check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp'])) {
+            return redirect()->to(site_url('dashboard'))->with('error', 'Akses ditolak.');
+        }
         $session = session();
         $role = strtolower((string)$session->get('user_role'));
         $userUlpId = $session->get('user_ulp_id');

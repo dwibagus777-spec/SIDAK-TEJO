@@ -2,12 +2,14 @@
 
 namespace App\Controllers;
 
-use CodeIgniter\Controller;
-
-class DbExport extends Controller
+class DbExport extends BaseController
 {
     public function index()
     {
+        if (!check_role(['administrator', 'admin_ulp'])) {
+            return redirect()->to(site_url('dashboard'))->with('error', 'Hanya Administrator yang memiliki akses ke fitur ini.');
+        }
+
         $db = \Config\Database::connect();
         
         try {
@@ -16,17 +18,17 @@ class DbExport extends Controller
             return $this->response->setStatusCode(500)->setBody("Database Connection Error: " . $e->getMessage());
         }
 
-        $output = "-- SIDAK TEJO Live Database Export from Railway\n";
+        $output = "-- SIDAK TEJO Live Database Export\n";
         $output .= "-- Exported on: " . date('Y-m-d H:i:s') . "\n";
         $output .= "SET FOREIGN_KEY_CHECKS = 0;\n";
         $output .= "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n";
         $output .= "SET NAMES utf8mb4;\n\n";
 
         foreach ($tables as $table) {
-            // Get CREATE TABLE
             try {
                 $query = $db->query("SHOW CREATE TABLE `{$table}`");
                 $row = $query->getRowArray();
+                if (!$row) continue;
                 $createTableSql = array_values($row)[1];
 
                 $output .= "DROP TABLE IF EXISTS `{$table}`;\n";
@@ -47,16 +49,17 @@ class DbExport extends Controller
                     $output .= "\n";
                 }
             } catch (\Throwable $e) {
-                // Skip problematic view/table if any
                 continue;
             }
         }
 
         $output .= "SET FOREIGN_KEY_CHECKS = 1;\n";
 
+        log_activity('EXPORT_DATABASE', 'Mengekspor mentahan kueri database SQL.');
+
         return $this->response
             ->setHeader('Content-Type', 'application/sql')
-            ->setHeader('Content-Disposition', 'attachment; filename="railway_live_sidak_tejo.sql"')
+            ->setHeader('Content-Disposition', 'attachment; filename="sidak_tejo_database_export.sql"')
             ->setBody($output);
     }
 }

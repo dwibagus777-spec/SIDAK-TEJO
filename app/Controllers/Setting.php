@@ -62,8 +62,7 @@ class Setting extends BaseController
             defined('WRITEPATH') ? WRITEPATH : null,
             defined('ROOTPATH') ? ROOTPATH . 'writable/' : null,
             defined('FCPATH') ? FCPATH . '../writable/' : null,
-            __DIR__ . '/../../writable/',
-            'e:/XAMPP/htdocs/SIDAK TEJO/writable/'
+            __DIR__ . '/../../writable/'
         ];
 
         $saved = false;

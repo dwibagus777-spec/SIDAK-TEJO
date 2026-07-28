@@ -31,7 +31,7 @@ class TemuanModel extends Model
     protected $updatedField  = 'updated_at';
 
     /**
-     * Dapatkan Top 10 Petugas yang paling banyak meng-input temuan
+     * Dapatkan Top 10 Petugas yang paling banyak meng-input temuan (SARGable Date Filter)
      */
     public function getTopInputOfficers($month = null, $year = null, $ulpId = null)
     {
@@ -41,14 +41,18 @@ class TemuanModel extends Model
         $builder->where('created_by_name IS NOT NULL');
         $builder->where('created_by_name !=', '');
 
-        if ($month) {
-            $builder->where('MONTH(tanggal_temuan)', $month);
+        if ($month && $year) {
+            $startDate = sprintf('%04d-%02d-01', (int)$year, (int)$month);
+            $endDate   = date('Y-m-t', strtotime($startDate));
+            $builder->where('tanggal_temuan >=', $startDate);
+            $builder->where('tanggal_temuan <=', $endDate);
+        } elseif ($year) {
+            $builder->where('tanggal_temuan >=', sprintf('%04d-01-01', (int)$year));
+            $builder->where('tanggal_temuan <=', sprintf('%04d-12-31', (int)$year));
         }
-        if ($year) {
-            $builder->where('YEAR(tanggal_temuan)', $year);
-        }
+
         if ($ulpId) {
-            $builder->where('ulp_id', $ulpId);
+            $builder->where('ulp_id', (int)$ulpId);
         }
 
         $builder->groupBy(['created_by', 'created_by_name', 'created_by_nip']);
@@ -59,7 +63,7 @@ class TemuanModel extends Model
     }
 
     /**
-     * Dapatkan Top 10 Petugas yang paling banyak melakukan update/penyelesaian temuan
+     * Dapatkan Top 10 Petugas yang paling banyak melakukan update/penyelesaian temuan (SARGable Date Filter)
      */
     public function getTopUpdateOfficers($month = null, $year = null, $ulpId = null)
     {
@@ -70,14 +74,18 @@ class TemuanModel extends Model
         $builder->where('updated_by_name !=', '');
         $builder->where('status', 'SELESAI');
 
-        if ($month) {
-            $builder->where('MONTH(updated_at)', $month);
+        if ($month && $year) {
+            $startDate = sprintf('%04d-%02d-01 00:00:00', (int)$year, (int)$month);
+            $endDate   = date('Y-m-t 23:59:59', strtotime($startDate));
+            $builder->where('updated_at >=', $startDate);
+            $builder->where('updated_at <=', $endDate);
+        } elseif ($year) {
+            $builder->where('updated_at >=', sprintf('%04d-01-01 00:00:00', (int)$year));
+            $builder->where('updated_at <=', sprintf('%04d-12-31 23:59:59', (int)$year));
         }
-        if ($year) {
-            $builder->where('YEAR(updated_at)', $year);
-        }
+
         if ($ulpId) {
-            $builder->where('ulp_id', $ulpId);
+            $builder->where('ulp_id', (int)$ulpId);
         }
 
         $builder->groupBy(['updated_by', 'updated_by_name', 'updated_by_nip']);

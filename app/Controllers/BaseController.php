@@ -42,19 +42,19 @@ abstract class BaseController extends Controller
         parent::initController($request, $response, $logger);
 
 
-        // Auto-heal ci_sessions table structure if using DatabaseHandler
+        // Auto-heal ci_sessions table & performance indexes
         try {
-            static $sessionsChecked = false;
-            if (!$sessionsChecked) {
-                $sessionsChecked = true;
+            static $dbInitialized = false;
+            if (!$dbInitialized) {
+                $dbInitialized = true;
                 $db = \Config\Database::connect();
                 if ($db->tableExists('ci_sessions')) {
                     $keys = $db->query("SHOW KEYS FROM ci_sessions WHERE Key_name = 'PRIMARY'")->getResultArray();
                     if (empty($keys)) {
-                        $db->query("ALTER TABLE `ci_sessions` ADD PRIMARY KEY (`id`, `ip_address`)");
+                        @$db->query("ALTER TABLE `ci_sessions` ADD PRIMARY KEY (`id`, `ip_address`)");
                     }
                 } else {
-                    $db->query("CREATE TABLE IF NOT EXISTS `ci_sessions` (
+                    @$db->query("CREATE TABLE IF NOT EXISTS `ci_sessions` (
                         `id` varchar(128) NOT NULL,
                         `ip_address` varchar(45) NOT NULL,
                         `timestamp` int(10) unsigned DEFAULT 0 NOT NULL,
@@ -63,9 +63,43 @@ abstract class BaseController extends Controller
                         KEY `ci_sessions_timestamp` (`timestamp`)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
                 }
+
+                // Create Hostinger MySQL Performance Indexes
+                $indexes = [
+                    'temuan' => [
+                        'idx_temuan_composite'    => "CREATE INDEX idx_temuan_composite ON temuan (deleted_at, ulp_id, jenis_temuan, status, prioritas, tanggal_temuan)",
+                        'idx_temuan_nomor'        => "CREATE INDEX idx_temuan_nomor ON temuan (nomor_temuan)",
+                        'idx_temuan_gis'          => "CREATE INDEX idx_temuan_gis ON temuan (deleted_at, latitude, longitude, ulp_id)",
+                        'idx_temuan_penyulang_sec'=> "CREATE INDEX idx_temuan_penyulang_sec ON temuan (penyulang_id, section_id)"
+                    ],
+                    'foto_eviden' => [
+                        'idx_foto_eviden_parent'  => "CREATE INDEX idx_foto_eviden_parent ON foto_eviden (id_parent, kategori)"
+                    ],
+                    'penyulang' => [
+                        'idx_penyulang_status'    => "CREATE INDEX idx_penyulang_status ON penyulang (ulp_id, status)"
+                    ],
+                    'sections' => [
+                        'idx_section_status'      => "CREATE INDEX idx_section_status ON sections (penyulang_id, status)"
+                    ],
+                    'users' => [
+                        'idx_users_auth'          => "CREATE INDEX idx_users_auth ON users (username, status)",
+                        'idx_users_ulp'           => "CREATE INDEX idx_users_ulp ON users (ulp_id, role)"
+                    ]
+                ];
+
+                foreach ($indexes as $table => $tableIndexes) {
+                    if ($db->tableExists($table)) {
+                        $existing = array_column($db->query("SHOW KEYS FROM `{$table}`")->getResultArray(), 'Key_name');
+                        foreach ($tableIndexes as $indexName => $sql) {
+                            if (!in_array($indexName, $existing, true)) {
+                                try { @$db->query($sql); } catch (\Throwable $ex) {}
+                            }
+                        }
+                    }
+                }
             }
         } catch (\Throwable $e) {
-            // Ignore temporary connection failures
+            // Ignore connection errors
         }
     }
 }

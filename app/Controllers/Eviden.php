@@ -65,9 +65,24 @@ class Eviden extends BaseController
         
         $dataList = $builder->get()->getResultArray();
 
-        // Count photos instead of loading full array to make it light
-        foreach ($dataList as &$item) {
-            $item['foto_count'] = $this->fotoModel->where('id_parent', $item['id_kubikel'])->where('kategori', 'KUBIKEL')->countAllResults();
+        // Count photos using single batch query (Eliminate N+1 query)
+        $ids = array_column($dataList, 'id_kubikel');
+        if (!empty($ids)) {
+            $db = \Config\Database::connect();
+            $counts = $db->table('foto_eviden')
+                ->select('id_parent, COUNT(*) as total')
+                ->where('kategori', 'KUBIKEL')
+                ->whereIn('id_parent', $ids)
+                ->groupBy('id_parent')
+                ->get()->getResultArray();
+            $countMap = array_column($counts, 'total', 'id_parent');
+            foreach ($dataList as &$item) {
+                $item['foto_count'] = $countMap[$item['id_kubikel']] ?? 0;
+            }
+        } else {
+            foreach ($dataList as &$item) {
+                $item['foto_count'] = 0;
+            }
         }
 
         $ulpModel = new \App\Models\UlpModel();
@@ -317,9 +332,24 @@ class Eviden extends BaseController
 
         $dataList = $builder->get()->getResultArray();
 
-        // Count photos instead of loading full array to make it light
-        foreach ($dataList as &$item) {
-            $item['foto_count'] = $this->fotoModel->where('id_parent', $item['id_trafo'])->where('kategori', 'TRAFO')->countAllResults();
+        // Count photos using single batch query (Eliminate N+1 query)
+        $ids = array_column($dataList, 'id_trafo');
+        if (!empty($ids)) {
+            $db = \Config\Database::connect();
+            $counts = $db->table('foto_eviden')
+                ->select('id_parent, COUNT(*) as total')
+                ->where('kategori', 'TRAFO')
+                ->whereIn('id_parent', $ids)
+                ->groupBy('id_parent')
+                ->get()->getResultArray();
+            $countMap = array_column($counts, 'total', 'id_parent');
+            foreach ($dataList as &$item) {
+                $item['foto_count'] = $countMap[$item['id_trafo']] ?? 0;
+            }
+        } else {
+            foreach ($dataList as &$item) {
+                $item['foto_count'] = 0;
+            }
         }
 
         $ulpModel = new \App\Models\UlpModel();

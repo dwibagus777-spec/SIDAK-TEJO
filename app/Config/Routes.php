@@ -7,20 +7,10 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // --- Rute Terbuka (Public Routes) ---
+$routes->match(['get', 'post'], 'login', 'Auth::login');
 $routes->get('/', 'Auth::login');
-$routes->get('', 'Auth::login');
-$routes->get('login', 'Auth::login');
-$routes->get('/login', 'Auth::login');
-$routes->post('/login', 'Auth::login');
-$routes->post('login', 'Auth::login');
-$routes->get('/logout', 'Auth::logout');
-$routes->get('logout', 'Auth::logout');
-$routes->get('auth/logout', 'Auth::logout');
-$routes->post('auth/logout', 'Auth::logout');
-
-$routes->get('export_railway_db.php', 'DbExport::index');
-$routes->get('export-live-db', 'DbExport::index');
-$routes->get('download-db', 'DbExport::index');
+$routes->match(['get', 'post'], 'logout', 'Auth::logout');
+$routes->match(['get', 'post'], 'auth/logout', 'Auth::logout');
 
 // Rute Cron Job Otomatis Harian Backup (Hostinger Compatible)
 $routes->match(['get', 'post'], 'backup/cron', 'Backup::cron');
@@ -38,6 +28,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('change-password', 'Auth::changePassword');
     $routes->get('setting/announcement', 'Setting::index');
     $routes->match(['get', 'post'], 'setting/update-announcement', 'Setting::updateAnnouncement');
+
+    // Ekspor Database (Admin Saja - Terproteksi Login & Role)
+    $routes->group('', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
+        $routes->get('export_railway_db.php', 'DbExport::index');
+        $routes->get('export-live-db', 'DbExport::index');
+        $routes->get('download-db', 'DbExport::index');
+    });
 
     // Manajemen Backup & Restore Sistem (Admin)
     $routes->group('backup', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {

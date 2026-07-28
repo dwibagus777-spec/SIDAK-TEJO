@@ -341,53 +341,92 @@
         const currentPenyulangId = "<?= $temuan['penyulang_id'] ?>";
         const currentSectionId   = "<?= $temuan['section_id'] ?>";
 
+        function refreshSelect2($element) {
+            if ($element.hasClass('select2-hidden-accessible')) {
+                $element.trigger('change.select2');
+            } else {
+                $element.trigger('change');
+            }
+        }
+
         function loadPenyulang(ulpId, selectedId) {
+            const $penyulang = $('#penyulang_id');
+            const $section = $('#section_id');
+
             if (!ulpId) {
-                $('#penyulang_id').html('<option value="">-- Pilih ULP Dahulu --</option>').trigger('change');
-                $('#section_id').html('<option value="">-- Pilih Penyulang Dahulu --</option>').trigger('change');
+                $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>');
+                $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                refreshSelect2($penyulang);
+                refreshSelect2($section);
                 return;
             }
-            $('#penyulang_id').html('<option value="">Sedang memuat...</option>').trigger('change');
+            $penyulang.html('<option value="">Sedang memuat...</option>');
+            refreshSelect2($penyulang);
+
             $.ajax({
-                url: "<?= site_url('temuan/ajax-penyulang/') ?>" + ulpId,
-                type: "GET", dataType: "json",
+                url: "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId,
+                type: "GET",
+                dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(data) {
                     let html = '<option value="">-- Pilih Penyulang --</option>';
-                    if (Array.isArray(data)) {
+                    if (Array.isArray(data) && data.length > 0) {
                         data.forEach(function(item) {
                             const sel = item.id == selectedId ? 'selected' : '';
                             html += `<option value="${item.id}" ${sel}>${item.nama_penyulang}</option>`;
                         });
+                    } else {
+                        html = '<option value="">-- Tidak ada penyulang aktif --</option>';
                     }
-                    $('#penyulang_id').html(html).trigger('change');
+                    $penyulang.html(html);
+                    refreshSelect2($penyulang);
+
+                    if (!selectedId) {
+                        $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                        refreshSelect2($section);
+                    }
                 },
-                error: function() {
-                    $('#penyulang_id').html('<option value="">Gagal memuat penyulang</option>').trigger('change');
+                error: function(xhr, status, err) {
+                    console.error('Error loading penyulang:', err);
+                    $penyulang.html('<option value="">Gagal memuat penyulang</option>');
+                    refreshSelect2($penyulang);
                 }
             });
         }
 
         function loadSection(penyulangId, selectedId) {
+            const $section = $('#section_id');
+
             if (!penyulangId) {
-                $('#section_id').html('<option value="">-- Pilih Penyulang Dahulu --</option>').trigger('change');
+                $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                refreshSelect2($section);
                 return;
             }
-            $('#section_id').html('<option value="">Sedang memuat...</option>').trigger('change');
+            $section.html('<option value="">Sedang memuat...</option>');
+            refreshSelect2($section);
+
             $.ajax({
-                url: "<?= site_url('temuan/ajax-section/') ?>" + penyulangId,
-                type: "GET", dataType: "json",
+                url: "<?= base_url('temuan/ajax-section') ?>/" + penyulangId,
+                type: "GET",
+                dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(data) {
                     let html = '<option value="">-- Pilih Section --</option>';
-                    if (Array.isArray(data)) {
+                    if (Array.isArray(data) && data.length > 0) {
                         data.forEach(function(item) {
                             const sel = item.id == selectedId ? 'selected' : '';
                             html += `<option value="${item.id}" ${sel}>${item.nama_section}</option>`;
                         });
+                    } else {
+                        html = '<option value="">-- Tidak ada section aktif --</option>';
                     }
-                    $('#section_id').html(html).trigger('change');
+                    $section.html(html);
+                    refreshSelect2($section);
                 },
-                error: function() {
-                    $('#section_id').html('<option value="">Gagal memuat section</option>').trigger('change');
+                error: function(xhr, status, err) {
+                    console.error('Error loading section:', err);
+                    $section.html('<option value="">Gagal memuat section</option>');
+                    refreshSelect2($section);
                 }
             });
         }

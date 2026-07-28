@@ -278,82 +278,121 @@
 <script>
     $(function() {
         // --- 1. CASCADING DROPDOWNS ---
-        
         const oldPenyulangId = "<?= old('penyulang_id') ?>";
         const oldSectionId = "<?= old('section_id') ?>";
 
+        function refreshSelect2($element) {
+            if ($element.hasClass('select2-hidden-accessible')) {
+                $element.trigger('change.select2');
+            } else {
+                $element.trigger('change');
+            }
+        }
+
         function loadPenyulang(ulpId, callback) {
+            const $penyulang = $('#penyulang_id');
+            const $section = $('#section_id');
+
             if (!ulpId) {
-                $('#penyulang_id').html('<option value="">-- Pilih ULP Dahulu --</option>').trigger('change');
-                $('#section_id').html('<option value="">-- Pilih Penyulang Dahulu --</option>').trigger('change');
+                $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>');
+                $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                refreshSelect2($penyulang);
+                refreshSelect2($section);
                 return;
             }
 
-            $('#penyulang_id').html('<option value="">Sedang memuat...</option>').trigger('change');
+            $penyulang.html('<option value="">Sedang memuat...</option>');
+            refreshSelect2($penyulang);
+
             $.ajax({
-                url: "<?= site_url('temuan/ajax-penyulang/') ?>" + ulpId,
+                url: "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId,
                 type: "GET",
                 dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(data) {
                     let html = '<option value="">-- Pilih Penyulang --</option>';
-                    if (Array.isArray(data)) {
+                    if (Array.isArray(data) && data.length > 0) {
                         data.forEach(function(item) {
                             html += `<option value="${item.id}">${item.nama_penyulang}</option>`;
                         });
+                    } else {
+                        html = '<option value="">-- Tidak ada penyulang aktif --</option>';
                     }
-                    $('#penyulang_id').html(html).trigger('change');
+                    $penyulang.html(html);
+                    refreshSelect2($penyulang);
+
+                    $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                    refreshSelect2($section);
+
                     if (callback) callback();
                 },
-                error: function() {
-                    $('#penyulang_id').html('<option value="">Gagal memuat penyulang</option>').trigger('change');
+                error: function(xhr, status, err) {
+                    console.error('Error loading penyulang:', err);
+                    $penyulang.html('<option value="">Gagal memuat penyulang</option>');
+                    refreshSelect2($penyulang);
                 }
             });
         }
 
         function loadSection(penyulangId, callback) {
+            const $section = $('#section_id');
+
             if (!penyulangId) {
-                $('#section_id').html('<option value="">-- Pilih Penyulang Dahulu --</option>').trigger('change');
+                $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                refreshSelect2($section);
                 return;
             }
 
-            $('#section_id').html('<option value="">Sedang memuat...</option>').trigger('change');
+            $section.html('<option value="">Sedang memuat...</option>');
+            refreshSelect2($section);
+
             $.ajax({
-                url: "<?= site_url('temuan/ajax-section/') ?>" + penyulangId,
+                url: "<?= base_url('temuan/ajax-section') ?>/" + penyulangId,
                 type: "GET",
                 dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(data) {
                     let html = '<option value="">-- Pilih Section --</option>';
-                    if (Array.isArray(data)) {
+                    if (Array.isArray(data) && data.length > 0) {
                         data.forEach(function(item) {
                             html += `<option value="${item.id}">${item.nama_section}</option>`;
                         });
+                    } else {
+                        html = '<option value="">-- Tidak ada section aktif --</option>';
                     }
-                    $('#section_id').html(html).trigger('change');
+                    $section.html(html);
+                    refreshSelect2($section);
+
                     if (callback) callback();
                 },
-                error: function() {
-                    $('#section_id').html('<option value="">Gagal memuat section</option>').trigger('change');
+                error: function(xhr, status, err) {
+                    console.error('Error loading section:', err);
+                    $section.html('<option value="">Gagal memuat section</option>');
+                    refreshSelect2($section);
                 }
             });
         }
 
         // Dropdown triggers
-        $('#ulp_id').change(function() {
+        $('#ulp_id').on('change', function() {
             loadPenyulang($(this).val());
         });
 
-        $('#penyulang_id').change(function() {
+        $('#penyulang_id').on('change', function() {
             loadSection($(this).val());
         });
 
-        // Restore old input cascade (if validation fails)
-        if ($('#ulp_id').val()) {
-            loadPenyulang($('#ulp_id').val(), function() {
+        // Restore old input cascade (if validation fails or pre-selected)
+        const initialUlpId = $('#ulp_id').val();
+        if (initialUlpId) {
+            loadPenyulang(initialUlpId, function() {
                 if (oldPenyulangId) {
                     $('#penyulang_id').val(oldPenyulangId);
+                    refreshSelect2($('#penyulang_id'));
                     loadSection(oldPenyulangId, function() {
                         if (oldSectionId) {
                             $('#section_id').val(oldSectionId);
+                            refreshSelect2($('#section_id'));
                         }
                     });
                 }

@@ -22,13 +22,11 @@ class SectionRepository extends BaseRepository
 
     public function getActiveSectionsByPenyulang(int $penyulangId): array
     {
-        return cache()->remember("active_sections_penyulang_{$penyulangId}", 86400, function() use ($penyulangId) {
-            return $this->model
-                ->where('penyulang_id', $penyulangId)
-                ->where('status', 'AKTIF')
-                ->orderBy('nama_section', 'ASC')
-                ->findAll();
-        });
+        return $this->model
+            ->where('penyulang_id', $penyulangId)
+            ->where('status', 'AKTIF')
+            ->orderBy('nama_section', 'ASC')
+            ->findAll();
     }
 
     public function getAllWithPenyulangAndUlp(): array

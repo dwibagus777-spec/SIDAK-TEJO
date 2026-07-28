@@ -316,7 +316,7 @@ if (!function_exists('get_photo_url')) {
             return $placeholder;
         }
 
-        // Jika photoName berupa URL lengkap (misal Cloudinary/external URL legacy)
+        // Jika photoName berupa URL lengkap (misal http:// atau https:// external URL legacy)
         if (str_starts_with($photoName, 'http://') || str_starts_with($photoName, 'https://')) {
             return $photoName;
         }

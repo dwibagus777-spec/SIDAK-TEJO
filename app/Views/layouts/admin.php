@@ -797,6 +797,13 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                                             <i class="fas fa-file-excel me-1" style="color:#1d6f42;"></i> Impor Excel
                                         </a>
                                     </li>
+                                    <?php if (check_role(['administrator', 'admin_ulp'])): ?>
+                                    <li>
+                                        <a class="dropdown-item <?= url_is('backup*') ? 'active' : '' ?>" href="<?= site_url('backup') ?>">
+                                            <i class="fas fa-database text-info me-1"></i> Backup & Restore
+                                        </a>
+                                    </li>
+                                    <?php endif; ?>
                                 </ul>
                             </div>
                         </li>

@@ -26,6 +26,7 @@ class TemuanService
             return $sourcePath;
         }
 
+        @ini_set('memory_limit', '256M');
         $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
         $image = null;
 
@@ -54,6 +55,10 @@ class TemuanService
             $compressedPath = $sourcePath . '.compressed.jpg';
             imagejpeg($image, $compressedPath, $quality);
             imagedestroy($image);
+
+            if (function_exists('gc_collect_cycles')) {
+                gc_collect_cycles();
+            }
 
             if (file_exists($compressedPath) && filesize($compressedPath) < filesize($sourcePath)) {
                 return $compressedPath;

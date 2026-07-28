@@ -3,17 +3,14 @@
 namespace Config;
 
 use CodeIgniter\Config\BaseConfig;
-use CodeIgniter\Session\Handlers\BaseHandler;
 use CodeIgniter\Session\Handlers\FileHandler;
-use CodeIgniter\Session\Handlers\DatabaseHandler;
 
 class Session extends BaseConfig
 {
     /**
-     * Session Driver
-     * DatabaseHandler untuk Production/Railway agar session tersimpan di MySQL & tidak reset saat redeploy.
+     * Session Driver - FileHandler untuk Hostinger Shared Hosting (Super Cepat)
      */
-    public string $driver = DatabaseHandler::class;
+    public string $driver = FileHandler::class;
 
     /**
      * Session Cookie Name
@@ -26,9 +23,9 @@ class Session extends BaseConfig
     public int $expiration = 86400;
 
     /**
-     * Session Save Path (nama tabel database)
+     * Session Save Path
      */
-    public string $savePath = 'ci_sessions';
+    public string $savePath = WRITEPATH . 'session';
 
     /**
      * Session Match IP
@@ -48,7 +45,7 @@ class Session extends BaseConfig
     /**
      * Session Database Group
      */
-    public ?string $DBGroup = 'default';
+    public ?string $DBGroup = null;
 
     /**
      * Lock Retry Interval (microseconds)
@@ -59,26 +56,4 @@ class Session extends BaseConfig
      * Lock Max Retries
      */
     public int $lockMaxRetries = 300;
-
-    public function __construct()
-    {
-        parent::__construct();
-
-        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
-        $isLocal = (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false);
-        $isCli = (php_sapi_name() === 'cli');
-
-        if ($isLocal && !$isCli) {
-            // Development lokal (XAMPP)
-            $this->driver   = FileHandler::class;
-            $this->savePath = WRITEPATH . 'session';
-            $this->DBGroup  = null;
-        } else {
-            // Cloud / Railway Production
-            $this->driver   = DatabaseHandler::class;
-            $this->savePath = 'ci_sessions';
-            $this->DBGroup  = 'default';
-        }
-    }
 }
-

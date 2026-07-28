@@ -13,7 +13,7 @@ class UlpRepository extends BaseRepository
 
     public function getActiveUlps(): array
     {
-        return cache()->remember('active_ulps', 3600, function() {
+        return cache()->remember('active_ulps', 86400, function() {
             return $this->model->where('status', 'AKTIF')->orderBy('nama_ulp', 'ASC')->findAll();
         });
     }

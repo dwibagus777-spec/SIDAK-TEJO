@@ -21,7 +21,7 @@ class PenyulangRepository extends BaseRepository
 
     public function getActivePenyulangsByUlp(int $ulpId): array
     {
-        return cache()->remember("active_penyulangs_ulp_{$ulpId}", 3600, function() use ($ulpId) {
+        return cache()->remember("active_penyulangs_ulp_{$ulpId}", 86400, function() use ($ulpId) {
             return $this->model
                 ->where('ulp_id', $ulpId)
                 ->where('status', 'AKTIF')
@@ -46,7 +46,7 @@ class PenyulangRepository extends BaseRepository
 
     public function getActivePenyulangs(): array
     {
-        return cache()->remember('active_penyulangs', 3600, function() {
+        return cache()->remember('active_penyulangs', 86400, function() {
             return $this->model->where('status', 'AKTIF')->orderBy('nama_penyulang', 'ASC')->findAll();
         });
     }

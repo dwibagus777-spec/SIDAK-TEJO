@@ -3,10 +3,10 @@
 <head>
     <meta charset="utf-8">
     <title>Cetak Laporan - SIDAK TEJO</title>
-    <!-- Google Font: Inter -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-    <!-- Bootstrap 5 minimal CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Google Font: Inter Local -->
+    <link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
+    <!-- Bootstrap 5 Local CSS -->
+    <link rel="stylesheet" href="<?= base_url('plugins/bootstrap/css/bootstrap.min.css') ?>">
     
     <style>
         @page {

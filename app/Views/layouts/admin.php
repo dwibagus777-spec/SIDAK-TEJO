@@ -41,10 +41,8 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicon_sidak.png') ?>">
     <link rel="shortcut icon" href="<?= base_url('assets/img/favicon_sidak.png') ?>">
 
-    <!-- Google Fonts: Outfit & Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Local Google Fonts: Outfit & Inter -->
+    <link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
 
     <!-- Local CSS Files (Offline-Safe & Correct Pathing) -->
     <?php foreach ($cssFiles as $file): ?>

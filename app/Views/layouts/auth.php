@@ -10,10 +10,8 @@
     <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicon_sidak.png') ?>">
     <link rel="shortcut icon" href="<?= base_url('assets/img/favicon_sidak.png') ?>">
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Local Google Fonts: Outfit & Inter -->
+    <link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
 
     <!-- Font Awesome Local -->
     <link rel="stylesheet" href="<?= base_url('plugins/fontawesome-free/css/all.min.css') ?>">

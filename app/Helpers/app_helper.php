@@ -304,7 +304,7 @@ if (!function_exists('get_daily_announcement')) {
 
 if (!function_exists('get_photo_url')) {
     /**
-     * Helper tunggal untuk mendapatkan URL foto
+     * Helper tunggal untuk mendapatkan URL foto dengan toleransi berkas hilang
      */
     function get_photo_url(?string $photoName, ?string $fotoPath = 'foto/'): string
     {
@@ -319,18 +319,29 @@ if (!function_exists('get_photo_url')) {
             return $placeholder;
         }
 
-        // Jika photoName berupa URL lengkap (misal http:// atau https:// external URL legacy)
+        // Bersihkan prefix "public/" atau "/public/" jika terbawa
+        $photoName = preg_replace('/^\/?public\//', '', $photoName);
+
+        // Jika photoName berupa URL eksternal lengkap
         if (str_starts_with($photoName, 'http://') || str_starts_with($photoName, 'https://')) {
             return $photoName;
         }
 
-        // Jika photoName sudah diawali path seperti "foto/abc.jpg" atau "uploads/abc.jpg"
+        // Tentukan relative path lokal
         if (str_starts_with($photoName, 'foto/') || str_starts_with($photoName, 'uploads/')) {
-            return base_url($photoName);
+            $relativePath = $photoName;
+        } else {
+            $dir = (!empty($fotoPath) && trim($fotoPath, '/') !== '') ? rtrim($fotoPath, '/') . '/' : 'foto/';
+            $dir = preg_replace('/^\/?public\//', '', $dir);
+            $relativePath = $dir . $photoName;
         }
 
-        // Standar lokal: foto_path == 'foto/' -> base_url('foto/' . $filename)
-        $dir = (!empty($fotoPath) && trim($fotoPath, '/') !== '') ? rtrim($fotoPath, '/') . '/' : 'foto/';
-        return base_url($dir . $photoName);
+        // Verifikasi keberadaan berkas fisik di server
+        if (defined('FCPATH') && file_exists(FCPATH . $relativePath)) {
+            return base_url($relativePath);
+        }
+
+        // Fallback jika berkas fisik tidak ditemukan di disk server
+        return $placeholder;
     }
 }

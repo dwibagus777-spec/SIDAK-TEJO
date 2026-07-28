@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sidak-tejo-v4';
-const MAPS_CACHE_NAME = 'sidak-tejo-maps-v3';
+const CACHE_NAME = 'sidak-tejo-v5';
+const MAPS_CACHE_NAME = 'sidak-tejo-maps-v4';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [

@@ -522,7 +522,7 @@
             }
 
             const btnSubmit = $('#btn-submit');
-            btnSubmit.html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan ke Cloudinary...');
+            btnSubmit.html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan data...');
             // Allow native form submission to proceed with multipart payload intact
             return true;
         });

@@ -301,38 +301,33 @@ if (!function_exists('get_daily_announcement')) {
 
 if (!function_exists('get_photo_url')) {
     /**
-     * Resolve robust URL for any photo filename & foto_path combination
+     * Helper tunggal untuk mendapatkan URL foto
      */
     function get_photo_url(?string $photoName, ?string $fotoPath = 'foto/'): string
     {
-        if (empty($photoName)) return '';
-        
-        $photoName = trim($photoName, '/');
-        
+        $placeholder = base_url('assets/img/no-image.png');
+
+        if (empty($photoName)) {
+            return $placeholder;
+        }
+
+        $photoName = trim($photoName);
+        if ($photoName === '') {
+            return $placeholder;
+        }
+
+        // Jika photoName berupa URL lengkap (misal Cloudinary/external URL legacy)
         if (str_starts_with($photoName, 'http://') || str_starts_with($photoName, 'https://')) {
             return $photoName;
         }
-        
+
+        // Jika photoName sudah diawali path seperti "foto/abc.jpg" atau "uploads/abc.jpg"
         if (str_starts_with($photoName, 'foto/') || str_starts_with($photoName, 'uploads/')) {
             return base_url($photoName);
         }
-        
-        $dir = !empty($fotoPath) ? rtrim($fotoPath, '/') . '/' : 'foto/';
 
-        if (file_exists(FCPATH . $dir . $photoName)) {
-            return base_url($dir . $photoName);
-        }
-        if (file_exists(FCPATH . $photoName)) {
-            return base_url($photoName);
-        }
-        if (file_exists(FCPATH . 'foto/' . $photoName)) {
-            return base_url('foto/' . $photoName);
-        }
-        if (file_exists(FCPATH . 'uploads/temuan/' . $photoName)) {
-            return base_url('uploads/temuan/' . $photoName);
-        }
-
-        // Returns empty string for dead local files (wiped by Railway deployment) so view skips them cleanly
-        return '';
+        // Standar lokal: foto_path == 'foto/' -> base_url('foto/' . $filename)
+        $dir = (!empty($fotoPath) && trim($fotoPath, '/') !== '') ? rtrim($fotoPath, '/') . '/' : 'foto/';
+        return base_url($dir . $photoName);
     }
 }

@@ -213,7 +213,7 @@
                                     <span class="text-muted" style="font-size: 8px;">Tidak ada foto</span>
                                 <?php else: ?>
                                     <?php foreach ($photos as $photo): 
-                                        $filePath = base_url($uploadPath . $photo);
+                                        $filePath = get_photo_url($photo, $row['foto_path'] ?? 'foto/');
                                     ?>
                                         <img src="<?= $filePath ?>" style="width: 48px; height: 48px; object-fit: cover; border-radius: 3px; border: 1px solid #94a3b8;">
                                     <?php endforeach; ?>

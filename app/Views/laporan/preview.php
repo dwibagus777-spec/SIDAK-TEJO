@@ -116,7 +116,7 @@
                                                  <span class="text-muted small">Tidak ada foto</span>
                                              <?php else: ?>
                                                  <?php foreach ($photos as $photo): 
-                                                     $filePath = base_url($uploadPath . $photo);
+                                                     $filePath = get_photo_url($photo, $row['foto_path'] ?? 'foto/');
                                                  ?>
                                                      <img src="<?= $filePath ?>" 
                                                           style="width: 46px; height: 46px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; cursor: pointer; transition: transform 0.2s;"

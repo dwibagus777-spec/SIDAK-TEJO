@@ -528,7 +528,7 @@
                     const photos = JSON.parse(temuan.foto || '[]');
                     if (photos.length > 0) {
                         photos.forEach(p => {
-                            const url = '<?= base_url() ?>' + temuan.foto_path + p;
+                            const url = (p.startsWith('http://') || p.startsWith('https://')) ? p : '<?= base_url() ?>' + (p.startsWith('foto/') ? p : (temuan.foto_path ? (temuan.foto_path.endsWith('/') ? temuan.foto_path : temuan.foto_path + '/') : 'foto/') + p);
                             photosHtml += `
                                 <div class="col-md-3 col-6 mb-2">
                                     <img src="${url}" class="img-fluid rounded border shadow-sm" style="cursor:pointer; max-height:120px; object-fit:cover; width:100%;" onclick="openLightbox('${url}')">

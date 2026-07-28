@@ -220,7 +220,7 @@
                                             <?php 
                                             $photos = json_decode($row['foto'], true) ?: [];
                                             if (!empty($photos)):
-                                                $firstPhoto = base_url($row['foto_path'] . $photos[0]);
+                                                $firstPhoto = get_photo_url($photos[0], $row['foto_path'] ?? 'foto/');
                                             ?>
                                                 <img src="<?= $firstPhoto ?>" class="img-preview" style="height: 40px; width: 40px;" onclick="openPhotoModal('<?= $firstPhoto ?>')" alt="Thumbnail">
                                             <?php else: ?>

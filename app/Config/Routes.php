@@ -223,6 +223,10 @@ $routes->group('api/v1', function ($routes) {
         // Eviden REST API
         $routes->get('eviden/kubikel', 'Api\EvidenApiController::kubikelList');
         $routes->get('eviden/trafo', 'Api\EvidenApiController::trafoList');
+
+        // Machine Learning & AI Integration REST API
+        $routes->get('ai/dataset', 'Api\AiApiController::dataset');
+        $routes->get('ai/summary', 'Api\AiApiController::summary');
     });
 });
 

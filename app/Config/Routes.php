@@ -193,9 +193,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 // --- Rute REST API v1 (Flutter Mobile App Backend with JWT) ---
 $routes->group('api/v1', function ($routes) {
     
-    // Auth (Unprotected)
+    // Auth & Sync (Unprotected / Direct API)
     $routes->post('auth/login', 'Api\AuthController::login');
     $routes->post('voice-ai/process', 'Api\VoiceAIApiController::process');
+    $routes->post('sync/bulk-records', 'Api\SyncApiController::bulkRecords');
+    $routes->post('sync/upload-photo', 'Api\SyncApiController::uploadPhoto');
 
     // Protected via JWT Bearer Token Filter ('filter' => 'jwt')
     $routes->group('', ['filter' => 'jwt'], function ($routes) {

@@ -789,6 +789,9 @@ class Eviden extends BaseController
     // ==========================================
     public function ajaxGetFotos()
     {
+        if (!session()->get('logged_in')) {
+            return $this->response->setStatusCode(401)->setJSON(['error' => 'Sesi berakhir, silakan login kembali.']);
+        }
         $idParent = $this->request->getGet('id_parent');
         $kategori = $this->request->getGet('kategori');
         

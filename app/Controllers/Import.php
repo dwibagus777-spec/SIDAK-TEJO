@@ -30,6 +30,9 @@ class Import extends BaseController
     // =========================================================================
     public function ajaxGetPenyulang()
     {
+        if (!check_role(['administrator', 'admin_ulp'])) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Akses ditolak.']);
+        }
         $ulpId = $this->request->getGet('ulp_id');
         $model = new PenyulangModel();
         $penyulangs = $model->where('ulp_id', $ulpId)->where('status', 'AKTIF')->findAll();

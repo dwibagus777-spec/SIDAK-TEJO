@@ -30,8 +30,21 @@ class App extends BaseConfig
             $host = $_SERVER['HTTP_HOST'];
             $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
             $subFolder = '/';
+
             if (strpos($scriptName, '/public/') !== false) {
-                $subFolder = substr($scriptName, 0, strpos($scriptName, '/public/') + 8);
+                // Dapatkan bagian sebelum /public/
+                $beforePublic = substr($scriptName, 0, strpos($scriptName, '/public/'));
+
+                if ($beforePublic === '' || $beforePublic === '/') {
+                    // SCRIPT_NAME = /public/index.php (tanpa subfolder)
+                    // Ini berarti root .htaccess melakukan rewrite ke public/
+                    // baseURL TIDAK boleh mengandung /public/ agar tidak double
+                    $subFolder = '/';
+                } else {
+                    // SCRIPT_NAME = /SIDAK%20TEJO/public/index.php (ada subfolder)
+                    // Ini adalah kasus XAMPP / subfolder development
+                    $subFolder = $beforePublic . '/public/';
+                }
             } elseif (strpos($scriptName, '/index.php') !== false) {
                 $subFolder = substr($scriptName, 0, strpos($scriptName, '/index.php'));
             }

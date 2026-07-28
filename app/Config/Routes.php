@@ -195,6 +195,7 @@ $routes->group('api/v1', function ($routes) {
     
     // Auth (Unprotected)
     $routes->post('auth/login', 'Api\AuthController::login');
+    $routes->post('voice-ai/process', 'Api\VoiceAIApiController::process');
 
     // Protected via JWT Bearer Token Filter ('filter' => 'jwt')
     $routes->group('', ['filter' => 'jwt'], function ($routes) {

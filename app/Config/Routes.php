@@ -193,7 +193,40 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     });
 });
 
-// --- Rute REST API (Android/Sistem PLN Lainnya) ---
+// --- Rute REST API v1 (Flutter Mobile App Backend with JWT) ---
+$routes->group('api/v1', function ($routes) {
+    
+    // Auth (Unprotected)
+    $routes->post('auth/login', 'Api\AuthController::login');
+
+    // Protected via JWT Bearer Token Filter ('filter' => 'jwt')
+    $routes->group('', ['filter' => 'jwt'], function ($routes) {
+        
+        // Auth Self Service
+        $routes->get('auth/me', 'Api\AuthController::me');
+        $routes->post('auth/change-password', 'Api\AuthController::changePassword');
+
+        // Master Data Dropdowns
+        $routes->get('master/ulps', 'Api\MasterApiController::ulps');
+        $routes->get('master/penyulangs', 'Api\MasterApiController::penyulangs');
+        $routes->get('master/sections', 'Api\MasterApiController::sections');
+
+        // Temuan REST API CRUD
+        $routes->get('temuan', 'Api\TemuanApiController::index');
+        $routes->get('temuan/terdekat', 'Api\TemuanApiController::terdekat');
+        $routes->get('temuan/(:num)', 'Api\TemuanApiController::show/$1');
+        $routes->post('temuan', 'Api\TemuanApiController::create');
+        $routes->post('temuan/update/(:num)', 'Api\TemuanApiController::update/$1');
+        $routes->delete('temuan/delete/(:num)', 'Api\TemuanApiController::delete/$1');
+        $routes->post('temuan/tindak-lanjut/(:num)', 'Api\TemuanApiController::tindakLanjut/$1');
+
+        // Eviden REST API
+        $routes->get('eviden/kubikel', 'Api\EvidenApiController::kubikelList');
+        $routes->get('eviden/trafo', 'Api\EvidenApiController::trafoList');
+    });
+});
+
+// --- Rute REST API Legacy (Kompatibilitas Sistem PLN) ---
 $routes->group('api', function ($routes) {
     $routes->post('auth/login', 'Api::login');
     $routes->post('auth/change-password', 'Api::changePassword');

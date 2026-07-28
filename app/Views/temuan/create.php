@@ -293,6 +293,8 @@
             const $penyulang = $('#penyulang_id');
             const $section = $('#section_id');
 
+            console.log("[SIDAK TEJO] ULP berubah:", ulpId);
+
             if (!ulpId) {
                 $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>');
                 $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
@@ -304,14 +306,21 @@
             $penyulang.html('<option value="">Sedang memuat...</option>');
             refreshSelect2($penyulang);
 
+            const requestUrl = "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId;
+            console.log("[SIDAK TEJO] Request AJAX Penyulang URL:", requestUrl);
+
             $.ajax({
-                url: "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId,
+                url: requestUrl,
                 type: "GET",
                 dataType: "json",
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(data) {
+                    console.log("[SIDAK TEJO] Response JSON Penyulang:", data);
+                    const totalPenyulang = Array.isArray(data) ? data.length : 0;
+                    console.log("[SIDAK TEJO] Jumlah Penyulang:", totalPenyulang);
+
                     let html = '<option value="">-- Pilih Penyulang --</option>';
-                    if (Array.isArray(data) && data.length > 0) {
+                    if (totalPenyulang > 0) {
                         data.forEach(function(item) {
                             html += `<option value="${item.id}">${item.nama_penyulang}</option>`;
                         });
@@ -327,8 +336,14 @@
                     if (callback) callback();
                 },
                 error: function(xhr, status, err) {
-                    console.error('Error loading penyulang:', err);
-                    $penyulang.html('<option value="">Gagal memuat penyulang</option>');
+                    console.error("[SIDAK TEJO] Gagal AJAX Penyulang!", {
+                        url: requestUrl,
+                        statusCode: xhr.status,
+                        statusText: xhr.statusText,
+                        responseText: xhr.responseText,
+                        error: err
+                    });
+                    $penyulang.html('<option value="">Gagal memuat penyulang (Status: ' + xhr.status + ')</option>');
                     refreshSelect2($penyulang);
                 }
             });
@@ -336,6 +351,8 @@
 
         function loadSection(penyulangId, callback) {
             const $section = $('#section_id');
+
+            console.log("[SIDAK TEJO] Penyulang berubah:", penyulangId);
 
             if (!penyulangId) {
                 $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
@@ -346,14 +363,21 @@
             $section.html('<option value="">Sedang memuat...</option>');
             refreshSelect2($section);
 
+            const requestUrl = "<?= base_url('temuan/ajax-section') ?>/" + penyulangId;
+            console.log("[SIDAK TEJO] Request AJAX Section URL:", requestUrl);
+
             $.ajax({
-                url: "<?= base_url('temuan/ajax-section') ?>/" + penyulangId,
+                url: requestUrl,
                 type: "GET",
                 dataType: "json",
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(data) {
+                    console.log("[SIDAK TEJO] Response JSON Section:", data);
+                    const totalSection = Array.isArray(data) ? data.length : 0;
+                    console.log("[SIDAK TEJO] Jumlah Section:", totalSection);
+
                     let html = '<option value="">-- Pilih Section --</option>';
-                    if (Array.isArray(data) && data.length > 0) {
+                    if (totalSection > 0) {
                         data.forEach(function(item) {
                             html += `<option value="${item.id}">${item.nama_section}</option>`;
                         });
@@ -366,8 +390,14 @@
                     if (callback) callback();
                 },
                 error: function(xhr, status, err) {
-                    console.error('Error loading section:', err);
-                    $section.html('<option value="">Gagal memuat section</option>');
+                    console.error("[SIDAK TEJO] Gagal AJAX Section!", {
+                        url: requestUrl,
+                        statusCode: xhr.status,
+                        statusText: xhr.statusText,
+                        responseText: xhr.responseText,
+                        error: err
+                    });
+                    $section.html('<option value="">Gagal memuat section (Status: ' + xhr.status + ')</option>');
                     refreshSelect2($section);
                 }
             });
@@ -685,6 +715,7 @@
                 e.preventDefault();
                 $('#btn-sync-map').trigger('click');
             }
+        });
         // ============================================================
         // MATERIAL REPEATER JS (Custom Add & Remove Row UI)
         // ============================================================

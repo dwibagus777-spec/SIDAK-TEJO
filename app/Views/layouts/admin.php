@@ -723,6 +723,12 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                                 <span class="nav-link-title">AI Center & Predictive Engine</span>
                             </a>
                         </li>
+                        <li class="nav-item <?= (url_is('asset-health*') || url_is('penyulang/health-index*')) ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('asset-health') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-heart-pulse text-danger"></i></span>
+                                <span class="nav-link-title">Asset Health Index</span>
+                            </a>
+                        </li>
                         <li class="nav-item <?= url_is('ecc*') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('ecc') ?>">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-tv text-danger"></i></span>

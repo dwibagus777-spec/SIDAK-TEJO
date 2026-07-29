@@ -41,6 +41,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('audit-log', 'AuditTrailController::index');
     $routes->get('digital-evidence/(:num)', 'AuditTrailController::evidence/$1');
     $routes->get('time-machine/(:num)', 'AuditTrailController::timeMachine/$1');
+
+    // Asset Health Index & Predictive Maintenance Routes (Phase 40)
+    $routes->get('asset-health', 'AssetHealthController::index');
+    $routes->get('penyulang/health-index', 'AssetHealthController::index');
     $routes->get('executive-dashboard', 'Dashboard::executive');
     $routes->get('dashboard/executive', 'Dashboard::executive');
     $routes->get('dashboard/executive-api', 'Dashboard::executiveApi');

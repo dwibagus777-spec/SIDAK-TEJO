@@ -1,4 +1,6 @@
 <?php
+if (function_exists('opcache_reset')) { @opcache_reset(); }
+clearstatcache(true);
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 header('Content-Type: text/plain; charset=utf-8');

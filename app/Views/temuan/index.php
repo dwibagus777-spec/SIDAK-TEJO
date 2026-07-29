@@ -337,17 +337,23 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer" style="background:#12122a; border-top:1px solid #2d2d4e;">
-                <a id="modal-btn-wa" href="#" target="_blank" class="btn btn-success btn-sm font-weight-bold shadow-sm" style="background-color: #25D366; border-color: #25D366; color: #ffffff;">
-                    <i class="fab fa-whatsapp me-1" style="font-size: 14px;"></i> Share ke WA
+            <div class="modal-footer" style="position: sticky; bottom: 0; z-index: 100; background:#12122a; border-top:1px solid #2d2d4e; padding: 10px 16px; margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;">
+                <a id="modal-btn-wa" href="#" target="_blank" class="btn btn-success btn-sm font-weight-bold shadow-sm" style="background-color: #25D366; border-color: #25D366; color: #ffffff; border-radius: 8px;">
+                    <i class="fab fa-whatsapp me-1"></i> Share WA
                 </a>
-                <a id="modal-btn-detail" href="#" class="btn btn-outline-info btn-sm">
+                <a id="modal-btn-detail" href="#" class="btn btn-outline-info btn-sm font-weight-bold" style="border-radius: 8px;">
                     <i class="fas fa-external-link-alt mr-1"></i> Buka Halaman Detail
                 </a>
-                <a id="modal-btn-edit" href="#" class="btn btn-warning btn-sm text-dark d-none">
+                <a id="modal-btn-edit" href="#" class="btn btn-warning btn-sm text-dark font-weight-bold d-none" style="border-radius: 8px;">
                     <i class="fas fa-edit mr-1"></i> Edit Temuan
                 </a>
-                <button type="button" class="btn btn-secondary btn-sm btn-custom-close">Tutup</button>
+                <a id="modal-btn-update-progress" href="#" class="btn btn-primary btn-sm font-weight-bold" style="background-color: #0284c7; border-color: #0284c7; color: #ffffff; border-radius: 8px;">
+                    <i class="fas fa-tasks mr-1"></i> Update Progress
+                </a>
+                <button id="modal-btn-delete" type="button" class="btn btn-danger btn-sm font-weight-bold d-none" style="border-radius: 8px;">
+                    <i class="fas fa-trash mr-1"></i> Delete
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm btn-custom-close font-weight-bold" style="border-radius: 8px;">Tutup</button>
             </div>
         </div>
     </div>
@@ -643,8 +649,16 @@
 
                 // Footer buttons
                 $('#modal-btn-detail').attr('href', res.detailUrl || ('<?= site_url('temuan/detail/') ?>' + id));
+                $('#modal-btn-update-progress').attr('href', '<?= site_url('temuan/update-pekerjaan/') ?>' + id);
                 if (res.canEdit) {
-                    $('#modal-btn-edit').attr('href', res.editUrl).removeClass('d-none');
+                    $('#modal-btn-edit').attr('href', res.editUrl || ('<?= site_url('temuan/edit/') ?>' + id)).removeClass('d-none');
+                } else {
+                    $('#modal-btn-edit').addClass('d-none');
+                }
+                if (res.canDelete || '<?= session()->get('user_role') ?>' === 'administrator') {
+                    $('#modal-btn-delete').data('id', id).removeClass('d-none');
+                } else {
+                    $('#modal-btn-delete').addClass('d-none');
                 }
 
                 // Tampilkan konten
@@ -656,6 +670,47 @@
                 $('#modal-content-area').removeClass('d-none').html(
                     '<div class="alert alert-danger m-3"><i class="fas fa-exclamation-circle mr-2"></i>Gagal memuat data. Coba lagi.</div>'
                 );
+            }
+        });
+    });
+
+    // Delete temuan from detail modal
+    $(document).on('click', '#modal-btn-delete', function(e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        if (!id) return;
+
+        Swal.fire({
+            title: 'Hapus Temuan?',
+            text: 'Apakah Anda yakin ingin menghapus data temuan ini?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-trash me-1"></i> Ya, Hapus',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '<?= site_url('temuan/delete/') ?>' + id,
+                    type: 'POST',
+                    data: { '<?= csrf_token() ?>': '<?= csrf_hash() ?>' },
+                    dataType: 'json',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(res) {
+                        if (res.success) {
+                            $('#modalDetailTemuan').css('display', 'none');
+                            $('body').css('overflow', 'auto');
+                            Swal.fire({ icon: 'success', title: 'Terhapus!', text: res.message || 'Data temuan berhasil dihapus.', timer: 2000, showConfirmButton: false });
+                            if (typeof table !== 'undefined') table.ajax.reload();
+                        } else {
+                            Swal.fire('Gagal!', res.message || 'Gagal menghapus temuan.', 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'Terjadi kesalahan sistem saat menghapus temuan.', 'error');
+                    }
+                });
             }
         });
     });

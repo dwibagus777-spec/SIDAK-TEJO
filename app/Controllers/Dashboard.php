@@ -136,4 +136,67 @@ class Dashboard extends BaseController
             'data'      => $analytics
         ]);
     }
+
+    /**
+     * Phase 14 Executive Dashboard View
+     */
+    public function executive()
+    {
+        $session = session();
+        $role = strtolower((string)$session->get('user_role'));
+        $ulpId = $session->get('user_ulp_id');
+
+        $ulpModel = new \App\Models\UlpModel();
+        $penyulangModel = new \App\Models\PenyulangModel();
+
+        $ulpIdFilter = null;
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($ulpId)) {
+            $ulpIdFilter = (int)$ulpId;
+        }
+
+        $initialData = $this->temuanRepository->getExecutiveAnalyticsData([], $role, $ulpIdFilter);
+
+        return view('dashboard/executive', [
+            'initialData' => $initialData,
+            'ulps'        => $ulpModel->where('status', 'AKTIF')->findAll(),
+            'penyulangs'  => $penyulangModel->where('status', 'AKTIF')->findAll(),
+            'userRole'    => $role,
+            'userName'    => session()->get('user_name') ?: 'User'
+        ]);
+    }
+
+    /**
+     * Real-time AJAX endpoint for Executive Dashboard filters & 30s auto-refresh
+     */
+    public function executiveApi()
+    {
+        $session = session();
+        $role = strtolower((string)$session->get('user_role'));
+        $ulpId = $session->get('user_ulp_id');
+
+        $ulpIdFilter = null;
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($ulpId)) {
+            $ulpIdFilter = (int)$ulpId;
+        }
+
+        $filters = [
+            'ulp_id'         => $this->request->getGet('ulp_id'),
+            'penyulang_id'   => $this->request->getGet('penyulang_id'),
+            'section_id'     => $this->request->getGet('section_id'),
+            'jenis_temuan'   => $this->request->getGet('jenis_temuan'),
+            'pelaksana'      => $this->request->getGet('pelaksana'),
+            'prioritas'      => $this->request->getGet('prioritas'),
+            'status'         => $this->request->getGet('status'),
+            'tanggal_mulai'  => $this->request->getGet('tanggal_mulai'),
+            'tanggal_selesai'=> $this->request->getGet('tanggal_selesai'),
+        ];
+
+        $analytics = $this->temuanRepository->getExecutiveAnalyticsData($filters, $role, $ulpIdFilter);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'success'   => true,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'data'      => $analytics
+        ]);
+    }
 }

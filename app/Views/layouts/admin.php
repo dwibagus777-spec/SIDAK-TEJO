@@ -623,7 +623,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 
     <!-- Mobile Top Header -->
     <div class="mobile-app-header">
-        <a href="javascript:window.history.back();" class="mobile-back-btn" title="Kembali">
+        <a href="javascript:smartBack('<?= site_url('dashboard') ?>');" class="mobile-back-btn" title="Kembali">
             <i class="fas fa-chevron-left"></i>
         </a>
         <a href="<?= site_url('dashboard') ?>" class="mobile-title text-white text-decoration-none d-flex align-items-center" style="cursor: pointer;" title="Ke Dashboard">
@@ -668,12 +668,22 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 <div class="collapse navbar-collapse" id="sidebar-menu">
                     <ul class="navbar-nav pt-lg-3">
                         <!-- Dashboard -->
-                        <li class="nav-item <?= url_is('dashboard') ? 'active' : '' ?>">
+                        <li class="nav-item <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('dashboard') ?>">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                                     <i class="nav-icon fas fa-tachometer-alt"></i>
                                 </span>
                                 <span class="nav-link-title">Dashboard</span>
+                            </a>
+                        </li>
+
+                        <!-- Executive Dashboard (Phase 14) -->
+                        <li class="nav-item <?= (url_is('executive-dashboard') || url_is('dashboard/executive')) ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('executive-dashboard') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-chart-line text-warning"></i>
+                                </span>
+                                <span class="nav-link-title">Executive Analytics <span class="badge bg-warning text-dark ms-1" style="font-size:9px; font-weight:bold;">V14</span></span>
                             </a>
                         </li>
 
@@ -1134,16 +1144,31 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <style>
         #global-voice-container {
             position: fixed !important;
-            bottom: 30px !important;
-            right: 18px !important;
+            bottom: 90px !important;
+            right: 20px !important;
             z-index: 999999 !important;
             display: flex !important;
             align-items: center !important;
-            gap: 8px !important;
+            gap: 10px !important;
             pointer-events: auto !important;
             touch-action: manipulation !important;
+            transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        #global-voice-container.shifted {
+            bottom: 160px !important;
+            transform: translateY(-20px) !important;
         }
         #btn-global-mic {
+            width: 64px !important;
+            height: 64px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.6rem !important;
+            border: 2px solid rgba(255,255,255,0.3) !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+            background: linear-gradient(135deg, #005eb8 0%, #003f8a 100%) !important;
             pointer-events: auto !important;
             cursor: pointer !important;
             touch-action: manipulation !important;
@@ -1168,8 +1193,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         </div>
         
         <!-- Floating Mic Button -->
-        <button type="button" id="btn-global-mic" class="btn btn-primary" title="Perintah Suara"
-                style="width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.45rem; border: 2px solid rgba(255,255,255,0.25); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45) !important; background: linear-gradient(135deg, #005eb8 0%, #003f8a 100%) !important;">
+        <button type="button" id="btn-global-mic" class="btn btn-primary" title="Perintah Suara">
             <i class="fas fa-microphone" id="global-mic-icon"></i>
         </button>
     </div>
@@ -1553,6 +1577,35 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 
         window.addEventListener('focus', sendSessionKeepAlivePing);
         window.addEventListener('online', sendSessionKeepAlivePing);
+
+        // Global Smart Back Helper (Task 4)
+        window.smartBack = function(fallbackUrl) {
+            if (window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+                window.history.back();
+            } else if (fallbackUrl) {
+                window.location.href = fallbackUrl;
+            } else {
+                window.history.back();
+            }
+        };
+
+        // Smart Floating Voice AI Position Adjustment (Task 2)
+        $(document).on('focusin', 'input, textarea, select', function() {
+            $('#global-voice-container').addClass('shifted');
+        });
+        $(document).on('focusout', 'input, textarea, select', function() {
+            setTimeout(function() {
+                if (!$('input:focus, textarea:focus, select:focus').length) {
+                    $('#global-voice-container').removeClass('shifted');
+                }
+            }, 200);
+        });
+        $(document).on('show.bs.modal', function() {
+            $('#global-voice-container').addClass('shifted');
+        });
+        $(document).on('hidden.bs.modal', function() {
+            $('#global-voice-container').removeClass('shifted');
+        });
     </script>
     <?= $this->renderSection('scripts') ?>
 </body>

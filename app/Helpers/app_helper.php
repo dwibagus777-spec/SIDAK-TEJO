@@ -338,7 +338,8 @@ if (!function_exists('get_photo_url')) {
 
         // Verifikasi keberadaan berkas fisik di server
         if (defined('FCPATH') && file_exists(FCPATH . $relativePath)) {
-            return base_url($relativePath);
+            $mtime = filemtime(FCPATH . $relativePath);
+            return base_url($relativePath) . '?v=' . ($mtime ?: time());
         }
 
         // Fallback jika berkas fisik tidak ditemukan di disk server

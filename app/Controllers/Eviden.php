@@ -63,18 +63,20 @@ class Eviden extends BaseController
             $builder->where('k.tgl_input <=', $tglSelesai);
         }
         
-        $dataList = $builder->get()->getResultArray();
+        $query = $builder->get();
+        $dataList = ($query && is_object($query) && method_exists($query, 'getResultArray')) ? $query->getResultArray() : [];
 
         // Count photos using single batch query (Eliminate N+1 query)
         $ids = array_column($dataList, 'id_kubikel');
         if (!empty($ids)) {
             $db = \Config\Database::connect();
-            $counts = $db->table('foto_eviden')
+            $countsQuery = $db->table('foto_eviden')
                 ->select('id_parent, COUNT(*) as total')
                 ->where('kategori', 'KUBIKEL')
                 ->whereIn('id_parent', $ids)
                 ->groupBy('id_parent')
-                ->get()->getResultArray();
+                ->get();
+            $counts = ($countsQuery && is_object($countsQuery) && method_exists($countsQuery, 'getResultArray')) ? $countsQuery->getResultArray() : [];
             $countMap = array_column($counts, 'total', 'id_parent');
             foreach ($dataList as &$item) {
                 $item['foto_count'] = $countMap[$item['id_kubikel']] ?? 0;
@@ -330,18 +332,20 @@ class Eviden extends BaseController
             $builder->where('t.tgl_input <=', $tglSelesai);
         }
 
-        $dataList = $builder->get()->getResultArray();
+        $query = $builder->get();
+        $dataList = ($query && is_object($query) && method_exists($query, 'getResultArray')) ? $query->getResultArray() : [];
 
         // Count photos using single batch query (Eliminate N+1 query)
         $ids = array_column($dataList, 'id_trafo');
         if (!empty($ids)) {
             $db = \Config\Database::connect();
-            $counts = $db->table('foto_eviden')
+            $countsQuery = $db->table('foto_eviden')
                 ->select('id_parent, COUNT(*) as total')
                 ->where('kategori', 'TRAFO')
                 ->whereIn('id_parent', $ids)
                 ->groupBy('id_parent')
-                ->get()->getResultArray();
+                ->get();
+            $counts = ($countsQuery && is_object($countsQuery) && method_exists($countsQuery, 'getResultArray')) ? $countsQuery->getResultArray() : [];
             $countMap = array_column($counts, 'total', 'id_parent');
             foreach ($dataList as &$item) {
                 $item['foto_count'] = $countMap[$item['id_trafo']] ?? 0;

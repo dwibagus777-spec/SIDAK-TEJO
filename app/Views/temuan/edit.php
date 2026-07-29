@@ -310,7 +310,7 @@
                         <button type="submit" class="btn btn-warning text-dark" id="btn-submit">
                             <i class="fas fa-save mr-1"></i> Simpan Perubahan
                         </button>
-                        <a href="<?= site_url('temuan/detail/' . $temuan['id']) ?>" class="btn btn-secondary ml-2">
+                        <a href="javascript:smartBack('<?= site_url('temuan/detail/' . $temuan['id']) ?>');" class="btn btn-secondary ml-2">
                             <i class="fas fa-arrow-left mr-1"></i> Kembali
                         </a>
                     </div>

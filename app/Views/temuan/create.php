@@ -254,7 +254,7 @@
                 </div>
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary" id="btn-submit"><i class="fas fa-save mr-1"></i> Simpan Temuan</button>
-                    <a href="<?= site_url('temuan') ?>" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> Kembali</a>
+                    <a href="javascript:smartBack('<?= site_url('temuan') ?>');" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> Kembali</a>
                 </div>
             </form>
         </div>

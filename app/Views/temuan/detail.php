@@ -377,7 +377,7 @@ $statusClass = match($statusStr) {
 
             </div>
             <div class="card-footer d-flex justify-content-between align-items-center">
-                <a href="<?= site_url('temuan') ?>" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> Kembali</a>
+                <a href="javascript:smartBack('<?= site_url('temuan') ?>');" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> Kembali</a>
                 <?php if (in_array(session()->get('user_role'), ['administrator', 'admin_ulp'])): ?>
                 <a href="<?= site_url('temuan/edit/' . $temuan['id']) ?>" class="btn btn-warning text-dark font-weight-bold">
                     <i class="fas fa-edit mr-1"></i> Edit Temuan

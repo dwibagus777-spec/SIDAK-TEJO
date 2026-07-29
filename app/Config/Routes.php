@@ -21,6 +21,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     
     // Dashboard & Session Keep-Alive
     $routes->get('dashboard', 'Dashboard::index');
+    $routes->get('executive-dashboard', 'Dashboard::executive');
+    $routes->get('dashboard/executive', 'Dashboard::executive');
+    $routes->get('dashboard/executive-api', 'Dashboard::executiveApi');
     $routes->get('dashboard/toggle-view', 'Dashboard::toggleView');
     $routes->get('dashboard/analytics-data', 'Dashboard::analyticsData');
     $routes->get('auth/ping', 'Auth::ping');

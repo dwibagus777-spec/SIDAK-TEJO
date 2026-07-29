@@ -37,51 +37,57 @@
         }
         
         /* Mobile Header Banner */
+        /* Mobile Header Banner - Maximum 170px */
         .mobile-header {
-            background: linear-gradient(135deg, #004d4f 0%, #007275 100%);
-            border-bottom-left-radius: 24px;
-            border-bottom-right-radius: 24px;
-            padding: 30px 20px 40px 20px;
+            background: linear-gradient(135deg, #003f8a 0%, #005eb8 50%, #007275 100%);
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            padding: 12px 16px 14px 16px;
             color: #ffffff;
             position: relative;
-            box-shadow: 0 4px 15px rgba(0, 77, 79, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 63, 138, 0.25);
+            max-height: 170px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         
         .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 6px;
         }
         
         .brand-logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         
         .brand-logo img {
-            height: 32px;
+            height: 26px;
         }
         
         .brand-text {
             font-family: 'Outfit', sans-serif;
             font-weight: 700;
-            font-size: 1.1rem;
-            line-height: 1.2;
+            font-size: 0.95rem;
+            line-height: 1.1;
         }
         
         .btn-logout-mobile {
-            background-color: rgba(255, 255, 255, 0.2);
-            border: none;
+            background-color: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             color: #ffffff;
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             transition: background-color 0.2s;
             text-decoration: none;
         }
@@ -90,23 +96,80 @@
             background-color: rgba(255, 255, 255, 0.35);
         }
         
+        .user-info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        
         .welcome-text {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             opacity: 0.9;
             margin: 0;
+            line-height: 1;
         }
         
         .user-name {
             font-family: 'Outfit', sans-serif;
             font-weight: 800;
-            font-size: 1.6rem;
+            font-size: 1.15rem;
             margin: 0;
+            letter-spacing: 0.2px;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+        
+        .status-badge-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: nowrap;
+        }
+
+        .badge-role {
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 7px;
+            border-radius: 10px;
             letter-spacing: 0.3px;
         }
         
-        /* Grid Menu Container */
+        .badge-online {
+            background: #10b981;
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 3px 7px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .badge-online.offline {
+            background: #ef4444;
+        }
+
+        .last-sync-tag {
+            font-size: 9px;
+            opacity: 0.85;
+            color: #ffffff;
+            white-space: nowrap;
+        }
+        
+        /* Grid Menu Container - Clean Margin to Prevent Overlap */
         .menu-container {
-            margin-top: -20px;
+            margin-top: 14px;
             padding: 0 16px;
         }
         
@@ -116,11 +179,11 @@
             gap: 12px;
         }
         
-        /* Menu Card Item */
+        /* Menu Card Item - MD3 Rounded 18px & Glass Accent */
         .menu-card {
             background-color: #ffffff;
-            border-radius: 16px;
-            padding: 18px 12px;
+            border-radius: 18px;
+            padding: 16px 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -128,31 +191,38 @@
             text-align: center;
             text-decoration: none;
             color: #1e293b;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            position: relative;
+            overflow: hidden;
         }
         
-        .menu-card:active {
-            transform: scale(0.96);
-            box-shadow: 0 2px 3px -1px rgba(0, 0, 0, 0.05);
+        .menu-card:active, .menu-card:hover {
+            transform: scale(0.97);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
         }
         
         .icon-circle {
-            width: 48px;
-            height: 48px;
+            width: 46px;
+            height: 46px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .menu-card:hover .icon-circle {
+            transform: scale(1.08);
         }
         
         .card-label {
             font-size: 0.8rem;
             font-weight: 700;
             color: #334155;
-            line-height: 1.3;
+            line-height: 1.25;
         }
         
         /* Version Toggle Footer */
@@ -178,30 +248,40 @@
 </head>
 <body>
 
-    <!-- Header Banner -->
+    <!-- Header Banner - Maksimal 170px -->
     <div class="mobile-header">
         <div class="header-top">
             <a href="<?= site_url('dashboard') ?>" class="brand-logo text-decoration-none text-white" style="cursor: pointer;" title="Ke Dashboard">
                 <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="Logo">
                 <div class="brand-text">
                     SIDAK TEJO<br>
-                    <span style="font-size: 0.7rem; font-weight: 500; opacity: 0.9;">PLN UP3 SIDOARJO</span>
+                    <span style="font-size: 0.65rem; font-weight: 500; opacity: 0.9;">PLN UP3 SIDOARJO</span>
                 </div>
             </a>
-            <a href="<?= site_url('auth/logout') ?>" class="btn-logout-mobile" title="Keluar">
-                <i class="fas fa-sign-out-alt"></i>
-            </a>
+            <div class="d-flex align-items-center gap-2">
+                <span class="last-sync-tag" id="header-last-sync" title="Last Sync"><i class="fas fa-sync-alt me-1"></i> <span id="sync-time-str"><?= date('H:i') ?></span></span>
+                <a href="<?= site_url('auth/logout') ?>" class="btn-logout-mobile" title="Keluar">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
         </div>
-        <div>
-            <p class="welcome-text">Selamat Datang,</p>
-            <h2 class="user-name"><?= esc($userName) ?></h2>
+        
+        <div class="user-info-bar">
+            <div>
+                <p class="welcome-text">Selamat Datang,</p>
+                <h2 class="user-name"><?= esc($userName) ?></h2>
+            </div>
+            <div class="status-badge-container">
+                <span class="badge-role"><?= esc(session()->get('user_role') ?: 'USER') ?></span>
+                <span class="badge-online" id="net-status-pill"><i class="fas fa-wifi"></i> Online</span>
+            </div>
         </div>
         
         <!-- Running Motivational Ticker Mobile -->
-        <div class="mt-3 p-2 rounded-3 d-flex align-items-center" style="background: rgba(255,255,255,0.18); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; overflow: hidden;">
-            <i class="fas fa-bullhorn text-warning me-2" style="font-size: 13px; flex-shrink: 0;"></i>
+        <div class="p-1 px-2 rounded-3 d-flex align-items-center" style="background: rgba(255,255,255,0.18); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; overflow: hidden; height: 24px;">
+            <i class="fas fa-bullhorn text-warning me-2" style="font-size: 11px; flex-shrink: 0;"></i>
             <div style="overflow: hidden; flex-grow: 1; display: flex; align-items: center;">
-                <marquee scrollamount="4" behavior="scroll" direction="left" style="font-size: 11px; font-weight: 700; color: #ffffff; margin: 0; line-height: 1.2;">
+                <marquee scrollamount="4" behavior="scroll" direction="left" style="font-size: 10px; font-weight: 700; color: #ffffff; margin: 0; line-height: 1.2;">
                     <?= esc(get_daily_announcement()) ?>
                 </marquee>
             </div>
@@ -212,10 +292,13 @@
     <div class="menu-container">
         <div class="menu-grid">
             
-            <?php 
-            $userRole = session()->get('user_role');
-            $canInput = in_array($userRole, ['administrator', 'admin_ulp', 'inspeksi']);
-            ?>
+            <!-- Executive Dashboard Analytics -->
+            <a href="<?= site_url('executive-dashboard') ?>" class="menu-card" style="background: linear-gradient(135deg, #003f8a 0%, #005eb8 100%); color: #ffffff;">
+                <div class="icon-circle" style="background-color: rgba(255, 255, 255, 0.2);">
+                    <i class="fas fa-chart-line text-warning" style="font-size: 20px;"></i>
+                </div>
+                <div class="card-label text-white">Executive Analytics</div>
+            </a>
 
             <!-- 1. Input Temuan -->
             <?php if ($canInput): ?>
@@ -484,16 +567,31 @@
     <style>
         #global-voice-container {
             position: fixed !important;
-            bottom: 30px !important;
-            right: 18px !important;
+            bottom: 90px !important;
+            right: 20px !important;
             z-index: 999999 !important;
             display: flex !important;
             align-items: center !important;
-            gap: 8px !important;
+            gap: 10px !important;
             pointer-events: auto !important;
             touch-action: manipulation !important;
+            transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        #global-voice-container.shifted {
+            bottom: 160px !important;
+            transform: translateY(-20px) !important;
         }
         #btn-global-mic {
+            width: 64px !important;
+            height: 64px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.6rem !important;
+            border: 2px solid rgba(255,255,255,0.3) !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+            background: linear-gradient(135deg, #005eb8 0%, #003f8a 100%) !important;
             pointer-events: auto !important;
             cursor: pointer !important;
             touch-action: manipulation !important;
@@ -516,8 +614,7 @@
             <i class="fas fa-circle-notch fa-spin mr-1"></i> <span id="global-voice-text">Mendengarkan...</span>
         </div>
         
-        <button type="button" id="btn-global-mic" class="btn btn-primary" title="Perintah Suara"
-                style="width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.45rem; border: 2px solid rgba(255,255,255,0.25); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45) !important; background: linear-gradient(135deg, #005eb8 0%, #003f8a 100%) !important;">
+        <button type="button" id="btn-global-mic" class="btn btn-primary" title="Perintah Suara">
             <i class="fas fa-microphone" id="global-mic-icon"></i>
         </button>
     </div>
@@ -743,6 +840,35 @@
                 showVoiceToast('Perintah kurang jelas. Silakan berikan perintah yang sesuai (Penyulang / Jenis Temuan / Terdekat)', 'warning', 'Perintah kurang jelas. Silakan sebutkan nama penyulang, jenis temuan, atau temuan terdekat.');
                 return false;
             }
+
+            // Global Smart Back Helper (Task 4)
+            window.smartBack = function(fallbackUrl) {
+                if (window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+                    window.history.back();
+                } else if (fallbackUrl) {
+                    window.location.href = fallbackUrl;
+                } else {
+                    window.history.back();
+                }
+            };
+
+            // Smart Floating Voice AI Position Adjustment (Task 2)
+            $(document).on('focusin', 'input, textarea, select', function() {
+                $('#global-voice-container').addClass('shifted');
+            });
+            $(document).on('focusout', 'input, textarea, select', function() {
+                setTimeout(function() {
+                    if (!$('input:focus, textarea:focus, select:focus').length) {
+                        $('#global-voice-container').removeClass('shifted');
+                    }
+                }, 200);
+            });
+            $(document).on('show.bs.modal', function() {
+                $('#global-voice-container').addClass('shifted');
+            });
+            $(document).on('hidden.bs.modal', function() {
+                $('#global-voice-container').removeClass('shifted');
+            });
         });
     </script>
 </body>

@@ -1,9 +1,52 @@
 /* Modern UI Customizations - Global Style */
 
+/* Material Design 3 & Dark Mode System Tokens */
+:root {
+    --md-sys-color-primary: #005eb8;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-surface: #ffffff;
+    --md-sys-color-on-surface: #1e293b;
+    --md-sys-color-background: #f4f6f9;
+    --md-sys-color-card: #ffffff;
+    --md-sys-color-border: rgba(226, 232, 240, 0.8);
+    --md-sys-radius: 18px;
+    --md-sys-shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.05);
+    --md-sys-glass-bg: rgba(255, 255, 255, 0.7);
+    --md-sys-glass-border: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="dark"] {
+    --md-sys-color-primary: #38bdf8;
+    --md-sys-color-on-primary: #0f172a;
+    --md-sys-color-surface: #1e293b;
+    --md-sys-color-on-surface: #f8fafc;
+    --md-sys-color-background: #0f172a;
+    --md-sys-color-card: #1e293b;
+    --md-sys-color-border: rgba(51, 65, 85, 0.8);
+    --md-sys-shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.3);
+    --md-sys-glass-bg: rgba(30, 41, 59, 0.7);
+    --md-sys-glass-border: rgba(255, 255, 255, 0.1);
+}
+
+/* Material Design 3 Rounded 18px Cards */
+.card-md3 {
+    background: var(--md-sys-color-card);
+    border-radius: var(--md-sys-radius);
+    border: 1px solid var(--md-sys-color-border);
+    box-shadow: var(--md-sys-shadow-soft);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.card-md3:active, .card-md3:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
 /* Card Styling */
 .card-modern {
     border: none;
-    border-radius: 15px;
+    border-radius: 18px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
     background: #fff;
@@ -380,4 +423,29 @@
 
 .bg-gradient-purple {
     background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+}
+
+/* Global Mobile Responsive Protection & Touch Target Sizing (Task 8 & 9) */
+html, body {
+    max-width: 100vw;
+    overflow-x: hidden !important;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 480px) {
+    .container, .container-fluid, .content-wrapper {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+    .btn {
+        min-height: 40px;
+        touch-action: manipulation;
+    }
+    .modal-dialog {
+        margin: 0.5rem !important;
+    }
 }

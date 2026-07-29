@@ -654,4 +654,239 @@ class TemuanRepository extends BaseRepository
             ]
         ];
     }
+
+    /**
+     * Phase 14 Enterprise Executive Dashboard Analytics Engine
+     */
+    public function getExecutiveAnalyticsData(array $filters = [], string $role = 'administrator', ?int $userUlpId = null): array
+    {
+        $db = \Config\Database::connect();
+        $roleLower = strtolower($role);
+
+        // Helper to apply dynamic multi-filters + role scoping
+        $applyFilters = function($builder) use ($filters, $roleLower, $userUlpId) {
+            $builder->where('temuan.deleted_at IS NULL');
+
+            // Role Scoping
+            if (!in_array($roleLower, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($userUlpId)) {
+                $builder->where('temuan.ulp_id', $userUlpId);
+            }
+
+            // Dynamic Filters
+            if (!empty($filters['ulp_id'])) {
+                $builder->where('temuan.ulp_id', (int)$filters['ulp_id']);
+            }
+            if (!empty($filters['penyulang_id'])) {
+                $builder->where('temuan.penyulang_id', (int)$filters['penyulang_id']);
+            }
+            if (!empty($filters['section_id'])) {
+                $builder->where('temuan.section_id', (int)$filters['section_id']);
+            }
+            if (!empty($filters['jenis_temuan'])) {
+                $builder->where('temuan.jenis_temuan', $filters['jenis_temuan']);
+            }
+            if (!empty($filters['pelaksana'])) {
+                $builder->where('temuan.pelaksana', $filters['pelaksana']);
+            }
+            if (!empty($filters['prioritas'])) {
+                $builder->where('temuan.prioritas', $filters['prioritas']);
+            }
+            if (!empty($filters['status'])) {
+                $builder->where('temuan.status', strtoupper($filters['status']));
+            }
+            if (!empty($filters['tanggal_mulai'])) {
+                $builder->where('temuan.tanggal_temuan >=', $filters['tanggal_mulai']);
+            }
+            if (!empty($filters['tanggal_selesai'])) {
+                $builder->where('temuan.tanggal_temuan <=', $filters['tanggal_selesai']);
+            }
+            return $builder;
+        };
+
+        // 1. Realtime KPI Calculations
+        $today = date('Y-m-d');
+        $thisWeekStart = date('Y-m-d', strtotime('monday this week'));
+        $thisMonthStart = date('Y-m-01');
+        $thisYearStart = date('Y-01-01');
+
+        $bTotal = $applyFilters($db->table('temuan'));
+        $totalTemuan = $bTotal->countAllResults();
+
+        $bHariIni = $applyFilters($db->table('temuan'))->where('DATE(tanggal_temuan)', $today);
+        $temuanHariIni = $bHariIni->countAllResults();
+
+        $bMingguIni = $applyFilters($db->table('temuan'))->where('tanggal_temuan >=', $thisWeekStart);
+        $temuanMingguIni = $bMingguIni->countAllResults();
+
+        $bBulanIni = $applyFilters($db->table('temuan'))->where('tanggal_temuan >=', $thisMonthStart);
+        $temuanBulanIni = $bBulanIni->countAllResults();
+
+        $bTahunIni = $applyFilters($db->table('temuan'))->where('tanggal_temuan >=', $thisYearStart);
+        $temuanTahunIni = $bTahunIni->countAllResults();
+
+        $bBelum = $applyFilters($db->table('temuan'))->where('status', 'BELUM');
+        $temuanBelum = $bBelum->countAllResults();
+
+        $bProses = $applyFilters($db->table('temuan'))->where('status', 'PROSES');
+        $temuanProses = $bProses->countAllResults();
+
+        $bSelesai = $applyFilters($db->table('temuan'))->where('status', 'SELESAI');
+        $temuanSelesai = $bSelesai->countAllResults();
+
+        // Overdue & SLA Calculation
+        $bSla = $applyFilters($db->table('temuan'))->select('id, status, prioritas, tanggal_temuan, updated_at');
+        $slaRows = $bSla->get()->getResultArray();
+
+        $overdueCount = 0;
+        $metCount = 0;
+        $slaByPrioritas = [
+            'EMERGENCY' => ['total' => 0, 'met' => 0, 'overdue' => 0],
+            'HIGH'      => ['total' => 0, 'met' => 0, 'overdue' => 0],
+            'MEDIUM'    => ['total' => 0, 'met' => 0, 'overdue' => 0],
+            'LOW'       => ['total' => 0, 'met' => 0, 'overdue' => 0],
+        ];
+
+        foreach ($slaRows as $row) {
+            $prio = strtoupper($row['prioritas'] ?: 'MEDIUM');
+            if (!isset($slaByPrioritas[$prio])) $slaByPrioritas[$prio] = ['total' => 0, 'met' => 0, 'overdue' => 0];
+
+            $created = strtotime($row['tanggal_temuan']);
+            $finished = ($row['status'] === 'SELESAI' && !empty($row['updated_at'])) ? strtotime($row['updated_at']) : time();
+            $daysDiff = max(0, floor(($finished - $created) / 86400));
+
+            $maxDays = match($prio) {
+                'EMERGENCY' => 1,
+                'HIGH'      => 3,
+                'MEDIUM'    => 7,
+                default     => 14
+            };
+
+            $slaByPrioritas[$prio]['total']++;
+            if ($daysDiff <= $maxDays) {
+                $metCount++;
+                $slaByPrioritas[$prio]['met']++;
+            } else {
+                $overdueCount++;
+                $slaByPrioritas[$prio]['overdue']++;
+            }
+        }
+
+        $persentaseSelesai = $totalTemuan > 0 ? round(($temuanSelesai / $totalTemuan) * 100, 1) : 0;
+        $persentaseSlaMet = ($metCount + $overdueCount) > 0 ? round(($metCount / ($metCount + $overdueCount)) * 100, 1) : 0;
+
+        // Targets & Achievements
+        $targetHarian = 15;
+        $targetBulanan = 350;
+        $targetTahunan = 4000;
+        $achHarian = round(($temuanHariIni / max(1, $targetHarian)) * 100, 1);
+        $achBulanan = round(($temuanBulanIni / max(1, $targetBulanan)) * 100, 1);
+        $achTahunan = round(($temuanTahunIni / max(1, $targetTahunan)) * 100, 1);
+
+        // 2. Chart Analytics Data
+        $chartHarianLabels = [];
+        $chartHarianTemuan = [];
+        $chartHarianSelesai = [];
+        for ($i = 13; $i >= 0; $i--) {
+            $dt = date('Y-m-d', strtotime("-{$i} days"));
+            $chartHarianLabels[] = date('d M', strtotime($dt));
+
+            $bH = $applyFilters($db->table('temuan'))->where('DATE(tanggal_temuan)', $dt);
+            $chartHarianTemuan[] = $bH->countAllResults();
+
+            $bR = $applyFilters($db->table('temuan'))->where('status', 'SELESAI')->where('DATE(updated_at)', $dt);
+            $chartHarianSelesai[] = $bR->countAllResults();
+        }
+
+        // Temuan per ULP
+        $bUlp = $applyFilters($db->table('temuan'))
+            ->select('ulps.nama_ulp, COUNT(temuan.id) as total, SUM(CASE WHEN temuan.status="SELESAI" THEN 1 ELSE 0 END) as selesai, SUM(CASE WHEN temuan.status="PROSES" THEN 1 ELSE 0 END) as proses, SUM(CASE WHEN temuan.status="BELUM" THEN 1 ELSE 0 END) as belum')
+            ->join('ulps', 'ulps.id = temuan.ulp_id')
+            ->groupBy('temuan.ulp_id');
+        $ulpRankingRaw = $bUlp->orderBy('total', 'DESC')->get()->getResultArray();
+
+        // Temuan per Penyulang (Top 10)
+        $bPenyulang = $applyFilters($db->table('temuan'))
+            ->select('penyulang.nama_penyulang, COUNT(temuan.id) as total')
+            ->join('penyulang', 'penyulang.id = temuan.penyulang_id')
+            ->groupBy('temuan.penyulang_id');
+        $penyulangChartRaw = $bPenyulang->orderBy('total', 'DESC')->limit(10)->get()->getResultArray();
+
+        // Temuan per Jenis
+        $bJenis = $applyFilters($db->table('temuan'))->select('jenis_temuan, COUNT(id) as total')->groupBy('jenis_temuan');
+        $jenisChartRaw = $bJenis->get()->getResultArray();
+
+        // Temuan per Pelaksana
+        $bPelaksana = $applyFilters($db->table('temuan'))->select('pelaksana, COUNT(id) as total, SUM(CASE WHEN status="SELESAI" THEN 1 ELSE 0 END) as selesai')->groupBy('pelaksana');
+        $pelaksanaChartRaw = $bPelaksana->get()->getResultArray();
+
+        // Temuan per Prioritas
+        $bPrioritas = $applyFilters($db->table('temuan'))->select('prioritas, COUNT(id) as total')->groupBy('prioritas');
+        $prioritasChartRaw = $bPrioritas->get()->getResultArray();
+
+        // 3. Petugas Ranking
+        $monthVal = !empty($filters['tanggal_mulai']) ? (int)date('m', strtotime($filters['tanggal_mulai'])) : date('n');
+        $yearVal = !empty($filters['tanggal_mulai']) ? (int)date('Y', strtotime($filters['tanggal_mulai'])) : date('Y');
+        $temuanModel = new \App\Models\TemuanModel();
+        $topInputOfficers = $temuanModel->getTopInputOfficers($monthVal, $yearVal, $userUlpId);
+        $topUpdateOfficers = $temuanModel->getTopUpdateOfficers($monthVal, $yearVal, $userUlpId);
+
+        // 4. GIS Heatmap & Marker Pins
+        $bMap = $applyFilters($db->table('temuan'))
+            ->select('temuan.id, temuan.nomor_temuan, temuan.jenis_temuan, temuan.pelaksana, temuan.prioritas, temuan.status, temuan.latitude, temuan.longitude, temuan.alamat, temuan.detail_temuan, ulps.nama_ulp, penyulang.nama_penyulang')
+            ->join('ulps', 'ulps.id = temuan.ulp_id', 'left')
+            ->join('penyulang', 'penyulang.id = temuan.penyulang_id', 'left')
+            ->where('temuan.latitude IS NOT NULL')
+            ->where('temuan.longitude IS NOT NULL');
+        $mapPins = $bMap->get()->getResultArray();
+
+        return [
+            'timestamp'             => date('Y-m-d H:i:s'),
+            'kpi'                   => [
+                'total_temuan'         => $totalTemuan,
+                'temuan_hari_ini'      => $temuanHariIni,
+                'temuan_minggu_ini'    => $temuanMingguIni,
+                'temuan_bulan_ini'     => $temuanBulanIni,
+                'temuan_tahun_ini'     => $temuanTahunIni,
+                'belum_dikerjakan'     => $temuanBelum,
+                'proses'               => $temuanProses,
+                'selesai'              => $temuanSelesai,
+                'overdue'              => $overdueCount,
+                'persentase_selesai'   => $persentaseSelesai,
+                'persentase_sla_met'   => $persentaseSlaMet,
+                'target_harian'        => $targetHarian,
+                'target_bulanan'       => $targetBulanan,
+                'target_tahunan'       => $targetTahunan,
+                'ach_harian'           => $achHarian,
+                'ach_bulanan'          => $achBulanan,
+                'ach_tahunan'          => $achTahunan,
+            ],
+            'charts'                => [
+                'harian'               => [
+                    'labels'  => $chartHarianLabels,
+                    'temuan'  => $chartHarianTemuan,
+                    'selesai' => $chartHarianSelesai
+                ],
+                'ulp'                  => $ulpRankingRaw,
+                'penyulang'            => $penyulangChartRaw,
+                'jenis'                => $jenisChartRaw,
+                'pelaksana'            => $pelaksanaChartRaw,
+                'prioritas'            => $prioritasChartRaw,
+                'status'               => [
+                    'BELUM'   => $temuanBelum,
+                    'PROSES'  => $temuanProses,
+                    'SELESAI' => $temuanSelesai
+                ]
+            ],
+            'sla'                   => [
+                'met'      => $metCount,
+                'overdue'  => $overdueCount,
+                'details'  => $slaByPrioritas
+            ],
+            'ulp_ranking'           => $ulpRankingRaw,
+            'top_input_officers'    => array_slice($topInputOfficers, 0, 10),
+            'bottom_input_officers' => array_slice(array_reverse($topInputOfficers), 0, 10),
+            'top_update_officers'   => array_slice($topUpdateOfficers, 0, 10),
+            'map_pins'              => $mapPins
+        ];
+    }
 }

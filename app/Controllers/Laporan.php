@@ -143,44 +143,85 @@ class Laporan extends BaseController
         header('Content-Type: application/vnd.ms-excel; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
-        
-        $output = fopen('php://output', 'w');
-        fwrite($output, "\xEF\xBB\xBF");
-        
-        $headers = [
-            'Nomor Temuan', 'ULP', 'Penyulang', 'Section', 'Jenis Temuan', 'Pelaksana', 
-            'Prioritas', 'Potensi Gangguan', 'Konduktor', 'NOGA', 'Material', 
-            'Detail Temuan', 'Alamat', 'Latitude', 'Longitude', 'Tanggal Temuan', 
-            'Status', 'Tanggal Selesai', 'Catatan Tindak Lanjut'
-        ];
-        fwrite($output, implode("\t", $headers) . "\n");
 
-        foreach ($data as $row) {
-            $line = [
-                $row['nomor_temuan'],
-                $row['nama_ulp'],
-                $row['nama_penyulang'],
-                $row['nama_section'],
-                $row['jenis_temuan'],
-                $row['pelaksana'],
-                $row['prioritas'],
-                $row['potensi_gangguan'],
-                $row['konduktor'],
-                $row['noga'] ?: '-',
-                str_replace(["\r", "\n", "\t"], " ", $row['material']),
-                str_replace(["\r", "\n", "\t"], " ", $row['detail_temuan']),
-                str_replace(["\r", "\n", "\t"], " ", $row['alamat']),
-                $row['latitude'],
-                $row['longitude'],
-                $row['tanggal_temuan'],
-                $row['status'],
-                $row['tanggal_selesai'] ?: '-',
-                str_replace(["\r", "\n", "\t"], " ", $row['catatan_tindak_lanjut'] ?: '-')
-            ];
-            fwrite($output, implode("\t", $line) . "\n");
+        $total = count($data);
+        $selesai = 0;
+        $emergency = 0;
+        foreach ($data as $r) {
+            if (strtoupper($r['status']) === 'SELESAI') $selesai++;
+            if (strtoupper($r['prioritas']) === 'EMERGENCY') $emergency++;
         }
 
-        fclose($output);
+        echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        echo '<head><meta charset="utf-8"><style>';
+        echo 'body { font-family: Calibri, sans-serif; font-size: 11pt; }';
+        echo '.title { font-size: 16pt; font-weight: bold; color: #0284c7; }';
+        echo '.sub-title { font-size: 10pt; color: #475569; }';
+        echo 'table { border-collapse: collapse; width: 100%; }';
+        echo 'th { background-color: #0284c7; color: #ffffff; font-weight: bold; border: 1px solid #000000; text-align: center; padding: 6px; }';
+        echo 'td { border: 1px solid #cbd5e1; padding: 5px; vertical-align: middle; }';
+        echo '.pri-EMERGENCY { background-color: #fee2e2; color: #dc2626; font-weight: bold; }';
+        echo '.pri-HIGH { background-color: #fff7ed; color: #c2410c; font-weight: bold; }';
+        echo '.pri-MEDIUM { background-color: #eff6ff; color: #1d4ed8; }';
+        echo '.pri-LOW { background-color: #f0fdf4; color: #16a34a; }';
+        echo '.st-SELESAI { background-color: #dcfce7; color: #15803d; font-weight: bold; }';
+        echo '.summary-row { background-color: #f1f5f9; font-weight: bold; }';
+        echo '</style></head><body>';
+
+        echo '<table>';
+        echo '<tr><td colspan="19" class="title">PT PLN (PERSERO) &mdash; LAPORAN INSPEKSI TEMUAN (SIDAK TEJO)</td></tr>';
+        echo '<tr><td colspan="19" class="sub-title">Tanggal Ekspor: ' . date('d-m-Y H:i:s') . ' WIB | User: ' . esc($session->get('user_name')) . ' | Total Data: ' . $total . ' (Selesai: ' . $selesai . ', Emergency: ' . $emergency . ')</td></tr>';
+        echo '<tr><td colspan="19"></td></tr>';
+
+        echo '<thead><tr>';
+        $headers = [
+            'No', 'Nomor Temuan', 'ULP', 'Penyulang', 'Section', 'Jenis Temuan', 'Pelaksana', 
+            'Prioritas', 'Potensi Gangguan', 'Konduktor', 'NOGA', 'Material', 
+            'Detail Temuan', 'Alamat', 'Latitude', 'Longitude', 'Tanggal Temuan', 
+            'Status', 'Tanggal Selesai'
+        ];
+        foreach ($headers as $h) {
+            echo '<th>' . $h . '</th>';
+        }
+        echo '</tr></thead>';
+
+        echo '<tbody>';
+        $no = 1;
+        foreach ($data as $row) {
+            $priClass = 'pri-' . strtoupper($row['prioritas']);
+            $stClass = strtoupper($row['status']) === 'SELESAI' ? 'st-SELESAI' : '';
+            echo '<tr>';
+            echo '<td align="center">' . $no++ . '</td>';
+            echo '<td>' . esc($row['nomor_temuan']) . '</td>';
+            echo '<td>' . esc($row['nama_ulp']) . '</td>';
+            echo '<td>' . esc($row['nama_penyulang']) . '</td>';
+            echo '<td>' . esc($row['nama_section']) . '</td>';
+            echo '<td>' . esc($row['jenis_temuan']) . '</td>';
+            echo '<td>' . esc($row['pelaksana']) . '</td>';
+            echo '<td class="' . $priClass . '" align="center">' . esc($row['prioritas']) . '</td>';
+            echo '<td>' . esc($row['potensi_gangguan']) . '</td>';
+            echo '<td>' . esc($row['konduktor']) . '</td>';
+            echo '<td align="center">' . esc($row['noga'] ?: '-') . '</td>';
+            echo '<td>' . esc($row['material']) . '</td>';
+            echo '<td>' . esc($row['detail_temuan']) . '</td>';
+            echo '<td>' . esc($row['alamat']) . '</td>';
+            echo '<td>' . esc($row['latitude']) . '</td>';
+            echo '<td>' . esc($row['longitude']) . '</td>';
+            echo '<td align="center">' . date('d-m-Y', strtotime($row['tanggal_temuan'])) . '</td>';
+            echo '<td class="' . $stClass . '" align="center">' . esc($row['status']) . '</td>';
+            echo '<td align="center">' . ($row['tanggal_selesai'] ? date('d-m-Y', strtotime($row['tanggal_selesai'])) : '-') . '</td>';
+            echo '</tr>';
+        }
+
+        echo '<tr class="summary-row">';
+        echo '<td colspan="7" align="right">TOTAL RINGKASAN:</td>';
+        echo '<td align="center">Emergency: ' . $emergency . '</td>';
+        echo '<td colspan="9"></td>';
+        echo '<td align="center">Selesai: ' . $selesai . ' / ' . $total . '</td>';
+        echo '<td></td>';
+        echo '</tr>';
+
+        echo '</tbody></table></body></html>';
         exit;
     }
 

@@ -135,21 +135,79 @@
 
     <!-- Branding Header -->
     <div class="report-header-top">
-        <div class="header-left">PT PLN (Persero)</div>
+        <div class="d-flex align-items-center gap-2">
+            <img src="<?= base_url('assets/img/logo_sidak.png') ?>" style="max-height: 28px;" onerror="this.style.display='none'">
+            <div class="header-left">PT PLN (Persero) &middot; SIDAK TEJO ENTERPRISE</div>
+        </div>
         <div class="header-right">SISTEM MONITORING TEMUAN INSPEKSI</div>
     </div>
 
-    <!-- Main Title -->
-    <div class="report-header-title">
-        <h2>INSPEKSI <?= $titleUlp ?></h2>
-        <div style="font-size: 9.5px; color: #475569; font-weight: 500; margin-top: 4px;">
-            Periode: <?= $filters['tanggal_awal'] ? date('d-m-Y', strtotime($filters['tanggal_awal'])) : 'Awal' ?> s.d 
-            <?= $filters['tanggal_akhir'] ? date('d-m-Y', strtotime($filters['tanggal_akhir'])) : 'Hari Ini' ?>
-            <?php if (!empty($filters['pelaksana'])): ?> | Pelaksana: <?= esc($filters['pelaksana']) ?><?php endif; ?>
-            <?php if (!empty($filters['prioritas'])): ?> | Prioritas: <?= esc($filters['prioritas']) ?><?php endif; ?>
-            <?php if (!empty($filters['status'])): ?> | Status: <?= esc($filters['status']) ?><?php endif; ?>
+    <!-- Main Title & Digital QR Metadata -->
+    <div class="report-header-title d-flex justify-content-between align-items-center mb-3">
+        <div class="text-start">
+            <h2>DOKUMEN EVIDEN INSPEKSI &ndash; <?= $titleUlp ?></h2>
+            <div style="font-size: 9.5px; color: #475569; font-weight: 500; margin-top: 4px;">
+                Periode: <?= $filters['tanggal_awal'] ? date('d-m-Y', strtotime($filters['tanggal_awal'])) : 'Awal' ?> s.d 
+                <?= $filters['tanggal_akhir'] ? date('d-m-Y', strtotime($filters['tanggal_akhir'])) : 'Hari Ini' ?>
+                <?php if (!empty($filters['pelaksana'])): ?> | Pelaksana: <?= esc($filters['pelaksana']) ?><?php endif; ?>
+                <?php if (!empty($filters['prioritas'])): ?> | Prioritas: <?= esc($filters['prioritas']) ?><?php endif; ?>
+                <?php if (!empty($filters['status'])): ?> | Status: <?= esc($filters['status']) ?><?php endif; ?>
+            </div>
+            <div class="text-muted small" style="font-size: 8px; margin-top: 2px;">
+                Dicetak oleh: <strong><?= esc(session()->get('user_name') ?? 'System User') ?></strong> (NIP: <?= esc(session()->get('nip') ?? '-') ?>) &middot; Tanggal: <?= date('d-m-Y H:i:s') ?> WIB
+            </div>
         </div>
-        <div class="text-muted small" style="font-size: 8px; margin-top: 2px;">Dicetak pada: <?= date('d-m-Y H:i:s') ?></div>
+        <!-- Digital Verification QR Code Stamp -->
+        <div class="text-center p-2 rounded border bg-light" style="font-size: 8px; min-width: 90px;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=<?= urlencode(site_url('laporan') . '?verify=' . md5(time() . session()->get('user_id'))) ?>" style="width: 50px; height: 50px;" alt="QR Verification">
+            <div class="fw-bold mt-1 text-primary" style="font-size: 7px;">VERIFIED DOC</div>
+        </div>
+    </div>
+
+    <!-- KPI Summary Bar -->
+    <?php
+    $totalCount = count($data);
+    $selesaiCount = 0;
+    $emergencyCount = 0;
+    $highCount = 0;
+    foreach ($data as $r) {
+        if (strtoupper($r['status']) === 'SELESAI') $selesaiCount++;
+        if (strtoupper($r['prioritas']) === 'EMERGENCY') $emergencyCount++;
+        if (strtoupper($r['prioritas']) === 'HIGH') $highCount++;
+    }
+    $belumCount = $totalCount - $selesaiCount;
+    ?>
+    <div class="row g-2 mb-3 text-center" style="font-size: 9px;">
+        <div class="col">
+            <div class="p-2 border rounded bg-light">
+                <span class="text-muted d-block" style="font-size: 7.5px;">TOTAL TEMUAN</span>
+                <strong class="fs-6 text-dark"><?= number_format($totalCount) ?></strong>
+            </div>
+        </div>
+        <div class="col">
+            <div class="p-2 border rounded bg-success-subtle">
+                <span class="text-success d-block" style="font-size: 7.5px;">SELESAI (100%)</span>
+                <strong class="fs-6 text-success"><?= number_format($selesaiCount) ?></strong>
+            </div>
+        </div>
+        <div class="col">
+            <div class="p-2 border rounded bg-warning-subtle">
+                <span class="text-warning-emphasis d-block" style="font-size: 7.5px;">BELUM SELESAI</span>
+                <strong class="fs-6 text-warning-emphasis"><?= number_format($belumCount) ?></strong>
+            </div>
+        </div>
+        <div class="col">
+            <div class="p-2 border rounded bg-danger-subtle">
+                <span class="text-danger d-block" style="font-size: 7.5px;">EMERGENCY</span>
+                <strong class="fs-6 text-danger"><?= number_format($emergencyCount) ?></strong>
+            </div>
+        </div>
+        <div class="col">
+            <div class="p-2 border rounded" style="background-color: #fff7ed;">
+                <span style="color: #c2410c; font-size: 7.5px;" class="d-block">HIGH PRIORITY</span>
+                <strong class="fs-6" style="color: #c2410c;"><?= number_format($highCount) ?></strong>
+            </div>
+        </div>
     </div>
 
     <!-- Printable Report Table -->

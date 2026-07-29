@@ -13,6 +13,20 @@ try {
     define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
     \CodeIgniter\Boot::bootTest($paths);
 
+    echo "=== STEP 1.5: TESTING DATABASE CONNECTION ===\n";
+    try {
+        $dbConfig = new \Config\Database();
+        echo "DB Host: " . $dbConfig->default['hostname'] . "\n";
+        echo "DB User: " . $dbConfig->default['username'] . "\n";
+        echo "DB Name: " . $dbConfig->default['database'] . "\n";
+        
+        $db = \Config\Database::connect();
+        $dbVersion = $db->getVersion();
+        echo "DB CONNECTION: SUCCESS (MySQL Version: " . $dbVersion . ")\n\n";
+    } catch (\Throwable $dberr) {
+        echo "DB CONNECTION FAILED: " . $dberr->getMessage() . " in " . $dberr->getFile() . ":" . $dberr->getLine() . "\n\n";
+    }
+
     echo "=== STEP 2: TESTING USER REPOSITORY QUERY ===\n";
     $userRepo = new \App\Repositories\UserRepository();
     $user = $userRepo->findByUsername('admin');

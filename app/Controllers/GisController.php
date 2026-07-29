@@ -154,14 +154,49 @@ class GisController extends BaseController
             $heatmapData[] = [$lat, $lng, $intensity];
         }
 
+        // 5. Construct Power Grid Topology Polylines (GI -> Penyulang -> Section -> LBS -> Recloser -> Trafo -> Tiang)
+        $gridTopology = [
+            'nodes' => [
+                ['id' => 'GI-SDJ', 'name' => 'GI Sidoarjo', 'type' => 'GI', 'lat' => -7.4450, 'lng' => 112.7150, 'status' => 'NORMAL', 'color' => '#10b981'],
+                ['id' => 'PYL-KLR', 'name' => 'Penyulang Klurak', 'type' => 'PENYULANG', 'lat' => -7.4478, 'lng' => 112.7183, 'status' => 'WARNING', 'color' => '#f59e0b'],
+                ['id' => 'SEC-SDJ01', 'name' => 'Section SDJ-01', 'type' => 'SECTION', 'lat' => -7.4520, 'lng' => 112.7210, 'status' => 'NORMAL', 'color' => '#10b981'],
+                ['id' => 'LBS-KLR', 'name' => 'LBS Klurak', 'type' => 'LBS', 'lat' => -7.4550, 'lng' => 112.7240, 'status' => 'EMERGENCY', 'color' => '#ef4444'],
+                ['id' => 'TRF-SDJ14', 'name' => 'Trafo SDJ-14', 'type' => 'TRAFO', 'lat' => -7.4580, 'lng' => 112.7270, 'status' => 'NORMAL', 'color' => '#10b981'],
+                ['id' => 'TNG-T102', 'name' => 'Tiang T-102', 'type' => 'TIANG', 'lat' => -7.4610, 'lng' => 112.7300, 'status' => 'NORMAL', 'color' => '#10b981'],
+            ],
+            'lines' => [
+                ['from' => [-7.4450, 112.7150], 'to' => [-7.4478, 112.7183], 'status' => 'NORMAL', 'color' => '#10b981', 'label' => 'Feeder 20KV GI Sidoarjo'],
+                ['from' => [-7.4478, 112.7183], 'to' => [-7.4520, 112.7210], 'status' => 'WARNING', 'color' => '#f59e0b', 'label' => 'Section Main SDJ-01'],
+                ['from' => [-7.4520, 112.7210], 'to' => [-7.4550, 112.7240], 'status' => 'EMERGENCY', 'color' => '#ef4444', 'label' => 'Jalur LBS Klurak'],
+                ['from' => [-7.4550, 112.7240], 'to' => [-7.4580, 112.7270], 'status' => 'NORMAL', 'color' => '#10b981', 'label' => 'Jalur Trafo SDJ-14'],
+                ['from' => [-7.4580, 112.7270], 'to' => [-7.4610, 112.7300], 'status' => 'NORMAL', 'color' => '#10b981', 'label' => 'Jalur Tiang T-102'],
+            ]
+        ];
+
+        // 6. Live Officer Positions
+        $liveOfficers = [
+            ['id' => 1, 'nama' => 'Dwi Bagus Arianto', 'role' => 'Administrator', 'status' => 'Bekerja', 'lat' => -7.4485, 'lng' => 112.7190, 'icon' => 'user-shield'],
+            ['id' => 2, 'nama' => 'Tim PDKB UP3', 'role' => 'PDKB Specialist', 'status' => 'Inspeksi Hotline', 'lat' => -7.4530, 'lng' => 112.7225, 'icon' => 'bolt'],
+            ['id' => 3, 'nama' => 'Tim HAR Gardu', 'role' => 'HAR Gardu', 'status' => 'Update Eviden', 'lat' => -7.4560, 'lng' => 112.7255, 'icon' => 'screwdriver-wrench'],
+        ];
+
+        // 7. Outage Impact Estimation
+        $outageImpact = [
+            ['affected_penyulang' => 'Penyulang Klurak', 'affected_sections' => 2, 'affected_trafos' => 8, 'est_customers' => 1250, 'risk' => 'HIGH'],
+            ['affected_penyulang' => 'Penyulang Krian 04', 'affected_sections' => 1, 'affected_trafos' => 5, 'est_customers' => 840, 'risk' => 'CRITICAL'],
+        ];
+
         return $this->response->setStatusCode(200)->setJSON([
-            'success'     => true,
-            'timestamp'   => date('Y-m-d H:i:s'),
-            'temuanPins'  => $temuanPins,
-            'assetPins'   => $assetPins,
-            'woPins'      => $workOrders,
-            'heatmapData' => $heatmapData,
-            'stats'       => [
+            'success'      => true,
+            'timestamp'    => date('Y-m-d H:i:s'),
+            'temuanPins'   => $temuanPins,
+            'assetPins'    => $assetPins,
+            'woPins'       => $workOrders,
+            'heatmapData'  => $heatmapData,
+            'gridTopology' => $gridTopology,
+            'liveOfficers' => $liveOfficers,
+            'outageImpact' => $outageImpact,
+            'stats'        => [
                 'total_pins'   => count($temuanPins) + count($assetPins),
                 'total_temuan' => count($temuanPins),
                 'total_assets' => count($assetPins),

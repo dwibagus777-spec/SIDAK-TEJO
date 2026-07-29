@@ -134,7 +134,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.ulp_id', $ulpIdFilter);
         }
 
-        return $builder->get()->getRowArray();
+        return self::safeRow($builder, 'TemuanRepository::getDetail');
     }
 
     /**
@@ -203,7 +203,7 @@ class TemuanRepository extends BaseRepository
             'draw'            => (int)($postData['draw'] ?? 0),
             'recordsTotal'    => $totalRecords,
             'recordsFiltered' => $totalFiltered,
-            'data'            => $builder->get()->getResultArray()
+            'data'            => self::safeGet($builder, null, 'TemuanRepository::getDataTables')
         ];
     }
 
@@ -217,7 +217,7 @@ class TemuanRepository extends BaseRepository
 
         $this->applyTemuanFilters($builder, $filters, $ulpIdFilter, null);
 
-        return $builder->orderBy('temuan.tanggal_temuan', 'DESC')->get()->getResultArray();
+        return self::safeGet($builder->orderBy('temuan.tanggal_temuan', 'DESC'), null, 'TemuanRepository::getFilteredTemuan');
     }
 
     /**
@@ -236,7 +236,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.jenis_temuan', $jenisTemuanFilter);
         }
 
-        return $builder->orderBy('temuan.id', 'DESC')->get()->getResultArray();
+        return self::safeGet($builder->orderBy('temuan.id', 'DESC'), null, 'TemuanRepository::getIdentifikasiGangguan');
     }
 
     /**
@@ -255,9 +255,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.jenis_temuan', $jenisTemuanFilter);
         }
 
-        return $builder->groupBy('temuan.section_id')
-            ->orderBy('total_temuan', 'DESC')
-            ->get()->getResultArray();
+        return self::safeGet($builder->groupBy('temuan.section_id')->orderBy('total_temuan', 'DESC'), null, 'TemuanRepository::getRankingSectionsForIdentifikasi');
     }
 
     /**
@@ -300,7 +298,7 @@ class TemuanRepository extends BaseRepository
                 SUM(CASE WHEN status = 'SELESAI' THEN 1 ELSE 0 END) AS selesai
             ");
 
-            $row = $builder->get()->getRowArray() ?: [];
+            $row = self::safeRow($builder, 'TemuanRepository::getDashboardStats') ?: [];
 
             return [
                 'total'          => (int)($row['total'] ?? 0),
@@ -332,11 +330,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('ulp_id', $ulpIdFilter);
         }
 
-        return $builder->groupBy("bulan")
-            ->orderBy("bulan", "ASC")
-            ->limit(12)
-            ->get()
-            ->getResultArray();
+        return self::safeGet($builder->groupBy('bulan')->orderBy('bulan', 'ASC')->limit(12), null, 'TemuanRepository::getMonthlyStats');
     }
 
     /**
@@ -353,9 +347,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.ulp_id', $ulpIdFilter);
         }
 
-        return $builder->groupBy('temuan.ulp_id')
-            ->get()
-            ->getResultArray();
+        return self::safeGet($builder->groupBy('temuan.ulp_id'), null, 'TemuanRepository::getUlpStats');
     }
 
     /**
@@ -373,11 +365,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.ulp_id', $ulpIdFilter);
         }
 
-        return $builder->groupBy('temuan.penyulang_id')
-            ->orderBy('total', 'DESC')
-            ->limit(10)
-            ->get()
-            ->getResultArray();
+        return self::safeGet($builder->groupBy('temuan.penyulang_id')->orderBy('total', 'DESC')->limit(10), null, 'TemuanRepository::getPenyulangStats');
     }
 
     /**
@@ -393,9 +381,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('ulp_id', $ulpIdFilter);
         }
 
-        return $builder->groupBy('pelaksana')
-            ->get()
-            ->getResultArray();
+        return self::safeGet($builder->groupBy('pelaksana'), null, 'TemuanRepository::getPelaksanaStats');
     }
 
     /**
@@ -411,9 +397,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('ulp_id', $ulpIdFilter);
         }
 
-        return $builder->groupBy('prioritas')
-            ->get()
-            ->getResultArray();
+        return self::safeGet($builder->groupBy('prioritas'), null, 'TemuanRepository::getPrioritasStats');
     }
 
     /**
@@ -429,9 +413,7 @@ class TemuanRepository extends BaseRepository
             $builder->where('ulp_id', $ulpIdFilter);
         }
 
-        return $builder->groupBy('potensi_gangguan')
-            ->get()
-            ->getResultArray();
+        return self::safeGet($builder->groupBy('potensi_gangguan'), null, 'TemuanRepository::getPotensiGangguanStats');
     }
 
     /**
@@ -457,7 +439,7 @@ class TemuanRepository extends BaseRepository
      */
     public function getComprehensiveAnalytics(string $role, ?int $ulpIdFilter = null): array
     {
-        $db = Database::connect();
+        $db = \Config\Database::connect();
         
         // Scope builder based on Role and ULP
         $applyScope = function($builder) use ($role, $ulpIdFilter) {
@@ -507,7 +489,7 @@ class TemuanRepository extends BaseRepository
             ->where('deleted_at IS NULL')
             ->where('tanggal_temuan >=', date('Y-m-d', strtotime('-6 days')));
         $b5 = $applyScope($b5);
-        $temuanMingguanRaw = $b5->groupBy('tgl')->orderBy('tgl', 'ASC')->get()->getResultArray();
+        $temuanMingguanRaw = self::safeGet($b5->groupBy('tgl')->orderBy('tgl', 'ASC'), null, 'TemuanRepository::getComprehensiveAnalytics_weeklyTemuan');
 
         $temuanMingguan = ['labels' => [], 'data' => []];
         for ($i = 6; $i >= 0; $i--) {
@@ -527,7 +509,7 @@ class TemuanRepository extends BaseRepository
             ->where('status', 'SELESAI')
             ->where('updated_at >=', date('Y-m-d 00:00:00', strtotime('-6 days')));
         $b6 = $applyScope($b6);
-        $realisasiHarianRaw = $b6->groupBy('tgl')->orderBy('tgl', 'ASC')->get()->getResultArray();
+        $realisasiHarianRaw = self::safeGet($b6->groupBy('tgl')->orderBy('tgl', 'ASC'), null, 'TemuanRepository::getComprehensiveAnalytics_dailyRealisasi');
 
         $realisasiHarian = ['labels' => [], 'data' => []];
         for ($i = 6; $i >= 0; $i--) {
@@ -545,7 +527,7 @@ class TemuanRepository extends BaseRepository
             ->select("DATE_FORMAT(tanggal_temuan, '%Y-%m') as bln, COUNT(id) as total")
             ->where('deleted_at IS NULL');
         $b7 = $applyScope($b7);
-        $temuanBulananRaw = $b7->groupBy('bln')->orderBy('bln', 'ASC')->limit(12)->get()->getResultArray();
+        $temuanBulananRaw = self::safeGet($b7->groupBy('bln')->orderBy('bln', 'ASC')->limit(12), null, 'TemuanRepository::getComprehensiveAnalytics_monthlyTemuan');
 
         $temuanBulanan = ['labels' => [], 'data' => []];
         foreach ($temuanBulananRaw as $r) {
@@ -559,7 +541,7 @@ class TemuanRepository extends BaseRepository
             ->where('deleted_at IS NULL')
             ->where('status', 'SELESAI');
         $b8 = $applyScope($b8);
-        $realisasiBulananRaw = $b8->groupBy('bln')->orderBy('bln', 'ASC')->limit(12)->get()->getResultArray();
+        $realisasiBulananRaw = self::safeGet($b8->groupBy('bln')->orderBy('bln', 'ASC')->limit(12), null, 'TemuanRepository::getComprehensiveAnalytics_monthlyRealisasi');
 
         $realisasiBulanan = ['labels' => [], 'data' => []];
         foreach ($realisasiBulananRaw as $r) {
@@ -570,7 +552,7 @@ class TemuanRepository extends BaseRepository
         // 9. Status Breakdown
         $b9 = $db->table('temuan')->select("status, COUNT(id) as total")->where('deleted_at IS NULL');
         $b9 = $applyScope($b9);
-        $statusRaw = $b9->groupBy('status')->get()->getResultArray();
+        $statusRaw = self::safeGet($b9->groupBy('status'), null, 'TemuanRepository::getComprehensiveAnalytics_status');
         $statusBreakdown = ['BELUM' => 0, 'PROSES' => 0, 'SELESAI' => 0, 'TERKENDALA' => 0];
         foreach ($statusRaw as $r) {
             $st = strtoupper($r['status']);
@@ -580,7 +562,7 @@ class TemuanRepository extends BaseRepository
         // 10. Prioritas Breakdown (EMERGENCY, HIGH, MEDIUM)
         $b10 = $db->table('temuan')->select("prioritas, COUNT(id) as total")->where('deleted_at IS NULL');
         $b10 = $applyScope($b10);
-        $prioritasRaw = $b10->groupBy('prioritas')->get()->getResultArray();
+        $prioritasRaw = self::safeGet($b10->groupBy('prioritas'), null, 'TemuanRepository::getComprehensiveAnalytics_prioritas');
         $prioritasBreakdown = ['EMERGENCY' => 0, 'HIGH' => 0, 'MEDIUM' => 0];
         foreach ($prioritasRaw as $r) {
             $pr = strtoupper($r['prioritas']);
@@ -590,7 +572,7 @@ class TemuanRepository extends BaseRepository
         // 11. Jenis Temuan Breakdown (ROW, HOTSPOT, KONSTRUKSI)
         $b11 = $db->table('temuan')->select("jenis_temuan, COUNT(id) as total")->where('deleted_at IS NULL');
         $b11 = $applyScope($b11);
-        $jenisRaw = $b11->groupBy('jenis_temuan')->get()->getResultArray();
+        $jenisRaw = self::safeGet($b11->groupBy('jenis_temuan'), null, 'TemuanRepository::getComprehensiveAnalytics_jenis');
         $jenisBreakdown = ['KONSTRUKSI' => 0, 'HOTSPOT' => 0, 'ROW' => 0];
         foreach ($jenisRaw as $r) {
             $jt = strtoupper($r['jenis_temuan']);
@@ -600,26 +582,26 @@ class TemuanRepository extends BaseRepository
         // 12. Pelaksana Breakdown
         $b12 = $db->table('temuan')->select("pelaksana, COUNT(id) as total")->where('deleted_at IS NULL');
         $b12 = $applyScope($b12);
-        $pelaksanaRaw = $b12->groupBy('pelaksana')->get()->getResultArray();
+        $pelaksanaRaw = self::safeGet($b12->groupBy('pelaksana'), null, 'TemuanRepository::getComprehensiveAnalytics_pelaksana');
 
         // 13. ULP Breakdown
         $b13 = $db->table('temuan')->select("ulps.nama_ulp, COUNT(temuan.id) as total")
             ->join('ulps', 'ulps.id = temuan.ulp_id')
             ->where('temuan.deleted_at IS NULL');
         $b13 = $applyScope($b13);
-        $ulpRaw = $b13->groupBy('temuan.ulp_id')->get()->getResultArray();
+        $ulpRaw = self::safeGet($b13->groupBy('temuan.ulp_id'), null, 'TemuanRepository::getComprehensiveAnalytics_ulp');
 
         // 14. Penyulang Breakdown
         $b14 = $db->table('temuan')->select("penyulang.nama_penyulang, COUNT(temuan.id) as total")
             ->join('penyulang', 'penyulang.id = temuan.penyulang_id')
             ->where('temuan.deleted_at IS NULL');
         $b14 = $applyScope($b14);
-        $penyulangRaw = $b14->groupBy('temuan.penyulang_id')->orderBy('total', 'DESC')->limit(10)->get()->getResultArray();
+        $penyulangRaw = self::safeGet($b14->groupBy('temuan.penyulang_id')->orderBy('total', 'DESC')->limit(10), null, 'TemuanRepository::getComprehensiveAnalytics_penyulang');
 
         // 15. SLA Calculation (Met SLA vs Overdue)
         $b15 = $db->table('temuan')->select("status, prioritas, tanggal_temuan, updated_at")->where('deleted_at IS NULL');
         $b15 = $applyScope($b15);
-        $slaRows = $b15->get()->getResultArray();
+        $slaRows = self::safeGet($b15, null, 'TemuanRepository::getComprehensiveAnalytics_sla');
         $slaMet = 0;
         $slaOverdue = 0;
 
@@ -746,7 +728,7 @@ class TemuanRepository extends BaseRepository
 
         // Overdue & SLA Calculation
         $bSla = $applyFilters($db->table('temuan'))->select('id, status, prioritas, tanggal_temuan, updated_at');
-        $slaRows = $bSla->get()->getResultArray();
+        $slaRows = self::safeGet($bSla, null, 'TemuanRepository::getExecutiveAnalyticsData_sla');
 
         $overdueCount = 0;
         $metCount = 0;
@@ -813,26 +795,26 @@ class TemuanRepository extends BaseRepository
             ->select('ulps.nama_ulp, COUNT(temuan.id) as total, SUM(CASE WHEN temuan.status="SELESAI" THEN 1 ELSE 0 END) as selesai, SUM(CASE WHEN temuan.status="PROSES" THEN 1 ELSE 0 END) as proses, SUM(CASE WHEN temuan.status="BELUM" THEN 1 ELSE 0 END) as belum')
             ->join('ulps', 'ulps.id = temuan.ulp_id')
             ->groupBy('temuan.ulp_id');
-        $ulpRankingRaw = $bUlp->orderBy('total', 'DESC')->get()->getResultArray();
+        $ulpRankingRaw = self::safeGet($bUlp->orderBy('total', 'DESC'), null, 'TemuanRepository::getExecutiveAnalyticsData_ulp');
 
         // Temuan per Penyulang (Top 10)
         $bPenyulang = $applyFilters($db->table('temuan'))
             ->select('penyulang.nama_penyulang, COUNT(temuan.id) as total')
             ->join('penyulang', 'penyulang.id = temuan.penyulang_id')
             ->groupBy('temuan.penyulang_id');
-        $penyulangChartRaw = $bPenyulang->orderBy('total', 'DESC')->limit(10)->get()->getResultArray();
+        $penyulangChartRaw = self::safeGet($bPenyulang->orderBy('total', 'DESC')->limit(10), null, 'TemuanRepository::getExecutiveAnalyticsData_penyulang');
 
         // Temuan per Jenis
         $bJenis = $applyFilters($db->table('temuan'))->select('jenis_temuan, COUNT(id) as total')->groupBy('jenis_temuan');
-        $jenisChartRaw = $bJenis->get()->getResultArray();
+        $jenisChartRaw = self::safeGet($bJenis, null, 'TemuanRepository::getExecutiveAnalyticsData_jenis');
 
         // Temuan per Pelaksana
         $bPelaksana = $applyFilters($db->table('temuan'))->select('pelaksana, COUNT(id) as total, SUM(CASE WHEN status="SELESAI" THEN 1 ELSE 0 END) as selesai')->groupBy('pelaksana');
-        $pelaksanaChartRaw = $bPelaksana->get()->getResultArray();
+        $pelaksanaChartRaw = self::safeGet($bPelaksana, null, 'TemuanRepository::getExecutiveAnalyticsData_pelaksana');
 
         // Temuan per Prioritas
         $bPrioritas = $applyFilters($db->table('temuan'))->select('prioritas, COUNT(id) as total')->groupBy('prioritas');
-        $prioritasChartRaw = $bPrioritas->get()->getResultArray();
+        $prioritasChartRaw = self::safeGet($bPrioritas, null, 'TemuanRepository::getExecutiveAnalyticsData_prioritas');
 
         // 3. Petugas Ranking
         $monthVal = !empty($filters['tanggal_mulai']) ? (int)date('m', strtotime($filters['tanggal_mulai'])) : date('n');
@@ -848,7 +830,7 @@ class TemuanRepository extends BaseRepository
             ->join('penyulang', 'penyulang.id = temuan.penyulang_id', 'left')
             ->where('temuan.latitude IS NOT NULL')
             ->where('temuan.longitude IS NOT NULL');
-        $mapPins = $bMap->get()->getResultArray();
+        $mapPins = self::safeGet($bMap, null, 'TemuanRepository::getExecutiveAnalyticsData_map');
 
         return [
             'timestamp'             => date('Y-m-d H:i:s'),

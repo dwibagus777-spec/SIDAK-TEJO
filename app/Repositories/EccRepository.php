@@ -2,6 +2,8 @@
 
 namespace App\Repositories;
 
+use CodeIgniter\Database\BaseResult;
+
 class EccRepository
 {
     private \CodeIgniter\Database\BaseConnection $db;
@@ -48,30 +50,56 @@ class EccRepository
 
     public function getEmergencyWallItems(?int $ulpIdFilter = null): array
     {
-        $builder = $this->db->table('temuan t');
-        $builder->select('t.id, t.nomor_temuan, t.jenis_temuan, t.detail_temuan, t.status, t.created_at, u.nama_ulp, p.nama_penyulang');
-        $builder->join('ulps u', 't.ulp_id = u.id', 'left');
-        $builder->join('penyulang p', 't.penyulang_id = p.id', 'left');
-        $builder->where('t.deleted_at IS NULL');
-        $builder->where('t.prioritas', 'EMERGENCY');
-        $builder->where('t.status !=', 'SELESAI');
-        if ($ulpIdFilter) {
-            $builder->where('t.ulp_id', $ulpIdFilter);
+        try {
+            $builder = $this->db->table('temuan t');
+            $builder->select('t.id, t.nomor_temuan, t.jenis_temuan, t.detail_temuan, t.status, t.created_at, u.nama_ulp, p.nama_penyulang');
+            $builder->join('ulps u', 't.ulp_id = u.id', 'left');
+            $builder->join('penyulang p', 't.penyulang_id = p.id', 'left');
+            $builder->where('t.deleted_at IS NULL');
+            $builder->where('t.prioritas', 'EMERGENCY');
+            $builder->where('t.status !=', 'SELESAI');
+            if ($ulpIdFilter) {
+                $builder->where('t.ulp_id', $ulpIdFilter);
+            }
+            $builder->orderBy('t.id', 'DESC');
+
+            $query = $builder->get(10);
+            if ($query === false || !($query instanceof BaseResult)) {
+                $error = $this->db->error();
+                log_message('error', '[EccRepository::getEmergencyWallItems] Query gagal | Code: ' . ($error['code'] ?? 'N/A') . ' | Message: ' . ($error['message'] ?? 'Unknown'));
+                return [];
+            }
+
+            return $query->getResultArray();
+        } catch (\Throwable $e) {
+            log_message('error', '[EccRepository::getEmergencyWallItems] Exception: ' . $e->getMessage());
+            return [];
         }
-        $builder->orderBy('t.id', 'DESC');
-        return $builder->get(10)->getResultArray();
     }
 
     public function getUlpRankings(?int $ulpIdFilter = null): array
     {
-        $builder = $this->db->table('ulps u');
-        $builder->select('u.id, u.nama_ulp, COUNT(t.id) as total_temuan, SUM(CASE WHEN t.status = "SELESAI" THEN 1 ELSE 0 END) as total_selesai');
-        $builder->join('temuan t', 't.ulp_id = u.id AND t.deleted_at IS NULL', 'left');
-        if ($ulpIdFilter) {
-            $builder->where('u.id', $ulpIdFilter);
+        try {
+            $builder = $this->db->table('ulps u');
+            $builder->select('u.id, u.nama_ulp, COUNT(t.id) as total_temuan, SUM(CASE WHEN t.status = "SELESAI" THEN 1 ELSE 0 END) as total_selesai');
+            $builder->join('temuan t', 't.ulp_id = u.id AND t.deleted_at IS NULL', 'left');
+            if ($ulpIdFilter) {
+                $builder->where('u.id', $ulpIdFilter);
+            }
+            $builder->groupBy('u.id, u.nama_ulp');
+            $builder->orderBy('total_temuan', 'DESC');
+
+            $query = $builder->get();
+            if ($query === false || !($query instanceof BaseResult)) {
+                $error = $this->db->error();
+                log_message('error', '[EccRepository::getUlpRankings] Query gagal | Code: ' . ($error['code'] ?? 'N/A') . ' | Message: ' . ($error['message'] ?? 'Unknown'));
+                return [];
+            }
+
+            return $query->getResultArray();
+        } catch (\Throwable $e) {
+            log_message('error', '[EccRepository::getUlpRankings] Exception: ' . $e->getMessage());
+            return [];
         }
-        $builder->groupBy('u.id, u.nama_ulp');
-        $builder->orderBy('total_temuan', 'DESC');
-        return $builder->get()->getResultArray();
     }
 }

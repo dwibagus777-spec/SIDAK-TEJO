@@ -60,6 +60,16 @@ class Dashboard extends BaseController
         $canApprove = check_role(['administrator', 'supervisor_ulp', 'supervisor_up3']);
         $canMonitoring = check_role(['administrator', 'admin_pusat', 'supervisor_up3', 'manager']);
 
+        // Fetch All Dashboard Analytics Data
+        $stats               = $this->temuanRepository->getDashboardStats($ulpIdFilter, $role);
+        $monthlyData         = $this->temuanRepository->getMonthlyStats($ulpIdFilter);
+        $ulpData             = $this->temuanRepository->getUlpStats($ulpIdFilter);
+        $penyulangData       = $this->temuanRepository->getPenyulangStats($ulpIdFilter);
+        $pelaksanaData       = $this->temuanRepository->getPelaksanaStats($ulpIdFilter);
+        $prioritasData       = $this->temuanRepository->getPrioritasStats($ulpIdFilter);
+        $potensiGangguanData = $this->temuanRepository->getPotensiGangguanStats($ulpIdFilter);
+        $mapPins             = $this->temuanRepository->getMapPins($ulpIdFilter);
+
         // Ambil Data Work Order & Asset Stats (Phase 31.1 Mission Control)
         $woRepo = new \App\Repositories\WorkOrderRepository();
         $assetRepo = new \App\Repositories\AssetRepository();

@@ -21,6 +21,9 @@ $routes->get('queue/run', 'QueueWorker::run');
 
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {
+    // Main Dashboard Web Route
+    $routes->get('dashboard', 'Dashboard::index');
+    $routes->match(['get', 'post'], 'dashboard', 'Dashboard::index');
     
     // AI Predictive Maintenance & AI Center Routes
     $routes->get('ai-center', 'AiPredictiveController::index');

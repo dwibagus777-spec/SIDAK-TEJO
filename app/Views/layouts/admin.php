@@ -780,6 +780,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         </li>
                         <?php endif; ?>
 
+                        <!-- Phase 22: Executive Command Center (ECC) -->
+                        <li class="nav-item <?= url_is('ecc*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('ecc') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-tv text-danger"></i>
+                                </span>
+                                <span class="nav-link-title">Command Center (ECC)</span>
+                            </a>
+                        </li>
+
                         <!-- Phase 21: Notification Center -->
                         <li class="nav-item <?= url_is('notifications*') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('notifications') ?>">

@@ -69,6 +69,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('notifications/api-unread', 'Notification::apiUnread');
     $routes->get('notifications/trigger-escalation', 'Notification::triggerEscalation');
 
+    // Phase 22 - Executive Command Center (ECC)
+    $routes->get('ecc', 'ExecutiveCommandCenter::index');
+    $routes->get('ecc/tv-mode', 'ExecutiveCommandCenter::tvMode');
+    $routes->get('ecc/api-data', 'ExecutiveCommandCenter::apiData');
+    $routes->get('ecc/sse-stream', 'ExecutiveCommandCenter::sseStream');
+
     // Ekspor Database (Admin Saja - Terproteksi Login & Role)
     $routes->group('', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
         $routes->get('export_railway_db.php', 'DbExport::index');

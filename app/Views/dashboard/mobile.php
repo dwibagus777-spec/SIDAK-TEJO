@@ -433,6 +433,14 @@
                 <div class="card-label">Notifikasi</div>
             </a>
 
+            <!-- Executive Command Center (ECC) -->
+            <a href="<?= site_url('ecc') ?>" class="menu-card">
+                <div class="icon-circle" style="background-color: #ffe4e6;">
+                    <i class="fas fa-tv" style="color: #e11d48; font-size: 20px;"></i>
+                </div>
+                <div class="card-label">Command Center</div>
+            </a>
+
             <!-- 10. Identifikasi Gangguan -->
             <a href="<?= site_url('identifikasi') ?>" class="menu-card">
                 <div class="icon-circle" style="background-color: #fdf2f8;">

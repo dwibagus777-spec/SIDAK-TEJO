@@ -1,4 +1,7 @@
 <?php
+if (function_exists('opcache_reset')) {
+    @opcache_reset();
+}
 
 use CodeIgniter\Boot;
 use Config\Paths;

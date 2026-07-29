@@ -53,13 +53,26 @@ class Dashboard extends BaseController
         $topInputOfficers = $this->temuanModel->getTopInputOfficers($monthFilter, $yearFilter, $ulpIdFilter);
         $topUpdateOfficers = $this->temuanModel->getTopUpdateOfficers($monthFilter, $yearFilter, $ulpIdFilter);
 
+        // Permission Flags
+        $canInput = check_role(['administrator', 'admin_ulp', 'inspeksi']);
+        $canEdit = check_role(['administrator', 'admin_ulp', 'inspeksi', 'yantek', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane']);
+        $canDelete = check_role(['administrator']);
+        $canApprove = check_role(['administrator', 'supervisor_ulp', 'supervisor_up3']);
+        $canMonitoring = check_role(['administrator', 'admin_pusat', 'supervisor_up3', 'manager']);
+
         if ($showMobile) {
             return view('dashboard/mobile', [
-                'userName' => $session->get('user_name') ?: 'inspeksi',
-                'topInputOfficers' => $topInputOfficers,
+                'userName'          => $session->get('user_name') ?: 'inspeksi',
+                'userRole'          => $role,
+                'canInput'          => $canInput,
+                'canEdit'           => $canEdit,
+                'canDelete'         => $canDelete,
+                'canApprove'        => $canApprove,
+                'canMonitoring'     => $canMonitoring,
+                'topInputOfficers'  => $topInputOfficers,
                 'topUpdateOfficers' => $topUpdateOfficers,
-                'monthFilter' => $monthFilter,
-                'yearFilter' => $yearFilter
+                'monthFilter'        => $monthFilter,
+                'yearFilter'         => $yearFilter
             ]);
         }
 
@@ -78,18 +91,24 @@ class Dashboard extends BaseController
         $mapPins = $this->temuanRepository->getMapPins($ulpIdFilter);
 
         return view('dashboard/index', [
-            'stats' => $stats,
-            'monthlyData' => $monthlyData,
-            'ulpData' => $ulpData,
-            'penyulangData' => $penyulangData,
-            'pelaksanaData' => $pelaksanaData,
-            'prioritasData' => $prioritasData,
+            'userRole'            => $role,
+            'canInput'            => $canInput,
+            'canEdit'             => $canEdit,
+            'canDelete'           => $canDelete,
+            'canApprove'          => $canApprove,
+            'canMonitoring'       => $canMonitoring,
+            'stats'               => $stats,
+            'monthlyData'         => $monthlyData,
+            'ulpData'             => $ulpData,
+            'penyulangData'       => $penyulangData,
+            'pelaksanaData'       => $pelaksanaData,
+            'prioritasData'       => $prioritasData,
             'potensiGangguanData' => $potensiGangguanData,
-            'mapPins' => $mapPins,
-            'topInputOfficers' => $topInputOfficers,
-            'topUpdateOfficers' => $topUpdateOfficers,
-            'monthFilter' => $monthFilter,
-            'yearFilter' => $yearFilter
+            'mapPins'             => $mapPins,
+            'topInputOfficers'    => $topInputOfficers,
+            'topUpdateOfficers'   => $topUpdateOfficers,
+            'monthFilter'         => $monthFilter,
+            'yearFilter'          => $yearFilter
         ]);
     }
 

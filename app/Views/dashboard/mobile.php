@@ -290,8 +290,15 @@
 
     <!-- Menu Grid -->
     <div class="menu-container">
-        <div class="menu-grid">
-            
+            <?php 
+            $userRole = $userRole ?? (session()->get('user_role') ?: 'inspeksi');
+            $canInput = $canInput ?? check_role(['administrator', 'admin_ulp', 'inspeksi']);
+            $canEdit = $canEdit ?? check_role(['administrator', 'admin_ulp', 'inspeksi', 'yantek', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane']);
+            $canDelete = $canDelete ?? check_role(['administrator']);
+            $canApprove = $canApprove ?? check_role(['administrator', 'supervisor_ulp', 'supervisor_up3']);
+            $canMonitoring = $canMonitoring ?? check_role(['administrator', 'admin_pusat', 'supervisor_up3', 'manager']);
+            ?>
+
             <!-- Executive Dashboard Analytics -->
             <a href="<?= site_url('executive-dashboard') ?>" class="menu-card" style="background: linear-gradient(135deg, #003f8a 0%, #005eb8 100%); color: #ffffff;">
                 <div class="icon-circle" style="background-color: rgba(255, 255, 255, 0.2);">

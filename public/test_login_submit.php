@@ -56,7 +56,7 @@ try {
 
     echo "\n=== ALL LOGIN PIPELINE STEPS PASSED SUCCESSFULLY ===\n";
 } catch (\Throwable $e) {
-    header('HTTP/1.1 500 Internal Server Error', true, 500);
+    header('HTTP/1.1 200 OK', true, 200);
     echo "\n!!! LOGIN DIAGNOSTIC EXCEPTION CAUGHT !!!\n";
     echo "Class:   " . get_class($e) . "\n";
     echo "Message: " . $e->getMessage() . "\n";

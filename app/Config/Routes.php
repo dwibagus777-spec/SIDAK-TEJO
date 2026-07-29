@@ -82,6 +82,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('notifications/rules', 'Notification::rules');
     $routes->get('notifications/preferences', 'Notification::preferences');
     $routes->get('notifications/api-unread', 'Notification::apiUnread');
+    $routes->get('notifications/api-unread-list', 'Notification::apiUnreadList');
     $routes->get('notifications/trigger-escalation', 'Notification::triggerEscalation');
 
     // Phase 22 - Executive Command Center (ECC)

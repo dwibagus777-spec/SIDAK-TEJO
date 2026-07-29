@@ -11,7 +11,7 @@ class NotificationModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $allowedFields    = ['user_id', 'type', 'title', 'message', 'channel', 'status', 'target', 'read_at', 'created_at'];
+    protected $allowedFields    = ['user_id', 'type', 'title', 'message', 'channel', 'status', 'target', 'role', 'temuan_id', 'is_read', 'read_at', 'created_at', 'updated_at'];
     protected $useTimestamps    = false;
 
     public function __construct()
@@ -29,19 +29,37 @@ class NotificationModel extends Model
             // 1. Table `notifications`
             if (!$db->tableExists('notifications')) {
                 $forge->addField([
-                    'id' => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'auto_increment' => true],
-                    'user_id' => ['type' => 'INT', 'constraint' => 11, 'null' => true],
-                    'type' => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'INFO'],
-                    'title' => ['type' => 'VARCHAR', 'constraint' => 255],
-                    'message' => ['type' => 'TEXT'],
-                    'channel' => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'IN_APP'], // PUSH, WA, TELEGRAM, EMAIL, IN_APP, VOICE
-                    'status' => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'SENT'], // PENDING, QUEUED, SENT, DELIVERED, READ, FAILED
-                    'target' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
-                    'read_at' => ['type' => 'DATETIME', 'null' => true],
+                    'id'         => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'auto_increment' => true],
+                    'user_id'    => ['type' => 'INT', 'constraint' => 11, 'null' => true],
+                    'temuan_id'  => ['type' => 'INT', 'constraint' => 11, 'null' => true],
+                    'role'       => ['type' => 'VARCHAR', 'constraint' => 50, 'null' => true],
+                    'type'       => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'INFO'],
+                    'title'      => ['type' => 'VARCHAR', 'constraint' => 255],
+                    'message'    => ['type' => 'TEXT'],
+                    'channel'    => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'IN_APP'],
+                    'status'     => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'SENT'],
+                    'is_read'    => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 0],
+                    'target'     => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
+                    'read_at'    => ['type' => 'DATETIME', 'null' => true],
                     'created_at' => ['type' => 'DATETIME', 'null' => true],
+                    'updated_at' => ['type' => 'DATETIME', 'null' => true],
                 ]);
                 $forge->addKey('id', true);
                 $forge->createTable('notifications', true);
+            } else {
+                // Ensure missing columns exist
+                if (!$db->fieldExists('role', 'notifications')) {
+                    $forge->addColumn('notifications', ['role' => ['type' => 'VARCHAR', 'constraint' => 50, 'null' => true]]);
+                }
+                if (!$db->fieldExists('temuan_id', 'notifications')) {
+                    $forge->addColumn('notifications', ['temuan_id' => ['type' => 'INT', 'constraint' => 11, 'null' => true]]);
+                }
+                if (!$db->fieldExists('is_read', 'notifications')) {
+                    $forge->addColumn('notifications', ['is_read' => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 0]]);
+                }
+                if (!$db->fieldExists('updated_at', 'notifications')) {
+                    $forge->addColumn('notifications', ['updated_at' => ['type' => 'DATETIME', 'null' => true]]);
+                }
             }
 
             // 2. Table `notification_templates`

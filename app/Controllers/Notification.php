@@ -50,6 +50,44 @@ class Notification extends BaseController
         return $this->response->setJSON(['unread_count' => $count]);
     }
 
+    public function apiUnreadList()
+    {
+        $userId = session()->get('user_id');
+        $role   = strtolower((string)session()->get('user_role'));
+        $list   = $this->repository->getUserNotifications($userId, 10);
+        $count  = $this->repository->getUnreadCount($userId);
+
+        $items = [];
+        foreach ($list as $n) {
+            $createdTime = strtotime($n['created_at'] ?? 'now');
+            $diffMinutes = round((time() - $createdTime) / 60);
+
+            $timeAgo = 'Baru saja';
+            if ($diffMinutes >= 1440) {
+                $timeAgo = round($diffMinutes / 1440) . ' hari lalu';
+            } elseif ($diffMinutes >= 60) {
+                $timeAgo = round($diffMinutes / 60) . ' jam lalu';
+            } elseif ($diffMinutes > 0) {
+                $timeAgo = $diffMinutes . ' menit lalu';
+            }
+
+            $items[] = [
+                'id'       => $n['id'],
+                'title'    => $n['title'],
+                'message'  => $n['message'],
+                'type'     => $n['type'] ?? 'INFO',
+                'is_read'  => (int)($n['is_read'] ?? 0),
+                'time_ago' => $timeAgo,
+                'target'   => $n['target'] ?: site_url('notifications'),
+            ];
+        }
+
+        return $this->response->setJSON([
+            'unread_count' => $count,
+            'items'        => $items
+        ]);
+    }
+
     public function templates()
     {
         if (!check_role(['administrator'])) {

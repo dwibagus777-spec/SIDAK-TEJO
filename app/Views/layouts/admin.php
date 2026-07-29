@@ -665,12 +665,21 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                     <div class="text-muted" style="font-size: 10px;"><?= indo_date(date('Y-m-d'), true) ?></div>
                 </div>
 
-                <!-- Notification Bell Icon (Phase 21) -->
-                <div class="px-2 d-none d-lg-block">
-                    <a href="<?= site_url('notifications') ?>" class="btn btn-outline-light btn-sm position-relative rounded-circle me-2" title="Notifikasi Center">
+                <!-- Notification Bell Icon (Phase 31 Smart Notification Center) -->
+                <div class="px-2 d-none d-lg-block dropdown">
+                    <a href="#" class="btn btn-outline-light btn-sm position-relative rounded-circle me-2 dropdown-toggle text-decoration-none" id="bellNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notification Center">
                         <i class="fas fa-bell text-warning"></i>
                         <span id="nav-unread-count-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 9px;">0</span>
                     </a>
+                    <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" aria-labelledby="bellNotifDropdown" style="width: 320px; border-radius: 16px; overflow: hidden; z-index: 1050;">
+                        <div class="p-3 bg-dark text-white d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0" style="font-size: 13px;"><i class="fas fa-bell text-warning me-1"></i> Notifikasi Center</h6>
+                            <a href="<?= site_url('notifications') ?>" class="text-info text-decoration-none small">Lihat Semua &rarr;</a>
+                        </div>
+                        <div id="dropdown-notif-list" style="max-height: 280px; overflow-y: auto;">
+                            <div class="text-center text-muted p-3 small"><i class="fas fa-spinner fa-spin me-1"></i> Memuat notifikasi...</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- User Profile info on Mobile menu toggle -->
@@ -1586,6 +1595,43 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             }
             setInterval(updateLiveClock, 1000);
         })();
+
+        // Phase 31 Smart Notification Center AJAX Poller
+        function fetchNavbarNotifications() {
+            fetch("<?= site_url('notifications/api-unread-list') ?>")
+                .then(res => res.json())
+                .then(data => {
+                    var badge = $('#nav-unread-count-badge');
+                    if (badge.length) badge.text(data.unread_count || 0);
+
+                    var container = $('#dropdown-notif-list');
+                    if (container.length) {
+                        if (!data.items || data.items.length === 0) {
+                            container.html('<div class="text-center text-muted p-3 small">Tidak ada notifikasi baru.</div>');
+                            return;
+                        }
+
+                        var html = '';
+                        data.items.forEach(function(item) {
+                            var icon = 'fa-info-circle text-info';
+                            if (item.type === 'EMERGENCY') icon = 'fa-triangle-exclamation text-danger';
+                            else if (item.type === 'WARNING') icon = 'fa-bolt text-warning';
+                            else if (item.type === 'SUCCESS') icon = 'fa-circle-check text-success';
+
+                            html += '<a href="' + item.target + '" class="dropdown-item p-2 border-bottom d-flex align-items-start gap-2" style="white-space: normal;">';
+                            html += '<i class="fas ' + icon + ' mt-1 fs-6"></i>';
+                            html += '<div><span class="fw-bold d-block text-dark small mb-0">' + item.title + '</span>';
+                            html += '<small class="text-muted d-block" style="font-size: 10px;">' + item.time_ago + '</small></div>';
+                            html += '</a>';
+                        });
+                        container.html(html);
+                    }
+                })
+                .catch(err => console.error("Notification Poller Error:", err));
+        }
+
+        fetchNavbarNotifications();
+        setInterval(fetchNavbarNotifications, 30000);
     </script>
     <?= $this->renderSection('scripts') ?>
 </body>

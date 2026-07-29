@@ -60,37 +60,14 @@ class Dashboard extends BaseController
         $canApprove = check_role(['administrator', 'supervisor_ulp', 'supervisor_up3']);
         $canMonitoring = check_role(['administrator', 'admin_pusat', 'supervisor_up3', 'manager']);
 
-        if ($showMobile) {
-            return view('dashboard/mobile', [
-                'userName'          => $session->get('user_name') ?: 'inspeksi',
-                'userRole'          => $role,
-                'canInput'          => $canInput,
-                'canEdit'           => $canEdit,
-                'canDelete'         => $canDelete,
-                'canApprove'        => $canApprove,
-                'canMonitoring'     => $canMonitoring,
-                'topInputOfficers'  => $topInputOfficers,
-                'topUpdateOfficers' => $topUpdateOfficers,
-                'monthFilter'        => $monthFilter,
-                'yearFilter'         => $yearFilter
-            ]);
-        }
+        // Ambil Data Work Order & Asset Stats (Phase 31.1 Mission Control)
+        $woRepo = new \App\Repositories\WorkOrderRepository();
+        $assetRepo = new \App\Repositories\AssetRepository();
+        $woStats = $woRepo->getWOStats($ulpIdFilter);
+        $assetStats = $assetRepo->getAssetStats($ulpIdFilter);
 
-        // Ambil Data Statistik Card
-        $stats = $this->temuanRepository->getDashboardStats($ulpIdFilter, $role);
-
-        // Ambil Data Grafik (Chart.js)
-        $monthlyData = $this->temuanRepository->getMonthlyStats($ulpIdFilter);
-        $ulpData = $this->temuanRepository->getUlpStats($ulpIdFilter);
-        $penyulangData = $this->temuanRepository->getPenyulangStats($ulpIdFilter);
-        $pelaksanaData = $this->temuanRepository->getPelaksanaStats($ulpIdFilter);
-        $prioritasData = $this->temuanRepository->getPrioritasStats($ulpIdFilter);
-        $potensiGangguanData = $this->temuanRepository->getPotensiGangguanStats($ulpIdFilter);
-
-        // Ambil data pin peta (GIS)
-        $mapPins = $this->temuanRepository->getMapPins($ulpIdFilter);
-
-        return view('dashboard/index', [
+        $viewParams = [
+            'userName'            => $session->get('user_name') ?: 'Petugas',
             'userRole'            => $role,
             'canInput'            => $canInput,
             'canEdit'             => $canEdit,
@@ -98,6 +75,8 @@ class Dashboard extends BaseController
             'canApprove'          => $canApprove,
             'canMonitoring'       => $canMonitoring,
             'stats'               => $stats,
+            'woStats'             => $woStats,
+            'assetStats'          => $assetStats,
             'monthlyData'         => $monthlyData,
             'ulpData'             => $ulpData,
             'penyulangData'       => $penyulangData,
@@ -109,7 +88,13 @@ class Dashboard extends BaseController
             'topUpdateOfficers'   => $topUpdateOfficers,
             'monthFilter'         => $monthFilter,
             'yearFilter'          => $yearFilter
-        ]);
+        ];
+
+        if ($showMobile) {
+            return view('dashboard/mobile', $viewParams);
+        }
+
+        return view('dashboard/index', $viewParams);
     }
 
     public function toggleView()

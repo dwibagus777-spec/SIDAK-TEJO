@@ -1,116 +1,139 @@
 <?= $this->extend('layouts/admin') ?>
 
-<?= $this->section('title') ?>Dashboard Enterprise<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>SIDAK TEJO Enterprise Inspection System<?= $this->endSection() ?>
+<?= $this->section('title') ?>Mission Control Executive Dashboard<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>SIDAK TEJO Smart Executive Mission Control<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <style>
-    /* Phase 30: SIDAK TEJO UX/UI REBORN Design System */
-    .dashboard-reborn {
+    /* Phase 31.1: Smart Executive Mission Control System Design */
+    .mission-control {
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     
-    /* Glassmorphism Card Style */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.92);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 18px;
-        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.02);
-        transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .glass-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.1);
-        border-color: rgba(148, 163, 184, 0.4);
-    }
-
-    /* Enterprise Quick Action Button */
-    .action-btn-card {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 16px 20px;
-        border-radius: 16px;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        text-decoration: none;
-        color: #1e293b;
-        transition: all 0.25s ease;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
-    }
-    .action-btn-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.12);
-        border-color: #cbd5e1;
-        color: #0284c7;
-    }
-    .action-btn-card .icon-box {
-        width: 46px;
-        height: 46px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        flex-shrink: 0;
-    }
-
-    /* KPI Stat Card Modern */
-    .kpi-card {
-        padding: 18px 20px;
-        border-radius: 16px;
-        position: relative;
+    /* Glassmorphism Card System */
+    .mc-card {
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(226, 232, 240, 0.85);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 8px 12px -6px rgba(15, 23, 42, 0.02);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow: hidden;
     }
-    .kpi-card .kpi-val {
-        font-size: 28px;
-        font-weight: 800;
-        line-height: 1.1;
-        letter-spacing: -0.5px;
+    .mc-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 22px 35px -10px rgba(15, 23, 42, 0.12);
+        border-color: rgba(148, 163, 184, 0.5);
     }
-    .kpi-card .kpi-label {
+
+    /* KPI Cards Modern with Ripple Hover */
+    .kpi-mc-card {
+        padding: 20px;
+        border-radius: 18px;
+        position: relative;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    .kpi-mc-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        color: inherit;
+    }
+    .kpi-mc-card .kpi-number {
+        font-size: 32px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -1px;
+    }
+    .kpi-mc-card .kpi-title {
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.6px;
         opacity: 0.85;
     }
-
-    /* Live GIS Map Card */
-    #dashboard-gis-map {
-        width: 100%;
-        height: 380px;
-        border-radius: 14px;
-        z-index: 1;
+    .kpi-mc-card .kpi-icon-bg {
+        position: absolute;
+        right: -10px;
+        bottom: -15px;
+        font-size: 80px;
+        opacity: 0.15;
+        transition: all 0.3s ease;
+    }
+    .kpi-mc-card:hover .kpi-icon-bg {
+        transform: scale(1.2) rotate(-8deg);
+        opacity: 0.25;
     }
 
-    /* Timeline Activity Item */
-    .activity-feed-item {
+    /* Quick Action Grid Max 2 Rows */
+    .quick-grid-2rows {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+    }
+    @media (max-width: 1200px) {
+        .quick-grid-2rows { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .quick-grid-2rows { grid-template-columns: repeat(3, 1fr); }
+    }
+    .quick-act-item {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 14px 10px;
+        text-align: center;
+        text-decoration: none;
+        color: #0f172a;
+        transition: all 0.25s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+    .quick-act-item:hover {
+        transform: translateY(-3px);
+        border-color: #0284c7;
+        color: #0284c7;
+        box-shadow: 0 10px 20px -5px rgba(2, 132, 199, 0.15);
+    }
+    .quick-act-item i {
+        font-size: 22px;
+    }
+    .quick-act-item span {
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    /* Live Activity Feed Item */
+    .live-feed-line {
         position: relative;
-        padding-left: 28px;
-        padding-bottom: 16px;
+        padding-left: 24px;
+        padding-bottom: 14px;
         border-left: 2px solid #e2e8f0;
     }
-    .activity-feed-item:last-child {
+    .live-feed-line:last-child {
         padding-bottom: 0;
         border-left: 2px solid transparent;
     }
-    .activity-feed-item::before {
+    .live-feed-line::before {
         content: '';
         position: absolute;
-        left: -7px;
-        top: 0;
-        width: 12px;
-        height: 12px;
+        left: -6px;
+        top: 2px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         background: #0284c7;
         border: 2px solid #ffffff;
     }
 
-    /* Weather & Shift Badge */
-    .status-pulse {
+    /* Status Pulse Animation */
+    .status-pulse-live {
         display: inline-block;
         width: 8px;
         height: 8px;
@@ -126,25 +149,29 @@
     }
 </style>
 
-<div class="dashboard-reborn container-fluid py-3">
+<div class="mission-control container-fluid py-3">
 
-    <!-- 1. ENTERPRISE HEADER BAR -->
-    <div class="glass-card p-4 mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
+    <!-- 1. MISSION CONTROL HEADER & REALTIME CLOCK -->
+    <div class="mc-card p-4 mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div class="d-flex align-items-center gap-3">
-                <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="SIDAK TEJO" style="max-height: 52px;" class="bg-white p-1 rounded-3 shadow-sm">
+                <!-- User Avatar / Photo -->
+                <div class="position-relative">
+                    <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="User Avatar" style="width: 56px; height: 56px; object-fit: contain;" class="bg-white p-1 rounded-circle border border-2 border-warning shadow-sm">
+                    <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
+                </div>
                 <div>
                     <div class="d-flex align-items-center gap-2 mb-1">
                         <?php
                             $hour = (int)date('H');
-                            if ($hour >= 4 && $hour < 11) $greeting = 'Selamat Pagi';
-                            elseif ($hour >= 11 && $hour < 15) $greeting = 'Selamat Siang';
-                            elseif ($hour >= 15 && $hour < 18) $greeting = 'Selamat Sore';
-                            else $greeting = 'Selamat Malam';
+                            if ($hour >= 0 && $hour < 11) $greeting = '🌅 Selamat Pagi';
+                            elseif ($hour >= 11 && $hour < 15) $greeting = '☀️ Selamat Siang';
+                            elseif ($hour >= 15 && $hour < 18) $greeting = '🌇 Selamat Sore';
+                            else $greeting = '🌙 Selamat Malam';
                         ?>
-                        <h4 class="fw-bold mb-0 text-white"><?= $greeting ?>, <span class="text-warning"><?= esc(session()->get('user_name') ?: 'Petugas') ?></span> 👋</h4>
+                        <h4 class="fw-bold mb-0 text-white"><?= $greeting ?>, <span class="text-warning"><?= esc(session()->get('user_name') ?: 'Executive') ?></span></h4>
                         <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">
-                            <span class="status-pulse me-1"></span> Live System
+                            <span class="status-pulse-live me-1"></span> Live System
                         </span>
                     </div>
                     <p class="text-white-50 small mb-0">
@@ -155,214 +182,252 @@
                 </div>
             </div>
 
-            <!-- Realtime Server Clock & Weather Widget -->
+            <!-- Realtime Clock & Weather Info -->
             <div class="text-end d-none d-md-block">
-                <h3 class="fw-bold font-monospace mb-0 text-warning" id="realtime-clock"><?= date('H:i:s') ?></h3>
+                <h2 class="fw-bold font-monospace mb-0 text-warning" id="mc-clock"><?= date('H:i:s') ?></h2>
                 <small class="text-white-50"><i class="fas fa-calendar-day me-1"></i> <?= date('l, d F Y') ?></small>
                 <div class="mt-1" style="font-size: 11px;">
-                    <span class="badge bg-dark border border-secondary text-info"><i class="fas fa-cloud-sun me-1"></i> Cerah &middot; 29°C</span>
-                    <span class="badge bg-dark border border-secondary text-white ms-1"><i class="fas fa-wifi text-success me-1"></i> Online Sync</span>
+                    <span class="badge bg-dark border border-secondary text-info me-1"><i class="fas fa-cloud-sun me-1"></i> Cerah &middot; 29°C</span>
+                    <span class="badge bg-dark border border-secondary text-success"><i class="fas fa-shield-heart me-1"></i> Aman Inspeksi</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Motivation & Daily Target Banner -->
+        <hr class="border-secondary opacity-25 my-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2" style="font-size: 12px;">
+            <div class="text-white-50">
+                <i class="fas fa-quote-left me-1 text-warning"></i>
+                <span class="fst-italic text-white">"Keselamatan kerja dan keandalan pasokan listrik Sidoarjo adalah prioritas utama kita bersama."</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-white-50">Target Hari Ini:</span>
+                <span class="fw-bold text-warning">15 / 20 Pekerjaan (75%)</span>
+                <div class="progress" style="width: 100px; height: 6px;">
+                    <div class="progress-bar bg-warning" style="width: 75%;"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. AI SUMMARY WIDGET -->
-    <div class="glass-card p-3 mb-4 border-start border-4 border-info" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
+    <!-- 2. AI MISSION CONTROL RECOMMENDATION PANEL -->
+    <div class="mc-card p-3 mb-4 border-start border-4 border-info" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
         <div class="d-flex align-items-start gap-3">
-            <div class="badge bg-info text-white rounded-circle p-2 fs-5"><i class="fas fa-robot"></i></div>
+            <div class="badge bg-info text-white rounded-circle p-2 fs-4"><i class="fas fa-brain"></i></div>
             <div class="flex-fill">
-                <h6 class="fw-bold text-dark mb-1"><i class="fas fa-sparkles text-warning me-1"></i> AI Intelligence Summary Hari Ini</h6>
+                <h6 class="fw-bold text-dark mb-1"><i class="fas fa-sparkles text-warning me-1"></i> AI Mission Control Insight</h6>
                 <p class="text-secondary small mb-0">
-                    Sistem mendeteksi <strong><?= number_format($stats['total']) ?> Total Temuan</strong> dengan status:
-                    <span class="badge bg-danger text-white"><?= number_format($stats['emergency']) ?> Emergency</span>,
-                    <span class="badge bg-warning text-dark"><?= number_format($stats['high']) ?> High</span>,
-                    <span class="badge bg-success text-white"><?= number_format($stats['selesai']) ?> Selesai</span>.
-                    Prioritas inspeksi fisik tertinggi: <strong>ULP Sidoarjo Kota & Penyulang Klurak Bali</strong>.
+                    Hari ini terdapat <strong><?= number_format($stats['emergency']) ?> pekerjaan Emergency</strong>. Disarankan diselesaikan sebelum pukul 11.00 WIB.
+                    <strong>ULP Sidoarjo Kota</strong> memiliki tingkat risiko kegagalan tertinggi pada Penyulang Klurak.
                 </p>
             </div>
             <a href="<?= site_url('ai-predictive') ?>" class="btn btn-info text-white btn-sm rounded-pill font-weight-bold px-3 ms-auto" style="white-space: nowrap;">
-                <i class="fas fa-brain me-1"></i> AI Risk Forecast
+                <i class="fas fa-arrow-right me-1"></i> Detail AI Risk
             </a>
         </div>
     </div>
 
-    <!-- 3. QUICK ACTION BAR (8 Modern Buttons) -->
-    <div class="row g-3 mb-4">
-        <?php if ($canInput): ?>
-        <div class="col-lg-3 col-md-4 col-6">
-            <a href="<?= site_url('temuan/create') ?>" class="action-btn-card">
-                <div class="icon-box bg-success-subtle text-success"><i class="fas fa-plus-circle"></i></div>
-                <div><h6 class="fw-bold mb-0">Input Temuan</h6><small class="text-muted">Form Inspeksi Lapangan</small></div>
-            </a>
-        </div>
-        <?php endif; ?>
-        <div class="col-lg-3 col-md-4 col-6">
-            <a href="<?= site_url('temuan/update-pekerjaan') ?>" class="action-btn-card">
-                <div class="icon-box bg-warning-subtle text-warning"><i class="fas fa-pen-to-square"></i></div>
-                <div><h6 class="fw-bold mb-0">Update Pekerjaan</h6><small class="text-muted">Tindak Lanjut & Foto</small></div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-md-4 col-6">
-            <a href="<?= site_url('work-orders') ?>" class="action-btn-card">
-                <div class="icon-box bg-info-subtle text-info"><i class="fas fa-file-invoice"></i></div>
-                <div><h6 class="fw-bold mb-0">Work Order (WO)</h6><small class="text-muted">Pekerjaan Aktif</small></div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-md-4 col-6">
-            <a href="<?= site_url('temuan') ?>" class="action-btn-card">
-                <div class="icon-box bg-primary-subtle text-primary"><i class="fas fa-list-check"></i></div>
-                <div><h6 class="fw-bold mb-0">Data Temuan</h6><small class="text-muted">Seluruh Rekap Data</small></div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-md-4 col-6">
-            <a href="<?= site_url('eviden/kubikel') ?>" class="action-btn-card">
-                <div class="icon-box bg-purple-subtle text-purple" style="background:#f3e8ff; color:#7e22ce;"><i class="fas fa-folder-open"></i></div>
-                <div><h6 class="fw-bold mb-0">Eviden Lapangan</h6><small class="text-muted">Kubikel & Trafo</small></div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-md-4 col-6">
-            <a href="<?= site_url('gis') ?>" class="action-btn-card">
-                <div class="icon-box bg-emerald-subtle text-emerald" style="background:#d1fae5; color:#059669;"><i class="fas fa-map-marked-alt"></i></div>
-                <div><h6 class="fw-bold mb-0">Peta GIS</h6><small class="text-muted">Pemetaan Jaringan</small></div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-md-4 col-6">
-            <a href="<?= site_url('ai-predictive') ?>" class="action-btn-card">
-                <div class="icon-box bg-amber-subtle text-amber" style="background:#fef3c7; color:#d97706;"><i class="fas fa-brain"></i></div>
-                <div><h6 class="fw-bold mb-0">AI Risk & Analytics</h6><small class="text-muted">Prediksi Kegagalan</small></div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-md-4 col-6">
-            <a href="<?= site_url('laporan') ?>" class="action-btn-card">
-                <div class="icon-box bg-slate-subtle text-slate" style="background:#f1f5f9; color:#475569;"><i class="fas fa-print"></i></div>
-                <div><h6 class="fw-bold mb-0">Pusat Laporan</h6><small class="text-muted">Export PDF & Excel</small></div>
-            </a>
-        </div>
-    </div>
-
-    <!-- 4. KPI CARDS GRID (10 Modern Cards) -->
+    <!-- 3. QUICK KPI CARDS (8 Interactive Cards with Animated Counter Effects) -->
     <div class="row g-3 mb-4">
         <!-- Total Temuan -->
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="glass-card kpi-card bg-primary text-white">
-                <span class="kpi-label text-white-50">Total Temuan</span>
-                <div class="kpi-val mt-1"><?= number_format($stats['total']) ?></div>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('temuan') ?>" class="mc-card kpi-mc-card bg-primary text-white">
+                <span class="kpi-title text-white-50">Jumlah Temuan</span>
+                <div class="kpi-number mt-1 count-up" data-value="<?= $stats['total'] ?>"><?= number_format($stats['total']) ?></div>
                 <small class="text-white-50 d-block mt-1">Inspeksi Fisik</small>
-            </div>
+                <i class="fas fa-search kpi-icon-bg"></i>
+            </a>
         </div>
         <!-- Emergency -->
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="glass-card kpi-card bg-danger text-white">
-                <span class="kpi-label text-white-50">Emergency</span>
-                <div class="kpi-val mt-1"><?= number_format($stats['emergency']) ?></div>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="mc-card kpi-mc-card bg-danger text-white">
+                <span class="kpi-title text-white-50">Emergency</span>
+                <div class="kpi-number mt-1 count-up" data-value="<?= $stats['emergency'] ?>"><?= number_format($stats['emergency']) ?></div>
                 <small class="text-white-50 d-block mt-1">Tindak Segera</small>
-            </div>
+                <i class="fas fa-triangle-exclamation kpi-icon-bg"></i>
+            </a>
         </div>
-        <!-- High -->
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="glass-card kpi-card text-dark" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color:#fff !important;">
-                <span class="kpi-label text-white-50">High Priority</span>
-                <div class="kpi-val mt-1"><?= number_format($stats['high']) ?></div>
+        <!-- High Priority -->
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="mc-card kpi-mc-card text-white" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <span class="kpi-title text-white-50">High Priority</span>
+                <div class="kpi-number mt-1 count-up" data-value="<?= $stats['high'] ?>"><?= number_format($stats['high']) ?></div>
                 <small class="text-white-50 d-block mt-1">SLA 3 Hari</small>
-            </div>
+                <i class="fas fa-bolt kpi-icon-bg"></i>
+            </a>
         </div>
-        <!-- Medium -->
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="glass-card kpi-card text-dark" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color:#fff !important;">
-                <span class="kpi-label text-white-50">Medium Priority</span>
-                <div class="kpi-val mt-1"><?= number_format($stats['medium']) ?></div>
+        <!-- Medium Priority -->
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('temuan?prioritas=MEDIUM') ?>" class="mc-card kpi-mc-card text-white" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                <span class="kpi-title text-white-50">Medium Priority</span>
+                <div class="kpi-number mt-1 count-up" data-value="<?= $stats['medium'] ?>"><?= number_format($stats['medium']) ?></div>
                 <small class="text-white-50 d-block mt-1">SLA 7 Hari</small>
-            </div>
+                <i class="fas fa-circle-info kpi-icon-bg"></i>
+            </a>
         </div>
-        <!-- Selesai -->
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="glass-card kpi-card bg-success text-white">
-                <span class="kpi-label text-white-50">Sudah Selesai</span>
-                <div class="kpi-val mt-1"><?= number_format($stats['selesai']) ?></div>
+        <!-- Sudah Selesai -->
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('temuan?status=SELESAI') ?>" class="mc-card kpi-mc-card bg-success text-white">
+                <span class="kpi-title text-white-50">Sudah Selesai</span>
+                <div class="kpi-number mt-1 count-up" data-value="<?= $stats['selesai'] ?>"><?= number_format($stats['selesai']) ?></div>
                 <small class="text-white-50 d-block mt-1">Tuntas 100%</small>
-            </div>
+                <i class="fas fa-circle-check kpi-icon-bg"></i>
+            </a>
         </div>
         <!-- Belum Selesai -->
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="glass-card kpi-card bg-dark text-white">
-                <span class="kpi-label text-white-50">Belum Selesai</span>
-                <div class="kpi-val mt-1"><?= number_format($stats['belum']) ?></div>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('temuan?status=BELUM') ?>" class="mc-card kpi-mc-card bg-dark text-white">
+                <span class="kpi-title text-white-50">Belum Selesai</span>
+                <div class="kpi-number mt-1 count-up" data-value="<?= $stats['belum'] ?>"><?= number_format($stats['belum']) ?></div>
                 <small class="text-white-50 d-block mt-1">Outstanding</small>
-            </div>
+                <i class="fas fa-hourglass-half kpi-icon-bg"></i>
+            </a>
+        </div>
+        <!-- WO Aktif -->
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('work-orders') ?>" class="mc-card kpi-mc-card text-white" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                <span class="kpi-title text-white-50">Work Order (WO) Aktif</span>
+                <div class="kpi-number mt-1 count-up" data-value="<?= $woStats['aktif'] ?? 0 ?>"><?= number_format($woStats['aktif'] ?? 0) ?></div>
+                <small class="text-white-50 d-block mt-1">Status Progress</small>
+                <i class="fas fa-file-invoice kpi-icon-bg"></i>
+            </a>
+        </div>
+        <!-- Asset Bermasalah -->
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('assets') ?>" class="mc-card kpi-mc-card text-white" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+                <span class="kpi-title text-white-50">Asset Bermasalah</span>
+                <div class="kpi-number mt-1 count-up" data-value="<?= $assetStats['bermasalah'] ?? 0 ?>"><?= number_format($assetStats['bermasalah'] ?? 0) ?></div>
+                <small class="text-white-50 d-block mt-1">Perlu Maintenance</small>
+                <i class="fas fa-boxes-stacked kpi-icon-bg"></i>
+            </a>
         </div>
     </div>
 
-    <!-- 5. LIVE GIS MAP & COMMAND CENTER PANEL -->
+    <!-- 4. QUICK ACTION GRID (Max 2 Rows) -->
+    <div class="mc-card p-3 mb-4">
+        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-grid-2 text-primary me-2"></i> Quick Action Menu</h6>
+        <div class="quick-grid-2rows">
+            <?php if ($canInput): ?>
+            <a href="<?= site_url('temuan/create') ?>" class="quick-act-item">
+                <i class="fas fa-plus-circle text-success"></i><span>Input Temuan</span>
+            </a>
+            <?php endif; ?>
+            <a href="<?= site_url('temuan') ?>" class="quick-act-item">
+                <i class="fas fa-list-check text-primary"></i><span>Data Temuan</span>
+            </a>
+            <a href="<?= site_url('temuan/update-pekerjaan') ?>" class="quick-act-item">
+                <i class="fas fa-pen-to-square text-warning"></i><span>Update Work</span>
+            </a>
+            <a href="<?= site_url('work-orders') ?>" class="quick-act-item">
+                <i class="fas fa-file-invoice text-info"></i><span>Work Order</span>
+            </a>
+            <a href="<?= site_url('gis') ?>" class="quick-act-item">
+                <i class="fas fa-map-marked-alt text-success"></i><span>Peta GIS</span>
+            </a>
+            <a href="<?= site_url('ai-predictive') ?>" class="quick-act-item">
+                <i class="fas fa-brain text-purple"></i><span>AI Analytics</span>
+            </a>
+            <a href="<?= site_url('laporan') ?>" class="quick-act-item">
+                <i class="fas fa-print text-slate"></i><span>Pusat Laporan</span>
+            </a>
+            <a href="<?= site_url('assets') ?>" class="quick-act-item">
+                <i class="fas fa-boxes-stacked text-amber"></i><span>Master Asset</span>
+            </a>
+            <a href="<?= site_url('ecc') ?>" class="quick-act-item">
+                <i class="fas fa-tv text-danger"></i><span>ECC Control</span>
+            </a>
+            <a href="<?= site_url('documents') ?>" class="quick-act-item">
+                <i class="fas fa-file-contract text-teal"></i><span>Dokumen</span>
+            </a>
+            <a href="<?= site_url('notifications') ?>" class="quick-act-item">
+                <i class="fas fa-bell text-warning"></i><span>Notifikasi</span>
+            </a>
+            <a href="<?= site_url('integration') ?>" class="quick-act-item">
+                <i class="fas fa-network-wired text-indigo"></i><span>Integrasi</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 5. LIVE GIS MAP & TARGET SLA PANEL -->
     <div class="row g-4 mb-4">
-        <!-- GIS Map Widget -->
+        <!-- Live Mini GIS Map -->
         <div class="col-lg-8 col-12">
-            <div class="glass-card p-4 h-100">
+            <div class="mc-card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-map-marked-alt text-success me-2"></i> Live GIS Map Temuan Lapangan</h5>
-                        <small class="text-muted">Pemetaan lokasi temuan berdasarkan titik koordinat presisi</small>
+                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-map-marked-alt text-success me-2"></i> Live Mini GIS Map Mission Control</h5>
+                        <small class="text-muted">Sebaran titik inspeksi & emergency di wilayah UP3 Sidoarjo</small>
                     </div>
                     <a href="<?= site_url('gis') ?>" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold">
-                        <i class="fas fa-expand me-1"></i> Fullscreen GIS
+                        <i class="fas fa-expand me-1"></i> Full GIS Mode
                     </a>
                 </div>
-                <div id="dashboard-gis-map" class="shadow-sm border"></div>
+                <div id="mc-gis-map" style="height: 360px; border-radius: 14px;" class="border shadow-sm"></div>
             </div>
         </div>
 
-        <!-- Command Center Quick Panel & Activity Feed -->
+        <!-- Target & SLA Progress Meters -->
         <div class="col-lg-4 col-12">
-            <div class="glass-card p-4 h-100">
-                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-tv text-danger me-2"></i> Command Center Panel</h5>
-                
+            <div class="mc-card p-4 h-100">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-gauge-high text-info me-2"></i> SLA & Progress Meter</h5>
+
+                <!-- SLA Met vs Overdue -->
                 <div class="p-3 bg-light rounded-3 mb-3 border">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="small fw-bold text-secondary">Target Completion Rate</span>
-                        <span class="badge bg-success">85.4%</span>
+                    <span class="small fw-bold text-secondary d-block mb-1">Penyelesaian SLA (Met vs Overdue)</span>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="badge bg-success"><i class="fas fa-check me-1"></i> SLA Met: 88.5%</span>
+                        <span class="badge bg-danger"><i class="fas fa-exclamation me-1"></i> Overdue: 11.5%</span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: 85.4%;"></div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-success" style="width: 88.5%;"></div>
+                        <div class="progress-bar bg-danger" style="width: 11.5%;"></div>
                     </div>
                 </div>
 
-                <h6 class="fw-bold text-dark mb-2"><i class="fas fa-clock-rotate-left text-info me-1"></i> Recent Activity Feed</h6>
-                <div class="activity-feed mt-3">
-                    <div class="activity-feed-item">
-                        <span class="fw-bold text-dark d-block small">Input Temuan Baru (STJ-2026-000412)</span>
-                        <small class="text-muted">Petugas Inspeksi &middot; Penyulang SDJ01 &middot; 10 menit lalu</small>
+                <!-- Realtime Activity Feed -->
+                <h6 class="fw-bold text-dark mb-3"><i class="fas fa-clock-rotate-left text-primary me-1"></i> Live Activity Feed</h6>
+                <div class="live-activity-feed">
+                    <div class="live-feed-line">
+                        <span class="fw-bold text-dark d-block small">Input Temuan (STJ-2026-000418)</span>
+                        <small class="text-muted">Petugas Inspeksi &middot; 08:12 WIB</small>
                     </div>
-                    <div class="activity-feed-item">
-                        <span class="fw-bold text-dark d-block small">Update Work Order (WO-2026-000088)</span>
-                        <small class="text-muted">Tim PDKB &middot; Penggantian Iselator &middot; 25 menit lalu</small>
+                    <div class="live-feed-line">
+                        <span class="fw-bold text-dark d-block small">Update Work Order (WO-00088)</span>
+                        <small class="text-muted">Tim PDKB &middot; 08:30 WIB</small>
                     </div>
-                    <div class="activity-feed-item">
-                        <span class="fw-bold text-dark d-block small">Upload Eviden Kubikel</span>
-                        <small class="text-muted">HAR Gardu &middot; Gardu SDJ-14 &middot; 1 jam lalu</small>
+                    <div class="live-feed-line">
+                        <span class="fw-bold text-dark d-block small">Upload Eviden Foto Gardu</span>
+                        <small class="text-muted">HAR Gardu &middot; 09:10 WIB</small>
                     </div>
-                    <div class="activity-feed-item">
-                        <span class="fw-bold text-dark d-block small">Offline Sync Completed</span>
-                        <small class="text-muted">Flutter Native Engine &middot; 12 Records &middot; 2 jam lalu</small>
+                    <div class="live-feed-line">
+                        <span class="fw-bold text-dark d-block small">Complete Job Inspection</span>
+                        <small class="text-muted">Supervisor ULP &middot; 09:15 WIB</small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 6. CHARTS & LEADERBOARD -->
+    <!-- 6. TREND HARIAN APEXCHARTS & STATUS PIE CHART -->
     <div class="row g-4 mb-4">
-        <!-- Monthly Trend Chart -->
-        <div class="col-lg-6 col-12">
-            <div class="glass-card p-4">
-                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-chart-area text-primary me-2"></i> Trend Temuan Bulanan</h5>
-                <div id="chart-monthly-trend" style="min-height: 280px;"></div>
+        <div class="col-lg-8 col-12">
+            <div class="mc-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-chart-area text-primary me-2"></i> Trend Inspeksi & Penyelesaian</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active">7 Hari</button>
+                        <button type="button" class="btn btn-outline-primary">30 Hari</button>
+                        <button type="button" class="btn btn-outline-primary">12 Bulan</button>
+                    </div>
+                </div>
+                <div id="mc-trend-chart" style="min-height: 290px;"></div>
             </div>
         </div>
-        <!-- Pelaksana Breakdown Chart -->
-        <div class="col-lg-6 col-12">
-            <div class="glass-card p-4">
-                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-chart-pie text-warning me-2"></i> Distibusi Pelaksana Inspeksi</h5>
-                <div id="chart-pelaksana-pie" style="min-height: 280px;"></div>
+
+        <div class="col-lg-4 col-12">
+            <div class="mc-card p-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-chart-pie text-warning me-2"></i> Status Pekerjaan</h5>
+                <div id="mc-status-donut" style="min-height: 290px;"></div>
             </div>
         </div>
     </div>
@@ -370,7 +435,7 @@
     <!-- 7. TOP OFFICERS LEADERBOARD -->
     <div class="row g-4">
         <div class="col-lg-6 col-12">
-            <div class="glass-card p-4">
+            <div class="mc-card p-4">
                 <h5 class="fw-bold text-dark mb-3"><i class="fas fa-trophy text-warning me-2"></i> Top 10 Petugas Input (Bulan Ini)</h5>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0" style="font-size: 13px;">
@@ -383,7 +448,13 @@
                             <?php else: ?>
                                 <?php foreach ($topInputOfficers as $idx => $officer): ?>
                                     <tr>
-                                        <td><span class="badge bg-<?= $idx < 3 ? 'warning text-dark' : 'secondary' ?>"><?= $idx + 1 ?></span></td>
+                                        <td>
+                                            <?php if ($idx === 0): ?>🥇
+                                            <?php elseif ($idx === 1): ?>🥈
+                                            <?php elseif ($idx === 2): ?>🥉
+                                            <?php else: ?><span class="badge bg-secondary"><?= $idx + 1 ?></span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="fw-bold text-dark"><?= esc($officer['created_by_name']) ?></td>
                                         <td><small class="text-muted"><?= esc($officer['created_by_nip'] ?: '-') ?></small></td>
                                         <td class="text-end fw-bold text-primary"><?= number_format($officer['total_input']) ?></td>
@@ -395,9 +466,10 @@
                 </div>
             </div>
         </div>
+
         <div class="col-lg-6 col-12">
-            <div class="glass-card p-4">
-                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-circle-check text-success me-2"></i> Top 10 Petugas Penyelesaian (Bulan Ini)</h5>
+            <div class="mc-card p-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-circle-check text-success me-2"></i> Top 10 Petugas Penyelesaian</h5>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0" style="font-size: 13px;">
                         <thead class="table-light">
@@ -409,7 +481,13 @@
                             <?php else: ?>
                                 <?php foreach ($topUpdateOfficers as $idx => $officer): ?>
                                     <tr>
-                                        <td><span class="badge bg-<?= $idx < 3 ? 'success' : 'secondary' ?>"><?= $idx + 1 ?></span></td>
+                                        <td>
+                                            <?php if ($idx === 0): ?>🥇
+                                            <?php elseif ($idx === 1): ?>🥈
+                                            <?php elseif ($idx === 2): ?>🥉
+                                            <?php else: ?><span class="badge bg-secondary"><?= $idx + 1 ?></span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="fw-bold text-dark"><?= esc($officer['updated_by_name']) ?></td>
                                         <td><small class="text-muted"><?= esc($officer['updated_by_nip'] ?: '-') ?></small></td>
                                         <td class="text-end fw-bold text-success"><?= number_format($officer['total_update']) ?></td>
@@ -424,33 +502,33 @@
     </div>
 </div>
 
-<!-- LEAFLET & APEXCHARTS SCRIPTS -->
+<!-- LEAFLET & APEXCHARTS LIBRARIES -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Realtime Clock Update
+    // Realtime Server Clock Update
     setInterval(function() {
         var now = new Date();
         var h = String(now.getHours()).padStart(2, '0');
         var m = String(now.getMinutes()).padStart(2, '0');
         var s = String(now.getSeconds()).padStart(2, '0');
-        var clockEl = document.getElementById('realtime-clock');
+        var clockEl = document.getElementById('mc-clock');
         if (clockEl) clockEl.innerText = h + ':' + m + ':' + s;
     }, 1000);
 
-    // Initialize GIS Leaflet Map
-    var map = L.map('dashboard-gis-map').setView([-7.4478, 112.7183], 11);
+    // Leaflet Mini GIS Map Initializer
+    var map = L.map('mc-gis-map').setView([-7.4478, 112.7183], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; SIDAK TEJO GIS'
+        attribution: '&copy; SIDAK TEJO Mission Control'
     }).addTo(map);
 
-    var pins = <?= json_encode($mapPins ?? []) ?>;
-    pins.forEach(function(pin) {
+    var mapPins = <?= json_encode($mapPins ?? []) ?>;
+    mapPins.forEach(function(pin) {
         if (pin.latitude && pin.longitude) {
-            var color = '#10b981'; // Selesai
+            var color = '#10b981';
             if (pin.prioritas === 'EMERGENCY') color = '#ef4444';
             else if (pin.prioritas === 'HIGH') color = '#f59e0b';
             else if (pin.prioritas === 'MEDIUM') color = '#3b82f6';
@@ -468,30 +546,30 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // ApexCharts: Monthly Trend
+    // ApexCharts Trend Area
     var monthlyData = <?= json_encode($monthlyData ?? []) ?>;
     var monthlyLabels = monthlyData.map(function(d){ return d.bulan; });
     var monthlyTotals = monthlyData.map(function(d){ return parseInt(d.total); });
 
-    new ApexCharts(document.querySelector("#chart-monthly-trend"), {
-        chart: { type: 'area', height: 280, toolbar: { show: false } },
+    new ApexCharts(document.querySelector("#mc-trend-chart"), {
+        chart: { type: 'area', height: 290, toolbar: { show: false } },
         stroke: { curve: 'smooth', width: 3 },
         colors: ['#0284c7'],
         series: [{ name: 'Jumlah Temuan', data: monthlyTotals }],
         xaxis: { categories: monthlyLabels },
-        fill: { type: 'gradient', gradient: { opacityFrom: 0.5, opacityTo: 0.05 } }
+        fill: { type: 'gradient', gradient: { opacityFrom: 0.55, opacityTo: 0.05 } }
     }).render();
 
-    // ApexCharts: Pelaksana Breakdown
-    var pelaksanaData = <?= json_encode($pelaksanaData ?? []) ?>;
-    var pelaksanaLabels = pelaksanaData.map(function(d){ return d.pelaksana || 'Lainnya'; });
-    var pelaksanaTotals = pelaksanaData.map(function(d){ return parseInt(d.total); });
-
-    new ApexCharts(document.querySelector("#chart-pelaksana-pie"), {
-        chart: { type: 'donut', height: 280 },
-        labels: pelaksanaLabels,
-        series: pelaksanaTotals,
-        colors: ['#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']
+    // ApexCharts Status Donut
+    new ApexCharts(document.querySelector("#mc-status-donut"), {
+        chart: { type: 'donut', height: 290 },
+        labels: ['Selesai', 'Belum Selesai', 'Work Order Aktif'],
+        series: [
+            <?= (int)($stats['selesai'] ?? 0) ?>,
+            <?= (int)($stats['belum'] ?? 0) ?>,
+            <?= (int)($woStats['aktif'] ?? 0) ?>
+        ],
+        colors: ['#10b981', '#0f172a', '#0284c7']
     }).render();
 });
 </script>

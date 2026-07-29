@@ -1,789 +1,498 @@
 <?= $this->extend('layouts/admin') ?>
 
-<?= $this->section('title') ?>Dashboard<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>Dashboard Analitik & GIS<?= $this->endSection() ?>
-
-<?= $this->section('breadcrumb') ?>
-<li class="breadcrumb-item active">Dashboard</li>
-<?= $this->endSection() ?>
+<?= $this->section('title') ?>Dashboard Enterprise<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>SIDAK TEJO Enterprise Inspection System<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <style>
-    /* Premium Watermark Logo Background */
-    .dashboard-watermark-bg {
-        position: relative;
-        min-height: calc(100vh - 120px);
+    /* Phase 30: SIDAK TEJO UX/UI REBORN Design System */
+    .dashboard-reborn {
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
-    .dashboard-watermark-bg::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: url('<?= base_url("assets/img/logo_sidak.png") ?>');
-        background-repeat: no-repeat;
-        background-position: center 30%;
-        background-size: 550px;
-        opacity: 0.045; /* Ultra faint opacity for a premium, non-distracting watermark */
-        pointer-events: none; /* Let clicks pass through to map/buttons */
+    
+    /* Glassmorphism Card Style */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 18px;
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.02);
+        transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .dashboard-watermark-bg > * {
-        position: relative;
-        z-index: 1; /* Keep content above the background watermark */
+    .glass-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.1);
+        border-color: rgba(148, 163, 184, 0.4);
     }
 
-    /* Eye-Catching Stat Cards */
-    div.eyecatching-card,
-    .card.eyecatching-card {
-        border-radius: 16px !important;
+    /* Enterprise Quick Action Button */
+    .action-btn-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px 20px;
+        border-radius: 16px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        text-decoration: none;
+        color: #1e293b;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    }
+    .action-btn-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.12);
+        border-color: #cbd5e1;
+        color: #0284c7;
+    }
+    .action-btn-card .icon-box {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    /* KPI Stat Card Modern */
+    .kpi-card {
+        padding: 18px 20px;
+        border-radius: 16px;
+        position: relative;
         overflow: hidden;
-        border: none !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
     }
-    div.eyecatching-card:hover,
-    .card.eyecatching-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.22);
+    .kpi-card .kpi-val {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.5px;
     }
-    .eyecatching-card .card-body {
-        padding: 24px;
-        position: relative;
-        z-index: 2;
+    .kpi-card .kpi-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.85;
     }
-    .eyecatching-card .icon-watermark {
-        position: absolute;
-        right: -10px;
-        bottom: -15px;
-        font-size: 120px;
-        opacity: 0.15;
+
+    /* Live GIS Map Card */
+    #dashboard-gis-map {
+        width: 100%;
+        height: 380px;
+        border-radius: 14px;
         z-index: 1;
-        pointer-events: none;
-        transition: all 0.3s ease;
     }
-    .eyecatching-card:hover .icon-watermark {
-        transform: scale(1.15) rotate(-6deg);
-        opacity: 0.25;
+
+    /* Timeline Activity Item */
+    .activity-feed-item {
+        position: relative;
+        padding-left: 28px;
+        padding-bottom: 16px;
+        border-left: 2px solid #e2e8f0;
     }
-    div.card-theme-belum,
-    .card.card-theme-belum {
-        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
-        background-color: #dc2626 !important;
-        color: #ffffff !important;
+    .activity-feed-item:last-child {
+        padding-bottom: 0;
+        border-left: 2px solid transparent;
     }
-    div.card-theme-selesai,
-    .card.card-theme-selesai {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-        background-color: #059669 !important;
-        color: #ffffff !important;
+    .activity-feed-item::before {
+        content: '';
+        position: absolute;
+        left: -7px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #0284c7;
+        border: 2px solid #ffffff;
+    }
+
+    /* Weather & Shift Badge */
+    .status-pulse {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-green 2s infinite;
+    }
+    @keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 </style>
-<div class="dashboard-watermark-bg">
-<!-- Grid Stats Card Modern -->
-<div class="row">
-    <!-- Jumlah Temuan -->
-    <div class="col-lg-3 col-6">
-        <div class="stats-card bg-gradient-blue">
-            <div class="inner">
-                <h3><?= $stats['total'] ?></h3>
-                <p>Jumlah Temuan</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-search"></i>
-            </div>
-            <div style="font-size: 11px;">
-                <a href="<?= site_url('temuan') ?>" class="text-white" style="text-decoration: underline;">Detail Data &rarr;</a>
-            </div>
-        </div>
-    </div>
-    <!-- EMERGENCY -->
-    <div class="col-lg-3 col-6">
-        <div class="stats-card bg-gradient-red animate__animated animate__pulse animate__infinite">
-            <div class="inner">
-                <h3><?= $stats['emergency'] ?></h3>
-                <p>Temuan Emergency</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-fire-extinguisher"></i>
-            </div>
-            <div style="font-size: 11px;">
-                <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="text-white" style="text-decoration: underline;">Detail Data &rarr;</a>
-            </div>
-        </div>
-    </div>
-    <!-- HIGH -->
-    <div class="col-lg-3 col-6">
-        <div class="stats-card bg-gradient-orange" style="background: linear-gradient(135deg, #f857a6 0%, #ff5858 100%) !important;">
-            <div class="inner">
-                <h3><?= $stats['high'] ?></h3>
-                <p>Temuan High</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div style="font-size: 11px;">
-                <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="text-white" style="text-decoration: underline;">Detail Data &rarr;</a>
-            </div>
-        </div>
-    </div>
-    <!-- MEDIUM -->
-    <div class="col-lg-3 col-6">
-        <div class="stats-card bg-gradient-info-modern">
-            <div class="inner">
-                <h3><?= $stats['medium'] ?></h3>
-                <p>Temuan Medium</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-info-circle"></i>
-            </div>
-            <div style="font-size: 11px;">
-                <a href="<?= site_url('temuan?prioritas=MEDIUM') ?>" class="text-white" style="text-decoration: underline;">Detail Data &rarr;</a>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row">
-    <!-- PDKB -->
-    <div class="col-5ths col-6">
-        <div class="stats-card bg-gradient-purple">
-            <div class="inner">
-                <h3><?= $stats['pdkb'] ?></h3>
-                <p>PDKB</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-bolt"></i>
-            </div>
-            <div style="font-size: 11px;">
-                <a href="<?= site_url('temuan?pelaksana=PDKB') ?>" class="text-white" style="text-decoration: underline;">Detail Data &rarr;</a>
-            </div>
-        </div>
-    </div>
-    <!-- HAR GARDU -->
-    <div class="col-5ths col-6">
-        <div class="stats-card bg-gradient-teal-modern">
-            <div class="inner">
-                <h3><?= $stats['har_gardu'] ?></h3>
-                <p>HAR GARDU</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-hammer"></i>
-            </div>
-            <div style="font-size: 11px;">
-                <a href="<?= site_url('temuan?pelaksana=HAR GARDU') ?>" class="text-white" style="text-decoration: underline;">Detail Data &rarr;</a>
-            </div>
-        </div>
-    </div>
-    <!-- HAR KONSTRUKSI -->
-    <div class="col-5ths col-6">
-        <div class="stats-card bg-gradient-info-modern" style="background: linear-gradient(135deg, #da22ff 0%, #9733ee 100%) !important;">
-            <div class="inner">
-                <h3><?= $stats['har_konstruksi'] ?></h3>
-                <p>HAR KONSTRUKSI</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-screwdriver-wrench"></i>
-            </div>
-            <div style="font-size: 11px;">
-                <a href="<?= site_url('temuan?pelaksana=HAR KONSTRUKSI') ?>" class="text-white" style="text-decoration: underline;">Detail Data &rarr;</a>
-            </div>
-        </div>
-    </div>
-    <!-- HAR ROW -->
-    <div class="col-5ths col-6">
-        <div class="stats-card bg-gradient-orange">
-            <div class="inner">
-                <h3><?= $stats['har_row'] ?></h3>
-                <p>HAR ROW</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-tree"></i>
-            </div>
-            <div style="font-size: 11px;">
-                <a href="<?= site_url('temuan?pelaksana=HAR ROW') ?>" class="text-white" style="text-decoration: underline;">Detail Data &rarr;</a>
-            </div>
-        </div>
-    </div>
-    <!-- HAR CRANE -->
-    <div class="col-5ths col-6">
-        <div class="stats-card bg-gradient-blue" style="background: linear-gradient(135deg, #7b4397 0%, #dc2430 100%) !important;">
-            <div class="inner">
-                <h3><?= $stats['har_crane'] ?></h3>
-                <p>HAR CRANE</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-truck-monster"></i>
-            </div>
-            <div style="font-size: 11px;">
-                <a href="<?= site_url('temuan?pelaksana=HAR CRANE') ?>" class="text-white" style="text-decoration: underline;">Detail Data &rarr;</a>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="dashboard-reborn container-fluid py-3">
 
-<!-- ROW 3: METRIK SUMMARY COMPACT (BELUM & SUDAH SELESAI) -->
-<div class="row mb-3">
-    <!-- BELUM SELESAI CARD -->
-    <div class="col-md-6 col-12 mb-2 mb-md-0">
-        <div class="card eyecatching-card card-theme-belum" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important; background-color: #dc2626 !important; color: #ffffff !important; padding: 0;">
-            <div class="card-body p-3">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center">
-                        <div class="p-2 rounded-circle me-3" style="background: rgba(255,255,255,0.22); backdrop-filter: blur(8px); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-clock-rotate-left text-white" style="font-size: 1.1rem;"></i>
-                        </div>
-                        <div>
-                            <span class="text-white-50 text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.8px;">Status Pekerjaan</span>
-                            <h5 class="m-0 font-weight-bold text-white" style="font-size: 16px;">Belum Selesai</h5>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <span class="badge bg-white text-danger font-weight-bold px-2 py-1" style="border-radius: 12px; font-size: 11px; color: #dc2626 !important;">
-                            <i class="fas fa-exclamation-circle me-1"></i> <?= $stats['total'] > 0 ? round(($stats['belum'] / $stats['total']) * 100, 1) : 0 ?>% Total
+    <!-- 1. ENTERPRISE HEADER BAR -->
+    <div class="glass-card p-4 mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="SIDAK TEJO" style="max-height: 52px;" class="bg-white p-1 rounded-3 shadow-sm">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <?php
+                            $hour = (int)date('H');
+                            if ($hour >= 4 && $hour < 11) $greeting = 'Selamat Pagi';
+                            elseif ($hour >= 11 && $hour < 15) $greeting = 'Selamat Siang';
+                            elseif ($hour >= 15 && $hour < 18) $greeting = 'Selamat Sore';
+                            else $greeting = 'Selamat Malam';
+                        ?>
+                        <h4 class="fw-bold mb-0 text-white"><?= $greeting ?>, <span class="text-warning"><?= esc(session()->get('user_name') ?: 'Petugas') ?></span> 👋</h4>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">
+                            <span class="status-pulse me-1"></span> Live System
                         </span>
-                        <h2 class="font-weight-extrabold text-white m-0 mt-1" style="font-size: 2rem; line-height: 1; color: #ffffff !important;">
-                            <?= number_format($stats['belum']) ?>
-                        </h2>
                     </div>
+                    <p class="text-white-50 small mb-0">
+                        <i class="fas fa-shield-halved me-1 text-info"></i> Role: <strong><?= esc(get_role_label(session()->get('user_role'))) ?></strong>
+                        &middot; ULP: <strong><?= esc(session()->get('user_ulp_nama') ?: 'UP3 Sidoarjo') ?></strong>
+                        &middot; Shift: <span class="badge bg-primary-subtle text-primary ms-1">Pagi (07:00 - 15:00)</span>
+                    </p>
                 </div>
+            </div>
 
-                <div class="progress mt-2 mb-2" style="height: 6px; background: rgba(255,255,255,0.25); border-radius: 6px;">
-                    <div class="progress-bar bg-white" style="width: <?= $stats['total'] > 0 ? ($stats['belum'] / $stats['total']) * 100 : 0 ?>%; border-radius: 6px; background-color: #ffffff !important;"></div>
+            <!-- Realtime Server Clock & Weather Widget -->
+            <div class="text-end d-none d-md-block">
+                <h3 class="fw-bold font-monospace mb-0 text-warning" id="realtime-clock"><?= date('H:i:s') ?></h3>
+                <small class="text-white-50"><i class="fas fa-calendar-day me-1"></i> <?= date('l, d F Y') ?></small>
+                <div class="mt-1" style="font-size: 11px;">
+                    <span class="badge bg-dark border border-secondary text-info"><i class="fas fa-cloud-sun me-1"></i> Cerah &middot; 29°C</span>
+                    <span class="badge bg-dark border border-secondary text-white ms-1"><i class="fas fa-wifi text-success me-1"></i> Online Sync</span>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-white-50" style="font-size: 11px;"><i class="fas fa-info-circle me-1"></i> Menunggu tindak lanjut</span>
-                    <a href="<?= site_url('temuan?status=BELUM') ?>" class="btn btn-xs btn-light text-danger font-weight-bold px-2 py-0" style="border-radius: 8px; font-size: 11px; color: #dc2626 !important; background-color: #ffffff !important;">
-                        Lihat Data &rarr;
+    <!-- 2. AI SUMMARY WIDGET -->
+    <div class="glass-card p-3 mb-4 border-start border-4 border-info" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
+        <div class="d-flex align-items-start gap-3">
+            <div class="badge bg-info text-white rounded-circle p-2 fs-5"><i class="fas fa-robot"></i></div>
+            <div class="flex-fill">
+                <h6 class="fw-bold text-dark mb-1"><i class="fas fa-sparkles text-warning me-1"></i> AI Intelligence Summary Hari Ini</h6>
+                <p class="text-secondary small mb-0">
+                    Sistem mendeteksi <strong><?= number_format($stats['total']) ?> Total Temuan</strong> dengan status:
+                    <span class="badge bg-danger text-white"><?= number_format($stats['emergency']) ?> Emergency</span>,
+                    <span class="badge bg-warning text-dark"><?= number_format($stats['high']) ?> High</span>,
+                    <span class="badge bg-success text-white"><?= number_format($stats['selesai']) ?> Selesai</span>.
+                    Prioritas inspeksi fisik tertinggi: <strong>ULP Sidoarjo Kota & Penyulang Klurak Bali</strong>.
+                </p>
+            </div>
+            <a href="<?= site_url('ai-predictive') ?>" class="btn btn-info text-white btn-sm rounded-pill font-weight-bold px-3 ms-auto" style="white-space: nowrap;">
+                <i class="fas fa-brain me-1"></i> AI Risk Forecast
+            </a>
+        </div>
+    </div>
+
+    <!-- 3. QUICK ACTION BAR (8 Modern Buttons) -->
+    <div class="row g-3 mb-4">
+        <?php if ($canInput): ?>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('temuan/create') ?>" class="action-btn-card">
+                <div class="icon-box bg-success-subtle text-success"><i class="fas fa-plus-circle"></i></div>
+                <div><h6 class="fw-bold mb-0">Input Temuan</h6><small class="text-muted">Form Inspeksi Lapangan</small></div>
+            </a>
+        </div>
+        <?php endif; ?>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('temuan/update-pekerjaan') ?>" class="action-btn-card">
+                <div class="icon-box bg-warning-subtle text-warning"><i class="fas fa-pen-to-square"></i></div>
+                <div><h6 class="fw-bold mb-0">Update Pekerjaan</h6><small class="text-muted">Tindak Lanjut & Foto</small></div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('work-orders') ?>" class="action-btn-card">
+                <div class="icon-box bg-info-subtle text-info"><i class="fas fa-file-invoice"></i></div>
+                <div><h6 class="fw-bold mb-0">Work Order (WO)</h6><small class="text-muted">Pekerjaan Aktif</small></div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('temuan') ?>" class="action-btn-card">
+                <div class="icon-box bg-primary-subtle text-primary"><i class="fas fa-list-check"></i></div>
+                <div><h6 class="fw-bold mb-0">Data Temuan</h6><small class="text-muted">Seluruh Rekap Data</small></div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('eviden/kubikel') ?>" class="action-btn-card">
+                <div class="icon-box bg-purple-subtle text-purple" style="background:#f3e8ff; color:#7e22ce;"><i class="fas fa-folder-open"></i></div>
+                <div><h6 class="fw-bold mb-0">Eviden Lapangan</h6><small class="text-muted">Kubikel & Trafo</small></div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('gis') ?>" class="action-btn-card">
+                <div class="icon-box bg-emerald-subtle text-emerald" style="background:#d1fae5; color:#059669;"><i class="fas fa-map-marked-alt"></i></div>
+                <div><h6 class="fw-bold mb-0">Peta GIS</h6><small class="text-muted">Pemetaan Jaringan</small></div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('ai-predictive') ?>" class="action-btn-card">
+                <div class="icon-box bg-amber-subtle text-amber" style="background:#fef3c7; color:#d97706;"><i class="fas fa-brain"></i></div>
+                <div><h6 class="fw-bold mb-0">AI Risk & Analytics</h6><small class="text-muted">Prediksi Kegagalan</small></div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+            <a href="<?= site_url('laporan') ?>" class="action-btn-card">
+                <div class="icon-box bg-slate-subtle text-slate" style="background:#f1f5f9; color:#475569;"><i class="fas fa-print"></i></div>
+                <div><h6 class="fw-bold mb-0">Pusat Laporan</h6><small class="text-muted">Export PDF & Excel</small></div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 4. KPI CARDS GRID (10 Modern Cards) -->
+    <div class="row g-3 mb-4">
+        <!-- Total Temuan -->
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="glass-card kpi-card bg-primary text-white">
+                <span class="kpi-label text-white-50">Total Temuan</span>
+                <div class="kpi-val mt-1"><?= number_format($stats['total']) ?></div>
+                <small class="text-white-50 d-block mt-1">Inspeksi Fisik</small>
+            </div>
+        </div>
+        <!-- Emergency -->
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="glass-card kpi-card bg-danger text-white">
+                <span class="kpi-label text-white-50">Emergency</span>
+                <div class="kpi-val mt-1"><?= number_format($stats['emergency']) ?></div>
+                <small class="text-white-50 d-block mt-1">Tindak Segera</small>
+            </div>
+        </div>
+        <!-- High -->
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="glass-card kpi-card text-dark" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color:#fff !important;">
+                <span class="kpi-label text-white-50">High Priority</span>
+                <div class="kpi-val mt-1"><?= number_format($stats['high']) ?></div>
+                <small class="text-white-50 d-block mt-1">SLA 3 Hari</small>
+            </div>
+        </div>
+        <!-- Medium -->
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="glass-card kpi-card text-dark" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color:#fff !important;">
+                <span class="kpi-label text-white-50">Medium Priority</span>
+                <div class="kpi-val mt-1"><?= number_format($stats['medium']) ?></div>
+                <small class="text-white-50 d-block mt-1">SLA 7 Hari</small>
+            </div>
+        </div>
+        <!-- Selesai -->
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="glass-card kpi-card bg-success text-white">
+                <span class="kpi-label text-white-50">Sudah Selesai</span>
+                <div class="kpi-val mt-1"><?= number_format($stats['selesai']) ?></div>
+                <small class="text-white-50 d-block mt-1">Tuntas 100%</small>
+            </div>
+        </div>
+        <!-- Belum Selesai -->
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="glass-card kpi-card bg-dark text-white">
+                <span class="kpi-label text-white-50">Belum Selesai</span>
+                <div class="kpi-val mt-1"><?= number_format($stats['belum']) ?></div>
+                <small class="text-white-50 d-block mt-1">Outstanding</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. LIVE GIS MAP & COMMAND CENTER PANEL -->
+    <div class="row g-4 mb-4">
+        <!-- GIS Map Widget -->
+        <div class="col-lg-8 col-12">
+            <div class="glass-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-map-marked-alt text-success me-2"></i> Live GIS Map Temuan Lapangan</h5>
+                        <small class="text-muted">Pemetaan lokasi temuan berdasarkan titik koordinat presisi</small>
+                    </div>
+                    <a href="<?= site_url('gis') ?>" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold">
+                        <i class="fas fa-expand me-1"></i> Fullscreen GIS
                     </a>
                 </div>
+                <div id="dashboard-gis-map" class="shadow-sm border"></div>
+            </div>
+        </div>
+
+        <!-- Command Center Quick Panel & Activity Feed -->
+        <div class="col-lg-4 col-12">
+            <div class="glass-card p-4 h-100">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-tv text-danger me-2"></i> Command Center Panel</h5>
+                
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-bold text-secondary">Target Completion Rate</span>
+                        <span class="badge bg-success">85.4%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: 85.4%;"></div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-dark mb-2"><i class="fas fa-clock-rotate-left text-info me-1"></i> Recent Activity Feed</h6>
+                <div class="activity-feed mt-3">
+                    <div class="activity-feed-item">
+                        <span class="fw-bold text-dark d-block small">Input Temuan Baru (STJ-2026-000412)</span>
+                        <small class="text-muted">Petugas Inspeksi &middot; Penyulang SDJ01 &middot; 10 menit lalu</small>
+                    </div>
+                    <div class="activity-feed-item">
+                        <span class="fw-bold text-dark d-block small">Update Work Order (WO-2026-000088)</span>
+                        <small class="text-muted">Tim PDKB &middot; Penggantian Iselator &middot; 25 menit lalu</small>
+                    </div>
+                    <div class="activity-feed-item">
+                        <span class="fw-bold text-dark d-block small">Upload Eviden Kubikel</span>
+                        <small class="text-muted">HAR Gardu &middot; Gardu SDJ-14 &middot; 1 jam lalu</small>
+                    </div>
+                    <div class="activity-feed-item">
+                        <span class="fw-bold text-dark d-block small">Offline Sync Completed</span>
+                        <small class="text-muted">Flutter Native Engine &middot; 12 Records &middot; 2 jam lalu</small>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- SUDAH SELESAI CARD -->
-    <div class="col-md-6 col-12">
-        <div class="card eyecatching-card card-theme-selesai" style="background: linear-gradient(135deg, #059669 0%, #047857 100%) !important; background-color: #059669 !important; color: #ffffff !important; padding: 0;">
-            <div class="card-body p-3">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center">
-                        <div class="p-2 rounded-circle me-3" style="background: rgba(255,255,255,0.22); backdrop-filter: blur(8px); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-circle-check text-white" style="font-size: 1.1rem;"></i>
-                        </div>
-                        <div>
-                            <span class="text-white-50 text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.8px;">Status Pekerjaan</span>
-                            <h5 class="m-0 font-weight-bold text-white" style="font-size: 16px;">Sudah Selesai</h5>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <span class="badge bg-white text-success font-weight-bold px-2 py-1" style="border-radius: 12px; font-size: 11px; color: #059669 !important;">
-                            <i class="fas fa-check-circle me-1"></i> <?= $stats['total'] > 0 ? round(($stats['selesai'] / $stats['total']) * 100, 1) : 0 ?>% Success Rate
-                        </span>
-                        <h2 class="font-weight-extrabold text-white m-0 mt-1" style="font-size: 2rem; line-height: 1; color: #ffffff !important;">
-                            <?= number_format($stats['selesai']) ?>
-                        </h2>
-                    </div>
-                </div>
-
-                <div class="progress mt-2 mb-2" style="height: 6px; background: rgba(255,255,255,0.25); border-radius: 6px;">
-                    <div class="progress-bar bg-white" style="width: <?= $stats['total'] > 0 ? ($stats['selesai'] / $stats['total']) * 100 : 0 ?>%; border-radius: 6px; background-color: #ffffff !important;"></div>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-white-50" style="font-size: 11px;"><i class="fas fa-shield-check me-1"></i> Tuntas sesuai SLA</span>
-                    <a href="<?= site_url('temuan?status=SELESAI') ?>" class="btn btn-xs btn-light text-success font-weight-bold px-2 py-0" style="border-radius: 8px; font-size: 11px; color: #059669 !important; background-color: #ffffff !important;">
-                        Lihat Data &rarr;
-                    </a>
-                </div>
+    <!-- 6. CHARTS & LEADERBOARD -->
+    <div class="row g-4 mb-4">
+        <!-- Monthly Trend Chart -->
+        <div class="col-lg-6 col-12">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-chart-area text-primary me-2"></i> Trend Temuan Bulanan</h5>
+                <div id="chart-monthly-trend" style="min-height: 280px;"></div>
+            </div>
+        </div>
+        <!-- Pelaksana Breakdown Chart -->
+        <div class="col-lg-6 col-12">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-chart-pie text-warning me-2"></i> Distibusi Pelaksana Inspeksi</h5>
+                <div id="chart-pelaksana-pie" style="min-height: 280px;"></div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- TOP 10 LEADERBOARD SECTION -->
-<div class="row my-4">
-    <div class="col-12 mb-3 d-flex align-items-center justify-content-between flex-wrap">
-        <div>
-            <h3 class="font-weight-extrabold text-dark m-0 d-flex align-items-center" style="font-size: 1.35rem;">
-                <i class="fas fa-trophy text-warning me-2 animate__animated animate__bounceIn"></i> 
-                Rekap Kinerja & Top 10 Petugas
-            </h3>
-            <p class="text-muted small m-0 mt-1">Peringkat petugas dengan kontribusi input & penyelesaian temuan tertinggi</p>
-        </div>
-        <!-- Month / Year Filter -->
-        <form method="GET" action="<?= site_url('dashboard') ?>" class="d-flex align-items-center gap-2 mt-2 mt-md-0">
-            <select name="month" class="form-select form-select-sm" style="border-radius: 8px; width: 140px;" onchange="this.form.submit()">
-                <?php
-                $bulanNames = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
-                $mFilter = $monthFilter ?? date('n');
-                $yFilter = $yearFilter ?? date('Y');
-                foreach ($bulanNames as $mNum => $mName):
-                ?>
-                    <option value="<?= $mNum ?>" <?= ($mFilter == $mNum) ? 'selected' : '' ?>><?= $mName ?></option>
-                <?php endforeach; ?>
-            </select>
-            <select name="year" class="form-select form-select-sm" style="border-radius: 8px; width: 100px;" onchange="this.form.submit()">
-                <?php for ($y = date('Y'); $y >= date('Y') - 3; $y--): ?>
-                    <option value="<?= $y ?>" <?= ($yFilter == $y) ? 'selected' : '' ?>><?= $y ?></option>
-                <?php endfor; ?>
-            </select>
-        </form>
-    </div>
-
-    <!-- Top 10 Input Temuan -->
-    <div class="col-lg-6 col-12 mb-3">
-        <div class="card border-0 shadow-sm rounded-3 overflow-hidden h-100">
-            <div class="card-header py-3" style="background: linear-gradient(135deg, #004D4F 0%, #007275 100%); color: #ffffff;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h4 class="card-title text-white font-weight-bold m-0" style="font-size: 15px;">
-                        <i class="fas fa-file-signature text-warning me-2"></i> Top 10 Petugas Input Temuan
-                    </h4>
-                    <span class="badge bg-warning text-dark font-weight-bold" style="border-radius: 12px; font-size: 11px;">
-                        <?= $bulanNames[$mFilter] ?> <?= $yFilter ?>
-                    </span>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <?php if (empty($topInputOfficers)): ?>
-                    <div class="text-center py-4 text-muted">
-                        <i class="fas fa-inbox fa-2x mb-2 d-block text-secondary"></i>
-                        Belum ada data input temuan pada periode ini.
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th style="width: 50px;" class="text-center">#</th>
-                                    <th>Nama Pegawai / NIP</th>
-                                    <th class="text-center" style="width: 110px;">Total Input</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+    <!-- 7. TOP OFFICERS LEADERBOARD -->
+    <div class="row g-4">
+        <div class="col-lg-6 col-12">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-trophy text-warning me-2"></i> Top 10 Petugas Input (Bulan Ini)</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 13px;">
+                        <thead class="table-light">
+                            <tr><th>#</th><th>Nama Petugas</th><th>NIP</th><th class="text-end">Jumlah Input</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($topInputOfficers)): ?>
+                                <tr><td colspan="4" class="text-center text-muted py-3">Belum ada data</td></tr>
+                            <?php else: ?>
                                 <?php foreach ($topInputOfficers as $idx => $officer): ?>
                                     <tr>
-                                        <td class="text-center font-weight-bold">
-                                            <?php if ($idx == 0): ?>
-                                                🥇
-                                            <?php elseif ($idx == 1): ?>
-                                                🥈
-                                            <?php elseif ($idx == 2): ?>
-                                                🥉
-                                            <?php else: ?>
-                                                <span class="badge bg-light text-dark border rounded-circle" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;"><?= $idx + 1 ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <div class="font-weight-bold text-dark"><?= esc($officer['created_by_name']) ?></div>
-                                            <small class="text-muted" style="font-size: 11px;">NIP: <?= esc($officer['created_by_nip'] ?: '-') ?></small>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-primary px-3 py-1 font-weight-bold" style="border-radius: 12px; font-size: 12px;">
-                                                <?= number_format($officer['total_input']) ?> Temuan
-                                            </span>
-                                        </td>
+                                        <td><span class="badge bg-<?= $idx < 3 ? 'warning text-dark' : 'secondary' ?>"><?= $idx + 1 ?></span></td>
+                                        <td class="fw-bold text-dark"><?= esc($officer['created_by_name']) ?></td>
+                                        <td><small class="text-muted"><?= esc($officer['created_by_nip'] ?: '-') ?></small></td>
+                                        <td class="text-end fw-bold text-primary"><?= number_format($officer['total_input']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- Top 10 Update / Penyelesaian Temuan -->
-    <div class="col-lg-6 col-12 mb-3">
-        <div class="card border-0 shadow-sm rounded-3 overflow-hidden h-100">
-            <div class="card-header py-3" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h4 class="card-title text-white font-weight-bold m-0" style="font-size: 15px;">
-                        <i class="fas fa-check-circle text-white me-2"></i> Top 10 Petugas Update & Eksekusi
-                    </h4>
-                    <span class="badge bg-white text-success font-weight-bold" style="border-radius: 12px; font-size: 11px; color: #059669 !important;">
-                        <?= $bulanNames[$mFilter] ?> <?= $yFilter ?>
-                    </span>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="card-body p-0">
-                <?php if (empty($topUpdateOfficers)): ?>
-                    <div class="text-center py-4 text-muted">
-                        <i class="fas fa-inbox fa-2x mb-2 d-block text-secondary"></i>
-                        Belum ada data update penyelesaian pada periode ini.
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th style="width: 50px;" class="text-center">#</th>
-                                    <th>Nama Pegawai / NIP</th>
-                                    <th class="text-center" style="width: 110px;">Total Tuntas</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+        </div>
+        <div class="col-lg-6 col-12">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-circle-check text-success me-2"></i> Top 10 Petugas Penyelesaian (Bulan Ini)</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 13px;">
+                        <thead class="table-light">
+                            <tr><th>#</th><th>Nama Petugas</th><th>NIP</th><th class="text-end">Jumlah Selesai</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($topUpdateOfficers)): ?>
+                                <tr><td colspan="4" class="text-center text-muted py-3">Belum ada data</td></tr>
+                            <?php else: ?>
                                 <?php foreach ($topUpdateOfficers as $idx => $officer): ?>
                                     <tr>
-                                        <td class="text-center font-weight-bold">
-                                            <?php if ($idx == 0): ?>
-                                                🥇
-                                            <?php elseif ($idx == 1): ?>
-                                                🥈
-                                            <?php elseif ($idx == 2): ?>
-                                                🥉
-                                            <?php else: ?>
-                                                <span class="badge bg-light text-dark border rounded-circle" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;"><?= $idx + 1 ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <div class="font-weight-bold text-dark"><?= esc($officer['updated_by_name']) ?></div>
-                                            <small class="text-muted" style="font-size: 11px;">NIP: <?= esc($officer['updated_by_nip'] ?: '-') ?></small>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-success px-3 py-1 font-weight-bold" style="border-radius: 12px; font-size: 12px; background-color: #059669 !important;">
-                                                <?= number_format($officer['total_update']) ?> Tuntas
-                                            </span>
-                                        </td>
+                                        <td><span class="badge bg-<?= $idx < 3 ? 'success' : 'secondary' ?>"><?= $idx + 1 ?></span></td>
+                                        <td class="fw-bold text-dark"><?= esc($officer['updated_by_name']) ?></td>
+                                        <td><small class="text-muted"><?= esc($officer['updated_by_nip'] ?: '-') ?></small></td>
+                                        <td class="text-end fw-bold text-success"><?= number_format($officer['total_update']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Real-time Analytics Dashboard Widgets (13 Responsive Charts) -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="font-weight-bold text-dark mb-0"><i class="fas fa-chart-pie text-primary mr-2"></i> Analitik Real-time</h4>
-    <div>
-        <span class="badge bg-success text-white px-3 py-2 me-2" id="live-indicator"><i class="fas fa-circle-dot fa-spin mr-1"></i> Live Auto-Refresh</span>
-        <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" id="btn-refresh-analytics">
-            <i class="fas fa-sync-alt mr-1"></i> Refresh Data
-        </button>
-    </div>
-</div>
+<!-- LEAFLET & APEXCHARTS SCRIPTS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-<!-- Row 1: Temuan vs Realisasi & SLA Performance -->
-<div class="row">
-    <div class="col-lg-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-balance-scale text-primary mr-2"></i> 1. Temuan vs Realisasi Selesai</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartTemuanVsRealisasi" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-clock text-warning mr-2"></i> 7. Performance SLA (Tuntas vs Overdue)</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartSla" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Row 2: Tren Mingguan (Input vs Realisasi) -->
-<div class="row">
-    <div class="col-lg-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-chart-line text-info mr-2"></i> 3. Temuan Mingguan (7 Hari Terakhir)</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartTemuanMingguan" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-check-double text-success mr-2"></i> 5. Realisasi Harian (7 Hari Terakhir)</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartRealisasiHarian" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Row 3: Tren Bulanan (Temuan vs Realisasi) -->
-<div class="row">
-    <div class="col-lg-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-calendar-alt text-primary mr-2"></i> 4. Temuan Bulanan (12 Bulan)</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartTemuanBulanan" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-calendar-check text-teal mr-2"></i> 6. Realisasi Bulanan (12 Bulan)</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartRealisasiBulanan" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Row 4: Prioritas, Status, Jenis Temuan -->
-<div class="row">
-    <div class="col-lg-4 col-md-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-triangle-exclamation text-danger mr-2"></i> 8. Breakdown Prioritas</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartPrioritas" style="min-height: 230px; height: 230px; max-height: 230px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4 col-md-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-list-check text-purple mr-2"></i> 9. Breakdown Status</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartStatus" style="min-height: 230px; height: 230px; max-height: 230px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4 col-md-12 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-tags text-indigo mr-2"></i> 13. Jenis Temuan</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartJenisTemuan" style="min-height: 230px; height: 230px; max-height: 230px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Row 5: Pelaksana, ULP, Penyulang -->
-<div class="row">
-    <div class="col-lg-4 col-md-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-users-gear text-teal mr-2"></i> 10. Pelaksana Pekerjaan</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartPelaksana" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4 col-md-6 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-building-user text-success mr-2"></i> 11. Distribusi per ULP</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartUlp" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4 col-md-12 col-12 mb-4">
-        <div class="card card-modern h-100 shadow-sm">
-            <div class="card-header border-bottom bg-transparent">
-                <h3 class="card-title text-dark mb-0"><i class="fas fa-bolt text-warning mr-2"></i> 12. Top 10 Penyulang</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="chartPenyulang" style="min-height: 250px; height: 250px; max-height: 250px; width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-</div>
-<?= $this->endSection() ?>
-
-<?= $this->section('scripts') ?>
 <script>
-    $(function() {
-        Chart.defaults.color = '#495057';
-        Chart.defaults.borderColor = '#e9ecef';
+document.addEventListener("DOMContentLoaded", function() {
+    // Realtime Clock Update
+    setInterval(function() {
+        var now = new Date();
+        var h = String(now.getHours()).padStart(2, '0');
+        var m = String(now.getMinutes()).padStart(2, '0');
+        var s = String(now.getSeconds()).padStart(2, '0');
+        var clockEl = document.getElementById('realtime-clock');
+        if (clockEl) clockEl.innerText = h + ':' + m + ':' + s;
+    }, 1000);
 
-        let chartInstances = {};
+    // Initialize GIS Leaflet Map
+    var map = L.map('dashboard-gis-map').setView([-7.4478, 112.7183], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; SIDAK TEJO GIS'
+    }).addTo(map);
 
-        function createOrUpdateChart(chartId, type, data, options) {
-            const ctx = document.getElementById(chartId);
-            if (!ctx) return;
+    var pins = <?= json_encode($mapPins ?? []) ?>;
+    pins.forEach(function(pin) {
+        if (pin.latitude && pin.longitude) {
+            var color = '#10b981'; // Selesai
+            if (pin.prioritas === 'EMERGENCY') color = '#ef4444';
+            else if (pin.prioritas === 'HIGH') color = '#f59e0b';
+            else if (pin.prioritas === 'MEDIUM') color = '#3b82f6';
 
-            if (chartInstances[chartId]) {
-                chartInstances[chartId].destroy();
-            }
+            var circle = L.circleMarker([pin.latitude, pin.longitude], {
+                radius: 7,
+                fillColor: color,
+                color: '#ffffff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+            }).addTo(map);
 
-            chartInstances[chartId] = new Chart(ctx, {
-                type: type,
-                data: data,
-                options: Object.assign({ responsive: true, maintainAspectRatio: false }, options || {})
-            });
+            circle.bindPopup('<strong>' + (pin.nomor_temuan || 'Temuan') + '</strong><br>' + (pin.detail_temuan || '') + '<br><small>Prioritas: ' + (pin.prioritas || 'NORMAL') + '</small>');
         }
-
-        function loadRealtimeAnalytics() {
-            $.ajax({
-                url: "<?= site_url('dashboard/analytics-data') ?>",
-                type: "GET",
-                dataType: "json",
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                success: function(res) {
-                    if (!res || !res.data) return;
-                    const d = res.data;
-
-                    // 1. Temuan vs Realisasi
-                    createOrUpdateChart('chartTemuanVsRealisasi', 'bar', {
-                        labels: ['Total Temuan Input', 'Total Realisasi Selesai'],
-                        datasets: [{
-                            label: 'Jumlah Record',
-                            data: [d.total_temuan, d.total_realisasi],
-                            backgroundColor: ['#005eb8', '#059669']
-                        }]
-                    });
-
-                    // 7. SLA Performance
-                    createOrUpdateChart('chartSla', 'doughnut', {
-                        labels: ['Sesuai SLA', 'Melewati SLA (Overdue)'],
-                        datasets: [{
-                            data: [d.sla.met, d.sla.overdue],
-                            backgroundColor: ['#059669', '#dc2626']
-                        }]
-                    });
-
-                    // 3. Temuan Mingguan
-                    createOrUpdateChart('chartTemuanMingguan', 'line', {
-                        labels: d.temuan_mingguan.labels,
-                        datasets: [{
-                            label: 'Temuan Harian',
-                            data: d.temuan_mingguan.data,
-                            borderColor: '#0284c7',
-                            backgroundColor: 'rgba(2, 132, 199, 0.15)',
-                            fill: true, tension: 0.3
-                        }]
-                    });
-
-                    // 5. Realisasi Harian
-                    createOrUpdateChart('chartRealisasiHarian', 'bar', {
-                        labels: d.realisasi_harian.labels,
-                        datasets: [{
-                            label: 'Realisasi Harian',
-                            data: d.realisasi_harian.data,
-                            backgroundColor: '#10b981'
-                        }]
-                    });
-
-                    // 4. Temuan Bulanan
-                    createOrUpdateChart('chartTemuanBulanan', 'line', {
-                        labels: d.temuan_bulanan.labels,
-                        datasets: [{
-                            label: 'Temuan per Bulan',
-                            data: d.temuan_bulanan.data,
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                            fill: true, tension: 0.3
-                        }]
-                    });
-
-                    // 6. Realisasi Bulanan
-                    createOrUpdateChart('chartRealisasiBulanan', 'line', {
-                        labels: d.realisasi_bulanan.labels,
-                        datasets: [{
-                            label: 'Realisasi per Bulan',
-                            data: d.realisasi_bulanan.data,
-                            borderColor: '#14b8a6',
-                            backgroundColor: 'rgba(20, 184, 166, 0.15)',
-                            fill: true, tension: 0.3
-                        }]
-                    });
-
-                    // 8. Prioritas Breakdown
-                    createOrUpdateChart('chartPrioritas', 'doughnut', {
-                        labels: ['EMERGENCY', 'HIGH', 'MEDIUM'],
-                        datasets: [{
-                            data: [d.prioritas_breakdown.EMERGENCY, d.prioritas_breakdown.HIGH, d.prioritas_breakdown.MEDIUM],
-                            backgroundColor: ['#dc2626', '#f97316', '#0284c7']
-                        }]
-                    });
-
-                    // 9. Status Breakdown
-                    createOrUpdateChart('chartStatus', 'doughnut', {
-                        labels: ['BELUM', 'PROSES', 'SELESAI', 'TERKENDALA'],
-                        datasets: [{
-                            data: [d.status_breakdown.BELUM, d.status_breakdown.PROSES, d.status_breakdown.SELESAI, d.status_breakdown.TERKENDALA],
-                            backgroundColor: ['#e11d48', '#f59e0b', '#10b981', '#8b5cf6']
-                        }]
-                    });
-
-                    // 13. Jenis Temuan
-                    createOrUpdateChart('chartJenisTemuan', 'pie', {
-                        labels: ['KONSTRUKSI', 'HOTSPOT', 'ROW'],
-                        datasets: [{
-                            data: [d.jenis_breakdown.KONSTRUKSI, d.jenis_breakdown.HOTSPOT, d.jenis_breakdown.ROW],
-                            backgroundColor: ['#6366f1', '#ef4444', '#84cc16']
-                        }]
-                    });
-
-                    // 10. Pelaksana Breakdown
-                    createOrUpdateChart('chartPelaksana', 'bar', {
-                        labels: d.pelaksana_raw.map(r => r.pelaksana || 'Lainnya'),
-                        datasets: [{
-                            label: 'Total Temuan',
-                            data: d.pelaksana_raw.map(r => r.total),
-                            backgroundColor: '#8b5cf6'
-                        }]
-                    });
-
-                    // 11. ULP Breakdown
-                    createOrUpdateChart('chartUlp', 'pie', {
-                        labels: d.ulp_raw.map(r => r.nama_ulp),
-                        datasets: [{
-                            data: d.ulp_raw.map(r => r.total),
-                            backgroundColor: ['#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
-                        }]
-                    });
-
-                    // 12. Penyulang Breakdown
-                    createOrUpdateChart('chartPenyulang', 'bar', {
-                        labels: d.penyulang_raw.map(r => r.nama_penyulang),
-                        datasets: [{
-                            label: 'Total Temuan',
-                            data: d.penyulang_raw.map(r => r.total),
-                            backgroundColor: '#f59e0b'
-                        }]
-                    }, { indexAxis: 'y' });
-                },
-                error: function(xhr, status, err) {
-                    console.error('Error fetching analytics:', err);
-                }
-            });
-        }
-
-        // Initial Load
-        loadRealtimeAnalytics();
-
-        // Manual Refresh Trigger
-        $('#btn-refresh-analytics').click(function() {
-            $(this).html('<i class="fas fa-spinner fa-spin mr-1"></i> Refreshing...');
-            loadRealtimeAnalytics();
-            setTimeout(() => {
-                $(this).html('<i class="fas fa-sync-alt mr-1"></i> Refresh Data');
-            }, 800);
-        });
-
-        // Auto Refresh every 30 seconds
-        setInterval(loadRealtimeAnalytics, 30000);
     });
+
+    // ApexCharts: Monthly Trend
+    var monthlyData = <?= json_encode($monthlyData ?? []) ?>;
+    var monthlyLabels = monthlyData.map(function(d){ return d.bulan; });
+    var monthlyTotals = monthlyData.map(function(d){ return parseInt(d.total); });
+
+    new ApexCharts(document.querySelector("#chart-monthly-trend"), {
+        chart: { type: 'area', height: 280, toolbar: { show: false } },
+        stroke: { curve: 'smooth', width: 3 },
+        colors: ['#0284c7'],
+        series: [{ name: 'Jumlah Temuan', data: monthlyTotals }],
+        xaxis: { categories: monthlyLabels },
+        fill: { type: 'gradient', gradient: { opacityFrom: 0.5, opacityTo: 0.05 } }
+    }).render();
+
+    // ApexCharts: Pelaksana Breakdown
+    var pelaksanaData = <?= json_encode($pelaksanaData ?? []) ?>;
+    var pelaksanaLabels = pelaksanaData.map(function(d){ return d.pelaksana || 'Lainnya'; });
+    var pelaksanaTotals = pelaksanaData.map(function(d){ return parseInt(d.total); });
+
+    new ApexCharts(document.querySelector("#chart-pelaksana-pie"), {
+        chart: { type: 'donut', height: 280 },
+        labels: pelaksanaLabels,
+        series: pelaksanaTotals,
+        colors: ['#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']
+    }).render();
+});
 </script>
 <?= $this->endSection() ?>

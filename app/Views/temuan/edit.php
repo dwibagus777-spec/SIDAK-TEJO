@@ -274,9 +274,26 @@
                     </div>
                     <?php endif; ?>
 
+                    <!-- Mode Ganti / Tambah Foto Baru (Phase 38 Hotfix) -->
+                    <div class="form-group mb-3 p-3 bg-light rounded border">
+                        <label class="font-weight-bold d-block mb-2"><i class="fas fa-arrows-rotate text-warning mr-1"></i> Mode Pengkinian Foto:</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="replace_photos" id="mode_replace" value="1" checked style="cursor: pointer;">
+                            <label class="form-check-label fw-bold text-danger" for="mode_replace" style="cursor: pointer;">
+                                <i class="fas fa-trash-can me-1"></i> Ganti Seluruh Foto Lama (File lama akan dihapus permanen)
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="replace_photos" id="mode_append" value="0" style="cursor: pointer;">
+                            <label class="form-check-label fw-bold text-primary" for="mode_append" style="cursor: pointer;">
+                                <i class="fas fa-plus me-1"></i> Tambahkan ke Foto Lama
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Upload Foto Tambahan (Pilihan Galeri / Berkas & Kamera Direct) -->
                     <div class="form-group mb-3">
-                        <label class="font-weight-bold"><i class="fas fa-camera text-primary mr-1"></i> Tambah Foto Baru (Opsional, Maks 10)</label>
+                        <label class="font-weight-bold"><i class="fas fa-camera text-primary mr-1"></i> Upload Foto Baru (Maks 10)</label>
                         
                         <div class="p-3 border rounded bg-light shadow-sm">
                             <div class="row g-2 mb-2">
@@ -296,7 +313,7 @@
                             <input type="file" id="foto_camera" class="d-none" multiple accept="image/*" capture="environment">
 
                             <div id="file-selection-info" class="small text-muted mt-2">
-                                <i class="fas fa-info-circle mr-1"></i> Foto baru akan ditambahkan ke foto yang sudah ada. Format: JPG, JPEG, PNG, WEBP.
+                                <i class="fas fa-info-circle mr-1"></i> Foto baru akan ditandai Watermark Geotagging & Metadata SIDAK TEJO.
                             </div>
                         </div>
                     </div>

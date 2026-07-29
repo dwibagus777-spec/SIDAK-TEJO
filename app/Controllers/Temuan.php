@@ -480,7 +480,8 @@ class Temuan extends BaseController
         ];
 
         $newFiles = $this->request->getFileMultiple('foto');
-        $res = $this->temuanService->updateTemuan($id, $data, $newFiles);
+        $replaceOld = $this->request->getPost('replace_photos') !== '0';
+        $res = $this->temuanService->updateTemuan($id, $data, $newFiles, $replaceOld);
 
         if ($res['success']) {
             return redirect()->to(site_url('temuan/detail/' . $id))->with('success', $res['message']);

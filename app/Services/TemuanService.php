@@ -95,10 +95,21 @@ class TemuanService
         $file->move($destinationDir, $generatedName);
 
         $diskPath = $destinationDir . $generatedName;
-        $compressed = $this->compressImage($diskPath, 80);
+        $compressed = $this->compressImage($diskPath, 85);
         if ($compressed !== $diskPath && file_exists($compressed)) {
             @rename($compressed, $diskPath);
         }
+
+        // Apply Watermark Metadata Overlay (Phase 38 Hotfix)
+        $session = session();
+        $wmService = new ImageWatermarkService();
+        $wmService->applyWatermark($diskPath, [
+            'up3'    => 'UP3 SIDOARJO',
+            'ulp'    => $session->get('user_ulp_nama') ?: 'Sidoarjo',
+            'user'   => $session->get('nama_pegawai') ?: ($session->get('user_name') ?: 'User'),
+            'status' => 'INSPEKSI',
+            'device' => (str_contains(strtolower($_SERVER['HTTP_USER_AGENT'] ?? ''), 'android')) ? 'Android / APK' : 'Web / Browser'
+        ]);
 
         return ['name' => $generatedName, 'path' => 'foto/', 'error' => ''];
     }
@@ -216,6 +227,71 @@ class TemuanService
     }
 
     /**
+     * Memperbarui Data Temuan (Hotfix Edit Foto & Unlink Foto Lama)
+     */
+    public function updateTemuan(int $id, array $data, ?array $newFiles, bool $replaceOldPhotos = true): array
+    {
+        $temuan = $this->temuanRepository->find($id);
+        if (!$temuan) {
+            return ['success' => false, 'message' => 'Temuan tidak ditemukan.'];
+        }
+
+        $data['updated_by'] = session()->get('user_id');
+
+        $hasNewFiles = !empty($newFiles) && isset($newFiles[0]) && $newFiles[0]->isValid();
+        if ($hasNewFiles) {
+            $uploadResult = $this->uploadMultiplePhotos($newFiles, false);
+            if (!$uploadResult['success']) {
+                return ['success' => false, 'message' => $uploadResult['message']];
+            }
+
+            if (!empty($uploadResult['names'])) {
+                // Decode foto lama
+                $existingPhotos = [];
+                if (!empty($temuan['foto'])) {
+                    if (is_array($temuan['foto'])) {
+                        $existingPhotos = $temuan['foto'];
+                    } else {
+                        $decoded = json_decode($temuan['foto'], true);
+                        $existingPhotos = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', (string)$temuan['foto'])));
+                    }
+                }
+
+                if ($replaceOldPhotos) {
+                    // Unlink berkas foto lama secara fisik dari server
+                    foreach ($existingPhotos as $oldPhoto) {
+                        $oldPath = FCPATH . 'foto/' . $oldPhoto;
+                        if (file_exists($oldPath) && is_file($oldPath)) {
+                            @unlink($oldPath);
+                        }
+                    }
+                    $data['foto'] = json_encode($uploadResult['names']);
+                } else {
+                    // Mode Tambah: Gabungkan foto lama dan foto baru
+                    $mergedPhotos = array_merge($existingPhotos, $uploadResult['names']);
+                    $data['foto'] = json_encode($mergedPhotos);
+                }
+
+                $data['foto_path'] = 'foto/';
+            }
+        }
+
+        $result = $this->temuanRepository->update($id, $data);
+
+        if ($result !== false) {
+            // Flush Cache CI4
+            if (function_exists('cache')) {
+                @cache()->clean();
+            }
+
+            log_activity('UPDATE_TEMUAN', 'Mengubah data temuan ID: ' . $id . ' (' . $temuan['nomor_temuan'] . ')');
+            return ['success' => true, 'message' => 'Data temuan & foto berhasil diperbarui.'];
+        }
+
+        return ['success' => false, 'message' => 'Gagal memperbarui data temuan.'];
+    }
+
+    /**
      * Memperbarui Progres Pekerjaan (Tindak Lanjut)
      */
     public function updateTemuanPekerjaan(int $temuanId, array $progressData, array $uploadFiles): array
@@ -280,41 +356,6 @@ class TemuanService
             'success' => true,
             'message' => 'Progress tindak lanjut berhasil ditambahkan.'
         ];
-    }
-
-    /**
-     * Memperbarui Data Temuan
-     */
-    public function updateTemuan(int $id, array $data, ?array $newFiles): array
-    {
-        $temuan = $this->temuanRepository->find($id);
-        if (!$temuan) {
-            return ['success' => false, 'message' => 'Temuan tidak ditemukan.'];
-        }
-
-        $data['updated_by'] = session()->get('user_id');
-
-        $hasNewFiles = !empty($newFiles) && isset($newFiles[0]) && $newFiles[0]->isValid();
-        if ($hasNewFiles) {
-            $uploadResult = $this->uploadMultiplePhotos($newFiles, false);
-            if (!$uploadResult['success']) {
-                return ['success' => false, 'message' => $uploadResult['message']];
-            }
-
-            if (!empty($uploadResult['names'])) {
-                $data['foto'] = json_encode($uploadResult['names']);
-                $data['foto_path'] = 'foto/';
-            }
-        }
-
-        $result = $this->temuanRepository->update($id, $data);
-
-        if ($result !== false) {
-            log_activity('UPDATE_TEMUAN', 'Mengubah data temuan ID: ' . $id . ' (' . $temuan['nomor_temuan'] . ')');
-            return ['success' => true, 'message' => 'Data temuan berhasil diperbarui.'];
-        }
-
-        return ['success' => false, 'message' => 'Gagal memperbarui data temuan.'];
     }
 
     /**

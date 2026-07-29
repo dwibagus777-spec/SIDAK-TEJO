@@ -425,6 +425,14 @@
                 <div class="card-label">AI Predictive</div>
             </a>
 
+            <!-- Notifikasi Center -->
+            <a href="<?= site_url('notifications') ?>" class="menu-card">
+                <div class="icon-circle" style="background-color: #fef3c7;">
+                    <i class="fas fa-bell" style="color: #d97706; font-size: 20px;"></i>
+                </div>
+                <div class="card-label">Notifikasi</div>
+            </a>
+
             <!-- 10. Identifikasi Gangguan -->
             <a href="<?= site_url('identifikasi') ?>" class="menu-card">
                 <div class="icon-circle" style="background-color: #fdf2f8;">

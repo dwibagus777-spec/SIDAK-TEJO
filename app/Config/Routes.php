@@ -60,6 +60,15 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('ai-predictive/api-data', 'AiPredictiveController::apiData');
     $routes->get('ai-predictive/export-dataset', 'AiPredictiveController::exportDataset');
 
+    // Phase 21 - Smart Notification Center & Automation
+    $routes->get('notifications', 'Notification::index');
+    $routes->get('notifications/read-all', 'Notification::markAllAsRead');
+    $routes->get('notifications/templates', 'Notification::templates');
+    $routes->get('notifications/rules', 'Notification::rules');
+    $routes->get('notifications/preferences', 'Notification::preferences');
+    $routes->get('notifications/api-unread', 'Notification::apiUnread');
+    $routes->get('notifications/trigger-escalation', 'Notification::triggerEscalation');
+
     // Ekspor Database (Admin Saja - Terproteksi Login & Role)
     $routes->group('', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
         $routes->get('export_railway_db.php', 'DbExport::index');

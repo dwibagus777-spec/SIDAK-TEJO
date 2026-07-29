@@ -665,6 +665,14 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                     <div class="text-muted" style="font-size: 10px;"><?= indo_date(date('Y-m-d'), true) ?></div>
                 </div>
 
+                <!-- Notification Bell Icon (Phase 21) -->
+                <div class="px-2 d-none d-lg-block">
+                    <a href="<?= site_url('notifications') ?>" class="btn btn-outline-light btn-sm position-relative rounded-circle me-2" title="Notifikasi Center">
+                        <i class="fas fa-bell text-warning"></i>
+                        <span id="nav-unread-count-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 9px;">0</span>
+                    </a>
+                </div>
+
                 <!-- User Profile info on Mobile menu toggle -->
                 <div class="navbar-nav flex-row d-lg-none">
                     <div class="nav-item">
@@ -771,6 +779,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                             </div>
                         </li>
                         <?php endif; ?>
+
+                        <!-- Phase 21: Notification Center -->
+                        <li class="nav-item <?= url_is('notifications*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('notifications') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-bell text-warning"></i>
+                                </span>
+                                <span class="nav-link-title">Notifikasi Center</span>
+                            </a>
+                        </li>
 
                         <!-- Phase 19: AI Predictive Maintenance & Decision Support -->
                         <li class="nav-item <?= url_is('ai-predictive*') ? 'active' : '' ?>">

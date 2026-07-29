@@ -772,6 +772,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         </li>
                         <?php endif; ?>
 
+                        <!-- Phase 18: Smart GIS & Network Mapping Enterprise -->
+                        <li class="nav-item <?= (url_is('gis*') || url_is('peta-jaringan*') ? 'active' : '') ?>">
+                            <a class="nav-link" href="<?= site_url('gis') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-map-marked-alt text-success"></i>
+                                </span>
+                                <span class="nav-link-title">Peta Jaringan (GIS)</span>
+                            </a>
+                        </li>
+
                         <!-- Phase 17: Master Asset Management -->
                         <li class="nav-item <?= url_is('assets*') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('assets') ?>">

@@ -49,6 +49,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('work-orders/toggle-checklist/(:num)', 'WorkOrderController::toggleChecklist/$1');
     $routes->post('work-orders/add-material/(:num)', 'WorkOrderController::addMaterial/$1');
 
+    // Phase 18 - Smart GIS & Network Mapping Enterprise
+    $routes->get('gis', 'GisController::index');
+    $routes->get('peta-jaringan', 'GisController::index');
+    $routes->get('gis/api-data', 'GisController::apiData');
+    $routes->post('gis/checkin', 'GisController::checkin');
+
     // Ekspor Database (Admin Saja - Terproteksi Login & Role)
     $routes->group('', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
         $routes->get('export_railway_db.php', 'DbExport::index');

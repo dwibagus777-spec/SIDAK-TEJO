@@ -409,6 +409,14 @@
                 <div class="card-label">Work Orders</div>
             </a>
 
+            <!-- Peta Jaringan GIS -->
+            <a href="<?= site_url('gis') ?>" class="menu-card">
+                <div class="icon-circle" style="background-color: #dcfce7;">
+                    <i class="fas fa-map-marked-alt" style="color: #16a34a; font-size: 20px;"></i>
+                </div>
+                <div class="card-label">Peta Jaringan</div>
+            </a>
+
             <!-- 10. Identifikasi Gangguan -->
             <a href="<?= site_url('identifikasi') ?>" class="menu-card">
                 <div class="icon-circle" style="background-color: #fdf2f8;">

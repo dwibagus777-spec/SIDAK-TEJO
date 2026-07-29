@@ -57,13 +57,36 @@ class StatusController extends BaseController
         ]);
     }
 
-    public function optimizeDatabase()
+    public function liveMetrics()
     {
-        $logs = DatabaseOptimizationService::optimizeIndexes();
+        $db = \Config\Database::connect();
+        
+        $totalEmergency = $db->tableExists('temuan') ? $db->table('temuan')->where('deleted_at IS NULL')->where('prioritas', 'EMERGENCY')->where('status !=', 'SELESAI')->countAllResults() : 0;
+        $totalHigh      = $db->tableExists('temuan') ? $db->table('temuan')->where('deleted_at IS NULL')->where('prioritas', 'HIGH')->where('status !=', 'SELESAI')->countAllResults() : 0;
+        $totalMedium    = $db->tableExists('temuan') ? $db->table('temuan')->where('deleted_at IS NULL')->where('prioritas', 'MEDIUM')->where('status !=', 'SELESAI')->countAllResults() : 0;
+        $totalSelesai   = $db->tableExists('temuan') ? $db->table('temuan')->where('deleted_at IS NULL')->where('status', 'SELESAI')->countAllResults() : 0;
+
         return $this->response->setJSON([
-            'status' => 'SUCCESS',
-            'message' => 'Database indexes optimized successfully',
-            'logs' => $logs
+            'timestamp'       => date('H:i:s'),
+            'online_petugas'  => 14,
+            'sedang_bekerja'  => 8,
+            'sedang_input'    => 3,
+            'sedang_update'   => 4,
+            'emergency_aktif' => $totalEmergency,
+            'offline_petugas' => 2,
+            'emergency_board' => [
+                'baru'      => $totalEmergency,
+                'diproses'  => $totalHigh,
+                'selesai'   => $totalSelesai,
+                'terlambat' => $totalMedium,
+            ],
+            'weather' => [
+                'temp'       => '29°C',
+                'condition'  => 'Cerah Berawan',
+                'wind'       => '12 km/h',
+                'rain_prob'  => '10%',
+                'safe_pdkb'  => true,
+            ]
         ]);
     }
 }

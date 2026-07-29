@@ -350,9 +350,10 @@ $routes->get('api/health', 'Api\HealthController::index');
 $routes->get('api/docs/json', 'Api\DocsController::json');
 $routes->get('api/docs/ui', 'Api\DocsController::ui');
 
-// Phase 25: Production Hardening & Health Endpoints
+// Phase 25 & 31.2: Production Hardening, Live Operations & Health Endpoints
 $routes->get('health', 'StatusController::health');
 $routes->get('status', 'StatusController::status');
+$routes->get('status/live-metrics', 'StatusController::liveMetrics');
 $routes->get('status/optimize-database', 'StatusController::optimizeDatabase');
 
 // API Versioning: v1, v2, v3

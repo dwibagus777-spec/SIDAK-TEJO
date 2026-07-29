@@ -278,28 +278,20 @@ if (!function_exists('get_user_role_scoping')) {
 
 if (!function_exists('get_daily_announcement')) {
     /**
-     * Dapatkan kata-kata motivasi harian untuk running ticker
+     * Dapatkan kata-kata motivasi harian untuk running ticker (database-driven dengan fallback)
      */
     function get_daily_announcement(): string
     {
-        $paths = [
-            defined('WRITEPATH') ? WRITEPATH . 'announcement.json' : null,
-            defined('ROOTPATH') ? ROOTPATH . 'writable/announcement.json' : null,
-            defined('FCPATH') ? FCPATH . '../writable/announcement.json' : null,
-            __DIR__ . '/../../writable/announcement.json'
-        ];
-
-        foreach ($paths as $filePath) {
-            if ($filePath && file_exists($filePath)) {
-                $content = @file_get_contents($filePath);
-                if ($content) {
-                    $data = @json_decode($content, true);
-                    if (!empty($data['message'])) {
-                        return $data['message'];
-                    }
-                }
+        try {
+            $settingService = new \App\Services\SystemSettingService();
+            $val = $settingService->get('daily_motivation');
+            if (!empty($val)) {
+                return $val;
             }
+        } catch (\Throwable $e) {
+            log_message('error', '[get_daily_announcement] Gagal mengambil dari DB: ' . $e->getMessage());
         }
+
         return "⚡ Tetap Utamakan K3 & Keselamatan Kerja! Semangat Petugas Inspeksi & HAR PLN UP3 Sidoarjo! Bekerja Keras, Pulang Selamat! ⚡";
     }
 }
@@ -407,9 +399,9 @@ if (!function_exists('greeting')) {
             $hour = (int)date('H');
         }
 
-        if ($hour >= 5 && $hour < 11) {
+        if ($hour >= 0 && $hour < 10) {
             return '🌅 Selamat Pagi';
-        } elseif ($hour >= 11 && $hour < 15) {
+        } elseif ($hour >= 10 && $hour < 15) {
             return '☀ Selamat Siang';
         } elseif ($hour >= 15 && $hour < 18) {
             return '🌤 Selamat Sore';

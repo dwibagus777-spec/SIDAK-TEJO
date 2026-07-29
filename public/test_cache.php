@@ -1,8 +1,11 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 header('Content-Type: text/plain; charset=utf-8');
 
-$root = dirname(__DIR__);
-$writablePath = $root . '/writable';
+try {
+    $root = dirname(__DIR__);
+    $writablePath = $root . '/writable';
 $realWritable = realpath($writablePath);
 
 echo "=== 1. WRITEPATH AUDIT ===\n";
@@ -47,3 +50,6 @@ try {
     echo "Cache Test Exception: " . $e->getMessage() . "\n";
 }
 echo "\n=== CACHE AUDIT COMPLETE ===\n";
+} catch (\Throwable $err) {
+    echo "GLOBAL ERROR: " . $err->getMessage() . " in " . $err->getFile() . ":" . $err->getLine() . "\n";
+}

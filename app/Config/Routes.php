@@ -36,6 +36,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     // Smart AI Recommendation Route (Phase 38)
     $routes->post('ai/recommendation', 'AiPredictiveController::recommendation');
+
+    // Digital Evidence & Audit Trail Routes (Phase 39)
+    $routes->get('audit-log', 'AuditTrailController::index');
+    $routes->get('digital-evidence/(:num)', 'AuditTrailController::evidence/$1');
+    $routes->get('time-machine/(:num)', 'AuditTrailController::timeMachine/$1');
     $routes->get('executive-dashboard', 'Dashboard::executive');
     $routes->get('dashboard/executive', 'Dashboard::executive');
     $routes->get('dashboard/executive-api', 'Dashboard::executiveApi');

@@ -848,6 +848,12 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                                 <span class="nav-link-title">Dokumen Center</span>
                             </a>
                         </li>
+                        <li class="nav-item <?= (url_is('audit-log*') || url_is('digital-evidence*') || url_is('time-machine*')) ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('audit-log') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-shield-halved text-warning"></i></span>
+                                <span class="nav-link-title">Audit Trail & Evidence</span>
+                            </a>
+                        </li>
                         <li class="nav-item <?= url_is('integration*') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('integration') ?>">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-network-wired text-indigo"></i></span>

@@ -745,10 +745,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                                 <span class="nav-link-title">Data Temuan</span>
                             </a>
                         </li>
-                        <li class="nav-item <?= url_is('work-orders*') ? 'active' : '' ?>">
+                        <li class="nav-item <?= url_is('work-orders*') && !url_is('work-orders/smart') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('work-orders') ?>">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-file-invoice text-info"></i></span>
                                 <span class="nav-link-title">Work Orders (WO)</span>
+                            </a>
+                        </li>
+                        <li class="nav-item <?= (url_is('smart-wo*') || url_is('work-orders/smart*')) ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('smart-wo') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-wand-magic-sparkles text-warning"></i></span>
+                                <span class="nav-link-title">Smart WO Center</span>
                             </a>
                         </li>
                         <?php if (!check_role(['supervisor_up3'])): ?>

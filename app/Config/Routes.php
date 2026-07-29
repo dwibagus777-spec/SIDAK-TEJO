@@ -29,6 +29,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('ai-copilot', 'AiCopilotController::index');
     $routes->get('sidak-ai', 'AiCopilotController::index');
     $routes->post('ai-copilot/ask', 'AiCopilotController::ask');
+
+    // Smart Work Order Center Routes (Phase 35)
+    $routes->get('smart-wo', 'SmartWoController::index');
+    $routes->get('work-orders/smart', 'SmartWoController::index');
     $routes->get('executive-dashboard', 'Dashboard::executive');
     $routes->get('dashboard/executive', 'Dashboard::executive');
     $routes->get('dashboard/executive-api', 'Dashboard::executiveApi');

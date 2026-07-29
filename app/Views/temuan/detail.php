@@ -264,6 +264,37 @@ $statusClass = match($statusStr) {
                 </div>
             </div>
             <div class="card-body">
+                <?php
+                // Phase 19: AI Decision Support & Explainable Recommendation
+                $aiService = new \App\Services\PredictiveMaintenanceService();
+                $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
+                ?>
+
+                <!-- Phase 19: AI Explainable Recommendation Box -->
+                <div class="card border-0 bg-dark text-white rounded-3 mb-4 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold mb-0 text-warning d-flex align-items-center">
+                                <i class="fas fa-brain text-warning me-2"></i> AI DECISION SUPPORT & REKOMENDASI OLEH SIDAK AI
+                            </h6>
+                            <span class="badge <?= $aiRecommendation['badge_class'] ?>">
+                                RISK SCORE: <?= number_format($aiRecommendation['score'], 1) ?> (<?= $aiRecommendation['category'] ?>)
+                            </span>
+                        </div>
+                        <p class="mb-2 fw-bold text-white small" style="font-size: 13px;">
+                            <i class="fas fa-lightbulb text-info me-1"></i> <?= esc($aiRecommendation['recommendation_text']) ?>
+                        </p>
+                        <div class="bg-secondary bg-opacity-25 rounded-2 p-2" style="font-size: 12px;">
+                            <strong class="text-warning d-block mb-1"><i class="fas fa-magnifying-glass-chart me-1"></i> Analisis Rasional Explainable AI:</strong>
+                            <ul class="mb-0 ps-3 text-light">
+                                <?php foreach ($aiRecommendation['reasons'] as $reason): ?>
+                                    <li><?= esc($reason) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Info Cards Grid Modern -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-6 col-12">

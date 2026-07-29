@@ -772,6 +772,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         </li>
                         <?php endif; ?>
 
+                        <!-- Phase 19: AI Predictive Maintenance & Decision Support -->
+                        <li class="nav-item <?= url_is('ai-predictive*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('ai-predictive') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-brain text-purple"></i>
+                                </span>
+                                <span class="nav-link-title">AI Predictive & Risk</span>
+                            </a>
+                        </li>
+
                         <!-- Phase 18: Smart GIS & Network Mapping Enterprise -->
                         <li class="nav-item <?= (url_is('gis*') || url_is('peta-jaringan*') ? 'active' : '') ?>">
                             <a class="nav-link" href="<?= site_url('gis') ?>">

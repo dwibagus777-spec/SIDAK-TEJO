@@ -55,6 +55,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('gis/api-data', 'GisController::apiData');
     $routes->post('gis/checkin', 'GisController::checkin');
 
+    // Phase 19 - AI Predictive Maintenance & Decision Support
+    $routes->get('ai-predictive', 'AiPredictiveController::index');
+    $routes->get('ai-predictive/api-data', 'AiPredictiveController::apiData');
+    $routes->get('ai-predictive/export-dataset', 'AiPredictiveController::exportDataset');
+
     // Ekspor Database (Admin Saja - Terproteksi Login & Role)
     $routes->group('', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
         $routes->get('export_railway_db.php', 'DbExport::index');

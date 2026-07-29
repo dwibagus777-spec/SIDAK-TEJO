@@ -417,6 +417,14 @@
                 <div class="card-label">Peta Jaringan</div>
             </a>
 
+            <!-- AI Predictive Maintenance -->
+            <a href="<?= site_url('ai-predictive') ?>" class="menu-card">
+                <div class="icon-circle" style="background-color: #f3e8ff;">
+                    <i class="fas fa-brain" style="color: #9333ea; font-size: 20px;"></i>
+                </div>
+                <div class="card-label">AI Predictive</div>
+            </a>
+
             <!-- 10. Identifikasi Gangguan -->
             <a href="<?= site_url('identifikasi') ?>" class="menu-card">
                 <div class="icon-circle" style="background-color: #fdf2f8;">

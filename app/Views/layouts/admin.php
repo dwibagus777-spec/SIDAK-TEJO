@@ -742,6 +742,19 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                             </a>
                         </li>
 
+                        <li class="nav-item <?= url_is('my-dashboard*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('my-dashboard') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-user-circle text-success"></i></span>
+                                <span class="nav-link-title">My Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item <?= url_is('ranking*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('ranking') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-ranking-star text-warning"></i></span>
+                                <span class="nav-link-title">Auto Ranking</span>
+                            </a>
+                        </li>
+
                         <!-- CATEGORY: OPERASIONAL -->
                         <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
                             <i class="fas fa-screwdriver-wrench me-1 text-info"></i> OPERASIONAL
@@ -1880,6 +1893,80 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                     .catch(function() {});
             }
             setInterval(refreshKpi, 60000);
+        })();
+        // STEP 11: Smart Filter Global Component (Phase 32)
+        (function initSmartFilter() {
+            // Inject Quick Filter Bar into any element with class .smart-filter-target
+            var targets = document.querySelectorAll('.smart-filter-target');
+            if (!targets.length) return;
+
+            var filterHtml = '<div class="smart-filter-bar d-flex flex-wrap gap-1 mb-3 align-items-center" style="background:#f8fafc;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;">' +
+                '<span style="font-size:10px;font-weight:800;color:#64748b;margin-right:6px;">FILTER CEPAT:</span>' +
+                '<button class="btn btn-xs btn-outline-primary sf-btn" data-range="today" style="font-size:11px;border-radius:8px;padding:3px 10px;">Hari Ini</button>' +
+                '<button class="btn btn-xs btn-outline-secondary sf-btn" data-range="yesterday" style="font-size:11px;border-radius:8px;padding:3px 10px;">Kemarin</button>' +
+                '<button class="btn btn-xs btn-outline-secondary sf-btn" data-range="7days" style="font-size:11px;border-radius:8px;padding:3px 10px;">7 Hari</button>' +
+                '<button class="btn btn-xs btn-outline-secondary sf-btn" data-range="30days" style="font-size:11px;border-radius:8px;padding:3px 10px;">30 Hari</button>' +
+                '<button class="btn btn-xs btn-outline-secondary sf-btn" data-range="thismonth" style="font-size:11px;border-radius:8px;padding:3px 10px;">Bulan Ini</button>' +
+                '<button class="btn btn-xs btn-outline-secondary sf-btn" data-range="thisyear" style="font-size:11px;border-radius:8px;padding:3px 10px;">Tahun Ini</button>' +
+                '<button class="btn btn-xs btn-danger sf-btn" data-range="emergency" style="font-size:11px;border-radius:8px;padding:3px 10px;">Emergency</button>' +
+                '<button class="btn btn-xs btn-success sf-btn" data-range="selesai" style="font-size:11px;border-radius:8px;padding:3px 10px;">Selesai</button>' +
+                '<button class="btn btn-xs btn-outline-danger sf-btn" data-range="belum" style="font-size:11px;border-radius:8px;padding:3px 10px;">Belum</button>' +
+            '</div>';
+
+            targets.forEach(function(el) {
+                el.insertAdjacentHTML('beforebegin', filterHtml);
+            });
+
+            function getDateRange(range) {
+                var today = new Date();
+                var fmt = function(d) { return d.toISOString().slice(0,10); };
+                switch(range) {
+                    case 'today':     return { from: fmt(today), to: fmt(today) };
+                    case 'yesterday': var y=new Date(today); y.setDate(y.getDate()-1); return { from: fmt(y), to: fmt(y) };
+                    case '7days':     var s=new Date(today); s.setDate(s.getDate()-6); return { from: fmt(s), to: fmt(today) };
+                    case '30days':    var s30=new Date(today); s30.setDate(s30.getDate()-29); return { from: fmt(s30), to: fmt(today) };
+                    case 'thismonth': return { from: fmt(today).slice(0,7)+'-01', to: fmt(today) };
+                    case 'thisyear':  return { from: fmt(today).slice(0,4)+'-01-01', to: fmt(today) };
+                    default: return null;
+                }
+            }
+
+            document.querySelectorAll('.sf-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.sf-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    var range = btn.getAttribute('data-range');
+
+                    // Status filter
+                    if (range === 'emergency' || range === 'selesai' || range === 'belum') {
+                        var statusMap = { emergency: 'EMERGENCY', selesai: 'SELESAI', belum: 'BELUM' };
+                        var curUrl = new URL(window.location.href);
+                        if (range === 'emergency') curUrl.searchParams.set('prioritas', 'EMERGENCY');
+                        else curUrl.searchParams.set('status', statusMap[range]);
+                        window.location.href = curUrl.toString();
+                        return;
+                    }
+
+                    var dr = getDateRange(range);
+                    if (!dr) return;
+
+                    // Try to fill form inputs first
+                    var fromInput = document.querySelector('input[name="tanggal_awal"], input[name="start_date"], input[name="from"]');
+                    var toInput   = document.querySelector('input[name="tanggal_akhir"], input[name="end_date"], input[name="to"]');
+                    if (fromInput && toInput) {
+                        fromInput.value = dr.from;
+                        toInput.value   = dr.to;
+                        var form = fromInput.closest('form');
+                        if (form) { form.submit(); return; }
+                    }
+
+                    // Fallback: URL params
+                    var curUrl2 = new URL(window.location.href);
+                    curUrl2.searchParams.set('tanggal_awal', dr.from);
+                    curUrl2.searchParams.set('tanggal_akhir', dr.to);
+                    window.location.href = curUrl2.toString();
+                });
+            });
         })();
     </script>
     <?= $this->renderSection('scripts') ?>

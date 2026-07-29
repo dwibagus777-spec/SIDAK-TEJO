@@ -52,6 +52,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Background Queue Worker Status (Step 4)
     $routes->get('queue/status', 'QueueWorker::status');
 
+    // Phase 32 — Personal Dashboard & Gamification
+    $routes->get('my-dashboard', 'PersonalDashboardController::index');
+    $routes->get('my-dashboard/api-stats', 'PersonalDashboardController::apiStats');
+    $routes->get('my-dashboard/timeline', 'PersonalDashboardController::timeline');
+    $routes->get('ranking', 'PersonalDashboardController::ranking');
+
     // Asset Health Index & Predictive Maintenance Routes (Phase 40)
     $routes->get('asset-health', 'AssetHealthController::index');
     $routes->get('penyulang/health-index', 'AssetHealthController::index');

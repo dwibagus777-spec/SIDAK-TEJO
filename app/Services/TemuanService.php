@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Repositories\TemuanRepository;
 use App\Repositories\TindakLanjutRepository;
+use App\Services\GamificationService;
 use CodeIgniter\HTTP\Files\UploadedFile;
 
 class TemuanService
@@ -212,6 +213,18 @@ class TemuanService
 
         if ($insertId) {
             log_activity('CREATE_TEMUAN', 'Menambahkan temuan baru: ' . $nomorTemuan);
+            // Phase 32 — Gamification: award points for INPUT_TEMUAN
+            try {
+                $userId = (int)$session->get('user_id');
+                if ($userId > 0) {
+                    (new GamificationService())->addPoints(
+                        $userId, 'INPUT_TEMUAN',
+                        'Input Temuan: ' . $nomorTemuan, $insertId, 'temuan'
+                    );
+                }
+            } catch (\Throwable $e) {
+                log_message('warning', '[Gamification] createTemuan hook: ' . $e->getMessage());
+            }
             return [
                 'success' => true,
                 'message' => 'Temuan berhasil disimpan.',
@@ -351,6 +364,32 @@ class TemuanService
         }
 
         $this->temuanRepository->update($temuanId, $updatePayload);
+
+        // Phase 32 — Gamification: award points
+        try {
+            $userId = (int)$session->get('user_id');
+            if ($userId > 0) {
+                $gamSvc = new GamificationService();
+                if ($statusProgress === 'SELESAI') {
+                    $prioritas = strtoupper($temuan['prioritas'] ?? '');
+                    $action = ($prioritas === 'EMERGENCY') ? 'EMERGENCY_SELESAI' : 'SELESAI_TEMUAN';
+                    $gamSvc->addPoints($userId, $action, 'Selesai: ' . $nomorTemuan, $temuanId, 'temuan');
+                    // Check SLA compliance
+                    $tanggalTemuan = strtotime($temuan['tanggal_temuan'] ?? date('Y-m-d'));
+                    $daysDiff = floor((time() - $tanggalTemuan) / 86400);
+                    $maxDays = match($prioritas) {
+                        'EMERGENCY' => 3, 'HIGH' => 7, 'MEDIUM' => 31, default => 90
+                    };
+                    if ($daysDiff <= $maxDays) {
+                        $gamSvc->addPoints($userId, 'SLA_MET', 'SLA Met: ' . $nomorTemuan, $temuanId, 'temuan');
+                    }
+                } else {
+                    $gamSvc->addPoints($userId, 'UPDATE_TEMUAN', 'Update progress: ' . $nomorTemuan, $temuanId, 'temuan');
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', '[Gamification] updateTemuanPekerjaan hook: ' . $e->getMessage());
+        }
 
         return [
             'success' => true,

@@ -25,10 +25,10 @@ class SmartRecommendationEngine
 
         // 2. SLA Completion Time Estimate
         $slaTime = match($prio) {
-            'EMERGENCY' => '0 - 24 Jam',
-            'HIGH'      => '2 Hari',
-            'MEDIUM'    => '7 Hari',
-            default     => '14 Hari'
+            'EMERGENCY' => '3 Hari',
+            'HIGH'      => '7 Hari',
+            'MEDIUM'    => '31 Hari',
+            default     => '3 Bulan'
         };
 
         // 3. Team Recommendation

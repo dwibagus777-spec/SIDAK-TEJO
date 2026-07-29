@@ -191,7 +191,7 @@
             <div class="emc-card kpi-emc-card text-white" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
                 <span class="kpi-emc-lbl">High Priority</span>
                 <div class="kpi-emc-val mt-1"><?= number_format($stats['high'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">SLA 3 Hari</small>
+                <small class="text-white-50 d-block mt-1">SLA 7 Hari</small>
             </div>
         </div>
         <!-- Medium Priority -->
@@ -199,7 +199,7 @@
             <div class="emc-card kpi-emc-card text-white" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
                 <span class="kpi-emc-lbl">Medium Priority</span>
                 <div class="kpi-emc-val mt-1"><?= number_format($stats['medium'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">SLA 7 Hari</small>
+                <small class="text-white-50 d-block mt-1">SLA 31 Hari</small>
             </div>
         </div>
         <!-- Belum Selesai -->
@@ -287,19 +287,19 @@
         <div class="row g-3 text-center">
             <div class="col-md-2 col-6">
                 <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle">
-                    <small class="text-danger fw-bold d-block" style="font-size: 10px;">EMERGENCY (SLA 6 Jam)</small>
+                    <small class="text-danger fw-bold d-block" style="font-size: 10px;">EMERGENCY (SLA 3 Hari)</small>
                     <h4 class="fw-bold text-danger mb-0"><?= number_format($stats['emergency'] ?? 0) ?></h4>
                 </div>
             </div>
             <div class="col-md-2 col-6">
                 <div class="p-3 bg-warning-subtle rounded-3 border border-warning-subtle">
-                    <small class="text-warning fw-bold d-block" style="font-size: 10px;">HIGH (SLA 3 Hari)</small>
+                    <small class="text-warning fw-bold d-block" style="font-size: 10px;">HIGH (SLA 7 Hari)</small>
                     <h4 class="fw-bold text-warning mb-0"><?= number_format($stats['high'] ?? 0) ?></h4>
                 </div>
             </div>
             <div class="col-md-2 col-6">
                 <div class="p-3 bg-primary-subtle rounded-3 border border-primary-subtle">
-                    <small class="text-primary fw-bold d-block" style="font-size: 10px;">MEDIUM (SLA 7 Hari)</small>
+                    <small class="text-primary fw-bold d-block" style="font-size: 10px;">MEDIUM (SLA 31 Hari)</small>
                     <h4 class="fw-bold text-primary mb-0"><?= number_format($stats['medium'] ?? 0) ?></h4>
                 </div>
             </div>

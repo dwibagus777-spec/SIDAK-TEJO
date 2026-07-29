@@ -13,14 +13,14 @@ class WorkOrderOptimizer
         $isEmergency = ($woData['is_emergency'] ?? false) || (strtoupper($woData['prioritas'] ?? '') === 'EMERGENCY');
 
         if ($isEmergency || $riskScore >= 85) {
-            return ['priority' => 'CRITICAL', 'badge' => 'bg-danger', 'sla_hours' => 6];
+            return ['priority' => 'CRITICAL', 'badge' => 'bg-danger', 'sla_hours' => 72];
         } elseif ($riskScore >= 65) {
-            return ['priority' => 'HIGH', 'badge' => 'bg-warning text-dark', 'sla_hours' => 24];
+            return ['priority' => 'HIGH', 'badge' => 'bg-warning text-dark', 'sla_hours' => 168];
         } elseif ($riskScore >= 40) {
-            return ['priority' => 'MEDIUM', 'badge' => 'bg-info text-white', 'sla_hours' => 72];
+            return ['priority' => 'MEDIUM', 'badge' => 'bg-info text-white', 'sla_hours' => 744];
         }
 
-        return ['priority' => 'LOW', 'badge' => 'bg-secondary', 'sla_hours' => 168];
+        return ['priority' => 'LOW', 'badge' => 'bg-secondary', 'sla_hours' => 2160];
     }
 
     /**

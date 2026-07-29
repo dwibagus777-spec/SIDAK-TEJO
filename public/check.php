@@ -3,6 +3,7 @@ if (function_exists('opcache_reset')) { @opcache_reset(); }
 clearstatcache(true);
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+mysqli_report(MYSQLI_REPORT_OFF);
 header('Content-Type: text/plain; charset=utf-8');
 
 $root = dirname(__DIR__);

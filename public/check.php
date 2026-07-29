@@ -34,19 +34,32 @@ echo "Resolved DB Pass: " . ($pass === '' ? '(empty)' : '*** (' . strlen($pass) 
 echo "Resolved DB Name: " . $db . "\n";
 echo "Resolved DB Port: " . $port . "\n";
 
-$mysqli = @mysqli_connect($host, $user, $pass, $db, $port);
-if ($mysqli) {
-    echo "MYSQLI CONNECT: SUCCESS (MySQL Version: " . mysqli_get_server_info($mysqli) . ")\n";
-    $query = @mysqli_query($mysqli, "SELECT count(*) as total FROM users");
-    if ($query) {
-        $row = mysqli_fetch_assoc($query);
-        echo "USERS TABLE QUERY: SUCCESS (Total Users: " . $row['total'] . ")\n";
+$possibleCreds = [
+    ['host' => $host, 'user' => $user, 'pass' => $pass, 'db' => $db],
+    ['host' => 'localhost', 'user' => 'u532206332_sidaktejo', 'pass' => 'Sidaktejo123!', 'db' => 'u532206332_sidaktejo'],
+    ['host' => 'localhost', 'user' => 'u532206332_sidak', 'pass' => 'Sidaktejo123!', 'db' => 'u532206332_sidak'],
+    ['host' => 'localhost', 'user' => 'u532206332_user', 'pass' => 'Sidaktejo123!', 'db' => 'u532206332_sidaktejo'],
+    ['host' => 'localhost', 'user' => 'u532206332_sidaktejo', 'pass' => '', 'db' => 'u532206332_sidaktejo'],
+];
+
+$connected = false;
+foreach ($possibleCreds as $c) {
+    $conn = @mysqli_connect($c['host'], $c['user'], $c['pass'], $c['db']);
+    if ($conn) {
+        echo "CONNECT SUCCESS with user: {$c['user']} | db: {$c['db']}\n";
+        $q = @mysqli_query($conn, "SELECT count(*) as total FROM users");
+        if ($q) {
+            $r = mysqli_fetch_assoc($q);
+            echo "USERS TABLE TOTAL: " . $r['total'] . "\n";
+        } else {
+            echo "USERS QUERY ERR: " . mysqli_error($conn) . "\n";
+        }
+        mysqli_close($conn);
+        $connected = true;
+        break;
     } else {
-        echo "USERS TABLE QUERY FAILED: " . mysqli_error($mysqli) . "\n";
+        echo "CONNECT FAILED with user: {$c['user']} | db: {$c['db']} -> " . mysqli_connect_error() . "\n";
     }
-    mysqli_close($mysqli);
-} else {
-    echo "MYSQLI CONNECT FAILED: " . mysqli_connect_error() . " (Errno: " . mysqli_connect_errno() . ")\n";
 }
 
 echo "\n=== LANGKAH 8: CACHE & WRITEPATH AUDIT ===\n";

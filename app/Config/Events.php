@@ -35,6 +35,24 @@ Events::on('pre_system', static function (): void {
             ob_end_flush();
         }
 
+        // STEP 8: Auto Ensure Writable Subdirectories (Hostinger Shared Hosting)
+        $writableDirs = ['cache', 'logs', 'session', 'uploads', 'debugbar', 'queue'];
+        foreach ($writableDirs as $wdir) {
+            $path = WRITEPATH . $wdir;
+            if (!is_dir($path)) {
+                @mkdir($path, 0755, true);
+            }
+            if (is_dir($path) && !is_writable($path)) {
+                @chmod($path, 0755);
+                if (!is_writable($path)) {
+                    @chmod($path, 0775);
+                }
+            }
+            if (!is_writable($path)) {
+                log_message('error', '[WRITABLE_CHECK] Folder tidak memiliki izin tulis: ' . $path);
+            }
+        }
+
         ob_start(static fn ($buffer) => $buffer);
     }
 

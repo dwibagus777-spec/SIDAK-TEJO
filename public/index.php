@@ -59,6 +59,23 @@ require FCPATH . '../app/Config/Paths.php';
 
 $paths = new Paths();
 
+// Ensure all writable subdirectories exist and have 0755/0775 write permissions (Hostinger Shared Hosting Compatible)
+(function($writablePath) {
+    $dirs = ['cache', 'logs', 'session', 'uploads', 'debugbar', 'queue'];
+    foreach ($dirs as $dir) {
+        $fullPath = rtrim($writablePath, '/\\') . DIRECTORY_SEPARATOR . $dir;
+        if (!is_dir($fullPath)) {
+            @mkdir($fullPath, 0755, true);
+        }
+        if (is_dir($fullPath) && !is_writable($fullPath)) {
+            @chmod($fullPath, 0755);
+            if (!is_writable($fullPath)) {
+                @chmod($fullPath, 0775);
+            }
+        }
+    }
+})($paths->writableDirectory);
+
 // LOAD THE FRAMEWORK BOOTSTRAP FILE
 require $paths->systemDirectory . '/Boot.php';
 

@@ -28,32 +28,44 @@ class Auth extends BaseController
         }
 
         if ($this->request->getMethod() === 'POST') {
-            
-            // Validasi Input
-            $rules = [
-                'username' => 'required',
-                'password' => 'required'
-            ];
+            try {
+                // Validasi Input
+                $rules = [
+                    'username' => 'required',
+                    'password' => 'required'
+                ];
 
-            if (!$this->validate($rules)) {
+                if (!$this->validate($rules)) {
+                    return view('layouts/auth', [
+                        'validation' => $this->validator
+                    ]);
+                }
+
+                $username   = $this->request->getPost('username');
+                $password   = $this->request->getPost('password');
+                $rememberMe = (bool)$this->request->getPost('remember_me');
+
+                $res = $this->authService->login($username, $password, $rememberMe);
+
+                if ($res['success']) {
+                    return redirect()->to(site_url('dashboard'));
+                }
+
                 return view('layouts/auth', [
-                    'validation' => $this->validator
+                    'error' => $res['message']
                 ]);
+            } catch (\Throwable $e) {
+                log_message('critical', '[LOGIN_CRITICAL] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString());
+                
+                header('Content-Type: text/plain; charset=utf-8', true, 500);
+                echo "=== LOGIN POST EXCEPTION TRACE ===\n";
+                echo "Exception Class: " . get_class($e) . "\n";
+                echo "Message:         " . $e->getMessage() . "\n";
+                echo "File:            " . $e->getFile() . "\n";
+                echo "Line:            " . $e->getLine() . "\n\n";
+                echo "Stack Trace:\n" . $e->getTraceAsString() . "\n";
+                exit(1);
             }
-
-            $username   = $this->request->getPost('username');
-            $password   = $this->request->getPost('password');
-            $rememberMe = (bool)$this->request->getPost('remember_me');
-
-            $res = $this->authService->login($username, $password, $rememberMe);
-
-            if ($res['success']) {
-                return redirect()->to(site_url('dashboard'));
-            }
-
-            return view('layouts/auth', [
-                'error' => $res['message']
-            ]);
         }
 
         return view('layouts/auth');

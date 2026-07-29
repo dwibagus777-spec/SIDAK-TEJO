@@ -19,8 +19,11 @@ $routes->match(['get', 'post'], 'backup/cron', 'Backup::cron');
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {
     
-    // Dashboard & Session Keep-Alive
-    $routes->get('dashboard', 'Dashboard::index');
+    // AI Predictive Maintenance & AI Center Routes
+    $routes->get('ai-center', 'AiPredictiveController::index');
+    $routes->get('ai-predictive', 'AiPredictiveController::index');
+    $routes->get('ai-predictive/api-data', 'AiPredictiveController::apiData');
+    $routes->get('ai-predictive/export-dataset', 'AiPredictiveController::exportDataset');
     $routes->get('executive-dashboard', 'Dashboard::executive');
     $routes->get('dashboard/executive', 'Dashboard::executive');
     $routes->get('dashboard/executive-api', 'Dashboard::executiveApi');

@@ -702,10 +702,10 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                                 <span class="nav-link-title">Executive Analytics</span>
                             </a>
                         </li>
-                        <li class="nav-item <?= url_is('ai-predictive*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('ai-predictive') ?>">
+                        <li class="nav-item <?= (url_is('ai-predictive*') || url_is('ai-center*')) ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('ai-center') ?>">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-brain text-purple"></i></span>
-                                <span class="nav-link-title">AI Predictive & Risk</span>
+                                <span class="nav-link-title">AI Center & Predictive Engine</span>
                             </a>
                         </li>
                         <li class="nav-item <?= url_is('ecc*') ? 'active' : '' ?>">

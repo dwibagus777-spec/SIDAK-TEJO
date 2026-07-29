@@ -298,9 +298,9 @@ if (!function_exists('get_daily_announcement')) {
 
 if (!function_exists('get_photo_url')) {
     /**
-     * Helper tunggal untuk mendapatkan URL foto dengan toleransi berkas hilang
+     * Helper tunggal untuk mendapatkan URL foto dengan toleransi berkas hilang & multi-resolution (thumb/medium/full)
      */
-    function get_photo_url(?string $photoName, ?string $fotoPath = 'foto/'): string
+    function get_photo_url(?string $photoName, ?string $fotoPath = 'foto/', string $size = 'full'): string
     {
         $placeholder = base_url('assets/img/no-image.png');
 
@@ -323,20 +323,35 @@ if (!function_exists('get_photo_url')) {
 
         // Tentukan relative path lokal
         if (str_starts_with($photoName, 'foto/') || str_starts_with($photoName, 'uploads/')) {
-            $relativePath = $photoName;
+            $baseDir = dirname($photoName) . '/';
+            $fileName = basename($photoName);
         } else {
             $dir = (!empty($fotoPath) && trim($fotoPath, '/') !== '') ? rtrim($fotoPath, '/') . '/' : 'foto/';
             $dir = preg_replace('/^\/?public\//', '', $dir);
-            $relativePath = $dir . $photoName;
+            $baseDir = $dir;
+            $fileName = $photoName;
         }
 
-        // Verifikasi keberadaan berkas fisik di server
+        // Ukuran spesifik (thumb / medium)
+        $subDir = match(strtolower($size)) {
+            'thumb'  => 'thumb/',
+            'medium' => 'medium/',
+            default  => ''
+        };
+
+        $relativePath = $baseDir . $subDir . $fileName;
         if (defined('FCPATH') && file_exists(FCPATH . $relativePath)) {
             $mtime = filemtime(FCPATH . $relativePath);
             return base_url($relativePath) . '?v=' . ($mtime ?: time());
         }
 
-        // Fallback jika berkas fisik tidak ditemukan di disk server
+        // Fallback ke file original utama jika subfolder belum terbuat
+        $fallbackPath = $baseDir . $fileName;
+        if (defined('FCPATH') && file_exists(FCPATH . $fallbackPath)) {
+            $mtime = filemtime(FCPATH . $fallbackPath);
+            return base_url($fallbackPath) . '?v=' . ($mtime ?: time());
+        }
+
         return $placeholder;
     }
 }

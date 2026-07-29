@@ -948,7 +948,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                     </div>
 
                     <!-- RUNNING TICKER MOTIVATIONAL ANNOUNCEMENT (CENTER HEADER - DESKTOP ONLY) -->
-                    <div class="header-ticker-container flex-grow-1 mx-3 d-none d-md-flex align-items-center" style="max-width: 50%; overflow: hidden; background: linear-gradient(90deg, #004D4F 0%, #007275 100%); border-radius: 20px; padding: 4px 14px; box-shadow: 0 2px 6px rgba(0,77,79,0.15);">
+                    <div class="header-ticker-container mx-2 d-none d-xl-flex align-items-center" style="max-width: 28%; min-width: 180px; overflow: hidden; background: linear-gradient(90deg, #004D4F 0%, #007275 100%); border-radius: 20px; padding: 4px 14px; box-shadow: 0 2px 6px rgba(0,77,79,0.15);">
                         <i class="fas fa-bullhorn text-warning me-2 animate__animated animate__pulse animate__infinite" style="font-size: 12px; flex-shrink: 0;"></i>
                         <span class="badge bg-warning text-dark font-weight-bold me-2 px-2" style="font-size: 10px; border-radius: 10px; flex-shrink: 0;">MOTIVASI:</span>
                         <div class="ticker-wrapper flex-grow-1" style="overflow: hidden; white-space: nowrap; position: relative;">
@@ -958,8 +958,38 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         </div>
                     </div>
 
+                    <!-- STEP 6: GLOBAL SMART SEARCH BAR -->
+                    <div class="flex-grow-1 mx-2 d-none d-md-block" style="max-width: 340px; position: relative;" id="global-search-wrapper">
+                        <form method="GET" action="<?= site_url('smart-search') ?>" autocomplete="off" id="global-search-form">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" style="border-radius: 10px 0 0 10px; background: #f8fafc; border-color: #e2e8f0;">
+                                    <i class="fas fa-search text-muted" style="font-size: 11px;"></i>
+                                </span>
+                                <input type="text" name="q" id="global-search-input" class="form-control"
+                                       placeholder="Cari temuan, WO, penyulang..."
+                                       style="border-left: none; border-radius: 0 10px 10px 0; border-color: #e2e8f0; font-size: 12px;"
+                                       autocomplete="off">
+                            </div>
+                        </form>
+                        <!-- Autocomplete Dropdown -->
+                        <div id="global-search-dropdown" class="shadow-sm" style="display:none; position:absolute; top:calc(100% + 6px); left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:12px; z-index:9999; max-height:320px; overflow-y:auto;"></div>
+                    </div>
+
                     <div class="navbar-nav flex-row align-items-center flex-shrink-0" style="gap: 6px;">
-                        <div class="nav-item me-2 d-none d-sm-block">
+                        <!-- STEP 8: Favorite Menu Button -->
+                        <div class="nav-item dropdown">
+                            <button class="btn btn-sm btn-outline-warning px-2 py-1 dropdown-toggle" type="button"
+                                    id="favMenuToggle" data-bs-toggle="dropdown" aria-expanded="false"
+                                    title="Menu Favorit" style="font-size: 11px; border-radius: 8px;">
+                                <i class="fas fa-star"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end p-2" id="fav-menu-list" style="min-width: 220px; border-radius: 14px;">
+                                <li class="text-muted small px-2 pb-1 fw-bold" style="font-size: 10px; letter-spacing: 1px;">MENU FAVORIT</li>
+                                <li><hr class="dropdown-divider mt-0 mb-2"></li>
+                                <li><div class="text-center text-muted py-2" style="font-size: 12px;" id="fav-empty-msg">Belum ada menu favorit.<br><small>Klik ⭐ di sidebar untuk tambah.</small></div></li>
+                            </ul>
+                        </div>
+                        <div class="nav-item me-1 d-none d-sm-block">
                             <span class="fw-bold text-dark" style="font-size: 0.8rem;">
                                 <i class="fas fa-user-circle me-1" style="color: #005eb8;"></i> <?= esc(session()->get('user_name')) ?> 
                                 <span class="badge bg-blue-lt ms-1" style="font-size: 10px; font-weight: 700;"><?= esc(get_role_label(session()->get('user_role'))) ?></span>
@@ -1639,11 +1669,218 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         container.html(html);
                     }
                 })
-                .catch(err => console.error("Notification Poller Error:", err));
+                .catch(err => console.log('Notif error:', err));
         }
 
         fetchNavbarNotifications();
         setInterval(fetchNavbarNotifications, 30000);
+
+        // STEP 14: Online / Offline Network Status Badge Engine
+        function updateNetworkStatus() {
+            var $badge = $('#network-status-badge');
+            if (!$badge.length) {
+                $('body').append('<div id="network-status-badge" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-size: 11px; font-weight: 800; padding: 6px 14px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s ease;"></div>');
+                $badge = $('#network-status-badge');
+            }
+
+            if (navigator.onLine) {
+                $badge.css({ 'background': '#10b981', 'color': '#ffffff' })
+                      .html('<i class="fas fa-wifi me-1"></i> ONLINE');
+                setTimeout(function() { $badge.fadeOut(); }, 4000);
+            } else {
+                $badge.css({ 'background': '#ef4444', 'color': '#ffffff' })
+                      .html('<i class="fas fa-plane me-1"></i> OFFLINE (Disimpan Lokal)').fadeIn();
+            }
+        }
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+        updateNetworkStatus();
+
+        // STEP 10: Keyboard Shortcuts Engine
+        document.addEventListener('keydown', function(e) {
+            // CTRL + N: Input Temuan Baru
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+                e.preventDefault();
+                window.location.href = "<?= site_url('temuan/create') ?>";
+            }
+            // CTRL + F: Focus Global Smart Search or local input
+            else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+                e.preventDefault();
+                var $localSearch = $('#gis-search-input, input[type="search"][id!="global-search-input"], input[name="search"]').first();
+                var $globalInput = $('#global-search-input');
+                if ($localSearch.length) {
+                    $localSearch.focus().select();
+                } else if ($globalInput.length) {
+                    $globalInput.focus().select();
+                } else {
+                    window.location.href = '<?= site_url('smart-search') ?>';
+                }
+            }
+            // CTRL + S: Save Active Form
+            else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                var $activeForm = $('form:visible').first();
+                if ($activeForm.length) {
+                    e.preventDefault();
+                    $activeForm.submit();
+                }
+            }
+            // ESC: Close Modals
+            else if (e.key === 'Escape') {
+                $('.modal.show').modal('hide');
+                $('#global-search-dropdown').hide();
+            }
+        });
+
+        // STEP 5: Auto Save Form Drafts (localStorage)
+        $('form input, form textarea, form select').on('input change', function() {
+            var $form = $(this).closest('form');
+            if ($form.attr('action') && $form.attr('action').indexOf('temuan') !== -1) {
+                var formData = $form.serializeArray();
+                localStorage.setItem('sidak_form_draft', JSON.stringify(formData));
+            }
+        });
+
+        // STEP 11: Session Restore — reload saved draft on create form page
+        (function restoreFormDraft() {
+            if (window.location.pathname.indexOf('/create') === -1) return;
+            var saved = localStorage.getItem('sidak_form_draft');
+            if (!saved) return;
+            try {
+                var arr = JSON.parse(saved);
+                arr.forEach(function(field) {
+                    var $el = $('[name="' + field.name + '"]');
+                    if ($el.length && field.value) $el.val(field.value).trigger('change');
+                });
+                console.log('[SIDAK] Draft form dipulihkan.');
+            } catch(e) { localStorage.removeItem('sidak_form_draft'); }
+        })();
+
+        // STEP 6: Global Smart Search Autocomplete
+        (function initGlobalSearch() {
+            var $input  = $('#global-search-input');
+            var $drop   = $('#global-search-dropdown');
+            var delay;
+            var searchUrl = '<?= site_url('smart-search/api') ?>';
+            var fullUrl   = '<?= site_url('smart-search') ?>';
+
+            $input.on('input', function() {
+                clearTimeout(delay);
+                var q = $(this).val().trim();
+                if (q.length < 2) { $drop.hide(); return; }
+                delay = setTimeout(function() {
+                    fetch(searchUrl + '?q=' + encodeURIComponent(q))
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            if (!data.results || data.results.length === 0) {
+                                $drop.html('<div class="p-3 text-muted text-center small">Tidak ditemukan. Tekan Enter untuk pencarian penuh.</div>').show();
+                                return;
+                            }
+                            var html = '';
+                            data.results.slice(0, 8).forEach(function(item) {
+                                var colorClass = item._color || 'text-secondary';
+                                var icon = item._icon || 'fa-file';
+                                html += '<a href="' + (item._url || '#') + '" class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none border-bottom smart-search-item">';
+                                html += '<i class="fas ' + icon + ' ' + colorClass + '" style="width:16px;"></i>';
+                                html += '<div class="flex-grow-1"><div class="fw-semibold small text-dark text-truncate" style="max-width:260px;">' + (item._label || '') + '</div>';
+                                if (item.prioritas) html += '<small class="badge badge-sm" style="font-size:9px;background:#e2e8f0;color:#374151;">' + item.prioritas + '</small>';
+                                html += '</div></a>';
+                            });
+                            html += '<a href="' + fullUrl + '?q=' + encodeURIComponent(q) + '" class="d-block text-center py-2 text-primary small fw-bold border-top">Lihat semua hasil →</a>';
+                            $drop.html(html).show();
+                        })
+                        .catch(function() { $drop.hide(); });
+                }, 280);
+            });
+
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('#global-search-wrapper').length) $drop.hide();
+            });
+
+            $('#global-search-form').on('submit', function() {
+                $drop.hide();
+                return true;
+            });
+        })();
+
+        // STEP 8: Favorite Menu Engine (localStorage)
+        (function initFavMenu() {
+            var FAV_KEY = 'sidak_fav_menu_v1';
+            var $list   = $('#fav-menu-list');
+            var $empty  = $('#fav-empty-msg');
+
+            function loadFavs() {
+                var favs = [];
+                try { favs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e) {}
+                if (favs.length === 0) { $empty.show(); return; }
+                $empty.hide();
+                var html = '';
+                favs.forEach(function(f, i) {
+                    html += '<li><a class="dropdown-item rounded-2 d-flex align-items-center gap-2" href="' + f.url + '" style="font-size: 12px;">';
+                    html += '<i class="fas ' + (f.icon || 'fa-link') + ' text-warning"></i>' + f.label;
+                    html += '<button class="btn btn-sm btn-link text-danger ms-auto p-0" onclick="removeFav(' + i + '); event.preventDefault();" style="font-size:10px;"><i class="fas fa-times"></i></button>';
+                    html += '</a></li>';
+                });
+                $list.find('li').filter(':not(:first):not(:nth-child(2))').remove();
+                $list.append(html);
+            }
+
+            window.removeFav = function(idx) {
+                var favs = [];
+                try { favs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e) {}
+                favs.splice(idx, 1);
+                localStorage.setItem(FAV_KEY, JSON.stringify(favs));
+                $list.find('li').filter(':not(:first):not(:nth-child(2))').remove();
+                loadFavs();
+            };
+
+            window.addFav = function(label, url, icon) {
+                var favs = [];
+                try { favs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e) {}
+                var exists = favs.some(function(f) { return f.url === url; });
+                if (!exists) {
+                    favs.push({ label: label, url: url, icon: icon || 'fa-star' });
+                    localStorage.setItem(FAV_KEY, JSON.stringify(favs));
+                    loadFavs();
+                    if (typeof Toastify !== 'undefined') {
+                        Toastify({ text: '⭐ Ditambahkan ke Favorit!', duration: 2500, gravity: 'bottom', position: 'right', style: { background: '#10b981' } }).showToast();
+                    }
+                }
+            };
+
+            loadFavs();
+        })();
+
+        // STEP 12: Auto Refresh Dashboard KPI Stats (AJAX, every 60s)
+        (function initDashboardRefresh() {
+            if (!document.getElementById('kpi-total-temuan')) return;
+            function refreshKpi() {
+                fetch('<?= site_url('dashboard/analytics-data') ?>')
+                    .then(function(r) { return r.json(); })
+                    .then(function(resp) {
+                        if (!resp || !resp.data) return;
+                        var d = resp.data;
+                        // Map total_temuan
+                        var el = document.getElementById('kpi-total-temuan');
+                        if (el && d.total_temuan !== undefined) el.textContent = d.total_temuan;
+                        // Map prioritas_breakdown
+                        var pb = d.prioritas_breakdown || {};
+                        var pMap = { 'kpi-emergency': 'EMERGENCY', 'kpi-high': 'HIGH', 'kpi-medium': 'MEDIUM' };
+                        Object.keys(pMap).forEach(function(id) {
+                            var pEl = document.getElementById(id);
+                            if (pEl) pEl.textContent = pb[pMap[id]] || 0;
+                        });
+                        // Map status_breakdown
+                        var sb = d.status_breakdown || {};
+                        var sMap = { 'kpi-selesai': 'SELESAI', 'kpi-belum': 'BELUM', 'kpi-proses': 'PROSES' };
+                        Object.keys(sMap).forEach(function(id) {
+                            var sEl = document.getElementById(id);
+                            if (sEl) sEl.textContent = sb[sMap[id]] || 0;
+                        });
+                    })
+                    .catch(function() {});
+            }
+            setInterval(refreshKpi, 60000);
+        })();
     </script>
     <?= $this->renderSection('scripts') ?>
 </body>

@@ -15,6 +15,9 @@ $routes->match(['get', 'post'], 'auth/logout', 'Auth::logout');
 // Rute Cron Job Otomatis Harian Backup (Hostinger Compatible)
 $routes->match(['get', 'post'], 'backup/cron', 'Backup::cron');
 
+// Background Queue Worker Cron (Hostinger cron, token secured)
+$routes->get('queue/run', 'QueueWorker::run');
+
 
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {
@@ -41,6 +44,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('audit-log', 'AuditTrailController::index');
     $routes->get('digital-evidence/(:num)', 'AuditTrailController::evidence/$1');
     $routes->get('time-machine/(:num)', 'AuditTrailController::timeMachine/$1');
+
+    // Smart Search — Global Multi-Table Search (Step 6)
+    $routes->get('smart-search', 'SmartSearch::index');
+    $routes->get('smart-search/api', 'SmartSearch::api');
+
+    // Background Queue Worker Status (Step 4)
+    $routes->get('queue/status', 'QueueWorker::status');
 
     // Asset Health Index & Predictive Maintenance Routes (Phase 40)
     $routes->get('asset-health', 'AssetHealthController::index');

@@ -174,7 +174,7 @@
         <div class="col-lg-3 col-md-6 col-12">
             <div class="emc-card kpi-emc-card bg-primary">
                 <span class="kpi-emc-lbl">Jumlah Temuan</span>
-                <div class="kpi-emc-val mt-1"><?= number_format($stats['total'] ?? 0) ?></div>
+                <div class="kpi-emc-val mt-1" id="kpi-total-temuan"><?= number_format($stats['total'] ?? 0) ?></div>
                 <small class="text-white-50 d-block mt-1">Total Inspeksi Fisik</small>
             </div>
         </div>
@@ -182,7 +182,7 @@
         <div class="col-lg-3 col-md-6 col-12">
             <div class="emc-card kpi-emc-card bg-danger">
                 <span class="kpi-emc-lbl">Emergency</span>
-                <div class="kpi-emc-val mt-1"><?= number_format($stats['emergency'] ?? 0) ?></div>
+                <div class="kpi-emc-val mt-1" id="kpi-emergency"><?= number_format($stats['emergency'] ?? 0) ?></div>
                 <small class="text-white-50 d-block mt-1">Tindak Lanjut Darurat</small>
             </div>
         </div>
@@ -190,7 +190,7 @@
         <div class="col-lg-3 col-md-6 col-12">
             <div class="emc-card kpi-emc-card text-white" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
                 <span class="kpi-emc-lbl">High Priority</span>
-                <div class="kpi-emc-val mt-1"><?= number_format($stats['high'] ?? 0) ?></div>
+                <div class="kpi-emc-val mt-1" id="kpi-high"><?= number_format($stats['high'] ?? 0) ?></div>
                 <small class="text-white-50 d-block mt-1">SLA 7 Hari</small>
             </div>
         </div>
@@ -198,7 +198,7 @@
         <div class="col-lg-3 col-md-6 col-12">
             <div class="emc-card kpi-emc-card text-white" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
                 <span class="kpi-emc-lbl">Medium Priority</span>
-                <div class="kpi-emc-val mt-1"><?= number_format($stats['medium'] ?? 0) ?></div>
+                <div class="kpi-emc-val mt-1" id="kpi-medium"><?= number_format($stats['medium'] ?? 0) ?></div>
                 <small class="text-white-50 d-block mt-1">SLA 31 Hari</small>
             </div>
         </div>
@@ -206,7 +206,7 @@
         <div class="col-lg-3 col-md-6 col-12">
             <div class="emc-card kpi-emc-card bg-dark">
                 <span class="kpi-emc-lbl">Belum Selesai</span>
-                <div class="kpi-emc-val mt-1"><?= number_format($stats['belum'] ?? 0) ?></div>
+                <div class="kpi-emc-val mt-1" id="kpi-belum"><?= number_format($stats['belum'] ?? 0) ?></div>
                 <small class="text-white-50 d-block mt-1">Outstanding</small>
             </div>
         </div>
@@ -222,7 +222,7 @@
         <div class="col-lg-3 col-md-6 col-12">
             <div class="emc-card kpi-emc-card bg-success">
                 <span class="kpi-emc-lbl">Sudah Selesai</span>
-                <div class="kpi-emc-val mt-1"><?= number_format($stats['selesai'] ?? 0) ?></div>
+                <div class="kpi-emc-val mt-1" id="kpi-selesai"><?= number_format($stats['selesai'] ?? 0) ?></div>
                 <small class="text-white-50 d-block mt-1">Tuntas 100%</small>
             </div>
         </div>

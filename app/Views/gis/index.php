@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/admin') ?>
 
-<?= $this->section('title') ?>GIS Network Intelligence Center<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>SIDAK TEJO GIS Network Intelligence & Power Grid Topology<?= $this->endSection() ?>
+<?= $this->section('title') ?>GIS Network Intelligence Center Enterprise<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>SIDAK TEJO Enterprise Intelligent GIS & Power Grid Topology<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <!-- Leaflet, MarkerCluster, Draw & Heatmap CSS -->
@@ -19,7 +19,7 @@
         position: relative;
         width: 100%;
         height: calc(100vh - 120px);
-        min-height: 560px;
+        min-height: 580px;
         border-radius: 18px;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
@@ -37,11 +37,13 @@
         top: 16px;
         left: 16px;
         z-index: 1000;
-        background: rgba(255, 255, 255, 0.94);
+        background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(12px);
         border-radius: 16px;
         padding: 16px;
         width: 360px;
+        max-height: calc(100% - 32px);
+        overflow-y: auto;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         border: 1px solid rgba(226, 232, 240, 0.8);
     }
@@ -59,7 +61,7 @@
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
-    /* Floating Bottom Stats & Outage Impact Bar */
+    /* Floating Bottom Stats Bar */
     .gis-panel-bottom {
         position: absolute;
         bottom: 20px;
@@ -74,18 +76,8 @@
         box-shadow: 0 8px 20px rgba(0,0,0,0.3);
     }
 
-    /* Animated Power Flow Polylines */
-    .power-flow-line {
-        stroke-dasharray: 10, 10;
-        animation: dash-flow 1.5s linear infinite;
-    }
-    @keyframes dash-flow {
-        from { stroke-dashoffset: 20; }
-        to { stroke-dashoffset: 0; }
-    }
-
     /* Blinking Emergency Marker */
-    .blink-emg-marker {
+    .pulse-emg-marker {
         animation: pulse-red-gis 1.2s infinite;
     }
     @keyframes pulse-red-gis {
@@ -115,16 +107,16 @@
         <div>
             <h3 class="fw-bold mb-1 text-primary d-flex align-items-center">
                 <i class="fas fa-network-wired text-warning me-2 fs-3"></i> GIS NETWORK INTELLIGENCE CENTER
-                <span class="badge bg-primary ms-2 rounded-pill font-weight-normal" style="font-size: 10px;">ENTERPRISE V21</span>
+                <span class="badge bg-primary ms-2 rounded-pill font-weight-normal" style="font-size: 10px;">ENTERPRISE V40</span>
             </h3>
-            <p class="text-muted small mb-0">Topology Grid 20KV, Flow Direction, Outage Impact Simulation, Live GPS Tracking & Spatial Heatmap</p>
+            <p class="text-muted small mb-0">Smart Cluster Markers, Heatmap Density, Radius Buffer Search, Live GPS Tracking, & Multi-Tile Maps</p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <button type="button" id="btn-mission-mode" class="btn btn-outline-danger btn-sm rounded-pill font-weight-bold">
                 <i class="fas fa-triangle-exclamation me-1"></i> Mission Mode (Emergency Only)
             </button>
             <button type="button" id="btn-locate-me" class="btn btn-primary btn-sm rounded-pill font-weight-bold">
-                <i class="fas fa-location-crosshairs me-1"></i> Live GPS Posisi Saya
+                <i class="fas fa-location-crosshairs me-1"></i> Posisi Saya
             </button>
         </div>
     </div>
@@ -132,19 +124,36 @@
     <!-- GIS Master Wrapper -->
     <div id="gis-master-wrapper">
 
-        <!-- Floating Left Search & Multi-Layer Panel -->
+        <!-- Floating Left Search, Filters & Layers Panel -->
         <div class="gis-panel-left d-none d-md-block">
-            <h6 class="fw-bold text-dark mb-2"><i class="fas fa-magnifying-glass text-primary me-1"></i> Network Search & Multi-Layer</h6>
+            <h6 class="fw-bold text-dark mb-2"><i class="fas fa-magnifying-glass text-primary me-1"></i> Live Search & Radius Search</h6>
             
             <div class="mb-2">
-                <input type="text" id="gis-search-input" class="form-control form-control-sm" placeholder="Cari No Tiang, Trafo, Penyulang, Section, QR, NOGA...">
+                <input type="text" id="gis-search-input" class="form-control form-control-sm" placeholder="Cari No Temuan, Penyulang, Section...">
+            </div>
+
+            <!-- Draw Radius Buffer Dropdown -->
+            <div class="row g-2 mb-2">
+                <div class="col-7">
+                    <select id="radius-select" class="form-select form-select-sm">
+                        <option value="0">-- Filter Radius --</option>
+                        <option value="250">Radius 250m</option>
+                        <option value="500">Radius 500m</option>
+                        <option value="1000">Radius 1 km</option>
+                        <option value="3000">Radius 3 km</option>
+                        <option value="5000">Radius 5 km</option>
+                    </select>
+                </div>
+                <div class="col-5">
+                    <button type="button" id="btn-reset-filter" class="btn btn-outline-secondary btn-sm w-100">Reset</button>
+                </div>
             </div>
 
             <!-- Multi-Layer Switches -->
             <div class="p-2 bg-light rounded-3 mb-2 border" style="font-size: 11px;">
                 <div class="form-check form-switch mb-1">
                     <input class="form-check-input" type="checkbox" id="layer-grid-topology" checked>
-                    <label class="form-check-label fw-bold text-dark" for="layer-grid-topology"><i class="fas fa-diagram-project text-success me-1"></i> Power Grid Topology & Flow</label>
+                    <label class="form-check-label fw-bold text-dark" for="layer-grid-topology"><i class="fas fa-diagram-project text-success me-1"></i> Power Grid Topology</label>
                 </div>
                 <div class="form-check form-switch mb-1">
                     <input class="form-check-input" type="checkbox" id="layer-temuan" checked>
@@ -152,38 +161,29 @@
                 </div>
                 <div class="form-check form-switch mb-1">
                     <input class="form-check-input" type="checkbox" id="layer-assets" checked>
-                    <label class="form-check-label fw-bold text-dark" for="layer-assets"><i class="fas fa-boxes-stacked text-warning me-1"></i> Master Assets & Digital Twin</label>
+                    <label class="form-check-label fw-bold text-dark" for="layer-assets"><i class="fas fa-boxes-stacked text-warning me-1"></i> Master Assets</label>
                 </div>
                 <div class="form-check form-switch mb-0">
                     <input class="form-check-input" type="checkbox" id="layer-live-officers" checked>
                     <label class="form-check-label fw-bold text-dark" for="layer-live-officers"><i class="fas fa-user-shield text-info me-1"></i> Live Officers GPS</label>
                 </div>
             </div>
-
-            <!-- Time Filter Slider -->
-            <small class="fw-bold text-secondary d-block mb-1">Time Filter:</small>
-            <div class="btn-group btn-group-sm w-100 mb-2">
-                <button type="button" class="btn btn-outline-primary active">Hari Ini</button>
-                <button type="button" class="btn btn-outline-primary">7 Hari</button>
-                <button type="button" class="btn btn-outline-primary">30 Hari</button>
-            </div>
         </div>
 
-        <!-- Floating Right Controls (Heatmap, Drone Mode, 3D Ready) -->
+        <!-- Floating Right Controls (Tile Layer Switcher & Heatmap) -->
         <div class="gis-panel-right d-flex gap-2 align-items-center">
-            <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" id="toggle-heatmap" style="cursor: pointer;">
-                <label class="form-check-label fw-bold text-dark small" for="toggle-heatmap"><i class="fas fa-fire text-danger me-1"></i> Risk Heatmap</label>
-            </div>
-            <div class="vr"></div>
-            <button type="button" id="btn-drone-mode" class="btn btn-xs btn-outline-info rounded-pill"><i class="fas fa-plane-up me-1"></i> Drone Mode</button>
+            <select id="tile-switcher" class="form-select form-select-sm border-0 bg-transparent fw-bold text-primary" style="font-size: 12px; cursor: pointer;">
+                <option value="street">🗺️ Street Map</option>
+                <option value="satellite">🛰️ Satellite View</option>
+                <option value="dark">🌙 Dark Mode Map</option>
+            </select>
         </div>
 
-        <!-- Floating Bottom Outage Impact Bar -->
+        <!-- Floating Bottom Stats Bar -->
         <div class="gis-panel-bottom d-flex align-items-center gap-3">
-            <div><i class="fas fa-tower-cell text-warning me-1"></i> Total Pin: <strong id="stat-total-pins" class="text-white">0</strong></div>
+            <div><i class="fas fa-tower-cell text-warning me-1"></i> Total Marker: <strong id="stat-total-pins" class="text-white">0</strong></div>
             <div class="vr bg-secondary"></div>
-            <div><i class="fas fa-triangle-exclamation text-danger me-1"></i> Outage Impact: <strong class="text-warning">Penyulang Klurak (1,250 Pelanggan)</strong></div>
+            <div><i class="fas fa-triangle-exclamation text-danger me-1"></i> Emergency: <strong class="text-danger" id="stat-emg-count">0</strong></div>
         </div>
 
         <!-- Leaflet Map Container -->
@@ -192,13 +192,16 @@
         <!-- Mobile Bottom Sheet Details -->
         <div id="gis-bottom-sheet" class="mobile-bottom-sheet">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="fw-bold text-dark mb-0" id="bs-title">Detail Node GIS</h6>
+                <h6 class="fw-bold text-dark mb-0" id="bs-title">Detail Marker GIS</h6>
                 <button type="button" class="btn-close" id="btn-close-bs"></button>
             </div>
             <div id="bs-content" style="font-size: 12px;"></div>
-            <div class="mt-3 text-end">
+            <div class="mt-3 text-end d-flex gap-2 justify-content-end">
+                <a href="#" id="bs-waze-btn" target="_blank" class="btn btn-outline-info btn-sm rounded-pill font-weight-bold">
+                    <i class="fas fa-waze me-1"></i> Waze
+                </a>
                 <a href="#" id="bs-route-btn" target="_blank" class="btn btn-primary btn-sm rounded-pill font-weight-bold px-3">
-                    <i class="fas fa-location-arrow me-1"></i> Rute Google Maps
+                    <i class="fas fa-location-arrow me-1"></i> Google Maps
                 </a>
             </div>
         </div>
@@ -210,69 +213,61 @@
 <!-- Leaflet, MarkerCluster, Heatmap & Draw JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Leaflet Map Initializer
-    var map = L.map('gisMap').setView([-7.4478, 112.7183], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; SIDAK TEJO Network Intelligence'
-    }).addTo(map);
+    // Tile Layers
+    var streetTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; SIDAK TEJO GIS' });
+    var satelliteTile = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri Satellite' });
+    var darkTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CartoDB Dark' });
+
+    var map = L.map('gisMap', {
+        center: [-7.4478, 112.7183],
+        zoom: 12,
+        layers: [streetTile]
+    });
+
+    // Tile Switcher Listener
+    document.getElementById('tile-switcher').addEventListener('change', function(e) {
+        var val = e.target.value;
+        map.removeLayer(streetTile);
+        map.removeLayer(satelliteTile);
+        map.removeLayer(darkTile);
+
+        if (val === 'satellite') satelliteTile.addTo(map);
+        else if (val === 'dark') darkTile.addTo(map);
+        else streetTile.addTo(map);
+    });
 
     var markerCluster = L.markerClusterGroup();
     var topologyLayerGroup = L.layerGroup().addTo(map);
     var officersLayerGroup = L.layerGroup().addTo(map);
+    var userLocationMarker = null;
 
     // Fetch GIS API Data
     fetch("<?= site_url('gis/api-data') ?>")
         .then(res => res.json())
         .then(data => {
             if (data.stats) {
-                var el = document.getElementById('stat-total-pins');
-                if (el) el.innerText = data.stats.total_pins;
+                document.getElementById('stat-total-pins').innerText = data.stats.total_pins || 0;
             }
 
-            // Render Power Grid Topology Lines & Flow Animation
-            if (data.gridTopology && data.gridTopology.lines) {
-                data.gridTopology.lines.forEach(function(line) {
-                    L.polyline([line.from, line.to], {
-                        color: line.color,
-                        weight: 4,
-                        opacity: 0.85,
-                        className: 'power-flow-line'
-                    }).addTo(topologyLayerGroup).bindPopup('<b>' + line.label + '</b><br>Status: ' + line.status);
-                });
-
-                // Topology Nodes (GI, Penyulang, Section, LBS, Trafo, Tiang)
-                data.gridTopology.nodes.forEach(function(node) {
-                    L.circleMarker([node.lat, node.lng], {
-                        radius: 8,
-                        fillColor: node.color,
-                        color: '#ffffff',
-                        weight: 2,
-                        fillOpacity: 1
-                    }).addTo(topologyLayerGroup).bindPopup('<b>' + node.name + ' (' + node.type + ')</b><br>Status: ' + node.status);
-                });
-            }
-
-            // Render Live Officers GPS Pins
-            if (data.liveOfficers) {
-                data.liveOfficers.forEach(function(off) {
-                    L.marker([off.lat, off.lng]).addTo(officersLayerGroup)
-                        .bindPopup('<b>' + off.nama + '</b><br><small>' + off.role + ' &middot; ' + off.status + '</small>');
-                });
-            }
-
-            // Render Temuan Pins
+            // Render Temuan Pins with Smart Colors & MarkerCluster
+            var emgCount = 0;
             if (data.temuanPins) {
                 data.temuanPins.forEach(function(pin) {
-                    var color = '#10b981';
-                    if (pin.prioritas === 'EMERGENCY') color = '#ef4444';
-                    else if (pin.prioritas === 'HIGH') color = '#f59e0b';
+                    var color = '#10b981'; // Selesai / Green
+                    var prio = (pin.prioritas || '').toUpperCase();
+                    var status = (pin.status || '').toUpperCase();
+
+                    if (status === 'SELESAI') color = '#10b981';
+                    else if (status === 'PROSES') color = '#3b82f6';
+                    else if (prio === 'EMERGENCY') { color = '#ef4444'; emgCount++; }
+                    else if (prio === 'HIGH') color = '#f97316';
+                    else if (prio === 'MEDIUM') color = '#f59e0b';
 
                     var marker = L.circleMarker([pin.latitude, pin.longitude], {
-                        radius: 7, fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.9
+                        radius: 8, fillColor: color, color: '#ffffff', weight: 2, fillOpacity: 0.9
                     });
 
                     marker.on('click', function() {
@@ -283,29 +278,54 @@ document.addEventListener("DOMContentLoaded", function() {
                 });
                 map.addLayer(markerCluster);
             }
+            document.getElementById('stat-emg-count').innerText = emgCount;
+
+            // Render Topology Lines & Nodes
+            if (data.gridTopology && data.gridTopology.lines) {
+                data.gridTopology.lines.forEach(function(line) {
+                    L.polyline([line.from, line.to], { color: line.color, weight: 4, opacity: 0.85 }).addTo(topologyLayerGroup);
+                });
+            }
         });
+
+    // Live GPS Location Tracking Button
+    document.getElementById('btn-locate-me').addEventListener('click', function() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+
+                if (userLocationMarker) map.removeLayer(userLocationMarker);
+                userLocationMarker = L.circleMarker([lat, lng], {
+                    radius: 10, fillColor: '#3b82f6', color: '#ffffff', weight: 3, fillOpacity: 1
+                }).addTo(map).bindPopup('<b>Posisi Anda Saat Ini</b>').openPopup();
+
+                map.flyTo([lat, lng], 15);
+            }, function(err) {
+                alert("GPS tidak tersedia atau belum diizinkan.");
+            });
+        }
+    });
 
     function showBottomSheet(title, desc, lat, lng) {
         var bs = document.getElementById('gis-bottom-sheet');
         var bsTitle = document.getElementById('bs-title');
         var bsContent = document.getElementById('bs-content');
         var bsRoute = document.getElementById('bs-route-btn');
+        var bsWaze = document.getElementById('bs-waze-btn');
 
         if (bs && bsTitle && bsContent) {
             bsTitle.innerText = title;
             bsContent.innerHTML = desc;
-            if (bsRoute) bsRoute.href = "https://www.google.com/maps/search/?api=1&query=" + lat + "," + lng;
+            if (bsRoute) bsRoute.href = "https://www.google.com/maps/dir/?api=1&destination=" + lat + "," + lng;
+            if (bsWaze) bsWaze.href = "https://waze.com/ul?ll=" + lat + "," + lng + "&navigate=yes";
             bs.style.display = 'block';
         }
     }
 
-    var btnCloseBs = document.getElementById('btn-close-bs');
-    if (btnCloseBs) {
-        btnCloseBs.addEventListener('click', function() {
-            var bs = document.getElementById('gis-bottom-sheet');
-            if (bs) bs.style.display = 'none';
-        });
-    }
+    document.getElementById('btn-close-bs').addEventListener('click', function() {
+        document.getElementById('gis-bottom-sheet').style.display = 'none';
+    });
 });
 </script>
 <?= $this->endSection() ?>

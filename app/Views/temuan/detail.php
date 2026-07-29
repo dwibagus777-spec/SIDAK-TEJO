@@ -385,6 +385,24 @@ $statusClass = match($statusStr) {
                     </div>
                 </div>
 
+                <!-- Leaflet Mini Map (Phase 40 Intelligent GIS) -->
+                <?php if (!empty($temuan['latitude']) && !empty($temuan['longitude'])): ?>
+                <div class="mb-3">
+                    <h6 class="font-weight-bold text-primary mb-2"><i class="fas fa-map-marked-alt me-1"></i> Mini Map Lokasi Presisi:</h6>
+                    <div id="miniGisMap" class="rounded border shadow-sm" style="height: 220px; width: 100%; z-index: 1;"></div>
+                </div>
+                <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    if (typeof L !== 'undefined') {
+                        var miniMap = L.map('miniGisMap').setView([<?= $temuan['latitude'] ?>, <?= $temuan['longitude'] ?>], 15);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; SIDAK TEJO GIS' }).addTo(miniMap);
+                        L.marker([<?= $temuan['latitude'] ?>, <?= $temuan['longitude'] ?>]).addTo(miniMap)
+                            .bindPopup('<b><?= esc($temuan['nomor_temuan']) ?></b><br><small><?= esc($temuan['jenis_temuan']) ?></small>').openPopup();
+                    }
+                });
+                </script>
+                <?php endif; ?>
+
                 <!-- 2-Column Photo Gallery Task 3 -->
                 <div class="mb-3">
                     <h6 class="font-weight-bold"><i class="fas fa-images text-secondary me-1"></i> Galeri Foto Temuan Lapangan:</h6>

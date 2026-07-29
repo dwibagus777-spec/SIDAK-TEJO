@@ -2,50 +2,71 @@
 
 namespace App\Controllers\Api;
 
-use App\Controllers\BaseController;
-use CodeIgniter\HTTP\ResponseInterface;
+use CodeIgniter\RESTful\ResourceController;
+use App\Services\IntegrationService;
 
-abstract class BaseApiController extends BaseController
+abstract class BaseApiController extends ResourceController
 {
-    /**
-     * Respon JSON Sukses
-     */
-    protected function respondSuccess($data = null, string $message = 'Sukses', int $statusCode = 200): ResponseInterface
+    protected IntegrationService $integrationService;
+    protected ?array $apiUser = null;
+    protected float $startTime;
+
+    public function __construct()
     {
-        $payload = [
-            'status'  => true,
-            'message' => $message,
-        ];
-
-        if ($data !== null) {
-            $payload['data'] = $data;
-        }
-
-        return $this->response->setStatusCode($statusCode)->setJSON($payload);
+        $this->integrationService = new IntegrationService();
+        $this->startTime = microtime(true);
     }
 
-    /**
-     * Respon JSON Error
-     */
-    protected function respondError(string $message = 'Terjadi kesalahan', int $statusCode = 400, $errors = null): ResponseInterface
+    protected function respondStandard(bool $status, int $code, string $message, mixed $data = null, array $meta = []): \CodeIgniter\HTTP\ResponseInterface
     {
-        $payload = [
-            'status'  => false,
+        $durationMs = round((microtime(true) - $this->startTime) * 1000, 2);
+
+        // Audit log
+        $this->integrationService->logRequest([
+            'user_id'       => $this->apiUser['user_id'] ?? null,
+            'api_key'       => $this->apiUser['api_key'] ?? null,
+            'method'        => $this->request->getMethod(true),
+            'endpoint'      => $this->request->getUri()->getPath(),
+            'request_body'  => substr(json_encode($this->request->getJSON(true) ?: $this->request->getRawInput()), 0, 1000),
+            'response_body' => substr(json_encode($data), 0, 1000),
+            'status_code'   => $code,
+            'duration_ms'   => $durationMs,
+            'ip_address'    => $this->request->getIPAddress(),
+            'user_agent'    => (string)$this->request->getUserAgent(),
+        ]);
+
+        $responseBody = [
+            'status'  => $status,
+            'code'    => $code,
             'message' => $message,
+            'data'    => $data,
+            'meta'    => array_merge([
+                'version'     => 'v1',
+                'duration_ms' => $durationMs,
+                'timestamp'   => date('Y-m-d H:i:s'),
+            ], $meta),
         ];
 
-        if ($errors !== null) {
-            $payload['errors'] = $errors;
-        }
-
-        return $this->response->setStatusCode($statusCode)->setJSON($payload);
+        return $this->response->setStatusCode($code)->setJSON($responseBody);
     }
 
-    /**
-     * Dapatkan data user dari JWT Token yang telah terotentikasi
-     */
-    protected function getJwtUser(): ?array
+    protected function verifyAuth(): bool
     {
-        return $this->request->jwtUser ?? null;
+        $auth = $this->integrationService->authenticate($this->request);
+        if (!$auth) {
+            return false;
+        }
+
+        // Rate limiter check
+        $identifier = $auth['api_key'] ?? ($this->request->getIPAddress());
+        $rateLimit  = $auth['rate_limit'] ?? 1000;
+
+        if (!$this->integrationService->checkRateLimit($identifier, $rateLimit)) {
+            $this->respondStandard(false, 429, 'Rate limit exceeded. Try again later.');
+            return false;
+        }
+
+        $this->apiUser = $auth;
+        return true;
     }
 }

@@ -810,6 +810,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                             </a>
                         </li>
 
+                        <!-- Phase 24: Enterprise Integration Platform -->
+                        <li class="nav-item <?= url_is('integration*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('integration') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-network-wired text-indigo"></i>
+                                </span>
+                                <span class="nav-link-title">Integration Center</span>
+                            </a>
+                        </li>
+
                         <!-- Phase 19: AI Predictive Maintenance & Decision Support -->
                         <li class="nav-item <?= url_is('ai-predictive*') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('ai-predictive') ?>">

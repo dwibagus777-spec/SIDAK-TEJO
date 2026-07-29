@@ -341,3 +341,35 @@ $routes->group('api', function ($routes) {
 
 // Phase 23: Public QR Code Document Verification (No Login Required)
 $routes->get('documents/verify/(:segment)', 'DocumentCenter::verify/$1');
+
+// Phase 24: Enterprise Integration Platform (EIP) Routes
+$routes->group('integration', ['filter' => 'role:administrator,admin,admin_pusat'], function ($routes) {
+    $routes->get('/', 'IntegrationCenter::index');
+    $routes->post('generate-key', 'IntegrationCenter::generateApiKey');
+    $routes->post('register-webhook', 'IntegrationCenter::registerWebhook');
+    $routes->get('test-webhook/(:num)', 'IntegrationCenter::testWebhook/$1');
+    $routes->get('export', 'IntegrationCenter::exportData');
+});
+
+// Phase 24: EIP OpenAPI / Health / Multi-version REST API
+$routes->get('api/health', 'Api\HealthController::index');
+$routes->get('api/docs/json', 'Api\DocsController::json');
+$routes->get('api/docs/ui', 'Api\DocsController::ui');
+
+// API Versioning: v1, v2, v3
+foreach (['v1', 'v2', 'v3'] as $version) {
+    $routes->group("api/{$version}", function ($routes) {
+        $routes->post('auth/login', 'Api\v1\ApiController::login');
+        $routes->post('auth/refresh', 'Api\v1\ApiController::refreshToken');
+        $routes->get('temuan', 'Api\v1\ApiController::getTemuan');
+        $routes->get('temuan/(:num)', 'Api\v1\ApiController::getTemuanDetail/$1');
+        $routes->get('work-orders', 'Api\v1\ApiController::getWorkOrders');
+        $routes->get('work-orders/(:num)', 'Api\v1\ApiController::getWorkOrderDetail/$1');
+        $routes->get('assets', 'Api\v1\ApiController::getAssets');
+        $routes->get('users', 'Api\v1\ApiController::getUsers');
+        $routes->get('dashboard', 'Api\v1\ApiController::getDashboardStats');
+        $routes->get('notifications', 'Api\v1\ApiController::getNotifications');
+        $routes->get('documents', 'Api\v1\ApiController::getDocuments');
+    });
+}
+

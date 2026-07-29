@@ -457,6 +457,14 @@
                 <div class="card-label">Dokumen</div>
             </a>
 
+            <!-- Integration Center (Phase 24) -->
+            <a href="<?= site_url('integration') ?>" class="menu-card">
+                <div class="icon-circle" style="background-color: #f3e8ff;">
+                    <i class="fas fa-network-wired" style="color: #7e22ce; font-size: 20px;"></i>
+                </div>
+                <div class="card-label">Integration</div>
+            </a>
+
         </div>
     </div>
 

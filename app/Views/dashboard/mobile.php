@@ -449,6 +449,14 @@
                 <div class="card-label">Identifikasi Gangguan</div>
             </a>
 
+            <!-- Dokumen Center (Phase 23) -->
+            <a href="<?= site_url('documents') ?>" class="menu-card">
+                <div class="icon-circle" style="background-color: #e0f2fe;">
+                    <i class="fas fa-file-contract" style="color: #0284c7; font-size: 20px;"></i>
+                </div>
+                <div class="card-label">Dokumen</div>
+            </a>
+
         </div>
     </div>
 

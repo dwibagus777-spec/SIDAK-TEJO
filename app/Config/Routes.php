@@ -75,6 +75,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('ecc/api-data', 'ExecutiveCommandCenter::apiData');
     $routes->get('ecc/sse-stream', 'ExecutiveCommandCenter::sseStream');
 
+    // Phase 23 - Digital Document Intelligence
+    $routes->get('documents', 'DocumentCenter::index');
+    $routes->get('documents/create', 'DocumentCenter::create');
+    $routes->post('documents/store', 'DocumentCenter::store');
+    $routes->get('documents/detail/(:num)', 'DocumentCenter::detail/$1');
+    $routes->post('documents/approve/(:num)', 'DocumentCenter::approve/$1');
+
     // Ekspor Database (Admin Saja - Terproteksi Login & Role)
     $routes->group('', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
         $routes->get('export_railway_db.php', 'DbExport::index');
@@ -331,3 +338,6 @@ $routes->group('api', function ($routes) {
     $routes->post('temuan/create', 'Api::createTemuan');
     $routes->post('temuan/tindak-lanjut', 'Api::tindakLanjut');
 });
+
+// Phase 23: Public QR Code Document Verification (No Login Required)
+$routes->get('documents/verify/(:segment)', 'DocumentCenter::verify/$1');

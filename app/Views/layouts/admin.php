@@ -800,6 +800,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                             </a>
                         </li>
 
+                        <!-- Phase 23: Digital Document Intelligence -->
+                        <li class="nav-item <?= url_is('documents*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('documents') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-file-contract text-teal"></i>
+                                </span>
+                                <span class="nav-link-title">Dokumen Center</span>
+                            </a>
+                        </li>
+
                         <!-- Phase 19: AI Predictive Maintenance & Decision Support -->
                         <li class="nav-item <?= url_is('ai-predictive*') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('ai-predictive') ?>">

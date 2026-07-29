@@ -25,6 +25,19 @@ if (version_compare(PHP_VERSION, $minPhpVersion, '<')) {
 
 /*
  *---------------------------------------------------------------
+ * AUTOMATIC DEPLOYMENT CHECK (Composer Integrity & Vendor Check)
+ *---------------------------------------------------------------
+ */
+$vendorAutoload = __DIR__ . '/../vendor/autoload.php';
+$deprecationContracts = __DIR__ . '/../vendor/symfony/deprecation-contracts/function.php';
+if (!file_exists($vendorAutoload) || !file_exists($deprecationContracts)) {
+    header('HTTP/1.1 500 Internal Server Error', true, 500);
+    echo '[DEPLOYMENT ERROR] Vendor dependencies incomplete. Missing vendor/autoload.php or vendor/symfony/deprecation-contracts/function.php. Please verify Composer installation.';
+    exit(1);
+}
+
+/*
+ *---------------------------------------------------------------
  * SET THE CURRENT DIRECTORY
  *---------------------------------------------------------------
  */

@@ -38,13 +38,6 @@ if (!file_exists($vendorAutoload) || !file_exists($deprecationContracts) || !is_
     exit(1);
 }
 
-// Pre-load Symfony Deprecation Contracts function.php & register file identifier in Composer global registry to prevent relative path require failures in autoload_real.php on Hostinger
-$realDepPath = realpath($deprecationContracts);
-if ($realDepPath && file_exists($realDepPath)) {
-    require_once $realDepPath;
-    $GLOBALS['__composer_autoload_files']['6e3fae29631ef280660b3cdad06f25a8'] = true;
-}
-
 /*
  *---------------------------------------------------------------
  * SET THE CURRENT DIRECTORY

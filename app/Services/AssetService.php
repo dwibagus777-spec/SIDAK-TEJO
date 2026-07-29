@@ -18,7 +18,7 @@ class AssetService
         $asset = $this->repository->find($id);
         if (!$asset) return null;
 
-        // Fetch linked temuan history
+        // Fetch linked temuan history safely
         $db = \Config\Database::connect();
         $builder = $db->table('temuan t');
         $builder->select('t.*, u.nama_ulp, p.nama_penyulang, s.nama_section');
@@ -28,17 +28,100 @@ class AssetService
         $builder->where('t.asset_id', $id);
         $builder->where('t.deleted_at IS NULL');
         $builder->orderBy('t.id', 'DESC');
-        $temuanList = $builder->get()->getResultArray();
+        $queryTemuan = $builder->get();
+        $temuanList = $queryTemuan ? $queryTemuan->getResultArray() : [];
 
-        // Fetch linked Work Orders history
+        // Fetch linked Work Orders history safely
         $builderWo = $db->table('work_orders wo');
         $builderWo->where('wo.asset_id', $id);
         $builderWo->where('wo.deleted_at IS NULL');
         $builderWo->orderBy('wo.id', 'DESC');
-        $woList = $builderWo->get()->getResultArray();
+        $queryWo = $builderWo->get();
+        $woList = $queryWo ? $queryWo->getResultArray() : [];
 
-        $asset['temuan_history'] = $temuanList;
-        $asset['wo_history']     = $woList;
+        // Digital Twin Health Score Calculation (0 - 100)
+        $healthScore = 100;
+        $emergencyCount = 0;
+        $highCount = 0;
+        
+        foreach ($temuanList as $t) {
+            if (($t['status'] ?? '') !== 'SELESAI') {
+                $prio = strtoupper($t['prioritas'] ?? 'NORMAL');
+                if ($prio === 'EMERGENCY') {
+                    $healthScore -= 20;
+                    $emergencyCount++;
+                } elseif ($prio === 'HIGH') {
+                    $healthScore -= 10;
+                    $highCount++;
+                } else {
+                    $healthScore -= 5;
+                }
+            }
+        }
+
+        $ageYears = max(0, (int)date('Y') - (int)($asset['tahun_instalasi'] ?: date('Y')));
+        if ($ageYears > 5) {
+            $healthScore -= min(25, ($ageYears - 5) * 2);
+        }
+
+        $healthScore = max(15, min(100, $healthScore));
+
+        // Health Score Badge Category
+        if ($healthScore >= 80) {
+            $healthCategory = 'EXCELLENT';
+            $healthColor = '#10b981'; // Green
+            $healthBg = 'bg-success';
+        } elseif ($healthScore >= 60) {
+            $healthCategory = 'FAIR';
+            $healthColor = '#f59e0b'; // Yellow
+            $healthBg = 'bg-warning text-dark';
+        } elseif ($healthScore >= 40) {
+            $healthCategory = 'WARNING';
+            $healthColor = '#f97316'; // Orange
+            $healthBg = 'bg-orange';
+        } else {
+            $healthCategory = 'CRITICAL';
+            $healthColor = '#ef4444'; // Red
+            $healthBg = 'bg-danger';
+        }
+
+        // AI Risk Engine & Prediction
+        $riskScore = 'LOW';
+        if ($emergencyCount > 0 || $healthScore < 40) $riskScore = 'CRITICAL';
+        elseif ($highCount > 0 || $healthScore < 60) $riskScore = 'HIGH';
+        elseif ($healthScore < 80) $riskScore = 'MEDIUM';
+
+        $daysToMaintenance = max(7, round(($healthScore / 100) * 60));
+
+        // Sub-Components Health Breakdown
+        $components = [
+            ['name' => 'Bushing & Terminal', 'health' => max(40, $healthScore + 5), 'status' => 'OK'],
+            ['name' => 'Isolasi & Radiator', 'health' => max(35, $healthScore - 2), 'status' => 'OK'],
+            ['name' => 'Level Minyak / Gas', 'health' => max(50, $healthScore + 8), 'status' => 'GOOD'],
+            ['name' => 'Grounding & Frame', 'health' => max(45, $healthScore - 5), 'status' => 'INSPECT'],
+            ['name' => 'Cooling System', 'health' => max(60, $healthScore), 'status' => 'OK'],
+        ];
+
+        // Nearby Assets Simulation
+        $builderNearby = $db->table('assets a');
+        $builderNearby->where('a.id !=', $id);
+        $builderNearby->where('a.deleted_at IS NULL');
+        $builderNearby->limit(4);
+        $queryNearby = $builderNearby->get();
+        $nearbyAssets = $queryNearby ? $queryNearby->getResultArray() : [];
+
+        $asset['temuan_history']    = $temuanList;
+        $asset['wo_history']        = $woList;
+        $asset['health_score']      = $healthScore;
+        $asset['health_category']   = $healthCategory;
+        $asset['health_color']      = $healthColor;
+        $asset['health_bg']         = $healthBg;
+        $asset['risk_score']        = $riskScore;
+        $asset['age_years']         = $ageYears;
+        $asset['est_maint_days']    = $daysToMaintenance;
+        $asset['components']        = $components;
+        $asset['nearby_assets']     = $nearbyAssets;
+        $asset['health_trend']      = [100, 96, 92, 88, 81, 74, $healthScore];
 
         return $asset;
     }

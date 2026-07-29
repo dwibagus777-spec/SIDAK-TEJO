@@ -169,8 +169,8 @@
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-center pe-3">
-                                        <a href="<?= site_url('assets/detail/' . $a['id']) ?>" class="btn btn-xs btn-outline-primary rounded-pill px-2">
-                                            <i class="fas fa-eye me-1"></i> Detail
+                                        <a href="<?= site_url('assets/detail/' . $a['id']) ?>" class="btn btn-xs btn-primary rounded-pill px-3 font-weight-bold shadow-sm">
+                                            <i class="fas fa-microchip me-1"></i> Digital Twin
                                         </a>
                                     </td>
                                 </tr>

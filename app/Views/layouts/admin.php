@@ -702,6 +702,12 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                                 <span class="nav-link-title">Executive Analytics</span>
                             </a>
                         </li>
+                        <li class="nav-item <?= (url_is('ai-copilot*') || url_is('sidak-ai*')) ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('ai-copilot') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-robot text-info"></i></span>
+                                <span class="nav-link-title">🤖 SIDAK AI Copilot</span>
+                            </a>
+                        </li>
                         <li class="nav-item <?= (url_is('ai-predictive*') || url_is('ai-center*')) ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('ai-center') ?>">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-brain text-purple"></i></span>

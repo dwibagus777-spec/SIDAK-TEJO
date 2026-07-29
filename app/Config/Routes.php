@@ -24,6 +24,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('ai-predictive', 'AiPredictiveController::index');
     $routes->get('ai-predictive/api-data', 'AiPredictiveController::apiData');
     $routes->get('ai-predictive/export-dataset', 'AiPredictiveController::exportDataset');
+
+    // SIDAK AI Copilot Routes (Phase 34)
+    $routes->get('ai-copilot', 'AiCopilotController::index');
+    $routes->get('sidak-ai', 'AiCopilotController::index');
+    $routes->post('ai-copilot/ask', 'AiCopilotController::ask');
     $routes->get('executive-dashboard', 'Dashboard::executive');
     $routes->get('dashboard/executive', 'Dashboard::executive');
     $routes->get('dashboard/executive-api', 'Dashboard::executiveApi');

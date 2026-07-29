@@ -45,21 +45,25 @@ $possibleCreds = [
 
 $connected = false;
 foreach ($possibleCreds as $c) {
-    $conn = @mysqli_connect($c['host'], $c['user'], $c['pass'], $c['db']);
-    if ($conn) {
-        echo "CONNECT SUCCESS with user: {$c['user']} | db: {$c['db']}\n";
-        $q = @mysqli_query($conn, "SELECT count(*) as total FROM users");
-        if ($q) {
-            $r = mysqli_fetch_assoc($q);
-            echo "USERS TABLE TOTAL: " . $r['total'] . "\n";
+    try {
+        $conn = @mysqli_connect($c['host'], $c['user'], $c['pass'], $c['db']);
+        if ($conn) {
+            echo "CONNECT SUCCESS with user: {$c['user']} | db: {$c['db']}\n";
+            $q = @mysqli_query($conn, "SELECT count(*) as total FROM users");
+            if ($q) {
+                $r = mysqli_fetch_assoc($q);
+                echo "USERS TABLE TOTAL: " . $r['total'] . "\n";
+            } else {
+                echo "USERS QUERY ERR: " . mysqli_error($conn) . "\n";
+            }
+            mysqli_close($conn);
+            $connected = true;
+            break;
         } else {
-            echo "USERS QUERY ERR: " . mysqli_error($conn) . "\n";
+            echo "CONNECT FAILED with user: {$c['user']} | db: {$c['db']} -> " . mysqli_connect_error() . "\n";
         }
-        mysqli_close($conn);
-        $connected = true;
-        break;
-    } else {
-        echo "CONNECT FAILED with user: {$c['user']} | db: {$c['db']} -> " . mysqli_connect_error() . "\n";
+    } catch (\Throwable $err) {
+        echo "CONNECT EXCEPTION with user: {$c['user']} | db: {$c['db']} -> " . $err->getMessage() . "\n";
     }
 }
 

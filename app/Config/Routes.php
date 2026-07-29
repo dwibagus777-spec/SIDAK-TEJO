@@ -33,6 +33,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Smart Work Order Center Routes (Phase 35)
     $routes->get('smart-wo', 'SmartWoController::index');
     $routes->get('work-orders/smart', 'SmartWoController::index');
+
+    // Smart AI Recommendation Route (Phase 38)
+    $routes->post('ai/recommendation', 'AiPredictiveController::recommendation');
     $routes->get('executive-dashboard', 'Dashboard::executive');
     $routes->get('dashboard/executive', 'Dashboard::executive');
     $routes->get('dashboard/executive-api', 'Dashboard::executiveApi');

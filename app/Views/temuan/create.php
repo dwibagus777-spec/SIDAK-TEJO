@@ -260,14 +260,31 @@
         </div>
     </div>
 
-    <!-- Peta Selector Koordinat -->
+    <!-- Peta Selector Koordinat & Card AI Recommendation -->
     <div class="col-lg-4 col-12">
+        <!-- Card AI Recommendation Modern (Phase 38) -->
+        <div class="card mb-3 shadow-sm border-0" style="border-left: 4px solid #7e22ce !important; border-radius: 16px; background: #ffffff;">
+            <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center" style="font-size: 14px;">
+                    <i class="fas fa-brain text-purple me-2"></i> AI Recommendation Engine
+                </h5>
+                <span class="badge bg-purple text-white rounded-pill px-2" style="background:#7e22ce; font-size:10px;">Rule-Based Engine</span>
+            </div>
+            <div class="card-body pt-2" style="font-size: 12px;">
+                <div id="ai-rec-box">
+                    <div class="text-muted text-center py-3">
+                        <i class="fas fa-sparkles text-warning me-1"></i> Isi form untuk menghasilkan rekomendasi AI otomatis...
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card" style="position: sticky; top: 1rem;">
             <div class="card-header">
                 <h3 class="card-title"><i class="fas fa-map-pin text-danger mr-1"></i> Pemilih Koordinat Peta</h3>
             </div>
             <div class="card-body p-0">
-                <div id="selector-map" style="height: 480px; width: 100%; border-radius: 0 0 12px 12px;"></div>
+                <div id="selector-map" style="height: 380px; width: 100%; border-radius: 0 0 12px 12px;"></div>
             </div>
         </div>
     </div>
@@ -748,6 +765,53 @@
         $(document).on('click', '.btn-remove-material', function() {
             $(this).closest('.material-item-row').remove();
         });
+
+        // Phase 38 Smart AI Recommendation Engine AJAX Listener
+        function triggerAiRecommendation() {
+            var formData = new FormData();
+            formData.append('jenis_temuan', $('#jenis_temuan').val() || '');
+            formData.append('prioritas', $('#prioritas').val() || '');
+            formData.append('potensi_gangguan', $('#potensi_gangguan').val() || '');
+            formData.append('pelaksana', $('#pelaksana').val() || '');
+            formData.append('detail_temuan', $('#detail_temuan').val() || '');
+
+            fetch("<?= site_url('ai/recommendation') ?>", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.data) {
+                    var d = res.data;
+                    var html = '<div class="mb-2 d-flex justify-content-between align-items-center">';
+                    html += '<span class="fw-bold">Estimasi Risiko:</span>';
+                    html += '<span class="badge" style="background:' + d.risk_color + '; color:#fff;">' + d.risk_level + '</span></div>';
+                    html += '<div class="mb-2"><strong>Waktu SLA:</strong> ' + d.sla_time + '</div>';
+                    html += '<div class="mb-2"><strong>Rekomendasi Tim:</strong> <span class="badge bg-primary">' + d.team + '</span></div>';
+
+                    // Checklist
+                    html += '<div class="mb-2"><strong class="d-block mb-1">Checklist Pekerjaan:</strong>';
+                    d.checklist.forEach(function(item) {
+                        html += '<div class="form-check"><input class="form-check-input" type="checkbox" checked><label class="form-check-label small">' + item + '</label></div>';
+                    });
+                    html += '</div>';
+
+                    // Material
+                    html += '<div class="mb-2"><strong>Material:</strong> <span class="text-muted">' + d.materials.join(', ') + '</span></div>';
+
+                    // Impacts & SOP
+                    html += '<div class="p-2 bg-light rounded border mb-2"><i class="fas fa-shield-halved text-warning me-1"></i> <strong>SOP PLN:</strong> ' + d.sop + '</div>';
+                    html += '<div><strong>Peralatan:</strong> <small class="text-secondary">' + d.tools.join(', ') + '</small></div>';
+
+                    $('#ai-rec-box').html(html);
+                }
+            });
+        }
+
+        $('#jenis_temuan, #prioritas, #potensi_gangguan, #pelaksana').on('change', triggerAiRecommendation);
+        $('#detail_temuan').on('blur', triggerAiRecommendation);
+        triggerAiRecommendation();
 
         $('form').on('submit', function() {
             let materialItems = [];

@@ -58,18 +58,33 @@ class AiPredictiveController extends BaseController
         $format = strtolower($this->request->getGet('format') ?: 'csv');
         $content = $this->service->exportMlDataset($format);
 
-        $filename = 'ML_Dataset_Sidak_Tejo_' . date('Ymd_His') . '.' . $format;
-
         if ($format === 'json') {
-            return $this->response
-                ->setHeader('Content-Type', 'application/json')
-                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            return $this->response->setHeader('Content-Type', 'application/json')
+                ->setHeader('Content-Disposition', 'attachment; filename="ml_dataset_' . date('Ymd_His') . '.json"')
                 ->setBody($content);
         }
 
-        return $this->response
-            ->setHeader('Content-Type', 'text/csv; charset=utf-8')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+        return $this->response->setHeader('Content-Type', 'text/csv')
+            ->setHeader('Content-Disposition', 'attachment; filename="ml_dataset_' . date('Ymd_His') . '.csv"')
             ->setBody($content);
+    }
+
+    public function recommendation()
+    {
+        $input = [
+            'jenis_temuan'     => $this->request->getPost('jenis_temuan'),
+            'prioritas'        => $this->request->getPost('prioritas'),
+            'potensi_gangguan' => $this->request->getPost('potensi_gangguan'),
+            'pelaksana'        => $this->request->getPost('pelaksana'),
+            'detail_temuan'    => $this->request->getPost('detail_temuan'),
+        ];
+
+        $recService = new \App\Services\SmartRecommendationService();
+        $recommendation = $recService->getRecommendation($input);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'success' => true,
+            'data'    => $recommendation
+        ]);
     }
 }

@@ -1189,11 +1189,11 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         <!-- Status Bubble -->
         <div id="global-voice-bubble" class="shadow-sm d-none animate__animated animate__fadeInRight" 
              style="background: #0f172a; color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 8px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: bold; white-space: nowrap; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
-            <i class="fas fa-circle-notch fa-spin mr-1"></i> <span id="global-voice-text">Mendengarkan...</span>
+            <i class="fas fa-brain fa-pulse me-1 text-warning"></i> <span id="global-voice-text">Mendengarkan ("Halo SIDAK")...</span>
         </div>
         
         <!-- Floating Mic Button -->
-        <button type="button" id="btn-global-mic" class="btn btn-primary" title="Perintah Suara">
+        <button type="button" id="btn-global-mic" class="btn btn-primary shadow" title="SIDAK TEJO Voice AI Assistant (Halo SIDAK)">
             <i class="fas fa-microphone" id="global-mic-icon"></i>
         </button>
     </div>
@@ -1203,62 +1203,67 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             let recognition = null;
             let isListening = false;
+            let isContinuous = true;
+
+            // Load Proactive Smart Notifications on page load (FITUR 8)
+            fetchSmartNotifications();
 
             if (SpeechRecognition) {
                 try {
                     recognition = new SpeechRecognition();
                     recognition.lang = 'id-ID';
                     recognition.interimResults = false;
+                    recognition.continuous = isContinuous;
 
                     recognition.onstart = function() {
                         isListening = true;
                         $('#btn-global-mic').addClass('listening');
                         $('#global-voice-bubble').removeClass('d-none');
-                        $('#global-voice-text').text('Mendengarkan...');
+                        $('#global-voice-text').text('AI Mendengarkan... (Ucapkan: Halo SIDAK)');
                     };
 
                     recognition.onerror = function(event) {
                         isListening = false;
                         $('#btn-global-mic').removeClass('listening');
-                        $('#global-voice-bubble').addClass('d-none');
                         if (event.error === 'not-allowed') {
                             const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
                             const msg = isHttp 
-                                ? 'Fitur Suara membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP (bukan HTTPS). Harap aktifkan SSL/HTTPS pada server.' 
-                                : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara.';
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'Akses Mikrofon Ditolak',
-                                text: msg,
-                                confirmButtonColor: '#005eb8'
-                            });
+                                ? 'Fitur Voice AI membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP.' 
+                                : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara SIDAK TEJO.';
+                            Swal.fire({ icon: 'warning', title: 'Akses Mikrofon Ditolak', text: msg, confirmButtonColor: '#005eb8' });
                         }
                     };
 
                     recognition.onend = function() {
                         isListening = false;
                         $('#btn-global-mic').removeClass('listening');
+                        if (isContinuous) {
+                            setTimeout(() => { try { recognition.start(); } catch(e){} }, 1000);
+                        }
                     };
 
                     recognition.onresult = function(event) {
-                        const resultText = event.results[0][0].transcript.toLowerCase().trim();
+                        const lastIndex = event.results.length - 1;
+                        const resultText = event.results[lastIndex][0].transcript.toLowerCase().trim();
+                        
                         $('#global-voice-bubble').removeClass('d-none');
-                        $('#global-voice-text').html('<i class="fas fa-quote-left mr-1"></i> "' + resultText + '"');
+                        $('#global-voice-text').html('<i class="fas fa-quote-left me-1 text-warning"></i> "' + resultText + '"');
                         
                         setTimeout(function() {
                             $('#global-voice-bubble').addClass('d-none');
-                        }, 3500);
-                        
-                        const voiceEvent = new CustomEvent('appVoiceCommand', {
-                            detail: { transcript: resultText },
-                            cancelable: true
-                        });
-                        const isHandled = !window.dispatchEvent(voiceEvent);
-                        if (isHandled) {
-                            return;
-                        }
+                        }, 4000);
 
-                        processVoiceCommand(resultText);
+                        // Wake Word Detector ("Halo SIDAK", "Hai SIDAK", "SIDAK") (FITUR 1)
+                        if (resultText.includes('halo sidak') || resultText.includes('hai sidak') || resultText.startsWith('sidak')) {
+                            const commandText = resultText.replace(/\b(halo sidak|hai sidak|sidak)\b/gi, '').trim();
+                            if (commandText.length > 0) {
+                                executeAiCommand(commandText);
+                            } else {
+                                speakAiFeedback("Ya, ada yang bisa SIDAK AI bantu?");
+                            }
+                        } else {
+                            executeAiCommand(resultText);
+                        }
                     };
                 } catch(err) {
                     console.error('SpeechRecognition init error:', err);
@@ -1270,25 +1275,18 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                     Swal.fire({
                         icon: 'info',
                         title: 'Fitur Perintah Suara',
-                        text: 'Peramban Web ini belum mendukung Speech Recognition. Disarankan menggunakan Google Chrome versi terbaru.',
+                        text: 'Peramban ini belum mendukung Speech Recognition. Disarankan menggunakan Google Chrome versi terbaru.',
                         confirmButtonColor: '#005eb8'
                     });
                     return;
                 }
 
                 if (!isListening) {
-                    try {
-                        recognition.start();
-                    } catch(err) {
-                        try {
-                            recognition.stop();
-                            setTimeout(function() { recognition.start(); }, 150);
-                        } catch(ex) {}
+                    try { recognition.start(); } catch(err) {
+                        try { recognition.stop(); setTimeout(() => recognition.start(), 150); } catch(ex) {}
                     }
                 } else {
-                    try {
-                        recognition.stop();
-                    } catch(err) {}
+                    try { recognition.stop(); } catch(err) {}
                 }
             };
 
@@ -1296,195 +1294,127 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             $(document).on('click touchstart', '#btn-global-mic', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-
                 const now = Date.now();
                 if (now - lastMicTap < 400) return;
                 lastMicTap = now;
-
                 window.triggerGlobalVoiceMic();
             });
-            
-            recognition.onstart = function() {
-                isListening = true;
-                $('#btn-global-mic').addClass('listening');
-                $('#global-voice-bubble').removeClass('d-none');
-                $('#global-voice-text').text('Mendengarkan...');
-            };
-            
-            recognition.onerror = function(event) {
-                isListening = false;
-                $('#btn-global-mic').removeClass('listening');
-                $('#global-voice-bubble').addClass('d-none');
-                if (event.error === 'not-allowed') {
-                    const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
-                    const msg = isHttp 
-                        ? 'Fitur Suara membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP (bukan HTTPS). Harap aktifkan SSL/HTTPS pada server.' 
-                        : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara.';
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Akses Mikrofon Ditolak',
-                        text: msg,
-                        confirmButtonColor: '#005eb8'
-                    });
+
+            function speakAiFeedback(msg) {
+                if ('speechSynthesis' in window) {
+                    try {
+                        window.speechSynthesis.cancel();
+                        const utterance = new SpeechSynthesisUtterance(msg);
+                        utterance.lang = 'id-ID';
+                        utterance.rate = 1.0;
+                        window.speechSynthesis.speak(utterance);
+                    } catch(e) {}
                 }
-            };
-            
-            recognition.onend = function() {
-                isListening = false;
-                $('#btn-global-mic').removeClass('listening');
-            };
-            
-            recognition.onresult = function(event) {
-                const resultText = event.results[0][0].transcript.toLowerCase().trim();
-                $('#global-voice-bubble').removeClass('d-none');
-                $('#global-voice-text').html('<i class="fas fa-quote-left mr-1"></i> "' + resultText + '"');
-                
-                setTimeout(function() {
-                    $('#global-voice-bubble').addClass('d-none');
-                }, 3500);
-                
-                const voiceEvent = new CustomEvent('appVoiceCommand', {
-                    detail: { transcript: resultText },
-                    cancelable: true
+            }
+
+            function executeAiCommand(text) {
+                if (!text || text.length < 2) return;
+
+                // 1. Smart DataTable Filter Integration (FITUR 6)
+                if (window.location.href.includes('/temuan') && $.fn.DataTable && $.fn.DataTable.isDataTable('#tableTemuan')) {
+                    if (text.includes('minggu ini') || text.includes('hari ini') || text.includes('belum selesai') || text.includes('emergency') || text.includes('hotspot') || text.includes('row')) {
+                        const table = $('#tableTemuan').DataTable();
+                        table.search(text).draw();
+                        speakAiFeedback("Memfilter tabel data temuan untuk kata kunci " + text);
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Smart DataTable Filter', text: 'Tabel difilter: "' + text + '"', showConfirmButton: false, timer: 2500 });
+                        return;
+                    }
+                }
+
+                // 2. Send command to backend AI API
+                $.ajax({
+                    url: "<?= site_url('api/v1/voice-ai/process') ?>",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ text: text, channel: 'voice' }),
+                    dataType: "json",
+                    success: function(res) {
+                        if (res.success) {
+                            speakAiFeedback(res.response_text);
+                            Swal.fire({
+                                toast: true,
+                                position: 'top',
+                                icon: 'info',
+                                title: '🤖 SIDAK AI Assistant',
+                                text: res.response_text,
+                                showConfirmButton: false,
+                                timer: 4500,
+                                timerProgressBar: true
+                            });
+
+                            // Action Handling
+                            if (res.action) {
+                                if (res.action.type === 'NAVIGATE' && res.action.url) {
+                                    setTimeout(() => window.location.href = res.action.url, 1200);
+                                }
+                            }
+                        }
+                    },
+                    error: function() {
+                        // Fallback client-side matching
+                        processVoiceCommandFallback(text);
+                    }
                 });
-                const isHandled = !window.dispatchEvent(voiceEvent);
-                if (isHandled) {
-                    return;
-                }
+            }
 
-                processVoiceCommand(resultText);
-            };
-
-            // AI Natural Language Voice Command Processor with Voice Audio Feedback
-            function processVoiceCommand(text) {
-                function speakAiFeedback(msg) {
-                    if ('speechSynthesis' in window) {
-                        try {
-                            window.speechSynthesis.cancel();
-                            const utterance = new SpeechSynthesisUtterance(msg);
-                            utterance.lang = 'id-ID';
-                            utterance.rate = 1.0;
-                            window.speechSynthesis.speak(utterance);
-                        } catch(e) {}
-                    }
-                }
-
-                function showVoiceToast(msg, icon, aiSpeak) {
-                    if (aiSpeak) {
-                        speakAiFeedback(aiSpeak);
-                    }
-                    Swal.fire({
-                        toast: true,
-                        position: 'top',
-                        icon: icon || 'info',
-                        title: '🎤 AI Voice Assistant',
-                        text: '"' + text + '" → ' + msg,
-                        showConfirmButton: false,
-                        timer: 3500,
-                        timerProgressBar: true
-                    });
-                }
-
+            function processVoiceCommandFallback(text) {
                 text = text.toLowerCase().trim();
-
-                // Clean filler words: "tolong", "mohon", "coba", "tampilkan", "lihat", "buka", "cari", "temukan", "filter", "saring", "data", "tabel", "daftar"
                 let rawTokens = text.replace(/\b(tolong|mohon|coba|tampilkan|lihat|buka|cari|temukan|filter|saring|data|tabel|daftar)\b/gi, '').trim();
 
-                // 1. DIRECT NAVIGATION INTENTS
-                if (rawTokens === 'dashboard' || rawTokens === 'beranda' || rawTokens === 'home' || rawTokens === 'awal') {
-                    showVoiceToast('Membuka Dashboard', 'success', 'Membuka dashboard');
-                    setTimeout(() => window.location.href = '<?= site_url("dashboard") ?>', 800);
-                    return true;
+                if (rawTokens.includes('dashboard')) {
+                    speakAiFeedback('Membuka Dashboard');
+                    setTimeout(() => window.location.href = '<?= site_url("executive-dashboard") ?>', 800);
+                    return;
                 }
-                if (rawTokens === 'input' || rawTokens === 'input temuan' || rawTokens === 'tambah' || rawTokens === 'tambah temuan' || rawTokens === 'buat temuan') {
-                    showVoiceToast('Membuka Input Temuan Baru', 'success', 'Membuka form input temuan baru');
+                if (rawTokens.includes('input') || rawTokens.includes('tambah')) {
+                    speakAiFeedback('Membuka Form Input Temuan Baru');
                     setTimeout(() => window.location.href = '<?= site_url("temuan/create") ?>', 800);
-                    return true;
+                    return;
                 }
-                if (rawTokens === 'update' || rawTokens === 'update pekerjaan' || rawTokens === 'progres' || rawTokens === 'tindak lanjut') {
-                    showVoiceToast('Membuka Update Pekerjaan', 'success', 'Membuka update pekerjaan');
-                    setTimeout(() => window.location.href = '<?= site_url("temuan/update-pekerjaan") ?>', 800);
-                    return true;
+                if (rawTokens.includes('laporan') || rawTokens.includes('report')) {
+                    speakAiFeedback('Membuka Pusat Laporan Temuan');
+                    setTimeout(() => window.location.href = '<?= site_url("laporan") ?>', 800);
+                    return;
                 }
-                if (rawTokens === 'laporan' || rawTokens === 'rekap' || rawTokens === 'pusat laporan') {
-                    showVoiceToast('Membuka Pusat Laporan', 'success', 'Membuka pusat laporan temuan');
-                    setTimeout(() => window.location.href = '<?= site_url("laporan/temuan") ?>', 800);
-                    return true;
+                if (rawTokens.includes('eviden')) {
+                    speakAiFeedback('Membuka Eviden');
+                    setTimeout(() => window.location.href = '<?= site_url("eviden") ?>', 800);
+                    return;
                 }
-                if (rawTokens === 'keluar' || rawTokens === 'logout') {
-                    showVoiceToast('Proses Keluar Sistem...', 'warning', 'Proses keluar dari sistem');
-                    setTimeout(() => window.location.href = '<?= site_url("logout") ?>', 800);
-                    return true;
-                }
-                if (rawTokens === 'kubikel') {
-                    showVoiceToast('Membuka Eviden Kubikel', 'success', 'Membuka eviden kubikel');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/kubikel") ?>', 800);
-                    return true;
-                }
-                if (rawTokens === 'trafo') {
-                    showVoiceToast('Membuka Eviden Trafo', 'success', 'Membuka eviden trafo');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/trafo") ?>', 800);
-                    return true;
-                }
-                if (rawTokens === 'saklar') {
-                    showVoiceToast('Membuka Eviden Saklar', 'success', 'Membuka eviden saklar');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/saklar") ?>', 800);
-                    return true;
-                }
-                if (rawTokens === 'management' || rawTokens === 'manajemen') {
-                    showVoiceToast('Membuka Eviden Management', 'success', 'Membuka eviden manajemen');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/management") ?>', 800);
-                    return true;
-                }
-                if (rawTokens === 'eviden') {
-                    showVoiceToast('Membuka Eviden Lapangan', 'success', 'Membuka eviden foto');
-                    setTimeout(() => window.location.href = '<?= site_url("eviden/kubikel") ?>', 800);
-                    return true;
-                }
-                if (rawTokens === 'master user' || rawTokens === 'user' || rawTokens === 'pengguna') {
-                    showVoiceToast('Membuka Master User', 'success', 'Membuka master user');
-                    setTimeout(() => window.location.href = '<?= site_url("users") ?>', 800);
-                    return true;
-                }
-                if (rawTokens === 'master ulp') {
-                    showVoiceToast('Membuka Master ULP', 'success', 'Membuka master ULP');
-                    setTimeout(() => window.location.href = '<?= site_url("ulps") ?>', 800);
-                    return true;
-                }
-                if (rawTokens === 'master penyulang') {
-                    showVoiceToast('Membuka Master Penyulang', 'success', 'Membuka master penyulang');
-                    setTimeout(() => window.location.href = '<?= site_url("penyulang") ?>', 800);
-                    return true;
-                }
-                if (rawTokens === 'master section') {
-                    showVoiceToast('Membuka Master Section', 'success', 'Membuka master section');
-                    setTimeout(() => window.location.href = '<?= site_url("sections") ?>', 800);
-                    return true;
-                }
+                speakAiFeedback('Perintah ' + text + ' tidak dikenali.');
+            }
 
-                // 2. TEMUAN TERDEKAT / PETA (Handles "terdekat", "peta", "gps")
-                if (text.includes('terdekat') || text.includes('peta') || text.includes('gps')) {
-                    let mapQuery = rawTokens.replace(/\b(terdekat|peta|map|gps|lokasi)\b/gi, '').replace(/\b(penyulang|jenis\s+temuan|jenis|ulp|section|temuan)\b/gi, '').trim();
-                    showVoiceToast('Membuka Temuan Terdekat' + (mapQuery ? ' ("' + mapQuery + '")' : ''), 'success', 'Membuka peta temuan terdekat' + (mapQuery ? ' ' + mapQuery : ''));
-                    let targetUrl = '<?= site_url("temuan/terdekat") ?>';
-                    if (mapQuery) {
-                        targetUrl += '?q=' + encodeURIComponent(mapQuery);
+            function fetchSmartNotifications() {
+                $.ajax({
+                    url: "<?= site_url('api/v1/voice-ai/notifications') ?>",
+                    type: "GET",
+                    dataType: "json",
+                    success: function(res) {
+                        if (res.success && res.notifications && res.notifications.length > 0) {
+                            res.notifications.forEach(n => {
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: n.type === 'EMERGENCY' ? 'error' : 'warning',
+                                    title: n.title,
+                                    text: n.message,
+                                    showConfirmButton: true,
+                                    confirmButtonText: 'Tinjau',
+                                    timer: 8000
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        window.location.href = '<?= site_url("executive-dashboard#tab-monitoring") ?>';
+                                    }
+                                });
+                            });
+                        }
                     }
-                    setTimeout(() => window.location.href = targetUrl, 800);
-                    return true;
-                }
-
-                // 3. SMART SEARCH & FILTER INTENTS (Extracts search query for "penyulang jenggolo", "jenis row", "jenggolo", etc.)
-                let searchTarget = rawTokens.replace(/\b(penyulang|jenis\s+temuan|jenis|ulp|section|temuan)\b/gi, '').trim();
-                if (searchTarget.length > 0) {
-                    showVoiceToast('Menyaring Temuan: "' + searchTarget + '"...', 'info', 'Menyaring temuan ' + searchTarget);
-                    setTimeout(() => window.location.href = '<?= site_url("temuan?q=") ?>' + encodeURIComponent(searchTarget), 800);
-                    return true;
-                }
-
-                // 4. FALLBACK UNRECOGNIZED SPEECH
-                showVoiceToast('Perintah kurang jelas. Silakan sebutkan nama penyulang, jenis temuan, atau temuan terdekat.', 'warning', 'Perintah kurang jelas. Silakan sebutkan nama penyulang, jenis temuan, atau temuan terdekat.');
-                return false;
+                });
             }
         });
 

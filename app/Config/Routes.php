@@ -201,6 +201,9 @@ $routes->group('api/v1', function ($routes) {
     // Auth & Sync (Unprotected / Direct API)
     $routes->post('auth/login', 'Api\AuthController::login');
     $routes->post('voice-ai/process', 'Api\VoiceAIApiController::process');
+    $routes->get('voice-ai/summary', 'Api\VoiceAIApiController::summary');
+    $routes->get('voice-ai/notifications', 'Api\VoiceAIApiController::notifications');
+    $routes->get('voice-ai/logs', 'Api\VoiceAIApiController::logs');
     $routes->post('sync/bulk-records', 'Api\SyncApiController::bulkRecords');
     $routes->post('sync/upload-photo', 'Api\SyncApiController::uploadPhoto');
 

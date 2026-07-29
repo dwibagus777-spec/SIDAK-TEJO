@@ -10,16 +10,32 @@ class IntentEngine
 
     public array $definedIntents = [
         'NAVIGATE_PAGE' => [
-            'description' => 'Navigasi ke halaman tertentu di aplikasi (misal: halaman temuan, eviden, laporan, dashboard)',
-            'keywords'    => ['buka', 'tampilkan', 'pindah', 'halaman', 'menu', 'nyang', 'go to', 'open', 'show']
+            'description' => 'Navigasi ke halaman aplikasi (misal: input temuan, dashboard, eviden, laporan, monitoring, KPI)',
+            'keywords'    => ['buka', 'tampilkan', 'pindah', 'halaman', 'menu', 'go to', 'open', 'show', 'view']
         ],
         'SEARCH_TEMUAN' => [
-            'description' => 'Pencarian data temuan inspeksi berdasarkan penyulang/ULP/status/kata kunci',
-            'keywords'    => ['cari', 'goleki', 'search', 'lacak', 'temukne', 'find']
+            'description' => 'Pencarian data temuan inspeksi berdasarkan penyulang, ULP, nomor temuan, status, prioritas',
+            'keywords'    => ['cari', 'goleki', 'search', 'lacak', 'temukne', 'find', 'nomor', 'stj-']
         ],
-        'CHECK_STATUS_ULP' => [
-            'description' => 'Mengecek status dan statistik temuan per ULP',
-            'keywords'    => ['piro', 'berapa', 'jumlah', 'statistik', 'status', 'total', 'count', 'how many']
+        'GENERATE_REPORT' => [
+            'description' => 'Membuat/mengunduh laporan temuan (harian, mingguan, bulanan, ULP, hotspot)',
+            'keywords'    => ['buat laporan', 'generate report', 'cetak laporan', 'download laporan', 'export laporan', 'laporan hari ini', 'laporan minggu ini', 'laporan bulan ini']
+        ],
+        'DATATABLE_FILTER' => [
+            'description' => 'Memfilter tabel data temuan tanpa reload halaman',
+            'keywords'    => ['filter', 'temuan minggu ini', 'temuan hari ini', 'temuan belum selesai', 'temuan emergency']
+        ],
+        'GET_EXECUTIVE_SUMMARY' => [
+            'description' => 'Ringkasan narasi eksekutif AI pada dashboard',
+            'keywords'    => ['ringkasan', 'summary', 'rekap', 'kondisi hari ini', 'ikhtisar', 'overview']
+        ],
+        'GET_SLA_NOTIFICATIONS' => [
+            'description' => 'Pengecekan status SLA, overdue, dan temuan emergency',
+            'keywords'    => ['sla', 'overdue', 'terlambat', 'emergency', 'sisa waktu']
+        ],
+        'GET_RANKING' => [
+            'description' => 'Informasi ranking petugas dan ranking ULP',
+            'keywords'    => ['ranking', 'peringkat', 'top 10', 'siapa ranking', 'terbaik', 'terbanyak']
         ],
         'CREATE_TEMUAN_TRIGGER' => [
             'description' => 'Membuka form input temuan baru',
@@ -40,7 +56,37 @@ class IntentEngine
     {
         $lowerText = strtolower(trim($userText));
 
-        // Quick Keyword Rule-based Detection
+        // 1. Report Intent
+        if (str_contains($lowerText, 'laporan') || str_contains($lowerText, 'report')) {
+            if (str_contains($lowerText, 'buat') || str_contains($lowerText, 'generate') || str_contains($lowerText, 'cetak') || str_contains($lowerText, 'download')) {
+                return [
+                    'intent'     => 'GENERATE_REPORT',
+                    'params'     => ['query' => $userText],
+                    'confidence' => 0.98
+                ];
+            }
+        }
+
+        // 2. Ranking Intent
+        if (str_contains($lowerText, 'ranking') || str_contains($lowerText, 'peringkat') || str_contains($lowerText, 'terbaik') || str_contains($lowerText, 'top 10')) {
+            return [
+                'intent'     => 'GET_RANKING',
+                'params'     => ['query' => $userText],
+                'confidence' => 0.95
+            ];
+        }
+
+        // 3. Navigation Keyword Check
+        if (str_starts_with($lowerText, 'buka ') || str_starts_with($lowerText, 'open ') || str_starts_with($lowerText, 'go to ')) {
+            $target = $this->extractNavigationTarget($lowerText);
+            return [
+                'intent'     => 'NAVIGATE_PAGE',
+                'params'     => ['target_page' => $target['page'], 'url' => $target['url']],
+                'confidence' => 0.98
+            ];
+        }
+
+        // 4. Quick Keyword Search / SLA / Summary Check
         foreach ($this->definedIntents as $intentKey => $def) {
             foreach ($def['keywords'] as $kw) {
                 if (str_contains($lowerText, $kw)) {
@@ -66,6 +112,20 @@ class IntentEngine
                             'confidence' => 0.95
                         ];
                     }
+                    if ($intentKey === 'GET_SLA_NOTIFICATIONS') {
+                        return [
+                            'intent'     => 'GET_SLA_NOTIFICATIONS',
+                            'params'     => ['query' => $userText],
+                            'confidence' => 0.92
+                        ];
+                    }
+                    if ($intentKey === 'GET_EXECUTIVE_SUMMARY') {
+                        return [
+                            'intent'     => 'GET_EXECUTIVE_SUMMARY',
+                            'params'     => ['query' => $userText],
+                            'confidence' => 0.92
+                        ];
+                    }
                 }
             }
         }
@@ -76,20 +136,23 @@ class IntentEngine
 
     private function extractNavigationTarget(string $text): array
     {
-        if (str_contains($text, 'eviden') || str_contains($text, 'kubikel') || str_contains($text, 'trafo')) {
+        if (str_contains($text, 'input') || str_contains($text, 'tambah')) {
+            return ['page' => 'Input Temuan', 'url' => site_url('temuan/create')];
+        }
+        if (str_contains($text, 'dashboard')) {
+            return ['page' => 'Dashboard Executive', 'url' => site_url('executive-dashboard')];
+        }
+        if (str_contains($text, 'eviden') || str_contains($text, 'trafo') || str_contains($text, 'kubikel')) {
             return ['page' => 'Eviden', 'url' => site_url('eviden')];
         }
         if (str_contains($text, 'laporan') || str_contains($text, 'report')) {
             return ['page' => 'Laporan', 'url' => site_url('laporan')];
         }
-        if (str_contains($text, 'penyulang')) {
-            return ['page' => 'Penyulang', 'url' => site_url('penyulang')];
+        if (str_contains($text, 'monitoring') || str_contains($text, 'peta') || str_contains($text, 'gis')) {
+            return ['page' => 'Monitoring GIS', 'url' => site_url('executive-dashboard#tab-monitoring')];
         }
-        if (str_contains($text, 'section') || str_contains($text, 'ruas')) {
-            return ['page' => 'Section', 'url' => site_url('sections')];
-        }
-        if (str_contains($text, 'ulp') || str_contains($text, 'unit')) {
-            return ['page' => 'ULP', 'url' => site_url('ulps')];
+        if (str_contains($text, 'kpi')) {
+            return ['page' => 'Executive KPI', 'url' => site_url('executive-dashboard#tab-executive')];
         }
         return ['page' => 'Data Temuan', 'url' => site_url('temuan')];
     }

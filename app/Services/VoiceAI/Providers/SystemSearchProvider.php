@@ -7,31 +7,8 @@ use Config\Database;
 
 class SystemSearchProvider implements SearchProviderInterface
 {
-    public function searchSystemData(string $query, array $filters = [], int $limit = 5): array
+    public function searchSystemData(string $query, array $filters = [], int $limit = 10): array
     {
-        try {
-            $factory = new \App\Services\SemanticSearch\SemanticSearchFactory();
-            $hybridSearch = $factory->makeHybridSearchService();
-            $hybridResults = $hybridSearch->search($query, $filters, $limit);
-
-            if (!empty($hybridResults)) {
-                $formatted = [];
-                foreach ($hybridResults as $res) {
-                    $formatted[] = [
-                        'type'        => $res['type'] ?? 'RECORD',
-                        'id'          => $res['id'] ?? 0,
-                        'title'       => $res['title'] ?? 'Hasil Pencarian',
-                        'description' => $res['content'] ?? ($res['payload']['content'] ?? ''),
-                        'score'       => $res['rrf_score'] ?? ($res['score'] ?? 1.0)
-                    ];
-                }
-                return $formatted;
-            }
-        } catch (\Throwable $e) {
-            log_message('warning', 'Hybrid Semantic Search fallback: ' . $e->getMessage());
-        }
-
-        // Direct SQL Fallback
         $db = Database::connect();
         $results = [];
         $queryClean = trim($query);
@@ -39,18 +16,39 @@ class SystemSearchProvider implements SearchProviderInterface
             return [];
         }
 
+        // Global Database Multi-Table Multi-Column Search Engine
         $builder = $db->table('temuan')
-            ->select('temuan.id, temuan.nomor_temuan, temuan.jenis_temuan, temuan.detail_temuan, temuan.alamat, temuan.status, temuan.prioritas, ulps.nama_ulp')
+            ->select('temuan.id, temuan.nomor_temuan, temuan.jenis_temuan, temuan.pelaksana, temuan.prioritas, temuan.status, temuan.detail_temuan, temuan.alamat, temuan.foto, temuan.created_at, ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section')
             ->join('ulps', 'ulps.id = temuan.ulp_id', 'left')
-            ->groupStart()
-                ->like('temuan.nomor_temuan', $queryClean)
+            ->join('penyulang', 'penyulang.id = temuan.penyulang_id', 'left')
+            ->join('sections', 'sections.id = temuan.section_id', 'left')
+            ->where('temuan.deleted_at IS NULL');
+
+        // Extract search terms (support multi-word OR matching)
+        $terms = array_filter(explode(' ', $queryClean), fn($t) => strlen($t) > 2);
+
+        $builder->groupStart();
+            $builder->like('temuan.nomor_temuan', $queryClean)
                 ->orLike('temuan.detail_temuan', $queryClean)
                 ->orLike('temuan.alamat', $queryClean)
+                ->orLike('temuan.jenis_temuan', $queryClean)
+                ->orLike('temuan.pelaksana', $queryClean)
+                ->orLike('temuan.prioritas', $queryClean)
+                ->orLike('temuan.status', $queryClean)
                 ->orLike('ulps.nama_ulp', $queryClean)
-            ->groupEnd();
+                ->orLike('penyulang.nama_penyulang', $queryClean)
+                ->orLike('sections.nama_section', $queryClean);
+
+            foreach ($terms as $term) {
+                $builder->orLike('temuan.detail_temuan', $term)
+                        ->orLike('temuan.nomor_temuan', $term)
+                        ->orLike('penyulang.nama_penyulang', $term)
+                        ->orLike('ulps.nama_ulp', $term);
+            }
+        $builder->groupEnd();
 
         if (!empty($filters['ulp_id'])) {
-            $builder->where('temuan.ulp_id', $filters['ulp_id']);
+            $builder->where('temuan.ulp_id', (int)$filters['ulp_id']);
         }
         if (!empty($filters['status'])) {
             $builder->where('temuan.status', strtoupper($filters['status']));
@@ -64,10 +62,43 @@ class SystemSearchProvider implements SearchProviderInterface
             $results[] = [
                 'type'        => 'TEMUAN',
                 'id'          => $r['id'],
+                'nomor'       => $r['nomor_temuan'],
                 'title'       => "Temuan {$r['nomor_temuan']} ({$r['jenis_temuan']})",
-                'description' => "Status {$r['status']} [Prioritas {$r['prioritas']}]. {$r['detail_temuan']} di {$r['alamat']}",
-                'ulp'         => $r['nama_ulp'] ?? '-'
+                'description' => "Status {$r['status']} [Prioritas {$r['prioritas']}]. Pelaksana {$r['pelaksana']}. {$r['detail_temuan']} di {$r['alamat']}",
+                'ulp'         => $r['nama_ulp'] ?? '-',
+                'penyulang'   => $r['nama_penyulang'] ?? '-',
+                'section'     => $r['nama_section'] ?? '-',
+                'url'         => site_url('temuan/detail/' . $r['id'])
             ];
+        }
+
+        // Also search Eviden Kubikel & Trafo tables if exists
+        try {
+            if ($db->tableExists('eviden_kubikel')) {
+                $kubikelRows = $db->table('eviden_kubikel')
+                    ->select('id, nama_kubikel, lokasi, kondisi')
+                    ->groupStart()
+                        ->like('nama_kubikel', $queryClean)
+                        ->orLike('lokasi', $queryClean)
+                        ->orLike('kondisi', $queryClean)
+                    ->groupEnd()
+                    ->limit(3)
+                    ->get()
+                    ->getResultArray();
+
+                foreach ($kubikelRows as $kr) {
+                    $results[] = [
+                        'type'        => 'EVIDEN_KUBIKEL',
+                        'id'          => $kr['id'],
+                        'nomor'       => 'KUBIKEL-' . $kr['id'],
+                        'title'       => "Eviden Kubikel: {$kr['nama_kubikel']}",
+                        'description' => "Lokasi: {$kr['lokasi']}. Kondisi: {$kr['kondisi']}",
+                        'url'         => site_url('eviden')
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('debug', 'Eviden kubikel search skip: ' . $e->getMessage());
         }
 
         return $results;
@@ -77,18 +108,18 @@ class SystemSearchProvider implements SearchProviderInterface
     {
         return [
             [
-                'topic'   => 'SLA Penanganan Temuan',
-                'snippet' => 'Prioritas UTAMA SLA 3 Hari, HIGH 7 Hari, MEDIUM 14 Hari, LOW 30 Hari.'
+                'topic'   => 'SLA Penanganan Temuan SIDAK TEJO',
+                'snippet' => 'Standard SLA: EMERGENCY (24 Jam / 1 Hari), HIGH (3 Hari), MEDIUM (7 Hari), LOW (14 Hari).'
             ],
             [
-                'topic'   => 'Jenis Temuan',
-                'snippet' => 'Jenis temuan terbagi 3 kategori: KONSTRUKSI (har gardu/konstruksi), HOTSPOT (pdkb/gardu), dan ROW (perantingan/pohon).'
+                'topic'   => 'Jenis & Pelaksana Inspeksi',
+                'snippet' => 'Jenis temuan terbagi atas KONSTRUKSI, HOTSPOT, ROW, dan GARDU dengan pelaksana YANTEK, PDKB, HAR GARDU, HAR KONSTRUKSI, HAR ROW, HAR CRANE, dan INSPEKSI.'
             ]
         ];
     }
 
     public function getProviderName(): string
     {
-        return 'system';
+        return 'system_global';
     }
 }

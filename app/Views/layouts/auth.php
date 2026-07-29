@@ -572,12 +572,7 @@
         </form>
 
         <div class="form-footer">
-            <div class="mb-2">
-                <a href="<?= site_url('login?export_db=1') ?>" class="text-white-50 text-decoration-none small" style="font-size: 11px; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; display: inline-block;">
-                    <i class="fas fa-database text-warning me-1"></i> 📥 Download Database Live Railway (.sql)
-                </a>
-            </div>
-            &copy; <?= date('Y') ?> SIDAK TEJO &mdash; Inspektorat Sidoarjo
+            &copy; <?= date('Y') ?> SIDAK TEJO &mdash; PT PLN (Persero) UP3 Sidoarjo
         </div>
     </div>
 

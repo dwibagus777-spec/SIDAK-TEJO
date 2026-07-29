@@ -82,20 +82,14 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('documents/detail/(:num)', 'DocumentCenter::detail/$1');
     $routes->post('documents/approve/(:num)', 'DocumentCenter::approve/$1');
 
-    // Ekspor Database (Admin Saja - Terproteksi Login & Role)
-    $routes->group('', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
-        $routes->get('export_railway_db.php', 'DbExport::index');
-        $routes->get('export-live-db', 'DbExport::index');
-        $routes->get('download-db', 'DbExport::index');
-    });
-
-    // Manajemen Backup & Restore Sistem (Admin)
-    $routes->group('backup', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
-        $routes->get('/', 'Backup::index');
-        $routes->get('create', 'Backup::create');
-        $routes->get('download/(:segment)', 'Backup::download/$1');
-        $routes->post('restore', 'Backup::restore');
-        $routes->get('delete/(:segment)', 'Backup::delete/$1');
+    // Modul Backup & Restore Database Hostinger (Admin Saja - Terproteksi Role)
+    $routes->group('backup-database', ['filter' => 'role:administrator,admin_pusat'], function ($routes) {
+        $routes->get('/', 'DatabaseBackup::index');
+        $routes->post('create', 'DatabaseBackup::create');
+        $routes->get('download/(:segment)', 'DatabaseBackup::download/$1');
+        $routes->get('delete/(:segment)', 'DatabaseBackup::delete/$1');
+        $routes->get('clean-old', 'DatabaseBackup::cleanOldBackups');
+        $routes->post('restore', 'DatabaseBackup::restore');
     });
 
     // Import CSV (Admin saja)

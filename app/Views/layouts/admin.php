@@ -820,6 +820,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                             </a>
                         </li>
 
+                        <!-- Database Backup Module -->
+                        <li class="nav-item <?= url_is('backup-database*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('backup-database') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-database text-warning"></i>
+                                </span>
+                                <span class="nav-link-title">Backup Database</span>
+                            </a>
+                        </li>
+
                         <!-- Phase 19: AI Predictive Maintenance & Decision Support -->
                         <li class="nav-item <?= url_is('ai-predictive*') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('ai-predictive') ?>">
@@ -1009,8 +1019,8 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                             </span>
                         </div>
                         <div class="nav-item">
-                            <a class="btn btn-warning text-dark btn-sm px-2 py-1 font-weight-bold" href="<?= site_url('login?export_db=1') ?>" target="_blank" title="Export Database Live Railway" style="font-size: 11px; border-radius: 4px; white-space: nowrap;">
-                                <i class="fas fa-database me-1"></i> <span class="d-none d-md-inline">Export DB Live</span>
+                            <a class="btn btn-warning text-dark btn-sm px-2 py-1 font-weight-bold" href="<?= site_url('backup-database') ?>" title="Backup Database Hostinger" style="font-size: 11px; border-radius: 4px; white-space: nowrap;">
+                                <i class="fas fa-database me-1"></i> <span class="d-none d-md-inline">Backup Database</span>
                             </a>
                         </div>
                         <div class="nav-item">

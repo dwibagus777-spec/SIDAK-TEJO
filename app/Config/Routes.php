@@ -34,6 +34,21 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('setting/announcement', 'Setting::index');
     $routes->match(['get', 'post'], 'setting/update-announcement', 'Setting::updateAnnouncement');
 
+    // Phase 17 - Master Asset Management
+    $routes->get('assets', 'AssetController::index');
+    $routes->get('assets/create', 'AssetController::create');
+    $routes->post('assets/store', 'AssetController::store');
+    $routes->get('assets/detail/(:num)', 'AssetController::detail/$1');
+
+    // Phase 17 - Work Order Enterprise
+    $routes->get('work-orders', 'WorkOrderController::index');
+    $routes->get('work-orders/create', 'WorkOrderController::create');
+    $routes->post('work-orders/store', 'WorkOrderController::store');
+    $routes->get('work-orders/detail/(:num)', 'WorkOrderController::detail/$1');
+    $routes->post('work-orders/update-status/(:num)', 'WorkOrderController::updateStatus/$1');
+    $routes->post('work-orders/toggle-checklist/(:num)', 'WorkOrderController::toggleChecklist/$1');
+    $routes->post('work-orders/add-material/(:num)', 'WorkOrderController::addMaterial/$1');
+
     // Ekspor Database (Admin Saja - Terproteksi Login & Role)
     $routes->group('', ['filter' => 'role:administrator,admin_ulp'], function ($routes) {
         $routes->get('export_railway_db.php', 'DbExport::index');

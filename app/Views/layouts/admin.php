@@ -772,6 +772,26 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         </li>
                         <?php endif; ?>
 
+                        <!-- Phase 17: Master Asset Management -->
+                        <li class="nav-item <?= url_is('assets*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('assets') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-boxes-stacked text-warning"></i>
+                                </span>
+                                <span class="nav-link-title">Master Asset PLN</span>
+                            </a>
+                        </li>
+
+                        <!-- Phase 17: Work Order Enterprise -->
+                        <li class="nav-item <?= url_is('work-orders*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('work-orders') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="nav-icon fas fa-screwdriver-wrench text-info"></i>
+                                </span>
+                                <span class="nav-link-title">Work Orders (WO)</span>
+                            </a>
+                        </li>
+
                         <!-- Data Master Dropdown -->
                         <?php if (check_role(['administrator', 'admin_ulp'])): ?>
                         <li class="nav-item dropdown <?= (url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show active' : '') ?>">

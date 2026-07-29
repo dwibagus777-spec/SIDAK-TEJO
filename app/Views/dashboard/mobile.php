@@ -393,6 +393,22 @@
                 <div class="card-label">Lap. Management</div>
             </a>
             
+            <!-- Master Asset PLN -->
+            <a href="<?= site_url('assets') ?>" class="menu-card">
+                <div class="icon-circle" style="background-color: #fef9c3;">
+                    <i class="fas fa-boxes-stacked" style="color: #ca8a04; font-size: 20px;"></i>
+                </div>
+                <div class="card-label">Master Asset</div>
+            </a>
+            
+            <!-- Work Orders (WO) -->
+            <a href="<?= site_url('work-orders') ?>" class="menu-card">
+                <div class="icon-circle" style="background-color: #e0f2fe;">
+                    <i class="fas fa-screwdriver-wrench" style="color: #0284c7; font-size: 20px;"></i>
+                </div>
+                <div class="card-label">Work Orders</div>
+            </a>
+
             <!-- 10. Identifikasi Gangguan -->
             <a href="<?= site_url('identifikasi') ?>" class="menu-card">
                 <div class="icon-circle" style="background-color: #fdf2f8;">

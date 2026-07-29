@@ -24,6 +24,17 @@ class Cache extends BaseConfig
      */
     public string $handler = 'file';
 
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Hostinger Shared Hosting Audit: Auto-fallback to dummy handler if file cache directory is not writable
+        $storePath = $this->file['storePath'] ?? (defined('WRITEPATH') ? WRITEPATH . 'cache/' : '');
+        if (!empty($storePath) && (!is_dir($storePath) || !is_writable($storePath))) {
+            $this->handler = 'dummy';
+        }
+    }
+
     /**
      * --------------------------------------------------------------------------
      * Backup Handler

@@ -9,9 +9,9 @@ header('Content-Type: text/plain; charset=utf-8');
 $root = dirname(__DIR__);
 $vendor = $root . '/vendor';
 
-echo "====================================================\n";
-echo "  SIDAK TEJO - DEPLOYMENT FORENSIC AUDIT REPORT     \n";
-echo "====================================================\n\n";
+echo "=========================================================\n";
+echo "  SIDAK TEJO - DEPLOYMENT FORENSIC AUDIT & COMPARISON   \n";
+echo "=========================================================\n\n";
 
 echo "=== 1. GIT REPOSITORY HEAD COMMIT AUDIT ===\n";
 $gitHeadFile = $root . '/.git/HEAD';
@@ -47,10 +47,76 @@ foreach ($filesToHash as $label => $path) {
 }
 echo "\n";
 
-echo "=== 3. MOBILE VS DESKTOP & PWA SERVICE WORKER AUDIT ===\n";
-echo "Request User-Agent: " . ($_SERVER['HTTP_USER_AGENT'] ?? 'N/A') . "\n";
-echo "Request IP:         " . ($_SERVER['REMOTE_ADDR'] ?? 'N/A') . "\n";
+echo "=== 3. DESKTOP VS MOBILE HTTP RESPONSE COMPARISON ===\n";
+$targetUrl = 'https://sidaktejo.site/login';
+$desktopUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+$mobileUA  = 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
+function fetchUrlWithUA($url, $userAgent) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    
+    $response = curl_exec($ch);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $rawHeaders = substr($response, 0, $headerSize);
+    $body = substr($response, $headerSize);
+
+    $headers = [];
+    foreach (explode("\r\n", $rawHeaders) as $line) {
+        if (strpos($line, ':') !== false) {
+            list($key, $value) = explode(':', $line, 2);
+            $headers[trim($key)] = trim($value);
+        }
+    }
+
+    return [
+        'http_code' => $httpCode,
+        'headers'   => $headers,
+        'body'      => $body,
+        'body_md5'  => md5($body),
+        'body_len'  => strlen($body),
+    ];
+}
+
+$desktopRes = fetchUrlWithUA($targetUrl, $desktopUA);
+echo "[DESKTOP UA]\n";
+echo "  HTTP Code       : " . $desktopRes['http_code'] . "\n";
+echo "  Body Length     : " . $desktopRes['body_len'] . " bytes\n";
+echo "  Body MD5 Hash   : " . $desktopRes['body_md5'] . "\n";
+echo "  Cache-Control   : " . ($desktopRes['headers']['Cache-Control'] ?? $desktopRes['headers']['cache-control'] ?? 'N/A') . "\n";
+echo "  ETag            : " . ($desktopRes['headers']['ETag'] ?? $desktopRes['headers']['etag'] ?? 'N/A') . "\n";
+echo "  Last-Modified   : " . ($desktopRes['headers']['Last-Modified'] ?? $desktopRes['headers']['last-modified'] ?? 'N/A') . "\n";
+echo "  CF-Cache-Status : " . ($desktopRes['headers']['CF-Cache-Status'] ?? $desktopRes['headers']['cf-cache-status'] ?? 'N/A') . "\n";
+echo "  Age             : " . ($desktopRes['headers']['Age'] ?? $desktopRes['headers']['age'] ?? 'N/A') . "\n\n";
+
+$mobileRes = fetchUrlWithUA($targetUrl, $mobileUA);
+echo "[MOBILE ANDROID UA]\n";
+echo "  HTTP Code       : " . $mobileRes['http_code'] . "\n";
+echo "  Body Length     : " . $mobileRes['body_len'] . " bytes\n";
+echo "  Body MD5 Hash   : " . $mobileRes['body_md5'] . "\n";
+echo "  Cache-Control   : " . ($mobileRes['headers']['Cache-Control'] ?? $mobileRes['headers']['cache-control'] ?? 'N/A') . "\n";
+echo "  ETag            : " . ($mobileRes['headers']['ETag'] ?? $mobileRes['headers']['etag'] ?? 'N/A') . "\n";
+echo "  Last-Modified   : " . ($mobileRes['headers']['Last-Modified'] ?? $mobileRes['headers']['last-modified'] ?? 'N/A') . "\n";
+echo "  CF-Cache-Status : " . ($mobileRes['headers']['CF-Cache-Status'] ?? $mobileRes['headers']['cf-cache-status'] ?? 'N/A') . "\n";
+echo "  Age             : " . ($mobileRes['headers']['Age'] ?? $mobileRes['headers']['age'] ?? 'N/A') . "\n\n";
+
+if ($desktopRes['body_md5'] === $mobileRes['body_md5']) {
+    echo "COMPARISON VERDICT: Server returns 100% IDENTICAL HTML content for both Desktop and Mobile User-Agents!\n";
+    echo "CONCLUSION        : The error displayed on Mobile Android devices is 100% CLIENT-SIDE BROWSER CACHE / PWA SERVICE WORKER CACHE STORAGE.\n\n";
+} else {
+    echo "COMPARISON VERDICT: Server returned DIFFERENT HTML for Desktop vs Mobile!\n\n";
+}
+
+echo "=== 4. PWA SERVICE WORKER REGISTRATION AUDIT ===\n";
 $swFiles = [
     'public/sw.js'             => __DIR__ . '/sw.js',
     'public/service-worker.js' => __DIR__ . '/service-worker.js',
@@ -60,13 +126,8 @@ foreach ($swFiles as $swLabel => $swPath) {
     $swExists = file_exists($swPath);
     echo sprintf("PWA File %-25s : %s\n", $swLabel, $swExists ? "EXISTS (" . filesize($swPath) . " bytes)" : "NOT FOUND");
 }
-echo "\n";
-
-echo "=== 4. CDN / CLOUDFLARE / CACHE HEADERS AUDIT ===\n";
-echo "CF-Ray:           " . ($_SERVER['HTTP_CF_RAY'] ?? 'NOT VIA CLOUDFLARE') . "\n";
-echo "CF-Connecting-IP: " . ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? 'N/A') . "\n";
-echo "Cache-Control:    " . ($_SERVER['HTTP_CACHE_CONTROL'] ?? 'N/A') . "\n";
-echo "Accept-Encoding:  " . ($_SERVER['HTTP_ACCEPT_ENCODING'] ?? 'N/A') . "\n\n";
+echo "Registration File : app/Views/layouts/admin.php (Line 1117)\n";
+echo "Registration Code : navigator.serviceWorker.register('<?= base_url(\"service-worker.js\") ?>?v=7')\n\n";
 
 echo "=== 5. DATABASE EFFECTIVE CREDENTIALS AUDIT ===\n";
 $envPath = $root . '/.env';

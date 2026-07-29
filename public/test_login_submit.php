@@ -1,80 +1,51 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 header('Content-Type: text/plain; charset=utf-8');
 
-try {
-    echo "=== STEP 1: INITIALIZING CI4 BOOTSTRAP ===\n";
-    require __DIR__ . '/../vendor/autoload.php';
-    require __DIR__ . '/../app/Config/Paths.php';
+echo "=== PURE PHP LOGIN & DB FORENSIC AUDIT ===\n";
 
-    $paths = new \Config\Paths();
-    require $paths->systemDirectory . '/Boot.php';
+$root = dirname(__DIR__);
+$envFile = $root . '/.env';
 
-    // Boot framework in web context without running route runner
-    define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
-    \CodeIgniter\Boot::bootTest($paths);
+echo "1. Checking .env file: " . (file_exists($envFile) ? "EXISTS" : "NOT FOUND") . "\n";
 
-    echo "=== STEP 1.5: TESTING DATABASE CONNECTION ===\n";
-    try {
-        $dbConfig = new \Config\Database();
-        echo "DB Host: " . $dbConfig->default['hostname'] . "\n";
-        echo "DB User: " . $dbConfig->default['username'] . "\n";
-        echo "DB Name: " . $dbConfig->default['database'] . "\n";
-        
-        $db = \Config\Database::connect();
-        $dbVersion = $db->getVersion();
-        echo "DB CONNECTION: SUCCESS (MySQL Version: " . $dbVersion . ")\n\n";
-    } catch (\Throwable $dberr) {
-        echo "DB CONNECTION FAILED: " . $dberr->getMessage() . " in " . $dberr->getFile() . ":" . $dberr->getLine() . "\n\n";
+$findEnv = function(...$keys) {
+    foreach ($keys as $k) {
+        $val = getenv($k) ?: (getenv(strtoupper($k)) ?: (getenv(strtolower($k)) ?: ($_ENV[$k] ?? ($_ENV[strtoupper($k)] ?? ($_ENV[strtolower($k)] ?? ($_SERVER[$k] ?? ($_SERVER[strtoupper($k)] ?? ($_SERVER[strtolower($k)] ?? null))))))));
+        if ($val !== null && $val !== '') { return $val; }
     }
+    return null;
+};
 
-    echo "=== STEP 2: TESTING USER REPOSITORY QUERY ===\n";
-    $userRepo = new \App\Repositories\UserRepository();
-    $user = $userRepo->findByUsername('admin');
-    
-    if (!$user) {
-        echo "USER FIND: 'admin' not found. Testing first available user in DB...\n";
-        $db = \Config\Database::connect();
-        $user = $db->table('users')->get()->getFirstRow('array');
-    }
-    
-    if (!$user) {
-        echo "USER FIND FAILED: No users found in database table 'users'.\n";
+$host = $findEnv('DB_HOST', 'MYSQLHOST', 'MYSQL_HOST', 'database_default_hostname') ?: '127.0.0.1';
+$user = $findEnv('DB_USER', 'MYSQLUSER', 'MYSQL_USER', 'database_default_username') ?: 'root';
+$pass = $findEnv('DB_PASS', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'database_default_password') ?? '';
+$db   = $findEnv('DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'database_default_database') ?: 'sidaktejo';
+$port = (int)($findEnv('DB_PORT', 'MYSQLPORT', 'MYSQL_PORT', 'database_default_port') ?: 3306);
+
+echo "2. Resolved DB Credentials:\n";
+echo "   Host: " . $host . "\n";
+echo "   User: " . $user . "\n";
+echo "   Pass: " . ($pass === '' ? '(empty)' : '*** (' . strlen($pass) . ' chars)') . "\n";
+echo "   DB:   " . $db . "\n";
+echo "   Port: " . $port . "\n\n";
+
+echo "3. Testing direct mysqli_connect()...\n";
+$mysqli = @mysqli_connect($host, $user, $pass, $db, $port);
+
+if ($mysqli) {
+    echo "   MYSQLI CONNECT: SUCCESS (Server Version: " . mysqli_get_server_info($mysqli) . ")\n";
+    $query = @mysqli_query($mysqli, "SELECT count(*) as total FROM users");
+    if ($query) {
+        $row = mysqli_fetch_assoc($query);
+        echo "   USERS TABLE QUERY: SUCCESS (Total Users: " . $row['total'] . ")\n";
     } else {
-        echo "USER FOUND: ID=" . $user['id'] . ", Username=" . $user['username'] . ", Role=" . ($user['role'] ?? 'N/A') . "\n";
+        echo "   USERS TABLE QUERY FAILED: " . mysqli_error($mysqli) . "\n";
     }
-
-    echo "=== STEP 3: TESTING SESSION SET ===\n";
-    $session = session();
-    if ($user) {
-        $session->set([
-            'user_id'      => $user['id'],
-            'user_name'    => !empty($user['nama_pegawai']) ? $user['nama_pegawai'] : ($user['nama'] ?? $user['username']),
-            'user_role'    => strtolower($user['role'] ?? 'admin'),
-            'logged_in'    => true,
-            'last_activity'=> time()
-        ]);
-        echo "SESSION SET: SUCCESS (user_id=" . $session->get('user_id') . ")\n";
-    }
-
-    echo "=== STEP 4: TESTING AUDIT LOG ACTIVITY ===\n";
-    if (function_exists('log_activity')) {
-        $logRes = log_activity('LOGIN_TEST', 'Diagnostic test login submit');
-        echo "LOG_ACTIVITY(): " . ($logRes ? "SUCCESS" : "FAILED") . "\n";
-    } else {
-        echo "LOG_ACTIVITY(): Function not loaded.\n";
-    }
-
-    echo "=== STEP 5: TESTING DASHBOARD ROUTE & FILTER CONTROLLER ===\n";
-    $dashboard = new \App\Controllers\Dashboard();
-    echo "DASHBOARD CONTROLLER INSTANTIATION: SUCCESS\n";
-
-    echo "\n=== ALL LOGIN PIPELINE STEPS PASSED SUCCESSFULLY ===\n";
-} catch (\Throwable $e) {
-    header('HTTP/1.1 200 OK', true, 200);
-    echo "\n!!! LOGIN DIAGNOSTIC EXCEPTION CAUGHT !!!\n";
-    echo "Class:   " . get_class($e) . "\n";
-    echo "Message: " . $e->getMessage() . "\n";
-    echo "File:    " . $e->getFile() . "\n";
-    echo "Line:    " . $e->getLine() . "\n\n";
-    echo "Trace:\n" . $e->getTraceAsString() . "\n";
+    mysqli_close($mysqli);
+} else {
+    echo "   MYSQLI CONNECT FAILED: " . mysqli_connect_error() . " (Errno: " . mysqli_connect_errno() . ")\n";
 }
+
+echo "\n=== END PURE PHP AUDIT ===\n";

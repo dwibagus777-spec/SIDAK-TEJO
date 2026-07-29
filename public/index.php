@@ -1,4 +1,5 @@
 <?php
+echo "DEPLOY VERSION: " . date('Y-m-d H:i:s'); exit;
 
 use CodeIgniter\Boot;
 use Config\Paths;

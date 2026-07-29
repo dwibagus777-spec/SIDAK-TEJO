@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set('Asia/Jakarta');
+
 use App\Models\AuditLogModel;
 
 if (!function_exists('log_activity')) {
@@ -344,5 +346,202 @@ if (!function_exists('get_photo_url')) {
 
         // Fallback jika berkas fisik tidak ditemukan di disk server
         return $placeholder;
+    }
+}
+
+if (!function_exists('indo_date')) {
+    /**
+     * Format tanggal ke Bahasa Indonesia (Contoh: 29 Juli 2026 atau Rabu, 29 Juli 2026)
+     */
+    function indo_date(?string $dateStr, bool $includeDay = false): string
+    {
+        if (empty($dateStr) || $dateStr === '0000-00-00' || $dateStr === '0000-00-00 00:00:00') {
+            return '-';
+        }
+
+        $time = strtotime($dateStr);
+        if (!$time) return '-';
+
+        $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        $months = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        $dayName = $days[date('w', $time)];
+        $dayNum = date('j', $time);
+        $monthName = $months[(int)date('n', $time)];
+        $year = date('Y', $time);
+
+        if ($includeDay) {
+            return "{$dayName}, {$dayNum} {$monthName} {$year}";
+        }
+        return "{$dayNum} {$monthName} {$year}";
+    }
+}
+
+if (!function_exists('indo_datetime')) {
+    /**
+     * Format datetime lengkap Bahasa Indonesia dengan Timezone WIB (Contoh: 29 Juli 2026 08:24:16 WIB)
+     */
+    function indo_datetime(?string $datetimeStr, bool $includeSeconds = true, bool $includeDay = false): string
+    {
+        if (empty($datetimeStr) || $datetimeStr === '0000-00-00 00:00:00') {
+            return '-';
+        }
+
+        $time = strtotime($datetimeStr);
+        if (!$time) return '-';
+
+        $dateFormatted = indo_date($datetimeStr, $includeDay);
+        $timeFormatted = $includeSeconds ? date('H:i:s', $time) : date('H:i', $time);
+
+        return "{$dateFormatted} {$timeFormatted} WIB";
+    }
+}
+
+if (!function_exists('greeting')) {
+    /**
+     * Smart Automatic Greeting berdasarkan Waktu Asia/Jakarta
+     */
+    function greeting(?int $hour = null): string
+    {
+        if ($hour === null) {
+            $hour = (int)date('H');
+        }
+
+        if ($hour >= 5 && $hour < 11) {
+            return '🌅 Selamat Pagi';
+        } elseif ($hour >= 11 && $hour < 15) {
+            return '☀ Selamat Siang';
+        } elseif ($hour >= 15 && $hour < 18) {
+            return '🌤 Selamat Sore';
+        } else {
+            return '🌙 Selamat Malam';
+        }
+    }
+}
+
+if (!function_exists('time_ago')) {
+    /**
+     * Relative Human Time
+     */
+    function time_ago(?string $datetimeStr): string
+    {
+        if (empty($datetimeStr)) return '-';
+        $time = strtotime($datetimeStr);
+        if (!$time) return '-';
+
+        $diff = time() - $time;
+        if ($diff < 60) return 'Baru saja';
+        if ($diff < 3600) return floor($diff / 60) . ' menit yang lalu';
+        if ($diff < 86400) return floor($diff / 3600) . ' jam yang lalu';
+        if ($diff < 604800) return floor($diff / 86400) . ' hari yang lalu';
+
+        return indo_date($datetimeStr);
+    }
+}
+
+if (!function_exists('formatDuration')) {
+    /**
+     * Format detik ke durasi yang ramah dibaca
+     */
+    function formatDuration(int $seconds): string
+    {
+        if ($seconds <= 0) return '0 menit';
+
+        $days = floor($seconds / 86400);
+        $hours = floor(($seconds % 86400) / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+
+        $parts = [];
+        if ($days > 0) $parts[] = "{$days} hari";
+        if ($hours > 0) $parts[] = "{$hours} jam";
+        if ($minutes > 0 && $days == 0) $parts[] = "{$minutes} menit";
+
+        return !empty($parts) ? implode(' ', $parts) : '1 menit';
+    }
+}
+
+if (!function_exists('duration')) {
+    /**
+     * Hitung durasi antara dua timestamp
+     */
+    function duration(string $startStr, ?string $endStr = null): string
+    {
+        $start = strtotime($startStr);
+        $end = !empty($endStr) ? strtotime($endStr) : time();
+
+        if (!$start) return '-';
+        return formatDuration(max(0, $end - $start));
+    }
+}
+
+if (!function_exists('shift')) {
+    /**
+     * Tentukan Shift Kerja berdasarkan Jam
+     */
+    function shift(?string $timeStr = null): string
+    {
+        $hour = !empty($timeStr) ? (int)date('H', strtotime($timeStr)) : (int)date('H');
+
+        if ($hour >= 7 && $hour < 15) {
+            return 'Shift Pagi (07.00 - 15.00)';
+        } elseif ($hour >= 15 && $hour < 23) {
+            return 'Shift Siang (15.00 - 23.00)';
+        } else {
+            return 'Shift Malam (23.00 - 07.00)';
+        }
+    }
+}
+
+if (!function_exists('sla_remaining_info')) {
+    /**
+     * Hitung sisa SLA / Overdue secara presisi
+     */
+    function sla_remaining_info(string $priority, string $createdStr, string $status, ?string $finishedStr = null): array
+    {
+        $prio = strtoupper($priority);
+        $st   = strtoupper($status);
+
+        $start = strtotime($createdStr);
+        $end   = ($st === 'SELESAI' && !empty($finishedStr)) ? strtotime($finishedStr) : time();
+
+        $maxDays = match($prio) {
+            'EMERGENCY' => 1,
+            'HIGH'      => 3,
+            'MEDIUM'    => 7,
+            default     => 14
+        };
+
+        $deadline = $start + ($maxDays * 86400);
+        $diff     = $deadline - $end;
+
+        if ($st === 'SELESAI') {
+            if ($diff >= 0) {
+                return [
+                    'is_overdue' => false,
+                    'badge'      => '<span class="badge bg-success"><i class="fas fa-circle-check me-1"></i> SELESAI (SLA OK)</span>',
+                    'text'       => 'Selesai tepat waktu'
+                ];
+            } else {
+                return [
+                    'is_overdue' => true,
+                    'badge'      => '<span class="badge bg-warning text-dark"><i class="fas fa-triangle-exclamation me-1"></i> SELESAI (OVERDUE ' . formatDuration(abs($diff)) . ')</span>',
+                    'text'       => 'Selesai melewati SLA ' . formatDuration(abs($diff))
+                ];
+            }
+        } else {
+            if ($diff >= 0) {
+                return [
+                    'is_overdue' => false,
+                    'badge'      => '<span class="badge bg-info text-white"><i class="fas fa-hourglass-half me-1"></i> SISA ' . formatDuration($diff) . '</span>',
+                    'text'       => 'Sisa SLA ' . formatDuration($diff)
+                ];
+            } else {
+                return [
+                    'is_overdue' => true,
+                    'badge'      => '<span class="badge bg-danger animate__animated animate__flash animate__infinite"><i class="fas fa-hourglass-end me-1"></i> OVERDUE ' . formatDuration(abs($diff)) . '</span>',
+                    'text'       => 'Terlambat ' . formatDuration(abs($diff))
+                ];
+            }
+        }
     }
 }

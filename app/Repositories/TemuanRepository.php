@@ -77,6 +77,17 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.tanggal_temuan <=', $filters['tanggal_akhir']);
         }
 
+        if (!empty($filters['shift'])) {
+            $shiftVal = strtolower($filters['shift']);
+            if (str_contains($shiftVal, 'pagi')) {
+                $builder->where('HOUR(temuan.created_at) >=', 7)->where('HOUR(temuan.created_at) <', 15);
+            } elseif (str_contains($shiftVal, 'siang')) {
+                $builder->where('HOUR(temuan.created_at) >=', 15)->where('HOUR(temuan.created_at) <', 23);
+            } elseif (str_contains($shiftVal, 'malam')) {
+                $builder->groupStart()->where('HOUR(temuan.created_at) >=', 23)->orWhere('HOUR(temuan.created_at) <', 7)->groupEnd();
+            }
+        }
+
         if (!empty($filters['status'])) {
             $statusVal = strtoupper($filters['status']);
             if ($statusVal === 'BELUM SELESAI') {

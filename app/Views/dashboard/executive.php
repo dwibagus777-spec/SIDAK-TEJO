@@ -9,12 +9,17 @@
     <!-- Top Executive Header & Toolbar -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom" style="gap: 12px;">
         <div>
+            <span class="badge bg-warning text-dark font-weight-bold mb-1" style="font-size: 11px;"><?= greeting() ?>, <?= esc($userName) ?>!</span>
             <h4 class="fw-bold mb-1 text-primary d-flex align-items-center" style="font-family: 'Outfit', sans-serif; letter-spacing: -0.5px;">
                 <i class="fas fa-chart-line text-warning me-2 fs-3"></i>
                 EXECUTIVE DASHBOARD & ANALYTICS
-                <span class="badge bg-primary ms-2 rounded-pill font-weight-normal" style="font-size: 10px; letter-spacing: 0.5px;">ENTERPRISE V14</span>
+                <span class="badge bg-primary ms-2 rounded-pill font-weight-normal" style="font-size: 10px; letter-spacing: 0.5px;">ENTERPRISE V15</span>
             </h4>
-            <p class="text-muted small mb-0">Realtime KPI, Monitoring Field Operations, Workload, SLA Tracking & GIS Heatmap</p>
+            <p class="text-muted small mb-0">
+                <i class="fas fa-calendar-day me-1 text-primary"></i> <?= indo_date(date('Y-m-d'), true) ?> • 
+                <span id="live-header-clock" class="fw-bold text-dark"><?= date('H:i:s') ?> WIB</span> • 
+                <span class="badge bg-light text-primary border me-1" style="font-size: 10px;"><?= shift() ?></span>
+            </p>
         </div>
 
         <div class="d-flex align-items-center flex-wrap gap-2">

@@ -66,6 +66,7 @@ class Laporan extends BaseController
         return [
             'tanggal_awal'     => $this->request->getPost('tanggal_awal'),
             'tanggal_akhir'    => $this->request->getPost('tanggal_akhir'),
+            'shift'            => $this->request->getPost('shift'),
             'ulp_id'           => $this->request->getPost('ulp_id'),
             'penyulang_id'     => $this->request->getPost('penyulang_id'),
             'section_id'       => $this->request->getPost('section_id'),

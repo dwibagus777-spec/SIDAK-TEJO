@@ -655,6 +655,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                     </a>
                 </h1>
 
+                <!-- Realtime Digital Clock & Shift Widget (Phase 15) -->
+                <div class="px-3 py-2 my-2 rounded-3 text-white border border-secondary shadow-xs d-none d-lg-block" style="font-size: 11px; background: rgba(15, 23, 42, 0.8) !important;">
+                    <div class="d-flex align-items-center justify-content-between text-info font-weight-bold">
+                        <span><i class="fas fa-clock me-1"></i> Live WIB</span>
+                        <span class="badge bg-primary" style="font-size: 9px;"><?= shift() ?></span>
+                    </div>
+                    <div class="fw-bold text-white fs-6 mt-1" id="live-sidebar-clock"><?= date('H:i:s') ?> WIB</div>
+                    <div class="text-muted" style="font-size: 10px;"><?= indo_date(date('Y-m-d'), true) ?></div>
+                </div>
+
                 <!-- User Profile info on Mobile menu toggle -->
                 <div class="navbar-nav flex-row d-lg-none">
                     <div class="nav-item">
@@ -1533,9 +1543,25 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         $(document).on('show.bs.modal', function() {
             $('#global-voice-container').addClass('shifted');
         });
-        $(document).on('hidden.bs.modal', function() {
-            $('#global-voice-container').removeClass('shifted');
-        });
+        // Zero-Lag Realtime Digital Clock Engine (Phase 15)
+        (function() {
+            let serverTimestamp = <?= time() ?>;
+            function updateLiveClock() {
+                serverTimestamp++;
+                const date = new Date(serverTimestamp * 1000);
+                
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                const clockString = hours + ':' + minutes + ':' + seconds + ' WIB';
+                
+                const $clockEl = $('#live-sidebar-clock, #live-header-clock, #live-mobile-clock');
+                if ($clockEl.length) {
+                    $clockEl.text(clockString);
+                }
+            }
+            setInterval(updateLiveClock, 1000);
+        })();
     </script>
     <?= $this->renderSection('scripts') ?>
 </body>

@@ -310,8 +310,16 @@ $statusClass = match($statusStr) {
                                 <td>: <?= $temuan['noga'] ? esc($temuan['noga']) : '<span class="text-muted small">Tidak ada</span>' ?></td>
                             </tr>
                             <tr>
-                                <th>Tanggal & Jam</th>
-                                <td>: <span class="font-weight-bold text-primary"><?= date('d-m-Y H:i', strtotime(!empty($temuan['created_at']) ? $temuan['created_at'] : $temuan['tanggal_temuan'])) ?> WIB</span></td>
+                                <th>Waktu Mulai</th>
+                                <td>: <span class="font-weight-bold text-primary"><?= indo_datetime($temuan['created_at'] ?: $temuan['tanggal_temuan']) ?></span></td>
+                            </tr>
+                            <tr>
+                                <th>Update Terakhir</th>
+                                <td>: <span class="font-weight-bold text-secondary"><?= indo_datetime($temuan['updated_at']) ?></span></td>
+                            </tr>
+                            <tr>
+                                <th>Lama Pengerjaan</th>
+                                <td>: <span class="badge bg-success font-weight-bold px-2 py-1"><i class="fas fa-stopwatch me-1"></i> <?= duration($temuan['created_at'] ?: $temuan['tanggal_temuan'], $temuan['updated_at']) ?></span></td>
                             </tr>
                         </table>
                     </div>

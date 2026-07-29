@@ -268,11 +268,15 @@
         
         <div class="user-info-bar">
             <div>
-                <p class="welcome-text">Selamat Datang,</p>
-                <h2 class="user-name"><?= esc($userName) ?></h2>
+                <p class="welcome-text mb-0" style="font-size: 0.75rem; color: #fde047; font-weight: 600;"><?= greeting() ?>,</p>
+                <h2 class="user-name my-0" style="font-size: 1.05rem;"><?= esc($userName) ?></h2>
+                <div class="text-white opacity-90 mt-1" style="font-size: 0.65rem; font-weight: 500;">
+                    <i class="fas fa-calendar-day me-1 text-warning"></i> <?= indo_date(date('Y-m-d'), true) ?> • <span id="live-mobile-clock" class="fw-bold text-white"><?= date('H:i:s') ?> WIB</span>
+                </div>
             </div>
-            <div class="status-badge-container">
-                <span class="badge-role"><?= esc(session()->get('user_role') ?: 'USER') ?></span>
+            <div class="status-badge-container d-flex flex-column align-items-end" style="gap: 2px;">
+                <span class="badge-role"><?= esc(get_role_label(session()->get('user_role') ?: 'USER')) ?></span>
+                <span class="badge bg-light text-dark font-weight-bold" style="font-size: 9px; padding: 2px 6px; border-radius: 4px;"><?= shift() ?></span>
                 <span class="badge-online" id="net-status-pill"><i class="fas fa-wifi"></i> Online</span>
             </div>
         </div>

@@ -70,7 +70,7 @@ class Eviden extends BaseController
         $ids = array_column($dataList, 'id_kubikel');
         if (!empty($ids)) {
             $db = \Config\Database::connect();
-            $countsQuery = $db->table('foto_eviden')
+            $countsQuery = $db->table('tb_foto_eviden')
                 ->select('id_parent, COUNT(*) as total')
                 ->where('kategori', 'KUBIKEL')
                 ->whereIn('id_parent', $ids)
@@ -339,7 +339,7 @@ class Eviden extends BaseController
         $ids = array_column($dataList, 'id_trafo');
         if (!empty($ids)) {
             $db = \Config\Database::connect();
-            $countsQuery = $db->table('foto_eviden')
+            $countsQuery = $db->table('tb_foto_eviden')
                 ->select('id_parent, COUNT(*) as total')
                 ->where('kategori', 'TRAFO')
                 ->whereIn('id_parent', $ids)

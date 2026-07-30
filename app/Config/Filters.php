@@ -90,7 +90,8 @@ class Filters extends BaseFilters
                     'eviden/management/delete/*',
                     'eviden/delete-foto/*',
                     'temuan/ajax-*',
-                    'temuan/ajax-datatables'
+                    'temuan/ajax-datatables',
+                    'ai-copilot/*'
                 ]
             ],
             // 'invalidchars',

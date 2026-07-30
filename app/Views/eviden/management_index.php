@@ -172,7 +172,7 @@
                                     <!-- Nameplate Lama (Ringan) -->
                                     <td>
                                         <?php if (!empty($row['foto_nameplate_lama'])): ?>
-                                            <button type="button" class="btn btn-xs btn-outline-info btn-view-single-foto" data-url="<?= base_url('foto/management/' . $row['foto_nameplate_lama']) ?>">
+                                            <button type="button" class="btn btn-xs btn-outline-info btn-view-single-foto" data-url="<?= get_photo_url($row['foto_nameplate_lama'], 'foto/management/') ?>">
                                                 <i class="fas fa-eye mr-1"></i> Lihat Foto
                                             </button>
                                         <?php else: ?>
@@ -183,7 +183,7 @@
                                     <!-- Nameplate Baru (Ringan) -->
                                     <td>
                                         <?php if (!empty($row['foto_nameplate_baru'])): ?>
-                                            <button type="button" class="btn btn-xs btn-outline-success btn-view-single-foto" data-url="<?= base_url('foto/management/' . $row['foto_nameplate_baru']) ?>">
+                                            <button type="button" class="btn btn-xs btn-outline-success btn-view-single-foto" data-url="<?= get_photo_url($row['foto_nameplate_baru'], 'foto/management/') ?>">
                                                 <i class="fas fa-eye mr-1"></i> Lihat Foto
                                             </button>
                                         <?php else: ?>

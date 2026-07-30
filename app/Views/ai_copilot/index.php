@@ -170,6 +170,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // Fetch AI Response via AJAX
         var formData = new FormData();
         formData.append('prompt', prompt);
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
         fetch("<?= site_url('ai-copilot/ask') ?>", {
             method: 'POST',

@@ -34,7 +34,12 @@ class Cache extends BaseConfig
             if (!is_dir($storePath)) {
                 @mkdir($storePath, 0775, true);
             }
-            if (!is_dir($storePath) || !is_writable($storePath)) {
+            if (is_dir($storePath)) {
+                @chmod($storePath, 0775);
+            }
+            helper('filesystem');
+            $writable = function_exists('is_really_writable') ? is_really_writable($storePath) : is_writable($storePath);
+            if (!is_dir($storePath) || !$writable) {
                 $this->handler = 'dummy';
                 $this->backupHandler = 'dummy';
             }

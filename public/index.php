@@ -70,12 +70,12 @@ $paths = new Paths();
     foreach ($dirs as $dir) {
         $fullPath = rtrim($writablePath, '/\\') . DIRECTORY_SEPARATOR . $dir;
         if (!is_dir($fullPath)) {
-            @mkdir($fullPath, 0755, true);
+            @mkdir($fullPath, 0775, true);
         }
-        if (is_dir($fullPath) && !is_writable($fullPath)) {
-            @chmod($fullPath, 0755);
+        if (is_dir($fullPath)) {
+            @chmod($fullPath, 0775);
             if (!is_writable($fullPath)) {
-                @chmod($fullPath, 0775);
+                @chmod($fullPath, 0777);
             }
         }
     }

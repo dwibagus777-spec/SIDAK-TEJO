@@ -32,7 +32,7 @@ Events::on('pre_system', static function (): void {
         }
 
         while (ob_get_level() > 0) {
-            ob_end_flush();
+            ob_end_clean();
         }
 
         // STEP 8: Auto Ensure Writable Subdirectories (Hostinger Shared Hosting)

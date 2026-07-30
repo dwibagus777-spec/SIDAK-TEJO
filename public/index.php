@@ -26,19 +26,7 @@ if (version_compare(PHP_VERSION, $minPhpVersion, '<')) {
     exit(1);
 }
 
-/*
- *---------------------------------------------------------------
- * AUTOMATIC DEPLOYMENT CHECK (Composer Integrity & Vendor Check)
- *---------------------------------------------------------------
- */
-$vendorAutoload = __DIR__ . '/../vendor/autoload.php';
-clearstatcache(true);
 
-if (!file_exists($vendorAutoload) || !is_readable($vendorAutoload)) {
-    header('HTTP/1.1 500 Internal Server Error', true, 500);
-    echo '[DEPLOYMENT ERROR] Vendor dependencies incomplete or unreadable. Missing vendor/autoload.php. Please verify Composer installation.';
-    exit(1);
-}
 
 /*
  *---------------------------------------------------------------

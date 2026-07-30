@@ -28,10 +28,16 @@ class Cache extends BaseConfig
     {
         parent::__construct();
 
-        // Hostinger Shared Hosting Audit: Auto-fallback to dummy handler if file cache directory is not writable
+        // Hostinger Shared Hosting Audit: Auto-create cache dir or auto-fallback to dummy handler if unwritable
         $storePath = $this->file['storePath'] ?? (defined('WRITEPATH') ? WRITEPATH . 'cache/' : '');
-        if (!empty($storePath) && (!is_dir($storePath) || !is_writable($storePath))) {
-            $this->handler = 'dummy';
+        if (!empty($storePath)) {
+            if (!is_dir($storePath)) {
+                @mkdir($storePath, 0775, true);
+            }
+            if (!is_dir($storePath) || !is_writable($storePath)) {
+                $this->handler = 'dummy';
+                $this->backupHandler = 'dummy';
+            }
         }
     }
 

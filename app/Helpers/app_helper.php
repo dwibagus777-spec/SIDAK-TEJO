@@ -356,6 +356,19 @@ if (!function_exists('get_photo_url')) {
     }
 }
 
+if (!function_exists('render_photo')) {
+    /**
+     * Render tag <img> foto secara aman dengan logging error jika foto gagal dimuat
+     */
+    function render_photo(?string $photoName, string $alt = 'Foto', string $class = 'img-thumbnail', ?string $fotoPath = 'foto/', string $size = 'full', string $extraAttr = ''): string
+    {
+        $url = get_photo_url($photoName, $fotoPath, $size);
+        $placeholder = base_url('assets/img/no-image.png');
+        $errorLogJs = "onerror=\"console.warn('Gagal memuat foto: " . addslashes((string)$photoName) . "'); this.onerror=null; this.src='" . $placeholder . "';\"";
+        return '<img src="' . htmlspecialchars($url) . '" alt="' . htmlspecialchars($alt) . '" class="' . htmlspecialchars($class) . '" ' . $errorLogJs . ' ' . $extraAttr . ' />';
+    }
+}
+
 if (!function_exists('indo_date')) {
     /**
      * Format tanggal ke Bahasa Indonesia (Contoh: 29 Juli 2026 atau Rabu, 29 Juli 2026)

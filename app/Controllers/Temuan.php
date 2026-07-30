@@ -321,6 +321,7 @@ class Temuan extends BaseController
                 'sla'       => $sla,
                 'history'   => $history,
                 'canEdit'   => in_array($role, ['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek']),
+                'canDelete' => in_array($role, ['administrator', 'admin', 'admin_pusat', 'admin_ulp']),
                 'editUrl'   => site_url('temuan/edit/' . $id),
                 'detailUrl' => site_url('temuan/detail/' . $id),
             ]);

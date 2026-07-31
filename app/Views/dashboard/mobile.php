@@ -243,6 +243,25 @@
             var mmap = L.map('emc-mini-mobile-map', { zoomControl: false }).setView([-7.4478, 112.7183], 11);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mmap);
 
+            var pins = <?= json_encode($mapPins ?? []) ?>;
+            pins.forEach(function(p) {
+                var lat = parseFloat(p.latitude);
+                var lng = parseFloat(p.longitude);
+                if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                    var color = '#10b981'; // Hijau
+                    if (p.prioritas === 'EMERGENCY') color = '#ef4444'; // Merah
+                    else if (p.prioritas === 'HIGH') color = '#f59e0b'; // Kuning
+
+                    var circle = L.circleMarker([lat, lng], {
+                        radius: 7, fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.9
+                    }).addTo(mmap);
+
+                    circle.on('click', function() {
+                        window.location.href = "<?= site_url('temuan/detail/') ?>" + p.id;
+                    });
+                }
+            });
+
             var savedMotiv = localStorage.getItem('sidak_admin_motivation');
             if (savedMotiv) {
                 var motivEl = document.getElementById('m-permanent-motivation');

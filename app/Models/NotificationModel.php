@@ -57,6 +57,12 @@ class NotificationModel extends Model
                 if (!$db->fieldExists('is_read', 'notifications')) {
                     $forge->addColumn('notifications', ['is_read' => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 0]]);
                 }
+                if (!$db->fieldExists('read_at', 'notifications')) {
+                    $forge->addColumn('notifications', ['read_at' => ['type' => 'DATETIME', 'null' => true]]);
+                }
+                if (!$db->fieldExists('target', 'notifications')) {
+                    $forge->addColumn('notifications', ['target' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true]]);
+                }
                 if (!$db->fieldExists('updated_at', 'notifications')) {
                     $forge->addColumn('notifications', ['updated_at' => ['type' => 'DATETIME', 'null' => true]]);
                 }

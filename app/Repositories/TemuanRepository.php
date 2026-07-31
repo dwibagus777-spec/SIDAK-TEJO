@@ -425,6 +425,10 @@ class TemuanRepository extends BaseRepository
             ->select('id, nomor_temuan, prioritas, status, latitude, longitude, alamat, detail_temuan')
             ->where('latitude IS NOT NULL')
             ->where('longitude IS NOT NULL')
+            ->where("latitude != ''")
+            ->where("longitude != ''")
+            ->where("latitude != '0'")
+            ->where("longitude != '0'")
             ->where('deleted_at IS NULL');
 
         if ($ulpIdFilter !== null) {

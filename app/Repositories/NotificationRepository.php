@@ -36,22 +36,41 @@ class NotificationRepository
 
     public function getUnreadCount(?int $userId): int
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('notifications')->where('read_at IS NULL');
-        if ($userId) {
-            $builder->groupStart()->where('user_id', $userId)->orWhere('user_id IS NULL')->groupEnd();
+        try {
+            $db = \Config\Database::connect();
+            $builder = $db->table('notifications');
+            if ($db->fieldExists('read_at', 'notifications')) {
+                $builder->where('read_at IS NULL');
+            } else {
+                $builder->where('is_read', 0);
+            }
+            if ($userId) {
+                $builder->groupStart()->where('user_id', $userId)->orWhere('user_id IS NULL')->groupEnd();
+            }
+            return $builder->countAllResults();
+        } catch (\Throwable $e) {
+            log_message('error', '[NotificationRepository::getUnreadCount] Exception: ' . $e->getMessage());
+            return 0;
         }
-        return $builder->countAllResults();
     }
 
     public function markAllAsRead(?int $userId): bool
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('notifications')->where('read_at IS NULL');
-        if ($userId) {
-            $builder->where('user_id', $userId);
+        try {
+            $db = \Config\Database::connect();
+            $builder = $db->table('notifications');
+            $updateData = ['is_read' => 1];
+            if ($db->fieldExists('read_at', 'notifications')) {
+                $updateData['read_at'] = date('Y-m-d H:i:s');
+            }
+            if ($userId) {
+                $builder->where('user_id', $userId);
+            }
+            return $builder->update($updateData);
+        } catch (\Throwable $e) {
+            log_message('error', '[NotificationRepository::markAllAsRead] Exception: ' . $e->getMessage());
+            return false;
         }
-        return $builder->update(['read_at' => date('Y-m-d H:i:s')]);
     }
 
     public function logNotification(array $data): bool

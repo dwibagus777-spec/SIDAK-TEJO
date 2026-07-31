@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sidak-tejo-v7';
-const MAPS_CACHE_NAME = 'sidak-tejo-maps-v5';
+const CACHE_NAME = 'sidak-tejo-v8-enterprise';
+const MAPS_CACHE_NAME = 'sidak-tejo-maps-v6';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -13,12 +13,13 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(PRECACHE_ASSETS).catch(err => {
                 console.warn('Pre-cache asset warning:', err);
             });
-        }).then(() => self.skipWaiting())
+        })
     );
 });
 
@@ -28,6 +29,7 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
                     if (cacheName !== CACHE_NAME && cacheName !== MAPS_CACHE_NAME) {
+                        console.log('Purging old ServiceWorker cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
@@ -39,14 +41,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
 
-    // Do NOT intercept navigation (page HTML requests like /temuan/create)
-    // Let browser handle page navigation directly to avoid stale cache or broken responses
-    if (event.request.mode === 'navigate') {
+    // Do NOT intercept navigation or HTML requests (like /temuan/detail/123)
+    // Always fetch fresh HTML directly from server
+    if (event.request.mode === 'navigate' || (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
         return;
     }
 
     // Cache strategy for Map Tiles
-    if (url.includes('basemaps.cartocdn.com') || url.includes('openstreetmap.org') || url.includes('raw.githubusercontent.com/pointhi/leaflet-color-markers')) {
+    if (url.includes('basemaps.cartocdn.com') || url.includes('openstreetmap.org') || url.includes('raw.githubusercontent.com/pointhi/leaflet-color-markers') || url.includes('arcgisonline.com')) {
         event.respondWith(
             caches.open(MAPS_CACHE_NAME).then((cache) => {
                 return cache.match(event.request).then((cachedResponse) => {
@@ -108,15 +110,5 @@ self.addEventListener('fetch', (event) => {
             })
         );
         return;
-    }
-
-    // Default network-first falling back to cache for other GET requests (images, css, js)
-    if (event.request.method === 'GET') {
-        event.respondWith(
-            fetch(event.request).catch(async () => {
-                const cached = await caches.match(event.request);
-                return cached || new Response('', { status: 503, statusText: 'Offline' });
-            })
-        );
     }
 });

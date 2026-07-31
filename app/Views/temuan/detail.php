@@ -380,6 +380,8 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+<div id="VIEW_DEBUG" class="d-none">ENTERPRISE BUILD 2026</div>
+
 <?php
 $lat = $temuan['latitude'];
 $lng = $temuan['longitude'];

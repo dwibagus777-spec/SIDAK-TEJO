@@ -292,10 +292,23 @@ class Temuan extends BaseController
         $sla = get_sla_status($temuan['prioritas'], $temuan['tanggal_temuan'], $temuan['status'], $temuan['tanggal_selesai']);
         $history = $this->tindakLanjutRepository->getHistoryByTemuan($id);
 
+        $trace = [
+            'ROUTE_TRACE_2026'      => 'temuan/detail/' . $id,
+            'CONTROLLER_TRACE_2026' => __METHOD__ . ' (' . realpath(__FILE__) . ')',
+            'VIEW_TRACE_2026'       => 'app/Views/temuan/detail.php (' . realpath(APPPATH . 'Views/temuan/detail.php') . ')',
+            'BUILD_TRACE_2026'      => 'BUILD_2026_ENTERPRISE_PLN_MOBILE',
+            'HTML_TRACE_2026'       => 'RUNTIME_HTML_TRACE_ACTIVE',
+            'DOC_ROOT_TRACE'        => $_SERVER['DOCUMENT_ROOT'] ?? 'N/A',
+            'FCPATH_TRACE'          => defined('FCPATH') ? FCPATH : 'N/A',
+            'APPPATH_TRACE'         => defined('APPPATH') ? APPPATH : 'N/A',
+            'WRITEPATH_TRACE'       => defined('WRITEPATH') ? WRITEPATH : 'N/A',
+        ];
+
         return view('temuan/detail', [
             'temuan'  => $temuan,
             'sla'     => $sla,
-            'history' => $history
+            'history' => $history,
+            'trace'   => $trace
         ]);
     }
 

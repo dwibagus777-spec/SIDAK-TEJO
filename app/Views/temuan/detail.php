@@ -1,4 +1,11 @@
-<!-- RENDERED_VIEW: app/Views/temuan/detail.php | BUILD: 998b582 | ENTERPRISE_PLN_MOBILE -->
+<!-- ROUTE_TRACE_2026: <?= esc($trace['ROUTE_TRACE_2026'] ?? 'N/A') ?> -->
+<!-- CONTROLLER_TRACE_2026: <?= esc($trace['CONTROLLER_TRACE_2026'] ?? 'N/A') ?> -->
+<!-- VIEW_TRACE_2026: <?= esc($trace['VIEW_TRACE_2026'] ?? 'N/A') ?> -->
+<!-- BUILD_TRACE_2026: <?= esc($trace['BUILD_TRACE_2026'] ?? 'N/A') ?> -->
+<!-- HTML_TRACE_2026: <?= esc($trace['HTML_TRACE_2026'] ?? 'N/A') ?> -->
+<!-- DOC_ROOT_TRACE: <?= esc($trace['DOC_ROOT_TRACE'] ?? 'N/A') ?> -->
+<!-- FCPATH_TRACE: <?= esc($trace['FCPATH_TRACE'] ?? 'N/A') ?> -->
+<!-- APPPATH_TRACE: <?= esc($trace['APPPATH_TRACE'] ?? 'N/A') ?> -->
 <?= $this->extend('layouts/admin') ?>
 
 

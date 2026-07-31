@@ -214,21 +214,27 @@
         box-shadow: 0 6px 16px rgba(0,0,0,0.08);
     }
 
-    /* Mobile Sticky Elements & Bottom Sheet */
+    /* Mobile Sticky Elements & Bottom Sheet - Cross-Browser GPU & Safe-Area Optimized */
     @media (max-width: 991.98px) {
         .mobile-sticky-header {
             position: sticky;
             top: 0;
             z-index: 1020;
             background: rgba(255, 255, 255, 0.95);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid #e2e8f0;
-            padding: 10px 16px;
+            padding-top: calc(10px + env(safe-area-inset-top, 0px));
+            padding-bottom: 10px;
+            padding-left: calc(16px + env(safe-area-inset-left, 0px));
+            padding-right: calc(16px + env(safe-area-inset-right, 0px));
             box-shadow: 0 4px 12px rgba(0,0,0,0.06);
             transition: var(--transition-fast);
+            will-change: transform, padding;
         }
         .mobile-sticky-header.shrunken {
-            padding: 6px 16px;
+            padding-top: calc(6px + env(safe-area-inset-top, 0px));
+            padding-bottom: 6px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.12);
         }
         .mobile-sticky-bottom-bar {
@@ -238,17 +244,22 @@
             right: 0;
             z-index: 1040;
             background: rgba(255, 255, 255, 0.96);
+            -webkit-backdrop-filter: blur(12px);
             backdrop-filter: blur(12px);
             border-top: 1px solid #cbd5e1;
-            padding: 8px 12px;
+            padding-top: 8px;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+            padding-left: calc(12px + env(safe-area-inset-left, 0px));
+            padding-right: calc(12px + env(safe-area-inset-right, 0px));
             display: flex;
             gap: 8px;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            will-change: transform;
         }
         .mobile-fab-container {
             position: fixed;
-            bottom: 68px;
-            right: 16px;
+            bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+            right: calc(16px + env(safe-area-inset-right, 0px));
             z-index: 1050;
         }
         .btn-fab-trigger {

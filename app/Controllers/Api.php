@@ -278,7 +278,7 @@ class Api extends BaseController
                 LEFT JOIN sections s ON t.section_id = s.id
                 LEFT JOIN ulps u ON t.ulp_id = u.id
                 WHERE t.latitude IS NOT NULL 
-                  AND t.longitude IS NOT NULL
+                  AND t.longitude IS NOT NULL";
         $params = [$lat, $lng, $lat];
 
         $role = strtolower((string)($this->request->getGet('role') ?: session()->get('user_role')));

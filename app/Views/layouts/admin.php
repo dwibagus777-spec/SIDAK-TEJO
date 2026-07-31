@@ -29,6 +29,14 @@ $jsFiles = [
 ];
 $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 ?>
+<!-- ROUTE_TRACE_2026: <?= esc($_SERVER['REQUEST_URI'] ?? 'N/A') ?> -->
+<!-- CONTROLLER_TRACE_2026: <?= esc($trace['CONTROLLER_TRACE_2026'] ?? 'App\Controllers\Temuan::detail') ?> -->
+<!-- VIEW_TRACE_2026: app/Views/temuan/detail.php (<?= esc(realpath(APPPATH . 'Views/temuan/detail.php') ?: 'N/A') ?>) -->
+<!-- BUILD_TRACE_2026: BUILD_5E22D5D_ENTERPRISE_PLN_MOBILE -->
+<!-- HTML_TRACE_2026: RUNTIME_HTML_TRACE_ACTIVE -->
+<!-- DOC_ROOT_TRACE: <?= esc($_SERVER['DOCUMENT_ROOT'] ?? 'N/A') ?> -->
+<!-- FCPATH_TRACE: <?= esc(defined('FCPATH') ? FCPATH : 'N/A') ?> -->
+<!-- APPPATH_TRACE: <?= esc(defined('APPPATH') ? APPPATH : 'N/A') ?> -->
 <!DOCTYPE html>
 <html lang="id">
 <head>

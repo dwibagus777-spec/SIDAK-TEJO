@@ -95,8 +95,9 @@ class Temuan extends BaseController
         $sla = get_sla_status($row['prioritas'], $row['tanggal_temuan'], $row['status']);
         $statusBadge = $sla['badge_html'];
 
-        // Tombol Aksi
-        $btnDetail = '<button type="button" class="btn btn-sm btn-info text-white btn-detail-modal" data-id="' . $row['id'] . '" title="Lihat Detail & Foto"><i class="fas fa-eye"></i></button>';
+        // Tombol Aksi - Direct link to Enterprise Detail View
+        $detailUrl = site_url('temuan/detail/' . $row['id']);
+        $btnDetail = '<a href="' . $detailUrl . '" class="btn btn-sm btn-info text-white" title="Lihat Detail Enterprise"><i class="fas fa-eye"></i></a>';
         
         $actions = $btnDetail;
 
@@ -128,7 +129,7 @@ class Temuan extends BaseController
         }
 
         return [
-            $row['nomor_temuan'],
+            '<a href="' . $detailUrl . '" class="font-weight-bold text-primary text-decoration-none"><i class="fas fa-file-invoice me-1"></i>' . esc($row['nomor_temuan']) . '</a>',
             $row['nama_penyulang'],
             $row['nama_section'],
             $row['jenis_temuan'],

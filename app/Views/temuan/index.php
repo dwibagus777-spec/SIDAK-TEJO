@@ -521,16 +521,11 @@
     // ============================================================
     const ajaxDetailUrl = '<?= site_url('temuan/ajax-detail/') ?>';
 
-    $(document).on('click', '.btn-detail-modal', function () {
+    $(document).on('click', '.btn-detail-modal', function (e) {
+        e.preventDefault();
         const id = $(this).data('id');
-
-        // Reset & tampilkan loading
-        $('#modal-loading').removeClass('d-none');
-        $('#modal-content-area').addClass('d-none');
-        $('#modal-nomor-temuan').text('Memuat...');
-        $('#modal-btn-edit').addClass('d-none');
-        $('#modalDetailTemuan').css('display', 'flex');
-        $('body').css('overflow', 'hidden');
+        window.location.href = '<?= site_url('temuan/detail/') ?>' + id;
+    });
 
         $.ajax({
             url: ajaxDetailUrl + id,

@@ -52,40 +52,49 @@ class Notification extends BaseController
 
     public function apiUnreadList()
     {
-        $userId = session()->get('user_id');
-        $role   = strtolower((string)session()->get('user_role'));
-        $list   = $this->repository->getUserNotifications($userId, 10);
-        $count  = $this->repository->getUnreadCount($userId);
+        try {
+            $userId = session()->get('user_id');
+            $list   = $this->repository->getUserNotifications($userId, 10);
+            $count  = $this->repository->getUnreadCount($userId);
 
-        $items = [];
-        foreach ($list as $n) {
-            $createdTime = strtotime($n['created_at'] ?? 'now');
-            $diffMinutes = round((time() - $createdTime) / 60);
+            $items = [];
+            foreach ($list as $n) {
+                $createdTime = strtotime($n['created_at'] ?? 'now');
+                $diffMinutes = round((time() - $createdTime) / 60);
 
-            $timeAgo = 'Baru saja';
-            if ($diffMinutes >= 1440) {
-                $timeAgo = round($diffMinutes / 1440) . ' hari lalu';
-            } elseif ($diffMinutes >= 60) {
-                $timeAgo = round($diffMinutes / 60) . ' jam lalu';
-            } elseif ($diffMinutes > 0) {
-                $timeAgo = $diffMinutes . ' menit lalu';
+                $timeAgo = 'Baru saja';
+                if ($diffMinutes >= 1440) {
+                    $timeAgo = round($diffMinutes / 1440) . ' hari lalu';
+                } elseif ($diffMinutes >= 60) {
+                    $timeAgo = round($diffMinutes / 60) . ' jam lalu';
+                } elseif ($diffMinutes > 0) {
+                    $timeAgo = $diffMinutes . ' menit lalu';
+                }
+
+                $items[] = [
+                    'id'       => $n['id'] ?? 0,
+                    'title'    => $n['title'] ?? 'Notifikasi',
+                    'message'  => $n['message'] ?? '',
+                    'type'     => $n['type'] ?? 'INFO',
+                    'is_read'  => (int)($n['is_read'] ?? 0),
+                    'time_ago' => $timeAgo,
+                    'target'   => !empty($n['target']) ? $n['target'] : site_url('notifications'),
+                ];
             }
 
-            $items[] = [
-                'id'       => $n['id'],
-                'title'    => $n['title'],
-                'message'  => $n['message'],
-                'type'     => $n['type'] ?? 'INFO',
-                'is_read'  => (int)($n['is_read'] ?? 0),
-                'time_ago' => $timeAgo,
-                'target'   => $n['target'] ?: site_url('notifications'),
-            ];
+            return $this->response->setJSON([
+                'status'       => 'success',
+                'unread_count' => $count,
+                'items'        => $items
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', '[Notification::apiUnreadList] Exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status'       => 'error',
+                'unread_count' => 0,
+                'items'        => []
+            ]);
         }
-
-        return $this->response->setJSON([
-            'unread_count' => $count,
-            'items'        => $items
-        ]);
     }
 
     public function templates()

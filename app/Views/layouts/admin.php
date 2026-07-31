@@ -1667,8 +1667,15 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         // Phase 31 Smart Notification Center AJAX Poller
         function fetchNavbarNotifications() {
             fetch("<?= site_url('notifications/api-unread-list') ?>")
-                .then(res => res.json())
+                .then(res => {
+                    const contentType = res.headers.get('content-type');
+                    if (res.ok && contentType && contentType.includes('application/json')) {
+                        return res.json();
+                    }
+                    return null;
+                })
                 .then(data => {
+                    if (!data) return;
                     var badge = $('#nav-unread-count-badge');
                     if (badge.length) badge.text(data.unread_count || 0);
 
@@ -1688,14 +1695,14 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 
                             html += '<a href="' + item.target + '" class="dropdown-item p-2 border-bottom d-flex align-items-start gap-2" style="white-space: normal;">';
                             html += '<i class="fas ' + icon + ' mt-1 fs-6"></i>';
-                            html += '<div><span class="fw-bold d-block text-dark small mb-0">' + item.title + '</span>';
-                            html += '<small class="text-muted d-block" style="font-size: 10px;">' + item.time_ago + '</small></div>';
+                            html += '<div><span class="fw-bold d-block text-dark small mb-0">' + (item.title || '') + '</span>';
+                            html += '<small class="text-muted d-block" style="font-size: 10px;">' + (item.time_ago || '') + '</small></div>';
                             html += '</a>';
                         });
                         container.html(html);
                     }
                 })
-                .catch(err => console.log('Notif error:', err));
+                .catch(err => console.log('Notif fetch bypassed:', err));
         }
 
         fetchNavbarNotifications();

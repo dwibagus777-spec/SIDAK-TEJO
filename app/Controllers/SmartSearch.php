@@ -99,34 +99,37 @@ class SmartSearch extends BaseController
         $results['Temuan'] = $temuan;
 
         // --- Work Order -----------------------------------------------------
-        $wo = $this->db->query(
-            "SELECT wo.id, wo.nomor_wo, wo.judul,
-                    wo.status, wo.prioritas, wo.tanggal_target
-             FROM work_orders wo
-             WHERE (wo.nomor_wo LIKE ? OR wo.judul LIKE ?)
-               AND wo.deleted_at IS NULL
-             ORDER BY wo.created_at DESC
-             LIMIT ?",
-            [$like, $like, $limit]
-        )->getResultArray();
+        $wo = [];
+        if ($this->db->tableExists('work_orders')) {
+            $woQuery = "SELECT wo.id, wo.nomor_wo, wo.judul_wo AS judul,
+                               wo.status, wo.prioritas, wo.created_at
+                        FROM work_orders wo
+                        WHERE (wo.nomor_wo LIKE ? OR wo.judul_wo LIKE ?)
+                          AND wo.deleted_at IS NULL
+                        ORDER BY wo.created_at DESC
+                        LIMIT ?";
+            $wo = $this->db->query($woQuery, [$like, $like, $limit])->getResultArray();
 
-        foreach ($wo as &$w) {
-            $w['_label'] = $w['nomor_wo'] . ' — ' . mb_substr($w['judul'], 0, 60);
-            $w['_url']   = site_url('work-orders/detail/' . $w['id']);
-            $w['_icon']  = 'fa-clipboard-list';
-            $w['_color'] = 'text-primary';
+            foreach ($wo as &$w) {
+                $w['_label'] = $w['nomor_wo'] . ' — ' . mb_substr($w['judul'] ?? '', 0, 60);
+                $w['_url']   = site_url('work-orders/detail/' . $w['id']);
+                $w['_icon']  = 'fa-clipboard-list';
+                $w['_color'] = 'text-primary';
+            }
         }
         $results['Work Order'] = $wo;
 
         // --- Penyulang / Section -------------------------------------------
         if (strlen($q) >= 3) {
             $penyulang = $this->db->query(
-                "SELECT DISTINCT penyulang, section,
-                       COUNT(*) AS jumlah_temuan
-                 FROM temuan
-                 WHERE (penyulang LIKE ? OR section LIKE ?)
-                   AND deleted_at IS NULL
-                 GROUP BY penyulang, section
+                "SELECT DISTINCT p.nama_penyulang AS penyulang, s.nama_section AS section,
+                       COUNT(t.id) AS jumlah_temuan
+                 FROM temuan t
+                 JOIN penyulang p ON p.id = t.penyulang_id
+                 JOIN sections s ON s.id = t.section_id
+                 WHERE (p.nama_penyulang LIKE ? OR s.nama_section LIKE ?)
+                   AND t.deleted_at IS NULL
+                 GROUP BY p.nama_penyulang, s.nama_section
                  LIMIT ?",
                 [$like, $like, $limit]
             )->getResultArray();

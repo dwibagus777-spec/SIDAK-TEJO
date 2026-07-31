@@ -29,10 +29,15 @@ class EccRepository
         $high        = (clone $builder)->where('t.prioritas', 'HIGH')->countAllResults();
         $medium      = (clone $builder)->where('t.prioritas', 'MEDIUM')->countAllResults();
 
-        $woBuilder   = $this->db->table('work_orders w')->where('w.deleted_at IS NULL');
-        $woAktif     = (clone $woBuilder)->whereIn('w.status', ['OPEN', 'ASSIGNED', 'PROGRESS', 'WAITING_MATERIAL', 'WAITING_PADAM'])->countAllResults();
-        $woSelesai   = (clone $woBuilder)->where('w.status', 'COMPLETED')->countAllResults();
-        $woOverdue   = (clone $woBuilder)->where('w.status !=', 'COMPLETED')->where('w.target_selesai <', date('Y-m-d H:i:s'))->countAllResults();
+        $woAktif = 0;
+        $woSelesai = 0;
+        $woOverdue = 0;
+        if ($this->db->tableExists('work_orders')) {
+            $woBuilder   = $this->db->table('work_orders w')->where('w.deleted_at IS NULL');
+            $woAktif     = (clone $woBuilder)->whereIn('w.status', ['OPEN', 'ASSIGNED', 'PROGRESS', 'WAITING_MATERIAL', 'WAITING_PADAM'])->countAllResults();
+            $woSelesai   = (clone $woBuilder)->where('w.status', 'COMPLETED')->countAllResults();
+            $woOverdue   = (clone $woBuilder)->where('w.status !=', 'COMPLETED')->where('w.target_selesai <', date('Y-m-d H:i:s'))->countAllResults();
+        }
 
         return [
             'total_temuan' => $totalTemuan,

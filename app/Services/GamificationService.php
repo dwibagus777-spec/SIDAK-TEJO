@@ -288,14 +288,14 @@ class GamificationService
     public function getUlpRanking(): array
     {
         return $this->db->query(
-            "SELECT u.nama AS ulp_name, u.id AS ulp_id,
+            "SELECT u.nama_ulp AS ulp_name, u.id AS ulp_id,
                     COUNT(t.id) AS total_temuan,
                     SUM(CASE WHEN t.status = 'SELESAI' THEN 1 ELSE 0 END) AS selesai,
                     ROUND(SUM(CASE WHEN t.status = 'SELESAI' THEN 1 ELSE 0 END) / NULLIF(COUNT(t.id),0) * 100, 1) AS pct
              FROM ulps u
              LEFT JOIN temuan t ON t.ulp_id = u.id AND t.deleted_at IS NULL
              WHERE u.status = 'AKTIF'
-             GROUP BY u.id, u.nama
+             GROUP BY u.id, u.nama_ulp
              ORDER BY selesai DESC, pct DESC
              LIMIT 10"
         )->getResultArray();
@@ -307,13 +307,13 @@ class GamificationService
     public function getPenyulangRanking(): array
     {
         return $this->db->query(
-            "SELECT p.nama AS penyulang_name, COUNT(t.id) AS total_temuan,
+            "SELECT p.nama_penyulang AS penyulang_name, COUNT(t.id) AS total_temuan,
                     SUM(CASE WHEN t.status = 'SELESAI' THEN 1 ELSE 0 END) AS selesai,
                     SUM(CASE WHEN t.prioritas = 'EMERGENCY' THEN 1 ELSE 0 END) AS emergency
-             FROM penyulangs p
+             FROM penyulang p
              LEFT JOIN temuan t ON t.penyulang_id = p.id AND t.deleted_at IS NULL
              WHERE p.status = 'AKTIF'
-             GROUP BY p.id, p.nama
+             GROUP BY p.id, p.nama_penyulang
              ORDER BY total_temuan DESC
              LIMIT 10"
         )->getResultArray();

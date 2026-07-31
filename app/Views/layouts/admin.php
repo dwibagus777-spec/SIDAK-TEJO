@@ -1055,8 +1055,13 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 
             <!-- Footer -->
             <footer class="footer footer-transparent d-print-none bg-white border-top py-3 text-center small text-muted">
-                <div class="container-xl">
-                    <strong>Copyright &copy; 2026 <span style="color: #005eb8;">SIDAK TEJO</span>.</strong> All rights reserved.
+                <div class="container-xl d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <strong>Copyright &copy; 2026 <span style="color: #005eb8;">SIDAK TEJO</span>.</strong> All rights reserved.
+                    </div>
+                    <div>
+                        <span class="badge bg-primary text-white" style="font-size: 11px; padding: 4px 8px;">Build: 998b582 - Enterprise PLN Mobile</span>
+                    </div>
                 </div>
             </footer>
         </div>

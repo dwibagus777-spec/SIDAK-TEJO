@@ -1,4 +1,6 @@
+<!-- RENDERED_VIEW: app/Views/temuan/detail.php | BUILD: 998b582 | ENTERPRISE_PLN_MOBILE -->
 <?= $this->extend('layouts/admin') ?>
+
 
 <?= $this->section('title') ?>Detail Temuan - <?= esc($temuan['nomor_temuan']) ?><?= $this->endSection() ?>
 <?= $this->section('page_title') ?>Detail Temuan Inspeksi Enterprise<?= $this->endSection() ?>

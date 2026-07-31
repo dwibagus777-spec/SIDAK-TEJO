@@ -3,6 +3,13 @@ if (function_exists('opcache_reset')) {
     @opcache_reset();
 }
 
+if (!headers_sent()) {
+    header("Cache-Control: no-cache, no-store, must-revalidate, max-age=0, s-maxage=0");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+    header("X-LiteSpeed-Purge: *");
+}
+
 use CodeIgniter\Boot;
 use Config\Paths;
 

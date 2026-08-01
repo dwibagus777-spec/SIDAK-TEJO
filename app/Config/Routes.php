@@ -64,9 +64,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Asset Health Index & Predictive Maintenance Routes (Phase 40)
     $routes->get('asset-health', 'AssetHealthController::index');
     $routes->get('penyulang/health-index', 'AssetHealthController::index');
-    $routes->get('executive-dashboard', 'Dashboard::executive');
-    $routes->get('dashboard/executive', 'Dashboard::executive');
+    $routes->get('executive-dashboard', 'ExecutiveDashboardController::index');
+    $routes->get('dashboard/executive', 'ExecutiveDashboardController::index');
     $routes->get('dashboard/executive-api', 'Dashboard::executiveApi');
+    $routes->get('dashboard/chart-data', 'ExecutiveDashboardController::getChartData');
+    $routes->get('dashboard/dashboard-summary', 'ExecutiveDashboardController::getSummary');
+    $routes->get('dashboard/dashboard-kpi', 'ExecutiveDashboardController::getKpiData');
     $routes->get('dashboard/toggle-view', 'Dashboard::toggleView');
     $routes->get('dashboard/analytics-data', 'Dashboard::analyticsData');
     $routes->get('auth/ping', 'Auth::ping');

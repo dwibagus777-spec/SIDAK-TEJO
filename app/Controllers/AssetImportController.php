@@ -27,6 +27,22 @@ class AssetImportController extends BaseController
      */
     public function downloadTemplate(): \CodeIgniter\HTTP\ResponseInterface
     {
+        if ($this->request->getGet('debug') === '1') {
+            $spreadsheetClass = \PhpOffice\PhpSpreadsheet\Spreadsheet::class;
+            return $this->response->setJSON([
+                'composer_path_defined' => defined('COMPOSER_PATH') ? COMPOSER_PATH : null,
+                'composer_path_realpath' => defined('COMPOSER_PATH') ? realpath(COMPOSER_PATH) : null,
+                'composer_path_exists' => defined('COMPOSER_PATH') ? file_exists(COMPOSER_PATH) : false,
+                'rootpath' => defined('ROOTPATH') ? ROOTPATH : null,
+                'fcpath' => defined('FCPATH') ? FCPATH : null,
+                'apppath' => defined('APPPATH') ? APPPATH : null,
+                'class_spreadsheet_exists' => class_exists($spreadsheetClass, true),
+                'vendor_phpoffice_dir_exists' => is_dir(FCPATH . '../vendor/phpoffice/phpspreadsheet'),
+                'vendor_autoload_fcpath_parent' => is_file(realpath(FCPATH . '../vendor/autoload.php')),
+                'vendor_autoload_apppath_parent' => is_file(realpath(APPPATH . '../vendor/autoload.php')),
+            ]);
+        }
+
         try {
             $spreadsheet = $this->exportService->generateTemplateSpreadsheet();
             $filename    = 'Template_Import_Master_Asset_PLN.xlsx';
@@ -40,7 +56,13 @@ class AssetImportController extends BaseController
             exit();
         } catch (\Throwable $e) {
             log_message('error', '[AssetImportController::downloadTemplate] Exception: ' . $e->getMessage());
-            return redirect()->to(site_url('master-assets'))->with('error', 'Gagal mengunduh template Excel: ' . $e->getMessage());
+            $diagInfo = [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'class_exists' => class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, false),
+            ];
+            return redirect()->to(site_url('master-assets'))->with('error', 'Gagal mengunduh template Excel: ' . $e->getMessage() . ' | Diag: ' . json_encode($diagInfo));
         }
     }
 

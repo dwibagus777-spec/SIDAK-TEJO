@@ -7,13 +7,13 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // --- Rute Terbuka (Public Routes) ---
-$routes->match(['get', 'post'], 'login', 'Auth::login');
+$routes->match(['GET', 'POST'], 'login', 'Auth::login');
 $routes->get('/', 'Auth::login');
-$routes->match(['get', 'post'], 'logout', 'Auth::logout');
-$routes->match(['get', 'post'], 'auth/logout', 'Auth::logout');
+$routes->match(['GET', 'POST'], 'logout', 'Auth::logout');
+$routes->match(['GET', 'POST'], 'auth/logout', 'Auth::logout');
 
 // Rute Cron Job Otomatis Harian Backup (Hostinger Compatible)
-$routes->match(['get', 'post'], 'backup/cron', 'Backup::cron');
+$routes->match(['GET', 'POST'], 'backup/cron', 'Backup::cron');
 
 // Background Queue Worker Cron (Hostinger cron, token secured)
 $routes->get('queue/run', 'QueueWorker::run');
@@ -23,7 +23,7 @@ $routes->get('queue/run', 'QueueWorker::run');
 $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Main Dashboard Web Route
     $routes->get('dashboard', 'Dashboard::index');
-    $routes->match(['get', 'post'], 'dashboard', 'Dashboard::index');
+    $routes->match(['GET', 'POST'], 'dashboard', 'Dashboard::index');
     
     // AI Predictive Maintenance & AI Center Routes
     $routes->get('ai-center', 'AiPredictiveController::index');
@@ -75,7 +75,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('change-password', 'Auth::changePassword');
     $routes->post('change-password', 'Auth::changePassword');
     $routes->get('setting/announcement', 'Setting::index');
-    $routes->match(['get', 'post'], 'setting/update-announcement', 'Setting::updateAnnouncement');
+    $routes->match(['GET', 'POST'], 'setting/update-announcement', 'Setting::updateAnnouncement');
 
     // Phase 17 - Master Asset Management
     $routes->get('assets', 'AssetController::index');

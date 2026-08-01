@@ -23,6 +23,77 @@ class AssetImportController extends BaseController
     }
 
     /**
+     * Comprehensive Diagnostic Endpoint: /master-assets/debug-runtime
+     */
+    public function debugRuntime(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $compPath = defined('COMPOSER_PATH') ? COMPOSER_PATH : null;
+        $rootPath = defined('ROOTPATH') ? ROOTPATH : null;
+        $fcPath   = defined('FCPATH') ? FCPATH : null;
+        $appPath  = defined('APPPATH') ? APPPATH : null;
+
+        $targetSpreadsheetFile = 'vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Spreadsheet.php';
+
+        $candidates = [
+            'COMPOSER_PATH'   => $compPath,
+            'ROOTPATH_vendor' => $rootPath ? $rootPath . 'vendor/autoload.php' : null,
+            'APPPATH_parent'  => $appPath ? realpath($appPath . '/../vendor/autoload.php') : null,
+            'FCPATH_parent'   => $fcPath ? realpath($fcPath . '/../vendor/autoload.php') : null,
+            'DIR_parent'      => realpath(__DIR__ . '/../../vendor/autoload.php'),
+        ];
+
+        $candidateResults = [];
+        foreach ($candidates as $key => $path) {
+            $candidateResults[$key] = [
+                'raw_path'   => $path,
+                'realpath'   => $path ? realpath($path) : false,
+                'file_exists'=> $path ? file_exists($path) : false,
+                'is_file'    => $path ? is_file($path) : false,
+            ];
+        }
+
+        $spreadSheetFileCandidates = [
+            'ROOTPATH_src' => $rootPath ? $rootPath . $targetSpreadsheetFile : null,
+            'FCPATH_src'   => $fcPath ? realpath($fcPath . '/../' . $targetSpreadsheetFile) : null,
+            'APPPATH_src'  => $appPath ? realpath($appPath . '/../' . $targetSpreadsheetFile) : null,
+            'DIR_src'      => realpath(__DIR__ . '/../../' . $targetSpreadsheetFile),
+        ];
+
+        $spreadsheetFileResults = [];
+        foreach ($spreadSheetFileCandidates as $key => $path) {
+            $spreadsheetFileResults[$key] = [
+                'raw_path'   => $path,
+                'realpath'   => $path ? realpath($path) : false,
+                'file_exists'=> $path ? file_exists($path) : false,
+            ];
+        }
+
+        $autoloadFuncs = [];
+        foreach (spl_autoload_functions() as $f) {
+            if (is_array($f)) {
+                $autoloadFuncs[] = (is_object($f[0]) ? get_class($f[0]) : $f[0]) . '::' . $f[1];
+            } else {
+                $autoloadFuncs[] = (string)$f;
+            }
+        }
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'timestamp'                   => date('Y-m-d H:i:s'),
+            'PHP_VERSION'                 => PHP_VERSION,
+            'ROOTPATH'                    => $rootPath,
+            'FCPATH'                      => $fcPath,
+            'APPPATH'                     => $appPath,
+            'COMPOSER_PATH'               => $compPath,
+            'composer_candidates'         => $candidateResults,
+            'spreadsheet_file_candidates' => $spreadsheetFileResults,
+            'class_exists_true'           => class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, true),
+            'class_exists_false'          => class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, false),
+            'spl_autoload_functions'      => $autoloadFuncs,
+            'include_path'                => get_include_path(),
+        ]);
+    }
+
+    /**
      * Download Excel Import Template
      */
     public function downloadTemplate(): \CodeIgniter\HTTP\ResponseInterface

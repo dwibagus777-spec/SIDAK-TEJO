@@ -69,12 +69,15 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.section_id', (int)$filters['section_id']);
         }
 
-        if (!empty($filters['tanggal_awal'])) {
-            $builder->where('temuan.tanggal_temuan >=', $filters['tanggal_awal']);
+        $startDate = !empty($filters['start_date']) ? $filters['start_date'] : (!empty($filters['tanggal_awal']) ? $filters['tanggal_awal'] : null);
+        $endDate   = !empty($filters['end_date']) ? $filters['end_date'] : (!empty($filters['tanggal_akhir']) ? $filters['tanggal_akhir'] : null);
+
+        if (!empty($startDate)) {
+            $builder->where('temuan.tanggal_temuan >=', $startDate . (strlen($startDate) === 10 ? ' 00:00:00' : ''));
         }
 
-        if (!empty($filters['tanggal_akhir'])) {
-            $builder->where('temuan.tanggal_temuan <=', $filters['tanggal_akhir']);
+        if (!empty($endDate)) {
+            $builder->where('temuan.tanggal_temuan <=', $endDate . (strlen($endDate) === 10 ? ' 23:59:59' : ''));
         }
 
         if (!empty($filters['shift'])) {

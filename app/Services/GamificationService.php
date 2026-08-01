@@ -66,6 +66,10 @@ class GamificationService
     public function addPoints(int $userId, string $action, string $description = '', int $refId = 0, string $refType = ''): void
     {
         try {
+            if (!$this->db->tableExists('user_gamification')) {
+                return;
+            }
+
             $points = self::POINTS[$action] ?? 0;
 
             // Ensure gamification row exists
@@ -227,10 +231,18 @@ class GamificationService
     }
 
     /**
-     * Get user gamification data (with fallback if row doesn't exist)
+     * Get user gamification data (with fallback if row or table doesn't exist)
      */
     public function getUserGamification(int $userId): array
     {
+        if (!$this->db->tableExists('user_gamification')) {
+            return [
+                'user_id' => $userId, 'total_points' => 0, 'level' => 'bronze',
+                'streak_days' => 0, 'temuan_count' => 0, 'selesai_count' => 0,
+                'emergency_selesai' => 0, 'sla_met_count' => 0, 'sla_overdue_count' => 0,
+            ];
+        }
+
         $row = $this->db->table('user_gamification')->where('user_id', $userId)->get()->getRowArray();
         if (!$row) {
             return [
@@ -247,6 +259,10 @@ class GamificationService
      */
     public function getUserAchievements(int $userId): array
     {
+        if (!$this->db->tableExists('user_achievements')) {
+            return [];
+        }
+
         return $this->db->table('user_achievements')
             ->where('user_id', $userId)
             ->orderBy('achieved_at', 'DESC')
@@ -258,6 +274,10 @@ class GamificationService
      */
     public function getUserTimeline(int $userId, string $date = ''): array
     {
+        if (!$this->db->tableExists('user_activity_timeline')) {
+            return [];
+        }
+
         if (!$date) $date = date('Y-m-d');
         return $this->db->table('user_activity_timeline')
             ->where('user_id', $userId)
@@ -271,6 +291,10 @@ class GamificationService
      */
     public function getLeaderboard(int $limit = 10, ?int $ulpId = null): array
     {
+        if (!$this->db->tableExists('user_gamification')) {
+            return [];
+        }
+
         $builder = $this->db->table('user_gamification ug')
             ->select('ug.*, u.nama_pegawai, u.role, u.ulp, ug.total_points')
             ->join('users u', 'u.id = ug.user_id', 'left')

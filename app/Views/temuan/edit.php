@@ -247,7 +247,7 @@
                         if (is_array($temuan['foto'])) {
                             $existingPhotos = $temuan['foto'];
                         } else {
-                            $decoded = json_decode($temuan['foto'], true);
+                            $decoded = json_decode((string)($temuan['foto'] ?? ''), true);
                             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                                 $existingPhotos = $decoded;
                             } else {

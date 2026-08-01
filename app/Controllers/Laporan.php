@@ -397,7 +397,7 @@ class Laporan extends BaseController
                 $item['tgl_input'] = $item['tanggal_temuan'];
                 $item['keterangan'] = $item['detail_temuan'];
                 
-                $photos = json_decode($item['foto'], true) ?: [];
+                $photos = json_decode((string)($item['foto'] ?? ''), true) ?: [];
                 $item['fotos'] = [];
                 foreach ($photos as $photo) {
                     $item['fotos'][] = [
@@ -562,7 +562,7 @@ class Laporan extends BaseController
                 $item['tgl_input'] = $item['tanggal_temuan'];
                 $item['keterangan'] = $item['detail_temuan'];
                 
-                $photos = json_decode($item['foto'], true) ?: [];
+                $photos = json_decode((string)($item['foto'] ?? ''), true) ?: [];
                 $item['fotos'] = [];
                 foreach ($photos as $photo) {
                     $item['fotos'][] = [

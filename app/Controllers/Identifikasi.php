@@ -322,7 +322,7 @@ class Identifikasi extends BaseController
             $textRunInfo->getFont()->setSize(11);
 
             // Right Column: Image
-            $photos = json_decode($row['foto'], true) ?: [];
+            $photos = json_decode((string)($row['foto'] ?? ''), true) ?: [];
             if (!empty($photos)) {
                 $imagePath = FCPATH . $row['foto_path'] . $photos[0];
                 if (file_exists($imagePath)) {

@@ -218,7 +218,7 @@
                                         <td><?= esc($row['detail_temuan']) ?></td>
                                         <td>
                                             <?php 
-                                            $photos = json_decode($row['foto'], true) ?: [];
+                                            $photos = json_decode((string)($row['foto'] ?? ''), true) ?: [];
                                             if (!empty($photos)):
                                                 $firstPhoto = get_photo_url($photos[0], $row['foto_path'] ?? 'foto/');
                                             ?>

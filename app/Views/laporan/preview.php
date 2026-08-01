@@ -109,7 +109,7 @@
                                      <td>
                                          <div class="d-flex flex-wrap align-items-center" style="gap: 4px; min-width: 120px;">
                                              <?php 
-                                             $photos = json_decode($row['foto'], true) ?: [];
+                                             $photos = json_decode((string)($row['foto'] ?? ''), true) ?: [];
                                              $uploadPath = $row['foto_path'];
                                              if (empty($photos)): 
                                              ?>

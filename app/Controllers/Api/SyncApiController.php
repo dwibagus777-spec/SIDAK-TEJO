@@ -134,7 +134,7 @@ class SyncApiController extends BaseController
                     $existingPhotos = [];
                     if (!empty($row['foto'])) {
                         $decoded = json_decode($row['foto'], true);
-                        $existingPhotos = is_array($decoded) ? $decoded : explode(',', $row['foto']);
+                        $existingPhotos = is_array($decoded) ? $decoded : explode(',', (string)($row['foto'] ?? ''));
                     }
                     $existingPhotos[] = $newName;
 

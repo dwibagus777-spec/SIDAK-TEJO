@@ -71,7 +71,7 @@
                 <?php
                     $photos = [];
                     if (!empty($temuan['foto'])) {
-                        $decoded = json_decode($temuan['foto'], true);
+                        $decoded = json_decode((string)($temuan['foto'] ?? ''), true);
                         $photos = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', (string)$temuan['foto'])));
                     }
                 ?>

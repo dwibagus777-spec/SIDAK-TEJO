@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Repositories\AssetRepository;
 use App\Services\AssetImportService;
 use App\Services\AssetExportService;
+use App\Services\DynamicAssetImportService;
+use App\Services\DynamicTemplateEngine;
 use App\Models\AssetModel;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
@@ -14,12 +16,14 @@ class AssetImportController extends BaseController
     private AssetRepository $repository;
     private AssetImportService $importService;
     private AssetExportService $exportService;
+    private DynamicAssetImportService $dynamicImportService;
 
     public function __construct()
     {
-        $this->repository    = new AssetRepository();
-        $this->importService = new AssetImportService();
-        $this->exportService = new AssetExportService();
+        $this->repository           = new AssetRepository();
+        $this->importService        = new AssetImportService();
+        $this->exportService        = new AssetExportService();
+        $this->dynamicImportService = new DynamicAssetImportService();
     }
 
     /**
@@ -281,7 +285,39 @@ class AssetImportController extends BaseController
         }
 
         $tempPath = $file->getTempName();
-        $result   = $this->importService->processImport($tempPath);
+
+        // Read spreadsheet header row for auto-detection
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tempPath);
+            $sheet       = $spreadsheet->getActiveSheet();
+            $rows        = $sheet->toArray(null, true, true, true);
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetImportController::processImport] Gagal membaca Excel: ' . $e->getMessage());
+            return redirect()->to(site_url('master-assets/import'))->with('error', 'Format berkas Excel tidak dapat dibaca: ' . $e->getMessage());
+        }
+
+        if (count($rows) <= 1) {
+            return redirect()->to(site_url('master-assets/import'))->with('error', 'Berkas Excel kosong atau hanya berisi baris header.');
+        }
+
+        // Inspection: Check if header row 1 contains "Kode Asset"
+        $headerRow = $rows[1] ?? [];
+        $hasKodeAssetColumn = false;
+
+        foreach ($headerRow as $cellVal) {
+            if (strcasecmp(trim((string)$cellVal), 'Kode Asset') === 0) {
+                $hasKodeAssetColumn = true;
+                break;
+            }
+        }
+
+        if ($hasKodeAssetColumn) {
+            // Old Template Flow -> Delegate to AssetImportService
+            $result = $this->importService->processImport($tempPath);
+        } else {
+            // New Dynamic Template Flow -> Delegate to DynamicAssetImportService
+            $result = $this->dynamicImportService->processImport($rows);
+        }
 
         if (!$result['success']) {
             return redirect()->to(site_url('master-assets/import'))->with('error', $result['message']);

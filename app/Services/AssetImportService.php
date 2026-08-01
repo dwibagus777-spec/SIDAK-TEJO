@@ -17,8 +17,33 @@ class AssetImportService
     private PenyulangModel $penyulangModel;
     private SectionModel $sectionModel;
 
+    private static function ensureComposerAutoload(): void
+    {
+        if (class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, false)) {
+            return;
+        }
+
+        $candidates = [
+            defined('COMPOSER_PATH') ? COMPOSER_PATH : '',
+            defined('ROOTPATH') ? ROOTPATH . 'vendor/autoload.php' : '',
+            defined('APPPATH') ? realpath(APPPATH . '../vendor/autoload.php') : '',
+            defined('FCPATH') ? realpath(FCPATH . '../vendor/autoload.php') : '',
+            realpath(__DIR__ . '/../../vendor/autoload.php'),
+        ];
+
+        foreach ($candidates as $path) {
+            if (!empty($path) && is_file($path)) {
+                require_once $path;
+                if (class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, false)) {
+                    break;
+                }
+            }
+        }
+    }
+
     public function __construct()
     {
+        self::ensureComposerAutoload();
         $this->assetModel     = new AssetModel();
         $this->ulpModel       = new UlpModel();
         $this->penyulangModel = new PenyulangModel();

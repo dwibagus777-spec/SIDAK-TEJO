@@ -11,11 +11,37 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class AssetExportService
 {
+    private static function ensureComposerAutoload(): void
+    {
+        if (class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, false)) {
+            return;
+        }
+
+        $candidates = [
+            defined('COMPOSER_PATH') ? COMPOSER_PATH : '',
+            defined('ROOTPATH') ? ROOTPATH . 'vendor/autoload.php' : '',
+            defined('APPPATH') ? realpath(APPPATH . '../vendor/autoload.php') : '',
+            defined('FCPATH') ? realpath(FCPATH . '../vendor/autoload.php') : '',
+            realpath(__DIR__ . '/../../vendor/autoload.php'),
+        ];
+
+        foreach ($candidates as $path) {
+            if (!empty($path) && is_file($path)) {
+                require_once $path;
+                if (class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, false)) {
+                    break;
+                }
+            }
+        }
+    }
+
     /**
      * Create Template Excel Spreadsheet with Sample Row
      */
     public function generateTemplateSpreadsheet(): Spreadsheet
     {
+        self::ensureComposerAutoload();
+
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Template Import Asset');
@@ -65,6 +91,8 @@ class AssetExportService
      */
     public function buildAssetSpreadsheet(array $assets): Spreadsheet
     {
+        self::ensureComposerAutoload();
+
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Master Asset PLN');

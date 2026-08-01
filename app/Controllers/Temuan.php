@@ -168,7 +168,7 @@ class Temuan extends BaseController
     /**
      * Respon JSON Standar untuk AJAX
      */
-    private function jsonResponse(array $data, int $statusCode = 200)
+    protected function jsonResponse($data, int $statusCode = 200)
     {
         return $this->response->setStatusCode($statusCode)->setJSON($data);
     }

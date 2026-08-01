@@ -139,14 +139,14 @@ class PersonalDashboardController extends BaseController
 
         $whereUser = '';
         if (!in_array(strtolower($role), ['administrator', 'admin_pusat', 'supervisor_up3'])) {
-            $whereUser = " AND (t.created_by = $userId OR t.user_id = $userId)";
+            $whereUser = " AND t.created_by = $userId";
         } elseif ($ulpId) {
             $whereUser = " AND t.ulp_id = $ulpId";
         }
 
         return $db->query(
             "SELECT t.id, t.nomor_temuan, t.jenis_temuan, t.prioritas, t.status,
-                    t.penyulang, t.section, t.tanggal_temuan, t.detail_temuan,
+                    t.penyulang_id, t.section_id, t.tanggal_temuan, t.detail_temuan,
                     DATEDIFF(DATE_ADD(t.tanggal_temuan, INTERVAL CASE t.prioritas
                         WHEN 'EMERGENCY' THEN 3
                         WHEN 'HIGH' THEN 7
@@ -167,7 +167,7 @@ class PersonalDashboardController extends BaseController
     {
         $db = db_connect();
         $whereUser = in_array(strtolower($role), ['administrator', 'admin_pusat']) ? '' :
-            " AND (t.created_by = $userId OR t.user_id = $userId)";
+            " AND t.created_by = $userId";
 
         $rows = $db->query(
             "SELECT DATE(tanggal_temuan) as tgl, COUNT(*) as count
@@ -200,7 +200,7 @@ class PersonalDashboardController extends BaseController
     {
         $db = db_connect();
         $whereUser = in_array(strtolower($role), ['administrator', 'admin_pusat']) ? '' :
-            " AND (t.created_by = $userId OR t.user_id = $userId)";
+            " AND t.created_by = $userId";
 
         $thisMonth  = (int)$db->query("SELECT COUNT(*) as c FROM temuan t WHERE t.deleted_at IS NULL AND MONTH(t.tanggal_temuan)=MONTH(CURDATE()) AND YEAR(t.tanggal_temuan)=YEAR(CURDATE())$whereUser")->getRowArray()['c'];
         $lastMonth  = (int)$db->query("SELECT COUNT(*) as c FROM temuan t WHERE t.deleted_at IS NULL AND MONTH(t.tanggal_temuan)=MONTH(DATE_SUB(CURDATE(),INTERVAL 1 MONTH)) AND YEAR(t.tanggal_temuan)=YEAR(DATE_SUB(CURDATE(),INTERVAL 1 MONTH))$whereUser")->getRowArray()['c'];

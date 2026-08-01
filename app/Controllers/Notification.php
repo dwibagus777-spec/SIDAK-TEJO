@@ -82,18 +82,24 @@ class Notification extends BaseController
                 ];
             }
 
-            return $this->response->setJSON([
-                'status'       => 'success',
-                'unread_count' => $count,
-                'items'        => $items
-            ]);
+            return $this->response
+                ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->setHeader('Pragma', 'no-cache')
+                ->setJSON([
+                    'status'       => 'success',
+                    'unread_count' => $count,
+                    'items'        => $items
+                ]);
         } catch (\Throwable $e) {
             log_message('error', '[Notification::apiUnreadList] Exception: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'status'       => 'error',
-                'unread_count' => 0,
-                'items'        => []
-            ]);
+            return $this->response
+                ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->setHeader('Pragma', 'no-cache')
+                ->setJSON([
+                    'status'       => 'error',
+                    'unread_count' => 0,
+                    'items'        => []
+                ]);
         }
     }
 

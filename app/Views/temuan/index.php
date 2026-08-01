@@ -404,8 +404,9 @@
                 "search": urlQ
             },
             "ajax": {
-                "url": "<?= site_url('temuan/ajax-datatables') ?>",
+                "url": "<?= site_url('temuan/ajax-datatables') ?>?_=" + Date.now(),
                 "type": "POST",
+                "cache": false,
                 "data": function(d) {
                     d.<?= csrf_token() ?> = "<?= csrf_hash() ?>";
                     d.ulp_id = $('#filter_ulp_id').val();

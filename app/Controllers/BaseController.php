@@ -102,5 +102,18 @@ abstract class BaseController extends Controller
             // Ignore connection errors
         }
     }
+
+    /**
+     * Anti-Cache JSON Response Engine
+     */
+    protected function jsonResponse($data, int $statusCode = 200): ResponseInterface
+    {
+        return $this->response
+            ->setStatusCode($statusCode)
+            ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')
+            ->setHeader('Pragma', 'no-cache')
+            ->setHeader('Expires', '0')
+            ->setJSON($data);
+    }
 }
 

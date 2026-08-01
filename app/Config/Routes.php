@@ -87,6 +87,15 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('master-assets/detail/(:num)', 'AssetController::detail/$1');
     $routes->get('assets/detail/(:num)', 'AssetController::detail/$1');
 
+    // Master Asset PLN Import & Export Routes
+    $routes->get('master-assets/template', 'AssetImportController::downloadTemplate');
+    $routes->get('master-assets/import', 'AssetImportController::importView');
+    $routes->post('master-assets/import-process', 'AssetImportController::processImport');
+    $routes->get('master-assets/download-error-report', 'AssetImportController::downloadErrorReport');
+    $routes->get('master-assets/export-excel', 'AssetImportController::exportExcel');
+    $routes->get('master-assets/export-csv', 'AssetImportController::exportCsv');
+    $routes->get('master-assets/export-pdf', 'AssetImportController::exportPdf');
+
     // Phase 17 - Work Order Enterprise
     $routes->get('work-orders', 'WorkOrderController::index');
     $routes->get('work-orders/create', 'WorkOrderController::create');

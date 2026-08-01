@@ -11,12 +11,30 @@
             </h3>
             <p class="text-muted small mb-0">Manajemen Aset PLN Jaringan Distribusi 20KV Terintegrasi QR Code, Barcode & GPS</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <?php 
+            $queryString = !empty($_GET) ? '?' . http_build_query($_GET) : '';
+            ?>
             <?php if (in_array(session()->get('user_role'), ['administrator', 'admin_ulp', 'inspeksi'])): ?>
                 <a href="<?= site_url('assets/create') ?>" class="btn btn-primary btn-sm font-weight-bold rounded-pill shadow-sm">
                     <i class="fas fa-plus-circle me-1"></i> Tambah Asset Baru
                 </a>
+                <a href="<?= site_url('master-assets/import') ?>" class="btn btn-success btn-sm font-weight-bold rounded-pill shadow-sm">
+                    <i class="fas fa-file-import me-1"></i> Import Excel
+                </a>
+                <a href="<?= site_url('master-assets/template') ?>" class="btn btn-outline-success btn-sm font-weight-bold rounded-pill">
+                    <i class="fas fa-download me-1"></i> Download Template
+                </a>
             <?php endif; ?>
+            <a href="<?= site_url('master-assets/export-excel' . $queryString) ?>" class="btn btn-outline-primary btn-sm font-weight-bold rounded-pill shadow-sm">
+                <i class="fas fa-file-excel me-1"></i> Export Excel
+            </a>
+            <a href="<?= site_url('master-assets/export-csv' . $queryString) ?>" class="btn btn-outline-info btn-sm font-weight-bold rounded-pill shadow-sm">
+                <i class="fas fa-file-csv me-1"></i> Export CSV
+            </a>
+            <a href="<?= site_url('master-assets/export-pdf' . $queryString) ?>" target="_blank" class="btn btn-outline-danger btn-sm font-weight-bold rounded-pill shadow-sm">
+                <i class="fas fa-file-pdf me-1"></i> Export PDF
+            </a>
         </div>
     </div>
 

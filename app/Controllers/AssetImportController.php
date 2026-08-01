@@ -184,8 +184,29 @@ class AssetImportController extends BaseController
         }
 
         try {
-            $spreadsheet = $this->exportService->generateTemplateSpreadsheet();
-            $filename    = 'Template_Import_Master_Asset_PLN.xlsx';
+            $jenisAsset = $this->request->getGet('jenis_asset');
+            $ulpId      = $this->request->getGet('ulp_id');
+            $up3        = $this->request->getGet('up3') ?: 'UP3 Sidoarjo';
+
+            if (!empty($jenisAsset)) {
+                // Dynamic Template Flow (New)
+                $namaUlp = 'Semua ULP';
+                if (!empty($ulpId)) {
+                    $ulpModel = new \App\Models\UlpModel();
+                    $ulpData  = $ulpModel->find($ulpId);
+                    if ($ulpData && !empty($ulpData['nama_ulp'])) {
+                        $namaUlp = $ulpData['nama_ulp'];
+                    }
+                }
+
+                $dynamicEngine = new \App\Services\DynamicTemplateEngine();
+                $spreadsheet    = $dynamicEngine->generate($jenisAsset, $namaUlp, $up3);
+                $filename       = 'Template_Import_Asset_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $jenisAsset) . '.xlsx';
+            } else {
+                // Static Template Flow (Old / Backward Compatible)
+                $spreadsheet = $this->exportService->generateTemplateSpreadsheet();
+                $filename    = 'Template_Import_Master_Asset_PLN.xlsx';
+            }
 
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment;filename="' . $filename . '"');

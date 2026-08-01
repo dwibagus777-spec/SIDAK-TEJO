@@ -22,9 +22,9 @@
                 <a href="<?= site_url('master-assets/import') ?>" class="btn btn-success btn-sm font-weight-bold rounded-pill shadow-sm">
                     <i class="fas fa-file-import me-1"></i> Import Excel
                 </a>
-                <a href="<?= site_url('master-assets/template') ?>" class="btn btn-outline-success btn-sm font-weight-bold rounded-pill">
+                <button type="button" class="btn btn-outline-success btn-sm font-weight-bold rounded-pill" data-bs-toggle="modal" data-bs-target="#modalDownloadTemplate">
                     <i class="fas fa-download me-1"></i> Download Template
-                </a>
+                </button>
             <?php endif; ?>
             <a href="<?= site_url('master-assets/export-excel' . $queryString) ?>" class="btn btn-outline-primary btn-sm font-weight-bold rounded-pill shadow-sm">
                 <i class="fas fa-file-excel me-1"></i> Export Excel
@@ -200,4 +200,8 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Download Template -->
+<?= $this->include('assets/modal_download_template') ?>
+
 <?= $this->endSection() ?>

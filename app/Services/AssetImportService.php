@@ -16,6 +16,7 @@ class AssetImportService
     private UlpModel $ulpModel;
     private PenyulangModel $penyulangModel;
     private SectionModel $sectionModel;
+    private AssetService $assetService;
 
     private static function ensureComposerAutoload(): void
     {
@@ -48,10 +49,11 @@ class AssetImportService
         $this->ulpModel       = new UlpModel();
         $this->penyulangModel = new PenyulangModel();
         $this->sectionModel   = new SectionModel();
+        $this->assetService   = new AssetService();
     }
 
     /**
-     * Process Uploaded Excel File
+     * Process Uploaded Excel File (Auto-Detect Template Format)
      */
     public function processImport(string $filePath): array
     {
@@ -76,12 +78,260 @@ class AssetImportService
             ];
         }
 
-        // Fetch lookup maps
+        // Auto-detect template format by inspecting header row 1
+        $headerRow = $rows[1] ?? [];
+        $hasKodeAssetColumn = false;
+
+        foreach ($headerRow as $cellVal) {
+            if (strcasecmp(trim((string)$cellVal), 'Kode Asset') === 0) {
+                $hasKodeAssetColumn = true;
+                break;
+            }
+        }
+
+        if ($hasKodeAssetColumn) {
+            // Old Template Flow (100% Backward Compatible)
+            return $this->processOldImportFlow($rows, $db);
+        } else {
+            // New Template Flow (Dynamic, Auto Kode Asset, Optional Section, Composite Dup Check)
+            return $this->processNewImportFlow($rows, $db);
+        }
+    }
+
+    /**
+     * Flow Import Baru (Tanpa Kolom Kode Asset, Optional Section, Composite Duplicate)
+     */
+    private function processNewImportFlow(array $rows, \CodeIgniter\Database\BaseConnection $db): array
+    {
         $ulpMap       = $this->getUlpLookupMap();
         $penyulangMap = $this->getPenyulangLookupMap();
         $sectionMap   = $this->getSectionLookupMap();
 
-        // Fetch existing asset codes for uniqueness check
+        // Parse header row to map column index -> field key
+        $headerRow = $rows[1] ?? [];
+        $columnMap = [];
+
+        foreach ($headerRow as $colLetter => $cellVal) {
+            $h = strtolower(trim((string)$cellVal));
+            if (str_contains($h, 'up3')) {
+                $columnMap['up3'] = $colLetter;
+            } elseif (str_contains($h, 'ulp')) {
+                $columnMap['ulp'] = $colLetter;
+            } elseif (str_contains($h, 'jenis')) {
+                $columnMap['jenis_asset'] = $colLetter;
+            } elseif (str_contains($h, 'nama')) {
+                $columnMap['nama_asset'] = $colLetter;
+            } elseif (str_contains($h, 'penyulang')) {
+                $columnMap['penyulang'] = $colLetter;
+            } elseif (str_contains($h, 'merk')) {
+                $columnMap['merk'] = $colLetter;
+            } elseif (str_contains($h, 'tipe') || str_contains($h, 'material')) {
+                $columnMap['type'] = $colLetter;
+            } elseif (str_contains($h, 'seri')) {
+                $columnMap['nomor_seri'] = $colLetter;
+            } elseif (str_contains($h, 'kapasitas') || str_contains($h, 'tinggi')) {
+                $columnMap['kapasitas'] = $colLetter;
+            } elseif (str_contains($h, 'tahun')) {
+                $columnMap['tahun_instalasi'] = $colLetter;
+            } elseif (str_contains($h, 'alamat') || str_contains($h, 'lokasi')) {
+                $columnMap['lokasi'] = $colLetter;
+            } elseif (str_contains($h, 'lat')) {
+                $columnMap['latitude'] = $colLetter;
+            } elseif (str_contains($h, 'long')) {
+                $columnMap['longitude'] = $colLetter;
+            } elseif (str_contains($h, 'section')) {
+                $columnMap['section'] = $colLetter;
+            }
+        }
+
+        // Intra-batch duplicate tracker: "ulpId_jenisAsset_namaAsset"
+        $batchComposites = [];
+        $validBatch      = [];
+        $errorReport     = [];
+        $inserted        = 0;
+        $failed          = 0;
+        $now             = date('Y-m-d H:i:s');
+        $rowIndex        = 0;
+
+        foreach ($rows as $rowNum => $row) {
+            $rowIndex++;
+            if ($rowIndex === 1) {
+                continue; // Header row
+            }
+
+            // Extract values using mapped columns
+            $up3Name        = trim((string)($row[$columnMap['up3'] ?? 'A'] ?? ''));
+            $ulpName        = trim((string)($row[$columnMap['ulp'] ?? 'B'] ?? ''));
+            $jenisAsset     = trim((string)($row[$columnMap['jenis_asset'] ?? 'C'] ?? ''));
+            $namaAsset      = trim((string)($row[$columnMap['nama_asset'] ?? 'D'] ?? ''));
+            $penyulangName  = trim((string)($row[$columnMap['penyulang'] ?? 'E'] ?? ''));
+            $merk           = trim((string)($row[$columnMap['merk'] ?? 'F'] ?? ''));
+            $type           = trim((string)($row[$columnMap['type'] ?? 'G'] ?? ''));
+            $nomorSeri      = trim((string)($row[$columnMap['nomor_seri'] ?? 'H'] ?? ''));
+            $kapasitas      = trim((string)($row[$columnMap['kapasitas'] ?? 'I'] ?? ''));
+            $tahunInstalasi = trim((string)($row[$columnMap['tahun_instalasi'] ?? 'J'] ?? ''));
+            $alamat         = trim((string)($row[$columnMap['lokasi'] ?? 'K'] ?? ''));
+            $latitude       = trim((string)($row[$columnMap['latitude'] ?? 'L'] ?? ''));
+            $longitude      = trim((string)($row[$columnMap['longitude'] ?? 'M'] ?? ''));
+            $sectionName    = trim((string)($row[$columnMap['section'] ?? 'N'] ?? ''));
+
+            // Skip entirely empty row
+            if (empty($namaAsset) && empty($jenisAsset) && empty($ulpName)) {
+                continue;
+            }
+
+            $errors = [];
+
+            // Mandatory Validations
+            if (empty($namaAsset)) {
+                $errors[] = 'Nama Asset wajib diisi.';
+            }
+
+            if (empty($jenisAsset)) {
+                $errors[] = 'Jenis Asset wajib diisi.';
+            }
+
+            // ULP lookup
+            $ulpId = null;
+            if (!empty($ulpName)) {
+                $ulpKey = strtolower($ulpName);
+                if (isset($ulpMap[$ulpKey])) {
+                    $ulpId = $ulpMap[$ulpKey];
+                } else {
+                    $errors[] = "ULP '{$ulpName}' tidak ditemukan di database.";
+                }
+            } else {
+                $errors[] = 'ULP wajib diisi.';
+            }
+
+            // Penyulang lookup (Optional)
+            $penyulangId = null;
+            if (!empty($penyulangName)) {
+                $pKey = strtolower($penyulangName);
+                $penyulangId = $penyulangMap[$pKey] ?? null;
+            }
+
+            // Section lookup (OPTIONAL: If empty or not found -> NULL, DO NOT FAIL!)
+            $sectionId = null;
+            if (!empty($sectionName)) {
+                $sKey = strtolower($sectionName);
+                $sectionId = $sectionMap[$sKey] ?? null;
+            }
+
+            // Composite Duplicate Check: ULP + Jenis Asset + Nama Asset
+            if (!empty($ulpId) && !empty($jenisAsset) && !empty($namaAsset)) {
+                $compositeKey = strtolower($ulpId . '_' . $jenisAsset . '_' . $namaAsset);
+
+                if (isset($batchComposites[$compositeKey])) {
+                    $errors[] = "Data duplikat di dalam berkas Excel ini (ULP + Jenis + Nama sama).";
+                } else {
+                    // Check against DB
+                    $existCount = $db->table('assets')
+                        ->where('ulp_id', $ulpId)
+                        ->where('LOWER(jenis_asset)', strtolower($jenisAsset))
+                        ->where('LOWER(nama_asset)', strtolower($namaAsset))
+                        ->where('deleted_at IS NULL')
+                        ->countAllResults();
+
+                    if ($existCount > 0) {
+                        $errors[] = "Asset '{$namaAsset}' ({$jenisAsset}) sudah ada di database untuk ULP tersebut (Duplikat).";
+                    }
+                }
+            }
+
+            if (!empty($errors)) {
+                $failed++;
+                $errorReport[] = [
+                    'baris'      => $rowNum,
+                    'kode_asset' => '(Auto Generate)',
+                    'nama_asset' => $namaAsset ?: '-',
+                    'alasan'     => implode(' | ', $errors),
+                ];
+                continue;
+            }
+
+            // Mark composite as used in current batch
+            $compositeKey = strtolower($ulpId . '_' . $jenisAsset . '_' . $namaAsset);
+            $batchComposites[$compositeKey] = true;
+
+            // Auto Generate Kode Asset
+            $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset);
+
+            $validBatch[] = [
+                'kode_asset'      => $kodeAsset,
+                'nama_asset'      => $namaAsset,
+                'jenis_asset'     => $jenisAsset,
+                'ulp_id'          => $ulpId,
+                'penyulang_id'    => $penyulangId,
+                'section_id'      => $sectionId,
+                'lokasi'          => $alamat ?: null,
+                'latitude'        => $latitude ?: null,
+                'longitude'       => $longitude ?: null,
+                'tahun_instalasi' => is_numeric($tahunInstalasi) ? (int)$tahunInstalasi : null,
+                'merk'            => $merk ?: null,
+                'type'            => $type ?: null,
+                'nomor_seri'      => $nomorSeri ?: null,
+                'kapasitas'       => $kapasitas ?: null,
+                'status'          => 'NORMAL',
+                'created_at'      => $now,
+                'updated_at'      => $now,
+            ];
+        }
+
+        // DB Transaction for safe batch insert
+        if (!empty($validBatch)) {
+            $db->transBegin();
+            try {
+                $chunks = array_chunk($validBatch, 500);
+                foreach ($chunks as $chunk) {
+                    $db->table('assets')->insertBatch($chunk);
+                }
+                
+                if ($db->transStatus() === false) {
+                    $db->transRollback();
+                    return [
+                        'success' => false,
+                        'message' => 'Gagal menyimpan batch data ke database (Transaction Rollback).',
+                    ];
+                }
+                
+                $db->transCommit();
+                $inserted = count($validBatch);
+            } catch (\Throwable $e) {
+                $db->transRollback();
+                log_message('error', '[AssetImportService] Transaction Exception: ' . $e->getMessage());
+                return [
+                    'success' => false,
+                    'message' => 'Gagal melakukan insert ke database: ' . $e->getMessage(),
+                ];
+            }
+        }
+
+        $errorExcelPath = null;
+        if (!empty($errorReport)) {
+            $errorExcelPath = $this->createErrorReportSpreadsheet($errorReport);
+        }
+
+        return [
+            'success'          => true,
+            'inserted'         => $inserted,
+            'failed'           => $failed,
+            'total'            => $inserted + $failed,
+            'errors'           => $errorReport,
+            'error_excel_path' => $errorExcelPath,
+            'message'          => "Import selesai: {$inserted} data baru berhasil di-generate & diimport, {$failed} data gagal/duplikat.",
+        ];
+    }
+
+    /**
+     * Flow Import Lama (Dengan Kolom Kode Asset — 100% Backward Compatible)
+     */
+    private function processOldImportFlow(array $rows, \CodeIgniter\Database\BaseConnection $db): array
+    {
+        $ulpMap       = $this->getUlpLookupMap();
+        $penyulangMap = $this->getPenyulangLookupMap();
+        $sectionMap   = $this->getSectionLookupMap();
+
         $existingCodes = [];
         if ($db->tableExists('assets')) {
             $query = $db->table('assets')->select('kode_asset')->where('deleted_at IS NULL')->get();
@@ -104,11 +354,9 @@ class AssetImportService
         foreach ($rows as $rowNum => $row) {
             $rowIndex++;
             if ($rowIndex === 1) {
-                // Header row
-                continue;
+                continue; // Header row
             }
 
-            // Extract columns by letter A-O
             $jenisAsset     = trim((string)($row['A'] ?? ''));
             $kodeAsset      = trim((string)($row['B'] ?? ''));
             $namaAsset      = trim((string)($row['C'] ?? ''));
@@ -125,12 +373,10 @@ class AssetImportService
             $longitude      = trim((string)($row['N'] ?? ''));
             $status         = strtoupper(trim((string)($row['O'] ?? 'NORMAL')));
 
-            // Skip entirely empty row
             if (empty($kodeAsset) && empty($namaAsset) && empty($jenisAsset)) {
                 continue;
             }
 
-            // Validation rules
             $errors = [];
 
             if (empty($kodeAsset)) {
@@ -150,7 +396,6 @@ class AssetImportService
                 $errors[] = 'Jenis Asset wajib diisi.';
             }
 
-            // ULP lookup
             $ulpId = null;
             if (!empty($ulpName)) {
                 $ulpKey = strtolower($ulpName);
@@ -161,7 +406,6 @@ class AssetImportService
                 }
             }
 
-            // Penyulang lookup
             $penyulangId = null;
             if (!empty($penyulangName)) {
                 $pKey = strtolower($penyulangName);
@@ -172,7 +416,6 @@ class AssetImportService
                 }
             }
 
-            // Section lookup
             $sectionId = null;
             if (!empty($sectionName)) {
                 $sKey = strtolower($sectionName);
@@ -183,7 +426,6 @@ class AssetImportService
                 }
             }
 
-            // Status validation
             if (!in_array($status, ['NORMAL', 'BERMASALAH', 'CRITICAL'])) {
                 $status = 'NORMAL';
             }
@@ -199,7 +441,6 @@ class AssetImportService
                 continue;
             }
 
-            // Mark code as used in current batch
             $existingCodes[strtoupper($kodeAsset)] = true;
 
             $validBatch[] = [
@@ -223,10 +464,8 @@ class AssetImportService
             ];
         }
 
-        // Perform batch insert
         if (!empty($validBatch)) {
             try {
-                // Chunk insert by 500 rows for high performance & low memory
                 $chunks = array_chunk($validBatch, 500);
                 foreach ($chunks as $chunk) {
                     $db->table('assets')->insertBatch($chunk);
@@ -241,7 +480,6 @@ class AssetImportService
             }
         }
 
-        // Generate error report spreadsheet if any rows failed
         $errorExcelPath = null;
         if (!empty($errorReport)) {
             $errorExcelPath = $this->createErrorReportSpreadsheet($errorReport);
@@ -267,13 +505,11 @@ class AssetImportService
         $sheet       = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Laporan Error Import');
 
-        // Headers
         $sheet->setCellValue('A1', 'Nomor Baris Excel');
         $sheet->setCellValue('B1', 'Kode Asset');
         $sheet->setCellValue('C1', 'Nama Asset');
         $sheet->setCellValue('D1', 'Alasan Error');
 
-        // Styling Header
         $sheet->getStyle('A1:D1')->getFont()->setBold(true);
         $sheet->getStyle('A1:D1')->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)

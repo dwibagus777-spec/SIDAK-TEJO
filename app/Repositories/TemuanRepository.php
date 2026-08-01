@@ -304,6 +304,7 @@ class TemuanRepository extends BaseRepository
                 'total'          => (int)($row['total'] ?? 0),
                 'pdkb'           => (int)($row['pdkb'] ?? 0),
                 'har_gardu'      => (int)($row['har_gardu'] ?? 0),
+                'har_gtt'        => (int)($row['har_gtt'] ?? 0),
                 'har_konstruksi' => (int)($row['har_konstruksi'] ?? 0),
                 'har_row'        => (int)($row['har_row'] ?? 0),
                 'har_crane'      => (int)($row['har_crane'] ?? 0),
@@ -312,6 +313,8 @@ class TemuanRepository extends BaseRepository
                 'high'           => (int)($row['high'] ?? 0),
                 'medium'         => (int)($row['medium'] ?? 0),
                 'belum'          => (int)($row['belum'] ?? 0),
+                'proses'         => (int)($row['proses'] ?? 0),
+                'padam'          => (int)($row['padam'] ?? 0),
                 'selesai'        => (int)($row['selesai'] ?? 0)
             ];
         });

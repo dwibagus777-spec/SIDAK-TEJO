@@ -135,7 +135,7 @@ class Temuan extends BaseController
             $row['jenis_temuan'],
             $fotoHtml,
             $prioBadge,
-            date('d-m-Y H:i', strtotime(!empty($row['created_at']) ? $row['created_at'] : $row['tanggal_temuan'])) . ' WIB',
+            date('d-m-Y', strtotime($row['tanggal_temuan'] ?: ($row['created_at'] ?? 'now'))) . (!empty($row['created_at']) ? ' ' . date('H:i', strtotime($row['created_at'])) : '') . ' WIB',
             $statusBadge,
             $actions
         ];

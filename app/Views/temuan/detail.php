@@ -631,7 +631,7 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                         <?php else:
                             foreach ($photos as $idx => $photo):
                                 if (empty($photo)) continue;
-                                $filePath = get_photo_url($photo, $temuan['foto_path'] ?? 'foto/');
+                                $filePath = get_photo_url($photo, $temuan['foto_path'] ?? 'foto/', 'full');
                         ?>
                             <div class="photo-masonry-item skeleton-loader" onclick="SidakGallery.open('<?= $filePath ?>', <?= $idx ?>)" role="button" aria-label="Lihat Foto Temuan <?= $idx + 1 ?>">
                                 <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 3'%3E%3C/svg%3E" data-src="<?= $filePath ?>" loading="lazy" class="lazy-image lazy-loading" alt="Foto Temuan <?= $idx + 1 ?>" onload="this.classList.remove('lazy-loading'); this.parentElement.classList.remove('skeleton-loader');" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-muted small p-2 text-center d-flex flex-column align-items-center justify-content-center h-100\'><i class=\'fas fa-image-slash fs-5 mb-1\'></i> Gagal Muat</span>';">
@@ -657,7 +657,7 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                         <i class="fas fa-location-dot me-1"></i> Buka Google Maps
                     </a>
                     <?php endif; ?>
-                    <?php if (in_array(session()->get('user_role'), ['administrator', 'admin_ulp'])): ?>
+                    <?php if (in_array(session()->get('user_role'), ['administrator', 'admin_ulp', 'inspeksi'])): ?>
                     <a href="<?= site_url('temuan/edit/' . $temuan['id']) ?>" class="btn btn-warning text-dark font-weight-bold px-3">
                         <i class="fas fa-edit me-1"></i> Edit Temuan
                     </a>

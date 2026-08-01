@@ -209,7 +209,9 @@
     </div>
 </div>
 
+<?= $this->section('modals') ?>
 <!-- Modal Download Template -->
 <?= $this->include('assets/modal_download_template') ?>
+<?= $this->endSection() ?>
 
 <?= $this->endSection() ?>

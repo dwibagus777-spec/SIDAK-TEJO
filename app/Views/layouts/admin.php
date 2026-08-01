@@ -1989,6 +1989,8 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             });
         })();
     </script>
+    <!-- Modal Section (Rendered directly under body root) -->
+    <?= $this->renderSection('modals') ?>
     <?= $this->renderSection('scripts') ?>
 </body>
 </html>

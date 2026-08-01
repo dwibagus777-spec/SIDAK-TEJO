@@ -1,5 +1,5 @@
 <!-- Modal Download Template Master Asset -->
-<div class="modal fade" id="modalDownloadTemplate" tabindex="-1" aria-labelledby="modalDownloadTemplateLabel" aria-hidden="true">
+<div class="modal fade" id="modalDownloadTemplate" aria-labelledby="modalDownloadTemplateLabel" aria-hidden="true" style="z-index: 1055;">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow rounded-4">
             <div class="modal-header bg-primary text-white rounded-top-4 py-3">
@@ -19,7 +19,7 @@
                         <label for="template_up3" class="form-label fw-bold small text-secondary">
                             <i class="fas fa-building text-primary me-1"></i> UP3 (Unit Pelaksana Pelayanan Pelanggan)
                         </label>
-                        <input type="text" class="form-label form-control bg-light fw-bold text-dark" id="template_up3" name="up3" value="UP3 Sidoarjo" readonly>
+                        <input type="text" class="form-control bg-light fw-bold text-dark" id="template_up3" name="up3" value="UP3 Sidoarjo" readonly>
                     </div>
 
                     <!-- Filter ULP -->
@@ -27,7 +27,7 @@
                         <label for="template_ulp_id" class="form-label fw-bold small text-secondary">
                             <i class="fas fa-network-wired text-primary me-1"></i> ULP (Unit Layanan Pelanggan)
                         </label>
-                        <select class="form-select" id="template_ulp_id" name="ulp_id">
+                        <select class="form-select select2-modal" id="template_ulp_id" name="ulp_id" style="pointer-events: auto !important; position: relative; z-index: 1060;">
                             <option value="">-- Semua ULP / General --</option>
                             <?php if (!empty($ulps) && is_array($ulps)): ?>
                                 <?php foreach ($ulps as $ulp): ?>
@@ -45,7 +45,7 @@
                         <?php 
                         $jenisList = ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'Tiang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'];
                         ?>
-                        <select class="form-select fw-bold text-primary" id="template_jenis_asset" name="jenis_asset" required>
+                        <select class="form-select select2-modal fw-bold text-primary" id="template_jenis_asset" name="jenis_asset" required style="pointer-events: auto !important; position: relative; z-index: 1060;">
                             <?php foreach ($jenisList as $j): ?>
                                 <option value="<?= $j ?>" <?= $j === 'Gardu' ? 'selected' : '' ?>><?= $j ?></option>
                             <?php endforeach; ?>
@@ -65,3 +65,22 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof jQuery !== 'undefined') {
+        jQuery('#modalDownloadTemplate').on('shown.bs.modal', function () {
+            if (typeof jQuery.fn.select2 !== 'undefined') {
+                jQuery('#template_ulp_id').select2({
+                    dropdownParent: jQuery('#modalDownloadTemplate'),
+                    width: '100%'
+                });
+                jQuery('#template_jenis_asset').select2({
+                    dropdownParent: jQuery('#modalDownloadTemplate'),
+                    width: '100%'
+                });
+            }
+        });
+    }
+});
+</script>

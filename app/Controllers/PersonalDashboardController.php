@@ -146,13 +146,16 @@ class PersonalDashboardController extends BaseController
 
         return $db->query(
             "SELECT t.id, t.nomor_temuan, t.jenis_temuan, t.prioritas, t.status,
-                    t.penyulang_id, t.section_id, t.tanggal_temuan, t.detail_temuan,
+                    p.nama_penyulang AS penyulang, s.nama_section AS section,
+                    t.tanggal_temuan, t.detail_temuan,
                     DATEDIFF(DATE_ADD(t.tanggal_temuan, INTERVAL CASE t.prioritas
                         WHEN 'EMERGENCY' THEN 3
                         WHEN 'HIGH' THEN 7
                         WHEN 'MEDIUM' THEN 31
                         ELSE 90 END DAY), CURDATE()) AS sisa_hari
              FROM temuan t
+             LEFT JOIN penyulang p ON p.id = t.penyulang_id
+             LEFT JOIN sections s ON s.id = t.section_id
              WHERE t.deleted_at IS NULL
                AND t.status != 'SELESAI'
                $whereUser

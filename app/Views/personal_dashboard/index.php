@@ -246,7 +246,7 @@ $nextLevel    = $nextLevel ?? 250;
                                     <span class="fw-bold text-dark" style="font-size: 12px;"><?= esc($task['nomor_temuan'] ?? '-') ?></span>
                                 </div>
                                 <div class="text-dark fw-semibold" style="font-size: 13px;"><?= esc(mb_substr($task['jenis_temuan'] ?? '-', 0, 60)) ?></div>
-                                <small class="text-muted"><?= esc($task['penyulang'] ?? '') ?><?= $task['section'] ? ' / ' . esc($task['section']) : '' ?></small>
+                                <small class="text-muted"><?= esc($task['penyulang'] ?? '') ?><?= !empty($task['section']) ? ' / ' . esc($task['section']) : '' ?></small>
                             </div>
                             <div class="text-end flex-shrink-0">
                                 <span class="sla-chip <?= $slaClass ?>"><?= $slaText ?></span>

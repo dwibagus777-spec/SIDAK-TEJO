@@ -353,20 +353,20 @@ class GamificationService
 
         // Count temuan hari ini by this user
         $temuanHariIni = (int)$db->query(
-            "SELECT COUNT(*) as c FROM temuan WHERE deleted_at IS NULL AND DATE(tanggal_temuan) = ? AND (created_by = ? OR user_id = ?)",
-            [$today, $userId, $userId]
+            "SELECT COUNT(*) as c FROM temuan WHERE deleted_at IS NULL AND DATE(tanggal_temuan) = ? AND created_by = ?",
+            [$today, $userId]
         )->getRowArray()['c'] ?? 0;
 
         // Count selesai hari ini
         $selesaiHariIni = (int)$db->query(
-            "SELECT COUNT(*) as c FROM temuan WHERE deleted_at IS NULL AND status = 'SELESAI' AND DATE(updated_at) = ? AND (created_by = ? OR user_id = ?)",
-            [$today, $userId, $userId]
+            "SELECT COUNT(*) as c FROM temuan WHERE deleted_at IS NULL AND status = 'SELESAI' AND DATE(updated_at) = ? AND created_by = ?",
+            [$today, $userId]
         )->getRowArray()['c'] ?? 0;
 
         // Count pekerjaan belum selesai (scoped to role)
         $whereExtra = '';
         if (!in_array(strtolower($userRole), ['administrator', 'admin_pusat'])) {
-            $whereExtra = " AND (created_by = $userId OR user_id = $userId)";
+            $whereExtra = " AND created_by = $userId";
         }
         $belum = (int)$db->query(
             "SELECT COUNT(*) as c FROM temuan WHERE deleted_at IS NULL AND status != 'SELESAI'$whereExtra"

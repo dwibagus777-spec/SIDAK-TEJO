@@ -18,6 +18,9 @@ class AssetRepository
     {
         try {
             $db = \Config\Database::connect();
+            if (!$db->tableExists('assets')) {
+                return null;
+            }
             $builder = $db->table('assets a');
             $builder->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section');
             $builder->join('ulps u', 'a.ulp_id = u.id', 'left');
@@ -44,6 +47,9 @@ class AssetRepository
     {
         try {
             $db = \Config\Database::connect();
+            if (!$db->tableExists('assets')) {
+                return null;
+            }
             $builder = $db->table('assets a');
             $builder->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section');
             $builder->join('ulps u', 'a.ulp_id = u.id', 'left');
@@ -70,6 +76,9 @@ class AssetRepository
     {
         try {
             $db = \Config\Database::connect();
+            if (!$db->tableExists('assets')) {
+                return [];
+            }
             $builder = $db->table('assets a');
             $builder->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section');
             $builder->join('ulps u', 'a.ulp_id = u.id', 'left');
@@ -127,6 +136,9 @@ class AssetRepository
     {
         try {
             $db = \Config\Database::connect();
+            if (!$db->tableExists('assets')) {
+                return ['total' => 0, 'normal' => 0, 'bermasalah' => 0, 'critical' => 0];
+            }
             $builder = $db->table('assets');
             $builder->where('deleted_at IS NULL');
 

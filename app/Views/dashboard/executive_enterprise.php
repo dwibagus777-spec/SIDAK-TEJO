@@ -238,8 +238,7 @@
     </div>
 </div>
 
-<!-- Chart.js Engine & Realtime AJAX Filter Handler -->
-<script src="<?= base_url('plugins/chart.js/Chart.min.js') ?>"></script>
+<?= $this->section('scripts') ?>
 <script>
 $(document).ready(function () {
     let chartLine = null;
@@ -511,4 +510,5 @@ $(document).ready(function () {
     });
 });
 </script>
+<?= $this->endSection() ?>
 <?= $this->endSection() ?>

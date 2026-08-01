@@ -19,7 +19,7 @@ class AssetImportService
 
     private static function ensureComposerAutoload(): void
     {
-        if (class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, false)) {
+        if (class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, true)) {
             return;
         }
 
@@ -34,7 +34,7 @@ class AssetImportService
         foreach ($candidates as $path) {
             if (!empty($path) && is_file($path)) {
                 require_once $path;
-                if (class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, false)) {
+                if (class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, true)) {
                     break;
                 }
             }

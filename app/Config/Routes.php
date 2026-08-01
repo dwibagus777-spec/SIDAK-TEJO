@@ -77,10 +77,14 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('setting/announcement', 'Setting::index');
     $routes->match(['GET', 'POST'], 'setting/update-announcement', 'Setting::updateAnnouncement');
 
-    // Phase 17 - Master Asset Management
+    // Phase 17 - Master Asset Management (master-assets route to avoid Apache 403 directory collision with public/assets/)
+    $routes->get('master-assets', 'AssetController::index');
     $routes->get('assets', 'AssetController::index');
+    $routes->get('master-assets/create', 'AssetController::create');
     $routes->get('assets/create', 'AssetController::create');
+    $routes->post('master-assets/store', 'AssetController::store');
     $routes->post('assets/store', 'AssetController::store');
+    $routes->get('master-assets/detail/(:num)', 'AssetController::detail/$1');
     $routes->get('assets/detail/(:num)', 'AssetController::detail/$1');
 
     // Phase 17 - Work Order Enterprise

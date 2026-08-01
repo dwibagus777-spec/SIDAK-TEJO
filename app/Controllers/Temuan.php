@@ -165,13 +165,6 @@ class Temuan extends BaseController
         return $uploadFiles;
     }
 
-    /**
-     * Respon JSON Standar untuk AJAX
-     */
-    protected function jsonResponse($data, int $statusCode = 200)
-    {
-        return $this->response->setStatusCode($statusCode)->setJSON($data);
-    }
 
     // ==========================================
     // PUBLIC CONTROLLER ACTIONS

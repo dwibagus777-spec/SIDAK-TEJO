@@ -1,7 +1,7 @@
 <!-- Modal Download Template Master Asset -->
-<div class="modal fade" id="modalDownloadTemplate" tabindex="-1" aria-labelledby="modalDownloadTemplateLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4">
+<div class="modal fade" id="modalDownloadTemplate" tabindex="-1" aria-labelledby="modalDownloadTemplateLabel" aria-hidden="true" style="z-index: 1060 !important;">
+    <div class="modal-dialog modal-dialog-centered" style="z-index: 1061 !important;">
+        <div class="modal-content border-0 shadow rounded-4" style="z-index: 1062 !important;">
             <div class="modal-header bg-primary text-white rounded-top-4 py-3">
                 <h5 class="modal-title fw-bold font-outfit" id="modalDownloadTemplateLabel">
                     <i class="fas fa-file-excel me-2"></i> Download Template Import Asset
@@ -27,7 +27,7 @@
                         <label for="template_ulp_id" class="form-label fw-bold small text-secondary">
                             <i class="fas fa-network-wired text-primary me-1"></i> ULP (Unit Layanan Pelanggan)
                         </label>
-                        <select class="form-select" id="template_ulp_id" name="ulp_id">
+                        <select class="form-select" id="template_ulp_id" name="ulp_id" style="position: relative; z-index: 1063 !important; pointer-events: auto !important;">
                             <option value="">-- Semua ULP / General --</option>
                             <?php if (!empty($ulps) && is_array($ulps)): ?>
                                 <?php foreach ($ulps as $ulp): ?>
@@ -45,7 +45,7 @@
                         <?php 
                         $jenisList = ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'Tiang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'];
                         ?>
-                        <select class="form-select fw-bold text-primary" id="template_jenis_asset" name="jenis_asset" required>
+                        <select class="form-select fw-bold text-primary" id="template_jenis_asset" name="jenis_asset" required style="position: relative; z-index: 1063 !important; pointer-events: auto !important;">
                             <?php foreach ($jenisList as $j): ?>
                                 <option value="<?= $j ?>" <?= $j === 'Gardu' ? 'selected' : '' ?>><?= $j ?></option>
                             <?php endforeach; ?>

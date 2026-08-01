@@ -526,7 +526,9 @@
         $('#foto, #foto_camera').change(function() {
             if (this.files && this.files.length > 0) {
                 handleEditIncomingFiles(this.files);
-                this.value = '';
+                if (this.id === 'foto_camera') {
+                    this.value = '';
+                }
             }
         });
 
@@ -667,6 +669,11 @@
         });
 
         $('form').on('submit', function() {
+            const fileInput = document.getElementById('foto');
+            if (fileInput && typeof editPhotoStore !== 'undefined' && editPhotoStore.files.length > 0) {
+                fileInput.files = editPhotoStore.files;
+            }
+
             let materialItems = [];
             $('.material-item-row').each(function() {
                 const nama = $(this).find('.input-nama-material').val().trim();

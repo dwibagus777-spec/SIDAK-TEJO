@@ -91,6 +91,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('assets/detail/(:num)', 'AssetController::detail/$1');
 
     // Master Asset PLN Import & Export Routes
+    $routes->get('master-assets/debug-vendor', 'AssetImportController::debugVendor');
     $routes->get('master-assets/debug-runtime', 'AssetImportController::debugRuntime');
     $routes->get('master-assets/template', 'AssetImportController::downloadTemplate');
     $routes->get('master-assets/import', 'AssetImportController::importView');

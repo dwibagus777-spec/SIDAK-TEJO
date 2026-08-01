@@ -23,6 +23,75 @@ class AssetImportController extends BaseController
     }
 
     /**
+     * Factual Production Vendor Diagnostic Endpoint: /master-assets/debug-vendor
+     */
+    public function debugVendor(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $fcPath   = defined('FCPATH') ? FCPATH : __DIR__ . '/../../public/';
+        $rootPath = defined('ROOTPATH') ? ROOTPATH : realpath($fcPath . '../') . '/';
+
+        $vendorDir   = realpath($rootPath . 'vendor');
+        $autoloadFile= realpath($rootPath . 'vendor/autoload.php');
+        $psr4File    = realpath($rootPath . 'vendor/composer/autoload_psr4.php');
+        $spreadsheetFile = realpath($rootPath . 'vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Spreadsheet.php');
+
+        $physicalChecks = [
+            'vendor/' => is_dir($rootPath . 'vendor') ? 'FOUND' : 'NOT FOUND',
+            'vendor/autoload.php' => is_file($rootPath . 'vendor/autoload.php') ? 'FOUND' : 'NOT FOUND',
+            'vendor/composer/autoload_psr4.php' => is_file($rootPath . 'vendor/composer/autoload_psr4.php') ? 'FOUND' : 'NOT FOUND',
+            'vendor/phpoffice/' => is_dir($rootPath . 'vendor/phpoffice') ? 'FOUND' : 'NOT FOUND',
+            'vendor/phpoffice/phpspreadsheet/' => is_dir($rootPath . 'vendor/phpoffice/phpspreadsheet') ? 'FOUND' : 'NOT FOUND',
+            'vendor/phpoffice/phpspreadsheet/src/' => is_dir($rootPath . 'vendor/phpoffice/phpspreadsheet/src') ? 'FOUND' : 'NOT FOUND',
+            'vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/' => is_dir($rootPath . 'vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet') ? 'FOUND' : 'NOT FOUND',
+            'Spreadsheet.php' => is_file($rootPath . 'vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Spreadsheet.php') ? 'FOUND' : 'NOT FOUND',
+        ];
+
+        $psr4Content = is_file($psr4File) ? file_get_contents($psr4File) : '';
+        $isPsr4Registered = str_contains($psr4Content, 'PhpOffice\\PhpSpreadsheet');
+
+        $composerLockFile = realpath($rootPath . 'composer.lock');
+        $phpspreadsheetVersionInLock = 'NOT FOUND';
+        if (is_file($composerLockFile)) {
+            $lockContent = file_get_contents($composerLockFile);
+            $lockData = json_decode($lockContent, true);
+            if (is_array($lockData) && !empty($lockData['packages'])) {
+                foreach ($lockData['packages'] as $pkg) {
+                    if (isset($pkg['name']) && $pkg['name'] === 'phpoffice/phpspreadsheet') {
+                        $phpspreadsheetVersionInLock = $pkg['version'] ?? 'INSTALLED';
+                        break;
+                    }
+                }
+            }
+        }
+
+        $composerJsonFile = realpath($rootPath . 'composer.json');
+        $phpspreadsheetVersionInJson = 'NOT FOUND';
+        if (is_file($composerJsonFile)) {
+            $jsonContent = file_get_contents($composerJsonFile);
+            $jsonData = json_decode($jsonContent, true);
+            if (isset($jsonData['require']['phpoffice/phpspreadsheet'])) {
+                $phpspreadsheetVersionInJson = $jsonData['require']['phpoffice/phpspreadsheet'];
+            }
+        }
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'vendor_exists'                => is_dir($rootPath . 'vendor'),
+            'autoload_exists'              => is_file($rootPath . 'vendor/autoload.php'),
+            'spreadsheet_exists'           => is_file($rootPath . 'vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Spreadsheet.php'),
+            'autoload_registered'          => $isPsr4Registered,
+            'composer_packages'            => [
+                'phpoffice/phpspreadsheet_in_json' => $phpspreadsheetVersionInJson,
+                'phpoffice/phpspreadsheet_in_lock' => $phpspreadsheetVersionInLock,
+            ],
+            'vendor_path'                  => $rootPath . 'vendor',
+            'realpath_vendor'              => $vendorDir,
+            'realpath_autoload'            => $autoloadFile,
+            'physical_verification'        => $physicalChecks,
+            'class_exists_spreadsheet'     => class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, true),
+        ]);
+    }
+
+    /**
      * Comprehensive Diagnostic Endpoint: /master-assets/debug-runtime
      */
     public function debugRuntime(): \CodeIgniter\HTTP\ResponseInterface

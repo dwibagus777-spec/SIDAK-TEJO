@@ -208,13 +208,16 @@ class AssetImportController extends BaseController
                 $filename    = 'Template_Import_Master_Asset_PLN.xlsx';
             }
 
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            header('Content-Disposition: attachment;filename="' . $filename . '"');
-            header('Cache-Control: max-age=0');
-
+            ob_start();
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
-            exit();
+            $content = ob_get_clean();
+
+            return $this->response
+                ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                ->setHeader('Content-Disposition', 'attachment;filename="' . $filename . '"')
+                ->setHeader('Cache-Control', 'max-age=0')
+                ->setBody($content);
         } catch (\Throwable $e) {
             log_message('error', '[downloadTemplate] ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             return $this->response->setStatusCode(500)->setJSON([
@@ -315,13 +318,16 @@ class AssetImportController extends BaseController
             $spreadsheet = $this->exportService->buildAssetSpreadsheet($assets);
             $filename    = 'Master_Asset_PLN_' . date('Ymd_His') . '.xlsx';
 
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            header('Content-Disposition: attachment;filename="' . $filename . '"');
-            header('Cache-Control: max-age=0');
-
+            ob_start();
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
-            exit();
+            $content = ob_get_clean();
+
+            return $this->response
+                ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                ->setHeader('Content-Disposition', 'attachment;filename="' . $filename . '"')
+                ->setHeader('Cache-Control', 'max-age=0')
+                ->setBody($content);
         } catch (\Throwable $e) {
             log_message('error', '[AssetImportController::exportExcel] Exception: ' . $e->getMessage());
             return redirect()->to(site_url('master-assets'))->with('error', 'Gagal mengekspor data ke Excel: ' . $e->getMessage());
@@ -341,17 +347,20 @@ class AssetImportController extends BaseController
             $spreadsheet = $this->exportService->buildAssetSpreadsheet($assets);
             $filename    = 'Master_Asset_PLN_' . date('Ymd_His') . '.csv';
 
-            header('Content-Type: text/csv');
-            header('Content-Disposition: attachment;filename="' . $filename . '"');
-            header('Cache-Control: max-age=0');
-
+            ob_start();
             $writer = new Csv($spreadsheet);
             $writer->setDelimiter(',');
             $writer->setEnclosure('"');
             $writer->setLineEnding("\r\n");
             $writer->setSheetIndex(0);
             $writer->save('php://output');
-            exit();
+            $content = ob_get_clean();
+
+            return $this->response
+                ->setHeader('Content-Type', 'text/csv')
+                ->setHeader('Content-Disposition', 'attachment;filename="' . $filename . '"')
+                ->setHeader('Cache-Control', 'max-age=0')
+                ->setBody($content);
         } catch (\Throwable $e) {
             log_message('error', '[AssetImportController::exportCsv] Exception: ' . $e->getMessage());
             return redirect()->to(site_url('master-assets'))->with('error', 'Gagal mengekspor data ke CSV: ' . $e->getMessage());

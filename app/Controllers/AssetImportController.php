@@ -195,14 +195,22 @@ class AssetImportController extends BaseController
             $writer->save('php://output');
             exit();
         } catch (\Throwable $e) {
-            log_message('error', '[AssetImportController::downloadTemplate] Exception: ' . $e->getMessage());
-            $diagInfo = [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'class_exists' => class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, false),
-            ];
-            return redirect()->to(site_url('master-assets'))->with('error', 'Gagal mengunduh template Excel: ' . $e->getMessage() . ' | Diag: ' . json_encode($diagInfo));
+            log_message('error', '[downloadTemplate] ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            return $this->response->setStatusCode(500)->setJSON([
+                'error'        => true,
+                'message'      => $e->getMessage(),
+                'class'        => get_class($e),
+                'file'         => $e->getFile(),
+                'line'         => $e->getLine(),
+                'trace'        => array_map(function ($t) {
+                    return [
+                        'file'     => $t['file'] ?? '[internal]',
+                        'line'     => $t['line'] ?? 0,
+                        'function' => ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? ''),
+                    ];
+                }, $e->getTrace()),
+                'class_exists_spreadsheet' => class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, true),
+            ]);
         }
     }
 

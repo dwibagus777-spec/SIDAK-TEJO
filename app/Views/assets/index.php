@@ -201,7 +201,7 @@
     </div>
 </div>
 
-<!-- Modal Download Template -->
+<?= $this->section('scripts') ?>
+<!-- Modal Download Template (Rendered at root body level outside container-xl stacking context) -->
 <?= $this->include('assets/modal_download_template') ?>
-
 <?= $this->endSection() ?>

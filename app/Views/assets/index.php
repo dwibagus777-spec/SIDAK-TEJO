@@ -29,65 +29,73 @@
             <a href="<?= site_url('master-assets/export-excel' . $queryString) ?>" class="btn btn-outline-primary btn-sm font-weight-bold rounded-pill shadow-sm">
                 <i class="fas fa-file-excel me-1"></i> Export Excel
             </a>
-            <a href="<?= site_url('master-assets/export-csv' . $queryString) ?>" class="btn btn-outline-info btn-sm font-weight-bold rounded-pill shadow-sm">
+            <a href="<?= site_url('master-assets/export-csv' . $queryString) ?>" class="btn btn-outline-secondary btn-sm font-weight-bold rounded-pill shadow-sm">
                 <i class="fas fa-file-csv me-1"></i> Export CSV
             </a>
-            <a href="<?= site_url('master-assets/export-pdf' . $queryString) ?>" target="_blank" class="btn btn-outline-danger btn-sm font-weight-bold rounded-pill shadow-sm">
+            <a href="<?= site_url('master-assets/export-pdf' . $queryString) ?>" class="btn btn-outline-danger btn-sm font-weight-bold rounded-pill shadow-sm" target="_blank">
                 <i class="fas fa-file-pdf me-1"></i> Export PDF
             </a>
         </div>
     </div>
 
-    <!-- Stat KPI Cards Grid -->
+    <!-- KPI Stats Cards -->
     <div class="row g-3 mb-4">
-        <div class="col-md-3 col-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 h-100 border-start border-4 border-primary">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="text-muted small font-weight-bold d-block">TOTAL ASSET</span>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($stats['total']) ?></h3>
-                    </div>
-                    <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary">
-                        <i class="fas fa-cubes fs-4"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 h-100 border-start border-4 border-success">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="text-muted small font-weight-bold d-block">STATUS NORMAL</span>
-                        <h3 class="fw-bold mb-0 text-success"><?= number_format($stats['normal']) ?></h3>
-                    </div>
-                    <div class="p-3 rounded-circle bg-success bg-opacity-10 text-success">
-                        <i class="fas fa-circle-check fs-4"></i>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-primary text-white overflow-hidden position-relative">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="text-white-50 small mb-1 font-weight-bold text-uppercase">Total Asset</p>
+                            <h2 class="fw-bold mb-0 text-white font-outfit"><?= number_format($stats['total']) ?></h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-circle p-3 text-white">
+                            <i class="fas fa-cubes fs-4"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 h-100 border-start border-4 border-warning">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="text-muted small font-weight-bold d-block">BERMASALAH</span>
-                        <h3 class="fw-bold mb-0 text-warning"><?= number_format($stats['bermasalah']) ?></h3>
-                    </div>
-                    <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning">
-                        <i class="fas fa-triangle-exclamation fs-4"></i>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-success text-white overflow-hidden position-relative">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="text-white-50 small mb-1 font-weight-bold text-uppercase">Status Normal</p>
+                            <h2 class="fw-bold mb-0 text-white font-outfit"><?= number_format($stats['normal']) ?></h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-circle p-3 text-white">
+                            <i class="fas fa-check-circle fs-4"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 h-100 border-start border-4 border-danger">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="text-muted small font-weight-bold d-block">CRITICAL</span>
-                        <h3 class="fw-bold mb-0 text-danger"><?= number_format($stats['critical']) ?></h3>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-warning text-dark overflow-hidden position-relative">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="text-dark-50 small mb-1 font-weight-bold text-uppercase">Bermasalah</p>
+                            <h2 class="fw-bold mb-0 text-dark font-outfit"><?= number_format($stats['bermasalah']) ?></h2>
+                        </div>
+                        <div class="bg-dark bg-opacity-10 rounded-circle p-3 text-dark">
+                            <i class="fas fa-triangle-exclamation fs-4"></i>
+                        </div>
                     </div>
-                    <div class="p-3 rounded-circle bg-danger bg-opacity-10 text-danger">
-                        <i class="fas fa-radiation fs-4"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-danger text-white overflow-hidden position-relative">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="text-white-50 small mb-1 font-weight-bold text-uppercase">Critical</p>
+                            <h2 class="fw-bold mb-0 text-white font-outfit"><?= number_format($stats['critical']) ?></h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-circle p-3 text-white">
+                            <i class="fas fa-radiation fs-4"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -138,15 +146,15 @@
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
-                    <thead class="table-light">
+                    <thead class="bg-light text-secondary">
                         <tr>
-                            <th class="ps-3">Kode Asset</th>
-                            <th>Nama Asset</th>
+                            <th class="ps-3 py-3">Kode Asset</th>
+                            <th>Nama Asset & SN</th>
                             <th>Jenis</th>
                             <th>ULP & Lokasi</th>
                             <th>Kapasitas / Merk</th>
                             <th>Status</th>
-                            <th class="text-center">Aksi</th>
+                            <th class="text-center pe-3">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -201,7 +209,7 @@
     </div>
 </div>
 
-<?= $this->section('scripts') ?>
-<!-- Modal Download Template (Rendered at root body level outside container-xl stacking context) -->
+<!-- Modal Download Template -->
 <?= $this->include('assets/modal_download_template') ?>
+
 <?= $this->endSection() ?>

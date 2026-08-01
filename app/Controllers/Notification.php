@@ -59,16 +59,18 @@ class Notification extends BaseController
 
             $items = [];
             foreach ($list as $n) {
-                $createdTime = !empty($n['created_at']) ? strtotime($n['created_at']) : time();
-                $diffMinutes = round((time() - $createdTime) / 60);
-
-                $timeAgo = 'Baru saja';
-                if ($diffMinutes >= 1440) {
-                    $timeAgo = round($diffMinutes / 1440) . ' hari lalu';
-                } elseif ($diffMinutes >= 60) {
-                    $timeAgo = round($diffMinutes / 60) . ' jam lalu';
-                } elseif ($diffMinutes > 0) {
-                    $timeAgo = $diffMinutes . ' menit lalu';
+                $createdTime = !empty($n['created_at']) ? strtotime($n['created_at']) : null;
+                $timeAgo = '-';
+                if ($createdTime) {
+                    $diffMinutes = round((time() - $createdTime) / 60);
+                    $timeAgo = 'Baru saja';
+                    if ($diffMinutes >= 1440) {
+                        $timeAgo = round($diffMinutes / 1440) . ' hari lalu';
+                    } elseif ($diffMinutes >= 60) {
+                        $timeAgo = round($diffMinutes / 60) . ' jam lalu';
+                    } elseif ($diffMinutes > 0) {
+                        $timeAgo = $diffMinutes . ' menit lalu';
+                    }
                 }
 
                 $items[] = [

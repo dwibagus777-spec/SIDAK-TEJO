@@ -375,13 +375,15 @@ class TemuanService
                     $action = ($prioritas === 'EMERGENCY') ? 'EMERGENCY_SELESAI' : 'SELESAI_TEMUAN';
                     $gamSvc->addPoints($userId, $action, 'Selesai: ' . $nomorTemuan, $temuanId, 'temuan');
                     // Check SLA compliance
-                    $tanggalTemuan = strtotime($temuan['tanggal_temuan'] ?? date('Y-m-d'));
-                    $daysDiff = floor((time() - $tanggalTemuan) / 86400);
-                    $maxDays = match($prioritas) {
-                        'EMERGENCY' => 3, 'HIGH' => 7, 'MEDIUM' => 31, default => 90
-                    };
-                    if ($daysDiff <= $maxDays) {
-                        $gamSvc->addPoints($userId, 'SLA_MET', 'SLA Met: ' . $nomorTemuan, $temuanId, 'temuan');
+                    $tanggalTemuan = !empty($temuan['tanggal_temuan']) ? strtotime($temuan['tanggal_temuan']) : (!empty($temuan['created_at']) ? strtotime($temuan['created_at']) : null);
+                    if ($tanggalTemuan !== null && $tanggalTemuan > 0) {
+                        $daysDiff = floor((time() - $tanggalTemuan) / 86400);
+                        $maxDays = match($prioritas) {
+                            'EMERGENCY' => 3, 'HIGH' => 7, 'MEDIUM' => 31, default => 90
+                        };
+                        if ($daysDiff <= $maxDays) {
+                            $gamSvc->addPoints($userId, 'SLA_MET', 'SLA Met: ' . $nomorTemuan, $temuanId, 'temuan');
+                        }
                     }
                 } else {
                     $gamSvc->addPoints($userId, 'UPDATE_TEMUAN', 'Update progress: ' . $nomorTemuan, $temuanId, 'temuan');

@@ -128,6 +128,15 @@ class Temuan extends BaseController
             }
         }
 
+        $rawDate = !empty($row['tanggal_temuan']) ? $row['tanggal_temuan'] : (!empty($row['created_at']) ? $row['created_at'] : null);
+        $tglStr = '-';
+        if ($rawDate) {
+            $ts = strtotime($rawDate);
+            if ($ts !== false && $ts > 0) {
+                $tglStr = date('d-m-Y', $ts) . (!empty($row['created_at']) ? ' ' . date('H:i', strtotime($row['created_at'])) : '') . ' WIB';
+            }
+        }
+
         return [
             '<a href="' . $detailUrl . '" class="font-weight-bold text-primary text-decoration-none"><i class="fas fa-file-invoice me-1"></i>' . esc($row['nomor_temuan']) . '</a>',
             $row['nama_penyulang'],
@@ -135,7 +144,7 @@ class Temuan extends BaseController
             $row['jenis_temuan'],
             $fotoHtml,
             $prioBadge,
-            date('d-m-Y', strtotime($row['tanggal_temuan'] ?: ($row['created_at'] ?? 'now'))) . (!empty($row['created_at']) ? ' ' . date('H:i', strtotime($row['created_at'])) : '') . ' WIB',
+            $tglStr,
             $statusBadge,
             $actions
         ];

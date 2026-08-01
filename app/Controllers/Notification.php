@@ -59,7 +59,7 @@ class Notification extends BaseController
 
             $items = [];
             foreach ($list as $n) {
-                $createdTime = strtotime($n['created_at'] ?? 'now');
+                $createdTime = !empty($n['created_at']) ? strtotime($n['created_at']) : time();
                 $diffMinutes = round((time() - $createdTime) / 60);
 
                 $timeAgo = 'Baru saja';

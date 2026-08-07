@@ -103,11 +103,27 @@ class MigrateController extends BaseController
                 `source_asset_id` INT UNSIGNED NOT NULL,
                 `target_asset_id` INT UNSIGNED NOT NULL,
                 `relationship_type` VARCHAR(50) DEFAULT 'CONNECTED_TO',
+                `sequence_no` INT DEFAULT 0,
+                `effective_date` DATE NULL,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
                 `notes` TEXT NULL,
                 `created_at` DATETIME NULL,
                 `updated_at` DATETIME NULL,
                 UNIQUE KEY `uk_asset_rel` (`source_asset_id`, `target_asset_id`, `relationship_type`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            if ($db->tableExists('asset_relationships')) {
+                $relFields = $db->getFieldNames('asset_relationships');
+                if (!in_array('is_active', $relFields)) {
+                    $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `relationship_type`");
+                }
+                if (!in_array('sequence_no', $relFields)) {
+                    $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `sequence_no` INT DEFAULT 0 AFTER `is_active`");
+                }
+                if (!in_array('effective_date', $relFields)) {
+                    $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `effective_date` DATE NULL AFTER `sequence_no`");
+                }
+            }
             $executed[] = 'asset_relationships';
 
             // 7. Table inspection_types (Migration 000010)

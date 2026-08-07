@@ -113,16 +113,17 @@ class MigrateController extends BaseController
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
             if ($db->tableExists('asset_relationships')) {
-                $relFields = $db->getFieldNames('asset_relationships');
-                if (!in_array('is_active', $relFields)) {
+                try {
                     $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `relationship_type`");
-                }
-                if (!in_array('sequence_no', $relFields)) {
+                } catch (\Throwable $exRel) {}
+
+                try {
                     $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `sequence_no` INT DEFAULT 0 AFTER `is_active`");
-                }
-                if (!in_array('effective_date', $relFields)) {
+                } catch (\Throwable $exRel) {}
+
+                try {
                     $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `effective_date` DATE NULL AFTER `sequence_no`");
-                }
+                } catch (\Throwable $exRel) {}
             }
             $executed[] = 'asset_relationships';
 
@@ -131,10 +132,8 @@ class MigrateController extends BaseController
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `code` VARCHAR(50) NOT NULL UNIQUE,
                 `name` VARCHAR(100) NOT NULL,
-                `category` VARCHAR(50) DEFAULT 'JTM',
+                `category` VARCHAR(50) DEFAULT 'ROUTINE',
                 `description` TEXT NULL,
-                `default_interval_months` INT DEFAULT 3,
-                `icon` VARCHAR(50) DEFAULT 'clipboard-check',
                 `is_active` TINYINT(1) DEFAULT 1,
                 `sort_order` INT DEFAULT 0,
                 `created_at` DATETIME NULL,
@@ -145,11 +144,11 @@ class MigrateController extends BaseController
             // 8. Table inspection_templates (Migration 000011)
             $db->query("CREATE TABLE IF NOT EXISTS `inspection_templates` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `inspection_type_id` INT UNSIGNED NOT NULL,
+                `code` VARCHAR(50) NOT NULL UNIQUE,
                 `title` VARCHAR(150) NOT NULL,
-                `asset_category` VARCHAR(50) NULL,
-                `construction_type_id` INT UNSIGNED NULL,
-                `version` VARCHAR(20) DEFAULT 'v1.0',
+                `asset_type` VARCHAR(50) NOT NULL,
+                `inspection_type_code` VARCHAR(50) NOT NULL,
+                `version` INT DEFAULT 1,
                 `is_active` TINYINT(1) DEFAULT 1,
                 `created_at` DATETIME NULL,
                 `updated_at` DATETIME NULL
@@ -160,35 +159,27 @@ class MigrateController extends BaseController
             $db->query("CREATE TABLE IF NOT EXISTS `inspection_template_items` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `template_id` INT UNSIGNED NOT NULL,
+                `item_code` VARCHAR(50) NOT NULL,
                 `item_name` VARCHAR(150) NOT NULL,
-                `item_type` VARCHAR(30) DEFAULT 'CHECKLIST',
-                `unit` VARCHAR(20) NULL,
-                `min_value` DECIMAL(10,2) NULL,
-                `max_value` DECIMAL(10,2) NULL,
-                `is_photo_required` TINYINT(1) DEFAULT 0,
-                `photo_label` VARCHAR(100) NULL,
-                `sort_order` INT DEFAULT 0,
+                `check_category` VARCHAR(50) DEFAULT 'VISUAL',
+                `sequence_no` INT DEFAULT 1,
+                `is_required` TINYINT(1) DEFAULT 1,
                 `created_at` DATETIME NULL,
-                `updated_at` DATETIME NULL
+                `updated_at` DATETIME NULL,
+                UNIQUE KEY `uk_tpl_item` (`template_id`, `item_code`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             $executed[] = 'inspection_template_items';
 
             // 10. Table inspections (Migration 000013)
             $db->query("CREATE TABLE IF NOT EXISTS `inspections` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `nomor_inspeksi` VARCHAR(50) NOT NULL UNIQUE,
+                `inspection_number` VARCHAR(50) NOT NULL UNIQUE,
+                `ulp_id` INT UNSIGNED NOT NULL,
+                `feeder_id` INT UNSIGNED NULL,
                 `inspection_type_id` INT UNSIGNED NOT NULL,
-                `baseline_id` INT UNSIGNED NULL,
-                `ulp_id` INT UNSIGNED NULL,
-                `penyulang_id` INT UNSIGNED NULL,
-                `inspector_user_id` INT UNSIGNED NOT NULL,
-                `start_time` DATETIME NULL,
-                `end_time` DATETIME NULL,
+                `inspector_name` VARCHAR(100) NOT NULL,
+                `scheduled_date` DATE NOT NULL,
                 `status` VARCHAR(20) DEFAULT 'DRAFT',
-                `total_points` INT DEFAULT 0,
-                `passed_points` INT DEFAULT 0,
-                `failed_points` INT DEFAULT 0,
-                `notes` TEXT NULL,
                 `created_at` DATETIME NULL,
                 `updated_at` DATETIME NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -245,15 +236,18 @@ class MigrateController extends BaseController
             $inspectionService->ensureCatalogSeeded();
 
             $allTables = $db->listTables();
+            $relColumns = $db->query("SHOW COLUMNS FROM asset_relationships")->getResultArray();
+            $relColumnNames = array_column($relColumns, 'Field');
 
             return $this->response->setJSON([
-                'success'           => true,
-                'message'           => 'Database DDL migration dan catalog seeding berhasil dieksekusi 100% di database Hostinger!',
-                'db_name'           => $db->getDatabase(),
-                'executed_steps'    => $executed,
-                'total_tables'      => count($allTables),
-                'asset_types_exist' => in_array('asset_types', $allTables),
-                'inspections_exist' => in_array('inspections', $allTables),
+                'success'                    => true,
+                'message'                    => 'Database DDL migration dan catalog seeding berhasil dieksekusi 100% di database Hostinger!',
+                'db_name'                    => $db->getDatabase(),
+                'executed_steps'             => $executed,
+                'total_tables'               => count($allTables),
+                'asset_types_exist'          => in_array('asset_types', $allTables),
+                'inspections_exist'          => in_array('inspections', $allTables),
+                'asset_relationships_fields' => $relColumnNames,
             ]);
         } catch (\Throwable $e) {
             return $this->response->setStatusCode(500)->setJSON([

@@ -255,6 +255,27 @@
         </div>
     </div>
 
+    <!-- 4.5. NETWORK TOPOLOGY TREE (RELEASE v2.1.0) -->
+    <div class="dt-card p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3"><i class="fas fa-sitemap text-info me-2"></i> Network Topology Tree & Feeder Relation</h5>
+        <?php if (!empty($topologyTree) && !empty($topologyTree['downstream'])): ?>
+            <div class="p-3 bg-light rounded-3 border border-secondary-subtle font-monospace text-dark" style="font-size: 13px;">
+                <div class="fw-bold text-primary mb-2"><i class="fas fa-layer-group me-1"></i> [ROOT] <?= esc($topologyTree['kode_asset']) ?> &mdash; <?= esc($topologyTree['nama_asset']) ?> (<?= esc($topologyTree['jenis_asset']) ?>)</div>
+                <div class="ps-3 border-start border-2 border-primary ms-2">
+                    <?php foreach ($topologyTree['downstream'] as $child): ?>
+                        <div class="mb-1 text-dark">
+                            &rdsh; <a href="<?= site_url('assets/detail/' . $child['id']) ?>" class="fw-bold text-decoration-none text-dark">[<?= esc($child['kode_asset']) ?>] <?= esc($child['nama_asset']) ?></a>
+                            <span class="badge bg-secondary ms-1" style="font-size: 10px;"><?= esc($child['jenis_asset']) ?></span>
+                            <span class="badge bg-success ms-1" style="font-size: 10px;"><?= esc($child['status']) ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php else: ?>
+            <p class="text-muted small mb-0"><i class="fas fa-info-circle me-1"></i> Aset ini berdiri sendiri atau belum terhubung dengan downstream node topologi lain.</p>
+        <?php endif; ?>
+    </div>
+
     <!-- 5. SOCIAL MEDIA STYLE TIMELINE HISTORY -->
     <div class="dt-card p-4 mb-4">
         <h5 class="fw-bold text-dark mb-4"><i class="fas fa-clock-rotate-left text-primary me-2"></i> Digital Twin Activity Timeline</h5>

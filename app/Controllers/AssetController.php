@@ -62,9 +62,13 @@ class AssetController extends BaseController
             return redirect()->to(site_url('assets'))->with('error', 'Data asset tidak ditemukan.');
         }
 
+        $topologyService = new \App\Services\AssetTopologyService();
+        $topologyTree = $topologyService->getTopologyTree($id);
+
         return view('assets/detail', [
-            'asset'    => $asset,
-            'userRole' => session()->get('user_role'),
+            'asset'        => $asset,
+            'topologyTree' => $topologyTree,
+            'userRole'     => session()->get('user_role'),
         ]);
     }
 
@@ -77,14 +81,18 @@ class AssetController extends BaseController
         $ulpModel = new UlpModel();
         $penyulangModel = new PenyulangModel();
         $sectionModel = new SectionModel();
+        $constructionService = new \App\Services\ConstructionService();
 
         return view('assets/form', [
-            'asset'      => null,
-            'ulps'       => $ulpModel->where('status', 'AKTIF')->findAll(),
-            'penyulangs' => $penyulangModel->where('status', 'AKTIF')->findAll(),
-            'sections'   => $sectionModel->findAll(),
-            'jenisList'  => ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'Tiang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'],
-            'generatedKode' => $this->service->generateKodeAsset('Gardu'),
+            'asset'             => null,
+            'ulps'              => $ulpModel->where('status', 'AKTIF')->findAll(),
+            'penyulangs'        => $penyulangModel->where('status', 'AKTIF')->findAll(),
+            'sections'          => $sectionModel->findAll(),
+            'assetTypes'        => $constructionService->getAssetTypes(),
+            'constructionTypes' => $constructionService->getConstructionTypes(),
+            'parentAssets'      => $this->repository->getFilteredAssets([], null),
+            'jenisList'         => ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'Tiang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'],
+            'generatedKode'     => $this->service->generateKodeAsset('Gardu'),
         ]);
     }
 
@@ -106,27 +114,31 @@ class AssetController extends BaseController
         }
 
         $data = [
-            'kode_asset'        => $kodeAsset,
-            'nama_asset'        => $this->request->getPost('nama_asset'),
-            'jenis_asset'       => $jenis,
-            'ulp_id'            => $this->request->getPost('ulp_id') ?: null,
-            'penyulang_id'      => $this->request->getPost('penyulang_id') ?: null,
-            'section_id'        => $this->request->getPost('section_id') ?: null,
-            'lokasi'            => $this->request->getPost('lokasi'),
-            'latitude'          => $this->request->getPost('latitude'),
-            'longitude'         => $this->request->getPost('longitude'),
-            'tahun_instalasi'   => $this->request->getPost('tahun_instalasi') ?: date('Y'),
-            'installation_date' => $this->request->getPost('installation_date') ?: null,
-            'merk'              => $this->request->getPost('merk'),
-            'type'              => $this->request->getPost('type'),
-            'nomor_seri'        => $this->request->getPost('nomor_seri'),
-            'kapasitas'         => $this->request->getPost('kapasitas'),
-            'status'            => strtoupper($this->request->getPost('status') ?: 'NORMAL'),
-            'foto'              => $fotoName,
-            'qr_code'           => site_url('assets/detail/' . $kodeAsset),
-            'barcode'           => $kodeAsset,
-            'created_at'        => date('Y-m-d H:i:s'),
-            'updated_at'        => date('Y-m-d H:i:s'),
+            'kode_asset'           => $kodeAsset,
+            'nama_asset'           => $this->request->getPost('nama_asset'),
+            'jenis_asset'          => $jenis,
+            'ulp_id'               => $this->request->getPost('ulp_id') ?: null,
+            'penyulang_id'         => $this->request->getPost('penyulang_id') ?: null,
+            'section_id'           => $this->request->getPost('section_id') ?: null,
+            'parent_asset_id'      => $this->request->getPost('parent_asset_id') ?: null,
+            'asset_type_id'        => $this->request->getPost('asset_type_id') ?: null,
+            'construction_type_id' => $this->request->getPost('construction_type_id') ?: null,
+            'sequence_no'          => $this->request->getPost('sequence_no') ?: null,
+            'lokasi'               => $this->request->getPost('lokasi'),
+            'latitude'             => $this->request->getPost('latitude'),
+            'longitude'            => $this->request->getPost('longitude'),
+            'tahun_instalasi'      => $this->request->getPost('tahun_instalasi') ?: date('Y'),
+            'installation_date'    => $this->request->getPost('installation_date') ?: null,
+            'merk'                 => $this->request->getPost('merk'),
+            'type'                 => $this->request->getPost('type'),
+            'nomor_seri'           => $this->request->getPost('nomor_seri'),
+            'kapasitas'            => $this->request->getPost('kapasitas'),
+            'status'               => strtoupper($this->request->getPost('status') ?: 'NORMAL'),
+            'foto'                 => $fotoName,
+            'qr_code'              => site_url('assets/detail/' . $kodeAsset),
+            'barcode'              => $kodeAsset,
+            'created_at'           => date('Y-m-d H:i:s'),
+            'updated_at'           => date('Y-m-d H:i:s'),
         ];
 
         $id = $this->repository->insert($data);
@@ -165,15 +177,19 @@ class AssetController extends BaseController
         $ulpModel = new UlpModel();
         $penyulangModel = new PenyulangModel();
         $sectionModel = new SectionModel();
+        $constructionService = new \App\Services\ConstructionService();
 
         return view('assets/form', [
-            'asset'         => $asset,
-            'isEdit'        => true,
-            'ulps'          => $ulpModel->where('status', 'AKTIF')->findAll(),
-            'penyulangs'    => $penyulangModel->where('status', 'AKTIF')->findAll(),
-            'sections'      => $sectionModel->findAll(),
-            'jenisList'     => ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'Tiang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'],
-            'generatedKode' => $asset['kode_asset'],
+            'asset'             => $asset,
+            'isEdit'            => true,
+            'ulps'              => $ulpModel->where('status', 'AKTIF')->findAll(),
+            'penyulangs'        => $penyulangModel->where('status', 'AKTIF')->findAll(),
+            'sections'          => $sectionModel->findAll(),
+            'assetTypes'        => $constructionService->getAssetTypes(),
+            'constructionTypes' => $constructionService->getConstructionTypes(),
+            'parentAssets'      => $this->repository->getFilteredAssets([], null),
+            'jenisList'         => ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'Tiang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'],
+            'generatedKode'     => $asset['kode_asset'],
         ]);
     }
 
@@ -197,22 +213,26 @@ class AssetController extends BaseController
         }
 
         $data = [
-            'nama_asset'        => $this->request->getPost('nama_asset'),
-            'jenis_asset'       => $this->request->getPost('jenis_asset'),
-            'ulp_id'            => $this->request->getPost('ulp_id') ?: null,
-            'penyulang_id'      => $this->request->getPost('penyulang_id') ?: null,
-            'section_id'        => $this->request->getPost('section_id') ?: null,
-            'lokasi'            => $this->request->getPost('lokasi'),
-            'latitude'          => $this->request->getPost('latitude'),
-            'longitude'         => $this->request->getPost('longitude'),
-            'tahun_instalasi'   => $this->request->getPost('tahun_instalasi') ?: date('Y'),
-            'installation_date' => $this->request->getPost('installation_date') ?: null,
-            'merk'              => $this->request->getPost('merk'),
-            'type'              => $this->request->getPost('type'),
-            'nomor_seri'        => $this->request->getPost('nomor_seri'),
-            'kapasitas'         => $this->request->getPost('kapasitas'),
-            'foto'              => $fotoName,
-            'updated_at'        => date('Y-m-d H:i:s'),
+            'nama_asset'           => $this->request->getPost('nama_asset'),
+            'jenis_asset'          => $this->request->getPost('jenis_asset'),
+            'ulp_id'               => $this->request->getPost('ulp_id') ?: null,
+            'penyulang_id'         => $this->request->getPost('penyulang_id') ?: null,
+            'section_id'           => $this->request->getPost('section_id') ?: null,
+            'parent_asset_id'      => $this->request->getPost('parent_asset_id') ?: null,
+            'asset_type_id'        => $this->request->getPost('asset_type_id') ?: null,
+            'construction_type_id' => $this->request->getPost('construction_type_id') ?: null,
+            'sequence_no'          => $this->request->getPost('sequence_no') ?: null,
+            'lokasi'               => $this->request->getPost('lokasi'),
+            'latitude'             => $this->request->getPost('latitude'),
+            'longitude'            => $this->request->getPost('longitude'),
+            'tahun_instalasi'      => $this->request->getPost('tahun_instalasi') ?: date('Y'),
+            'installation_date'    => $this->request->getPost('installation_date') ?: null,
+            'merk'                 => $this->request->getPost('merk'),
+            'type'                 => $this->request->getPost('type'),
+            'nomor_seri'           => $this->request->getPost('nomor_seri'),
+            'kapasitas'            => $this->request->getPost('kapasitas'),
+            'foto'                 => $fotoName,
+            'updated_at'           => date('Y-m-d H:i:s'),
         ];
 
         $this->repository->update($id, $data);

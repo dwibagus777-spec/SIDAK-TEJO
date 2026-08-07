@@ -97,6 +97,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('assets/soft-delete/(:num)', 'AssetController::softDelete/$1');
     $routes->post('assets/restore/(:num)', 'AssetController::restore/$1');
 
+    // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
+    $routes->get('assets/geojson', 'GISController::geoJson');
+    $routes->get('assets/network/(:num)', 'GISController::network/$1');
+    $routes->get('assets/baseline/(:num)', 'GISController::baseline/$1');
+
     // Master Asset PLN Import & Export Routes
     $routes->get('master-assets/debug-vendor', 'AssetImportController::debugVendor');
     $routes->get('master-assets/debug-runtime', 'AssetImportController::debugRuntime');

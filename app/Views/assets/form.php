@@ -62,6 +62,35 @@
                         </select>
                     </div>
 
+                    <!-- RELEASE v2.1.0: Network Topology & Construction Specs -->
+                    <div class="col-md-4">
+                        <label for="form_parent_asset_id" class="form-label fw-bold">Parent Asset / Induk Topologi <small class="text-muted">(Opsional)</small></label>
+                        <select id="form_parent_asset_id" name="parent_asset_id" class="form-select">
+                            <option value="">-- Tanpa Induk (Standalone/Top Root) --</option>
+                            <?php if (!empty($parentAssets)): ?>
+                                <?php foreach ($parentAssets as $pa): ?>
+                                    <?php if ($isEdit && $pa['id'] == $asset['id']) continue; ?>
+                                    <option value="<?= $pa['id'] ?>" <?= ($isEdit && ($asset['parent_asset_id'] ?? null) == $pa['id']) ? 'selected' : '' ?>>
+                                        [<?= esc($pa['kode_asset']) ?>] <?= esc($pa['nama_asset']) ?> (<?= esc($pa['jenis_asset']) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="form_construction_type_id" class="form-label fw-bold">Standar Konstruksi PLN <small class="text-muted">(Opsional)</small></label>
+                        <select id="form_construction_type_id" name="construction_type_id" class="form-select">
+                            <option value="">-- Pilih Standar Konstruksi PLN --</option>
+                            <?php if (!empty($constructionTypes)): ?>
+                                <?php foreach ($constructionTypes as $ct): ?>
+                                    <option value="<?= $ct['id'] ?>" <?= ($isEdit && ($asset['construction_type_id'] ?? null) == $ct['id']) ? 'selected' : '' ?>>
+                                        <?= esc($ct['code']) ?> - <?= esc($ct['name']) ?> (<?= esc($ct['network_type']) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+
                     <div class="col-md-6">
                         <label for="form_merk" class="form-label fw-bold">Merk / Pabrikan</label>
                         <input id="form_merk" type="text" name="merk" class="form-control" placeholder="Contoh: Schneider / ABB / Trafoindo" value="<?= esc($asset['merk'] ?? '') ?>">

@@ -174,9 +174,11 @@
                                         <span class="fw-bold text-dark d-block"><?= esc($a['nama_asset']) ?></span>
                                         <small class="text-muted">SN: <?= esc($a['nomor_seri'] ?: '-') ?></small>
                                     </td>
-                                    <td>
-                                        <span class="badge bg-secondary"><?= esc($a['jenis_asset']) ?></span>
-                                    </td>
+                                     <td>
+                                         <span class="badge bg-info-subtle text-info border border-info-subtle font-weight-bold">
+                                             <?= esc(!empty($a['jenis_asset']) ? $a['jenis_asset'] : (str_contains($a['kode_asset'], 'GRD') ? 'Gardu' : (str_contains($a['kode_asset'], 'TRF') ? 'Trafo' : (str_contains($a['kode_asset'], 'KUB') ? 'Kubikel' : 'Asset')))) ?>
+                                         </span>
+                                     </td>
                                     <td>
                                         <span class="fw-bold text-secondary d-block"><?= esc($a['nama_ulp'] ?: '-') ?></span>
                                         <small class="text-muted text-truncate d-inline-block" style="max-width: 200px;" title="<?= esc($a['lokasi']) ?>"><?= esc($a['lokasi']) ?></small>

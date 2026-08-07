@@ -113,6 +113,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('executive-analytics', 'ExecutiveAnalyticsController::index');
 
     // Master Asset PLN Import & Export Routes
+    $routes->get('master-assets/auto-migrate', 'MigrateController::autoMigrate');
     $routes->get('master-assets/debug-vendor', 'AssetImportController::debugVendor');
     $routes->get('master-assets/debug-runtime', 'AssetImportController::debugRuntime');
     $routes->get('master-assets/template', 'AssetImportController::downloadTemplate');

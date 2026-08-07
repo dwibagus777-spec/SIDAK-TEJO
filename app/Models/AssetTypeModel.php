@@ -31,5 +31,5 @@ class AssetTypeModel extends Model
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_field';
+    protected $updatedField  = 'updated_at';
 }

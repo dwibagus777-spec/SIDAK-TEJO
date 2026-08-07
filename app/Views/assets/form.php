@@ -171,19 +171,42 @@
             $('#form_ulp_id').on('change', function() {
                 var ulpId = $(this).val();
                 var $penyulang = $('#form_penyulang_id');
+                var $section = $('#form_section_id');
+                $section.html('<option value="">-- Pilih Section --</option>');
                 if (ulpId) {
                     $penyulang.html('<option value="">Sedang memuat...</option>');
                     $.get('<?= site_url("api/penyulang-by-ulp/") ?>' + ulpId, function(res) {
                         var opt = '<option value="">-- Pilih Penyulang --</option>';
-                        if (res && res.data) {
-                            res.data.forEach(function(item) {
-                                opt += '<option value="' + item.id + '">' + item.nama_penyulang + '</option>';
-                            });
-                        }
+                        var list = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+                        list.forEach(function(item) {
+                            opt += '<option value="' + item.id + '">' + item.nama_penyulang + '</option>';
+                        });
                         $penyulang.html(opt);
                     }).fail(function() {
                         $penyulang.html('<option value="">Gagal memuat penyulang</option>');
                     });
+                } else {
+                    $penyulang.html('<option value="">-- Pilih Penyulang --</option>');
+                }
+            });
+
+            $('#form_penyulang_id').on('change', function() {
+                var penyulangId = $(this).val();
+                var $section = $('#form_section_id');
+                if (penyulangId) {
+                    $section.html('<option value="">Sedang memuat...</option>');
+                    $.get('<?= site_url("api/section-by-penyulang/") ?>' + penyulangId, function(res) {
+                        var opt = '<option value="">-- Pilih Section --</option>';
+                        var list = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+                        list.forEach(function(item) {
+                            opt += '<option value="' + item.id + '">' + item.nama_section + '</option>';
+                        });
+                        $section.html(opt);
+                    }).fail(function() {
+                        $section.html('<option value="">Gagal memuat section</option>');
+                    });
+                } else {
+                    $section.html('<option value="">-- Pilih Section --</option>');
                 }
             });
         });

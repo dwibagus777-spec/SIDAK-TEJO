@@ -702,12 +702,13 @@
                 $('#material-hidden-field').val('Tidak ada spesifikasi material');
             }
         });
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initTemuanEdit);
-    } else {
-        initTemuanEdit();
-    }
+    });
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTemuanEdit);
+} else {
+    initTemuanEdit();
+}
 })();
 </script>
 <?= $this->endSection() ?>

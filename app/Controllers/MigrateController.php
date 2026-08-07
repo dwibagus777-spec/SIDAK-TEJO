@@ -240,11 +240,9 @@ class MigrateController extends BaseController
             $relColumnNames = array_column($relColumns, 'Field');
 
             return $this->response->setJSON([
-                'success'                    => true,
-                'message'                    => 'Database DDL migration dan catalog seeding berhasil dieksekusi 100% di database Hostinger!',
-                'db_name'                    => $db->getDatabase(),
-                'asset_relationships_fields' => implode(', ', $relColumnNames),
-                'is_active_present'          => in_array('is_active', $relColumnNames),
+                'db_name'           => $db->getDatabase(),
+                'rel_fields'        => implode(', ', $relColumnNames),
+                'is_active_present' => in_array('is_active', $relColumnNames),
             ]);
         } catch (\Throwable $e) {
             return $this->response->setStatusCode(500)->setJSON([

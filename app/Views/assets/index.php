@@ -194,22 +194,105 @@
                                             <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> NORMAL</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="text-center pe-3">
-                                        <a href="<?= site_url('assets/detail/' . $a['id']) ?>" class="btn btn-xs btn-primary rounded-pill px-3 font-weight-bold shadow-sm">
-                                            <i class="fas fa-microchip me-1"></i> Digital Twin
-                                        </a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                                     <td class="text-center pe-3">
+                                         <div class="btn-group btn-group-sm" role="group">
+                                             <a href="<?= site_url('assets/detail/' . $a['id']) ?>" class="btn btn-xs btn-primary font-weight-bold shadow-sm" title="Digital Twin Hub">
+                                                 <i class="fas fa-microchip me-1"></i> Digital Twin
+                                             </a>
+                                             
+                                             <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
+                                                 <a href="<?= site_url('assets/edit/' . $a['id']) ?>" class="btn btn-xs btn-warning text-dark font-weight-bold shadow-sm" title="Edit Master Asset">
+                                                     <i class="fas fa-edit me-1"></i> Edit
+                                                 </a>
+                                                 
+                                                 <?php if (strtoupper($a['status']) === 'DIHAPUS' || !empty($a['deleted_at'])): ?>
+                                                     <form action="<?= site_url('assets/restore/' . $a['id']) ?>" method="post" class="d-inline" onsubmit="return confirm('Restore aset ini kembali?');">
+                                                         <?= csrf_field() ?>
+                                                         <button type="submit" class="btn btn-xs btn-success text-white font-weight-bold shadow-sm" title="Restore Asset">
+                                                             <i class="fas fa-undo me-1"></i> Restore
+                                                         </button>
+                                                     </form>
+                                                 <?php else: ?>
+                                                     <button type="button" class="btn btn-xs btn-outline-danger font-weight-bold shadow-sm btn-delete-asset" 
+                                                             data-id="<?= $a['id'] ?>" 
+                                                             data-kode="<?= esc($a['kode_asset']) ?>" 
+                                                             data-nama="<?= esc($a['nama_asset']) ?>" 
+                                                             data-sn="<?= esc($a['nomor_seri'] ?: '-') ?>"
+                                                             title="Soft Delete Asset">
+                                                         <i class="fas fa-trash me-1"></i> Hapus
+                                                     </button>
+                                                 <?php endif; ?>
+                                             <?php endif; ?>
+                                         </div>
+                                     </td>
+                                 </tr>
+                             <?php endforeach; ?>
+                         <?php endif; ?>
+                     </tbody>
+                 </table>
+             </div>
+         </div>
+     </div>
+ </div>
+
+<!-- Modal Soft Delete Asset -->
+<div class="modal fade" id="modalSoftDeleteAsset" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white border-0 rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Konfirmasi Soft Delete Asset</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <form id="formSoftDeleteAsset" action="" method="POST">
+                <?= csrf_field() ?>
+                <div class="modal-body p-4">
+                    <p class="text-dark fw-bold mb-2">Apakah Anda yakin ingin menghapus Master Asset berikut?</p>
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="row g-2 small">
+                            <div class="col-4 text-muted">Kode Asset:</div>
+                            <div class="col-8 fw-bold text-dark font-monospace" id="delKodeAsset">-</div>
+                            <div class="col-4 text-muted">Nama Asset:</div>
+                            <div class="col-8 fw-bold text-dark" id="delNamaAsset">-</div>
+                            <div class="col-4 text-muted">Serial Number:</div>
+                            <div class="col-8 fw-bold text-dark font-monospace" id="delSnAsset">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-danger">Alasan Penghapusan (Wajib) <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control" rows="3" placeholder="Contoh: Aset di-scrap karena rusak berat / diganti dengan unit baru..." required></textarea>
+                    </div>
+                    <small class="text-muted d-block"><i class="fas fa-shield-alt text-success me-1"></i> Data aset tidak akan dihapus permanen dari database dan histori audit akan tersimpan.</small>
+                </div>
+                <div class="modal-footer bg-light border-0 rounded-bottom-4">
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger font-weight-bold px-4 rounded-3"><i class="fas fa-trash me-1"></i> Hapus Asset</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <!-- Modal Download Template -->
 <?= $this->include('assets/modal_download_template') ?>
+
+<script>
+$(document).ready(function() {
+    $('.btn-delete-asset').click(function() {
+        var id = $(this).data('id');
+        var kode = $(this).data('kode');
+        var nama = $(this).data('nama');
+        var sn = $(this).data('sn');
+
+        $('#delKodeAsset').text(kode);
+        $('#delNamaAsset').text(nama);
+        $('#delSnAsset').text(sn);
+        $('#formSoftDeleteAsset').attr('action', '<?= site_url("assets/soft-delete/") ?>' + id);
+
+        var modal = new bootstrap.Modal(document.getElementById('modalSoftDeleteAsset'));
+        modal.show();
+    });
+});
+</script>
 
 <?= $this->endSection() ?>

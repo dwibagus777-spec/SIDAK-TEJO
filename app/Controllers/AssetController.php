@@ -106,26 +106,27 @@ class AssetController extends BaseController
         }
 
         $data = [
-            'kode_asset'      => $kodeAsset,
-            'nama_asset'      => $this->request->getPost('nama_asset'),
-            'jenis_asset'     => $jenis,
-            'ulp_id'          => $this->request->getPost('ulp_id') ?: null,
-            'penyulang_id'    => $this->request->getPost('penyulang_id') ?: null,
-            'section_id'      => $this->request->getPost('section_id') ?: null,
-            'lokasi'          => $this->request->getPost('lokasi'),
-            'latitude'        => $this->request->getPost('latitude'),
-            'longitude'       => $this->request->getPost('longitude'),
-            'tahun_instalasi' => $this->request->getPost('tahun_instalasi') ?: date('Y'),
-            'merk'            => $this->request->getPost('merk'),
-            'type'            => $this->request->getPost('type'),
-            'nomor_seri'      => $this->request->getPost('nomor_seri'),
-            'kapasitas'       => $this->request->getPost('kapasitas'),
-            'status'          => strtoupper($this->request->getPost('status') ?: 'NORMAL'),
-            'foto'            => $fotoName,
-            'qr_code'         => site_url('assets/detail/' . $kodeAsset),
-            'barcode'         => $kodeAsset,
-            'created_at'      => date('Y-m-d H:i:s'),
-            'updated_at'      => date('Y-m-d H:i:s'),
+            'kode_asset'        => $kodeAsset,
+            'nama_asset'        => $this->request->getPost('nama_asset'),
+            'jenis_asset'       => $jenis,
+            'ulp_id'            => $this->request->getPost('ulp_id') ?: null,
+            'penyulang_id'      => $this->request->getPost('penyulang_id') ?: null,
+            'section_id'        => $this->request->getPost('section_id') ?: null,
+            'lokasi'            => $this->request->getPost('lokasi'),
+            'latitude'          => $this->request->getPost('latitude'),
+            'longitude'         => $this->request->getPost('longitude'),
+            'tahun_instalasi'   => $this->request->getPost('tahun_instalasi') ?: date('Y'),
+            'installation_date' => $this->request->getPost('installation_date') ?: null,
+            'merk'              => $this->request->getPost('merk'),
+            'type'              => $this->request->getPost('type'),
+            'nomor_seri'        => $this->request->getPost('nomor_seri'),
+            'kapasitas'         => $this->request->getPost('kapasitas'),
+            'status'            => strtoupper($this->request->getPost('status') ?: 'NORMAL'),
+            'foto'              => $fotoName,
+            'qr_code'           => site_url('assets/detail/' . $kodeAsset),
+            'barcode'           => $kodeAsset,
+            'created_at'        => date('Y-m-d H:i:s'),
+            'updated_at'        => date('Y-m-d H:i:s'),
         ];
 
         $id = $this->repository->insert($data);
@@ -148,6 +149,92 @@ class AssetController extends BaseController
         }
 
         return redirect()->to(site_url('assets/detail/' . $id))->with('success', 'Master Asset baru berhasil ditambahkan!');
+    }
+
+    public function edit(int $id)
+    {
+        if (!check_role(['administrator', 'admin_ulp', 'inspeksi'])) {
+            return redirect()->to(site_url('assets'))->with('error', 'Akses ditolak.');
+        }
+
+        $asset = $this->repository->find($id);
+        if (!$asset) {
+            return redirect()->to(site_url('assets'))->with('error', 'Data asset tidak ditemukan.');
+        }
+
+        $ulpModel = new UlpModel();
+        $penyulangModel = new PenyulangModel();
+        $sectionModel = new SectionModel();
+
+        return view('assets/form', [
+            'asset'         => $asset,
+            'isEdit'        => true,
+            'ulps'          => $ulpModel->where('status', 'AKTIF')->findAll(),
+            'penyulangs'    => $penyulangModel->where('status', 'AKTIF')->findAll(),
+            'sections'      => $sectionModel->findAll(),
+            'jenisList'     => ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'Tiang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'],
+            'generatedKode' => $asset['kode_asset'],
+        ]);
+    }
+
+    public function update(int $id)
+    {
+        if (!check_role(['administrator', 'admin_ulp', 'inspeksi'])) {
+            return redirect()->to(site_url('assets'))->with('error', 'Akses ditolak.');
+        }
+
+        $asset = $this->repository->find($id);
+        if (!$asset) {
+            return redirect()->to(site_url('assets'))->with('error', 'Data asset tidak ditemukan.');
+        }
+
+        $foto = $this->request->getFile('foto');
+        $fotoName = $asset['foto'];
+        if ($foto && $foto->isValid() && !$foto->hasMoved()) {
+            $fotoName = 'asset_' . time() . '_' . $foto->getRandomName();
+            $foto->move(FCPATH . 'uploads/assets/', $fotoName);
+            $fotoName = 'uploads/assets/' . $fotoName;
+        }
+
+        $data = [
+            'nama_asset'        => $this->request->getPost('nama_asset'),
+            'jenis_asset'       => $this->request->getPost('jenis_asset'),
+            'ulp_id'            => $this->request->getPost('ulp_id') ?: null,
+            'penyulang_id'      => $this->request->getPost('penyulang_id') ?: null,
+            'section_id'        => $this->request->getPost('section_id') ?: null,
+            'lokasi'            => $this->request->getPost('lokasi'),
+            'latitude'          => $this->request->getPost('latitude'),
+            'longitude'         => $this->request->getPost('longitude'),
+            'tahun_instalasi'   => $this->request->getPost('tahun_instalasi') ?: date('Y'),
+            'installation_date' => $this->request->getPost('installation_date') ?: null,
+            'merk'              => $this->request->getPost('merk'),
+            'type'              => $this->request->getPost('type'),
+            'nomor_seri'        => $this->request->getPost('nomor_seri'),
+            'kapasitas'         => $this->request->getPost('kapasitas'),
+            'foto'              => $fotoName,
+            'updated_at'        => date('Y-m-d H:i:s'),
+        ];
+
+        $this->repository->update($id, $data);
+        log_activity('UPDATE_ASSET', 'Mengubah data master asset: ' . $asset['kode_asset'] . ' (' . $data['nama_asset'] . ')');
+
+        // Log EDIT event in Asset History (State Machine status remains unchanged)
+        try {
+            (new \App\Services\AssetHistoryService())->logEvent(
+                $id,
+                \Config\AssetEvent::EDIT,
+                $asset['status'],
+                $asset['status'],
+                $asset['kode_asset'],
+                'Perubahan spesifikasi/data master aset oleh user.',
+                (int)session()->get('user_id')
+            );
+            (new \App\Services\HealthScoreService())->refreshCachedHealthScore($id);
+        } catch (\Throwable $e) {
+            log_message('warning', '[AssetHistory] update hook: ' . $e->getMessage());
+        }
+
+        return redirect()->to(site_url('assets/detail/' . $id))->with('success', 'Data Master Asset berhasil diperbarui!');
     }
 
     /**

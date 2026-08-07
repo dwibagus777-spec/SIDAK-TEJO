@@ -51,9 +51,14 @@ class HealthScoreService
             }
         }
 
-        // Age factor penalty
-        $tahunInstalasi = (int)($asset['tahun_instalasi'] ?: date('Y'));
-        $ageYears = max(0, (int)date('Y') - $tahunInstalasi);
+        // Age factor penalty (primary source: installation_date, fallback: tahun_instalasi)
+        $installDate = !empty($asset['installation_date']) ? strtotime($asset['installation_date']) : null;
+        if ($installDate && $installDate > 0) {
+            $ageYears = max(0, (int)date('Y') - (int)date('Y', $installDate));
+        } else {
+            $tahunInstalasi = (int)($asset['tahun_instalasi'] ?: date('Y'));
+            $ageYears = max(0, (int)date('Y') - $tahunInstalasi);
+        }
         if ($ageYears > 5) {
             $healthScore -= min(25, ($ageYears - 5) * 2);
         }

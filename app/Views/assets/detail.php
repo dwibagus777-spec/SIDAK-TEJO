@@ -141,7 +141,8 @@
                     <span class="badge bg-dark border border-secondary"><i class="fas fa-tag me-1"></i> Jenis: <?= esc($asset['jenis_asset']) ?></span>
                     <span class="badge bg-dark border border-secondary"><i class="fas fa-industry me-1"></i> Merk: <?= esc($asset['merk'] ?: '-') ?></span>
                     <span class="badge bg-dark border border-secondary"><i class="fas fa-barcode me-1"></i> SN: <?= esc($asset['nomor_seri'] ?: '-') ?></span>
-                    <span class="badge bg-dark border border-secondary"><i class="fas fa-calendar me-1"></i> Umur: <?= $asset['age_years'] ?? 0 ?> Tahun</span>
+                    <span class="badge bg-dark border border-secondary"><i class="fas fa-calendar-check me-1 text-info"></i> Awal Pemasangan: <?= !empty($asset['installation_date']) ? date('d-m-Y', strtotime($asset['installation_date'])) : 'Belum diisi' ?></span>
+                    <span class="badge bg-dark border border-secondary"><i class="fas fa-hourglass-half me-1 text-warning"></i> Umur: <?= $asset['age_years'] ?? 0 ?> Tahun</span>
                 </div>
             </div>
 

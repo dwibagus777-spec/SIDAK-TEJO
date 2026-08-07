@@ -89,6 +89,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('assets/store', 'AssetController::store');
     $routes->get('master-assets/detail/(:num)', 'AssetController::detail/$1');
     $routes->get('assets/detail/(:num)', 'AssetController::detail/$1');
+    $routes->get('assets/edit/(:num)', 'AssetController::edit/$1');
+    $routes->post('assets/update/(:num)', 'AssetController::update/$1');
     $routes->post('assets/verify-pass/(:num)', 'AssetController::verifyPass/$1');
     $routes->post('assets/verify-fail/(:num)', 'AssetController::verifyFail/$1');
     $routes->get('assets/history/(:num)', 'AssetController::history/$1');

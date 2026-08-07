@@ -213,6 +213,21 @@ class TemuanService
 
         if ($insertId) {
             log_activity('CREATE_TEMUAN', 'Menambahkan temuan baru: ' . $nomorTemuan);
+            
+            // Enterprise Asset Lifecycle Hook: Update Asset Status to BERMASALAH & log history
+            try {
+                if (!empty($data['asset_id'])) {
+                    (new \App\Services\AssetLifecycleService())->triggerTemuanCreated(
+                        (int)$data['asset_id'],
+                        $nomorTemuan,
+                        (int)$session->get('user_id'),
+                        $data['deskripsi_temuan'] ?? null
+                    );
+                }
+            } catch (\Throwable $e) {
+                log_message('warning', '[AssetLifecycle] createTemuan hook: ' . $e->getMessage());
+            }
+
             // Phase 32 — Gamification: award points for INPUT_TEMUAN
             try {
                 $userId = (int)$session->get('user_id');

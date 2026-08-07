@@ -89,6 +89,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('assets/store', 'AssetController::store');
     $routes->get('master-assets/detail/(:num)', 'AssetController::detail/$1');
     $routes->get('assets/detail/(:num)', 'AssetController::detail/$1');
+    $routes->post('assets/verify-pass/(:num)', 'AssetController::verifyPass/$1');
+    $routes->post('assets/verify-fail/(:num)', 'AssetController::verifyFail/$1');
+    $routes->get('assets/history/(:num)', 'AssetController::history/$1');
+    $routes->post('assets/soft-delete/(:num)', 'AssetController::softDelete/$1');
+    $routes->post('assets/restore/(:num)', 'AssetController::restore/$1');
 
     // Master Asset PLN Import & Export Routes
     $routes->get('master-assets/debug-vendor', 'AssetImportController::debugVendor');

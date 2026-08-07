@@ -131,6 +131,129 @@ class AssetController extends BaseController
         $id = $this->repository->insert($data);
         log_activity('CREATE_ASSET', 'Menambah master asset baru: ' . $kodeAsset . ' (' . $data['nama_asset'] . ')');
 
+        // Log initial creation in Asset History
+        try {
+            (new \App\Services\AssetHistoryService())->logEvent(
+                (int)$id,
+                \Config\AssetEvent::CREATED,
+                null,
+                $data['status'],
+                $kodeAsset,
+                'Master Aset baru berhasil didaftarkan ke sistem SIDAK TEJO.',
+                (int)session()->get('user_id')
+            );
+            (new \App\Services\HealthScoreService())->refreshCachedHealthScore((int)$id);
+        } catch (\Throwable $e) {
+            log_message('warning', '[AssetHistory] store hook: ' . $e->getMessage());
+        }
+
         return redirect()->to(site_url('assets/detail/' . $id))->with('success', 'Master Asset baru berhasil ditambahkan!');
+    }
+
+    /**
+     * Supervisor Verification PASS Workflow (Transition MENUNGGU_VERIFIKASI -> NORMAL)
+     */
+    public function verifyPass(int $id)
+    {
+        $supervisorId = (int)session()->get('user_id');
+        $catatan = $this->request->getPost('catatan');
+
+        $service = new \App\Services\AssetVerificationService();
+        if ($service->verifyInspectionPass($id, $supervisorId, $catatan)) {
+            log_activity('VERIFY_ASSET_PASS', "Inspeksi Supervisor LULUS untuk Asset ID {$id}");
+            if ($this->request->isAJAX()) {
+                return $this->jsonResponse(['success' => true, 'message' => 'Verifikasi Inspeksi LULUS. Status aset kembali NORMAL.']);
+            }
+            return redirect()->to(site_url('assets/detail/' . $id))->with('success', 'Verifikasi Inspeksi LULUS. Status aset kembali NORMAL.');
+        }
+
+        if ($this->request->isAJAX()) {
+            return $this->jsonResponse(['success' => false, 'message' => 'Gagal memproses verifikasi.'], 400);
+        }
+        return redirect()->to(site_url('assets/detail/' . $id))->with('error', 'Gagal memproses verifikasi.');
+    }
+
+    /**
+     * Supervisor Verification FAIL Workflow (Transition MENUNGGU_VERIFIKASI -> BERMASALAH)
+     */
+    public function verifyFail(int $id)
+    {
+        $supervisorId = (int)session()->get('user_id');
+        $catatan = $this->request->getPost('catatan');
+
+        $service = new \App\Services\AssetVerificationService();
+        if ($service->verifyInspectionFail($id, $supervisorId, $catatan)) {
+            log_activity('VERIFY_ASSET_FAIL', "Inspeksi Supervisor GAGAL untuk Asset ID {$id}");
+            if ($this->request->isAJAX()) {
+                return $this->jsonResponse(['success' => true, 'message' => 'Inspeksi GAGAL. Status aset dikembalikan ke BERMASALAH.']);
+            }
+            return redirect()->to(site_url('assets/detail/' . $id))->with('success', 'Inspeksi GAGAL. Status aset dikembalikan ke BERMASALAH.');
+        }
+
+        if ($this->request->isAJAX()) {
+            return $this->jsonResponse(['success' => false, 'message' => 'Gagal memproses verifikasi.'], 400);
+        }
+        return redirect()->to(site_url('assets/detail/' . $id))->with('error', 'Gagal memproses verifikasi.');
+    }
+
+    /**
+     * Fetch Timeline Audit History via AJAX
+     */
+    public function history(int $id)
+    {
+        $service = new \App\Services\AssetHistoryService();
+        $timeline = $service->getAssetTimeline($id);
+        return $this->jsonResponse(['success' => true, 'timeline' => $timeline]);
+    }
+
+    /**
+     * Soft Delete Asset with Mandatory Reason
+     */
+    public function softDelete(int $id)
+    {
+        $userId = (int)session()->get('user_id');
+        $reason = $this->request->getPost('reason') ?: 'Soft delete by user';
+
+        $service = new \App\Services\AssetLifecycleService();
+        if ($service->softDeleteAsset($id, $userId, $reason)) {
+            log_activity('DELETE_ASSET', "Soft delete asset ID {$id}. Alasan: {$reason}");
+            if ($this->request->isAJAX()) {
+                return $this->jsonResponse(['success' => true, 'message' => 'Master Asset berhasil di-soft delete.']);
+            }
+            return redirect()->to(site_url('assets'))->with('success', 'Master Asset berhasil di-soft delete.');
+        }
+
+        if ($this->request->isAJAX()) {
+            return $this->jsonResponse(['success' => false, 'message' => 'Gagal menghapus asset.'], 400);
+        }
+        return redirect()->to(site_url('assets'))->with('error', 'Gagal menghapus asset.');
+    }
+
+    /**
+     * Restore Soft-Deleted Asset (Admin only)
+     */
+    public function restore(int $id)
+    {
+        if (!check_role(['administrator', 'admin'])) {
+            if ($this->request->isAJAX()) {
+                return $this->jsonResponse(['success' => false, 'message' => 'Akses ditolak.'], 403);
+            }
+            return redirect()->to(site_url('assets'))->with('error', 'Akses ditolak.');
+        }
+
+        $adminId = (int)session()->get('user_id');
+        $service = new \App\Services\AssetLifecycleService();
+        if ($service->restoreAsset($id, $adminId)) {
+            log_activity('RESTORE_ASSET', "Restore asset ID {$id} oleh Admin");
+            if ($this->request->isAJAX()) {
+                return $this->jsonResponse(['success' => true, 'message' => 'Master Asset berhasil dipulihkan.']);
+            }
+            return redirect()->to(site_url('assets/detail/' . $id))->with('success', 'Master Asset berhasil dipulihkan.');
+        }
+
+        if ($this->request->isAJAX()) {
+            return $this->jsonResponse(['success' => false, 'message' => 'Gagal memulihkan asset.'], 400);
+        }
+        return redirect()->to(site_url('assets'))->with('error', 'Gagal memulihkan asset.');
     }
 }

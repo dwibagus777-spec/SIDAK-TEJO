@@ -58,6 +58,20 @@ class WorkOrderService
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
+        // Enterprise Asset Lifecycle Hook: Update Asset Status to MAINTENANCE
+        try {
+            if (!empty($data['asset_id'])) {
+                (new \App\Services\AssetLifecycleService())->triggerWorkOrderCreated(
+                    (int)$data['asset_id'],
+                    $data['nomor_wo'],
+                    null,
+                    $data['catatan'] ?? null
+                );
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', '[AssetLifecycle] createWorkOrder hook: ' . $e->getMessage());
+        }
+
         return $woId;
     }
 
@@ -88,6 +102,20 @@ class WorkOrderService
             'foto_sesudah' => $fotoSesudah,
             'created_at'   => date('Y-m-d H:i:s'),
         ]);
+
+        // Enterprise Asset Lifecycle Hook: On WO Completion -> Update Asset Status to MENUNGGU_VERIFIKASI
+        try {
+            if (!empty($wo['asset_id']) && (strtoupper($newStatus) === 'COMPLETED' || strtoupper($newStatus) === 'SELESAI')) {
+                (new \App\Services\AssetLifecycleService())->triggerWorkOrderCompleted(
+                    (int)$wo['asset_id'],
+                    $wo['nomor_wo'],
+                    null,
+                    $fotoSesudah
+                );
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', '[AssetLifecycle] updateStatus hook: ' . $e->getMessage());
+        }
 
         return true;
     }

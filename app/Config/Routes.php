@@ -412,7 +412,9 @@ $routes->group('api', function ($routes) {
     $routes->post('auth/change-password', 'Api::changePassword');
     $routes->get('options', 'Api::getOptions');
     $routes->get('penyulangs/(:num)', 'Api::getPenyulangsByUlp/$1');
+    $routes->get('penyulang-by-ulp/(:num)', 'Api::getPenyulangsByUlp/$1');
     $routes->get('sections/(:num)', 'Api::getSectionsByPenyulang/$1');
+    $routes->get('section-by-penyulang/(:num)', 'Api::getSectionsByPenyulang/$1');
     $routes->get('temuan', 'Api::getTemuan');
     $routes->get('temuan/terdekat', 'Api::getTemuanTerdekat');
     $routes->get('temuan/(:num)', 'Api::detailTemuan/$1');

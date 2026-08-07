@@ -232,21 +232,27 @@ class Api extends BaseController
     }
 
     /**
-     * GET /api/penyulangs/(:num)
+     * GET /api/penyulangs/(:num) & GET /api/penyulang-by-ulp/(:num)
      */
     public function getPenyulangsByUlp(int $ulpId)
     {
         $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($ulpId);
-        return $this->respond($penyulangs);
+        return $this->respond([
+            'status' => 200,
+            'data'   => $penyulangs,
+        ]);
     }
 
     /**
-     * GET /api/sections/(:num)
+     * GET /api/sections/(:num) & GET /api/section-by-penyulang/(:num)
      */
     public function getSectionsByPenyulang(int $penyulangId)
     {
         $sections = $this->sectionRepository->getActiveSectionsByPenyulang($penyulangId);
-        return $this->respond($sections);
+        return $this->respond([
+            'status' => 200,
+            'data'   => $sections,
+        ]);
     }
 
     /**

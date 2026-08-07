@@ -102,6 +102,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('assets/network/(:num)', 'GISController::network/$1');
     $routes->get('assets/baseline/(:num)', 'GISController::baseline/$1');
 
+    // Release v2.2.0 - Guided Inspection Execution Engine Routes
+    $routes->get('inspections', 'InspectionController::index');
+    $routes->get('inspections/start', 'InspectionController::start');
+    $routes->post('inspections/start', 'InspectionController::storeStart');
+    $routes->get('inspections/guided/(:num)', 'InspectionController::guided/$1');
+    $routes->post('inspections/submit-point/(:num)', 'InspectionController::submitPoint/$1');
+
     // Master Asset PLN Import & Export Routes
     $routes->get('master-assets/debug-vendor', 'AssetImportController::debugVendor');
     $routes->get('master-assets/debug-runtime', 'AssetImportController::debugRuntime');

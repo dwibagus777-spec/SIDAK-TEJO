@@ -81,19 +81,26 @@ class MigrateController extends BaseController
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             $executed[] = 'baseline_assets';
 
-            // 5. Add columns to assets (Migration 000008)
-            $fields = $db->getFieldNames('assets');
-            if (!in_array('parent_asset_id', $fields)) {
-                $db->query("ALTER TABLE `assets` ADD COLUMN `parent_asset_id` INT UNSIGNED NULL AFTER `section_id`");
-            }
-            if (!in_array('asset_type_id', $fields)) {
-                $db->query("ALTER TABLE `assets` ADD COLUMN `asset_type_id` INT UNSIGNED NULL AFTER `parent_asset_id`");
-            }
-            if (!in_array('construction_type_id', $fields)) {
-                $db->query("ALTER TABLE `assets` ADD COLUMN `construction_type_id` INT UNSIGNED NULL AFTER `asset_type_id`");
-            }
-            if (!in_array('sequence_no', $fields)) {
-                $db->query("ALTER TABLE `assets` ADD COLUMN `sequence_no` INT NULL AFTER `construction_type_id`");
+            // 5. Add columns to assets (Migration 000008 & v2.1.0/v2.3.0 schema reconciliation)
+            if ($db->tableExists('assets')) {
+                $assetColumnsPatch = [
+                    'parent_asset_id'      => "ALTER TABLE `assets` ADD COLUMN `parent_asset_id` INT UNSIGNED NULL AFTER `section_id`",
+                    'asset_type_id'        => "ALTER TABLE `assets` ADD COLUMN `asset_type_id` INT UNSIGNED NULL AFTER `parent_asset_id`",
+                    'construction_type_id' => "ALTER TABLE `assets` ADD COLUMN `construction_type_id` INT UNSIGNED NULL AFTER `asset_type_id`",
+                    'sequence_no'          => "ALTER TABLE `assets` ADD COLUMN `sequence_no` INT NULL AFTER `construction_type_id`",
+                    'installation_date'    => "ALTER TABLE `assets` ADD COLUMN `installation_date` DATE NULL AFTER `tahun_instalasi`",
+                    'health_score'         => "ALTER TABLE `assets` ADD COLUMN `health_score` DECIMAL(5,2) DEFAULT 100.00 AFTER `status`",
+                    'health_category'      => "ALTER TABLE `assets` ADD COLUMN `health_category` VARCHAR(20) DEFAULT 'GOOD' AFTER `health_score`",
+                    'asset_version'        => "ALTER TABLE `assets` ADD COLUMN `asset_version` VARCHAR(20) DEFAULT 'v1.0' AFTER `health_category`",
+                    'deleted_by'           => "ALTER TABLE `assets` ADD COLUMN `deleted_by` INT UNSIGNED NULL AFTER `barcode`",
+                    'deleted_reason'       => "ALTER TABLE `assets` ADD COLUMN `deleted_reason` TEXT NULL AFTER `deleted_by`",
+                ];
+
+                foreach ($assetColumnsPatch as $col => $sql) {
+                    try {
+                        $db->query($sql);
+                    } catch (\Throwable $eAsset) {}
+                }
             }
             $executed[] = 'assets_columns_updated';
 
@@ -235,14 +242,16 @@ class MigrateController extends BaseController
             $inspectionService = new \App\Services\InspectionCatalogService();
             $inspectionService->ensureCatalogSeeded();
 
-            $allTables = $db->listTables();
             $relColumns = $db->query("SHOW COLUMNS FROM asset_relationships")->getResultArray();
             $relColumnNames = array_column($relColumns, 'Field');
+            $assetColumns = $db->query("SHOW COLUMNS FROM assets")->getResultArray();
+            $assetColumnNames = array_column($assetColumns, 'Field');
 
             return $this->response->setJSON([
-                'db_name'           => $db->getDatabase(),
-                'rel_fields'        => implode(', ', $relColumnNames),
-                'is_active_present' => in_array('is_active', $relColumnNames),
+                'db_name'                   => $db->getDatabase(),
+                'installation_date_present' => in_array('installation_date', $assetColumnNames),
+                'assets_fields'             => implode(', ', $assetColumnNames),
+                'rel_fields'                => implode(', ', $relColumnNames),
             ]);
         } catch (\Throwable $e) {
             return $this->response->setStatusCode(500)->setJSON([

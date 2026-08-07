@@ -84,16 +84,17 @@ class MigrateController extends BaseController
             // 5. Add columns to assets (Migration 000008 & v2.1.0/v2.3.0 schema reconciliation)
             if ($db->tableExists('assets')) {
                 $assetColumnsPatch = [
-                    'parent_asset_id'      => "ALTER TABLE `assets` ADD COLUMN `parent_asset_id` INT UNSIGNED NULL AFTER `section_id`",
-                    'asset_type_id'        => "ALTER TABLE `assets` ADD COLUMN `asset_type_id` INT UNSIGNED NULL AFTER `parent_asset_id`",
-                    'construction_type_id' => "ALTER TABLE `assets` ADD COLUMN `construction_type_id` INT UNSIGNED NULL AFTER `asset_type_id`",
-                    'sequence_no'          => "ALTER TABLE `assets` ADD COLUMN `sequence_no` INT NULL AFTER `construction_type_id`",
-                    'installation_date'    => "ALTER TABLE `assets` ADD COLUMN `installation_date` DATE NULL AFTER `tahun_instalasi`",
-                    'health_score'         => "ALTER TABLE `assets` ADD COLUMN `health_score` DECIMAL(5,2) DEFAULT 100.00 AFTER `status`",
-                    'health_category'      => "ALTER TABLE `assets` ADD COLUMN `health_category` VARCHAR(20) DEFAULT 'GOOD' AFTER `health_score`",
-                    'asset_version'        => "ALTER TABLE `assets` ADD COLUMN `asset_version` VARCHAR(20) DEFAULT 'v1.0' AFTER `health_category`",
-                    'deleted_by'           => "ALTER TABLE `assets` ADD COLUMN `deleted_by` INT UNSIGNED NULL AFTER `barcode`",
-                    'deleted_reason'       => "ALTER TABLE `assets` ADD COLUMN `deleted_reason` TEXT NULL AFTER `deleted_by`",
+                    'parent_asset_id'      => "ALTER TABLE `assets` ADD COLUMN `parent_asset_id` INT UNSIGNED NULL",
+                    'asset_type_id'        => "ALTER TABLE `assets` ADD COLUMN `asset_type_id` INT UNSIGNED NULL",
+                    'construction_type_id' => "ALTER TABLE `assets` ADD COLUMN `construction_type_id` INT UNSIGNED NULL",
+                    'sequence_no'          => "ALTER TABLE `assets` ADD COLUMN `sequence_no` INT NULL",
+                    'tahun_instalasi'      => "ALTER TABLE `assets` ADD COLUMN `tahun_instalasi` INT NULL",
+                    'installation_date'    => "ALTER TABLE `assets` ADD COLUMN `installation_date` DATE NULL",
+                    'health_score'         => "ALTER TABLE `assets` ADD COLUMN `health_score` DECIMAL(5,2) DEFAULT 100.00",
+                    'health_category'      => "ALTER TABLE `assets` ADD COLUMN `health_category` VARCHAR(20) DEFAULT 'GOOD'",
+                    'asset_version'        => "ALTER TABLE `assets` ADD COLUMN `asset_version` VARCHAR(20) DEFAULT 'v1.0'",
+                    'deleted_by'           => "ALTER TABLE `assets` ADD COLUMN `deleted_by` INT UNSIGNED NULL",
+                    'deleted_reason'       => "ALTER TABLE `assets` ADD COLUMN `deleted_reason` TEXT NULL",
                 ];
 
                 foreach ($assetColumnsPatch as $col => $sql) {
@@ -121,15 +122,15 @@ class MigrateController extends BaseController
 
             if ($db->tableExists('asset_relationships')) {
                 try {
-                    $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `relationship_type`");
+                    $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1");
                 } catch (\Throwable $exRel) {}
 
                 try {
-                    $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `sequence_no` INT DEFAULT 0 AFTER `is_active`");
+                    $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `sequence_no` INT DEFAULT 0");
                 } catch (\Throwable $exRel) {}
 
                 try {
-                    $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `effective_date` DATE NULL AFTER `sequence_no`");
+                    $db->query("ALTER TABLE `asset_relationships` ADD COLUMN `effective_date` DATE NULL");
                 } catch (\Throwable $exRel) {}
             }
             $executed[] = 'asset_relationships';

@@ -243,17 +243,13 @@ class MigrateController extends BaseController
                 'success'                    => true,
                 'message'                    => 'Database DDL migration dan catalog seeding berhasil dieksekusi 100% di database Hostinger!',
                 'db_name'                    => $db->getDatabase(),
-                'executed_steps'             => $executed,
-                'total_tables'               => count($allTables),
-                'asset_types_exist'          => in_array('asset_types', $allTables),
-                'inspections_exist'          => in_array('inspections', $allTables),
-                'asset_relationships_fields' => $relColumnNames,
+                'asset_relationships_fields' => implode(', ', $relColumnNames),
+                'is_active_present'          => in_array('is_active', $relColumnNames),
             ]);
         } catch (\Throwable $e) {
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'error'   => $e->getMessage(),
-                'trace'   => $e->getTraceAsString(),
             ]);
         }
     }

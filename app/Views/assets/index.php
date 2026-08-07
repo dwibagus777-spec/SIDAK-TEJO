@@ -275,24 +275,42 @@
 
 <!-- Modal Download Template -->
 <?= $this->include('assets/modal_download_template') ?>
+<?= $this->endSection() ?>
 
+<?= $this->section('scripts') ?>
 <script>
-$(document).ready(function() {
-    $('.btn-delete-asset').click(function() {
-        var id = $(this).data('id');
-        var kode = $(this).data('kode');
-        var nama = $(this).data('nama');
-        var sn = $(this).data('sn');
+(function() {
+    function initDeleteModal() {
+        if (typeof jQuery === 'undefined') {
+            setTimeout(initDeleteModal, 50);
+            return;
+        }
+        var $ = jQuery;
+        $(function() {
+            $('.btn-delete-asset').on('click', function() {
+                var id = $(this).data('id');
+                var kode = $(this).data('kode');
+                var nama = $(this).data('nama');
+                var sn = $(this).data('sn');
 
-        $('#delKodeAsset').text(kode);
-        $('#delNamaAsset').text(nama);
-        $('#delSnAsset').text(sn);
-        $('#formSoftDeleteAsset').attr('action', '<?= site_url("assets/soft-delete/") ?>' + id);
+                $('#delKodeAsset').text(kode);
+                $('#delNamaAsset').text(nama);
+                $('#delSnAsset').text(sn);
+                $('#formSoftDeleteAsset').attr('action', '<?= site_url("assets/soft-delete/") ?>' + id);
 
-        var modal = new bootstrap.Modal(document.getElementById('modalSoftDeleteAsset'));
-        modal.show();
-    });
-});
+                var modalEl = document.getElementById('modalSoftDeleteAsset');
+                if (modalEl) {
+                    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    modal.show();
+                }
+            });
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDeleteModal);
+    } else {
+        initDeleteModal();
+    }
+})();
 </script>
-
 <?= $this->endSection() ?>

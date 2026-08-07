@@ -353,66 +353,79 @@
 
 <?= $this->section('scripts') ?>
 <script>
-    $(function() {
-        // --- 1. CASCADING DROPDOWNS (pre-filled) ---
-        const currentPenyulangId = "<?= $temuan['penyulang_id'] ?>";
-        const currentSectionId   = "<?= $temuan['section_id'] ?>";
-
-        function refreshSelect2($element) {
-            if ($element.hasClass('select2-hidden-accessible')) {
-                $element.trigger('change.select2');
-            } else {
-                $element.trigger('change');
-            }
+(function() {
+    function initTemuanEdit() {
+        if (typeof jQuery === 'undefined') {
+            setTimeout(initTemuanEdit, 50);
+            return;
         }
+        var $ = jQuery;
+        $(function() {
+            // --- 1. CASCADING DROPDOWNS (pre-filled with Request Token Guard) ---
+            const currentPenyulangId = "<?= $temuan['penyulang_id'] ?>";
+            const currentSectionId   = "<?= $temuan['section_id'] ?>";
+            let penyulangRequestToken = 0;
+            let sectionRequestToken = 0;
 
-        function loadPenyulang(ulpId, selectedId) {
-            const $penyulang = $('#penyulang_id');
-            const $section = $('#section_id');
-
-            if (!ulpId) {
-                $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>');
-                $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
-                refreshSelect2($penyulang);
-                refreshSelect2($section);
-                return;
-            }
-            $penyulang.html('<option value="">Sedang memuat...</option>');
-            refreshSelect2($penyulang);
-
-            $.ajax({
-                url: "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId,
-                type: "GET",
-                dataType: "json",
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                success: function(data) {
-                    let html = '<option value="">-- Pilih Penyulang --</option>';
-                    if (Array.isArray(data) && data.length > 0) {
-                        data.forEach(function(item) {
-                            const sel = item.id == selectedId ? 'selected' : '';
-                            html += `<option value="${item.id}" ${sel}>${item.nama_penyulang}</option>`;
-                        });
-                    } else {
-                        html = '<option value="">-- Tidak ada penyulang aktif --</option>';
-                    }
-                    $penyulang.html(html);
-                    refreshSelect2($penyulang);
-
-                    if (!selectedId) {
-                        $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
-                        refreshSelect2($section);
-                    }
-                },
-                error: function(xhr, status, err) {
-                    console.error('Error loading penyulang:', err);
-                    $penyulang.html('<option value="">Gagal memuat penyulang</option>');
-                    refreshSelect2($penyulang);
+            function refreshSelect2($element) {
+                if ($.fn.select2 && $element.hasClass('select2-hidden-accessible')) {
+                    $element.trigger('change.select2');
+                } else {
+                    $element.trigger('change');
                 }
-            });
-        }
+            }
 
-        function loadSection(penyulangId, selectedId) {
-            const $section = $('#section_id');
+            function loadPenyulang(ulpId, selectedId) {
+                const $penyulang = $('#penyulang_id');
+                const $section = $('#section_id');
+                const currentToken = ++penyulangRequestToken;
+
+                if (!ulpId) {
+                    $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>');
+                    $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                    refreshSelect2($penyulang);
+                    refreshSelect2($section);
+                    return;
+                }
+                $penyulang.html('<option value="">Sedang memuat...</option>');
+                refreshSelect2($penyulang);
+
+                $.ajax({
+                    url: "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId,
+                    type: "GET",
+                    dataType: "json",
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(data) {
+                        if (currentToken !== penyulangRequestToken) return;
+
+                        let html = '<option value="">-- Pilih Penyulang --</option>';
+                        if (Array.isArray(data) && data.length > 0) {
+                            data.forEach(function(item) {
+                                const sel = item.id == selectedId ? 'selected' : '';
+                                html += `<option value="${item.id}" ${sel}>${item.nama_penyulang}</option>`;
+                            });
+                        } else {
+                            html = '<option value="">-- Tidak ada penyulang aktif --</option>';
+                        }
+                        $penyulang.html(html);
+                        refreshSelect2($penyulang);
+
+                        if (!selectedId) {
+                            $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                            refreshSelect2($section);
+                        }
+                    },
+                    error: function(xhr, status, err) {
+                        if (currentToken !== penyulangRequestToken) return;
+                        $penyulang.html('<option value="">Gagal memuat penyulang</option>');
+                        refreshSelect2($penyulang);
+                    }
+                });
+            }
+
+            function loadSection(penyulangId, selectedId) {
+                const $section = $('#section_id');
+                const currentToken = ++sectionRequestToken;
 
             if (!penyulangId) {
                 $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
@@ -689,7 +702,12 @@
                 $('#material-hidden-field').val('Tidak ada spesifikasi material');
             }
         });
-
-    });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTemuanEdit);
+    } else {
+        initTemuanEdit();
+    }
+})();
 </script>
 <?= $this->endSection() ?>

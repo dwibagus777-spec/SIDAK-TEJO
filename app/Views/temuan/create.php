@@ -293,78 +293,78 @@
 
 <?= $this->section('scripts') ?>
 <script>
-    $(function() {
-        // --- 1. CASCADING DROPDOWNS ---
-        const oldPenyulangId = "<?= old('penyulang_id') ?>";
-        const oldSectionId = "<?= old('section_id') ?>";
-
-        function refreshSelect2($element) {
-            if ($element.hasClass('select2-hidden-accessible')) {
-                $element.trigger('change.select2');
-            } else {
-                $element.trigger('change');
-            }
+(function() {
+    function initTemuanCreate() {
+        if (typeof jQuery === 'undefined') {
+            setTimeout(initTemuanCreate, 50);
+            return;
         }
+        var $ = jQuery;
+        $(function() {
+            // --- 1. CASCADING DROPDOWNS WITH REQUEST TOKEN GUARD ---
+            const oldPenyulangId = "<?= old('penyulang_id') ?>";
+            const oldSectionId = "<?= old('section_id') ?>";
+            let penyulangRequestToken = 0;
+            let sectionRequestToken = 0;
 
-        function loadPenyulang(ulpId, callback) {
-            const $penyulang = $('#penyulang_id');
-            const $section = $('#section_id');
-
-            console.log("[SIDAK TEJO] ULP berubah:", ulpId);
-
-            if (!ulpId) {
-                $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>');
-                $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
-                refreshSelect2($penyulang);
-                refreshSelect2($section);
-                return;
-            }
-
-            $penyulang.html('<option value="">Sedang memuat...</option>');
-            refreshSelect2($penyulang);
-
-            const requestUrl = "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId;
-            console.log("[SIDAK TEJO] Request AJAX Penyulang URL:", requestUrl);
-
-            $.ajax({
-                url: requestUrl,
-                type: "GET",
-                dataType: "json",
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                success: function(data) {
-                    console.log("[SIDAK TEJO] Response JSON Penyulang:", data);
-                    const totalPenyulang = Array.isArray(data) ? data.length : 0;
-                    console.log("[SIDAK TEJO] Jumlah Penyulang:", totalPenyulang);
-
-                    let html = '<option value="">-- Pilih Penyulang --</option>';
-                    if (totalPenyulang > 0) {
-                        data.forEach(function(item) {
-                            html += `<option value="${item.id}">${item.nama_penyulang}</option>`;
-                        });
-                    } else {
-                        html = '<option value="">-- Tidak ada penyulang aktif --</option>';
-                    }
-                    $penyulang.html(html);
-                    refreshSelect2($penyulang);
-
-                    $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
-                    refreshSelect2($section);
-
-                    if (callback) callback();
-                },
-                error: function(xhr, status, err) {
-                    console.error("[SIDAK TEJO] Gagal AJAX Penyulang!", {
-                        url: requestUrl,
-                        statusCode: xhr.status,
-                        statusText: xhr.statusText,
-                        responseText: xhr.responseText,
-                        error: err
-                    });
-                    $penyulang.html('<option value="">Gagal memuat penyulang (Status: ' + xhr.status + ')</option>');
-                    refreshSelect2($penyulang);
+            function refreshSelect2($element) {
+                if ($.fn.select2 && $element.hasClass('select2-hidden-accessible')) {
+                    $element.trigger('change.select2');
+                } else {
+                    $element.trigger('change');
                 }
-            });
-        }
+            }
+
+            function loadPenyulang(ulpId, callback) {
+                const $penyulang = $('#penyulang_id');
+                const $section = $('#section_id');
+                const currentToken = ++penyulangRequestToken;
+
+                if (!ulpId) {
+                    $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>');
+                    $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                    refreshSelect2($penyulang);
+                    refreshSelect2($section);
+                    return;
+                }
+
+                $penyulang.html('<option value="">Sedang memuat...</option>');
+                refreshSelect2($penyulang);
+
+                const requestUrl = "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId;
+
+                $.ajax({
+                    url: requestUrl,
+                    type: "GET",
+                    dataType: "json",
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(data) {
+                        if (currentToken !== penyulangRequestToken) return;
+
+                        const totalPenyulang = Array.isArray(data) ? data.length : 0;
+                        let html = '<option value="">-- Pilih Penyulang --</option>';
+                        if (totalPenyulang > 0) {
+                            data.forEach(function(item) {
+                                html += `<option value="${item.id}">${item.nama_penyulang}</option>`;
+                            });
+                        } else {
+                            html = '<option value="">-- Tidak ada penyulang aktif --</option>';
+                        }
+                        $penyulang.html(html);
+                        refreshSelect2($penyulang);
+
+                        $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+                        refreshSelect2($section);
+
+                        if (callback) callback();
+                    },
+                    error: function(xhr, status, err) {
+                        if (currentToken !== penyulangRequestToken) return;
+                        $penyulang.html('<option value="">Gagal memuat penyulang (Status: ' + xhr.status + ')</option>');
+                        refreshSelect2($penyulang);
+                    }
+                });
+            }
 
         function loadSection(penyulangId, callback) {
             const $section = $('#section_id');
@@ -829,7 +829,12 @@
                 $('#material-hidden-field').val('Tidak ada spesifikasi material');
             }
         });
-
-    });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTemuanCreate);
+    } else {
+        initTemuanCreate();
+    }
+})();
 </script>
 <?= $this->endSection() ?>

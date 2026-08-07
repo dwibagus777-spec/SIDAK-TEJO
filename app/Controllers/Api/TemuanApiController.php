@@ -112,8 +112,9 @@ class TemuanApiController extends BaseApiController
     /**
      * GET /api/v1/temuan/(:num)
      */
-    public function show(int $id)
+    public function show($id = null)
     {
+        $id = (int)$id;
         $item = $this->temuanRepository->findWithRelations($id);
         if (!$item) {
             return $this->respondError('Data temuan tidak ditemukan.', 404);
@@ -174,8 +175,9 @@ class TemuanApiController extends BaseApiController
     /**
      * POST /api/v1/temuan/update/(:num)
      */
-    public function update(int $id)
+    public function update($id = null)
     {
+        $id = (int)$id;
         $temuan = $this->temuanRepository->find($id);
         if (!$temuan) {
             return $this->respondError('Data temuan tidak ditemukan.', 404);
@@ -198,8 +200,9 @@ class TemuanApiController extends BaseApiController
     /**
      * DELETE /api/v1/temuan/delete/(:num)
      */
-    public function delete(int $id)
+    public function delete($id = null)
     {
+        $id = (int)$id;
         if ($this->temuanService->deleteTemuan($id)) {
             return $this->respondSuccess(null, 'Temuan berhasil dihapus.');
         }

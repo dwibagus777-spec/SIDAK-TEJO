@@ -1211,6 +1211,14 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             });
         }
         $(function () {
+            // Enterprise Global CSRF Token Sync via AJAX Response Headers
+            $(document).ajaxComplete(function(event, xhr, settings) {
+                var newToken = xhr.getResponseHeader('X-CSRF-TOKEN');
+                if (newToken) {
+                    $('input[name="<?= csrf_token() ?>"]').val(newToken);
+                }
+            });
+
             if ($('.select2').length) {
                 $('.select2').select2({
                     theme: 'bootstrap4'

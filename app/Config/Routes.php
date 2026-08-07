@@ -41,7 +41,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('work-orders/smart', 'SmartWoController::index');
 
     // Smart AI Recommendation Route (Phase 38)
-    $routes->post('ai/recommendation', 'AiPredictiveController::recommendation');
+    $routes->match(['get', 'post'], 'ai/recommendation', 'AiPredictiveController::recommendation');
 
     // Digital Evidence & Audit Trail Routes (Phase 39)
     $routes->get('audit-log', 'AuditTrailController::index');

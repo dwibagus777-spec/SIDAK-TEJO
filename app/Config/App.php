@@ -235,4 +235,12 @@ class App extends BaseConfig
      * @see http://www.w3.org/TR/CSP/
      */
     public bool $CSPEnabled = false;
+
+    /**
+     * --------------------------------------------------------------------------
+     * Diagnostic Mode Feature Flags (Production Safety Controlled)
+     * --------------------------------------------------------------------------
+     */
+    public bool $diagnosticMode = false;
+    public string $diagnosticUntil = '';
 }

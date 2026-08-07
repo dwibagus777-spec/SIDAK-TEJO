@@ -86,16 +86,16 @@ class Auth extends BaseController
         $session = session();
         if ($session->get('logged_in')) {
             $session->set('last_activity', time());
-            return $this->response->setStatusCode(200)->setJSON([
+            return $this->jsonResponse([
                 'status' => true,
                 'time'   => date('Y-m-d H:i:s')
             ]);
         }
 
-        return $this->response->setStatusCode(401)->setJSON([
+        return $this->jsonResponse([
             'status'  => false,
             'message' => 'Session expired'
-        ]);
+        ], 401);
     }
 
     public function changePassword()

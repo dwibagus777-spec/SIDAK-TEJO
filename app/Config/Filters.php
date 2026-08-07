@@ -29,7 +29,7 @@ class Filters extends BaseFilters
         'toolbar'       => DebugToolbar::class,
         'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
-        'secureheaders' => SecureHeaders::class,
+        'secureheaders' => \App\Filters\SecurityHeadersFilter::class,
         'cors'          => Cors::class,
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
@@ -37,6 +37,7 @@ class Filters extends BaseFilters
         'auth'          => \App\Filters\AuthFilter::class,
         'role'          => \App\Filters\RoleFilter::class,
         'jwt'           => \App\Filters\JwtAuthFilter::class,
+        'diagnostic'    => \App\Filters\DiagnosticFilter::class,
     ];
 
     /**
@@ -76,6 +77,7 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
+            'diagnostic',
             'csrf' => [
                 'except' => [
                     'api/*',
@@ -91,7 +93,8 @@ class Filters extends BaseFilters
                     'eviden/delete-foto/*',
                     'temuan/ajax-*',
                     'temuan/ajax-datatables',
-                    'ai-copilot/*'
+                    'ai-copilot/*',
+                    'ai/recommendation'
                 ]
             ],
             // 'invalidchars',
@@ -115,5 +118,14 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        'diagnostic' => [
+            'before' => [
+                'temuan/store',
+                'temuan/update/*',
+                'assets/store',
+                'work-orders/store'
+            ]
+        ]
+    ];
 }

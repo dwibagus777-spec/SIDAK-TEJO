@@ -64,6 +64,14 @@ abstract class BaseController extends Controller
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
                 }
 
+                if (!$db->tableExists('assets')) {
+                    new \App\Models\AssetModel();
+                }
+
+                if (!$db->tableExists('work_orders')) {
+                    new \App\Models\WorkOrderModel();
+                }
+
                 // Create Hostinger MySQL Performance Indexes
                 $indexes = [
                     'temuan' => [
@@ -110,6 +118,7 @@ abstract class BaseController extends Controller
     {
         return $this->response
             ->setStatusCode($statusCode)
+            ->setHeader('X-CSRF-TOKEN', csrf_hash())
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')
             ->setHeader('Pragma', 'no-cache')
             ->setHeader('Expires', '0')

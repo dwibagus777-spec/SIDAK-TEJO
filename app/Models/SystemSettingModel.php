@@ -21,11 +21,17 @@ class SystemSettingModel extends Model
         $this->ensureTableExists();
     }
 
+    private static bool $tableChecked = false;
+
     /**
      * Pastikan tabel system_settings dan data default selalu tersedia di database
      */
     private function ensureTableExists(): void
     {
+        if (self::$tableChecked) {
+            return;
+        }
+        self::$tableChecked = true;
         try {
             $db = \Config\Database::connect();
             if (!$db->tableExists('system_settings')) {
@@ -57,7 +63,6 @@ class SystemSettingModel extends Model
                     ],
                 ]);
                 $forge->addKey('id', true);
-                $forge->addUniqueKey('setting_key');
                 $forge->createTable('system_settings', true);
 
                 // Seed Default Settings

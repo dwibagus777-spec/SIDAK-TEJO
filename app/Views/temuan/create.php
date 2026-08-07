@@ -768,16 +768,16 @@
 
         // Phase 38 Smart AI Recommendation Engine AJAX Listener
         function triggerAiRecommendation() {
-            var formData = new FormData();
-            formData.append('jenis_temuan', $('#jenis_temuan').val() || '');
-            formData.append('prioritas', $('#prioritas').val() || '');
-            formData.append('potensi_gangguan', $('#potensi_gangguan').val() || '');
-            formData.append('pelaksana', $('#pelaksana').val() || '');
-            formData.append('detail_temuan', $('#detail_temuan').val() || '');
+            var params = new URLSearchParams({
+                'jenis_temuan': $('#jenis_temuan').val() || '',
+                'prioritas': $('#prioritas').val() || '',
+                'potensi_gangguan': $('#potensi_gangguan').val() || '',
+                'pelaksana': $('#pelaksana').val() || '',
+                'detail_temuan': $('#detail_temuan').val() || ''
+            });
 
-            fetch("<?= site_url('ai/recommendation') ?>", {
-                method: 'POST',
-                body: formData,
+            fetch("<?= site_url('ai/recommendation') ?>?" + params.toString(), {
+                method: 'GET',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(res => res.json())

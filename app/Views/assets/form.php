@@ -114,5 +114,43 @@
             </form>
         </div>
     </div>
-</div>
+<script>
+$(document).ready(function() {
+    $('select[name="ulp_id"]').change(function() {
+        var ulpId = $(this).val();
+        var $penyulang = $('select[name="penyulang_id"]');
+        var $section = $('select[name="section_id"]');
+        $penyulang.html('<option value="">-- Loading... --</option>');
+        $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
+        if (ulpId) {
+            $.getJSON('<?= site_url('temuan/ajax-penyulang') ?>/' + ulpId, function(data) {
+                var html = '<option value="">-- Pilih Penyulang --</option>';
+                $.each(data, function(i, item) {
+                    html += '<option value="' + item.id + '">' + item.nama_penyulang + '</option>';
+                });
+                $penyulang.html(html).trigger('change.select2');
+            });
+        } else {
+            $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>').trigger('change.select2');
+        }
+    });
+
+    $('select[name="penyulang_id"]').change(function() {
+        var penyulangId = $(this).val();
+        var $section = $('select[name="section_id"]');
+        $section.html('<option value="">-- Loading... --</option>');
+        if (penyulangId) {
+            $.getJSON('<?= site_url('temuan/ajax-section') ?>/' + penyulangId, function(data) {
+                var html = '<option value="">-- Pilih Section --</option>';
+                $.each(data, function(i, item) {
+                    html += '<option value="' + item.id + '">' + item.nama_section + '</option>';
+                });
+                $section.html(html).trigger('change.select2');
+            });
+        } else {
+            $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>').trigger('change.select2');
+        }
+    });
+});
+</script>
 <?= $this->endSection() ?>

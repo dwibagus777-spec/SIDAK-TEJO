@@ -747,9 +747,14 @@
                 formData.append('status_progress', $('#status_progress').val());
                 formData.append('komentar', $('#komentar').val());
 
-                const fSebelum = form.find('input[name="foto_sebelum"]')[0]?.files[0];
-                const fProses  = form.find('input[name="foto_proses"]')[0]?.files[0];
-                const fSesudah = form.find('input[name="foto_sesudah"]')[0]?.files[0];
+                const getFile = (name, id) => {
+                    return form.find('input[name="' + name + '"]')[0]?.files[0] 
+                        || document.getElementById(id + '_cam')?.files[0];
+                };
+
+                const fSebelum = getFile('foto_sebelum', 'foto_sebelum');
+                const fProses  = getFile('foto_proses', 'foto_proses');
+                const fSesudah = getFile('foto_sesudah', 'foto_sesudah');
 
                 if (fSebelum) formData.append('foto_sebelum', await compressImage(fSebelum));
                 if (fProses)  formData.append('foto_proses',  await compressImage(fProses));

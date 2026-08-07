@@ -30,11 +30,17 @@ class AssetModel extends Model
         $this->ensureTableExists();
     }
 
+    private static bool $tableChecked = false;
+
     /**
      * Pastikan tabel assets dan data bawaan PLN tersedia di database
      */
     private function ensureTableExists(): void
     {
+        if (self::$tableChecked) {
+            return;
+        }
+        self::$tableChecked = true;
         try {
             $db = \Config\Database::connect();
             if (!$db->tableExists('assets')) {
@@ -147,7 +153,6 @@ class AssetModel extends Model
                     ],
                 ]);
                 $forge->addKey('id', true);
-                $forge->addUniqueKey('kode_asset');
                 $forge->createTable('assets', true);
 
                 $this->seedDefaults();

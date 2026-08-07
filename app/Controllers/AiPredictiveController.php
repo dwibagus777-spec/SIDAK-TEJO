@@ -72,11 +72,11 @@ class AiPredictiveController extends BaseController
     public function recommendation()
     {
         $input = [
-            'jenis_temuan'     => $this->request->getPost('jenis_temuan'),
-            'prioritas'        => $this->request->getPost('prioritas'),
-            'potensi_gangguan' => $this->request->getPost('potensi_gangguan'),
-            'pelaksana'        => $this->request->getPost('pelaksana'),
-            'detail_temuan'    => $this->request->getPost('detail_temuan'),
+            'jenis_temuan'     => $this->request->getVar('jenis_temuan'),
+            'prioritas'        => $this->request->getVar('prioritas'),
+            'potensi_gangguan' => $this->request->getVar('potensi_gangguan'),
+            'pelaksana'        => $this->request->getVar('pelaksana'),
+            'detail_temuan'    => $this->request->getVar('detail_temuan'),
         ];
 
         $recService = new \App\Services\SmartRecommendationService();

@@ -30,11 +30,17 @@ class WorkOrderModel extends Model
         $this->ensureTablesExist();
     }
 
+    private static bool $tablesChecked = false;
+
     /**
      * Pastikan tabel work_orders, wo_checklists, wo_materials, wo_histories tersedia
      */
     private function ensureTablesExist(): void
     {
+        if (self::$tablesChecked) {
+            return;
+        }
+        self::$tablesChecked = true;
         try {
             $db = \Config\Database::connect();
             $forge = \Config\Database::forge();
@@ -139,7 +145,6 @@ class WorkOrderModel extends Model
                     ],
                 ]);
                 $forge->addKey('id', true);
-                $forge->addUniqueKey('nomor_wo');
                 $forge->createTable('work_orders', true);
             }
 

@@ -244,6 +244,63 @@ class Api extends BaseController
     }
 
     /**
+     * GET /api/network/penyulang
+     * Cascading Filter Params: gi_id (optional), ulp_id (optional)
+     */
+    public function getNetworkPenyulangs()
+    {
+        $giId  = $this->request->getGet('gi_id');
+        $ulpId = $this->request->getGet('ulp_id');
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('penyulang p');
+        $builder->select('p.id, p.kode_penyulang, p.nama_penyulang, p.gi_id, p.ulp_id, p.status');
+        $builder->where('p.status', 'AKTIF');
+
+        if (!empty($giId)) {
+            $builder->where('p.gi_id', (int)$giId);
+        }
+        if (!empty($ulpId)) {
+            $builder->where('p.ulp_id', (int)$ulpId);
+        }
+
+        $builder->orderBy('p.nama_penyulang', 'ASC');
+        $penyulangs = $builder->get()->getResultArray();
+
+        return $this->respond([
+            'status' => 200,
+            'data'   => $penyulangs,
+        ]);
+    }
+
+    /**
+     * GET /api/network/ulps
+     * Filter active ULPs linked to selected Gardu Induk (optional)
+     */
+    public function getNetworkUlps()
+    {
+        $giId = $this->request->getGet('gi_id');
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('ulps u');
+        $builder->select('DISTINCT u.id, u.kode_ulp, u.nama_ulp', false);
+        $builder->where('u.status', 'AKTIF');
+
+        if (!empty($giId)) {
+            $builder->join('penyulang p', 'u.id = p.ulp_id');
+            $builder->where('p.gi_id', (int)$giId);
+        }
+
+        $builder->orderBy('u.nama_ulp', 'ASC');
+        $ulps = $builder->get()->getResultArray();
+
+        return $this->respond([
+            'status' => 200,
+            'data'   => $ulps,
+        ]);
+    }
+
+    /**
      * GET /api/sections/(:num) & GET /api/section-by-penyulang/(:num)
      */
     public function getSectionsByPenyulang(int $penyulangId)

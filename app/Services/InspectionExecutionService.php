@@ -38,9 +38,9 @@ class InspectionExecutionService
     /**
      * Start a Guided Inspection run based on a Feeder Baseline
      */
-    public function startInspection(int $inspectionTypeId, int $baselineId, int $inspectorUserId): array
+    public function startInspection(int $inspectionTypeId, int $baselineId, int $inspectorUserId, ?string $objectType = null): array
     {
-        $baseline = $this->baselineService->getBaselineDetail($baselineId);
+        $baseline = $this->baselineService->getBaselineDetail($baselineId, $objectType);
         if (!$baseline) {
             throw new \InvalidArgumentException("Baseline jaringan dengan ID {$baselineId} tidak ditemukan.");
         }

@@ -110,4 +110,45 @@ class BaselineService
 
         return $this->baselineModel->findAll();
     }
+
+    public function getBaselineDetail(int $baselineId, ?string $objectType = null): ?array
+    {
+        $baseline = $this->baselineModel->find($baselineId);
+        if (!$baseline) {
+            return null;
+        }
+
+        $assets = $this->getOrderedBaselineAssets($baselineId);
+
+        if (!empty($objectType) && strtoupper($objectType) !== 'SEMUA') {
+            $objUpper = strtoupper($objectType);
+            $assets = array_values(array_filter($assets, function ($ast) use ($objUpper) {
+                return strtoupper($ast['jenis_asset'] ?? '') === $objUpper;
+            }));
+        }
+
+        $baseline['assets'] = $assets;
+        return $baseline;
+    }
+
+    public function resolveBaselineForPenyulang(int $penyulangId, ?string $objectType = null): ?array
+    {
+        $existing = $this->baselineModel->where('penyulang_id', $penyulangId)->first();
+        if ($existing) {
+            return $this->getBaselineDetail((int)$existing['id'], $objectType);
+        }
+
+        $all = $this->getBaselines();
+        foreach ($all as $b) {
+            if ((int)($b['penyulang_id'] ?? 0) === $penyulangId) {
+                return $this->getBaselineDetail((int)$b['id'], $objectType);
+            }
+        }
+
+        if (!empty($all)) {
+            return $this->getBaselineDetail((int)$all[0]['id'], $objectType);
+        }
+
+        return null;
+    }
 }

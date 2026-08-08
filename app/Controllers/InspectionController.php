@@ -41,21 +41,48 @@ class InspectionController extends BaseController
 
     public function start()
     {
+        $giModel = new \App\Models\GarduIndukModel();
+        $ulpRepo = new \App\Repositories\UlpRepository();
+        $penyulangRepo = new \App\Repositories\PenyulangRepository();
+
         return view('inspections/start', [
-            'types'     => $this->catalogService->getInspectionTypes(),
-            'baselines' => $this->baselineService->getBaselines(),
+            'types'      => $this->catalogService->getInspectionTypes(),
+            'garduInduk' => $giModel->getActiveGi(),
+            'ulps'       => $ulpRepo->getActiveUlps(),
+            'penyulangs' => $penyulangRepo->getModel()->where('status', 'AKTIF')->findAll(),
+            'baselines'  => $this->baselineService->getBaselines(),
         ]);
     }
 
     public function storeStart()
     {
-        $typeId     = (int)$this->request->getPost('inspection_type_id');
-        $baselineId = (int)$this->request->getPost('baseline_id');
-        $userId     = (int)(session()->get('user_id') ?: 1);
+        $typeId      = (int)$this->request->getPost('inspection_type_id');
+        $baselineId  = (int)$this->request->getPost('baseline_id');
+        $penyulangId = (int)$this->request->getPost('penyulang_id');
+        $objectType  = $this->request->getPost('object_type') ?: 'SEMUA';
+        $userId      = (int)(session()->get('user_id') ?: 1);
 
         try {
-            $run = $this->executionService->startInspection($typeId, $baselineId, $userId);
-            return redirect()->to(site_url('inspections/guided/' . $run['inspection_id']))->with('success', 'Sesi inspeksi berhasil dimulai!');
+            if ($baselineId <= 0 && $penyulangId > 0) {
+                $resolved = $this->baselineService->resolveBaselineForPenyulang($penyulangId, $objectType);
+                if ($resolved) {
+                    $baselineId = (int)$resolved['id'];
+                }
+            }
+
+            if ($baselineId <= 0) {
+                $allBaselines = $this->baselineService->getBaselines();
+                if (!empty($allBaselines)) {
+                    $baselineId = (int)$allBaselines[0]['id'];
+                }
+            }
+
+            if ($baselineId <= 0) {
+                return redirect()->to(site_url('inspections/start'))->with('error', 'Belum ada rute baseline yang tersedia untuk kombinasi penyulang ini.');
+            }
+
+            $run = $this->executionService->startInspection($typeId, $baselineId, $userId, $objectType);
+            return redirect()->to(site_url('inspections/guided/' . $run['inspection_id']))->with('success', 'Sesi Guided Inspection berhasil dimulai!');
         } catch (\Throwable $e) {
             return redirect()->to(site_url('inspections/start'))->with('error', $e->getMessage());
         }

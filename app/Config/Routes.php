@@ -106,6 +106,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('master-gi/update/(:num)', 'GarduIndukController::update/$1');
     $routes->post('master-gi/delete/(:num)', 'GarduIndukController::delete/$1');
 
+    // Release v2.3.0.29 - Network Cascading Selection APIs
+    $routes->get('api/network/penyulang', 'Api::getNetworkPenyulangs');
+    $routes->get('api/network/ulps', 'Api::getNetworkUlps');
+
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
     $routes->get('assets/geojson', 'GISController::geoJson');
     $routes->get('assets/network/(:num)', 'GISController::network/$1');

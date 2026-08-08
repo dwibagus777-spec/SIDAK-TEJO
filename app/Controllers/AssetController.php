@@ -59,7 +59,7 @@ class AssetController extends BaseController
     {
         $asset = $this->service->getAssetDetail($id);
         if (!$asset) {
-            return redirect()->to(site_url('assets'))->with('error', 'Data asset tidak ditemukan.');
+            return redirect()->to(site_url('master-assets'))->with('error', 'Data asset tidak ditemukan.');
         }
 
         $topologyService = new \App\Services\AssetTopologyService();
@@ -75,7 +75,7 @@ class AssetController extends BaseController
     public function create()
     {
         if (!check_role(['administrator', 'admin_ulp', 'inspeksi'])) {
-            return redirect()->to(site_url('assets'))->with('error', 'Akses ditolak.');
+            return redirect()->to(site_url('master-assets'))->with('error', 'Akses ditolak.');
         }
 
         $ulpModel = new UlpModel();
@@ -99,7 +99,7 @@ class AssetController extends BaseController
     public function store()
     {
         if (!check_role(['administrator', 'admin_ulp', 'inspeksi'])) {
-            return redirect()->to(site_url('assets'))->with('error', 'Akses ditolak.');
+            return redirect()->to(site_url('master-assets'))->with('error', 'Akses ditolak.');
         }
 
         $jenis = $this->request->getPost('jenis_asset');
@@ -166,12 +166,12 @@ class AssetController extends BaseController
     public function edit(int $id)
     {
         if (!check_role(['administrator', 'admin_ulp', 'inspeksi'])) {
-            return redirect()->to(site_url('assets'))->with('error', 'Akses ditolak.');
+            return redirect()->to(site_url('master-assets'))->with('error', 'Akses ditolak.');
         }
 
         $asset = $this->repository->find($id);
         if (!$asset) {
-            return redirect()->to(site_url('assets'))->with('error', 'Data asset tidak ditemukan.');
+            return redirect()->to(site_url('master-assets'))->with('error', 'Data asset tidak ditemukan.');
         }
 
         $ulpModel = new UlpModel();
@@ -196,12 +196,12 @@ class AssetController extends BaseController
     public function update(int $id)
     {
         if (!check_role(['administrator', 'admin_ulp', 'inspeksi'])) {
-            return redirect()->to(site_url('assets'))->with('error', 'Akses ditolak.');
+            return redirect()->to(site_url('master-assets'))->with('error', 'Akses ditolak.');
         }
 
         $asset = $this->repository->find($id);
         if (!$asset) {
-            return redirect()->to(site_url('assets'))->with('error', 'Data asset tidak ditemukan.');
+            return redirect()->to(site_url('master-assets'))->with('error', 'Data asset tidak ditemukan.');
         }
 
         $foto = $this->request->getFile('foto');
@@ -327,13 +327,13 @@ class AssetController extends BaseController
             if ($this->request->isAJAX()) {
                 return $this->jsonResponse(['success' => true, 'message' => 'Master Asset berhasil di-soft delete.']);
             }
-            return redirect()->to(site_url('assets'))->with('success', 'Master Asset berhasil di-soft delete.');
+            return redirect()->to(site_url('master-assets'))->with('success', 'Master Asset berhasil di-soft delete.');
         }
 
         if ($this->request->isAJAX()) {
             return $this->jsonResponse(['success' => false, 'message' => 'Gagal menghapus asset.'], 400);
         }
-        return redirect()->to(site_url('assets'))->with('error', 'Gagal menghapus asset.');
+        return redirect()->to(site_url('master-assets'))->with('error', 'Gagal menghapus asset.');
     }
 
     /**
@@ -345,7 +345,7 @@ class AssetController extends BaseController
             if ($this->request->isAJAX()) {
                 return $this->jsonResponse(['success' => false, 'message' => 'Akses ditolak.'], 403);
             }
-            return redirect()->to(site_url('assets'))->with('error', 'Akses ditolak.');
+            return redirect()->to(site_url('master-assets'))->with('error', 'Akses ditolak.');
         }
 
         $adminId = (int)session()->get('user_id');
@@ -361,6 +361,6 @@ class AssetController extends BaseController
         if ($this->request->isAJAX()) {
             return $this->jsonResponse(['success' => false, 'message' => 'Gagal memulihkan asset.'], 400);
         }
-        return redirect()->to(site_url('assets'))->with('error', 'Gagal memulihkan asset.');
+        return redirect()->to(site_url('master-assets'))->with('error', 'Gagal memulihkan asset.');
     }
 }

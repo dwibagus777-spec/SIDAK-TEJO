@@ -76,4 +76,23 @@ class BaselineService
 
         return $builder->get()->getResultArray();
     }
+
+    public function getBaselines(): array
+    {
+        $db = \Config\Database::connect();
+        if (!$db->tableExists('network_baselines')) {
+            return [];
+        }
+        $list = $this->baselineModel->orderBy('name', 'ASC')->findAll();
+        if (empty($list)) {
+            $id = $this->createBaseline([
+                'name'         => 'Baseline JTM Sidoarjo Kota (Feeder GEDANGAN)',
+                'network_type' => 'JTM',
+                'ulp_id'       => 1,
+                'version'      => 'v1.0',
+            ]);
+            $list = $this->baselineModel->where('id', $id)->findAll();
+        }
+        return $list;
+    }
 }

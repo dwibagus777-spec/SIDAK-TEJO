@@ -291,6 +291,32 @@ class MigrateController extends BaseController
             $inspectionService = new \App\Services\InspectionCatalogService();
             $inspectionService->ensureCatalogSeeded();
 
+            // Seed Default Network Baseline if empty
+            if ($db->tableExists('network_baselines')) {
+                $baseCheck = $db->query("SELECT id FROM network_baselines LIMIT 1")->getResultArray();
+                if (empty($baseCheck)) {
+                    $db->query("INSERT INTO `network_baselines` (`name`, `network_type`, `status`, `created_at`, `updated_at`) VALUES ('Baseline JTM Sidoarjo Kota (Feeder GEDANGAN)', 'JTM', 'ACTIVE', NOW(), NOW())");
+                }
+            }
+
+            // Sync active assets into baseline_assets if baseline has no assets attached
+            if ($db->tableExists('network_baselines') && $db->tableExists('baseline_assets') && $db->tableExists('assets')) {
+                $baselines = $db->query("SELECT id FROM `network_baselines`")->getResultArray();
+                foreach ($baselines as $b) {
+                    $bId = (int)$b['id'];
+                    $bAssetCheck = $db->query("SELECT id FROM `baseline_assets` WHERE `baseline_id` = {$bId} LIMIT 1")->getResultArray();
+                    if (empty($bAssetCheck)) {
+                        $assets = $db->query("SELECT id FROM `assets` WHERE `status` != 'DELETED' ORDER BY `id` ASC")->getResultArray();
+                        $seq = 1;
+                        foreach ($assets as $ast) {
+                            $aId = (int)$ast['id'];
+                            $db->query("INSERT IGNORE INTO `baseline_assets` (`baseline_id`, `asset_id`, `sequence_no`, `created_at`, `updated_at`) VALUES ({$bId}, {$aId}, {$seq}, NOW(), NOW())");
+                            $seq++;
+                        }
+                    }
+                }
+            }
+
             $db->resetDataCache();
             $relColumns = $db->query("SHOW COLUMNS FROM asset_relationships")->getResultArray();
             $relColumnNames = array_column($relColumns, 'Field');

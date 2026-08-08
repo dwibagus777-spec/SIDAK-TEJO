@@ -266,14 +266,16 @@ class MigrateController extends BaseController
             $inspectionService = new \App\Services\InspectionCatalogService();
             $inspectionService->ensureCatalogSeeded();
 
+            $db->resetDataCache();
             $relColumns = $db->query("SHOW COLUMNS FROM asset_relationships")->getResultArray();
             $relColumnNames = array_column($relColumns, 'Field');
             $assetColumns = $db->query("SHOW COLUMNS FROM assets")->getResultArray();
             $assetColumnNames = array_column($assetColumns, 'Field');
+            $historyCheck = $db->query("SHOW TABLES LIKE 'asset_history'")->getResultArray();
 
             return $this->response->setJSON([
                 'db_name'                   => $db->getDatabase(),
-                'asset_history_exist'       => $db->tableExists('asset_history'),
+                'asset_history_exist'       => count($historyCheck) > 0,
                 'installation_date_present' => in_array('installation_date', $assetColumnNames),
                 'assets_fields'             => implode(', ', $assetColumnNames),
                 'rel_fields'                => implode(', ', $relColumnNames),

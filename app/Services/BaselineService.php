@@ -83,6 +83,20 @@ class BaselineService
         if (!$db->tableExists('network_baselines')) {
             return [];
         }
-        return $this->baselineModel->orderBy('name', 'ASC')->findAll();
+
+        $builder = $db->table('network_baselines nb');
+        $builder->select('nb.*, nb.network_type as type, u.nama_ulp, p.nama_penyulang, COUNT(ba.id) as total_assets');
+        $builder->join('ulp u', 'nb.ulp_id = u.id', 'left');
+        $builder->join('penyulang p', 'nb.penyulang_id = p.id', 'left');
+        $builder->join('baseline_assets ba', 'nb.id = ba.baseline_id', 'left');
+        $builder->groupBy('nb.id');
+        $builder->orderBy('nb.name', 'ASC');
+
+        $result = $builder->get()->getResultArray();
+        if (!empty($result)) {
+            return $result;
+        }
+
+        return $this->baselineModel->findAll();
     }
 }

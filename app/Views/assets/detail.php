@@ -296,7 +296,7 @@
                 <div class="timeline-social-item mb-3">
                     <span class="badge bg-success font-monospace me-2" style="font-size: 10px;"><?= esc($wo['nomor_wo']) ?></span>
                     <span class="text-muted small"><?= indo_datetime($wo['created_at']) ?></span>
-                    <h6 class="fw-bold text-dark mb-1 mt-1">Work Order: <?= esc($wo['judul_pekerjaan']) ?></h6>
+                    <h6 class="fw-bold text-dark mb-1 mt-1">Work Order: <?= esc($wo['judul_wo'] ?? $wo['judul_pekerjaan'] ?? '-') ?></h6>
                     <p class="text-muted small mb-0">Status: <strong><?= esc($wo['status']) ?></strong> &middot; Target: <?= esc($wo['target_selesai'] ?: '-') ?></p>
                 </div>
             <?php endforeach; ?>

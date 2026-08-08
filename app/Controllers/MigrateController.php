@@ -17,6 +17,45 @@ class MigrateController extends BaseController
         $executed = [];
 
         try {
+            // 0. Table gardu_induk (Master Gardu Induk)
+            $db->query("CREATE TABLE IF NOT EXISTS `gardu_induk` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `kode_gi` VARCHAR(50) NOT NULL UNIQUE,
+                `nama_gi` VARCHAR(150) NOT NULL,
+                `lokasi` VARCHAR(255) NULL,
+                `latitude` DECIMAL(10,8) NULL,
+                `longitude` DECIMAL(11,8) NULL,
+                `status` VARCHAR(20) DEFAULT 'ACTIVE',
+                `created_at` DATETIME NULL,
+                `updated_at` DATETIME NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $executed[] = 'gardu_induk';
+
+            if ($db->tableExists('penyulang')) {
+                $penyulangCols = array_column($db->query("SHOW COLUMNS FROM penyulang")->getResultArray(), 'Field');
+                if (!in_array('gi_id', $penyulangCols)) {
+                    try {
+                        $db->query("ALTER TABLE `penyulang` ADD COLUMN `gi_id` INT UNSIGNED NULL");
+                    } catch (\Throwable $exGi) {}
+                }
+            }
+
+            // Seed Master Gardu Induk if empty
+            if ($db->tableExists('gardu_induk')) {
+                $giCheck = $db->query("SELECT id FROM gardu_induk LIMIT 1")->getResultArray();
+                if (empty($giCheck)) {
+                    $gis = [
+                        ['kode' => 'GI-BDR', 'nama' => 'GI BUDURAN',  'lokasi' => 'Buduran, Sidoarjo'],
+                        ['kode' => 'GI-SDO', 'nama' => 'GI SIDOARJO', 'lokasi' => 'Sidoarjo Kota'],
+                        ['kode' => 'GI-WRU', 'nama' => 'GI WARU',     'lokasi' => 'Waru, Sidoarjo'],
+                        ['kode' => 'GI-KRN', 'nama' => 'GI KRIAN',    'lokasi' => 'Krian, Sidoarjo'],
+                    ];
+                    foreach ($gis as $g) {
+                        $db->query("INSERT INTO `gardu_induk` (`kode_gi`, `nama_gi`, `lokasi`, `status`, `created_at`, `updated_at`) VALUES ('{$g['kode']}', '{$g['nama']}', '{$g['lokasi']}', 'ACTIVE', NOW(), NOW())");
+                    }
+                }
+            }
+
             // 1. Table asset_types (Migration 000004)
             $db->query("CREATE TABLE IF NOT EXISTS `asset_types` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

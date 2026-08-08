@@ -59,10 +59,18 @@ class InspectionController extends BaseController
         $typeId      = (int)$this->request->getPost('inspection_type_id');
         $baselineId  = (int)$this->request->getPost('baseline_id');
         $penyulangId = (int)$this->request->getPost('penyulang_id');
+        $planningId  = (int)$this->request->getPost('planning_id');
         $objectType  = $this->request->getPost('object_type') ?: 'SEMUA';
         $userId      = (int)(session()->get('user_id') ?: 1);
 
         try {
+            if ($planningId > 0) {
+                try {
+                    $planningModel = new \App\Models\InspectionPlanningModel();
+                    $planningModel->update($planningId, ['status' => 'IN_PROGRESS']);
+                } catch (\Throwable $exP) {}
+            }
+
             if ($baselineId <= 0 && $penyulangId > 0) {
                 $resolved = $this->baselineService->resolveBaselineForPenyulang($penyulangId, $objectType);
                 if ($resolved) {
@@ -70,18 +78,18 @@ class InspectionController extends BaseController
                 }
             }
 
-            if ($baselineId <= 0) {
+            if ($baselineId <= 0 && $planningId <= 0) {
                 $allBaselines = $this->baselineService->getBaselines();
                 if (!empty($allBaselines)) {
                     $baselineId = (int)$allBaselines[0]['id'];
                 }
             }
 
-            if ($baselineId <= 0) {
+            if ($baselineId <= 0 && $planningId <= 0) {
                 return redirect()->to(site_url('inspections/start'))->with('error', 'Belum ada rute baseline yang tersedia untuk kombinasi penyulang ini.');
             }
 
-            $run = $this->executionService->startInspection($typeId, $baselineId, $userId, $objectType);
+            $run = $this->executionService->startInspection($typeId, $baselineId, $userId, $objectType, $planningId);
             return redirect()->to(site_url('inspections/guided/' . $run['inspection_id']))->with('success', 'Sesi Guided Inspection berhasil dimulai!');
         } catch (\Throwable $e) {
             return redirect()->to(site_url('inspections/start'))->with('error', $e->getMessage());

@@ -151,4 +151,30 @@ class BaselineService
 
         return null;
     }
+
+    public function resolveBaselineForPlanning(int $planningId): ?array
+    {
+        $db = \Config\Database::connect();
+        $planning = $db->table('inspection_plannings')->where('id', $planningId)->get()->getRowArray();
+        if (!$planning) {
+            return null;
+        }
+
+        $builder = $db->table('inspection_planning_assets pa');
+        $builder->select('pa.sequence_no, 0.0 as distance_from_previous, NULL as section_name, a.id as asset_id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.latitude, a.longitude, ct.code as construction_code, ct.name as construction_name');
+        $builder->join('assets a', 'pa.asset_id = a.id');
+        $builder->join('construction_types ct', 'a.construction_type_id = ct.id', 'left');
+        $builder->where('pa.planning_id', $planningId);
+        $builder->orderBy('pa.sequence_no', 'ASC');
+
+        $assets = $builder->get()->getResultArray();
+
+        return [
+            'id'           => 0,
+            'name'         => $planning['title'],
+            'ulp_id'       => $planning['ulp_id'],
+            'penyulang_id' => $planning['penyulang_id'],
+            'assets'       => $assets,
+        ];
+    }
 }

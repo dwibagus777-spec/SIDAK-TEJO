@@ -77,11 +77,12 @@
                                                     <i class="fas fa-boxes-stacked me-1"></i> <?= esc($t['total_assets']) ?> Target Asset
                                                 </span>
                                                 <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1 fw-bold">
-                                                    <?= esc(strupper($t['status'])) ?>
+                                                    <?= esc(strtoupper($t['status'])) ?>
                                                 </span>
                                             </div>
                                             <form action="<?= site_url('inspections/start') ?>" method="post">
                                                 <?= csrf_field() ?>
+                                                <input type="hidden" name="planning_id" value="<?= $t['id'] ?>">
                                                 <input type="hidden" name="inspection_type_id" value="<?= $t['inspection_type_id'] ?>">
                                                 <input type="hidden" name="penyulang_id" value="<?= $t['penyulang_id'] ?>">
                                                 <input type="hidden" name="object_type" value="<?= $t['jenis_asset'] ?>">

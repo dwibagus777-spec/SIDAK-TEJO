@@ -1273,6 +1273,10 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             touch-action: manipulation !important;
             transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
+        body.modal-open #global-voice-container {
+            z-index: 1030 !important;
+            pointer-events: none !important;
+        }
         #global-voice-container.shifted {
             bottom: 160px !important;
             transform: translateY(-20px) !important;

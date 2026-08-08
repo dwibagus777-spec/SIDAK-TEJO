@@ -243,7 +243,7 @@
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header bg-danger text-white border-0 rounded-top-4">
                 <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Konfirmasi Soft Delete Asset</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="formSoftDeleteAsset" action="" method="POST">
                 <?= csrf_field() ?>
@@ -267,7 +267,7 @@
                     <small class="text-muted d-block"><i class="fas fa-shield-alt text-success me-1"></i> Data aset tidak akan dihapus permanen dari database dan histori audit akan tersimpan.</small>
                 </div>
                 <div class="modal-footer bg-light border-0 rounded-bottom-4">
-                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-danger font-weight-bold px-4 rounded-3"><i class="fas fa-trash me-1"></i> Hapus Asset</button>
                 </div>
             </form>
@@ -302,8 +302,12 @@
 
                 var modalEl = document.getElementById('modalSoftDeleteAsset');
                 if (modalEl) {
-                    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                    modal.show();
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                        modal.show();
+                    } else if (typeof $ !== 'undefined' && $.fn.modal) {
+                        $(modalEl).modal('show');
+                    }
                 }
             });
         });

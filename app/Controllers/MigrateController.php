@@ -72,17 +72,22 @@ class MigrateController extends BaseController
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
             if ($db->tableExists('network_baselines')) {
-                $baseCols = [
+                $baseColsRes = $db->query("SHOW COLUMNS FROM network_baselines")->getResultArray();
+                $baseColNames = array_column($baseColsRes, 'Field');
+
+                $baseColsPatch = [
                     'network_type'   => "ALTER TABLE `network_baselines` ADD COLUMN `network_type` VARCHAR(20) DEFAULT 'JTM'",
                     'gardu_id'       => "ALTER TABLE `network_baselines` ADD COLUMN `gardu_id` INT UNSIGNED NULL",
                     'trafo_id'       => "ALTER TABLE `network_baselines` ADD COLUMN `trafo_id` INT UNSIGNED NULL",
                     'version'        => "ALTER TABLE `network_baselines` ADD COLUMN `version` VARCHAR(20) DEFAULT 'v1.0'",
                     'effective_date' => "ALTER TABLE `network_baselines` ADD COLUMN `effective_date` DATE NULL",
                 ];
-                foreach ($baseCols as $col => $sql) {
-                    try {
-                        $db->query($sql);
-                    } catch (\Throwable $exBase) {}
+                foreach ($baseColsPatch as $col => $sql) {
+                    if (!in_array($col, $baseColNames)) {
+                        try {
+                            $db->query($sql);
+                        } catch (\Throwable $exBase) {}
+                    }
                 }
             }
             $executed[] = 'network_baselines';
@@ -291,12 +296,16 @@ class MigrateController extends BaseController
             $relColumnNames = array_column($relColumns, 'Field');
             $assetColumns = $db->query("SHOW COLUMNS FROM assets")->getResultArray();
             $assetColumnNames = array_column($assetColumns, 'Field');
+            $baseColumns = $db->query("SHOW COLUMNS FROM network_baselines")->getResultArray();
+            $baseColumnNames = array_column($baseColumns, 'Field');
             $historyCheck = $db->query("SHOW TABLES LIKE 'asset_history'")->getResultArray();
 
             return $this->response->setJSON([
                 'db_name'                   => $db->getDatabase(),
                 'asset_history_exist'       => count($historyCheck) > 0,
+                'network_type_present'      => in_array('network_type', $baseColumnNames),
                 'installation_date_present' => in_array('installation_date', $assetColumnNames),
+                'network_baselines_fields'  => implode(', ', $baseColumnNames),
                 'assets_fields'             => implode(', ', $assetColumnNames),
                 'rel_fields'                => implode(', ', $relColumnNames),
             ]);

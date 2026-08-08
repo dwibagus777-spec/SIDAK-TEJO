@@ -85,10 +85,21 @@ class BaselineService
         }
 
         $builder = $db->table('network_baselines nb');
-        $builder->select('nb.*, nb.network_type as type, u.nama_ulp, p.nama_penyulang, COUNT(ba.id) as total_assets');
-        $builder->join('ulp u', 'nb.ulp_id = u.id', 'left');
-        $builder->join('penyulang p', 'nb.penyulang_id = p.id', 'left');
-        $builder->join('baseline_assets ba', 'nb.id = ba.baseline_id', 'left');
+        $builder->select('nb.*, nb.network_type as type');
+        
+        if ($db->tableExists('ulps')) {
+            $builder->select('u.nama_ulp');
+            $builder->join('ulps u', 'nb.ulp_id = u.id', 'left');
+        }
+        if ($db->tableExists('penyulang')) {
+            $builder->select('p.nama_penyulang');
+            $builder->join('penyulang p', 'nb.penyulang_id = p.id', 'left');
+        }
+        if ($db->tableExists('baseline_assets')) {
+            $builder->select('COUNT(ba.id) as total_assets');
+            $builder->join('baseline_assets ba', 'nb.id = ba.baseline_id', 'left');
+        }
+        
         $builder->groupBy('nb.id');
         $builder->orderBy('nb.name', 'ASC');
 

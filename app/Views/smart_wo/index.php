@@ -108,19 +108,19 @@
                             <?php if (empty($analytics['optimized_wos'])): ?>
                                 <tr><td colspan="7" class="text-center py-4 text-muted">Belum ada Work Order aktif.</td></tr>
                             <?php else: ?>
-                                <?php foreach ($analytics['optimized_wos'] as $idx => $wo): ?>
+                                <?php foreach (($analytics['optimized_wos'] ?? []) as $idx => $wo): ?>
                                     <tr>
                                         <td><span class="badge bg-dark rounded-circle font-monospace"><?= $idx + 1 ?></span></td>
                                         <td>
-                                            <span class="fw-bold font-monospace text-primary d-block"><?= esc($wo['nomor_wo']) ?></span>
+                                            <span class="fw-bold font-monospace text-primary d-block"><?= esc($wo['nomor_wo'] ?? '-') ?></span>
                                             <span class="fw-bold text-dark"><?= esc($wo['judul_wo'] ?? $wo['judul_pekerjaan'] ?? '-') ?></span>
                                         </td>
                                         <td><span class="badge <?= esc($wo['badge_class'] ?? 'bg-secondary') ?>"><?= esc($wo['auto_priority'] ?? '-') ?></span></td>
-                                        <td><small class="fw-bold text-secondary"><?= esc($wo['petugas_assigned'] ?: 'Tim PDKB UP3') ?></small></td>
-                                        <td><small class="text-muted"><i class="fas fa-clock me-1 text-info"></i> <?= $analytics['est_job_duration'] ?></small></td>
-                                        <td><span class="badge bg-light text-dark border"><?= esc($wo['status']) ?></span></td>
+                                        <td><small class="fw-bold text-secondary"><?= esc($wo['petugas_assigned'] ?? $wo['pelaksana'] ?? 'Tim PDKB UP3') ?></small></td>
+                                        <td><small class="text-muted"><i class="fas fa-clock me-1 text-info"></i> <?= esc($analytics['est_job_duration'] ?? '-') ?></small></td>
+                                        <td><span class="badge bg-light text-dark border"><?= esc($wo['status'] ?? '-') ?></span></td>
                                         <td class="text-center">
-                                            <a href="<?= site_url('work-orders/edit/' . $wo['id']) ?>" class="btn btn-xs btn-outline-primary rounded-pill px-2">Update &rarr;</a>
+                                            <a href="<?= site_url('work-orders/edit/' . ($wo['id'] ?? 0)) ?>" class="btn btn-xs btn-outline-primary rounded-pill px-2">Update &rarr;</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

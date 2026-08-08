@@ -773,10 +773,28 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                                 <span class="nav-link-title">Planning Inspeksi</span>
                             </a>
                         </li>
+                        <li class="nav-item <?= url_is('inspection-progress*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('inspection-progress') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-chart-line text-info"></i></span>
+                                <span class="nav-link-title">Progress Inspeksi (Live)</span>
+                            </a>
+                        </li>
                         <li class="nav-item <?= url_is('my-inspections*') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('my-inspections') ?>">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-tasks text-success"></i></span>
                                 <span class="nav-link-title">Tugas Inspeksi Saya</span>
+                            </a>
+                        </li>
+                        <li class="nav-item <?= url_is('my-progress*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('my-progress') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-play-circle text-warning"></i></span>
+                                <span class="nav-link-title">Progress Saya</span>
+                            </a>
+                        </li>
+                        <li class="nav-item <?= url_is('my-history*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('my-history') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-history text-secondary"></i></span>
+                                <span class="nav-link-title">Riwayat Saya</span>
                             </a>
                         </li>
                         <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>

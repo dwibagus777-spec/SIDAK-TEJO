@@ -114,6 +114,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('planning/detail/(:num)', 'InspectionPlanningController::detail/$1');
     $routes->get('my-inspections', 'InspectionPlanningController::myInspections');
 
+    // Release v2.3.0.32 - Inspection Progress Monitoring & Inspector History Routes
+    $routes->get('inspection-progress', 'InspectionProgressController::index');
+    $routes->get('inspection-progress/detail/(:num)', 'InspectionProgressController::detail/$1');
+    $routes->get('my-progress', 'InspectionProgressController::myProgress');
+    $routes->get('my-history', 'InspectionProgressController::myHistory');
+
     // Release v2.3.0.29 - Network Cascading Selection APIs
     $routes->get('api/network/penyulang', 'Api::getNetworkPenyulangs');
     $routes->get('api/network/ulps', 'Api::getNetworkUlps');

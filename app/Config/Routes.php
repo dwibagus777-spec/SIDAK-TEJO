@@ -125,9 +125,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('api/network/ulps', 'Api::getNetworkUlps');
 
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
-    $routes->get('master-assets/geojson', 'GISController::geoJson');
-    $routes->get('assets/network/(:num)', 'GISController::network/$1');
-    $routes->get('assets/baseline/(:num)', 'GISController::baseline/$1');
+    $routes->get('master-assets/geojson', 'GisController::geoJson');
+    $routes->get('assets/network/(:num)', 'GisController::network/$1');
+    $routes->get('assets/baseline/(:num)', 'GisController::baseline/$1');
 
     // Release v2.2.0 - Guided Inspection Execution Engine Routes
     $routes->get('inspections', 'InspectionController::index');

@@ -7,7 +7,7 @@ use App\Services\AssetTopologyService;
 use App\Services\BaselineService;
 use CodeIgniter\HTTP\ResponseInterface;
 
-class GISController extends BaseController
+class GisController extends BaseController
 {
     private GISService $gisService;
     private AssetTopologyService $topologyService;

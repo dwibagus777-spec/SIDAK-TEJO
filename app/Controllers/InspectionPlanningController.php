@@ -200,7 +200,9 @@ class InspectionPlanningController extends BaseController
      */
     public function myInspections()
     {
-        $userId = (int)(session()->get('user_id') ?: 1);
+        $userId    = (int)(session()->get('user_id') ?: 1);
+        $userUlpId = session()->get('ulp_id');
+        $userRole  = session()->get('role');
 
         $db = Database::connect();
         $builder = $db->table('inspection_plannings p');
@@ -210,12 +212,17 @@ class InspectionPlanningController extends BaseController
         $builder->join('ulps u', 'p.ulp_id = u.id', 'left');
         $builder->join('penyulang peny', 'p.penyulang_id = peny.id', 'left');
         
-        // Inspector can see tasks assigned to them or unassigned published tasks
+        // Scope ULP Rule: Administrator/Admin see all tasks; ULP Inspectors see tasks assigned to them, matching their ULP, or unassigned.
         $builder->where("p.status IN ('PUBLISHED', 'ASSIGNED', 'IN_PROGRESS')");
-        $builder->groupStart();
-        $builder->where('p.assigned_inspector_id', $userId);
-        $builder->orWhere('p.assigned_inspector_id IS NULL');
-        $builder->groupEnd();
+        if (!in_array($userRole, ['administrator', 'admin'])) {
+            $builder->groupStart();
+                $builder->where('p.assigned_inspector_id', $userId);
+                if (!empty($userUlpId)) {
+                    $builder->orWhere('p.ulp_id', (int)$userUlpId);
+                }
+                $builder->orWhere('p.assigned_inspector_id IS NULL');
+            $builder->groupEnd();
+        }
         $builder->orderBy('p.scheduled_date', 'ASC');
 
         $myTasks = $builder->get()->getResultArray();

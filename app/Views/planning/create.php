@@ -113,9 +113,9 @@
                     <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-user-check me-1"></i> STEP 5: Penugasan Petugas Inspeksi (WHO)</h6>
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold text-dark">Petugas Inspeksi Lapangan (Assigned Inspector)</label>
+                            <label class="form-label fw-bold text-dark">Petugas Inspeksi Lapangan (Assigned Inspector / Scope ULP)</label>
                             <select name="assigned_inspector_id" class="form-select form-select-lg">
-                                <option value="">-- Pilih Petugas Inspeksi --</option>
+                                <option value="">-- Semua Petugas ULP Terkait (Otomatis) --</option>
                                 <?php foreach ($inspectors as $usr): ?>
                                     <option value="<?= $usr['id'] ?>"><?= esc($usr['nama'] ?: $usr['username']) ?> (<?= esc($usr['username']) ?> &bull; <?= esc($usr['role'] ?? 'Petugas') ?>)</option>
                                 <?php endforeach; ?>

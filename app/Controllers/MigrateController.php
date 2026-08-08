@@ -52,19 +52,39 @@ class MigrateController extends BaseController
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             $executed[] = 'construction_types';
 
-            // 3. Table network_baselines (Migration 000006)
+            // 3. Table network_baselines (Migration 000006 & Schema Reconciliation)
             $db->query("CREATE TABLE IF NOT EXISTS `network_baselines` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `code` VARCHAR(50) NOT NULL UNIQUE,
+                `code` VARCHAR(50) NULL,
                 `name` VARCHAR(100) NOT NULL,
                 `type` VARCHAR(20) DEFAULT 'JTM',
+                `network_type` VARCHAR(20) DEFAULT 'JTM',
                 `ulp_id` INT UNSIGNED NULL,
                 `penyulang_id` INT UNSIGNED NULL,
+                `gardu_id` INT UNSIGNED NULL,
+                `trafo_id` INT UNSIGNED NULL,
+                `version` VARCHAR(20) DEFAULT 'v1.0',
+                `effective_date` DATE NULL,
                 `total_assets` INT DEFAULT 0,
-                `status` VARCHAR(20) DEFAULT 'AKTIF',
+                `status` VARCHAR(20) DEFAULT 'ACTIVE',
                 `created_at` DATETIME NULL,
                 `updated_at` DATETIME NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            if ($db->tableExists('network_baselines')) {
+                $baseCols = [
+                    'network_type'   => "ALTER TABLE `network_baselines` ADD COLUMN `network_type` VARCHAR(20) DEFAULT 'JTM'",
+                    'gardu_id'       => "ALTER TABLE `network_baselines` ADD COLUMN `gardu_id` INT UNSIGNED NULL",
+                    'trafo_id'       => "ALTER TABLE `network_baselines` ADD COLUMN `trafo_id` INT UNSIGNED NULL",
+                    'version'        => "ALTER TABLE `network_baselines` ADD COLUMN `version` VARCHAR(20) DEFAULT 'v1.0'",
+                    'effective_date' => "ALTER TABLE `network_baselines` ADD COLUMN `effective_date` DATE NULL",
+                ];
+                foreach ($baseCols as $col => $sql) {
+                    try {
+                        $db->query($sql);
+                    } catch (\Throwable $exBase) {}
+                }
+            }
             $executed[] = 'network_baselines';
 
             // 4. Table baseline_assets (Migration 000007)

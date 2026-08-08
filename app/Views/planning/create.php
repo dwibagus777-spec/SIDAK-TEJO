@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const jenis = jenisAssetSelect.value;
 
-        fetch(`<?= site_url('assets/geojson') ?>?penyulang_id=${penyulangId}`)
+        fetch(`<?= site_url('master-assets/geojson') ?>?penyulang_id=${penyulangId}`)
             .then(res => res.json())
             .then(res => {
                 const features = (res.features || []);

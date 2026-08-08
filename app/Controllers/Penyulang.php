@@ -5,18 +5,21 @@ namespace App\Controllers;
 use App\Services\MasterDataService;
 use App\Repositories\PenyulangRepository;
 use App\Repositories\UlpRepository;
+use App\Models\GarduIndukModel;
 
 class Penyulang extends BaseController
 {
     private MasterDataService $masterDataService;
     private PenyulangRepository $penyulangRepository;
     private UlpRepository $ulpRepository;
+    private GarduIndukModel $giModel;
 
     public function __construct()
     {
         $this->masterDataService = new MasterDataService();
         $this->penyulangRepository = new PenyulangRepository();
         $this->ulpRepository = new UlpRepository();
+        $this->giModel = new GarduIndukModel();
     }
 
     public function index()
@@ -52,7 +55,12 @@ class Penyulang extends BaseController
             $ulps = $this->ulpRepository->getActiveUlps();
         }
 
-        return view('penyulang/create', ['ulps' => $ulps]);
+        $garduInduk = $this->giModel->getActiveGi();
+
+        return view('penyulang/create', [
+            'ulps'       => $ulps,
+            'garduInduk' => $garduInduk,
+        ]);
     }
 
     public function store()
@@ -107,6 +115,7 @@ class Penyulang extends BaseController
             'kode_penyulang'    => trim($this->request->getPost('kode_penyulang')),
             'nama_penyulang'    => trim($this->request->getPost('nama_penyulang')),
             'ulp_id'            => $ulpIdInput,
+            'gi_id'             => $this->request->getPost('gi_id') ?: null,
             'status'            => $this->request->getPost('status')
         ];
 
@@ -137,9 +146,12 @@ class Penyulang extends BaseController
             ? [$this->ulpRepository->find($userUlpId)] 
             : $this->ulpRepository->getActiveUlps();
 
+        $garduInduk = $this->giModel->getActiveGi();
+
         return view('penyulang/edit', [
-            'penyulang' => $penyulang,
-            'ulps' => $ulps
+            'penyulang'  => $penyulang,
+            'ulps'       => $ulps,
+            'garduInduk' => $garduInduk,
         ]);
     }
 
@@ -171,9 +183,12 @@ class Penyulang extends BaseController
                 ? [$this->ulpRepository->find($userUlpId)] 
                 : $this->ulpRepository->getActiveUlps();
 
+            $garduInduk = $this->giModel->getActiveGi();
+
             return view('penyulang/edit', [
-                'penyulang' => $penyulang,
-                'ulps' => $ulps,
+                'penyulang'  => $penyulang,
+                'ulps'       => $ulps,
+                'garduInduk' => $garduInduk,
                 'validation' => $this->validator
             ]);
         }
@@ -194,22 +209,26 @@ class Penyulang extends BaseController
                 ? [$this->ulpRepository->find($userUlpId)] 
                 : $this->ulpRepository->getActiveUlps();
 
+            $garduInduk = $this->giModel->getActiveGi();
+
             return view('penyulang/edit', [
-                'penyulang' => $penyulang,
-                'ulps' => $ulps,
-                'error' => 'Penyulang dengan nama tersebut sudah ada di ULP yang dipilih.'
+                'penyulang'  => $penyulang,
+                'ulps'       => $ulps,
+                'garduInduk' => $garduInduk,
+                'error'      => 'Penyulang dengan nama tersebut sudah ada di ULP yang dipilih.'
             ]);
         }
 
         // Note: id_unik_penyulang tidak boleh diubah (PERMANEN)
-        $data = [
+        $updateData = [
             'kode_penyulang' => trim($this->request->getPost('kode_penyulang')),
             'nama_penyulang' => trim($this->request->getPost('nama_penyulang')),
             'ulp_id'         => $ulpIdInput,
+            'gi_id'          => $this->request->getPost('gi_id') ?: null,
             'status'         => $this->request->getPost('status')
         ];
 
-        if ($this->masterDataService->updatePenyulang($id, $data)) {
+        if ($this->masterDataService->updatePenyulang($id, $updateData)) {
             return redirect()->to(site_url('penyulang'))->with('success', 'Master Penyulang berhasil diperbarui.');
         }
 

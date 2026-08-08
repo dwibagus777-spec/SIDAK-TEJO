@@ -47,6 +47,20 @@
                     </div>
 
                     <div class="form-group mb-3">
+                        <label for="gi_id">Gardu Induk (GI)</label>
+                        <select name="gi_id" id="gi_id" class="form-control select2">
+                            <option value="">-- Pilih Gardu Induk --</option>
+                            <?php if (!empty($garduInduk)): ?>
+                                <?php foreach ($garduInduk as $gi): ?>
+                                    <option value="<?= $gi['id'] ?>" <?= old('gi_id') == $gi['id'] ? 'selected' : '' ?>>
+                                        [<?= esc($gi['kode_gi']) ?>] <?= esc($gi['nama_gi']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
                         <label for="ulp_id">ULP</label>
                         <select name="ulp_id" id="ulp_id" class="form-control select2 <?= ($validation && $validation->hasError('ulp_id')) ? 'is-invalid' : '' ?>" required>
                             <option value="">-- Pilih ULP --</option>

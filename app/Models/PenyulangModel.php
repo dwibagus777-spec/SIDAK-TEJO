@@ -11,7 +11,7 @@ class PenyulangModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $allowedFields    = ['id_unik_penyulang', 'kode_penyulang', 'nama_penyulang', 'ulp_id', 'status'];
+    protected $allowedFields    = ['id_unik_penyulang', 'kode_penyulang', 'nama_penyulang', 'ulp_id', 'gi_id', 'status'];
 
     // Timestamps
     protected $useTimestamps = true;

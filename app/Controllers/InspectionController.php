@@ -67,7 +67,12 @@ class InspectionController extends BaseController
             if ($planningId > 0) {
                 try {
                     $planningModel = new \App\Models\InspectionPlanningModel();
-                    $planningModel->update($planningId, ['status' => 'IN_PROGRESS']);
+                    $planning = $planningModel->find($planningId);
+                    $updateData = ['status' => 'IN_PROGRESS'];
+                    if ($planning && empty($planning['assigned_inspector_id'])) {
+                        $updateData['assigned_inspector_id'] = $userId;
+                    }
+                    $planningModel->update($planningId, $updateData);
                 } catch (\Throwable $exP) {}
             }
 

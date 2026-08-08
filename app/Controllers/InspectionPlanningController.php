@@ -212,15 +212,20 @@ class InspectionPlanningController extends BaseController
         $builder->join('ulps u', 'p.ulp_id = u.id', 'left');
         $builder->join('penyulang peny', 'p.penyulang_id = peny.id', 'left');
         
-        // Scope ULP Rule: Administrator/Admin see all tasks; ULP Inspectors see tasks assigned to them, matching their ULP, or unassigned.
+        // Scope ULP & Concurrency Claim Rule:
+        // - Administrator/Admin see all tasks across all ULPs.
+        // - Direct Assignment: If p.assigned_inspector_id IS NOT NULL, ONLY the assigned inspector can see it.
+        // - ULP Pool: If p.assigned_inspector_id IS NULL, any inspector matching p.ulp_id can see & claim it.
         $builder->where("p.status IN ('PUBLISHED', 'ASSIGNED', 'IN_PROGRESS')");
         if (!in_array($userRole, ['administrator', 'admin'])) {
             $builder->groupStart();
                 $builder->where('p.assigned_inspector_id', $userId);
-                if (!empty($userUlpId)) {
-                    $builder->orWhere('p.ulp_id', (int)$userUlpId);
-                }
-                $builder->orWhere('p.assigned_inspector_id IS NULL');
+                $builder->orGroupStart();
+                    $builder->where('p.assigned_inspector_id IS NULL');
+                    if (!empty($userUlpId)) {
+                        $builder->where('p.ulp_id', (int)$userUlpId);
+                    }
+                $builder->groupEnd();
             $builder->groupEnd();
         }
         $builder->orderBy('p.scheduled_date', 'ASC');

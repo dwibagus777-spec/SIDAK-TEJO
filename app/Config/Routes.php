@@ -100,6 +100,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('assets/soft-delete/(:num)', 'AssetController::softDelete/$1');
     $routes->post('assets/restore/(:num)', 'AssetController::restore/$1');
 
+    // Release v2.3.0.25 - Master Gardu Induk (GI) Management Routes
+    $routes->get('master-gi', 'GarduIndukController::index');
+    $routes->post('master-gi/store', 'GarduIndukController::store');
+    $routes->post('master-gi/update/(:num)', 'GarduIndukController::update/$1');
+    $routes->post('master-gi/delete/(:num)', 'GarduIndukController::delete/$1');
+
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
     $routes->get('assets/geojson', 'GISController::geoJson');
     $routes->get('assets/network/(:num)', 'GISController::network/$1');

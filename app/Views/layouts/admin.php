@@ -840,13 +840,14 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                             </a>
                         </li>
                         <?php if (check_role(['administrator', 'admin_ulp'])): ?>
-                        <li class="nav-item dropdown <?= (url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show active' : '') ?>">
+                        <li class="nav-item dropdown <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show active' : '') ?>">
                             <a class="nav-link dropdown-toggle" href="#menu-master" data-bs-toggle="collapse" role="button">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-layer-group"></i></span>
                                 <span class="nav-link-title">Master Referensi</span>
                             </a>
-                            <div class="collapse <?= (url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show' : '') ?>" id="menu-master">
+                            <div class="collapse <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show' : '') ?>" id="menu-master">
                                 <ul class="navbar-nav">
+                                    <li><a class="dropdown-item <?= url_is('master-gi*') ? 'active' : '' ?>" href="<?= site_url('master-gi') ?>"><i class="fas fa-charging-station me-1 text-primary"></i> Gardu Induk (GI)</a></li>
                                     <?php if (check_role(['administrator'])): ?>
                                     <li><a class="dropdown-item <?= url_is('ulps*') ? 'active' : '' ?>" href="<?= site_url('ulps') ?>">Data ULP</a></li>
                                     <?php endif; ?>

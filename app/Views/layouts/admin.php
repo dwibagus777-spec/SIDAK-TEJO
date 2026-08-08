@@ -1211,6 +1211,13 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             });
         }
         $(function () {
+            // Enterprise Global Bootstrap Modal Stacking Context Relocation (OBS-20260808-002)
+            $(document).on('show.bs.modal', '.modal', function () {
+                if (this.parentNode !== document.body) {
+                    $(this).appendTo('body');
+                }
+            });
+
             // Enterprise Global CSRF Token Sync via AJAX Response Headers
             $(document).ajaxComplete(function(event, xhr, settings) {
                 var newToken = xhr.getResponseHeader('X-CSRF-TOKEN');

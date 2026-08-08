@@ -32,19 +32,16 @@ class GarduIndukController extends BaseController
             return redirect()->to(site_url('master-gi'))->with('error', 'Akses ditolak.');
         }
 
-        $validation = \Config\Services::validation();
-        $validation->setRules([
-            'kode_gi' => 'required|min_length[3]|is_unique[gardu_induk.kode_gi]',
-            'nama_gi' => 'required|min_length[3]',
-        ]);
-
-        if (!$validation->withRequest($this->request)->run()) {
-            return redirect()->to(site_url('master-gi'))->with('error', implode(', ', $validation->getErrors()));
+        $namaGi = strtoupper(trim($this->request->getPost('nama_gi') ?: ''));
+        if (strlen($namaGi) < 3) {
+            return redirect()->to(site_url('master-gi'))->with('error', 'Nama Gardu Induk wajib diisi minimal 3 karakter.');
         }
 
+        $kodeGi = $this->giModel->generateKodeGi($namaGi);
+
         $data = [
-            'kode_gi'   => strtoupper(trim($this->request->getPost('kode_gi'))),
-            'nama_gi'   => strtoupper(trim($this->request->getPost('nama_gi'))),
+            'kode_gi'   => $kodeGi,
+            'nama_gi'   => $namaGi,
             'lokasi'    => $this->request->getPost('lokasi'),
             'latitude'  => $this->request->getPost('latitude') ?: null,
             'longitude' => $this->request->getPost('longitude') ?: null,
@@ -54,7 +51,7 @@ class GarduIndukController extends BaseController
         $this->giModel->insert($data);
         log_activity('CREATE_GI', "Membuat Gardu Induk Baru: {$data['nama_gi']} ({$data['kode_gi']})");
 
-        return redirect()->to(site_url('master-gi'))->with('success', 'Gardu Induk baru berhasil ditambahkan!');
+        return redirect()->to(site_url('master-gi'))->with('success', "Gardu Induk baru '{$data['nama_gi']}' ({$data['kode_gi']}) berhasil ditambahkan!");
     }
 
     public function update(int $id)

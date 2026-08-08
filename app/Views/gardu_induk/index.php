@@ -168,10 +168,8 @@
             <form action="<?= site_url('master-gi/store') ?>" method="post">
                 <?= csrf_field() ?>
                 <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Kode GI <span class="text-danger">*</span></label>
-                        <input type="text" name="kode_gi" class="form-control" placeholder="Misal: GI-BDR" required>
-                        <small class="text-muted">Kode unik identifikasi Gardu Induk</small>
+                    <div class="alert alert-info rounded-3 small mb-3 border-0">
+                        <i class="fas fa-magic me-1"></i> Kode GI (misal: <code>GI-BDR-001</code>) akan secara otomatis digenerasi oleh sistem berdasarkan Nama Gardu Induk yang diinputkan.
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Nama Gardu Induk <span class="text-danger">*</span></label>

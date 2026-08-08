@@ -34,7 +34,7 @@ class SmartWorkOrderService
         $totalWo = count($woList);
         $criticalWo = 0; $highWo = 0; $completedWo = 0;
 
-        foreach ($woList as &$wo) {
+        foreach ($optimizedWos as &$wo) {
             $prioRes = $this->optimizer->calculateAutoPriority($wo);
             $wo['auto_priority'] = $prioRes['priority'];
             $wo['badge_class']   = $prioRes['badge'];

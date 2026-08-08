@@ -190,17 +190,29 @@
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Menyimpan...';
 
+        let csrfHeaderName = '<?= csrf_header() ?>';
+        let csrfHashValue  = '<?= csrf_hash() ?>';
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        if (csrfHeaderName && csrfHashValue) {
+            headers[csrfHeaderName] = csrfHashValue;
+        }
+
         fetch(`<?= site_url('inspections/submit-point/') ?>${p.id}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
+            headers: headers,
             body: JSON.stringify(payload)
         })
         .then(res => res.json())
         .then(res => {
             btn.disabled = false;
+            if (res.csrf_token && res.csrf_hash) {
+                csrfHeaderName = res.csrf_token;
+                csrfHashValue  = res.csrf_hash;
+            }
             if (res.success) {
                 if (currentIndex < pointsData.length - 1) {
                     renderPoint(currentIndex + 1);

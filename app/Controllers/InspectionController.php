@@ -143,6 +143,8 @@ class InspectionController extends BaseController
             $notes      = $json['notes'] ?? null;
 
             $result = $this->executionService->savePointResult($pointId, $itemsData, $photosData, $notes);
+            $result['csrf_token'] = csrf_token();
+            $result['csrf_hash']  = csrf_hash();
             return $this->response->setJSON($result);
         } catch (\Throwable $e) {
             return $this->response->setStatusCode(500)->setJSON([

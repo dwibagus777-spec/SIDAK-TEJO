@@ -767,6 +767,18 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
                             <i class="fas fa-screwdriver-wrench me-1 text-info"></i> OPERASIONAL
                         </li>
+                        <li class="nav-item <?= url_is('planning*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('planning') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-clipboard-list text-primary"></i></span>
+                                <span class="nav-link-title">Planning Inspeksi</span>
+                            </a>
+                        </li>
+                        <li class="nav-item <?= url_is('my-inspections*') ? 'active' : '' ?>">
+                            <a class="nav-link" href="<?= site_url('my-inspections') ?>">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-tasks text-success"></i></span>
+                                <span class="nav-link-title">Tugas Inspeksi Saya</span>
+                            </a>
+                        </li>
                         <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
                         <li class="nav-item <?= url_is('temuan/create') ? 'active' : '' ?>">
                             <a class="nav-link" href="<?= site_url('temuan/create') ?>">

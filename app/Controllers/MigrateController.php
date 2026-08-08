@@ -45,16 +45,50 @@ class MigrateController extends BaseController
                 $giCheck = $db->query("SELECT id FROM gardu_induk LIMIT 1")->getResultArray();
                 if (empty($giCheck)) {
                     $gis = [
-                        ['kode' => 'GI-BDR', 'nama' => 'GI BUDURAN',  'lokasi' => 'Buduran, Sidoarjo'],
-                        ['kode' => 'GI-SDO', 'nama' => 'GI SIDOARJO', 'lokasi' => 'Sidoarjo Kota'],
-                        ['kode' => 'GI-WRU', 'nama' => 'GI WARU',     'lokasi' => 'Waru, Sidoarjo'],
-                        ['kode' => 'GI-KRN', 'nama' => 'GI KRIAN',    'lokasi' => 'Krian, Sidoarjo'],
+                        ['kode' => 'GI-BDR-001', 'nama' => 'GI BUDURAN',  'lokasi' => 'Buduran, Sidoarjo'],
+                        ['kode' => 'GI-SDR-001', 'nama' => 'GI SIDOARJO', 'lokasi' => 'Sidoarjo Kota'],
+                        ['kode' => 'GI-WRU-001', 'nama' => 'GI WARU',     'lokasi' => 'Waru, Sidoarjo'],
+                        ['kode' => 'GI-KRN-001', 'nama' => 'GI KRIAN',    'lokasi' => 'Krian, Sidoarjo'],
                     ];
                     foreach ($gis as $g) {
                         $db->query("INSERT INTO `gardu_induk` (`kode_gi`, `nama_gi`, `lokasi`, `status`, `created_at`, `updated_at`) VALUES ('{$g['kode']}', '{$g['nama']}', '{$g['lokasi']}', 'ACTIVE', NOW(), NOW())");
                     }
                 }
             }
+
+            // 0B. Table inspection_plannings (Release v2.3.0.30 - Inspection Planning Layer)
+            $db->query("CREATE TABLE IF NOT EXISTS `inspection_plannings` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `nomor_planning` VARCHAR(100) NOT NULL UNIQUE,
+                `title` VARCHAR(255) NOT NULL,
+                `inspection_type_id` INT UNSIGNED NOT NULL,
+                `gi_id` INT UNSIGNED NULL,
+                `ulp_id` INT UNSIGNED NULL,
+                `penyulang_id` INT UNSIGNED NULL,
+                `jenis_asset` VARCHAR(50) DEFAULT 'SEMUA',
+                `assigned_inspector_id` INT UNSIGNED NULL,
+                `created_by_user_id` INT UNSIGNED NOT NULL,
+                `scheduled_date` DATE NULL,
+                `published_at` DATETIME NULL,
+                `completed_at` DATETIME NULL,
+                `total_assets` INT DEFAULT 0,
+                `status` VARCHAR(30) DEFAULT 'DRAFT',
+                `created_at` DATETIME NULL,
+                `updated_at` DATETIME NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $executed[] = 'inspection_plannings';
+
+            // 0C. Table inspection_planning_assets (Release v2.3.0.30 - Planning Asset Snapshots)
+            $db->query("CREATE TABLE IF NOT EXISTS `inspection_planning_assets` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `planning_id` INT UNSIGNED NOT NULL,
+                `asset_id` INT UNSIGNED NOT NULL,
+                `sequence_no` INT DEFAULT 1,
+                `created_at` DATETIME NULL,
+                UNIQUE KEY `uniq_planning_asset` (`planning_id`, `asset_id`),
+                UNIQUE KEY `uniq_planning_seq` (`planning_id`, `sequence_no`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $executed[] = 'inspection_planning_assets';
 
             // 1. Table asset_types (Migration 000004)
             $db->query("CREATE TABLE IF NOT EXISTS `asset_types` (

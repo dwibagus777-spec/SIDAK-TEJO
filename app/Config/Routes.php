@@ -106,6 +106,14 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('master-gi/update/(:num)', 'GarduIndukController::update/$1');
     $routes->post('master-gi/delete/(:num)', 'GarduIndukController::delete/$1');
 
+    // Release v2.3.0.30 - Inspection Planning & Assignment Layer Routes
+    $routes->get('planning', 'InspectionPlanningController::index');
+    $routes->get('planning/create', 'InspectionPlanningController::create');
+    $routes->post('planning/store', 'InspectionPlanningController::store');
+    $routes->post('planning/publish/(:num)', 'InspectionPlanningController::publish/$1');
+    $routes->get('planning/detail/(:num)', 'InspectionPlanningController::detail/$1');
+    $routes->get('my-inspections', 'InspectionPlanningController::myInspections');
+
     // Release v2.3.0.29 - Network Cascading Selection APIs
     $routes->get('api/network/penyulang', 'Api::getNetworkPenyulangs');
     $routes->get('api/network/ulps', 'Api::getNetworkUlps');

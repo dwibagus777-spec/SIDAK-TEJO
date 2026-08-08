@@ -51,7 +51,7 @@ class AssetHealthService
 
         // 2. Fetch Top 10 Sections
         $builderSec = $db->table('sections s');
-        $builderSec->select('s.id, s.nama_section, s.kode_section, p.nama_penyulang');
+        $builderSec->select('s.id, s.nama_section, NULL as kode_section, p.nama_penyulang', false);
         $builderSec->join('penyulang p', 's.penyulang_id = p.id', 'left');
         $sections = $builderSec->get()->getResultArray();
 

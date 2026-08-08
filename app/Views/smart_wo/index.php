@@ -113,7 +113,7 @@
                                         <td><span class="badge bg-dark rounded-circle font-monospace"><?= $idx + 1 ?></span></td>
                                         <td>
                                             <span class="fw-bold font-monospace text-primary d-block"><?= esc($wo['nomor_wo']) ?></span>
-                                            <span class="fw-bold text-dark"><?= esc($wo['judul_pekerjaan']) ?></span>
+                                            <span class="fw-bold text-dark"><?= esc($wo['judul_wo'] ?? $wo['judul_pekerjaan'] ?? '-') ?></span>
                                         </td>
                                         <td><span class="badge <?= $wo['badge_class'] ?>"><?= $wo['auto_priority'] ?></span></td>
                                         <td><small class="fw-bold text-secondary"><?= esc($wo['petugas_assigned'] ?: 'Tim PDKB UP3') ?></small></td>

@@ -117,7 +117,7 @@
                             <select name="assigned_inspector_id" class="form-select form-select-lg">
                                 <option value="">-- Pilih Petugas Inspeksi --</option>
                                 <?php foreach ($inspectors as $usr): ?>
-                                    <option value="<?= $usr['id'] ?>"><?= esc($usr['nama_lengkap']) ?> (<?= esc($usr['username']) ?> &bull; <?= esc($usr['role'] ?? 'Petugas') ?>)</option>
+                                    <option value="<?= $usr['id'] ?>"><?= esc($usr['nama'] ?: $usr['username']) ?> (<?= esc($usr['username']) ?> &bull; <?= esc($usr['role'] ?? 'Petugas') ?>)</option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

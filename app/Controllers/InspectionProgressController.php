@@ -28,7 +28,7 @@ class InspectionProgressController extends BaseController
 
         $db = Database::connect();
         $builder = $db->table('inspections i');
-        $builder->select('i.*, t.name as type_name, u.nama_ulp, p.nama_penyulang, usr.nama_lengkap as inspector_name');
+        $builder->select('i.*, t.name as type_name, u.nama_ulp, p.nama_penyulang, COALESCE(usr.nama, usr.username) as inspector_name');
         $builder->join('inspection_types t', 'i.inspection_type_id = t.id', 'left');
         $builder->join('ulps u', 'i.ulp_id = u.id', 'left');
         $builder->join('penyulang p', 'i.penyulang_id = p.id', 'left');

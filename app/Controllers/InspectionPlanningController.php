@@ -47,7 +47,7 @@ class InspectionPlanningController extends BaseController
 
         $db = Database::connect();
         $builder = $db->table('inspection_plannings p');
-        $builder->select('p.*, t.name as type_name, gi.nama_gi, u.nama_ulp, peny.nama_penyulang, usr.nama_lengkap as inspector_name');
+        $builder->select('p.*, t.name as type_name, gi.nama_gi, u.nama_ulp, peny.nama_penyulang, COALESCE(usr.nama, usr.username) as inspector_name');
         $builder->join('inspection_types t', 'p.inspection_type_id = t.id', 'left');
         $builder->join('gardu_induk gi', 'p.gi_id = gi.id', 'left');
         $builder->join('ulps u', 'p.ulp_id = u.id', 'left');

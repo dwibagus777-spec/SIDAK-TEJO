@@ -135,6 +135,29 @@ class MigrateController extends BaseController
             }
             $executed[] = 'asset_relationships';
 
+            // 6.5. Table asset_history (Audit Trail Log)
+            $db->query("CREATE TABLE IF NOT EXISTS `asset_history` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `asset_id` INT UNSIGNED NOT NULL,
+                `tanggal` DATETIME NULL,
+                `jenis_event` VARCHAR(50) NOT NULL,
+                `status_lama` VARCHAR(50) NULL,
+                `status_baru` VARCHAR(50) NULL,
+                `referensi` VARCHAR(100) NULL,
+                `deskripsi` TEXT NULL,
+                `user_id` INT UNSIGNED NULL,
+                `approved_by` INT UNSIGNED NULL,
+                `foto_sebelum` VARCHAR(255) NULL,
+                `foto_sesudah` VARCHAR(255) NULL,
+                `ip_address` VARCHAR(50) NULL,
+                `user_agent` VARCHAR(255) NULL,
+                `device` VARCHAR(50) NULL,
+                `created_at` DATETIME NULL,
+                `updated_at` DATETIME NULL,
+                KEY `idx_asset_hist` (`asset_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $executed[] = 'asset_history';
+
             // 7. Table inspection_types (Migration 000010)
             $db->query("CREATE TABLE IF NOT EXISTS `inspection_types` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -250,6 +273,7 @@ class MigrateController extends BaseController
 
             return $this->response->setJSON([
                 'db_name'                   => $db->getDatabase(),
+                'asset_history_exist'       => $db->tableExists('asset_history'),
                 'installation_date_present' => in_array('installation_date', $assetColumnNames),
                 'assets_fields'             => implode(', ', $assetColumnNames),
                 'rel_fields'                => implode(', ', $relColumnNames),

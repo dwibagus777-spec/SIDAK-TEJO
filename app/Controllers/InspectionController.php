@@ -118,6 +118,7 @@ class InspectionController extends BaseController
             ->select('inspection_points.*, assets.kode_asset, assets.nama_asset, assets.jenis_asset, assets.lokasi, assets.latitude, assets.longitude')
             ->join('assets', 'assets.id = inspection_points.asset_id')
             ->where('inspection_points.inspection_id', $id)
+            ->where('assets.deleted_at IS NULL')
             ->orderBy('inspection_points.sequence_no', 'ASC')
             ->findAll();
 

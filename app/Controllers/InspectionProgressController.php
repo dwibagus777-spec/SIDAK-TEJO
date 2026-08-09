@@ -69,6 +69,7 @@ class InspectionProgressController extends BaseController
         $builder->select('ip.*, a.kode_asset, a.nama_asset, a.jenis_asset, a.status as asset_status, a.lokasi');
         $builder->join('assets a', 'ip.asset_id = a.id');
         $builder->where('ip.inspection_id', $id);
+        $builder->where('a.deleted_at IS NULL');
         $builder->orderBy('ip.sequence_no', 'ASC');
 
         $points = $builder->get()->getResultArray();

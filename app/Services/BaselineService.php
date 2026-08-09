@@ -165,6 +165,7 @@ class BaselineService
         $builder->join('assets a', 'pa.asset_id = a.id');
         $builder->join('construction_types ct', 'a.construction_type_id = ct.id', 'left');
         $builder->where('pa.planning_id', $planningId);
+        $builder->where('a.deleted_at IS NULL');
         $builder->orderBy('pa.sequence_no', 'ASC');
 
         $assets = $builder->get()->getResultArray();

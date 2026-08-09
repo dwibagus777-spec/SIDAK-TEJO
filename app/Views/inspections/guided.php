@@ -133,6 +133,10 @@
         if (index < 0 || index >= pointsData.length) return;
         currentIndex = index;
         const p = pointsData[index];
+        if (!p || !p.id) {
+            console.warn('[GuidedInspection] Invalid point object at index', index);
+            return;
+        }
 
         document.getElementById('point-seq-badge').innerText = '#' + String(p.sequence_no).padStart(3, '0');
         document.getElementById('asset-name-header').innerText = p.nama_asset;

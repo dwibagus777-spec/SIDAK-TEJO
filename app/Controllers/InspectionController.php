@@ -158,7 +158,9 @@ class InspectionController extends BaseController
 
         // 3. Idempotent Check: Check if inspector already has an active inspection session for this feeder/planning
         $existingRun = null;
-        if ($planningId > 0) {
+        $hasPlanningCol = $db->fieldExists('planning_id', 'inspections');
+
+        if ($planningId > 0 && $hasPlanningCol) {
             $existingRun = $this->inspectionModel
                 ->where('planning_id', $planningId)
                 ->where('inspector_user_id', $userId)

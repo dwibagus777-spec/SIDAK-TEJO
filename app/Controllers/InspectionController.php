@@ -131,10 +131,21 @@ class InspectionController extends BaseController
             return redirect()->to(site_url('gis'))->with('error', 'ASSET_INACTIVE: Aset berstatus nonaktif.');
         }
 
-        // 2. Check Feeder Planning Target Contract
+        // 2. Check Feeder Planning Target Contract (with server-side validation of planning_id candidate)
+        $candidatePlanningId = (int)($this->request->getGet('planning_id') ?? 0);
         $penyulangId = (int)($asset['penyulang_id'] ?? 0);
         $planning = null;
-        if ($penyulangId > 0 && $db->tableExists('inspection_plannings')) {
+
+        if ($candidatePlanningId > 0 && $db->tableExists('inspection_plannings')) {
+            $planning = $db->table('inspection_plannings')
+                ->where('id', $candidatePlanningId)
+                ->where('penyulang_id', $penyulangId)
+                ->whereIn('status', ['PUBLISHED', 'IN_PROGRESS'])
+                ->get()
+                ->getRowArray();
+        }
+
+        if (!$planning && $penyulangId > 0 && $db->tableExists('inspection_plannings')) {
             $planning = $db->table('inspection_plannings')
                 ->where('penyulang_id', $penyulangId)
                 ->whereIn('status', ['PUBLISHED', 'IN_PROGRESS'])

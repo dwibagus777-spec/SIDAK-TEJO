@@ -32,8 +32,13 @@ class GisController extends BaseController
                 ->getResultArray();
         }
 
+        $selectedPenyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
+        $selectedPlanningId  = (int)($this->request->getGet('planning_id') ?? 0);
+
         return view('gis/index', [
-            'penyulangs' => $penyulangs
+            'penyulangs'          => $penyulangs,
+            'selectedPenyulangId' => $selectedPenyulangId,
+            'selectedPlanningId'  => $selectedPlanningId,
         ]);
     }
 
@@ -113,7 +118,7 @@ class GisController extends BaseController
     }
 
     /**
-     * Release B - Step B3: GET master-assets/feeder-assets?penyulang_id=X&min_lat=...
+     * Release D: GET master-assets/feeder-assets?penyulang_id=X&planning_id=Y&min_lat=...
      */
     public function feederAssets(): ResponseInterface
     {
@@ -122,12 +127,13 @@ class GisController extends BaseController
             return $this->response->setStatusCode(400)->setJSON(['status' => 'error', 'message' => 'penyulang_id required.']);
         }
 
-        $minLat = $this->request->getGet('min_lat') !== null ? (float)$this->request->getGet('min_lat') : null;
-        $maxLat = $this->request->getGet('max_lat') !== null ? (float)$this->request->getGet('max_lat') : null;
-        $minLng = $this->request->getGet('min_lng') !== null ? (float)$this->request->getGet('min_lng') : null;
-        $maxLng = $this->request->getGet('max_lng') !== null ? (float)$this->request->getGet('max_lng') : null;
+        $planningId = $this->request->getGet('planning_id') !== null ? (int)$this->request->getGet('planning_id') : null;
+        $minLat     = $this->request->getGet('min_lat') !== null ? (float)$this->request->getGet('min_lat') : null;
+        $maxLat     = $this->request->getGet('max_lat') !== null ? (float)$this->request->getGet('max_lat') : null;
+        $minLng     = $this->request->getGet('min_lng') !== null ? (float)$this->request->getGet('min_lng') : null;
+        $maxLng     = $this->request->getGet('max_lng') !== null ? (float)$this->request->getGet('max_lng') : null;
 
-        $res = $this->gisService->getFeederViewportAssets($penyulangId, $minLat, $maxLat, $minLng, $maxLng);
+        $res = $this->gisService->getFeederViewportAssets($penyulangId, $minLat, $maxLat, $minLng, $maxLng, $planningId);
         return $this->response->setJSON($res);
     }
 }

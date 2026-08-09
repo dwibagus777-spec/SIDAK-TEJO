@@ -34,77 +34,54 @@ class GISService
     }
 
     /**
-     * Map Asset Type code to Leaflet marker shape
+     * Release D: Map Construction Type code/name to Leaflet marker shape & icon class
      */
-    public function getMarkerShape(?string $jenisAsset): string
+    public function getConstructionMarkerSpec(?string $jenisAsset, ?string $constructionType = null): array
     {
         $jenis = strtoupper((string)$jenisAsset);
+        $type  = strtoupper((string)$constructionType);
+        $combined = $jenis . ' ' . $type;
 
-        if (str_contains($jenis, 'TRAFO')) {
-            return 'diamond';
+        if (str_contains($combined, 'TRAFO')) {
+            return [
+                'shape'      => 'trafo',
+                'icon_class' => 'fas fa-bolt',
+                'label'      => 'TRAFO'
+            ];
         }
-        if (str_contains($jenis, 'GARDU')) {
-            return 'square';
+        if (str_contains($combined, 'GTT') || str_contains($combined, 'GARDU TRAFO')) {
+            return [
+                'shape'      => 'gtt',
+                'icon_class' => 'fas fa-charging-station',
+                'label'      => 'GTT'
+            ];
         }
-        if (str_contains($jenis, 'LBS')) {
-            return 'pentagon';
+        if (str_contains($combined, 'GARDU') || str_contains($combined, 'GDG')) {
+            return [
+                'shape'      => 'gardu',
+                'icon_class' => 'fas fa-building-columns',
+                'label'      => 'GARDU'
+            ];
         }
-        if (str_contains($jenis, 'RECLOSER')) {
-            return 'hexagon';
+        if (str_contains($combined, 'KUBIKEL') || str_contains($combined, 'SWITCH') || str_contains($combined, 'LBS') || str_contains($combined, 'RECLOSER')) {
+            return [
+                'shape'      => 'kubikel',
+                'icon_class' => 'fas fa-box-archive',
+                'label'      => 'KUBIKEL'
+            ];
         }
-        if (str_contains($jenis, 'TIANG')) {
-            return 'circle';
-        }
-
-        return 'circle';
-    }
-
-    /**
-     * Generate GeoJSON FeatureCollection for Leaflet GIS Map
-     */
-    public function getGeoJsonCollection(array $filters = [], ?int $userUlpId = null): array
-    {
-        $assets = $this->assetRepository->getFilteredAssets($filters, $userUlpId);
-        $features = [];
-
-        foreach ($assets as $a) {
-            $lat = (float)($a['latitude'] ?? 0);
-            $lng = (float)($a['longitude'] ?? 0);
-
-            if ($lat == 0 || $lng == 0) {
-                continue; // Skip assets without coordinates
-            }
-
-            $color = $this->getStatusColor($a['status'] ?? 'NORMAL');
-            $shape = $this->getMarkerShape($a['jenis_asset'] ?? '');
-
-            $features[] = [
-                'type' => 'Feature',
-                'geometry' => [
-                    'type' => 'Point',
-                    'coordinates' => [$lng, $lat]
-                ],
-                'properties' => [
-                    'id'           => (int)$a['id'],
-                    'kode_asset'   => $a['kode_asset'],
-                    'nama_asset'   => $a['nama_asset'],
-                    'jenis_asset'  => $a['jenis_asset'] ?: 'Gardu',
-                    'status'       => $a['status'],
-                    'merk'         => $a['merk'] ?: '-',
-                    'nomor_seri'   => $a['nomor_seri'] ?: '-',
-                    'lokasi'       => $a['lokasi'] ?: '-',
-                    'nama_ulp'     => $a['nama_ulp'] ?: '-',
-                    'marker_color' => $color,
-                    'marker_shape' => $shape,
-                    'detail_url'   => site_url('assets/detail/' . $a['id']),
-                    'twin_url'     => site_url('assets/digital-twin/' . $a['id']),
-                ]
+        if (str_contains($combined, 'TIANG') || str_contains($combined, 'POLE')) {
+            return [
+                'shape'      => 'pole',
+                'icon_class' => 'fas fa-square-poll-vertical',
+                'label'      => 'TIANG'
             ];
         }
 
         return [
-            'type' => 'FeatureCollection',
-            'features' => $features
+            'shape'      => 'generic',
+            'icon_class' => 'fas fa-location-dot',
+            'label'      => $jenis ?: 'ASET'
         ];
     }
 
@@ -123,6 +100,16 @@ class GISService
 
         if (!$penyulang) {
             return ['status' => 'error', 'message' => 'Penyulang tidak ditemukan.'];
+        }
+
+        $planning = null;
+        if ($db->tableExists('inspection_plannings')) {
+            $planning = $db->table('inspection_plannings')
+                ->where('penyulang_id', $penyulangId)
+                ->whereIn('status', ['PUBLISHED', 'IN_PROGRESS'])
+                ->orderBy('id', 'DESC')
+                ->get()
+                ->getRowArray();
         }
 
         $assets = $this->assetRepository->getFilteredAssets(['penyulang_id' => $penyulangId]);
@@ -149,6 +136,12 @@ class GISService
         return [
             'status'          => 'success',
             'penyulang'       => $penyulang,
+            'planning'        => $planning ? [
+                'id'             => (int)$planning['id'],
+                'nomor_planning' => $planning['nomor_planning'],
+                'title'          => $planning['title'],
+                'status'         => $planning['status'],
+            ] : null,
             'total_assets'    => count($assets),
             'valid_gis_count' => $validCount,
             'transline' => [
@@ -168,39 +161,143 @@ class GISService
     }
 
     /**
-     * Release B - Step B3: Get Lightweight Viewport Assets
+     * Release D: Get Viewport Assets with Full Feeder Planning Context & Construction Shapes
      */
-    public function getFeederViewportAssets(int $penyulangId, ?float $minLat = null, ?float $maxLat = null, ?float $minLng = null, ?float $maxLng = null): array
+    public function getFeederViewportAssets(int $penyulangId, ?float $minLat = null, ?float $maxLat = null, ?float $minLng = null, ?float $maxLng = null, ?int $planningId = null): array
     {
-        $assets = $this->assetRepository->getFilteredAssets(['penyulang_id' => $penyulangId]);
+        $db = \Config\Database::connect();
+        $planning = null;
+
+        if ($planningId > 0 && $db->tableExists('inspection_plannings')) {
+            $planning = $db->table('inspection_plannings')
+                ->where('id', $planningId)
+                ->get()
+                ->getRowArray();
+        }
+
+        if (!$planning && $penyulangId > 0 && $db->tableExists('inspection_plannings')) {
+            $planning = $db->table('inspection_plannings')
+                ->where('penyulang_id', $penyulangId)
+                ->whereIn('status', ['PUBLISHED', 'IN_PROGRESS'])
+                ->orderBy('id', 'DESC')
+                ->get()
+                ->getRowArray();
+        }
+
+        $assets = [];
+        $pointStatusMap = [];
+        $currentTargetAssetId = null;
+
+        if ($planning && $db->tableExists('inspection_planning_assets')) {
+            $builder = $db->table('inspection_planning_assets pa');
+            $builder->select('pa.sequence_no, a.*, ct.code as construction_code, ct.name as construction_name');
+            $builder->join('assets a', 'pa.asset_id = a.id');
+            $builder->join('construction_types ct', 'a.construction_type_id = ct.id', 'left');
+            $builder->where('pa.planning_id', (int)$planning['id']);
+            $builder->where('a.deleted_at IS NULL');
+            $builder->orderBy('pa.sequence_no', 'ASC');
+            $assets = $builder->get()->getResultArray();
+
+            if ($db->tableExists('inspections') && $db->tableExists('inspection_points')) {
+                $inspectionRun = $db->table('inspections')
+                    ->where('planning_id', (int)$planning['id'])
+                    ->whereIn('status', ['IN_PROGRESS', 'COMPLETED'])
+                    ->orderBy('id', 'DESC')
+                    ->get()
+                    ->getRowArray();
+
+                if ($inspectionRun) {
+                    $points = $db->table('inspection_points')
+                        ->where('inspection_id', (int)$inspectionRun['id'])
+                        ->get()
+                        ->getResultArray();
+
+                    foreach ($points as $pt) {
+                        $pointStatusMap[(int)$pt['asset_id']] = strtoupper((string)($pt['status'] ?? 'PENDING'));
+                    }
+                }
+            }
+
+            foreach ($assets as $astItem) {
+                $astId = (int)$astItem['id'];
+                $st = $pointStatusMap[$astId] ?? 'PENDING';
+                if ($st === 'PENDING' || $st === 'DRAFT') {
+                    $currentTargetAssetId = $astId;
+                    break;
+                }
+            }
+        }
+
+        if (empty($assets)) {
+            $assets = $this->assetRepository->getFilteredAssets(['penyulang_id' => $penyulangId]);
+        }
+
         $markers = [];
+        $totalPlanned = count($assets);
+        $inspectedCount = 0;
 
         foreach ($assets as $idx => $a) {
             $lat = (float)($a['latitude'] ?? 0);
             $lng = (float)($a['longitude'] ?? 0);
             if ($lat == 0 || $lng == 0) continue;
 
+            $astId = (int)$a['id'];
+            $seqNo = (int)($a['sequence_no'] ?? ($idx + 1));
+            $inspStatus = $pointStatusMap[$astId] ?? 'PENDING';
+
+            if ($inspStatus === 'PASS' || $inspStatus === 'FAIL' || $inspStatus === 'COMPLETED') {
+                $inspectedCount++;
+            }
+
+            if ($currentTargetAssetId !== null && $astId === $currentTargetAssetId && ($inspStatus === 'PENDING' || $inspStatus === 'DRAFT')) {
+                $inspStatus = 'CURRENT_TARGET';
+            }
+
             if ($minLat !== null && ($lat < $minLat || $lat > $maxLat || $lng < $minLng || $lng > $maxLng)) {
                 continue;
             }
 
+            $spec = $this->getConstructionMarkerSpec($a['jenis_asset'] ?? '', $a['construction_code'] ?? null);
+
+            $accentColor = '#0284c7';
+            if ($inspStatus === 'PASS') {
+                $accentColor = '#10b981';
+            } elseif ($inspStatus === 'FAIL') {
+                $accentColor = '#ef4444';
+            } elseif ($inspStatus === 'CURRENT_TARGET') {
+                $accentColor = '#f59e0b';
+            }
+
             $markers[] = [
-                'id'          => (int)$a['id'],
-                'sequence_no' => $idx + 1,
-                'kode_asset'  => $a['kode_asset'],
-                'nama_asset'  => $a['nama_asset'],
-                'jenis'       => $a['jenis_asset'] ?: 'Gardu',
-                'status'      => $a['status'],
-                'lat'         => $lat,
-                'lng'         => $lng,
-                'color'       => $this->getStatusColor($a['status'] ?? 'NORMAL')
+                'id'                => $astId,
+                'planning_id'       => $planning ? (int)$planning['id'] : null,
+                'sequence_no'       => $seqNo,
+                'kode_asset'        => $a['kode_asset'],
+                'nama_asset'        => $a['nama_asset'],
+                'jenis'             => $a['jenis_asset'] ?: 'Gardu',
+                'status'            => $a['status'],
+                'inspection_status' => $inspStatus,
+                'lat'               => $lat,
+                'lng'               => $lng,
+                'shape'             => $spec['shape'],
+                'icon_class'        => $spec['icon_class'],
+                'shape_label'       => $spec['label'],
+                'color'             => $accentColor,
             ];
         }
 
         return [
-            'status'  => 'success',
-            'count'   => count($markers),
-            'markers' => $markers
+            'status'          => 'success',
+            'planning'        => $planning ? [
+                'id'             => (int)$planning['id'],
+                'nomor_planning' => $planning['nomor_planning'],
+                'title'          => $planning['title'],
+                'status'         => $planning['status'],
+            ] : null,
+            'total_planned'   => $totalPlanned,
+            'inspected_count' => $inspectedCount,
+            'count'           => count($markers),
+            'markers'         => $markers
         ];
     }
 }

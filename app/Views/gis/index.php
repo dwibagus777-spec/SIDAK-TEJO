@@ -76,14 +76,103 @@
         box-shadow: 0 8px 20px rgba(0,0,0,0.3);
     }
 
-    /* Blinking Emergency Marker */
-    .pulse-emg-marker {
-        animation: pulse-red-gis 1.2s infinite;
+    /* Construction-Specific SVG/HTML Marker Icons */
+    .custom-gis-div-icon {
+        background: transparent;
+        border: none;
     }
-    @keyframes pulse-red-gis {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-        70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    .gis-construction-marker {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 11px;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .gis-construction-marker:hover {
+        transform: scale(1.25);
+        z-index: 9999 !important;
+    }
+
+    /* Shapes based on construction type */
+    .shape-pole {
+        width: 28px; height: 28px;
+        border-radius: 50%; /* Circle for Tiang */
+    }
+    .shape-gtt {
+        width: 28px; height: 28px;
+        border-radius: 6px; /* Square/Shield for GTT */
+    }
+    .shape-gardu {
+        width: 32px; height: 26px;
+        border-radius: 4px; /* Rectangular Building for Gardu */
+    }
+    .shape-kubikel {
+        width: 26px; height: 30px;
+        border-radius: 5px; /* Cubicle Panel */
+    }
+    .shape-trafo {
+        width: 28px; height: 28px;
+        transform: rotate(45deg); /* Diamond for Trafo */
+    }
+    .shape-trafo i {
+        transform: rotate(-45deg);
+    }
+    .shape-generic {
+        width: 28px; height: 28px;
+        border-radius: 50%;
+    }
+
+    /* Secondary Inspection State Accent Borders & Badges */
+    .state-pending {
+        background-color: #0284c7;
+        border: 2px solid #ffffff;
+    }
+    .state-pass {
+        background-color: #10b981;
+        border: 2px solid #ffffff;
+    }
+    .state-fail {
+        background-color: #ef4444;
+        border: 2px solid #ffffff;
+    }
+    .state-current-target {
+        background-color: #f59e0b;
+        border: 3px solid #ffffff;
+        animation: target-pulse 1.5s infinite;
+    }
+
+    @keyframes target-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    .marker-seq-badge {
+        position: absolute;
+        top: -8px; right: -8px;
+        background: #0f172a;
+        color: #f59e0b;
+        font-size: 9px;
+        font-weight: bold;
+        padding: 1px 4px;
+        border-radius: 8px;
+        border: 1px solid #f59e0b;
+        line-height: 1;
+        z-index: 10;
+    }
+    .marker-status-badge {
+        position: absolute;
+        bottom: -4px; right: -4px;
+        width: 13px; height: 13px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        border: 1px solid #fff;
     }
 
     /* Mobile Bottom Sheet */
@@ -133,12 +222,28 @@
                     <option value="">-- Pilih Penyulang (GI -> Ujung) --</option>
                     <?php if (!empty($penyulangs)): ?>
                         <?php foreach ($penyulangs as $p): ?>
-                            <option value="<?= $p['id'] ?>">
+                            <option value="<?= $p['id'] ?>" <?= (isset($selectedPenyulangId) && (int)$selectedPenyulangId === (int)$p['id']) ? 'selected' : '' ?>>
                                 <?= esc($p['nama_penyulang']) ?> (<?= esc($p['nama_ulp'] ?: 'ULP') ?>)
                             </option>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </select>
+            </div>
+
+            <!-- Feeder Inspection Journey Card Panel -->
+            <div id="feeder-inspection-card" class="p-3 bg-white rounded-3 border border-info shadow-sm mb-2" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="fw-bold text-primary font-monospace" id="fic-planning-no">PLN-20260809-001</small>
+                    <span class="badge bg-warning text-dark font-weight-bold" id="fic-progress-badge">0 / 0 Selesai</span>
+                </div>
+                <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;" id="fic-title">Planning Inspections</h6>
+                <div class="progress mb-2" style="height: 6px;">
+                    <div class="progress-bar bg-success" id="fic-progress-bar" role="progressbar" style="width: 0%;"></div>
+                </div>
+                <div class="p-2 bg-light rounded border" style="font-size: 11px;">
+                    <span class="text-muted d-block" style="font-size: 10px;">Target Inspeksi Saat Ini:</span>
+                    <strong class="text-dark font-monospace d-block" id="fic-current-target">#001 GDG-001</strong>
+                </div>
             </div>
 
             <div class="mb-2">
@@ -248,7 +353,8 @@ document.addEventListener("DOMContentLoaded", function() {
         : L.layerGroup();
     var translinePolylineLayer = L.layerGroup().addTo(map);
     var userLocationMarker = null;
-    var currentFeederId = null;
+    var currentFeederId = <?= json_encode((int)($selectedPenyulangId ?? 0)) ?> || null;
+    var currentPlanningId = <?= json_encode((int)($selectedPlanningId ?? 0)) ?> || null;
     var userCoords = null;
     var currentVisibleMarkers = [];
 
@@ -264,18 +370,54 @@ document.addEventListener("DOMContentLoaded", function() {
         return Math.round(R * c);
     }
 
+    // Release D: Construction-Specific HTML DivIcon Marker Builder
+    function createConstructionIcon(m) {
+        var shapeClass = 'shape-' + (m.shape || 'generic');
+        var statusClass = 'state-' + String(m.inspection_status || 'PENDING').toLowerCase().replace('_', '-');
+        var iconClass = m.icon_class || 'fas fa-location-dot';
+
+        var badgeHtml = '';
+        if (m.inspection_status === 'CURRENT_TARGET') {
+            badgeHtml = `<span class="marker-seq-badge">#${String(m.sequence_no).padStart(3, '0')}</span>`;
+        } else if (m.inspection_status === 'PASS') {
+            badgeHtml = `<span class="marker-status-badge bg-success"><i class="fas fa-check" style="font-size:7px;"></i></span>`;
+        } else if (m.inspection_status === 'FAIL') {
+            badgeHtml = `<span class="marker-status-badge bg-danger"><i class="fas fa-exclamation" style="font-size:7px;"></i></span>`;
+        }
+
+        var html = `
+            <div class="gis-construction-marker ${shapeClass} ${statusClass}" title="${m.shape_label || ''}: ${m.kode_asset}">
+                <i class="${iconClass}"></i>
+                ${badgeHtml}
+            </div>
+        `;
+
+        var iconSize = (m.shape === 'gardu') ? [32, 26] : (m.shape === 'kubikel') ? [26, 30] : [28, 28];
+        return L.divIcon({
+            className: 'custom-gis-div-icon',
+            html: html,
+            iconSize: iconSize,
+            iconAnchor: [iconSize[0]/2, iconSize[1]/2]
+        });
+    }
+
     // Load Feeder Network Transline & Bounds
-    function loadFeederNetwork(feederId) {
+    function loadFeederNetwork(feederId, planningId) {
         if (!feederId) return;
         currentFeederId = feederId;
+        if (planningId) currentPlanningId = planningId;
         translinePolylineLayer.clearLayers();
 
-        fetch("<?= site_url('master-assets/feeder-network') ?>?penyulang_id=" + feederId)
+        var url = "<?= site_url('master-assets/feeder-network') ?>?penyulang_id=" + feederId;
+        fetch(url)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
                     if (data.penyulang) {
                         document.getElementById('stat-feeder-name').innerText = data.penyulang.nama_penyulang;
+                    }
+                    if (data.planning) {
+                        currentPlanningId = data.planning.id;
                     }
 
                     // Render 1 Single LineString Transline Polyline Layer
@@ -304,11 +446,14 @@ document.addEventListener("DOMContentLoaded", function() {
             });
     }
 
-    // Viewport Bounding Box Asset Loader
+    // Viewport Bounding Box Asset Loader with Full Feeder Planning Context
     function loadViewportAssets() {
         if (!currentFeederId) return;
         var bounds = map.getBounds();
         var url = `<?= site_url('master-assets/feeder-assets') ?>?penyulang_id=${currentFeederId}&min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lng=${bounds.getWest()}&max_lng=${bounds.getEast()}`;
+        if (currentPlanningId) {
+            url += `&planning_id=${currentPlanningId}`;
+        }
 
         fetch(url)
             .then(res => res.json())
@@ -316,17 +461,31 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (data.status === 'success' && data.markers) {
                     markerCluster.clearLayers();
                     currentVisibleMarkers = data.markers;
-                    document.getElementById('stat-total-pins').innerText = data.count;
+                    document.getElementById('stat-total-pins').innerText = data.total_planned || data.count;
+
+                    if (data.planning) {
+                        var fic = document.getElementById('feeder-inspection-card');
+                        if (fic) {
+                            fic.style.display = 'block';
+                            document.getElementById('fic-planning-no').innerText = data.planning.nomor_planning;
+                            document.getElementById('fic-title').innerText = data.planning.title;
+                            var inspected = data.inspected_count || 0;
+                            var total = data.total_planned || data.count;
+                            document.getElementById('fic-progress-badge').innerText = inspected + ' / ' + total + ' Selesai';
+                            var pct = total > 0 ? Math.round((inspected / total) * 100) : 0;
+                            document.getElementById('fic-progress-bar').style.width = pct + '%';
+                        }
+                    }
+
+                    var currentTargetObj = null;
 
                     data.markers.forEach(function(m) {
-                        var color = m.color || '#10b981';
-                        var marker = L.circleMarker([m.lat, m.lng], {
-                            radius: 7,
-                            fillColor: color,
-                            color: '#ffffff',
-                            weight: 2,
-                            fillOpacity: 0.9
-                        });
+                        var icon = createConstructionIcon(m);
+                        var marker = L.marker([m.lat, m.lng], { icon: icon });
+
+                        if (m.inspection_status === 'CURRENT_TARGET') {
+                            currentTargetObj = m;
+                        }
 
                         marker.on('click', function() {
                             openAssetBottomSheet(m);
@@ -334,6 +493,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
                         markerCluster.addLayer(marker);
                     });
+
+                    if (currentTargetObj) {
+                        document.getElementById('fic-current-target').innerText = '#' + String(currentTargetObj.sequence_no).padStart(3, '0') + ' ' + currentTargetObj.kode_asset + ' (' + currentTargetObj.jenis + ')';
+                    } else if (data.inspected_count === data.total_planned && data.total_planned > 0) {
+                        document.getElementById('fic-current-target').innerText = '🎉 Seluruh penyulang selesai diinspeksi!';
+                    }
 
                     map.addLayer(markerCluster);
                     updateNearestAsset();
@@ -362,10 +527,15 @@ document.addEventListener("DOMContentLoaded", function() {
             card.style.display = 'block';
             document.getElementById('na-seq').innerText = '#' + String(nearest.sequence_no).padStart(3, '0');
             document.getElementById('na-kode').innerText = nearest.kode_asset;
-            document.getElementById('na-jenis').innerText = nearest.jenis + ' • ' + nearest.nama_asset;
-            document.getElementById('na-status').innerText = nearest.status;
+            document.getElementById('na-jenis').innerText = (nearest.shape_label || nearest.jenis) + ' • ' + nearest.nama_asset;
+            document.getElementById('na-status').innerText = nearest.inspection_status || nearest.status;
             document.getElementById('na-distance').innerText = nearest.calculated_distance + ' m dari posisi Anda';
-            document.getElementById('na-inspect-btn').href = `<?= site_url('inspections/start-by-asset') ?>?asset_id=${nearest.id}`;
+            
+            var naUrl = `<?= site_url('inspections/start-by-asset') ?>?asset_id=${nearest.id}`;
+            if (nearest.planning_id) {
+                naUrl += `&planning_id=${nearest.planning_id}`;
+            }
+            document.getElementById('na-inspect-btn').href = naUrl;
         }
     }
 
@@ -373,9 +543,14 @@ document.addEventListener("DOMContentLoaded", function() {
         var distText = userCoords ? getHaversineDistance(userCoords.lat, userCoords.lng, m.lat, m.lng) + ' m' : '-';
         document.getElementById('bs-seq').innerText = '#' + String(m.sequence_no).padStart(3, '0');
         document.getElementById('bs-kode').innerText = m.kode_asset;
-        document.getElementById('bs-nama').innerText = m.jenis + ' • ' + m.nama_asset;
+        document.getElementById('bs-nama').innerText = (m.shape_label || m.jenis) + ' • ' + m.nama_asset;
         document.getElementById('bs-distance').innerText = distText;
-        document.getElementById('bs-inspect-action').href = `<?= site_url('inspections/start-by-asset') ?>?asset_id=${m.id}`;
+        
+        var inspectUrl = `<?= site_url('inspections/start-by-asset') ?>?asset_id=${m.id}`;
+        if (m.planning_id) {
+            inspectUrl += `&planning_id=${m.planning_id}`;
+        }
+        document.getElementById('bs-inspect-action').href = inspectUrl;
         document.getElementById('gis-bottom-sheet').style.display = 'block';
     }
 
@@ -386,7 +561,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('feeder-select').addEventListener('change', function(e) {
         var feederId = e.target.value;
         if (feederId) {
-            loadFeederNetwork(feederId);
+            loadFeederNetwork(feederId, null);
         }
     });
 
@@ -395,6 +570,11 @@ document.addEventListener("DOMContentLoaded", function() {
             loadViewportAssets();
         }
     });
+
+    // Auto-select Feeder and Planning on page load if parameters passed
+    if (currentFeederId) {
+        loadFeederNetwork(currentFeederId, currentPlanningId);
+    }
 
     // Live GPS Location Tracking
     document.getElementById('btn-locate-me').addEventListener('click', function() {
@@ -413,4 +593,5 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 </script>
+
 <?= $this->endSection() ?>

@@ -1,5 +1,14 @@
 # 📝 CHANGELOG & VERIFIED RELEASE AUDIT TRAIL
 
+## [Release D - Full Feeder Inspection Journey & Construction-Shape GIS] - 2026-08-09
+### Added / Refactored
+- Implemented **Full Feeder Planned-Asset Inspection Journey** in `app/Services/GISService.php`, `app/Controllers/GisController.php`, `app/Views/gis/index.php`, and `app/Views/inspections/guided.php`.
+- Implemented **Construction-Specific SVG/HTML DivIcon Markers**: Tiang (`shape-pole`), GTT (`shape-gtt`), Gardu Distribusi (`shape-gardu`), Kubikel (`shape-kubikel`), and Trafo (`shape-trafo`) with distinct icons and shapes.
+- Implemented **Secondary Visual State Badges**: Inspection status (`PENDING`, `CURRENT_TARGET`, `PASS`, `FAIL`) acts as secondary border accent/badge without changing construction shape identity.
+- Implemented **Feeder Inspection Journey Card Panel**: Displays feeder planning title, progress (`X / N Inspected`), progress bar, and current target recommendation (`#047 GDG-047`).
+- Implemented **Feeder Context Rehydration**: Returning from Guided Inspection via `/gis?penyulang_id=X&planning_id=Y` restores selected feeder & planning context while keeping all planned assets visible.
+- Verified 100% boundary compliance: 5 Frozen Core Files untouched, 0% DDL, 100% SIDAK TEJO color scheme preserved.
+
 ## [v-nav-ux-reborn] - 2026-08-09
 ### Added / Refactored
 - Implemented **Navigation UX Refactor (Performance-First / Zero Regression)** in `app/Views/layouts/admin.php`.

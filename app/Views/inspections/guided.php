@@ -17,8 +17,15 @@
                         <i class="fas fa-wifi me-1"></i> ONLINE
                     </span>
                 </div>
-                <h5 class="fw-bold text-white mb-1"><?= esc($inspection['type_name']) ?></h5>
-                <p class="small text-white-50 mb-2"><i class="fas fa-route me-1"></i> <?= esc($inspection['baseline_name']) ?></p>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <h5 class="fw-bold text-white mb-0"><?= esc($inspection['type_name']) ?></h5>
+                        <p class="small text-white-50 mb-0"><i class="fas fa-route me-1"></i> <?= esc($inspection['baseline_name']) ?></p>
+                    </div>
+                    <a href="<?= site_url('gis') ?>?penyulang_id=<?= (int)($inspection['penyulang_id'] ?? 0) ?>&planning_id=<?= (int)($inspection['planning_id'] ?? 0) ?>" class="btn btn-outline-light btn-sm rounded-pill font-weight-bold">
+                        <i class="fas fa-map-location-dot me-1"></i> Kembali ke GIS
+                    </a>
+                </div>
 
                 <div class="d-flex justify-content-between align-items-center small mb-1">
                     <span class="fw-bold" id="progress-text">Titik Aset 1 dari <?= count($points) ?></span>
@@ -221,8 +228,8 @@
                 if (currentIndex < pointsData.length - 1) {
                     renderPoint(currentIndex + 1);
                 } else {
-                    alert('Seluruh titik aset telah berhasil diinspeksi!');
-                    window.location.href = '<?= site_url('inspections') ?>';
+                    alert('Seluruh titik aset pada penyulang ini telah berhasil diinspeksi!');
+                    window.location.href = '<?= site_url('gis') ?>?penyulang_id=<?= (int)($inspection['penyulang_id'] ?? 0) ?>&planning_id=<?= (int)($inspection['planning_id'] ?? 0) ?>';
                 }
             } else {
                 alert('Gagal menyimpan hasil: ' + (res.message || 'Error tidak diketahui'));

@@ -401,26 +401,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (userLocationMarker) map.removeLayer(userLocationMarker);
                 userLocationMarker = L.circleMarker([userCoords.lat, userCoords.lng], {
                     radius: 10, fillColor: '#3b82f6', color: '#ffffff', weight: 3, fillOpacity: 1
-    });
+                }).addTo(map);
 
-    function showBottomSheet(title, desc, lat, lng) {
-        var bs = document.getElementById('gis-bottom-sheet');
-        var bsTitle = document.getElementById('bs-title');
-        var bsContent = document.getElementById('bs-content');
-        var bsRoute = document.getElementById('bs-route-btn');
-        var bsWaze = document.getElementById('bs-waze-btn');
-
-        if (bs && bsTitle && bsContent) {
-            bsTitle.innerText = title;
-            bsContent.innerHTML = desc;
-            if (bsRoute) bsRoute.href = "https://www.google.com/maps/dir/?api=1&destination=" + lat + "," + lng;
-            if (bsWaze) bsWaze.href = "https://waze.com/ul?ll=" + lat + "," + lng + "&navigate=yes";
-            bs.style.display = 'block';
+                map.setView([userCoords.lat, userCoords.lng], 16);
+                updateNearestAsset();
+            });
         }
-    }
-
-    document.getElementById('btn-close-bs').addEventListener('click', function() {
-        document.getElementById('gis-bottom-sheet').style.display = 'none';
     });
 });
 </script>

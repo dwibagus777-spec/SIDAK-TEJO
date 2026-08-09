@@ -190,9 +190,8 @@ class GISService
 
         if ($planning && $db->tableExists('inspection_planning_assets')) {
             $builder = $db->table('inspection_planning_assets pa');
-            $builder->select('pa.sequence_no, a.*, ct.code as construction_code, ct.name as construction_name');
+            $builder->select('pa.sequence_no, a.*');
             $builder->join('assets a', 'pa.asset_id = a.id');
-            $builder->join('construction_types ct', 'a.construction_type_id = ct.id', 'left');
             $builder->where('pa.planning_id', (int)$planning['id']);
             $builder->where('a.deleted_at IS NULL');
             $builder->orderBy('pa.sequence_no', 'ASC');
@@ -257,7 +256,7 @@ class GISService
                 continue;
             }
 
-            $spec = $this->getConstructionMarkerSpec($a['jenis_asset'] ?? '', $a['construction_code'] ?? null);
+            $spec = $this->getConstructionMarkerSpec($a['jenis_asset'] ?? '', $a['nama_asset'] ?? null);
 
             $accentColor = '#0284c7';
             if ($inspStatus === 'PASS') {

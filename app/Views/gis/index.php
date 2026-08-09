@@ -217,7 +217,7 @@
 
 <!-- Leaflet, MarkerCluster JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -242,7 +242,10 @@ document.addEventListener("DOMContentLoaded", function() {
         else streetTile.addTo(map);
     });
 
-    var markerCluster = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
+    // Defensive MarkerCluster Capability Detection
+    var markerCluster = (typeof L.markerClusterGroup === 'function')
+        ? L.markerClusterGroup({ disableClusteringAtZoom: 16 })
+        : L.layerGroup();
     var translinePolylineLayer = L.layerGroup().addTo(map);
     var userLocationMarker = null;
     var currentFeederId = null;

@@ -198,8 +198,14 @@ class GISService
             $assets = $builder->get()->getResultArray();
 
             if ($db->tableExists('inspections') && $db->tableExists('inspection_points')) {
-                $inspectionRun = $db->table('inspections')
-                    ->where('planning_id', (int)$planning['id'])
+                $hasPlanningCol = $db->fieldExists('planning_id', 'inspections');
+                $runBuilder = $db->table('inspections');
+                if ($hasPlanningCol) {
+                    $runBuilder->where('planning_id', (int)$planning['id']);
+                } else {
+                    $runBuilder->where('penyulang_id', (int)$penyulangId);
+                }
+                $inspectionRun = $runBuilder
                     ->whereIn('status', ['IN_PROGRESS', 'COMPLETED'])
                     ->orderBy('id', 'DESC')
                     ->get()

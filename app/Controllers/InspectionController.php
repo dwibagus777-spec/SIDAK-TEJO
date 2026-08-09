@@ -101,6 +101,113 @@ class InspectionController extends BaseController
         }
     }
 
+    /**
+     * Release C: Server-Side Validation & Idempotent Start/Claim from Map Marker
+     * GET /inspections/start-by-asset?asset_id=X
+     */
+    public function startByAsset()
+    {
+        $assetId = (int)($this->request->getGet('asset_id') ?? 0);
+        $userId  = (int)(session()->get('user_id') ?: 1);
+
+        if ($assetId <= 0) {
+            return redirect()->to(site_url('gis'))->with('error', 'ASSET_NOT_FOUND: Parameter asset_id tidak valid.');
+        }
+
+        $db = \Config\Database::connect();
+
+        // 1. Server-Side Validation Contract: Verify asset exists, is ACTIVE, and deleted_at IS NULL
+        $asset = $db->table('assets')
+            ->where('id', $assetId)
+            ->where('deleted_at IS NULL')
+            ->get()
+            ->getRowArray();
+
+        if (!$asset) {
+            return redirect()->to(site_url('gis'))->with('error', 'ASSET_SOFT_DELETED: Aset tidak ditemukan atau telah dihapus.');
+        }
+
+        if (strtoupper($asset['status'] ?? '') !== 'AKTIF') {
+            return redirect()->to(site_url('gis'))->with('error', 'ASSET_INACTIVE: Aset berstatus nonaktif.');
+        }
+
+        // 2. Check Feeder Planning Target Contract
+        $penyulangId = (int)($asset['penyulang_id'] ?? 0);
+        $planning = null;
+        if ($penyulangId > 0 && $db->tableExists('inspection_plannings')) {
+            $planning = $db->table('inspection_plannings')
+                ->where('penyulang_id', $penyulangId)
+                ->whereIn('status', ['PUBLISHED', 'IN_PROGRESS'])
+                ->orderBy('id', 'DESC')
+                ->get()
+                ->getRowArray();
+        }
+
+        $planningId = $planning ? (int)$planning['id'] : null;
+
+        // 3. Idempotent Check: Check if inspector already has an active inspection session for this feeder/planning
+        $existingRun = null;
+        if ($planningId > 0) {
+            $existingRun = $this->inspectionModel
+                ->where('planning_id', $planningId)
+                ->where('inspector_user_id', $userId)
+                ->where('status', 'IN_PROGRESS')
+                ->first();
+        }
+
+        if (!$existingRun && $penyulangId > 0) {
+            $existingRun = $this->inspectionModel
+                ->where('penyulang_id', $penyulangId)
+                ->where('inspector_user_id', $userId)
+                ->where('status', 'IN_PROGRESS')
+                ->first();
+        }
+
+        if ($existingRun) {
+            // Re-use active session idempotently without creating duplicate inspection runs
+            return redirect()->to(site_url('inspections/guided/' . $existingRun['id']))->with('info', 'Melanjutkan sesi inspeksi aktif untuk penyulang ini.');
+        }
+
+        // 4. Claim & Start New Session
+        $typeId = 1;
+        $allTypes = $this->catalogService->getInspectionTypes();
+        if (!empty($allTypes)) {
+            $typeId = (int)$allTypes[0]['id'];
+        }
+
+        $resolved = $this->baselineService->resolveBaselineForPenyulang($penyulangId, 'SEMUA');
+        $baselineId = $resolved ? (int)$resolved['id'] : 0;
+
+        if ($baselineId <= 0 && $planningId > 0) {
+            $bRes = $this->baselineService->resolveBaselineForPlanning($planningId);
+            if ($bRes) $baselineId = (int)($bRes['id'] ?? 0);
+        }
+
+        if ($baselineId <= 0) {
+            $allBaselines = $this->baselineService->getBaselines();
+            if (!empty($allBaselines)) {
+                $baselineId = (int)$allBaselines[0]['id'];
+            }
+        }
+
+        if ($baselineId <= 0) {
+            return redirect()->to(site_url('gis'))->with('error', 'PLANNING_NOT_ELIGIBLE: Belum ada rute baseline untuk penyulang aset ini.');
+        }
+
+        if ($planningId > 0 && $db->tableExists('inspection_plannings')) {
+            try {
+                $pModel = new \App\Models\InspectionPlanningModel();
+                $pModel->update($planningId, [
+                    'status'                 => 'IN_PROGRESS',
+                    'assigned_inspector_id' => $userId
+                ]);
+            } catch (\Throwable $exP) {}
+        }
+
+        $run = $this->executionService->startInspection($typeId, $baselineId, $userId, 'SEMUA', $planningId);
+        return redirect()->to(site_url('inspections/guided/' . $run['inspection_id']))->with('success', 'Sesi Guided Inspection berhasil dimulai dari marker GIS!');
+    }
+
     public function guided(int $id)
     {
         $inspection = $this->inspectionModel

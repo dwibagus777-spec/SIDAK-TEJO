@@ -365,7 +365,7 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('na-jenis').innerText = nearest.jenis + ' • ' + nearest.nama_asset;
             document.getElementById('na-status').innerText = nearest.status;
             document.getElementById('na-distance').innerText = nearest.calculated_distance + ' m dari posisi Anda';
-            document.getElementById('na-inspect-btn').href = `<?= site_url('inspections/start') ?>?asset_id=${nearest.id}`;
+            document.getElementById('na-inspect-btn').href = `<?= site_url('inspections/start-by-asset') ?>?asset_id=${nearest.id}`;
         }
     }
 
@@ -375,7 +375,7 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('bs-kode').innerText = m.kode_asset;
         document.getElementById('bs-nama').innerText = m.jenis + ' • ' + m.nama_asset;
         document.getElementById('bs-distance').innerText = distText;
-        document.getElementById('bs-inspect-action').href = `<?= site_url('inspections/start') ?>?asset_id=${m.id}`;
+        document.getElementById('bs-inspect-action').href = `<?= site_url('inspections/start-by-asset') ?>?asset_id=${m.id}`;
         document.getElementById('gis-bottom-sheet').style.display = 'block';
     }
 

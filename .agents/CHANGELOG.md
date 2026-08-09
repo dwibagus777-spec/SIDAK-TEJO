@@ -1,5 +1,11 @@
 # 📝 CHANGELOG & VERIFIED RELEASE AUDIT TRAIL
 
+## [vC-interactive-map-inspection-claim] - 2026-08-09
+### Added
+- Server-side validation & idempotent marker claim endpoint (`GET /inspections/start-by-asset?asset_id=X`) in `app/Controllers/InspectionController.php`.
+- Integrated GIS Mobile Bottom Sheet & Nearest Asset Card `[ MULAI INSPEKSI ]` action with server-side planning & active asset verification.
+- Verified 100% server-side security checks (`assets.deleted_at IS NULL`, `status = 'AKTIF'`, planning target contract, and inspector session re-use).
+
 ## [vB.2-markercluster-resolution] - 2026-08-09
 ### Fixed
 - Updated `Leaflet.markercluster` CDN URL to CDNJS (`https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js`) in `app/Views/gis/index.php`.

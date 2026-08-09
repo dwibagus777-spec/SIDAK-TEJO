@@ -134,6 +134,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Release v2.2.0 - Guided Inspection Execution Engine Routes
     $routes->get('inspections', 'InspectionController::index');
     $routes->get('inspections/start', 'InspectionController::start');
+    $routes->get('inspections/start-by-asset', 'InspectionController::startByAsset');
     $routes->post('inspections/start', 'InspectionController::storeStart');
     $routes->get('inspections/guided/(:num)', 'InspectionController::guided/$1');
     $routes->post('inspections/submit-point/(:num)', 'InspectionController::submitPoint/$1');

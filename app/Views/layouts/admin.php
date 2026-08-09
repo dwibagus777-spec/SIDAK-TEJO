@@ -137,6 +137,49 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             transform: scale(1.15);
         }
 
+        /* Collapsible Navigation Group Styling */
+        .nav-header {
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s ease;
+        }
+        .nav-header:hover {
+            color: #ffffff !important;
+        }
+        .nav-header .chevron-icon {
+            transition: transform 0.2s ease;
+        }
+        .nav-header[aria-expanded="true"] .chevron-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Desktop Collapsed Sidebar Mode (~68px) */
+        @media (min-width: 992px) {
+            body.sidebar-collapsed .navbar-vertical {
+                width: 68px !important;
+            }
+            body.sidebar-collapsed .page-wrapper {
+                margin-left: 68px !important;
+            }
+            body.sidebar-collapsed .navbar-vertical .nav-link-title,
+            body.sidebar-collapsed .navbar-vertical .nav-header span,
+            body.sidebar-collapsed .navbar-vertical .nav-header .chevron-icon,
+            body.sidebar-collapsed .navbar-vertical .navbar-brand .text-start,
+            body.sidebar-collapsed .navbar-vertical .border,
+            body.sidebar-collapsed .navbar-vertical #live-sidebar-clock {
+                display: none !important;
+            }
+            body.sidebar-collapsed .navbar-vertical .nav-link {
+                margin: 0.15rem 0.35rem;
+                padding: 0.6rem 0.5rem;
+                text-align: center;
+            }
+            body.sidebar-collapsed .navbar-vertical .nav-link i.nav-icon {
+                margin-right: 0 !important;
+                font-size: 1.2rem;
+            }
+        }
+
         /* Styling dropdowns di sidebar Tabler */
         .navbar-vertical .dropdown-menu {
             background-color: #003637 !important; /* Darker tosca for submenus */
@@ -699,289 +742,269 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                     </div>
                 </div>
 
-                <!-- Navigation List with Enterprise Categories (Phase 30 UX/UI Reborn) -->
+                <!-- Navigation List with Enterprise Categories & Grouped Accordions -->
                 <div class="collapse navbar-collapse" id="sidebar-menu">
                     <ul class="navbar-nav pt-lg-3">
 
-                        <!-- CATEGORY: ANALYTICS -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-2 mb-1" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
-                            <i class="fas fa-chart-pie me-1 text-primary"></i> ANALYTICS
+                        <!-- CATEGORY 1: CORE & ANALYTICS (Expanded) -->
+                        <li class="nav-header text-uppercase text-muted px-3 mt-2 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-core" aria-expanded="true" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                            <span><i class="fas fa-compass me-1 text-primary"></i> CORE & ANALYTICS</span>
+                            <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
-                        <li class="nav-item <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('dashboard') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-gauge-high text-primary"></i></span>
-                                <span class="nav-link-title">Dashboard Utama</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= (url_is('executive-dashboard') || url_is('dashboard/executive')) ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('executive-dashboard') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-chart-line text-warning"></i></span>
-                                <span class="nav-link-title">Executive Analytics</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= (url_is('ai-copilot*') || url_is('sidak-ai*')) ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('ai-copilot') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-robot text-info"></i></span>
-                                <span class="nav-link-title">🤖 SIDAK AI Copilot</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= (url_is('ai-predictive*') || url_is('ai-center*')) ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('ai-center') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-brain text-purple"></i></span>
-                                <span class="nav-link-title">AI Center & Predictive Engine</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= (url_is('asset-health*') || url_is('penyulang/health-index*')) ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('asset-health') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-heart-pulse text-danger"></i></span>
-                                <span class="nav-link-title">Asset Health Index</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('ecc*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('ecc') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-tv text-danger"></i></span>
-                                <span class="nav-link-title">Command Center (ECC)</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('notifications*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('notifications') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-bell text-warning"></i></span>
-                                <span class="nav-link-title">Notifikasi Center</span>
-                            </a>
-                        </li>
+                        <div class="collapse show" id="group-core">
+                            <li class="nav-item <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('dashboard') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-gauge-high text-primary"></i></span>
+                                    <span class="nav-link-title">Dashboard Utama</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= (url_is('executive-dashboard') || url_is('dashboard/executive')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('executive-dashboard') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-chart-line text-warning"></i></span>
+                                    <span class="nav-link-title">Executive Analytics</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= (url_is('gis*') || url_is('peta-jaringan*') ? 'active' : '') ?>">
+                                <a class="nav-link" href="<?= site_url('gis') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-map-marked-alt text-success"></i></span>
+                                    <span class="nav-link-title">Peta Jaringan (GIS)</span>
+                                </a>
+                            </li>
+                        </div>
 
-                        <li class="nav-item <?= url_is('my-dashboard*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('my-dashboard') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-user-circle text-success"></i></span>
-                                <span class="nav-link-title">My Dashboard</span>
-                            </a>
+                        <!-- CATEGORY 2: OPERASIONAL & LAPANGAN (Expanded) -->
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-operasional" aria-expanded="true" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                            <span><i class="fas fa-screwdriver-wrench me-1 text-info"></i> OPERASIONAL & LAPANGAN</span>
+                            <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
-                        <li class="nav-item <?= url_is('ranking*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('ranking') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-ranking-star text-warning"></i></span>
-                                <span class="nav-link-title">Auto Ranking</span>
-                            </a>
-                        </li>
+                        <div class="collapse show" id="group-operasional">
+                            <li class="nav-item <?= url_is('planning*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('planning') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-clipboard-list text-primary"></i></span>
+                                    <span class="nav-link-title">Planning Inspeksi</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('inspection-progress*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('inspection-progress') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-chart-line text-info"></i></span>
+                                    <span class="nav-link-title">Progress Inspeksi (Live)</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('my-inspections*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('my-inspections') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-tasks text-success"></i></span>
+                                    <span class="nav-link-title">Tugas Inspeksi Saya</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('my-progress*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('my-progress') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-play-circle text-warning"></i></span>
+                                    <span class="nav-link-title">Progress Saya</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('my-history*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('my-history') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-history text-secondary"></i></span>
+                                    <span class="nav-link-title">Riwayat Saya</span>
+                                </a>
+                            </li>
+                            <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
+                            <li class="nav-item <?= url_is('temuan/create') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('temuan/create') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-plus-circle text-success"></i></span>
+                                    <span class="nav-link-title">Input Temuan</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            <li class="nav-item <?= (url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan') ? 'active' : '') ?>">
+                                <a class="nav-link" href="<?= site_url('temuan') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-list-check text-primary"></i></span>
+                                    <span class="nav-link-title">Data Temuan</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('work-orders*') && !url_is('work-orders/smart') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('work-orders') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-file-invoice text-info"></i></span>
+                                    <span class="nav-link-title">Work Orders (WO)</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= (url_is('smart-wo*') || url_is('work-orders/smart*')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('smart-wo') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-wand-magic-sparkles text-warning"></i></span>
+                                    <span class="nav-link-title">Smart WO Center</span>
+                                </a>
+                            </li>
+                            <?php if (!check_role(['supervisor_up3'])): ?>
+                            <li class="nav-item <?= url_is('temuan/update-pekerjaan') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('temuan/update-pekerjaan') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-pen-to-square text-warning"></i></span>
+                                    <span class="nav-link-title">Update Pekerjaan</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                        </div>
 
-                        <!-- CATEGORY: OPERASIONAL -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
-                            <i class="fas fa-screwdriver-wrench me-1 text-info"></i> OPERASIONAL
+                        <!-- CATEGORY 3: AI & INTELLIGENCE -->
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-ai" aria-expanded="<?= (url_is('ai*') || url_is('sidak-ai*') || url_is('ranking*')) ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                            <span><i class="fas fa-brain me-1 text-purple"></i> AI & INTELLIGENCE</span>
+                            <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
-                        <li class="nav-item <?= url_is('planning*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('planning') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-clipboard-list text-primary"></i></span>
-                                <span class="nav-link-title">Planning Inspeksi</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('inspection-progress*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('inspection-progress') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-chart-line text-info"></i></span>
-                                <span class="nav-link-title">Progress Inspeksi (Live)</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('my-inspections*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('my-inspections') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-tasks text-success"></i></span>
-                                <span class="nav-link-title">Tugas Inspeksi Saya</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('my-progress*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('my-progress') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-play-circle text-warning"></i></span>
-                                <span class="nav-link-title">Progress Saya</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('my-history*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('my-history') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-history text-secondary"></i></span>
-                                <span class="nav-link-title">Riwayat Saya</span>
-                            </a>
-                        </li>
-                        <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
-                        <li class="nav-item <?= url_is('temuan/create') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('temuan/create') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-plus-circle text-success"></i></span>
-                                <span class="nav-link-title">Input Temuan</span>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <li class="nav-item <?= (url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan') ? 'active' : '') ?>">
-                            <a class="nav-link" href="<?= site_url('temuan') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-list-check text-primary"></i></span>
-                                <span class="nav-link-title">Data Temuan</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('work-orders*') && !url_is('work-orders/smart') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('work-orders') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-file-invoice text-info"></i></span>
-                                <span class="nav-link-title">Work Orders (WO)</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= (url_is('smart-wo*') || url_is('work-orders/smart*')) ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('smart-wo') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-wand-magic-sparkles text-warning"></i></span>
-                                <span class="nav-link-title">Smart WO Center</span>
-                            </a>
-                        </li>
-                        <?php if (!check_role(['supervisor_up3'])): ?>
-                        <li class="nav-item <?= url_is('temuan/update-pekerjaan') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('temuan/update-pekerjaan') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-pen-to-square text-warning"></i></span>
-                                <span class="nav-link-title">Update Pekerjaan</span>
-                            </a>
-                        </li>
-                        <?php endif; ?>
+                        <div class="collapse <?= (url_is('ai*') || url_is('sidak-ai*') || url_is('ranking*')) ? 'show' : '' ?>" id="group-ai">
+                            <li class="nav-item <?= (url_is('ai-copilot*') || url_is('sidak-ai*')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('ai-copilot') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-robot text-info"></i></span>
+                                    <span class="nav-link-title">🤖 SIDAK AI Copilot</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= (url_is('ai-predictive*') || url_is('ai-center*')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('ai-center') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-brain text-purple"></i></span>
+                                    <span class="nav-link-title">AI Center & Predictive Engine</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('ranking*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('ranking') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-ranking-star text-warning"></i></span>
+                                    <span class="nav-link-title">Auto Ranking</span>
+                                </a>
+                            </li>
+                        </div>
 
-                        <!-- CATEGORY: DATA -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
-                            <i class="fas fa-database me-1 text-success"></i> DATA & GIS
+                        <!-- CATEGORY 4: DATA & MASTER REFERENSI -->
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-data" aria-expanded="<?= (url_is('master*') || url_is('asset*') || url_is('eviden*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*')) ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                            <span><i class="fas fa-database me-1 text-success"></i> DATA & MASTER REFERENSI</span>
+                            <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
-                        <?php if (!check_role(['har_row'])): ?>
-                        <li class="nav-item dropdown <?= url_is('eviden*') ? 'show active' : '' ?>">
-                            <a class="nav-link dropdown-toggle" href="#menu-eviden" data-bs-toggle="collapse" role="button" aria-expanded="<?= url_is('eviden*') ? 'true' : 'false' ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-folder-open text-primary"></i></span>
-                                <span class="nav-link-title">Eviden Lapangan</span>
-                            </a>
-                            <div class="collapse <?= url_is('eviden*') ? 'show' : '' ?>" id="menu-eviden">
-                                <ul class="navbar-nav">
-                                    <li><a class="dropdown-item <?= url_is('eviden/kubikel*') ? 'active' : '' ?>" href="<?= site_url('eviden/kubikel') ?>">Eviden Kubikel</a></li>
-                                    <li><a class="dropdown-item <?= url_is('eviden/trafo*') ? 'active' : '' ?>" href="<?= site_url('eviden/trafo') ?>">Eviden Trafo</a></li>
-                                    <li><a class="dropdown-item <?= url_is('eviden/management*') ? 'active' : '' ?>" href="<?= site_url('eviden/management') ?>">Management Trafo</a></li>
-                                </ul>
-                            </div>
-                        </li>
-                        <?php endif; ?>
-                        <li class="nav-item <?= (url_is('master-assets*') || url_is('assets*')) ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('master-assets') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-boxes-stacked text-warning"></i></span>
-                                <span class="nav-link-title">Master Asset PLN</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= (url_is('gis*') || url_is('peta-jaringan*') ? 'active' : '') ?>">
-                            <a class="nav-link" href="<?= site_url('gis') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-map-marked-alt text-success"></i></span>
-                                <span class="nav-link-title">Peta Jaringan (GIS)</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('temuan/terdekat') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('temuan/terdekat') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-location-crosshairs text-danger"></i></span>
-                                <span class="nav-link-title">Temuan Terdekat</span>
-                            </a>
-                        </li>
-                        <?php if (check_role(['administrator', 'admin_ulp'])): ?>
-                        <li class="nav-item dropdown <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show active' : '') ?>">
-                            <a class="nav-link dropdown-toggle" href="#menu-master" data-bs-toggle="collapse" role="button">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-layer-group"></i></span>
-                                <span class="nav-link-title">Master Referensi</span>
-                            </a>
-                            <div class="collapse <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show' : '') ?>" id="menu-master">
-                                <ul class="navbar-nav">
-                                    <li><a class="dropdown-item <?= url_is('master-gi*') ? 'active' : '' ?>" href="<?= site_url('master-gi') ?>"><i class="fas fa-charging-station me-1 text-primary"></i> Gardu Induk (GI)</a></li>
-                                    <?php if (check_role(['administrator'])): ?>
-                                    <li><a class="dropdown-item <?= url_is('ulps*') ? 'active' : '' ?>" href="<?= site_url('ulps') ?>">Data ULP</a></li>
-                                    <?php endif; ?>
-                                    <li><a class="dropdown-item <?= url_is('penyulang*') ? 'active' : '' ?>" href="<?= site_url('penyulang') ?>">Data Penyulang</a></li>
-                                    <li><a class="dropdown-item <?= url_is('sections*') ? 'active' : '' ?>" href="<?= site_url('sections') ?>">Data Section</a></li>
-                                    <li><a class="dropdown-item <?= url_is('users*') ? 'active' : '' ?>" href="<?= site_url('users') ?>">Data User</a></li>
-                                    <li><a class="dropdown-item <?= url_is('import*') ? 'active' : '' ?>" href="<?= site_url('import') ?>"><i class="fas fa-file-excel me-1 text-success"></i> Impor Excel</a></li>
-                                </ul>
-                            </div>
-                        </li>
-                        <?php endif; ?>
+                        <div class="collapse <?= (url_is('master*') || url_is('asset*') || url_is('eviden*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*')) ? 'show' : '' ?>" id="group-data">
+                            <li class="nav-item <?= (url_is('asset-health*') || url_is('penyulang/health-index*')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('asset-health') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-heart-pulse text-danger"></i></span>
+                                    <span class="nav-link-title">Asset Health Index</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= (url_is('master-assets*') || url_is('assets*')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('master-assets') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-boxes-stacked text-warning"></i></span>
+                                    <span class="nav-link-title">Master Asset PLN</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('temuan/terdekat') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('temuan/terdekat') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-location-crosshairs text-danger"></i></span>
+                                    <span class="nav-link-title">Temuan Terdekat</span>
+                                </a>
+                            </li>
+                            <?php if (!check_role(['har_row'])): ?>
+                            <li class="nav-item dropdown <?= url_is('eviden*') ? 'show active' : '' ?>">
+                                <a class="nav-link dropdown-toggle" href="#menu-eviden" data-bs-toggle="collapse" role="button" aria-expanded="<?= url_is('eviden*') ? 'true' : 'false' ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-folder-open text-primary"></i></span>
+                                    <span class="nav-link-title">Eviden Lapangan</span>
+                                </a>
+                                <div class="collapse <?= url_is('eviden*') ? 'show' : '' ?>" id="menu-eviden">
+                                    <ul class="navbar-nav">
+                                        <li><a class="dropdown-item <?= url_is('eviden/kubikel*') ? 'active' : '' ?>" href="<?= site_url('eviden/kubikel') ?>">Eviden Kubikel</a></li>
+                                        <li><a class="dropdown-item <?= url_is('eviden/trafo*') ? 'active' : '' ?>" href="<?= site_url('eviden/trafo') ?>">Eviden Trafo</a></li>
+                                        <li><a class="dropdown-item <?= url_is('eviden/management*') ? 'active' : '' ?>" href="<?= site_url('eviden/management') ?>">Management Trafo</a></li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <?php endif; ?>
+                            <?php if (check_role(['administrator', 'admin_ulp'])): ?>
+                            <li class="nav-item dropdown <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show active' : '') ?>">
+                                <a class="nav-link dropdown-toggle" href="#menu-master" data-bs-toggle="collapse" role="button">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-layer-group text-info"></i></span>
+                                    <span class="nav-link-title">Master Referensi</span>
+                                </a>
+                                <div class="collapse <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show' : '') ?>" id="menu-master">
+                                    <ul class="navbar-nav">
+                                        <li><a class="dropdown-item <?= url_is('master-gi*') ? 'active' : '' ?>" href="<?= site_url('master-gi') ?>"><i class="fas fa-charging-station me-1 text-primary"></i> Gardu Induk (GI)</a></li>
+                                        <?php if (check_role(['administrator'])): ?>
+                                        <li><a class="dropdown-item <?= url_is('ulps*') ? 'active' : '' ?>" href="<?= site_url('ulps') ?>">Data ULP</a></li>
+                                        <?php endif; ?>
+                                        <li><a class="dropdown-item <?= url_is('penyulang*') ? 'active' : '' ?>" href="<?= site_url('penyulang') ?>">Data Penyulang</a></li>
+                                        <li><a class="dropdown-item <?= url_is('sections*') ? 'active' : '' ?>" href="<?= site_url('sections') ?>">Data Section</a></li>
+                                        <li><a class="dropdown-item <?= url_is('users*') ? 'active' : '' ?>" href="<?= site_url('users') ?>">Data User</a></li>
+                                        <li><a class="dropdown-item <?= url_is('import*') ? 'active' : '' ?>" href="<?= site_url('import') ?>"><i class="fas fa-file-excel me-1 text-success"></i> Impor Excel</a></li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <?php endif; ?>
+                        </div>
 
-                        <!-- CATEGORY: LAPORAN -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
-                            <i class="fas fa-file-lines me-1 text-warning"></i> LAPORAN & DOKUMEN
+                        <!-- CATEGORY 5: SYSTEM & LAPORAN -->
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-system" aria-expanded="<?= (url_is('ecc*') || url_is('notifications*') || url_is('my-dashboard*') || url_is('laporan*') || url_is('documents*') || url_is('audit-log*') || url_is('integration*') || url_is('backup-database*') || url_is('change-password*')) ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                            <span><i class="fas fa-gear me-1 text-secondary"></i> SYSTEM & LAPORAN</span>
+                            <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
-                        <li class="nav-item <?= url_is('laporan*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('laporan') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-print text-primary"></i></span>
-                                <span class="nav-link-title">Pusat Laporan</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('documents*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('documents') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-file-contract text-teal"></i></span>
-                                <span class="nav-link-title">Dokumen Center</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= (url_is('audit-log*') || url_is('digital-evidence*') || url_is('time-machine*')) ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('audit-log') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-shield-halved text-warning"></i></span>
-                                <span class="nav-link-title">Audit Trail & Evidence</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('integration*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('integration') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-network-wired text-indigo"></i></span>
-                                <span class="nav-link-title">Integration Center</span>
-                            </a>
-                        </li>
-                        <li class="nav-item <?= url_is('backup-database*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('backup-database') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-database text-warning"></i></span>
-                                <span class="nav-link-title">Backup Database</span>
-                            </a>
-                        </li>
-
-                        <!-- CATEGORY: SETTING -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
-                            <i class="fas fa-sliders me-1 text-secondary"></i> SETTING & AKUN
-                        </li>
-                        <li class="nav-item <?= url_is('change-password*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('change-password') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-key text-info"></i></span>
-                                <span class="nav-link-title">Ganti Password</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-danger" href="<?= site_url('logout') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-power-off text-danger"></i></span>
-                                <span class="nav-link-title">Logout System</span>
-                            </a>
-                        </li>
-
-                        <!-- Pusat Laporan Dropdown & Identifikasi Gangguan -->
-                        <li class="nav-item dropdown <?= url_is('laporan*') ? 'show active' : '' ?>">
-                            <a class="nav-link dropdown-toggle" href="#menu-laporan" data-bs-toggle="collapse" role="button">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-print text-primary"></i></span>
-                                <span class="nav-link-title">Pusat Laporan</span>
-                            </a>
-                            <div class="collapse <?= url_is('laporan*') ? 'show' : '' ?>" id="menu-laporan">
-                                <ul class="navbar-nav">
-                                    <li><a class="dropdown-item <?= (url_is('laporan/temuan*') || url_is('laporan') ? 'active' : '') ?>" href="<?= site_url('laporan/temuan') ?>">Lap. Temuan</a></li>
-                                    <li><a class="dropdown-item <?= url_is('laporan/eviden*') ? 'active' : '' ?>" href="<?= site_url('laporan/eviden') ?>">Lap. Eviden Lapangan</a></li>
-                                    <li><a class="dropdown-item <?= url_is('laporan/management*') ? 'active' : '' ?>" href="<?= site_url('laporan/management') ?>">Lap. Management Trafo</a></li>
-                                </ul>
-                            </div>
-                        </li>
-                        <li class="nav-item <?= url_is('identifikasi*') ? 'active' : '' ?>">
-                            <a class="nav-link" href="<?= site_url('identifikasi') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-bolt text-warning"></i></span>
-                                <span class="nav-link-title">Identifikasi Gangguan</span>
-                            </a>
-                        </li>
-
-                        <!-- Ganti Versi Layout -->
-                        <li class="nav-item mt-3 border-top pt-2">
-                            <a class="nav-link text-info font-weight-bold" href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="nav-icon fas fa-mobile-screen-button"></i>
-                                </span>
-                                <span class="nav-link-title">Ganti Versi Mobile</span>
-                            </a>
-                        </li>
-
-                        <!-- Logout / Keluar -->
-                        <li class="nav-item">
-                            <a class="nav-link text-danger font-weight-bold" href="<?= site_url('logout') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="nav-icon fas fa-power-off"></i>
-                                </span>
-                                <span class="nav-link-title">Keluar (Logout)</span>
-                            </a>
-                        </li>
+                        <div class="collapse <?= (url_is('ecc*') || url_is('notifications*') || url_is('my-dashboard*') || url_is('laporan*') || url_is('documents*') || url_is('audit-log*') || url_is('integration*') || url_is('backup-database*') || url_is('change-password*')) ? 'show' : '' ?>" id="group-system">
+                            <li class="nav-item <?= url_is('ecc*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('ecc') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-tv text-danger"></i></span>
+                                    <span class="nav-link-title">Command Center (ECC)</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('notifications*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('notifications') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-bell text-warning"></i></span>
+                                    <span class="nav-link-title">Notifikasi Center</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('my-dashboard*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('my-dashboard') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-user-circle text-success"></i></span>
+                                    <span class="nav-link-title">My Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown <?= url_is('laporan*') ? 'show active' : '' ?>">
+                                <a class="nav-link dropdown-toggle" href="#menu-laporan" data-bs-toggle="collapse" role="button">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-print text-primary"></i></span>
+                                    <span class="nav-link-title">Pusat Laporan</span>
+                                </a>
+                                <div class="collapse <?= url_is('laporan*') ? 'show' : '' ?>" id="menu-laporan">
+                                    <ul class="navbar-nav">
+                                        <li><a class="dropdown-item <?= (url_is('laporan/temuan*') || url_is('laporan') ? 'active' : '') ?>" href="<?= site_url('laporan/temuan') ?>">Lap. Temuan</a></li>
+                                        <li><a class="dropdown-item <?= url_is('laporan/eviden*') ? 'active' : '' ?>" href="<?= site_url('laporan/eviden') ?>">Lap. Eviden Lapangan</a></li>
+                                        <li><a class="dropdown-item <?= url_is('laporan/management*') ? 'active' : '' ?>" href="<?= site_url('laporan/management') ?>">Lap. Management Trafo</a></li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="nav-item <?= url_is('documents*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('documents') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-file-contract text-teal"></i></span>
+                                    <span class="nav-link-title">Dokumen Center</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= (url_is('audit-log*') || url_is('digital-evidence*') || url_is('time-machine*')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('audit-log') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-shield-halved text-warning"></i></span>
+                                    <span class="nav-link-title">Audit Trail & Evidence</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('integration*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('integration') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-network-wired text-indigo"></i></span>
+                                    <span class="nav-link-title">Integration Center</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('backup-database*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('backup-database') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-database text-warning"></i></span>
+                                    <span class="nav-link-title">Backup Database</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('change-password*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('change-password') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-key text-info"></i></span>
+                                    <span class="nav-link-title">Ganti Password</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-danger font-weight-bold" href="<?= site_url('logout') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-power-off text-danger"></i></span>
+                                    <span class="nav-link-title">Logout System</span>
+                                </a>
+                            </li>
+                        </div>
                     </ul>
                 </div>
             </div>
@@ -993,6 +1016,9 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             <header class="navbar navbar-expand navbar-light d-flex d-print-none navbar-top-wrapper" style="border-bottom: 1px solid rgba(0, 0, 0, 0.08); background-color: #ffffff; padding: 0.5rem 1rem;">
                 <div class="container-xl d-flex justify-content-between align-items-center flex-nowrap" style="gap: 8px;">
                     <div class="d-flex align-items-center flex-shrink-0">
+                        <button type="button" class="btn btn-outline-secondary btn-sm me-2 d-none d-lg-inline-flex align-items-center" id="btn-collapse-sidebar" title="Toggle Sidebar Mode">
+                            <i class="fas fa-bars"></i>
+                        </button>
                         <!-- Mobile toggle view for desktop -->
                         <a href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>" class="btn btn-outline-primary btn-sm px-2 py-1" style="font-size: 11px; font-weight: 700; border-radius: 4px; white-space: nowrap;">
                             <i class="fas fa-mobile-screen-button me-1"></i> Versi Mobile
@@ -2038,7 +2064,46 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 });
             });
         })();
+
+        // Desktop Sidebar Collapse & Storage Handler
+        document.addEventListener("DOMContentLoaded", function() {
+            var btnCollapse = document.getElementById('btn-collapse-sidebar');
+            if (btnCollapse) {
+                btnCollapse.addEventListener('click', function() {
+                    document.body.classList.toggle('sidebar-collapsed');
+                    var isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                    localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                    if (typeof window.L !== 'undefined' && typeof window.map !== 'undefined' && window.map) {
+                        setTimeout(function() { window.map.invalidateSize(); }, 200);
+                    }
+                });
+                if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                    document.body.classList.add('sidebar-collapsed');
+                }
+            }
+        });
     </script>
+
+    <!-- Mobile Field Bottom Navigation Bar (< 992px) -->
+    <div class="mobile-bottom-nav d-lg-none d-print-none fixed-bottom border-top border-secondary py-1 px-2 d-flex justify-content-around align-items-center" style="z-index: 1040; background-color: #003637 !important; height: 56px; box-shadow: 0 -4px 12px rgba(0,0,0,0.15);">
+        <a href="<?= site_url('dashboard') ?>" class="text-center text-white text-decoration-none <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 22%;">
+            <i class="fas fa-gauge-high d-block fs-5 mb-1 <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'text-warning' : 'text-white' ?>"></i>
+            <span>Home</span>
+        </a>
+        <a href="<?= site_url('gis') ?>" class="text-center text-white text-decoration-none <?= url_is('gis*') ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 22%;">
+            <i class="fas fa-map-marked-alt d-block fs-5 mb-1 <?= url_is('gis*') ? 'text-warning' : 'text-success' ?>"></i>
+            <span>GIS</span>
+        </a>
+        <a href="<?= site_url('my-inspections') ?>" class="text-center text-white text-decoration-none <?= (url_is('my-inspections*') || url_is('planning*') || url_is('inspections*')) ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 22%;">
+            <i class="fas fa-tasks d-block fs-5 mb-1 <?= (url_is('my-inspections*') || url_is('planning*') || url_is('inspections*')) ? 'text-warning' : 'text-info' ?>"></i>
+            <span>Inspeksi</span>
+        </a>
+        <a href="#sidebar-menu" class="text-center text-white text-decoration-none opacity-75" data-bs-toggle="collapse" role="button" aria-controls="sidebar-menu" aria-expanded="false" style="font-size: 10px; width: 22%;">
+            <i class="fas fa-bars d-block fs-5 mb-1 text-warning"></i>
+            <span>Menu</span>
+        </a>
+    </div>
+
     <?= $this->renderSection('scripts') ?>
 </body>
 </html>

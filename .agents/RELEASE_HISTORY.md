@@ -15,3 +15,4 @@
 | **`vB.1-js-syntax-fix`** | Release vB.1: GIS View JS Syntax Fix | Fixed unclosed geolocation callback and missing closing brackets in `app/Views/gis/index.php` | 🟢 LIVE |
 | **`vB.2-markercluster-resolution`** | Release vB.2: MarkerCluster Dependency Resolution | Updated MarkerCluster CDN URL to cdnjs and implemented defensive capability detection `typeof L.markerClusterGroup === 'function'` | 🟢 LIVE |
 | **`vC-interactive-map-inspection-claim`** | Release C: Interactive Map Marker Inspection Selection | Added `startByAsset()` endpoint with 100% server-side validation & idempotent session claim from GIS map | 🟡 READY FOR RUNTIME VERIFICATION (C-08 Concurrency Evidence Pending) |
+| **`v-nav-ux-reborn`** | Navigation UX Refactor (Performance-First / Zero Regression) | Refactored sidebar into 5 grouped collapsible categories, desktop collapsed mode (~68px), and mobile bottom nav bar | 🟡 DEPLOYED (Pending Runtime Verification) |

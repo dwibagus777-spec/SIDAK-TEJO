@@ -1,5 +1,13 @@
 # 📝 CHANGELOG & VERIFIED RELEASE AUDIT TRAIL
 
+## [v-nav-ux-reborn] - 2026-08-09
+### Added / Refactored
+- Implemented **Navigation UX Refactor (Performance-First / Zero Regression)** in `app/Views/layouts/admin.php`.
+- Grouped 27 navigation items into 5 collapsible accordion categories (CORE & ANALYTICS, OPERASIONAL & LAPANGAN, AI & INTELLIGENCE, DATA & MASTER REFERENSI, SYSTEM & LAPORAN).
+- Implemented **Desktop Collapsed Mode** (~68px width) via `#btn-collapse-sidebar` toggle with auto Leaflet map canvas expansion (`window.map.invalidateSize()`).
+- Implemented **Mobile Field Bottom Navigation Bar** (`< 992px`) for field workers (Home, GIS, Inspeksi, More Drawer).
+- Preserved 100% of existing color scheme (`--color-tosca-dark`, `#FF6B35` green energy accent), 0% backend changes, 0% DDL, and 0% frozen core engine modification.
+
 ## [vC-interactive-map-inspection-claim] - 2026-08-09
 ### Added
 - Server-side validation & idempotent marker claim endpoint (`GET /inspections/start-by-asset?asset_id=X`) in `app/Controllers/InspectionController.php`.

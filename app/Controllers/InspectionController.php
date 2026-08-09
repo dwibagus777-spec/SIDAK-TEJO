@@ -127,7 +127,7 @@ class InspectionController extends BaseController
             return redirect()->to(site_url('gis'))->with('error', 'ASSET_SOFT_DELETED: Aset tidak ditemukan atau telah dihapus.');
         }
 
-        if (strtoupper($asset['status'] ?? '') !== 'AKTIF') {
+        if (in_array(strtoupper($asset['status'] ?? ''), ['NONAKTIF', 'NON-AKTIF', 'RETIRED', 'NON_AKTIF'])) {
             return redirect()->to(site_url('gis'))->with('error', 'ASSET_INACTIVE: Aset berstatus nonaktif.');
         }
 

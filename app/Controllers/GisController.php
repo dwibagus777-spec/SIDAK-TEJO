@@ -20,6 +20,47 @@ class GisController extends BaseController
         $this->baselineService = new BaselineService();
     }
 
+    public function index()
+    {
+        $db = \Config\Database::connect();
+        $penyulangs = [];
+        if ($db->tableExists('penyulang')) {
+            $penyulangs = $db->table('penyulang p')
+                ->select('p.id, p.kode_penyulang, p.nama_penyulang, u.nama_ulp')
+                ->join('ulps u', 'p.ulp_id = u.id', 'left')
+                ->get()
+                ->getResultArray();
+        }
+
+        return view('gis/index', [
+            'penyulangs' => $penyulangs
+        ]);
+    }
+
+    public function apiData(): ResponseInterface
+    {
+        $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
+        $userUlpId = session()->get('ulp_id');
+
+        $collection = $this->gisService->getGeoJsonCollection(
+            $penyulangId > 0 ? ['penyulang_id' => $penyulangId] : [],
+            $userUlpId
+        );
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'stats'  => [
+                'total_pins' => count($collection['features'] ?? [])
+            ],
+            'features' => $collection['features'] ?? []
+        ]);
+    }
+
+    public function checkin(): ResponseInterface
+    {
+        return $this->response->setJSON(['status' => 'success', 'message' => 'Check-in recorded']);
+    }
+
     public function geoJson(): ResponseInterface
     {
         $session = session();
@@ -55,5 +96,38 @@ class GisController extends BaseController
             'status' => 'success',
             'data'   => $route
         ]);
+    }
+
+    /**
+     * Release B - Step B2: GET master-assets/feeder-network?penyulang_id=X
+     */
+    public function feederNetwork(): ResponseInterface
+    {
+        $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
+        if ($penyulangId <= 0) {
+            return $this->response->setStatusCode(400)->setJSON(['status' => 'error', 'message' => 'penyulang_id required.']);
+        }
+
+        $res = $this->gisService->getFeederNetwork($penyulangId);
+        return $this->response->setJSON($res);
+    }
+
+    /**
+     * Release B - Step B3: GET master-assets/feeder-assets?penyulang_id=X&min_lat=...
+     */
+    public function feederAssets(): ResponseInterface
+    {
+        $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
+        if ($penyulangId <= 0) {
+            return $this->response->setStatusCode(400)->setJSON(['status' => 'error', 'message' => 'penyulang_id required.']);
+        }
+
+        $minLat = $this->request->getGet('min_lat') !== null ? (float)$this->request->getGet('min_lat') : null;
+        $maxLat = $this->request->getGet('max_lat') !== null ? (float)$this->request->getGet('max_lat') : null;
+        $minLng = $this->request->getGet('min_lng') !== null ? (float)$this->request->getGet('min_lng') : null;
+        $maxLng = $this->request->getGet('max_lng') !== null ? (float)$this->request->getGet('max_lng') : null;
+
+        $res = $this->gisService->getFeederViewportAssets($penyulangId, $minLat, $maxLat, $minLng, $maxLng);
+        return $this->response->setJSON($res);
     }
 }

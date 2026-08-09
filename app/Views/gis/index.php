@@ -126,47 +126,51 @@
 
         <!-- Floating Left Search, Filters & Layers Panel -->
         <div class="gis-panel-left d-none d-md-block">
-            <h6 class="fw-bold text-dark mb-2"><i class="fas fa-magnifying-glass text-primary me-1"></i> Live Search & Radius Search</h6>
+            <h6 class="fw-bold text-dark mb-2"><i class="fas fa-network-wired text-primary me-1"></i> Pilih Feeder / Penyulang</h6>
             
             <div class="mb-2">
-                <input type="text" id="gis-search-input" class="form-control form-control-sm" placeholder="Cari No Temuan, Penyulang, Section...">
+                <select id="feeder-select" class="form-select form-select-sm fw-bold text-primary border-primary">
+                    <option value="">-- Pilih Penyulang (GI -> Ujung) --</option>
+                    <?php if (!empty($penyulangs)): ?>
+                        <?php foreach ($penyulangs as $p): ?>
+                            <option value="<?= $p['id'] ?>">
+                                <?= esc($p['nama_penyulang']) ?> (<?= esc($p['nama_ulp'] ?: 'ULP') ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
             </div>
 
-            <!-- Draw Radius Buffer Dropdown -->
-            <div class="row g-2 mb-2">
-                <div class="col-7">
-                    <select id="radius-select" class="form-select form-select-sm">
-                        <option value="0">-- Filter Radius --</option>
-                        <option value="250">Radius 250m</option>
-                        <option value="500">Radius 500m</option>
-                        <option value="1000">Radius 1 km</option>
-                        <option value="3000">Radius 3 km</option>
-                        <option value="5000">Radius 5 km</option>
-                    </select>
-                </div>
-                <div class="col-5">
-                    <button type="button" id="btn-reset-filter" class="btn btn-outline-secondary btn-sm w-100">Reset</button>
-                </div>
+            <div class="mb-2">
+                <input type="text" id="gis-search-input" class="form-control form-control-sm" placeholder="Cari Kode Asset, Penyulang, Section...">
             </div>
 
             <!-- Multi-Layer Switches -->
             <div class="p-2 bg-light rounded-3 mb-2 border" style="font-size: 11px;">
                 <div class="form-check form-switch mb-1">
-                    <input class="form-check-input" type="checkbox" id="layer-grid-topology" checked>
-                    <label class="form-check-label fw-bold text-dark" for="layer-grid-topology"><i class="fas fa-diagram-project text-success me-1"></i> Power Grid Topology</label>
-                </div>
-                <div class="form-check form-switch mb-1">
-                    <input class="form-check-input" type="checkbox" id="layer-temuan" checked>
-                    <label class="form-check-label fw-bold text-dark" for="layer-temuan"><i class="fas fa-list-check text-primary me-1"></i> Pin Temuan Inspeksi</label>
-                </div>
-                <div class="form-check form-switch mb-1">
-                    <input class="form-check-input" type="checkbox" id="layer-assets" checked>
-                    <label class="form-check-label fw-bold text-dark" for="layer-assets"><i class="fas fa-boxes-stacked text-warning me-1"></i> Master Assets</label>
+                    <input class="form-check-input" type="checkbox" id="layer-transline-poly" checked>
+                    <label class="form-check-label fw-bold text-dark" for="layer-transline-poly"><i class="fas fa-route text-primary me-1"></i> Feeder Transline Polyline</label>
                 </div>
                 <div class="form-check form-switch mb-0">
-                    <input class="form-check-input" type="checkbox" id="layer-live-officers" checked>
-                    <label class="form-check-label fw-bold text-dark" for="layer-live-officers"><i class="fas fa-user-shield text-info me-1"></i> Live Officers GPS</label>
+                    <input class="form-check-input" type="checkbox" id="layer-viewport-assets" checked>
+                    <label class="form-check-label fw-bold text-dark" for="layer-viewport-assets"><i class="fas fa-location-dot text-warning me-1"></i> Viewport Asset Markers</label>
                 </div>
+            </div>
+
+            <!-- Nearest Asset Card Panel -->
+            <div id="nearest-asset-card" class="p-3 bg-white rounded-3 border border-primary shadow-sm" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-primary rounded-pill font-monospace" id="na-seq">#001</span>
+                    <span class="badge bg-success" id="na-status">AKTIF</span>
+                </div>
+                <h6 class="fw-bold text-dark mb-0" id="na-kode">GDG-001</h6>
+                <small class="text-muted d-block mb-2" id="na-jenis">Tiang Sutet</small>
+                <div class="d-flex align-items-center text-info small fw-bold mb-2">
+                    <i class="fas fa-location-arrow me-1"></i> <span id="na-distance">18 m dari posisi Anda</span>
+                </div>
+                <a href="#" id="na-inspect-btn" class="btn btn-sm btn-primary w-100 rounded-pill font-weight-bold">
+                    <i class="fas fa-clipboard-check me-1"></i> MULAI INSPEKSI
+                </a>
             </div>
         </div>
 
@@ -181,27 +185,28 @@
 
         <!-- Floating Bottom Stats Bar -->
         <div class="gis-panel-bottom d-flex align-items-center gap-3">
-            <div><i class="fas fa-tower-cell text-warning me-1"></i> Total Marker: <strong id="stat-total-pins" class="text-white">0</strong></div>
+            <div><i class="fas fa-tower-cell text-warning me-1"></i> Asset Visible: <strong id="stat-total-pins" class="text-white">0</strong></div>
             <div class="vr bg-secondary"></div>
-            <div><i class="fas fa-triangle-exclamation text-danger me-1"></i> Emergency: <strong class="text-danger" id="stat-emg-count">0</strong></div>
+            <div><i class="fas fa-route text-success me-1"></i> Feeder: <strong class="text-success" id="stat-feeder-name">Semua</strong></div>
         </div>
 
         <!-- Leaflet Map Container -->
         <div id="gisMap"></div>
 
-        <!-- Mobile Bottom Sheet Details -->
-        <div id="gis-bottom-sheet" class="mobile-bottom-sheet">
+        <!-- Mobile Bottom Sheet for Tap Asset -->
+        <div class="mobile-bottom-sheet" id="gis-bottom-sheet">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="fw-bold text-dark mb-0" id="bs-title">Detail Marker GIS</h6>
-                <button type="button" class="btn-close" id="btn-close-bs"></button>
+                <div>
+                    <span class="badge bg-primary font-monospace" id="bs-seq">#001</span>
+                    <h6 class="fw-bold mb-0 d-inline ms-1" id="bs-kode">GDG-001</h6>
+                </div>
+                <button type="button" class="btn-close" id="bs-close-btn"></button>
             </div>
-            <div id="bs-content" style="font-size: 12px;"></div>
-            <div class="mt-3 text-end d-flex gap-2 justify-content-end">
-                <a href="#" id="bs-waze-btn" target="_blank" class="btn btn-outline-info btn-sm rounded-pill font-weight-bold">
-                    <i class="fas fa-waze me-1"></i> Waze
-                </a>
-                <a href="#" id="bs-route-btn" target="_blank" class="btn btn-primary btn-sm rounded-pill font-weight-bold px-3">
-                    <i class="fas fa-location-arrow me-1"></i> Google Maps
+            <p class="text-muted small mb-2" id="bs-nama">Tiang 20kV Gedangan</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-info small fw-bold"><i class="fas fa-location-arrow me-1"></i><span id="bs-distance">12 m</span></span>
+                <a href="#" id="bs-inspect-action" class="btn btn-primary btn-sm rounded-pill font-weight-bold px-3">
+                    <i class="fas fa-play me-1"></i> MULAI INSPEKSI
                 </a>
             </div>
         </div>
@@ -210,13 +215,12 @@
 
 </div>
 
-<!-- Leaflet, MarkerCluster, Heatmap & Draw JS -->
+<!-- Leaflet, MarkerCluster JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Tile Layers
     var streetTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; SIDAK TEJO GIS' });
     var satelliteTile = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri Satellite' });
     var darkTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CartoDB Dark' });
@@ -227,7 +231,6 @@ document.addEventListener("DOMContentLoaded", function() {
         layers: [streetTile]
     });
 
-    // Tile Switcher Listener
     document.getElementById('tile-switcher').addEventListener('change', function(e) {
         var val = e.target.value;
         map.removeLayer(streetTile);
@@ -239,72 +242,165 @@ document.addEventListener("DOMContentLoaded", function() {
         else streetTile.addTo(map);
     });
 
-    var markerCluster = L.markerClusterGroup();
-    var topologyLayerGroup = L.layerGroup().addTo(map);
-    var officersLayerGroup = L.layerGroup().addTo(map);
+    var markerCluster = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
+    var translinePolylineLayer = L.layerGroup().addTo(map);
     var userLocationMarker = null;
+    var currentFeederId = null;
+    var userCoords = null;
+    var currentVisibleMarkers = [];
 
-    // Fetch GIS API Data
-    fetch("<?= site_url('gis/api-data') ?>")
-        .then(res => res.json())
-        .then(data => {
-            if (data.stats) {
-                document.getElementById('stat-total-pins').innerText = data.stats.total_pins || 0;
-            }
+    // Haversine Distance Formula in meters
+    function getHaversineDistance(lat1, lon1, lat2, lon2) {
+        var R = 6371000;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return Math.round(R * c);
+    }
 
-            // Render Temuan Pins with Smart Colors & MarkerCluster
-            var emgCount = 0;
-            if (data.temuanPins) {
-                data.temuanPins.forEach(function(pin) {
-                    var color = '#10b981'; // Selesai / Green
-                    var prio = (pin.prioritas || '').toUpperCase();
-                    var status = (pin.status || '').toUpperCase();
+    // Load Feeder Network Transline & Bounds
+    function loadFeederNetwork(feederId) {
+        if (!feederId) return;
+        currentFeederId = feederId;
+        translinePolylineLayer.clearLayers();
 
-                    if (status === 'SELESAI') color = '#10b981';
-                    else if (status === 'PROSES') color = '#3b82f6';
-                    else if (prio === 'EMERGENCY') { color = '#ef4444'; emgCount++; }
-                    else if (prio === 'HIGH') color = '#f97316';
-                    else if (prio === 'MEDIUM') color = '#f59e0b';
+        fetch("<?= site_url('master-assets/feeder-network') ?>?penyulang_id=" + feederId)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (data.penyulang) {
+                        document.getElementById('stat-feeder-name').innerText = data.penyulang.nama_penyulang;
+                    }
 
-                    var marker = L.circleMarker([pin.latitude, pin.longitude], {
-                        radius: 8, fillColor: color, color: '#ffffff', weight: 2, fillOpacity: 0.9
+                    // Render 1 Single LineString Transline Polyline Layer
+                    if (data.transline && data.transline.geometry && data.transline.geometry.coordinates.length > 0) {
+                        var latLngs = data.transline.geometry.coordinates.map(c => [c[1], c[0]]);
+                        var polyline = L.polyline(latLngs, {
+                            color: '#0284c7',
+                            weight: 5,
+                            opacity: 0.85,
+                            lineJoin: 'round'
+                        });
+                        translinePolylineLayer.addLayer(polyline);
+                    }
+
+                    // Fit Map Bounds
+                    if (data.bbox) {
+                        map.fitBounds([
+                            [data.bbox.min_lat, data.bbox.min_lng],
+                            [data.bbox.max_lat, data.bbox.max_lng]
+                        ], { padding: [40, 40] });
+                    }
+
+                    // Trigger Viewport Markers Load
+                    loadViewportAssets();
+                }
+            });
+    }
+
+    // Viewport Bounding Box Asset Loader
+    function loadViewportAssets() {
+        if (!currentFeederId) return;
+        var bounds = map.getBounds();
+        var url = `<?= site_url('master-assets/feeder-assets') ?>?penyulang_id=${currentFeederId}&min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lng=${bounds.getWest()}&max_lng=${bounds.getEast()}`;
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.markers) {
+                    markerCluster.clearLayers();
+                    currentVisibleMarkers = data.markers;
+                    document.getElementById('stat-total-pins').innerText = data.count;
+
+                    data.markers.forEach(function(m) {
+                        var color = m.color || '#10b981';
+                        var marker = L.circleMarker([m.lat, m.lng], {
+                            radius: 7,
+                            fillColor: color,
+                            color: '#ffffff',
+                            weight: 2,
+                            fillOpacity: 0.9
+                        });
+
+                        marker.on('click', function() {
+                            openAssetBottomSheet(m);
+                        });
+
+                        markerCluster.addLayer(marker);
                     });
 
-                    marker.on('click', function() {
-                        showBottomSheet(pin.nomor_temuan, pin.detail_temuan, pin.latitude, pin.longitude);
-                    });
+                    map.addLayer(markerCluster);
+                    updateNearestAsset();
+                }
+            });
+    }
 
-                    markerCluster.addLayer(marker);
-                });
-                map.addLayer(markerCluster);
-            }
-            document.getElementById('stat-emg-count').innerText = emgCount;
+    // Nearest Asset Calculator
+    function updateNearestAsset() {
+        if (!userCoords || currentVisibleMarkers.length === 0) return;
 
-            // Render Topology Lines & Nodes
-            if (data.gridTopology && data.gridTopology.lines) {
-                data.gridTopology.lines.forEach(function(line) {
-                    L.polyline([line.from, line.to], { color: line.color, weight: 4, opacity: 0.85 }).addTo(topologyLayerGroup);
-                });
+        var minDistance = Infinity;
+        var nearest = null;
+
+        currentVisibleMarkers.forEach(function(m) {
+            var dist = getHaversineDistance(userCoords.lat, userCoords.lng, m.lat, m.lng);
+            if (dist < minDistance) {
+                minDistance = dist;
+                nearest = m;
+                nearest.calculated_distance = dist;
             }
         });
 
-    // Live GPS Location Tracking Button
+        if (nearest) {
+            var card = document.getElementById('nearest-asset-card');
+            card.style.display = 'block';
+            document.getElementById('na-seq').innerText = '#' + String(nearest.sequence_no).padStart(3, '0');
+            document.getElementById('na-kode').innerText = nearest.kode_asset;
+            document.getElementById('na-jenis').innerText = nearest.jenis + ' • ' + nearest.nama_asset;
+            document.getElementById('na-status').innerText = nearest.status;
+            document.getElementById('na-distance').innerText = nearest.calculated_distance + ' m dari posisi Anda';
+            document.getElementById('na-inspect-btn').href = `<?= site_url('inspections/start') ?>?asset_id=${nearest.id}`;
+        }
+    }
+
+    function openAssetBottomSheet(m) {
+        var distText = userCoords ? getHaversineDistance(userCoords.lat, userCoords.lng, m.lat, m.lng) + ' m' : '-';
+        document.getElementById('bs-seq').innerText = '#' + String(m.sequence_no).padStart(3, '0');
+        document.getElementById('bs-kode').innerText = m.kode_asset;
+        document.getElementById('bs-nama').innerText = m.jenis + ' • ' + m.nama_asset;
+        document.getElementById('bs-distance').innerText = distText;
+        document.getElementById('bs-inspect-action').href = `<?= site_url('inspections/start') ?>?asset_id=${m.id}`;
+        document.getElementById('gis-bottom-sheet').style.display = 'block';
+    }
+
+    document.getElementById('bs-close-btn').addEventListener('click', function() {
+        document.getElementById('gis-bottom-sheet').style.display = 'none';
+    });
+
+    document.getElementById('feeder-select').addEventListener('change', function(e) {
+        var feederId = e.target.value;
+        if (feederId) {
+            loadFeederNetwork(feederId);
+        }
+    });
+
+    map.on('moveend zoomend', function() {
+        if (currentFeederId) {
+            loadViewportAssets();
+        }
+    });
+
+    // Live GPS Location Tracking
     document.getElementById('btn-locate-me').addEventListener('click', function() {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(function(pos) {
-                var lat = pos.coords.latitude;
-                var lng = pos.coords.longitude;
-
+                userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 if (userLocationMarker) map.removeLayer(userLocationMarker);
-                userLocationMarker = L.circleMarker([lat, lng], {
+                userLocationMarker = L.circleMarker([userCoords.lat, userCoords.lng], {
                     radius: 10, fillColor: '#3b82f6', color: '#ffffff', weight: 3, fillOpacity: 1
-                }).addTo(map).bindPopup('<b>Posisi Anda Saat Ini</b>').openPopup();
-
-                map.flyTo([lat, lng], 15);
-            }, function(err) {
-                alert("GPS tidak tersedia atau belum diizinkan.");
-            });
-        }
     });
 
     function showBottomSheet(title, desc, lat, lng) {

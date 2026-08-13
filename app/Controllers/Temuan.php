@@ -128,12 +128,12 @@ class Temuan extends BaseController
             }
         }
 
-        $rawDate = !empty($row['tanggal_temuan']) ? $row['tanggal_temuan'] : (!empty($row['created_at']) ? $row['created_at'] : null);
+        $rawDate = !empty($row['created_at']) ? $row['created_at'] : (!empty($row['tanggal_temuan']) ? $row['tanggal_temuan'] : null);
         $tglStr = '-';
         if ($rawDate) {
             $ts = strtotime($rawDate);
             if ($ts !== false && $ts > 0) {
-                $tglStr = date('d-m-Y', $ts) . (!empty($row['created_at']) ? ' ' . date('H:i', strtotime($row['created_at'])) : '') . ' WIB';
+                $tglStr = date('d-m-Y H:i', $ts) . ' WIB';
             }
         }
 

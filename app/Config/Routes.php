@@ -146,6 +146,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Master Asset PLN Import & Export Routes
     $routes->get('master-assets/debug-vendor', 'AssetImportController::debugVendor');
     $routes->get('master-assets/debug-runtime', 'AssetImportController::debugRuntime');
+    $routes->get('master-assets/debug-foto/(:num)', 'AssetImportController::debugFoto/$1');
     $routes->get('master-assets/template', 'AssetImportController::downloadTemplate');
     $routes->get('master-assets/penyulang-by-ulp/(:num)', 'AssetImportController::getPenyulangByUlp/$1');
     $routes->get('penyulang-by-ulp/(:num)', 'AssetImportController::getPenyulangByUlp/$1');

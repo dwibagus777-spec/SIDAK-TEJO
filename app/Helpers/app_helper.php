@@ -352,6 +352,11 @@ if (!function_exists('get_photo_url')) {
             return base_url($fallbackPath) . '?v=' . ($mtime ?: time());
         }
 
+        // Defensif Fallback ke relative public URL jika file_exists gagal tetapi fileName tersedia
+        if (!empty($fileName)) {
+            return base_url($relativePath);
+        }
+
         return $placeholder;
     }
 }

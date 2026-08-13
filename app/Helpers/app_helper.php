@@ -352,9 +352,10 @@ if (!function_exists('get_photo_url')) {
             return base_url($fallbackPath) . '?v=' . ($mtime ?: time());
         }
 
-        // Defensif Fallback ke relative public URL jika file_exists gagal tetapi fileName tersedia
-        if (!empty($fileName)) {
-            return base_url($relativePath);
+        // Cek juga di subfolder public/ jika FCPATH menunjuk ke root public_html
+        if (defined('FCPATH') && file_exists(FCPATH . 'public/' . $relativePath)) {
+            $mtime = filemtime(FCPATH . 'public/' . $relativePath);
+            return base_url($relativePath) . '?v=' . ($mtime ?: time());
         }
 
         return $placeholder;

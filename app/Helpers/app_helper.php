@@ -345,20 +345,24 @@ if (!function_exists('get_photo_url')) {
         foreach (array_unique([$relativePath, $fallbackPath]) as $rel) {
             if (empty($rel)) continue;
 
+            $cleanRel = preg_replace('/^public\//', '', $rel);
+
             if (defined('FCPATH')) {
-                if (file_exists(FCPATH . $rel)) {
-                    $mtime = filemtime(FCPATH . $rel);
-                    return base_url($rel) . '?v=' . ($mtime ?: time());
+                if (file_exists(FCPATH . $cleanRel)) {
+                    $mtime = filemtime(FCPATH . $cleanRel);
+                    return base_url($cleanRel) . '?v=' . ($mtime ?: time());
                 }
-                if (file_exists(FCPATH . 'public/' . $rel)) {
-                    $mtime = filemtime(FCPATH . 'public/' . $rel);
-                    return base_url($rel) . '?v=' . ($mtime ?: time());
+
+                $parentPath = rtrim(dirname(FCPATH), '/\\') . '/';
+                if (file_exists($parentPath . $cleanRel)) {
+                    $mtime = filemtime($parentPath . $cleanRel);
+                    return base_url($cleanRel) . '?v=' . ($mtime ?: time());
                 }
             }
 
-            if (defined('ROOTPATH') && file_exists(ROOTPATH . 'public/' . $rel)) {
-                $mtime = filemtime(ROOTPATH . 'public/' . $rel);
-                return base_url($rel) . '?v=' . ($mtime ?: time());
+            if (defined('ROOTPATH') && file_exists(ROOTPATH . $cleanRel)) {
+                $mtime = filemtime(ROOTPATH . $cleanRel);
+                return base_url($cleanRel) . '?v=' . ($mtime ?: time());
             }
         }
 

@@ -170,6 +170,8 @@ class TemuanRepository extends BaseRepository
         if ($searchValue !== '') {
             $builder->groupStart()
                 ->like('temuan.nomor_temuan', $searchValue)
+                ->orLike('temuan.detail_temuan', $searchValue)
+                ->orLike('temuan.alamat', $searchValue)
                 ->orLike('temuan.jenis_temuan', $searchValue)
                 ->orLike('temuan.pelaksana', $searchValue)
                 ->orLike('temuan.prioritas', $searchValue)

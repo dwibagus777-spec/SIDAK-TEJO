@@ -40,17 +40,23 @@ class DynamicTemplateEngine
     /**
      * Generate Dynamic Template Spreadsheet based on Metadata
      */
-    public function generate(string $jenisAsset = 'Gardu', string $namaUlp = 'Sidoarjo Kota', string $namaUp3 = 'UP3 Sidoarjo'): Spreadsheet
-    {
+    public function generate(
+        string $jenisAsset = 'Gardu', 
+        string $namaUlp = 'Sidoarjo Kota', 
+        string $namaUp3 = 'UP3 Sidoarjo',
+        ?int $ulpId = null,
+        ?int $penyulangId = null,
+        ?string $namaPenyulang = null
+    ): Spreadsheet {
         self::ensureComposerAutoload();
 
         $spreadsheet = new Spreadsheet();
 
         // ----------------------------------------------------
-        // SHEET 1: Data Asset
+        // SHEET 1: DATA_ASSET
         // ----------------------------------------------------
         $sheetData = $spreadsheet->getActiveSheet();
-        $sheetData->setTitle('Data Asset');
+        $sheetData->setTitle('DATA_ASSET');
 
         // Fetch headers from Metadata class
         $headers = AssetTemplateMetadata::getHeaderDefinition($jenisAsset);
@@ -85,10 +91,36 @@ class DynamicTemplateEngine
         }
 
         // ----------------------------------------------------
-        // SHEET 2: Petunjuk Pengisian
+        // SHEET 2: SYSTEM_METADATA
+        // ----------------------------------------------------
+        $sheetMeta = $spreadsheet->createSheet();
+        $sheetMeta->setTitle('SYSTEM_METADATA');
+        $sheetMeta->setCellValue('A1', 'KEY');
+        $sheetMeta->setCellValue('B1', 'VALUE');
+        $sheetMeta->getStyle('A1:B1')->getFont()->setBold(true);
+
+        $metaData = [
+            ['UP3_ID', '1'],
+            ['ULP_ID', (string)($ulpId ?? '')],
+            ['PENYULANG_ID', (string)($penyulangId ?? '')],
+            ['PENYULANG_NAME', (string)($namaPenyulang ?? '')],
+            ['JENIS_ASSET', strtoupper($jenisAsset)],
+        ];
+
+        $mRow = 2;
+        foreach ($metaData as $md) {
+            $sheetMeta->setCellValue('A' . $mRow, $md[0]);
+            $sheetMeta->setCellValue('B' . $mRow, $md[1]);
+            $mRow++;
+        }
+        $sheetMeta->getColumnDimension('A')->setAutoSize(true);
+        $sheetMeta->getColumnDimension('B')->setAutoSize(true);
+
+        // ----------------------------------------------------
+        // SHEET 3: PETUNJUK_PENGISIAN
         // ----------------------------------------------------
         $sheetInfo = $spreadsheet->createSheet();
-        $sheetInfo->setTitle('Petunjuk Pengisian');
+        $sheetInfo->setTitle('PETUNJUK_PENGISIAN');
         $sheetInfo->setCellValue('A1', 'PETUNJUK PENGISIAN TEMPLATE IMPORT MASTER ASSET PLN');
         $sheetInfo->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 
@@ -115,5 +147,33 @@ class DynamicTemplateEngine
         $spreadsheet->setActiveSheetIndex(0);
 
         return $spreadsheet;
+    }
+
+    /**
+     * Generate Clean CSV Content with UTF-8 BOM (\xEF\xBB\xBF) for MS Excel Windows Compatibility
+     */
+    public function generateCsv(
+        string $jenisAsset = 'Gardu', 
+        string $namaUlp = 'Sidoarjo Kota', 
+        string $namaUp3 = 'UP3 Sidoarjo'
+    ): string {
+        $headers = AssetTemplateMetadata::getHeaderDefinition($jenisAsset);
+        $sampleData = AssetTemplateMetadata::getSampleRow($jenisAsset, $namaUp3, $namaUlp);
+
+        // UTF-8 BOM
+        $csv = "\xEF\xBB\xBF";
+
+        // Header Row
+        $headerLabels = array_map(fn($h) => '"' . str_replace('"', '""', $h['label']) . '"', $headers);
+        $csv .= implode(',', $headerLabels) . "\r\n";
+
+        // Sample Data Row
+        $sampleVals = array_map(function($h) use ($sampleData) {
+            $val = $sampleData[$h['key']] ?? '';
+            return '"' . str_replace('"', '""', $val) . '"';
+        }, $headers);
+        $csv .= implode(',', $sampleVals) . "\r\n";
+
+        return $csv;
     }
 }

@@ -109,6 +109,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Release v2.3.0.30 - Inspection Planning & Assignment Layer Routes
     $routes->get('planning', 'InspectionPlanningController::index');
     $routes->get('planning/create', 'InspectionPlanningController::create');
+    $routes->get('planning/ajax-assets', 'InspectionPlanningController::ajaxGetAssets');
     $routes->post('planning/store', 'InspectionPlanningController::store');
     $routes->post('planning/publish/(:num)', 'InspectionPlanningController::publish/$1');
     $routes->get('planning/detail/(:num)', 'InspectionPlanningController::detail/$1');
@@ -146,6 +147,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('master-assets/debug-vendor', 'AssetImportController::debugVendor');
     $routes->get('master-assets/debug-runtime', 'AssetImportController::debugRuntime');
     $routes->get('master-assets/template', 'AssetImportController::downloadTemplate');
+    $routes->get('master-assets/penyulang-by-ulp/(:num)', 'AssetImportController::getPenyulangByUlp/$1');
+    $routes->get('penyulang-by-ulp/(:num)', 'AssetImportController::getPenyulangByUlp/$1');
     $routes->get('master-assets/import', 'AssetImportController::importView');
     $routes->post('master-assets/import-process', 'AssetImportController::processImport');
     $routes->get('master-assets/download-error-report', 'AssetImportController::downloadErrorReport');

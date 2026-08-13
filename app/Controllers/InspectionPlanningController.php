@@ -236,4 +236,34 @@ class InspectionPlanningController extends BaseController
             'tasks' => $myTasks,
         ]);
     }
+
+    /**
+     * AJAX Get Assets for Streamlined Planning View
+     * GET /planning/ajax-assets
+     */
+    public function ajaxGetAssets(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $penyulangId = (int)$this->request->getGet('penyulang_id');
+        $jenisAsset  = strtoupper((string)($this->request->getGet('jenis_asset') ?: 'SEMUA'));
+
+        if ($penyulangId <= 0) {
+            return $this->response->setJSON([]);
+        }
+
+        $db = Database::connect();
+        $builder = $db->table('assets a');
+        $builder->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.lokasi, a.latitude, a.longitude, s.nama_section');
+        $builder->join('sections s', 'a.section_id = s.id', 'left');
+        $builder->where('a.penyulang_id', $penyulangId);
+        $builder->where('a.deleted_at IS NULL');
+
+        if (!empty($jenisAsset) && $jenisAsset !== 'SEMUA') {
+            $builder->where('UPPER(a.jenis_asset)', $jenisAsset);
+        }
+
+        $builder->orderBy('a.id', 'ASC');
+        $assets = $builder->get()->getResultArray();
+
+        return $this->response->setJSON($assets ?: []);
+    }
 }

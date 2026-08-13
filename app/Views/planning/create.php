@@ -1,244 +1,430 @@
 <?= $this->extend('layouts/admin') ?>
 
-<?= $this->section('title') ?>Buat Planning Inspeksi Baru<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>Form Planning & Assignment Inspeksi Jaringan<?= $this->endSection() ?>
+<?= $this->section('title') ?>Planning Inspeksi<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>Kelola & Register Planning Inspeksi<?= $this->endSection() ?>
 
 <?= $this->section('breadcrumb') ?>
 <li class="breadcrumb-item"><a href="<?= site_url('planning') ?>">Planning Inspeksi</a></li>
-<li class="breadcrumb-item active">Buat Baru</li>
+<li class="breadcrumb-item active">Perencanaan Baru</li>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="row justify-content-center">
-    <div class="col-md-10 col-12">
-        <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-header bg-primary text-white py-3 rounded-top-4">
-                <h5 class="card-title mb-0 font-weight-bold"><i class="fas fa-edit me-2"></i> Form Perencanaan & Penugasan Inspeksi (WHAT + WHO)</h5>
-            </div>
-            <form action="<?= site_url('planning/store') ?>" method="post" id="formPlanning">
-                <?= csrf_field() ?>
-                <div class="card-body p-4">
-                    <?php if (session()->getFlashdata('error')): ?>
-                        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
-                            <i class="fas fa-exclamation-triangle me-2"></i> <?= session()->getFlashdata('error') ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    <?php endif; ?>
+<div class="container-fluid px-0">
+    <form action="<?= site_url('planning/store') ?>" method="post" id="formPlanningStreamlined">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="publish">
 
-                    <!-- STEP 1: Identitas Planning -->
-                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-info-circle me-1"></i> STEP 1: Identitas & Jadwal Inspeksi</h6>
-                    <div class="row mb-4">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold text-dark">Judul Planning Inspeksi <span class="text-danger">*</span></label>
-                            <input type="text" name="title" class="form-control form-control-lg" placeholder="Contoh: Planning Inspeksi JTM Feeder GEDANGAN" required>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label fw-bold text-dark">Jenis Pekerjaan <span class="text-danger">*</span></label>
-                            <select name="inspection_type_id" class="form-select form-select-lg" required>
-                                <option value="">-- Pilih Jenis Inspeksi --</option>
-                                <?php foreach ($types as $t): ?>
-                                    <option value="<?= $t['id'] ?>">[<?= esc($t['code']) ?>] <?= esc($t['name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label fw-bold text-dark">Jadwal Pelaksanaan <span class="text-danger">*</span></label>
-                            <input type="date" name="scheduled_date" class="form-control form-control-lg" value="<?= date('Y-m-d') ?>" required>
-                        </div>
-                    </div>
-
-                    <!-- STEP 2: Scope Jaringan -->
-                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-network-wired me-1"></i> STEP 2: Scope Jaringan (GI ➔ ULP ➔ Penyulang)</h6>
-                    <div class="row mb-4">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold text-dark">Gardu Induk (GI)</label>
-                            <select name="gi_id" id="gi_id" class="form-select">
-                                <option value="">-- Semua Gardu Induk --</option>
-                                <?php foreach ($garduInduk as $gi): ?>
-                                    <option value="<?= $gi['id'] ?>">[<?= esc($gi['kode_gi']) ?>] <?= esc($gi['nama_gi']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold text-dark">ULP</label>
-                            <select name="ulp_id" id="ulp_id" class="form-select">
-                                <option value="">-- Semua ULP --</option>
-                                <?php foreach ($ulps as $u): ?>
-                                    <option value="<?= $u['id'] ?>"><?= esc($u['nama_ulp']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold text-dark">Penyulang / Feeder <span class="text-danger">*</span></label>
-                            <select name="penyulang_id" id="penyulang_id" class="form-select" required>
-                                <option value="">-- Pilih Penyulang --</option>
-                                <?php foreach ($penyulangs as $p): ?>
-                                    <option value="<?= $p['id'] ?>" data-gi="<?= $p['gi_id'] ?? '' ?>" data-ulp="<?= $p['ulp_id'] ?? '' ?>">
-                                        [<?= esc($p['kode_penyulang']) ?>] <?= esc($p['nama_penyulang']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- STEP 3: Objek & STEP 4: Asset Checkbox List -->
-                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-boxes-stacked me-1"></i> STEP 3 & 4: Objek & Target Asset (Snapshot List)</h6>
-                    <div class="row mb-3">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold text-dark">Kategori Objek Asset</label>
-                            <select name="jenis_asset" id="jenis_asset" class="form-select">
-                                <option value="SEMUA">Semua Objek (Tiang, Gardu, Trafo, Keypoint)</option>
-                                <option value="TIANG">Khusus TIANG</option>
-                                <option value="GARDU">Khusus GARDU</option>
-                                <option value="TRAFO">Khusus TRAFO</option>
-                                <option value="KEYPOINT">Khusus KEYPOINT</option>
-                            </select>
-                        </div>
-                        <div class="col-md-8 mb-3 d-flex align-items-end justify-content-end gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="btnSelectAll"><i class="fas fa-check-square me-1"></i> Pilih Semua</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btnDeselectAll"><i class="fas fa-square me-1"></i> Hapus Semua</button>
-                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="btnLoadAssets"><i class="fas fa-sync me-1"></i> Muat Asset Lapangan</button>
-                        </div>
-                    </div>
-
-                    <div class="border rounded-4 p-3 bg-light mb-4" style="max-height: 280px; overflow-y: auto;" id="assetListContainer">
-                        <div class="text-center text-muted py-4" id="assetPlaceholder">
-                            <i class="fas fa-search-location fa-2x mb-2 text-secondary opacity-50 d-block"></i>
-                            Pilih <strong>Penyulang</strong> dan klik <strong>Muat Asset Lapangan</strong> untuk memilih daftar asset snapshot.
-                        </div>
-                        <div class="row row-cols-1 row-cols-md-2 g-2" id="assetCheckboxList"></div>
-                    </div>
-
-                    <!-- STEP 5: Assign Inspector -->
-                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-user-check me-1"></i> STEP 5: Penugasan Petugas Inspeksi (WHO)</h6>
-                    <div class="row mb-3">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold text-dark">Petugas Inspeksi Lapangan (Assigned Inspector / Scope ULP)</label>
-                            <select name="assigned_inspector_id" class="form-select form-select-lg">
-                                <option value="">-- Semua Petugas ULP Terkait (Otomatis) --</option>
-                                <?php foreach ($inspectors as $usr): ?>
-                                    <option value="<?= $usr['id'] ?>"><?= esc($usr['nama'] ?: $usr['username']) ?> (<?= esc($usr['username']) ?> &bull; <?= esc($usr['role'] ?? 'Petugas') ?>)</option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center rounded-bottom-4">
-                    <a href="<?= site_url('planning') ?>" class="btn btn-outline-secondary rounded-pill px-4">Batal</a>
+        <!-- TOP HEADER & CONTEXT FILTER PANEL -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4" style="background: linear-gradient(135deg, #005EB8 0%, #003B73 100%);">
+            <div class="card-body p-4 text-white">
+                <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <button type="submit" name="action" value="draft" class="btn btn-secondary rounded-pill px-4 me-2">
-                            <i class="fas fa-save me-1"></i> Simpan Draft
-                        </button>
-                        <button type="submit" name="action" value="publish" class="btn btn-primary rounded-pill px-5 font-weight-bold">
-                            <i class="fas fa-paper-plane me-1"></i> Publish & Assign Planning
-                        </button>
+                        <h4 class="fw-bold font-outfit mb-1"><i class="fas fa-calendar-alt me-2"></i> Planning Inspeksi JTM</h4>
+                        <p class="mb-0 text-white-50 small">Rencanakan kegiatan inspeksi berdasarkan penyulang, jenis pekerjaan, dan jenis asset.</p>
+                    </div>
+                    <a href="<?= site_url('planning') ?>" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                        <i class="fas fa-list me-1"></i> Daftar Planning
+                    </a>
+                </div>
+
+                <div class="row g-3 bg-white text-dark rounded-4 p-3 shadow-sm mx-0">
+                    <!-- 1. ULP -->
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold small text-secondary mb-1"><i class="fas fa-network-wired text-primary me-1"></i> ULP</label>
+                        <select name="ulp_id" id="filter_ulp_id" class="form-select fw-bold">
+                            <option value="">-- Pilih ULP --</option>
+                            <?php foreach ($ulps as $u): ?>
+                                <option value="<?= $u['id'] ?>"><?= esc($u['nama_ulp']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- 2. Penyulang -->
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold small text-secondary mb-1"><i class="fas fa-bolt text-primary me-1"></i> Penyulang <span class="text-danger">*</span></label>
+                        <select name="penyulang_id" id="filter_penyulang_id" class="form-select fw-bold" required disabled>
+                            <option value="">-- Pilih ULP Terlebih Dahulu --</option>
+                        </select>
+                    </div>
+
+                    <!-- 3. Jenis Pekerjaan -->
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold small text-secondary mb-1"><i class="fas fa-tasks text-primary me-1"></i> Pekerjaan <span class="text-danger">*</span></label>
+                        <select name="inspection_type_id" id="inspection_type_id" class="form-select fw-bold" required>
+                            <option value="">-- Pilih Jenis Pekerjaan --</option>
+                            <?php foreach ($types as $t): ?>
+                                <option value="<?= $t['id'] ?>"><?= esc($t['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- 4. Jenis Asset -->
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold small text-secondary mb-1"><i class="fas fa-cubes text-primary me-1"></i> Jenis Asset <span class="text-danger">*</span></label>
+                        <select name="jenis_asset" id="filter_jenis_asset" class="form-select fw-bold text-primary">
+                            <option value="TIANG">Tiang</option>
+                            <option value="GARDU">Gardu</option>
+                            <option value="TRAFO">Trafo</option>
+                            <option value="RECLOSER">Recloser</option>
+                            <option value="PMCB">PMCB</option>
+                            <option value="POHON">Pohon</option>
+                            <option value="SEMUA">Semua Asset</option>
+                        </select>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
+
+        <!-- MAIN LAYOUT: ASSET TABLE (COL 8) vs DETAIL PLANNING PANEL (COL 4) -->
+        <div class="row">
+            <!-- LEFT COLUMN: ASSET LIST TABLE -->
+            <div class="col-lg-8 col-12 mb-4">
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary text-white p-2 rounded-3 font-outfit" id="headerContextBadge">
+                                <i class="fas fa-map-marker-alt me-1"></i> Pilih Context
+                            </span>
+                            <span class="badge bg-light text-dark border p-2 rounded-3 small" id="selectedCounterBadge">
+                                0 Asset Dipilih
+                            </span>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="checkSelectAll" style="cursor: pointer;">
+                            <label class="form-check-label fw-bold small cursor-pointer" for="checkSelectAll">Pilih Semua</label>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                            <table class="table table-hover align-middle mb-0" id="tablePlanningAssets">
+                                <thead class="table-light sticky-top" style="z-index: 5;">
+                                    <tr class="small text-secondary">
+                                        <th style="width: 40px;" class="text-center">#</th>
+                                        <th style="width: 50px;">No</th>
+                                        <th>Nama Asset</th>
+                                        <th>Section</th>
+                                        <th>Latitude</th>
+                                        <th>Longitude</th>
+                                        <th>Konstruksi</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyPlanningAssets">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-5" id="assetTableEmptyState">
+                                            <i class="fas fa-mouse-pointer fa-2x mb-3 text-secondary opacity-50 d-block"></i>
+                                            Silakan pilih <strong>ULP</strong> dan <strong>Penyulang</strong> di atas untuk memuat daftar asset.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: DETAIL PLANNING PANEL -->
+            <div class="col-lg-4 col-12 mb-4">
+                <div class="card shadow-sm border-0 rounded-4 position-sticky" style="top: 80px;">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h6 class="card-title mb-0 fw-bold font-outfit text-dark">
+                            <i class="fas fa-edit text-primary me-2"></i> Detail Planning
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <!-- Judul Planning -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-secondary mb-1">Judul Planning <span class="text-danger">*</span></label>
+                            <input type="text" name="title" id="planning_title" class="form-control" placeholder="Contoh: Planning Inspeksi JTM Banjar Kemantren" required>
+                        </div>
+
+                        <!-- Range Dari Nomor - Ke Nomor -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-secondary mb-1">Dari Nomor</label>
+                                <input type="text" id="dari_nomor" class="form-control bg-light" placeholder="1" readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-secondary mb-1">Ke Nomor</label>
+                                <input type="text" id="ke_nomor" class="form-control bg-light" placeholder="1" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Tanggal Mulai -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-secondary mb-1">Tanggal Mulai <span class="text-danger">*</span></label>
+                            <input type="date" name="scheduled_date" id="scheduled_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        </div>
+
+                        <!-- Lama Pekerjaan & Periodik -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-secondary mb-1">Lama Pekerjaan (Hari)</label>
+                                <input type="number" name="lama_pekerjaan" id="lama_pekerjaan" class="form-control" value="31" min="1">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-secondary mb-1">Periodik (Bulan)</label>
+                                <select name="periodik" id="periodik" class="form-select">
+                                    <option value="0">0 (Sekali)</option>
+                                    <option value="1">1 Bulan</option>
+                                    <option value="3" selected>3 Bulan</option>
+                                    <option value="6">6 Bulan</option>
+                                    <option value="12">12 Bulan</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Penugasan Petugas -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-secondary mb-1">Petugas Inspeksi (Inspector)</label>
+                            <select name="assigned_inspector_id" id="assigned_inspector_id" class="form-select">
+                                <option value="">-- Otomatis (Pool ULP) --</option>
+                                <?php foreach ($inspectors as $usr): ?>
+                                    <option value="<?= $usr['id'] ?>"><?= esc($usr['nama'] ?: $usr['username']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <!-- Action Submit Button -->
+                        <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-pill font-weight-bold shadow-sm mb-3" id="btnSubmitPlanning">
+                            <i class="fas fa-calendar-check me-1"></i> Rencanakan Inspeksi
+                        </button>
+
+                        <!-- Context-Aware Download Template Links -->
+                        <div class="border-top pt-3 text-center">
+                            <span class="small text-muted d-block mb-2 font-monospace">DOWNLOAD TEMPLATE ASSET:</span>
+                            <div class="d-flex justify-content-center gap-2">
+                                <a href="#" id="btnDownloadTemplateCsv" class="btn btn-sm btn-outline-info rounded-pill flex-fill">
+                                    <i class="fas fa-file-csv me-1"></i> Template CSV
+                                </a>
+                                <a href="#" id="btnDownloadTemplateXlsx" class="btn btn-sm btn-outline-success rounded-pill flex-fill">
+                                    <i class="fas fa-file-excel me-1"></i> Template Excel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
+<!-- SCRIPT STREAMLINED PLANNING -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const giSelect = document.getElementById('gi_id');
-    const ulpSelect = document.getElementById('ulp_id');
-    const penyulangSelect = document.getElementById('penyulang_id');
-    const jenisAssetSelect = document.getElementById('jenis_asset');
-    const btnLoadAssets = document.getElementById('btnLoadAssets');
-    const btnSelectAll = document.getElementById('btnSelectAll');
-    const btnDeselectAll = document.getElementById('btnDeselectAll');
-    const assetCheckboxList = document.getElementById('assetCheckboxList');
-    const assetPlaceholder = document.getElementById('assetPlaceholder');
+    const ulpSelect = document.getElementById('filter_ulp_id');
+    const penyulangSelect = document.getElementById('filter_penyulang_id');
+    const jenisAssetSelect = document.getElementById('filter_jenis_asset');
+    const typeSelect = document.getElementById('inspection_type_id');
+    const tbodyAssets = document.getElementById('tbodyPlanningAssets');
+    const checkSelectAll = document.getElementById('checkSelectAll');
+    const selectedCounterBadge = document.getElementById('selectedCounterBadge');
+    const headerContextBadge = document.getElementById('headerContextBadge');
+    const dariNomorInput = document.getElementById('dari_nomor');
+    const keNomorInput = document.getElementById('ke_nomor');
+    const planningTitleInput = document.getElementById('planning_title');
+    const btnDownloadCsv = document.getElementById('btnDownloadTemplateCsv');
+    const btnDownloadXlsx = document.getElementById('btnDownloadTemplateXlsx');
 
-    // Cascading Penyulang Filter
-    const origPenyulangOpts = Array.from(penyulangSelect.options);
-    function filterPenyulang() {
-        const selGi = giSelect.value;
-        const selUlp = ulpSelect.value;
+    let loadedAssets = [];
 
-        penyulangSelect.innerHTML = '';
-        const defOpt = document.createElement('option');
-        defOpt.value = '';
-        defOpt.textContent = '-- Pilih Penyulang --';
-        penyulangSelect.appendChild(defOpt);
+    // 1. Cascading ULP -> Penyulang
+    ulpSelect.addEventListener('change', function() {
+        const ulpId = this.value;
+        penyulangSelect.innerHTML = '<option value="">-- Memuat Penyulang... --</option>';
+        penyulangSelect.disabled = true;
+        resetAssetTable();
 
-        origPenyulangOpts.forEach(opt => {
-            if (!opt.value) return;
-            const matchGi = !selGi || (opt.getAttribute('data-gi') === selGi);
-            const matchUlp = !selUlp || (opt.getAttribute('data-ulp') === selUlp);
-            if (matchGi && matchUlp) {
-                penyulangSelect.appendChild(opt.cloneNode(true));
-            }
-        });
-    }
-    giSelect.addEventListener('change', filterPenyulang);
-    ulpSelect.addEventListener('change', filterPenyulang);
-
-    // AJAX Load Assets for Selection
-    btnLoadAssets.addEventListener('click', function() {
-        const penyulangId = penyulangSelect.value;
-        if (!penyulangId) {
-            alert('Pilih Penyulang terlebih dahulu.');
+        if (!ulpId) {
+            penyulangSelect.innerHTML = '<option value="">-- Pilih ULP Terlebih Dahulu --</option>';
             return;
         }
 
-        assetPlaceholder.style.display = 'block';
-        assetPlaceholder.innerHTML = '<i class="fas fa-spinner fa-spin fa-2x mb-2 text-primary"></i><br>Memuat daftar asset lapangan...';
-        assetCheckboxList.innerHTML = '';
+        fetch('<?= site_url('master-assets/penyulang-by-ulp/') ?>' + ulpId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            let options = '<option value="">-- Pilih Penyulang --</option>';
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(p => {
+                    options += `<option value="${p.id}">${p.nama_penyulang}</option>`;
+                });
+                penyulangSelect.disabled = false;
+            } else {
+                options = '<option value="">-- Tidak ada penyulang --</option>';
+                penyulangSelect.disabled = true;
+            }
+            penyulangSelect.innerHTML = options;
+        });
+    });
 
+    // 2. Load Assets dynamically on Penyulang / Jenis Asset change
+    penyulangSelect.addEventListener('change', loadAssets);
+    jenisAssetSelect.addEventListener('change', loadAssets);
+
+    function loadAssets() {
+        const penyulangId = penyulangSelect.value;
+        const jenisAsset = jenisAssetSelect.value;
+
+        updateContextTitle();
+        updateDownloadTemplateLinks();
+
+        if (!penyulangId) {
+            resetAssetTable();
+            return;
+        }
+
+        tbodyAssets.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-muted py-5">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-2 text-primary"></i><br>Memuat data asset...
+                </td>
+            </tr>
+        `;
+
+        fetch(`<?= site_url('planning/ajax-assets') ?>?penyulang_id=${penyulangId}&jenis_asset=${jenisAsset}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            loadedAssets = data || [];
+            renderAssetTable(loadedAssets);
+        })
+        .catch(err => {
+            tbodyAssets.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle me-1"></i> Gagal memuat data asset.
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderAssetTable(assets) {
+        if (!assets || assets.length === 0) {
+            tbodyAssets.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">
+                        <i class="fas fa-exclamation-circle fa-2x mb-2 text-secondary opacity-50 d-block"></i>
+                        Belum ada asset untuk kombinasi Penyulang & Jenis Asset ini.
+                    </td>
+                </tr>
+            `;
+            updateSelectedCounter();
+            return;
+        }
+
+        let html = '';
+        assets.forEach((ast, idx) => {
+            html += `
+                <tr>
+                    <td class="text-center">
+                        <input class="form-check-input chk-asset-item" type="checkbox" name="asset_ids[]" value="${ast.id}" data-seq="${idx + 1}" checked>
+                    </td>
+                    <td class="fw-bold small text-secondary">${idx + 1}</td>
+                    <td>
+                        <strong class="text-dark d-block mb-0">${ast.nama_asset}</strong>
+                        <small class="text-muted font-monospace">${ast.kode_asset || ''}</small>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">${ast.nama_section || 'Utama'}</span></td>
+                    <td class="small font-monospace">${ast.latitude || '-'}</td>
+                    <td class="small font-monospace">${ast.longitude || '-'}</td>
+                    <td class="small text-uppercase">${ast.jenis_asset || 'Tiang'}</td>
+                    <td><span class="badge bg-success text-white">NORMAL</span></td>
+                </tr>
+            `;
+        });
+
+        tbodyAssets.innerHTML = html;
+        checkSelectAll.checked = true;
+
+        // Add event listeners to checkboxes
+        document.querySelectorAll('.chk-asset-item').forEach(chk => {
+            chk.addEventListener('change', updateSelectedCounter);
+        });
+
+        updateSelectedCounter();
+    }
+
+    function resetAssetTable() {
+        loadedAssets = [];
+        tbodyAssets.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-muted py-5">
+                    <i class="fas fa-mouse-pointer fa-2x mb-3 text-secondary opacity-50 d-block"></i>
+                    Silakan pilih <strong>ULP</strong> dan <strong>Penyulang</strong> di atas untuk memuat daftar asset.
+                </td>
+            </tr>
+        `;
+        checkSelectAll.checked = false;
+        updateSelectedCounter();
+    }
+
+    // 3. Select All Toggle
+    checkSelectAll.addEventListener('change', function() {
+        const isChecked = this.checked;
+        document.querySelectorAll('.chk-asset-item').forEach(chk => {
+            chk.checked = isChecked;
+        });
+        updateSelectedCounter();
+    });
+
+    // 4. Update Counter & Smart Range (Dari Nomor - Ke Nomor)
+    function updateSelectedCounter() {
+        const checkedItems = document.querySelectorAll('.chk-asset-item:checked');
+        const total = loadedAssets.length;
+        const count = checkedItems.length;
+
+        selectedCounterBadge.textContent = `${count} dari ${total} Asset Dipilih`;
+
+        if (count > 0) {
+            const seqs = Array.from(checkedItems).map(c => parseInt(c.getAttribute('data-seq'))).sort((a,b) => a - b);
+            dariNomorInput.value = seqs[0];
+            keNomorInput.value = seqs[seqs.length - 1];
+        } else {
+            dariNomorInput.value = '-';
+            keNomorInput.value = '-';
+        }
+    }
+
+    // 5. Update Context Title & Download Template Links
+    function updateContextTitle() {
+        const ulpText = ulpSelect.options[ulpSelect.selectedIndex]?.text || '';
+        const penyulangText = penyulangSelect.options[penyulangSelect.selectedIndex]?.text || '';
+        const jenisAsset = jenisAssetSelect.value;
+        const typeText = typeSelect.options[typeSelect.selectedIndex]?.text || '';
+
+        if (penyulangSelect.value) {
+            headerContextBadge.innerHTML = `<i class="fas fa-map-marker-alt me-1"></i> ${penyulangText} &bull; ${jenisAsset}`;
+            if (!planningTitleInput.value || planningTitleInput.value.startsWith('Planning Inspeksi')) {
+                planningTitleInput.value = `Planning Inspeksi ${typeText || 'JTM'} - ${penyulangText}`;
+            }
+        } else {
+            headerContextBadge.innerHTML = `<i class="fas fa-map-marker-alt me-1"></i> Pilih Context`;
+        }
+    }
+
+    function updateDownloadTemplateLinks() {
+        const ulpId = ulpSelect.value;
+        const penyulangId = penyulangSelect.value;
         const jenis = jenisAssetSelect.value;
 
-        fetch(`<?= site_url('master-assets/geojson') ?>?penyulang_id=${penyulangId}`)
-            .then(res => res.json())
-            .then(res => {
-                const features = (res.features || []);
-                let filtered = features;
-                if (jenis !== 'SEMUA') {
-                    filtered = features.filter(f => (f.properties.jenis_asset || '').toUpperCase() === jenis);
-                }
+        if (ulpId && penyulangId) {
+            btnDownloadCsv.href = `<?= site_url('master-assets/template') ?>?up3=UP3+Sidoarjo&ulp_id=${ulpId}&penyulang_id=${penyulangId}&jenis_asset=${jenis}&format=csv`;
+            btnDownloadXlsx.href = `<?= site_url('master-assets/template') ?>?up3=UP3+Sidoarjo&ulp_id=${ulpId}&penyulang_id=${penyulangId}&jenis_asset=${jenis}&format=xlsx`;
+            btnDownloadCsv.target = '_blank';
+            btnDownloadXlsx.target = '_blank';
+        } else {
+            btnDownloadCsv.href = '#';
+            btnDownloadXlsx.href = '#';
+            btnDownloadCsv.removeAttribute('target');
+            btnDownloadXlsx.removeAttribute('target');
+        }
+    }
 
-                if (filtered.length === 0) {
-                    assetPlaceholder.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i> Tidak ada asset yang sesuai dengan kriteria scope terpilih.</span>';
-                    return;
-                }
-
-                assetPlaceholder.style.display = 'none';
-                let html = '';
-                filtered.forEach((f, idx) => {
-                    const prop = f.properties;
-                    const astId = prop.id;
-                    const kode = prop.kode_asset || `AST-${astId}`;
-                    const nama = prop.nama_asset || `Asset ${kode}`;
-                    const jns = prop.jenis_asset || 'TIANG';
-
-                    html += `
-                        <div class="col">
-                            <div class="form-check card p-2 mb-0 border-0 shadow-sm rounded-3 bg-white">
-                                <input class="form-check-input asset-checkbox me-2" type="checkbox" name="asset_ids[]" value="${astId}" id="chk_ast_${astId}" checked>
-                                <label class="form-check-label w-100" for="chk_ast_${astId}">
-                                    <strong class="text-dark d-block mb-0">${idx + 1}. [${kode}] ${nama}</strong>
-                                    <small class="text-muted">${jns} &bull; ${prop.lokasi || 'Jalur Feeder'}</small>
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                });
-                assetCheckboxList.innerHTML = html;
-            })
-            .catch(err => {
-                assetPlaceholder.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i> Gagal memuat daftar asset. Silakan coba lagi.</span>';
-            });
-    });
-
-    btnSelectAll.addEventListener('click', function() {
-        document.querySelectorAll('.asset-checkbox').forEach(c => c.checked = true);
-    });
-
-    btnDeselectAll.addEventListener('click', function() {
-        document.querySelectorAll('.asset-checkbox').forEach(c => c.checked = false);
-    });
+    typeSelect.addEventListener('change', updateContextTitle);
 });
 </script>
 <?= $this->endSection() ?>

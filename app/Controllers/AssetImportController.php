@@ -169,6 +169,25 @@ class AssetImportController extends BaseController
     /**
      * Download Excel Import Template
      */
+    /**
+     * Reusable Endpoint: Get Penyulangs by ULP ID
+     * GET /master-assets/penyulang-by-ulp/{ulp_id}
+     */
+    public function getPenyulangByUlp(int $ulpId): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $penyulangModel = new \App\Models\PenyulangModel();
+        $penyulangs = $penyulangModel
+            ->where('ulp_id', $ulpId)
+            ->where('status', 'AKTIF')
+            ->orderBy('nama_penyulang', 'ASC')
+            ->findAll();
+
+        return $this->response->setJSON($penyulangs ?: []);
+    }
+
+    /**
+     * Download Excel/CSV Import Template with Chained Validation
+     */
     public function downloadTemplate(): \CodeIgniter\HTTP\ResponseInterface
     {
         if ($this->request->getGet('debug') === '1') {
@@ -188,23 +207,83 @@ class AssetImportController extends BaseController
         }
 
         try {
-            $jenisAsset = $this->request->getGet('jenis_asset');
-            $ulpId      = $this->request->getGet('ulp_id');
-            $up3        = $this->request->getGet('up3') ?: 'UP3 Sidoarjo';
+            $jenisAsset  = $this->request->getGet('jenis_asset');
+            $ulpId       = $this->request->getGet('ulp_id');
+            $penyulangId = $this->request->getGet('penyulang_id');
+            $format      = strtolower((string)($this->request->getGet('format') ?: 'xlsx'));
+            $up3         = $this->request->getGet('up3') ?: 'UP3 Sidoarjo';
 
-            if (!empty($jenisAsset)) {
-                // Dynamic Template Flow (New)
-                $namaUlp = 'Semua ULP';
-                if (!empty($ulpId)) {
-                    $ulpModel = new \App\Models\UlpModel();
-                    $ulpData  = $ulpModel->find($ulpId);
-                    if ($ulpData && !empty($ulpData['nama_ulp'])) {
-                        $namaUlp = $ulpData['nama_ulp'];
-                    }
+            // Check if request is using new Context-Aware mode (both ulp_id and penyulang_id provided)
+            $isContextMode = (!empty($ulpId) || !empty($penyulangId));
+
+            if ($isContextMode) {
+                // --- STRICT CHAINED SERVER VALIDATION ---
+                // 1. Check ULP exists
+                $ulpModel = new \App\Models\UlpModel();
+                $ulpData  = !empty($ulpId) ? $ulpModel->find($ulpId) : null;
+                if (!$ulpData) {
+                    return $this->response->setStatusCode(422)->setJSON([
+                        'status'  => 422,
+                        'message' => 'ULP yang dipilih tidak ditemukan dalam sistem.'
+                    ]);
                 }
 
+                // 2. Check Penyulang exists and belongs to ULP
+                $penyulangModel = new \App\Models\PenyulangModel();
+                $penyulangData  = !empty($penyulangId) ? $penyulangModel->find($penyulangId) : null;
+                if (!$penyulangData) {
+                    return $this->response->setStatusCode(422)->setJSON([
+                        'status'  => 422,
+                        'message' => 'Penyulang yang dipilih tidak ditemukan dalam sistem.'
+                    ]);
+                }
+
+                if ((int)$penyulangData['ulp_id'] !== (int)$ulpId) {
+                    return $this->response->setStatusCode(422)->setJSON([
+                        'status'  => 422,
+                        'message' => 'Penyulang ' . $penyulangData['nama_penyulang'] . ' tidak termasuk dalam ULP ' . $ulpData['nama_ulp'] . '.'
+                    ]);
+                }
+
+                // 3. Check Format
+                if (!in_array($format, ['xlsx', 'csv'], true)) {
+                    return $this->response->setStatusCode(422)->setJSON([
+                        'status'  => 422,
+                        'message' => 'Format template harus berupa xlsx atau csv.'
+                    ]);
+                }
+
+                $namaUlp       = $ulpData['nama_ulp'];
+                $namaPenyulang = $penyulangData['nama_penyulang'];
+                $sanitizedPenyulang = preg_replace('/[^a-zA-Z0-9_]/', '_', $namaPenyulang);
+                $sanitizedJenis     = preg_replace('/[^a-zA-Z0-9_]/', '_', $jenisAsset ?: 'Asset');
+
                 $dynamicEngine = new \App\Services\DynamicTemplateEngine();
-                $spreadsheet    = $dynamicEngine->generate($jenisAsset, $namaUlp, $up3);
+
+                if ($format === 'csv') {
+                    $csvContent = $dynamicEngine->generateCsv($jenisAsset ?: 'Gardu', $namaUlp, $up3);
+                    $filename   = 'Template_Import_' . $sanitizedJenis . '_' . $sanitizedPenyulang . '.csv';
+
+                    return $this->response
+                        ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
+                        ->setHeader('Content-Disposition', 'attachment;filename="' . $filename . '"')
+                        ->setHeader('Cache-Control', 'max-age=0')
+                        ->setBody($csvContent);
+                } else {
+                    $spreadsheet = $dynamicEngine->generate(
+                        $jenisAsset ?: 'Gardu',
+                        $namaUlp,
+                        $up3,
+                        (int)$ulpId,
+                        (int)$penyulangId,
+                        $namaPenyulang
+                    );
+                    $filename = 'Template_Import_' . $sanitizedJenis . '_' . $sanitizedPenyulang . '.xlsx';
+                }
+            } else if (!empty($jenisAsset)) {
+                // Dynamic Template Flow (Legacy Partial Request)
+                $dynamicEngine = new \App\Services\DynamicTemplateEngine();
+                $spreadsheet    = $dynamicEngine->generate($jenisAsset, 'Semua ULP', $up3);
                 $filename       = 'Template_Import_Asset_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $jenisAsset) . '.xlsx';
             } else {
                 // Static Template Flow (Old / Backward Compatible)
@@ -225,19 +304,8 @@ class AssetImportController extends BaseController
         } catch (\Throwable $e) {
             log_message('error', '[downloadTemplate] ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             return $this->response->setStatusCode(500)->setJSON([
-                'error'        => true,
-                'message'      => $e->getMessage(),
-                'class'        => get_class($e),
-                'file'         => $e->getFile(),
-                'line'         => $e->getLine(),
-                'trace'        => array_map(function ($t) {
-                    return [
-                        'file'     => $t['file'] ?? '[internal]',
-                        'line'     => $t['line'] ?? 0,
-                        'function' => ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? ''),
-                    ];
-                }, $e->getTrace()),
-                'class_exists_spreadsheet' => class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, true),
+                'error'   => true,
+                'message' => $e->getMessage(),
             ]);
         }
     }

@@ -535,7 +535,7 @@
             }
         }
 
-        function handleIncomingFiles(incomingFiles) {
+        async function handleIncomingFiles(incomingFiles) {
             const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
             for (let i = 0; i < incomingFiles.length; i++) {
                 const f = incomingFiles[i];
@@ -547,7 +547,12 @@
                     Toast.fire({ icon: 'warning', title: 'Maksimal upload 10 foto.' });
                     break;
                 }
-                createPhotoStore.items.add(f);
+                try {
+                    const compressedFile = await compressImageFile(f, 1200, 0.8);
+                    createPhotoStore.items.add(compressedFile);
+                } catch (e) {
+                    createPhotoStore.items.add(f);
+                }
             }
             renderPhotoPreviews();
         }

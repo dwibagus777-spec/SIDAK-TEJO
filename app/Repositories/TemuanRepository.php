@@ -186,7 +186,7 @@ class TemuanRepository extends BaseRepository
         $totalFiltered = $builder->countAllResults(false);
 
         // Order & Pagination
-        $orderColumnIdx = $postData['order'][0]['column'] ?? 0;
+        $orderColumnIdx = $postData['order'][0]['column'] ?? 6;
         $orderDir = $postData['order'][0]['dir'] ?? 'desc';
         
         $columnsMap = [
@@ -196,12 +196,15 @@ class TemuanRepository extends BaseRepository
             3 => 'temuan.jenis_temuan',
             4 => 'temuan.id',
             5 => 'temuan.prioritas',
-            6 => 'temuan.tanggal_temuan',
+            6 => 'temuan.created_at',
             7 => 'temuan.status',
         ];
         
-        $orderColumn = $columnsMap[$orderColumnIdx] ?? 'temuan.id';
+        $orderColumn = $columnsMap[$orderColumnIdx] ?? 'temuan.created_at';
         $builder->orderBy($orderColumn, $orderDir);
+        if ($orderColumn !== 'temuan.id') {
+            $builder->orderBy('temuan.id', 'DESC');
+        }
 
         $start = (int)($postData['start'] ?? 0);
         $length = (int)($postData['length'] ?? 10);

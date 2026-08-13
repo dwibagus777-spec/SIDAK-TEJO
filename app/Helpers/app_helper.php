@@ -340,22 +340,26 @@ if (!function_exists('get_photo_url')) {
         };
 
         $relativePath = $baseDir . $subDir . $fileName;
-        if (defined('FCPATH') && file_exists(FCPATH . $relativePath)) {
-            $mtime = filemtime(FCPATH . $relativePath);
-            return base_url($relativePath) . '?v=' . ($mtime ?: time());
-        }
-
-        // Fallback ke file original utama jika subfolder belum terbuat
         $fallbackPath = $baseDir . $fileName;
-        if (defined('FCPATH') && file_exists(FCPATH . $fallbackPath)) {
-            $mtime = filemtime(FCPATH . $fallbackPath);
-            return base_url($fallbackPath) . '?v=' . ($mtime ?: time());
-        }
 
-        // Cek juga di subfolder public/ jika FCPATH menunjuk ke root public_html
-        if (defined('FCPATH') && file_exists(FCPATH . 'public/' . $relativePath)) {
-            $mtime = filemtime(FCPATH . 'public/' . $relativePath);
-            return base_url($relativePath) . '?v=' . ($mtime ?: time());
+        foreach (array_unique([$relativePath, $fallbackPath]) as $rel) {
+            if (empty($rel)) continue;
+
+            if (defined('FCPATH')) {
+                if (file_exists(FCPATH . $rel)) {
+                    $mtime = filemtime(FCPATH . $rel);
+                    return base_url($rel) . '?v=' . ($mtime ?: time());
+                }
+                if (file_exists(FCPATH . 'public/' . $rel)) {
+                    $mtime = filemtime(FCPATH . 'public/' . $rel);
+                    return base_url($rel) . '?v=' . ($mtime ?: time());
+                }
+            }
+
+            if (defined('ROOTPATH') && file_exists(ROOTPATH . 'public/' . $rel)) {
+                $mtime = filemtime(ROOTPATH . 'public/' . $rel);
+                return base_url($rel) . '?v=' . ($mtime ?: time());
+            }
         }
 
         return $placeholder;

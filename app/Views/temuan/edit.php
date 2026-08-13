@@ -519,7 +519,44 @@
             }
         }
 
-        function handleEditIncomingFiles(incomingFiles) {
+        function compressImageFile(file, maxWidth = 1200, quality = 0.8) {
+            return new Promise((resolve) => {
+                if (!file.type.startsWith('image/')) { resolve(file); return; }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        let w = img.width, h = img.height;
+                        const maxDim = maxWidth;
+                        if (w > maxDim || h > maxDim) {
+                            if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                            else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        canvas.toBlob((blob) => {
+                            if (blob && blob.size < file.size) {
+                                const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(newFile);
+                            } else {
+                                resolve(file);
+                            }
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = () => resolve(file);
+                };
+                reader.onerror = () => resolve(file);
+            });
+        }
+
+        async function handleEditIncomingFiles(incomingFiles) {
             const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
             for (let i = 0; i < incomingFiles.length; i++) {
                 const f = incomingFiles[i];
@@ -531,7 +568,12 @@
                     Toast.fire({ icon: 'warning', title: 'Maksimal upload 10 foto tambahan.' });
                     break;
                 }
-                editPhotoStore.items.add(f);
+                try {
+                    const compressedFile = await compressImageFile(f, 1200, 0.8);
+                    editPhotoStore.items.add(compressedFile);
+                } catch (e) {
+                    editPhotoStore.items.add(f);
+                }
             }
             renderEditPhotoPreviews();
         }

@@ -1112,24 +1112,69 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                 const camInput = document.getElementById('foto_' + key + '_cam');
                 const previewEl = document.getElementById('preview_name_foto_' + key);
 
-                const handleFileChange = (file) => {
-                    if (file && previewEl) {
-                        previewEl.innerHTML = '<span class="text-success font-weight-bold"><i class="fas fa-check-circle me-1"></i> ' + file.name + '</span>';
+                function compressImageFile(file, maxWidth = 1200, quality = 0.8) {
+                    return new Promise((resolve) => {
+                        if (!file.type.startsWith('image/')) { resolve(file); return; }
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = (e) => {
+                            const img = new Image();
+                            img.src = e.target.result;
+                            img.onload = () => {
+                                let w = img.width, h = img.height;
+                                const maxDim = maxWidth;
+                                if (w > maxDim || h > maxDim) {
+                                    if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                                    else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                                }
+                                const canvas = document.createElement('canvas');
+                                canvas.width = w; canvas.height = h;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, w, h);
+                                canvas.toBlob((blob) => {
+                                    if (blob && blob.size < file.size) {
+                                        const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                            type: 'image/jpeg',
+                                            lastModified: Date.now()
+                                        });
+                                        resolve(newFile);
+                                    } else {
+                                        resolve(file);
+                                    }
+                                }, 'image/jpeg', quality);
+                            };
+                            img.onerror = () => resolve(file);
+                        };
+                        reader.onerror = () => resolve(file);
+                    });
+                }
+
+                const handleFileChange = async (file, targetInput) => {
+                    if (!file) return;
+                    try {
+                        const compressed = await compressImageFile(file, 1200, 0.8);
+                        const dt = new DataTransfer();
+                        dt.items.add(compressed);
+                        if (targetInput) targetInput.files = dt.files;
+                        if (previewEl) {
+                            previewEl.innerHTML = '<span class="text-success font-weight-bold"><i class="fas fa-check-circle me-1"></i> ' + compressed.name + ' (' + Math.round(compressed.size/1024) + 'KB)</span>';
+                        }
+                    } catch(e) {
+                        if (previewEl) {
+                            previewEl.innerHTML = '<span class="text-success font-weight-bold"><i class="fas fa-check-circle me-1"></i> ' + file.name + '</span>';
+                        }
                     }
                 };
 
-                camInput?.addEventListener('change', function() {
+                camInput?.addEventListener('change', async function() {
                     if (this.files && this.files.length > 0) {
-                        const dt = new DataTransfer();
-                        dt.items.add(this.files[0]);
-                        if (mainInput) mainInput.files = dt.files;
-                        handleFileChange(this.files[0]);
+                        await handleFileChange(this.files[0], mainInput);
                     }
                 });
 
-                mainInput?.addEventListener('change', function() {
+                mainInput?.addEventListener('change', async function() {
                     if (this.files && this.files.length > 0) {
-                        handleFileChange(this.files[0]);
+                        await handleFileChange(this.files[0], mainInput);
                     }
                 });
             });

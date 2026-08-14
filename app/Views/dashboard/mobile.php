@@ -149,7 +149,7 @@
         <div class="emc-m-card border-start border-4 border-warning bg-light">
             <small class="text-muted fw-bold d-block mb-1" style="font-size: 10px;"><i class="fas fa-quote-left me-1 text-warning"></i> MOTIVASI ADMIN</small>
             <p class="fst-italic text-dark small mb-0" id="m-permanent-motivation">
-                "Keselamatan Kerja dan Keandalan Pasokan Listrik Sidoarjo Adalah Prioritas Utama Kita Bersama."
+                "<?= esc(get_daily_announcement()) ?>"
             </p>
         </div>
 

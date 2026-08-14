@@ -113,6 +113,7 @@ class Setting extends BaseController
                 'success'      => true, 
                 'message'      => 'Pengaturan & Motivasi Harian berhasil tersimpan permanen di database!',
                 'announcement' => $dailyMotivation ?: $message,
+                'csrfHash'     => csrf_hash(),
                 'updated_by'   => $userName,
                 'updated_at'   => indo_datetime(date('Y-m-d H:i:s'))
             ]);

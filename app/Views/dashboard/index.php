@@ -143,7 +143,7 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2" style="font-size: 12px;">
             <div class="d-flex align-items-center gap-2">
                 <i class="fas fa-quote-left text-warning fs-5"></i>
-                <span id="permanent-motivation-text" class="fst-italic text-white">"Keselamatan Kerja dan Keandalan Pasokan Listrik Sidoarjo Adalah Prioritas Utama Kita Bersama."</span>
+                <span id="permanent-motivation-text" class="fst-italic text-white">"<?= esc(get_daily_announcement()) ?>"</span>
                 <button type="button" class="btn btn-xs btn-outline-light rounded-circle ms-2" onclick="editMotivation()" title="Edit Motivasi Admin"><i class="fas fa-pencil"></i></button>
             </div>
             <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
@@ -364,19 +364,44 @@ document.addEventListener("DOMContentLoaded", function() {
         if (clockEl) clockEl.innerText = h + ':' + m + ':' + s + ' WIB';
     }, 1000);
 
-    // Permanent Motivation Text
-    var savedMotiv = localStorage.getItem('sidak_admin_motivation');
-    if (savedMotiv) {
-        var motivEl = document.getElementById('permanent-motivation-text');
-        if (motivEl) motivEl.innerText = '"' + savedMotiv + '"';
-    }
-
     window.editMotivation = function() {
-        var input = prompt("Masukkan Kata Motivasi Admin Baru (Disimpan Permanen):");
-        if (input && input.trim()) {
-            localStorage.setItem('sidak_admin_motivation', input.trim());
-            var motivEl = document.getElementById('permanent-motivation-text');
-            if (motivEl) motivEl.innerText = '"' + input.trim() + '"';
+        var currentText = ($('#permanent-motivation-text').text() || '').replace(/^"|"$/g, '').trim();
+        var input = prompt("Masukkan Kata-Kata Motivasi Admin Baru (Disimpan Permanen ke Database):", currentText);
+        if (input !== null && input.trim() !== '') {
+            const newText = input.trim();
+            $.ajax({
+                url: '<?= site_url('setting/announcement') ?>',
+                type: 'POST',
+                data: {
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+                    'daily_motivation': newText
+                },
+                dataType: 'JSON',
+                success: function(res) {
+                    if (res && res.success) {
+                        var motivEl = document.getElementById('permanent-motivation-text');
+                        if (motivEl) motivEl.innerText = '"' + newText + '"';
+                        var mMotivEl = document.getElementById('m-permanent-motivation');
+                        if (mMotivEl) mMotivEl.innerText = '"' + newText + '"';
+                        var tickerEl = document.getElementById('running-announcement-text');
+                        if (tickerEl) tickerEl.innerText = newText;
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Motivasi Admin Saved!',
+                                text: 'Kata-kata motivasi harian berhasil tersimpan permanen di database server.',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        }
+                    } else {
+                        alert(res ? res.message : 'Gagal menyimpan motivasi.');
+                    }
+                },
+                error: function(xhr) {
+                    alert('Gagal terhubung ke server untuk menyimpan motivasi.');
+                }
+            });
         }
     };
 

@@ -98,10 +98,12 @@ class TemuanRepository extends BaseRepository
 
         if (!empty($filters['status'])) {
             $statusVal = strtoupper($filters['status']);
-            if ($statusVal === 'BELUM SELESAI') {
+            if ($statusVal === 'BELUM SELESAI' || $statusVal === 'BELUM') {
                 $builder->where('temuan.status !=', 'SELESAI');
             } elseif ($statusVal === 'SUDAH SELESAI' || $statusVal === 'SELESAI') {
                 $builder->where('temuan.status', 'SELESAI');
+            } elseif ($statusVal === 'PROSES' || $statusVal === 'DALAM_PROSES' || $statusVal === 'DALAM PROSES') {
+                $builder->whereIn('temuan.status', ['PROSES', 'DALAM_PROSES', 'TINDAK_LANJUT', 'PROSES PEKERJAAN']);
             } else {
                 $builder->where('temuan.status', $statusVal);
             }

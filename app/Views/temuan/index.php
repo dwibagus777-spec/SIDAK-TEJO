@@ -174,12 +174,13 @@
                     </div>
 
                     <!-- 5. Filter Status -->
-                    <div class="col-md-1 form-group mb-2">
+                    <div class="col-md-2 form-group mb-2">
                         <label for="filter_status" class="small font-weight-bold">Status</label>
                         <select id="filter_status" class="form-control form-control-sm select2">
-                            <option value="">-- Semua --</option>
-                            <option value="BELUM">BELUM</option>
-                            <option value="SELESAI">SELESAI</option>
+                            <option value="">-- Semua Status --</option>
+                            <option value="BELUM">BELUM SELESAI</option>
+                            <option value="PROSES">DALAM PROSES</option>
+                            <option value="SELESAI">SUDAH SELESAI</option>
                         </select>
                     </div>
 
@@ -387,13 +388,22 @@
         const urlStatus = urlParams.get('status');
 
         if (urlPelaksana) {
-            $('#filter_pelaksana').val(urlPelaksana).trigger('change.select2');
+            $('#filter_pelaksana').val(urlPelaksana.toUpperCase()).trigger('change.select2');
         }
         if (urlPrioritas) {
-            $('#filter_prioritas').val(urlPrioritas).trigger('change.select2');
+            $('#filter_prioritas').val(urlPrioritas.toUpperCase()).trigger('change.select2');
         }
         if (urlStatus) {
-            $('#filter_status').val(urlStatus).trigger('change.select2');
+            const cleanStatus = urlStatus.toUpperCase();
+            if (cleanStatus === 'PROSES' || cleanStatus === 'DALAM_PROSES' || cleanStatus === 'DALAM PROSES') {
+                $('#filter_status').val('PROSES').trigger('change.select2');
+            } else if (cleanStatus === 'SELESAI' || cleanStatus === 'SUDAH_SELESAI' || cleanStatus === 'SUDAH SELESAI') {
+                $('#filter_status').val('SELESAI').trigger('change.select2');
+            } else if (cleanStatus === 'BELUM' || cleanStatus === 'BELUM_SELESAI' || cleanStatus === 'BELUM SELESAI') {
+                $('#filter_status').val('BELUM').trigger('change.select2');
+            } else {
+                $('#filter_status').val(urlStatus).trigger('change.select2');
+            }
         }
 
         // 2. Inisialisasi DataTable Server Side

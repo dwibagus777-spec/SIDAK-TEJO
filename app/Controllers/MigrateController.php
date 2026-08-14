@@ -468,7 +468,62 @@ class MigrateController extends BaseController
             ]);
         }
     }
+
+    public function debugStorage()
+    {
+        $persistentParent = '/home/u532206332/domains/sidaktejo.site/';
+        $persistentDir = $persistentParent . 'sidak_storage/foto/';
+        $persistentWritable = false;
+        $persistentCreated = false;
+
+        if (is_dir($persistentParent) && is_writable($persistentParent)) {
+            if (!is_dir($persistentDir)) {
+                @mkdir($persistentDir, 0755, true);
+            }
+            $persistentCreated = is_dir($persistentDir);
+            $persistentWritable = is_writable($persistentDir);
+        }
+
+        $canaryFile = $persistentDir . 'CANARY_STORAGE_PERSISTENCE.txt';
+        $canaryWritten = false;
+        if ($persistentWritable) {
+            @file_put_contents($canaryFile, 'CANARY_TEST_TIMESTAMP_' . date('Y-m-d H:i:s'));
+            $canaryWritten = is_file($canaryFile);
+        }
+
+        $writableUploadsDir = WRITEPATH . 'uploads/foto/';
+        if (!is_dir($writableUploadsDir)) {
+            @mkdir($writableUploadsDir, 0755, true);
+        }
+        $writableCanaryFile = $writableUploadsDir . 'CANARY_STORAGE_PERSISTENCE.txt';
+        @file_put_contents($writableCanaryFile, 'CANARY_TEST_TIMESTAMP_' . date('Y-m-d H:i:s'));
+
+        $symlinkSupported = function_exists('symlink');
+        $symlinkCreated = false;
+        $symlinkPath = FCPATH . 'test_symlink_dir';
+        if ($symlinkSupported && !file_exists($symlinkPath)) {
+            try {
+                @symlink($persistentDir, $symlinkPath);
+                $symlinkCreated = is_link($symlinkPath);
+            } catch (\Throwable $symEx) {
+                $symlinkCreated = false;
+            }
+        }
+
+        return $this->response->setJSON([
+            'fcpath'                         => FCPATH,
+            'writepath'                        => WRITEPATH,
+            'persistent_parent_writable'     => is_writable($persistentParent),
+            'persistent_dir_created'         => $persistentCreated,
+            'persistent_dir_writable'        => $persistentWritable,
+            'persistent_canary_exists'       => is_file($canaryFile),
+            'writable_uploads_canary_exists' => is_file($writableCanaryFile),
+            'symlink_function_exists'        => $symlinkSupported,
+            'symlink_created'                => $symlinkCreated,
+        ]);
+    }
 }
+
 
 
 

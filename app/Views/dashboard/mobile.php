@@ -189,22 +189,22 @@
 
         <!-- 5. 1-COLUMN KPI STACK MOBILE -->
         <div class="kpi-mobile-stack">
-            <div class="kpi-m-row bg-primary shadow-sm">
+            <a href="<?= site_url('temuan') ?>" class="kpi-m-row bg-primary text-white text-decoration-none shadow-sm d-flex justify-content-between align-items-center">
                 <div><small class="text-white-50 font-weight-bold" style="font-size: 10px;">JUMLAH TEMUAN</small><h4 class="fw-bold mb-0"><?= number_format($stats['total'] ?? 0) ?></h4></div>
-                <i class="fas fa-search fs-3 opacity-50"></i>
-            </div>
-            <div class="kpi-m-row bg-danger shadow-sm">
+                <i class="fas fa-chevron-right fs-3 opacity-50"></i>
+            </a>
+            <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="kpi-m-row bg-danger text-white text-decoration-none shadow-sm d-flex justify-content-between align-items-center">
                 <div><small class="text-white-50 font-weight-bold" style="font-size: 10px;">EMERGENCY</small><h4 class="fw-bold mb-0"><?= number_format($stats['emergency'] ?? 0) ?></h4></div>
-                <i class="fas fa-triangle-exclamation fs-3 opacity-50"></i>
-            </div>
-            <div class="kpi-m-row bg-warning text-dark shadow-sm">
+                <i class="fas fa-chevron-right fs-3 opacity-50"></i>
+            </a>
+            <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="kpi-m-row bg-warning text-dark text-decoration-none shadow-sm d-flex justify-content-between align-items-center">
                 <div><small class="text-dark font-weight-bold" style="font-size: 10px;">HIGH PRIORITY</small><h4 class="fw-bold mb-0"><?= number_format($stats['high'] ?? 0) ?></h4></div>
-                <i class="fas fa-bolt fs-3 opacity-50"></i>
-            </div>
-            <div class="kpi-m-row bg-success shadow-sm">
+                <i class="fas fa-chevron-right fs-3 opacity-50"></i>
+            </a>
+            <a href="<?= site_url('temuan?status=SELESAI') ?>" class="kpi-m-row bg-success text-white text-decoration-none shadow-sm d-flex justify-content-between align-items-center">
                 <div><small class="text-white-50 font-weight-bold" style="font-size: 10px;">SUDAH SELESAI</small><h4 class="fw-bold mb-0"><?= number_format($stats['selesai'] ?? 0) ?></h4></div>
-                <i class="fas fa-circle-check fs-3 opacity-50"></i>
-            </div>
+                <i class="fas fa-chevron-right fs-3 opacity-50"></i>
+            </a>
         </div>
 
         <!-- 6. MINI MAP MONITORING -->

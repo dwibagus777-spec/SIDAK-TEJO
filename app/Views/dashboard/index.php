@@ -46,6 +46,14 @@
         letter-spacing: 0.6px;
         opacity: 0.85;
     }
+    .kpi-drilldown-link {
+        cursor: pointer;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+    }
+    .kpi-drilldown-link:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.2) !important;
+    }
 
     /* Floating Quick Action */
     .quick-action-bar-emc {
@@ -172,59 +180,80 @@
     <div class="row g-3 mb-4">
         <!-- Jumlah Temuan -->
         <div class="col-lg-3 col-md-6 col-12">
-            <div class="emc-card kpi-emc-card bg-primary">
-                <span class="kpi-emc-lbl">Jumlah Temuan</span>
+            <a href="<?= site_url('temuan') ?>" class="emc-card kpi-emc-card bg-primary text-white text-decoration-none d-block kpi-drilldown-link">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="kpi-emc-lbl">Jumlah Temuan</span>
+                    <i class="fas fa-chevron-right opacity-50"></i>
+                </div>
                 <div class="kpi-emc-val mt-1" id="kpi-total-temuan"><?= number_format($stats['total'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">Total Inspeksi Fisik</small>
-            </div>
+                <small class="text-white-50 d-block mt-1">Total Inspeksi Fisik &rarr;</small>
+            </a>
         </div>
         <!-- Emergency -->
         <div class="col-lg-3 col-md-6 col-12">
-            <div class="emc-card kpi-emc-card bg-danger">
-                <span class="kpi-emc-lbl">Emergency</span>
+            <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="emc-card kpi-emc-card bg-danger text-white text-decoration-none d-block kpi-drilldown-link">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="kpi-emc-lbl">Emergency</span>
+                    <i class="fas fa-chevron-right opacity-50"></i>
+                </div>
                 <div class="kpi-emc-val mt-1" id="kpi-emergency"><?= number_format($stats['emergency'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">Tindak Lanjut Darurat</small>
-            </div>
+                <small class="text-white-50 d-block mt-1">Tindak Lanjut Darurat &rarr;</small>
+            </a>
         </div>
         <!-- High Priority -->
         <div class="col-lg-3 col-md-6 col-12">
-            <div class="emc-card kpi-emc-card text-white" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                <span class="kpi-emc-lbl">High Priority</span>
+            <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="emc-card kpi-emc-card text-white text-decoration-none d-block kpi-drilldown-link" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="kpi-emc-lbl">High Priority</span>
+                    <i class="fas fa-chevron-right opacity-50"></i>
+                </div>
                 <div class="kpi-emc-val mt-1" id="kpi-high"><?= number_format($stats['high'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">SLA 7 Hari</small>
-            </div>
+                <small class="text-white-50 d-block mt-1">SLA 7 Hari &rarr;</small>
+            </a>
         </div>
         <!-- Medium Priority -->
         <div class="col-lg-3 col-md-6 col-12">
-            <div class="emc-card kpi-emc-card text-white" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
-                <span class="kpi-emc-lbl">Medium Priority</span>
+            <a href="<?= site_url('temuan?prioritas=MEDIUM') ?>" class="emc-card kpi-emc-card text-white text-decoration-none d-block kpi-drilldown-link" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="kpi-emc-lbl">Medium Priority</span>
+                    <i class="fas fa-chevron-right opacity-50"></i>
+                </div>
                 <div class="kpi-emc-val mt-1" id="kpi-medium"><?= number_format($stats['medium'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">SLA 31 Hari</small>
-            </div>
+                <small class="text-white-50 d-block mt-1">SLA 31 Hari &rarr;</small>
+            </a>
         </div>
         <!-- Belum Selesai -->
         <div class="col-lg-3 col-md-6 col-12">
-            <div class="emc-card kpi-emc-card bg-dark">
-                <span class="kpi-emc-lbl">Belum Selesai</span>
+            <a href="<?= site_url('temuan?status=BELUM') ?>" class="emc-card kpi-emc-card bg-dark text-white text-decoration-none d-block kpi-drilldown-link">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="kpi-emc-lbl">Belum Selesai</span>
+                    <i class="fas fa-chevron-right opacity-50"></i>
+                </div>
                 <div class="kpi-emc-val mt-1" id="kpi-belum"><?= number_format($stats['belum'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">Outstanding</small>
-            </div>
+                <small class="text-white-50 d-block mt-1">Outstanding &rarr;</small>
+            </a>
         </div>
-        <!-- Proses -->
+        <!-- Dalam Proses -->
         <div class="col-lg-3 col-md-6 col-12">
-            <div class="emc-card kpi-emc-card text-white" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
-                <span class="kpi-emc-lbl">Dalam Proses</span>
+            <a href="<?= site_url('temuan?status=PROSES') ?>" class="emc-card kpi-emc-card text-white text-decoration-none d-block kpi-drilldown-link" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="kpi-emc-lbl">Dalam Proses</span>
+                    <i class="fas fa-chevron-right opacity-50"></i>
+                </div>
                 <div class="kpi-emc-val mt-1"><?= number_format($woStats['aktif'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">Status Progress</small>
-            </div>
+                <small class="text-white-50 d-block mt-1">Status Progress &rarr;</small>
+            </a>
         </div>
         <!-- Sudah Selesai -->
         <div class="col-lg-3 col-md-6 col-12">
-            <div class="emc-card kpi-emc-card bg-success">
-                <span class="kpi-emc-lbl">Sudah Selesai</span>
+            <a href="<?= site_url('temuan?status=SELESAI') ?>" class="emc-card kpi-emc-card bg-success text-white text-decoration-none d-block kpi-drilldown-link">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="kpi-emc-lbl">Sudah Selesai</span>
+                    <i class="fas fa-chevron-right opacity-50"></i>
+                </div>
                 <div class="kpi-emc-val mt-1" id="kpi-selesai"><?= number_format($stats['selesai'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">Tuntas 100%</small>
-            </div>
+                <small class="text-white-50 d-block mt-1">Tuntas 100% &rarr;</small>
+            </a>
         </div>
         <!-- Target Harian -->
         <div class="col-lg-3 col-md-6 col-12">

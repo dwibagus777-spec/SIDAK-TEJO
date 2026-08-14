@@ -150,26 +150,23 @@ class TemuanApiController extends BaseApiController
             return $this->respondError('Validasi gagal.', 422, $this->validator->getErrors());
         }
 
-        $uploadedPhotos = [];
+        $photoFiles = null;
         if (!empty($files['foto'])) {
             $photoFiles = is_array($files['foto']) ? $files['foto'] : [$files['foto']];
-            $uploadedPhotos = $this->temuanService->uploadMultiplePhotos($photoFiles);
         }
 
         $postData = $this->request->getPost();
-        $postData['foto'] = json_encode($uploadedPhotos);
-        $postData['foto_path'] = 'foto/';
         $postData['status'] = $postData['status'] ?? 'BELUM';
         $postData['created_by'] = $user['user_id'];
         $postData['created_by_name'] = $user['nama_pegawai'];
         $postData['created_by_nip'] = $user['nip'];
 
-        $id = $this->temuanService->createTemuan($postData);
-        if ($id) {
-            return $this->respondSuccess(['id' => $id], 'Temuan baru berhasil disimpan.', 201);
+        $res = $this->temuanService->createTemuan($postData, $photoFiles);
+        if ($res['success']) {
+            return $this->respondSuccess(['id' => $res['id'] ?? null], $res['message'] ?? 'Temuan baru berhasil disimpan.', 201);
         }
 
-        return $this->respondError('Gagal menyimpan temuan.', 500);
+        return $this->respondError($res['message'] ?? 'Gagal menyimpan temuan.', 500);
     }
 
     /**

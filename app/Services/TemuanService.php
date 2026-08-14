@@ -255,7 +255,7 @@ class TemuanService
     }
 
     /**
-     * Memperbarui Data Temuan (Hotfix Edit Foto & Unlink Foto Lama)
+     * Memperbarui Data Temuan (Safe Atomic Photo Replacement & Unlink Cleanup via array_diff)
      */
     public function updateTemuan(int $id, array $data, ?array $newFiles, bool $replaceOldPhotos = true): array
     {
@@ -266,47 +266,60 @@ class TemuanService
 
         $data['updated_by'] = session()->get('user_id');
 
+        // Decode foto lama yang saat ini ada di DB
+        $existingPhotos = [];
+        if (!empty($temuan['foto'])) {
+            if (is_array($temuan['foto'])) {
+                $existingPhotos = $temuan['foto'];
+            } else {
+                $decoded = json_decode((string)($temuan['foto'] ?? ''), true);
+                $existingPhotos = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', (string)$temuan['foto'])));
+            }
+        }
+
+        $photosToDelete = [];
         $hasNewFiles = !empty($newFiles) && isset($newFiles[0]) && $newFiles[0]->isValid();
+
         if ($hasNewFiles) {
+            // 1. Upload berkas foto baru terlebih dahulu
             $uploadResult = $this->uploadMultiplePhotos($newFiles, false);
             if (!$uploadResult['success']) {
                 return ['success' => false, 'message' => $uploadResult['message']];
             }
 
             if (!empty($uploadResult['names'])) {
-                // Decode foto lama
-                $existingPhotos = [];
-                if (!empty($temuan['foto'])) {
-                    if (is_array($temuan['foto'])) {
-                        $existingPhotos = $temuan['foto'];
-                    } else {
-                        $decoded = json_decode((string)($temuan['foto'] ?? ''), true);
-                        $existingPhotos = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', (string)$temuan['foto'])));
-                    }
-                }
+                // 2. Hitung final photos berdasarkan mode replace/append
+                $finalPhotos = $replaceOldPhotos
+                    ? $uploadResult['names']
+                    : array_values(array_unique(array_merge($existingPhotos, $uploadResult['names'])));
 
-                if ($replaceOldPhotos) {
-                    // Unlink berkas foto lama secara fisik dari server
-                    foreach ($existingPhotos as $oldPhoto) {
-                        $oldPath = FCPATH . 'foto/' . $oldPhoto;
-                        if (file_exists($oldPath) && is_file($oldPath)) {
-                            @unlink($oldPath);
-                        }
-                    }
-                    $data['foto'] = json_encode($uploadResult['names']);
-                } else {
-                    // Mode Tambah: Gabungkan foto lama dan foto baru
-                    $mergedPhotos = array_merge($existingPhotos, $uploadResult['names']);
-                    $data['foto'] = json_encode($mergedPhotos);
-                }
-
+                $data['foto'] = json_encode($finalPhotos);
                 $data['foto_path'] = 'foto/';
+
+                // 3. Tentukan foto lama yang TIDAK LAGI DIREFERENSIKAN oleh DB (array_diff)
+                $photosToDelete = array_diff($existingPhotos, $finalPhotos);
             }
         }
 
+        // 4. Update transaksi database terlebih dahulu
         $result = $this->temuanRepository->update($id, $data);
 
         if ($result !== false) {
+            // 5. DEFERRED CLEANUP: HANYA HAPUS FOTO LAMA APABILA TRANSAKSI DB BERHASIL 100%
+            if (!empty($photosToDelete)) {
+                foreach ($photosToDelete as $oldPhoto) {
+                    $cleanName = basename(trim((string)$oldPhoto));
+                    if (empty($cleanName)) continue;
+
+                    $oldPath = FCPATH . 'foto/' . $cleanName;
+                    if (is_file($oldPath)) {
+                        if (!@unlink($oldPath)) {
+                            log_message('warning', '[updateTemuan] Cleanup foto lama gagal: ' . $oldPath);
+                        }
+                    }
+                }
+            }
+
             // Flush Cache CI4
             if (function_exists('cache')) {
                 @cache()->clean();

@@ -108,8 +108,12 @@ class AssetController extends BaseController
         $foto = $this->request->getFile('foto');
         $fotoName = null;
         if ($foto && $foto->isValid() && !$foto->hasMoved()) {
+            $targetAssetDir = (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH) . 'uploads/assets/';
+            if (!is_dir($targetAssetDir)) {
+                mkdir($targetAssetDir, 0755, true);
+            }
             $fotoName = 'asset_' . time() . '_' . $foto->getRandomName();
-            $foto->move(FCPATH . 'uploads/assets/', $fotoName);
+            $foto->move($targetAssetDir, $fotoName);
             $fotoName = 'uploads/assets/' . $fotoName;
         }
 
@@ -207,8 +211,12 @@ class AssetController extends BaseController
         $foto = $this->request->getFile('foto');
         $fotoName = $asset['foto'];
         if ($foto && $foto->isValid() && !$foto->hasMoved()) {
+            $targetAssetDir = (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH) . 'uploads/assets/';
+            if (!is_dir($targetAssetDir)) {
+                mkdir($targetAssetDir, 0755, true);
+            }
             $fotoName = 'asset_' . time() . '_' . $foto->getRandomName();
-            $foto->move(FCPATH . 'uploads/assets/', $fotoName);
+            $foto->move($targetAssetDir, $fotoName);
             $fotoName = 'uploads/assets/' . $fotoName;
         }
 

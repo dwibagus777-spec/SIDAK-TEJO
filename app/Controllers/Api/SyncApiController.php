@@ -119,7 +119,7 @@ class SyncApiController extends BaseController
                 ]);
             }
 
-            $uploadDir = FCPATH . 'foto/';
+            $uploadDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/';
             if (!is_dir($uploadDir)) {
                 @mkdir($uploadDir, 0755, true);
             }

@@ -644,8 +644,19 @@ class Laporan extends BaseController
             $fotos = array_slice($row['fotos'], 0, 4);
             $idx = 0;
             foreach ($fotos as $foto) {
-                $imagePath = FCPATH . 'foto/' . $foto['nama_file'];
-                if (file_exists($imagePath)) {
+                $candidatePaths = [
+                    (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/') . $foto['nama_file'],
+                    WRITEPATH . 'uploads/foto/' . $foto['nama_file'],
+                    FCPATH . 'foto/' . $foto['nama_file'],
+                ];
+                $imagePath = null;
+                foreach ($candidatePaths as $cPath) {
+                    if (is_file($cPath)) {
+                        $imagePath = $cPath;
+                        break;
+                    }
+                }
+                if ($imagePath) {
                     if ($idx === 0) { $x = 30; $y = 160; }
                     elseif ($idx === 1) { $x = 480; $y = 160; }
                     elseif ($idx === 2) { $x = 30; $y = 370; }

@@ -136,21 +136,26 @@ class WorkOrderController extends BaseController
         $fNameProses = null;
         $fNameSesud  = null;
 
+        $targetWoDir = (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH) . 'uploads/wo/';
+        if (!is_dir($targetWoDir)) {
+            mkdir($targetWoDir, 0755, true);
+        }
+
         if ($fotoSebel && $fotoSebel->isValid() && !$fotoSebel->hasMoved()) {
             $fNameSebel = 'wo_before_' . time() . '_' . $fotoSebel->getRandomName();
-            $fotoSebel->move(FCPATH . 'uploads/wo/', $fNameSebel);
+            $fotoSebel->move($targetWoDir, $fNameSebel);
             $fNameSebel = 'uploads/wo/' . $fNameSebel;
         }
 
         if ($fotoProses && $fotoProses->isValid() && !$fotoProses->hasMoved()) {
             $fNameProses = 'wo_process_' . time() . '_' . $fotoProses->getRandomName();
-            $fotoProses->move(FCPATH . 'uploads/wo/', $fNameProses);
+            $fotoProses->move($targetWoDir, $fNameProses);
             $fNameProses = 'uploads/wo/' . $fNameProses;
         }
 
         if ($fotoSesud && $fotoSesud->isValid() && !$fotoSesud->hasMoved()) {
             $fNameSesud = 'wo_after_' . time() . '_' . $fotoSesud->getRandomName();
-            $fotoSesud->move(FCPATH . 'uploads/wo/', $fNameSesud);
+            $fotoSesud->move($targetWoDir, $fNameSesud);
             $fNameSesud = 'uploads/wo/' . $fNameSesud;
         }
 

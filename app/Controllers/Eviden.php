@@ -155,7 +155,9 @@ class Eviden extends BaseController
                     foreach ($files as $file) {
                         if ($file->isValid() && !$file->hasMoved()) {
                             $newName = $file->getRandomName();
-                            $file->move(FCPATH . 'foto/', $newName);
+                            $targetDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/';
+                            if (!is_dir($targetDir)) { @mkdir($targetDir, 0755, true); }
+                            $file->move($targetDir, $newName);
 
                             $this->fotoModel->insert([
                                 'id_parent' => $insertedId,
@@ -248,7 +250,9 @@ class Eviden extends BaseController
                     foreach ($files as $file) {
                         if ($file->isValid() && !$file->hasMoved()) {
                             $newName = $file->getRandomName();
-                            $file->move(FCPATH . 'foto/', $newName);
+                            $targetDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/';
+                            if (!is_dir($targetDir)) { @mkdir($targetDir, 0755, true); }
+                            $file->move($targetDir, $newName);
 
                             $this->fotoModel->insert([
                                 'id_parent' => $id,
@@ -421,7 +425,9 @@ class Eviden extends BaseController
                     foreach ($files as $file) {
                         if ($file->isValid() && !$file->hasMoved()) {
                             $newName = $file->getRandomName();
-                            $file->move(FCPATH . 'foto/', $newName);
+                            $targetDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/';
+                            if (!is_dir($targetDir)) { @mkdir($targetDir, 0755, true); }
+                            $file->move($targetDir, $newName);
 
                             $this->fotoModel->insert([
                                 'id_parent' => $insertedId,
@@ -511,7 +517,9 @@ class Eviden extends BaseController
                     foreach ($files as $file) {
                         if ($file->isValid() && !$file->hasMoved()) {
                             $newName = $file->getRandomName();
-                            $file->move(FCPATH . 'foto/', $newName);
+                            $targetDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/';
+                            if (!is_dir($targetDir)) { @mkdir($targetDir, 0755, true); }
+                            $file->move($targetDir, $newName);
 
                             $this->fotoModel->insert([
                                 'id_parent' => $id,
@@ -639,9 +647,9 @@ class Eviden extends BaseController
         $fileLama = $this->request->getFile('foto_nameplate_lama');
         if ($fileLama && $fileLama->isValid() && !$fileLama->hasMoved()) {
             $newNameLama = $fileLama->getRandomName();
-            $dir = FCPATH . 'foto/management/';
+            $dir = (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/') . 'management/';
             if (!is_dir($dir)) {
-                mkdir($dir, 0777, true);
+                mkdir($dir, 0755, true);
             }
             $fileLama->move($dir, $newNameLama);
             $data['foto_nameplate_lama'] = $newNameLama;
@@ -650,9 +658,9 @@ class Eviden extends BaseController
         $fileBaru = $this->request->getFile('foto_nameplate_baru');
         if ($fileBaru && $fileBaru->isValid() && !$fileBaru->hasMoved()) {
             $newNameBaru = $fileBaru->getRandomName();
-            $dir = FCPATH . 'foto/management/';
+            $dir = (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/') . 'management/';
             if (!is_dir($dir)) {
-                mkdir($dir, 0777, true);
+                mkdir($dir, 0755, true);
             }
             $fileBaru->move($dir, $newNameBaru);
             $data['foto_nameplate_baru'] = $newNameBaru;
@@ -721,22 +729,36 @@ class Eviden extends BaseController
         $fileLama = $this->request->getFile('foto_nameplate_lama');
         if ($fileLama && $fileLama->isValid() && !$fileLama->hasMoved()) {
             $newNameLama = $fileLama->getRandomName();
-            $fileLama->move(FCPATH . 'foto/management/', $newNameLama);
+            $dir = (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/') . 'management/';
+            if (!is_dir($dir)) { mkdir($dir, 0755, true); }
+            $fileLama->move($dir, $newNameLama);
             $data['foto_nameplate_lama'] = $newNameLama;
 
-            if (!empty($management['foto_nameplate_lama']) && file_exists(FCPATH . 'foto/management/' . $management['foto_nameplate_lama'])) {
-                @unlink(FCPATH . 'foto/management/' . $management['foto_nameplate_lama']);
+            if (!empty($management['foto_nameplate_lama'])) {
+                $cOld = [
+                    (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/') . 'management/' . $management['foto_nameplate_lama'],
+                    WRITEPATH . 'uploads/foto/management/' . $management['foto_nameplate_lama'],
+                    FCPATH . 'foto/management/' . $management['foto_nameplate_lama'],
+                ];
+                foreach ($cOld as $cPath) { if (is_file($cPath)) { @unlink($cPath); } }
             }
         }
 
         $fileBaru = $this->request->getFile('foto_nameplate_baru');
         if ($fileBaru && $fileBaru->isValid() && !$fileBaru->hasMoved()) {
             $newNameBaru = $fileBaru->getRandomName();
-            $fileBaru->move(FCPATH . 'foto/management/', $newNameBaru);
+            $dir = (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/') . 'management/';
+            if (!is_dir($dir)) { mkdir($dir, 0755, true); }
+            $fileBaru->move($dir, $newNameBaru);
             $data['foto_nameplate_baru'] = $newNameBaru;
 
-            if (!empty($management['foto_nameplate_baru']) && file_exists(FCPATH . 'foto/management/' . $management['foto_nameplate_baru'])) {
-                @unlink(FCPATH . 'foto/management/' . $management['foto_nameplate_baru']);
+            if (!empty($management['foto_nameplate_baru'])) {
+                $cOld = [
+                    (defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : FCPATH . 'foto/') . 'management/' . $management['foto_nameplate_baru'],
+                    WRITEPATH . 'uploads/foto/management/' . $management['foto_nameplate_baru'],
+                    FCPATH . 'foto/management/' . $management['foto_nameplate_baru'],
+                ];
+                foreach ($cOld as $cPath) { if (is_file($cPath)) { @unlink($cPath); } }
             }
         }
 

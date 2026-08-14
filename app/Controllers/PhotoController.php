@@ -6,21 +6,31 @@ class PhotoController extends BaseController
 {
     public function show(string $filename = '')
     {
-        $cleanName = basename(trim(rawurldecode($filename)));
+        $relativePath = ltrim(rawurldecode($filename), '/');
+        $relativePath = str_replace('\\', '/', $relativePath);
 
-        if (
-            $cleanName === '' ||
-            $cleanName === '.' ||
-            $cleanName === '..' ||
-            str_contains($cleanName, "\0")
-        ) {
+        $parts = array_filter(
+            explode('/', $relativePath),
+            static fn ($part) =>
+                $part !== '' &&
+                $part !== '.' &&
+                $part !== '..' &&
+                !str_contains($part, "\0")
+        );
+
+        $relativePath = implode('/', $parts);
+
+        if ($relativePath === '') {
             return $this->response->setStatusCode(404);
         }
 
+        $baseStorageDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . '/' : WRITEPATH . 'uploads/foto/';
+
         $candidatePaths = [
-            SIDAK_STORAGE_PATH . $cleanName,
-            WRITEPATH . 'uploads/foto/' . $cleanName,
-            FCPATH . 'foto/' . $cleanName,
+            $baseStorageDir . $relativePath,
+            WRITEPATH . 'uploads/foto/' . $relativePath,
+            FCPATH . 'foto/' . $relativePath,
+            FCPATH . 'uploads/' . $relativePath,
         ];
 
         foreach ($candidatePaths as $path) {

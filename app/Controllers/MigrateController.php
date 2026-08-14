@@ -416,7 +416,7 @@ class MigrateController extends BaseController
         }
     }
 
-    public function debugFoto($id)
+    public function debugFoto($id = 524)
     {
         $db = Database::connect();
         $row = $db->table('temuan')->where('id', (int)$id)->get()->getRowArray();

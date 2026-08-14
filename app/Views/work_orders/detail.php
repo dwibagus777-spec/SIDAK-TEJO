@@ -128,24 +128,24 @@
                                     <div class="d-flex gap-2 flex-wrap mt-2">
                                         <?php if (!empty($h['foto_sebelum'])): ?>
                                             <div class="text-center">
-                                                <a href="<?= base_url($h['foto_sebelum']) ?>" target="_blank">
-                                                    <img src="<?= base_url($h['foto_sebelum']) ?>" alt="Sebelum" class="img-thumbnail rounded-3" style="width: 90px; height: 90px; object-fit: cover;">
+                                                <a href="<?= get_photo_url($h['foto_sebelum']) ?>" target="_blank">
+                                                    <img src="<?= get_photo_url($h['foto_sebelum']) ?>" alt="Sebelum" class="img-thumbnail rounded-3" style="width: 90px; height: 90px; object-fit: cover;">
                                                 </a>
                                                 <span class="badge bg-danger d-block mt-1" style="font-size: 9px;">Foto Sebelum</span>
                                             </div>
                                         <?php endif; ?>
                                         <?php if (!empty($h['foto_proses'])): ?>
                                             <div class="text-center">
-                                                <a href="<?= base_url($h['foto_proses']) ?>" target="_blank">
-                                                    <img src="<?= base_url($h['foto_proses']) ?>" alt="Proses" class="img-thumbnail rounded-3" style="width: 90px; height: 90px; object-fit: cover;">
+                                                <a href="<?= get_photo_url($h['foto_proses']) ?>" target="_blank">
+                                                    <img src="<?= get_photo_url($h['foto_proses']) ?>" alt="Proses" class="img-thumbnail rounded-3" style="width: 90px; height: 90px; object-fit: cover;">
                                                 </a>
                                                 <span class="badge bg-warning text-dark d-block mt-1" style="font-size: 9px;">Foto Proses</span>
                                             </div>
                                         <?php endif; ?>
                                         <?php if (!empty($h['foto_sesudah'])): ?>
                                             <div class="text-center">
-                                                <a href="<?= base_url($h['foto_sesudah']) ?>" target="_blank">
-                                                    <img src="<?= base_url($h['foto_sesudah']) ?>" alt="Sesudah" class="img-thumbnail rounded-3" style="width: 90px; height: 90px; object-fit: cover;">
+                                                <a href="<?= get_photo_url($h['foto_sesudah']) ?>" target="_blank">
+                                                    <img src="<?= get_photo_url($h['foto_sesudah']) ?>" alt="Sesudah" class="img-thumbnail rounded-3" style="width: 90px; height: 90px; object-fit: cover;">
                                                 </a>
                                                 <span class="badge bg-success d-block mt-1" style="font-size: 9px;">Foto Sesudah</span>
                                             </div>

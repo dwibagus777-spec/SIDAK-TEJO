@@ -58,9 +58,13 @@ class Setting extends BaseController
             ));
             
             if (empty($message)) {
-                $jsonInput = $this->request->getJSON(true);
-                if (!empty($jsonInput['message'])) {
-                    $message = trim((string)$jsonInput['message']);
+                try {
+                    $jsonInput = $this->request->getJSON(true);
+                    if (is_array($jsonInput) && !empty($jsonInput['message'])) {
+                        $message = trim((string)$jsonInput['message']);
+                    }
+                } catch (\Throwable $e) {
+                    // Non-JSON request body (e.g. form-urlencoded), safely ignore
                 }
             }
 

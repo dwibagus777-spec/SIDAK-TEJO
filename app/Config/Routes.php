@@ -20,7 +20,7 @@ $routes->get('queue/run', 'QueueWorker::run');
 
 // Production Database DDL Auto-Migrate & Catalog Seeder Route (Publicly callable for deployment sync)
 $routes->get('master-assets/auto-migrate', 'MigrateController::autoMigrate');
-$routes->get('master-assets/debug-foto/(:num)', 'MigrateController::debugFoto/$1');
+$routes->get('debug-foto-524', 'MigrateController::debugFoto/524');
 
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {

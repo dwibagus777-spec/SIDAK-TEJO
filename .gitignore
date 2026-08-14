@@ -129,3 +129,7 @@ public/*.zip
 public/uploads/*
 !public/uploads/index.html
 
+# Runtime uploaded photos - NEVER deploy via Git
+/public/foto/*
+!/public/foto/index.html
+!/public/foto/.gitkeep

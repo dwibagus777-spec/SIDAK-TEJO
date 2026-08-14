@@ -370,7 +370,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (input !== null && input.trim() !== '') {
             const newText = input.trim();
             $.ajax({
-                url: '<?= site_url('setting/announcement') ?>',
+                url: '<?= site_url('setting/update-announcement') ?>',
                 type: 'POST',
                 data: {
                     '<?= csrf_token() ?>': '<?= csrf_hash() ?>',

@@ -83,6 +83,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('change-password', 'Auth::changePassword');
     $routes->post('change-password', 'Auth::changePassword');
     $routes->get('setting/announcement', 'Setting::index');
+    $routes->post('setting/announcement', 'Setting::updateAnnouncement');
     $routes->match(['GET', 'POST'], 'setting/update-announcement', 'Setting::updateAnnouncement');
 
     // Phase 17 - Master Asset Management (master-assets route to avoid Apache 403 directory collision with public/assets/)

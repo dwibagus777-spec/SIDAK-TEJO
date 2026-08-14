@@ -494,7 +494,8 @@ class MigrateController extends BaseController
                 }
             }
 
-            $persistentFilesCount = is_dir($targetDir) ? count(array_diff(scandir($targetDir), ['.', '..'])) : 0;
+            $persistentFilesList = is_dir($targetDir) ? array_values(array_diff(scandir($targetDir), ['.', '..'])) : [];
+            $persistentFilesCount = count($persistentFilesList);
 
             return $this->response->setJSON([
                 'db_name'                   => $db->getDatabase(),
@@ -503,6 +504,7 @@ class MigrateController extends BaseController
                 'installation_date_present' => in_array('installation_date', $assetColumnNames),
                 'persistent_storage_path'   => $targetDir,
                 'persistent_files_count'    => $persistentFilesCount,
+                'persistent_files_samples'  => array_slice($persistentFilesList, 0, 20),
                 'restored_from_backup'      => $restoredFromBackupCount,
                 'copied_from_legacy'        => $copiedFromLegacyCount,
             ]);

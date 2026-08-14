@@ -84,7 +84,14 @@ class WorkOrderRepository
                 $builder->where('a.ulp_id', (int)$filters['ulp_id']);
             }
             if (!empty($filters['status'])) {
-                $builder->where('wo.status', strtoupper($filters['status']));
+                $st = strtoupper($filters['status']);
+                if ($st === 'AKTIF' || $st === 'PROSES' || $st === 'OPEN') {
+                    $builder->where('wo.status !=', 'COMPLETED')->where('wo.status !=', 'CANCELLED');
+                } elseif ($st === 'SELESAI' || $st === 'COMPLETED') {
+                    $builder->where('wo.status', 'COMPLETED');
+                } else {
+                    $builder->where('wo.status', $st);
+                }
             }
             if (!empty($filters['prioritas'])) {
                 $builder->where('wo.prioritas', strtoupper($filters['prioritas']));

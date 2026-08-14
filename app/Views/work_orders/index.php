@@ -86,6 +86,7 @@
                 <div class="col-md-2 col-6">
                     <select name="status" class="form-select form-select-sm">
                         <option value="">-- Semua Status --</option>
+                        <option value="AKTIF" <?= in_array(strtoupper($filters['status'] ?? ''), ['AKTIF', 'PROSES']) ? 'selected' : '' ?>>WO AKTIF (BELUM SELESAI)</option>
                         <option value="OPEN" <?= ($filters['status'] ?? '') === 'OPEN' ? 'selected' : '' ?>>OPEN</option>
                         <option value="ASSIGNED" <?= ($filters['status'] ?? '') === 'ASSIGNED' ? 'selected' : '' ?>>ASSIGNED</option>
                         <option value="PROGRESS" <?= ($filters['status'] ?? '') === 'PROGRESS' ? 'selected' : '' ?>>PROGRESS</option>

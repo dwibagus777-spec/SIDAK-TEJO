@@ -233,15 +233,15 @@
                 <small class="text-white-50 d-block mt-1">Outstanding &rarr;</small>
             </a>
         </div>
-        <!-- Dalam Proses -->
+        <!-- WO Aktif -->
         <div class="col-lg-3 col-md-6 col-12">
-            <a href="<?= site_url('temuan?status=PROSES') ?>" class="emc-card kpi-emc-card text-white text-decoration-none d-block kpi-drilldown-link" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+            <a href="<?= site_url('work-orders?status=AKTIF') ?>" class="emc-card kpi-emc-card text-white text-decoration-none d-block kpi-drilldown-link" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="kpi-emc-lbl">Dalam Proses</span>
+                    <span class="kpi-emc-lbl">WO Aktif</span>
                     <i class="fas fa-chevron-right opacity-50"></i>
                 </div>
                 <div class="kpi-emc-val mt-1"><?= number_format($woStats['aktif'] ?? 0) ?></div>
-                <small class="text-white-50 d-block mt-1">Status Progress &rarr;</small>
+                <small class="text-white-50 d-block mt-1">SPK Work Order Aktif &rarr;</small>
             </a>
         </div>
         <!-- Sudah Selesai -->

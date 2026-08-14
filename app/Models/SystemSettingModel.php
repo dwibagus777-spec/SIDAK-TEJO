@@ -133,9 +133,9 @@ class SystemSettingModel extends Model
         ];
 
         foreach ($defaults as $key => $val) {
-            $existing = $this->where('setting_key', $key)->first();
+            $existing = $this->db->table('system_settings')->where('setting_key', $key)->get()->getRowArray();
             if (!$existing) {
-                $this->insert([
+                $this->db->table('system_settings')->insert([
                     'setting_key'   => $key,
                     'setting_value' => $val,
                     'updated_by'    => 'System Default',

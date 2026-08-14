@@ -415,67 +415,6 @@ class MigrateController extends BaseController
             ]);
         }
     }
-
-    public function debugFoto($id = 524)
-    {
-        $db = Database::connect();
-        $row = $db->table('temuan')->where('id', (int)$id)->get()->getRowArray();
-        
-        $fcpathFotoFiles = [];
-        if (is_dir(FCPATH . 'foto')) {
-            $fcpathFotoFiles = array_values(array_diff(scandir(FCPATH . 'foto'), ['.', '..']));
-        }
-
-        $altPath = str_replace('/public/', '/', FCPATH) . 'foto';
-        $altFotoFiles = [];
-        if (is_dir($altPath)) {
-            $altFotoFiles = array_values(array_diff(scandir($altPath), ['.', '..']));
-        }
-
-        $writableUploads = [];
-        if (is_dir(WRITEPATH . 'uploads')) {
-            $writableUploads = array_values(array_diff(scandir(WRITEPATH . 'uploads'), ['.', '..']));
-        }
-
-        $photoInfo = [];
-        if ($row && !empty($row['foto'])) {
-            $decoded = json_decode($row['foto'], true);
-            $names = is_array($decoded) ? $decoded : [$row['foto']];
-            foreach ($names as $name) {
-                $cleanName = basename(trim((string)$name));
-                $p1 = FCPATH . 'foto/' . $cleanName;
-                $p2 = str_replace('/public/', '/', FCPATH) . 'foto/' . $cleanName;
-                $p3 = WRITEPATH . 'uploads/' . $cleanName;
-                
-                $photoInfo[] = [
-                    'name' => $cleanName,
-                    'fcpath_foto_exists' => is_file($p1),
-                    'fcpath_foto_path' => $p1,
-                    'alt_foto_exists' => is_file($p2),
-                    'alt_foto_path' => $p2,
-                    'writable_uploads_exists' => is_file($p3),
-                    'writable_uploads_path' => $p3,
-                ];
-            }
-        }
-
-        return $this->response->setJSON([
-            'id' => $id,
-            'temuan_exists' => !empty($row),
-            'temuan_id' => $row['id'] ?? null,
-            'nomor_temuan' => $row['nomor_temuan'] ?? null,
-            'foto_raw_db' => $row['foto'] ?? null,
-            'foto_path_db' => $row['foto_path'] ?? null,
-            'created_at' => $row['created_at'] ?? null,
-            'updated_at' => $row['updated_at'] ?? null,
-            'fcpath' => FCPATH,
-            'writepath' => WRITEPATH,
-            'photo_check' => $photoInfo,
-            'fcpath_foto_count' => count($fcpathFotoFiles),
-            'fcpath_foto_samples' => array_slice($fcpathFotoFiles, 0, 25),
-            'alt_foto_count' => count($altFotoFiles),
-            'writable_uploads_count' => count($writableUploads),
-        ]);
-    }
 }
+
 

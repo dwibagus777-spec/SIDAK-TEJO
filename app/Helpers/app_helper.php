@@ -313,60 +313,31 @@ if (!function_exists('get_photo_url')) {
             return $placeholder;
         }
 
-        // Bersihkan prefix "public/" atau "/public/" jika terbawa
-        $photoName = preg_replace('/^\/?public\//', '', $photoName);
-
         // Jika photoName berupa URL eksternal lengkap
         if (str_starts_with($photoName, 'http://') || str_starts_with($photoName, 'https://')) {
             return $photoName;
         }
 
-        // Tentukan relative path lokal
-        if (str_starts_with($photoName, 'foto/') || str_starts_with($photoName, 'uploads/')) {
-            $baseDir = dirname($photoName) . '/';
-            $fileName = basename($photoName);
-        } else {
-            $dir = (!empty($fotoPath) && trim($fotoPath, '/') !== '') ? rtrim($fotoPath, '/') . '/' : 'foto/';
-            $dir = preg_replace('/^\/?public\//', '', $dir);
-            $baseDir = $dir;
-            $fileName = $photoName;
+        $cleanName = basename(rawurldecode($photoName));
+        if ($cleanName === '' || $cleanName === '.' || $cleanName === '..') {
+            return $placeholder;
         }
 
-        // Ukuran spesifik (thumb / medium)
-        $subDir = match(strtolower($size)) {
-            'thumb'  => 'thumb/',
-            'medium' => 'medium/',
-            default  => ''
-        };
+        $persistentDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : WRITEPATH . 'uploads/foto/';
+        $candidatePaths = [
+            $persistentDir . $cleanName,
+            WRITEPATH . 'uploads/foto/' . $cleanName,
+            FCPATH . 'foto/' . $cleanName,
+        ];
 
-        $relativePath = $baseDir . $subDir . $fileName;
-        $fallbackPath = $baseDir . $fileName;
-
-        foreach (array_unique([$relativePath, $fallbackPath]) as $rel) {
-            if (empty($rel)) continue;
-
-            $cleanRel = preg_replace('/^public\//', '', $rel);
-
-            if (defined('FCPATH')) {
-                if (file_exists(FCPATH . $cleanRel)) {
-                    $mtime = filemtime(FCPATH . $cleanRel);
-                    return base_url($cleanRel) . '?v=' . ($mtime ?: time());
-                }
-
-                $parentPath = rtrim(dirname(FCPATH), '/\\') . '/';
-                if (file_exists($parentPath . $cleanRel)) {
-                    $mtime = filemtime($parentPath . $cleanRel);
-                    return base_url($cleanRel) . '?v=' . ($mtime ?: time());
-                }
-            }
-
-            if (defined('ROOTPATH') && file_exists(ROOTPATH . $cleanRel)) {
-                $mtime = filemtime(ROOTPATH . $cleanRel);
-                return base_url($cleanRel) . '?v=' . ($mtime ?: time());
+        foreach ($candidatePaths as $path) {
+            if (is_file($path) && is_readable($path)) {
+                $mtime = filemtime($path) ?: time();
+                return base_url('foto/' . rawurlencode($cleanName)) . '?v=' . $mtime;
             }
         }
 
-        return $placeholder;
+        return base_url('foto/' . rawurlencode($cleanName));
     }
 }
 

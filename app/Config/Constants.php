@@ -92,3 +92,13 @@ defined('EXIT_USER_INPUT')     || define('EXIT_USER_INPUT', 7);     // invalid u
 defined('EXIT_DATABASE')       || define('EXIT_DATABASE', 8);       // database error
 defined('EXIT__AUTO_MIN')      || define('EXIT__AUTO_MIN', 9);      // lowest automatically-assigned error code
 defined('EXIT__AUTO_MAX')      || define('EXIT__AUTO_MAX', 125);    // highest automatically-assigned error code
+
+/*
+ |--------------------------------------------------------------------------
+ | Persistent Storage Architecture Settings
+ |--------------------------------------------------------------------------
+ | Centralized path for user uploaded runtime photos outside deployment root.
+ */
+defined('SIDAK_STORAGE_PATH') || define('SIDAK_STORAGE_PATH', is_dir('/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/') 
+    ? '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/' 
+    : WRITEPATH . 'uploads/foto/');

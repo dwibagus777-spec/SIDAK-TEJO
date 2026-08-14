@@ -451,15 +451,60 @@ class MigrateController extends BaseController
                 'symlink_created'                => $symlinkCreated,
             ];
 
+            // LEGACY FILE & BACKUP RESTORE ROUTINE TO SIDAK_STORAGE_PATH
+            $targetDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : WRITEPATH . 'uploads/foto/';
+            if (!is_dir($targetDir)) {
+                @mkdir($targetDir, 0755, true);
+            }
+
+            $restoredFromBackupCount = 0;
+            $copiedFromLegacyCount = 0;
+
+            if (is_file(WRITEPATH . 'backups/backup-public-foto-20260814.zip') && class_exists('\ZipArchive')) {
+                $zip = new \ZipArchive();
+                if ($zip->open(WRITEPATH . 'backups/backup-public-foto-20260814.zip') === true) {
+                    for ($i = 0; $i < $zip->numFiles; $i++) {
+                        $entryName = $zip->getNameIndex($i);
+                        $cleanFile = basename($entryName);
+                        if (!empty($cleanFile) && !str_starts_with($cleanFile, '.')) {
+                            $dest = $targetDir . $cleanFile;
+                            if (!file_exists($dest)) {
+                                $stream = $zip->getStream($entryName);
+                                if ($stream) {
+                                    file_put_contents($dest, stream_get_contents($stream));
+                                    fclose($stream);
+                                    $restoredFromBackupCount++;
+                                }
+                            }
+                        }
+                    }
+                    $zip->close();
+                }
+            }
+
+            if (is_dir(FCPATH . 'foto')) {
+                $legacyFiles = array_diff(scandir(FCPATH . 'foto'), ['.', '..']);
+                foreach ($legacyFiles as $f) {
+                    $source = FCPATH . 'foto/' . $f;
+                    $dest = $targetDir . $f;
+                    if (is_file($source) && !file_exists($dest)) {
+                        @copy($source, $dest);
+                        $copiedFromLegacyCount++;
+                    }
+                }
+            }
+
+            $persistentFilesCount = is_dir($targetDir) ? count(array_diff(scandir($targetDir), ['.', '..'])) : 0;
+
             return $this->response->setJSON([
                 'db_name'                   => $db->getDatabase(),
                 'asset_history_exist'       => count($historyCheck) > 0,
                 'network_type_present'      => in_array('network_type', $baseColumnNames),
                 'installation_date_present' => in_array('installation_date', $assetColumnNames),
-                'network_baselines_fields'  => implode(', ', $baseColumnNames),
-                'assets_fields'             => implode(', ', $assetColumnNames),
-                'rel_fields'                => implode(', ', $relColumnNames),
-                'storage_audit'             => $storageAudit,
+                'persistent_storage_path'   => $targetDir,
+                'persistent_files_count'    => $persistentFilesCount,
+                'restored_from_backup'      => $restoredFromBackupCount,
+                'copied_from_legacy'        => $copiedFromLegacyCount,
             ]);
         } catch (\Throwable $e) {
             return $this->response->setStatusCode(500)->setJSON([

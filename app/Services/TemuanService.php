@@ -88,9 +88,9 @@ class TemuanService
             return ['name' => '', 'path' => 'error', 'error' => $errorMessage];
         }
 
-        $destinationDir = FCPATH . 'foto/';
+        $destinationDir = SIDAK_STORAGE_PATH;
         if (!is_dir($destinationDir)) {
-            mkdir($destinationDir, 0777, true);
+            mkdir($destinationDir, 0755, true);
         }
 
         $file->move($destinationDir, $generatedName);
@@ -311,10 +311,16 @@ class TemuanService
                     $cleanName = basename(trim((string)$oldPhoto));
                     if (empty($cleanName)) continue;
 
-                    $oldPath = FCPATH . 'foto/' . $cleanName;
-                    if (is_file($oldPath)) {
-                        if (!@unlink($oldPath)) {
-                            log_message('warning', '[updateTemuan] Cleanup foto lama gagal: ' . $oldPath);
+                    $candidateOldPaths = [
+                        SIDAK_STORAGE_PATH . $cleanName,
+                        WRITEPATH . 'uploads/foto/' . $cleanName,
+                        FCPATH . 'foto/' . $cleanName,
+                    ];
+                    foreach ($candidateOldPaths as $oldPath) {
+                        if (is_file($oldPath)) {
+                            if (!@unlink($oldPath)) {
+                                log_message('warning', '[updateTemuan] Cleanup foto lama gagal: ' . $oldPath);
+                            }
                         }
                     }
                 }

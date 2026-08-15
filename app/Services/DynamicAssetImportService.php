@@ -188,8 +188,8 @@ class DynamicAssetImportService
                     // Check against DB assets table
                     $existCount = $db->table('assets')
                         ->where('ulp_id', $ulpId)
-                        ->where('LOWER(jenis_asset)', strtolower($jenisAsset))
-                        ->where('LOWER(nama_asset)', strtolower($namaAsset))
+                        ->where('jenis_asset', $jenisAsset)
+                        ->where('nama_asset', $namaAsset)
                         ->where('deleted_at IS NULL')
                         ->countAllResults();
 
@@ -248,10 +248,13 @@ class DynamicAssetImportService
                 }
                 
                 if ($db->transStatus() === false) {
+                    $dbError = $db->error();
+                    $dbErrorMsg = !empty($dbError['message']) ? $dbError['message'] : 'Transaction Rollback';
+                    log_message('error', '[DynamicAssetImportService] Transaction Failed: ' . json_encode($dbError));
                     $db->transRollback();
                     return [
                         'success' => false,
-                        'message' => 'Gagal menyimpan batch data ke database (Transaction Rollback).',
+                        'message' => 'Gagal menyimpan batch data ke database: ' . $dbErrorMsg,
                     ];
                 }
                 

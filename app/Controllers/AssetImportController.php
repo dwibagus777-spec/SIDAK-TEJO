@@ -351,7 +351,14 @@ class AssetImportController extends BaseController
                 $dynamicEngine = new \App\Services\DynamicTemplateEngine();
 
                 if ($format === 'csv') {
-                    $csvContent = $dynamicEngine->generateCsv($jenisAsset ?: 'Gardu', $namaUlp, $up3);
+                    $csvContent = $dynamicEngine->generateCsv(
+                        $jenisAsset ?: 'Gardu',
+                        $namaUlp,
+                        $up3,
+                        (int)$ulpId,
+                        (int)$penyulangId,
+                        $namaPenyulang
+                    );
                     $filename   = 'Template_Import_' . $sanitizedJenis . '_' . $sanitizedPenyulang . '.csv';
 
                     return $this->response

@@ -105,14 +105,14 @@ class AssetTemplateMetadata
     /**
      * Get Sample Row Data for a specific asset type
      */
-    public static function getSampleRow(string $jenisAsset, string $up3, string $ulp): array
+    public static function getSampleRow(string $jenisAsset, string $up3, string $ulp, ?string $penyulang = null): array
     {
         return [
             'up3'             => $up3 ?: 'UP3 Sidoarjo',
             'ulp'             => $ulp ?: 'Sidoarjo Kota',
             'jenis_asset'     => $jenisAsset,
             'nama_asset'      => $jenisAsset . ' SDJ-001',
-            'penyulang'       => 'BY PASS',
+            'penyulang'       => !empty($penyulang) ? $penyulang : 'BY PASS',
             'merk'            => 'Schneider Electric',
             'type'            => 'Portal 20KV',
             'nomor_seri'      => 'SN-' . date('Y') . '-001',

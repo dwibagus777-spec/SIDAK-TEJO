@@ -76,7 +76,7 @@ class DynamicTemplateEngine
         $sheetData->getStyle($headerRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Add 1 Sample Row
-        $sampleData = AssetTemplateMetadata::getSampleRow($jenisAsset, $namaUp3, $namaUlp);
+        $sampleData = AssetTemplateMetadata::getSampleRow($jenisAsset, $namaUp3, $namaUlp, $namaPenyulang);
         foreach ($headers as $colIndex => $h) {
             $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
             $val       = $sampleData[$h['key']] ?? '';
@@ -155,10 +155,13 @@ class DynamicTemplateEngine
     public function generateCsv(
         string $jenisAsset = 'Gardu', 
         string $namaUlp = 'Sidoarjo Kota', 
-        string $namaUp3 = 'UP3 Sidoarjo'
+        string $namaUp3 = 'UP3 Sidoarjo',
+        ?int $ulpId = null,
+        ?int $penyulangId = null,
+        ?string $namaPenyulang = null
     ): string {
         $headers = AssetTemplateMetadata::getHeaderDefinition($jenisAsset);
-        $sampleData = AssetTemplateMetadata::getSampleRow($jenisAsset, $namaUp3, $namaUlp);
+        $sampleData = AssetTemplateMetadata::getSampleRow($jenisAsset, $namaUp3, $namaUlp, $namaPenyulang);
 
         // UTF-8 BOM
         $csv = "\xEF\xBB\xBF";

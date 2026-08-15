@@ -214,8 +214,8 @@ class DynamicAssetImportService
             $compositeKey = strtolower($ulpId . '_' . $jenisAsset . '_' . $namaAsset);
             $batchComposites[$compositeKey] = true;
 
-            // Auto Generate Kode Asset
-            $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset);
+            // Auto Generate Kode Asset (e.g. AST-KOTA-BNJRKMTREN-GRD-001)
+            $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset, $ulpName, $penyulangName);
 
             $validBatch[] = [
                 'kode_asset'      => $kodeAsset,
@@ -333,7 +333,15 @@ class DynamicAssetImportService
             $ulps = $this->ulpModel->findAll();
             foreach ($ulps as $u) {
                 if (!empty($u['nama_ulp'])) {
-                    $map[strtolower(trim($u['nama_ulp']))] = (int)$u['id'];
+                    $rawName = strtolower(trim($u['nama_ulp']));
+                    $map[$rawName] = (int)$u['id'];
+
+                    $noPrefix = preg_replace('/^ulp\s+/i', '', $rawName);
+                    $map[$noPrefix] = (int)$u['id'];
+
+                    if (!str_starts_with($rawName, 'ulp ')) {
+                        $map['ulp ' . $rawName] = (int)$u['id'];
+                    }
                 }
             }
         } catch (\Throwable $e) {

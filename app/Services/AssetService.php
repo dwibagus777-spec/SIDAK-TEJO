@@ -126,28 +126,85 @@ class AssetService
         return $asset;
     }
 
-    public function generateKodeAsset(string $jenis): string
+    public function generateKodeAsset(string $jenis, ?string $namaUlp = null, ?string $namaPenyulang = null): string
     {
-        $prefix = match(strtoupper($jenis)) {
-            'GARDU'     => 'AST-GRD-',
-            'TRAFO'     => 'AST-TRF-',
-            'KUBIKEL'   => 'AST-KUB-',
-            'LBS'       => 'AST-LBS-',
-            'RECLOSER'  => 'AST-REC-',
-            'SECTION'   => 'AST-SEC-',
-            'PENYULANG' => 'AST-PYL-',
-            'TIANG'     => 'AST-TNG-',
-            'JTM'       => 'AST-JTM-',
-            'JTR'       => 'AST-JTR-',
-            'PHB'       => 'AST-PHB-',
-            'APP'       => 'AST-APP-',
-            'METER'     => 'AST-MTR-',
-            'GROUNDING' => 'AST-GND-',
-            default     => 'AST-PLN-'
+        // 1. Sanitize Jenis Code
+        $jenisCode = match(strtoupper(trim($jenis))) {
+            'GARDU'     => 'GRD',
+            'TRAFO'     => 'TFR',
+            'KUBIKEL'   => 'KBL',
+            'LBS'       => 'LBS',
+            'RECLOSER'  => 'RCL',
+            'SECTION'   => 'SEC',
+            'PENYULANG' => 'PYL',
+            'TIANG'     => 'TNG',
+            'JTM'       => 'JTM',
+            'JTR'       => 'JTR',
+            'PHB'       => 'PHB',
+            'APP'       => 'APP',
+            'METER'     => 'MTR',
+            'GROUNDING' => 'GND',
+            default     => 'AST'
         };
 
-        $rand = strtoupper(substr(md5(uniqid((string)mt_rand(), true)), 0, 4));
-        return $prefix . date('Ym') . '-' . $rand;
+        // 2. Sanitize ULP Code (e.g. ULP Sidoarjo Kota -> KOTA)
+        $ulpCode = 'SDJ';
+        if (!empty($namaUlp)) {
+            $cleanUlp = strtoupper(trim(preg_replace('/^ulp\s+/i', '', $namaUlp)));
+            if (str_contains($cleanUlp, 'KOTA') || str_contains($cleanUlp, 'SIDOARJO')) {
+                $ulpCode = 'KOTA';
+            } else if (str_contains($cleanUlp, 'KRIAN')) {
+                $ulpCode = 'KRN';
+            } else if (str_contains($cleanUlp, 'PORONG')) {
+                $ulpCode = 'PRG';
+            } else if (str_contains($cleanUlp, 'SEDATI')) {
+                $ulpCode = 'SDT';
+            } else if (str_contains($cleanUlp, 'MOJOSARI')) {
+                $ulpCode = 'MJS';
+            } else {
+                $ulpCode = preg_replace('/[^A-Z0-9]/', '', $cleanUlp);
+                $ulpCode = substr($ulpCode, 0, 4) ?: 'SDJ';
+            }
+        }
+
+        // 3. Sanitize Penyulang Code (e.g. BANJAR KEMANTREN -> BNJRKMTREN)
+        $penyulangCode = 'GEN';
+        if (!empty($namaPenyulang)) {
+            $cleanPenyulang = strtoupper(trim($namaPenyulang));
+            $pNoSpace = preg_replace('/[^A-Z0-9]/', '', $cleanPenyulang);
+            if (strlen($pNoSpace) > 8) {
+                $vowelsRemoved = preg_replace('/[AEIOU]/', '', $pNoSpace);
+                $penyulangCode = substr($vowelsRemoved ?: $pNoSpace, 0, 10);
+            } else {
+                $penyulangCode = substr($pNoSpace, 0, 8);
+            }
+        }
+
+        $basePattern = "AST-{$ulpCode}-{$penyulangCode}-{$jenisCode}-";
+
+        // 4. Query database to find sequence number
+        try {
+            $db = \Config\Database::connect();
+            $maxRow = $db->table('assets')
+                ->select('kode_asset')
+                ->like('kode_asset', $basePattern, 'after')
+                ->orderBy('id', 'DESC')
+                ->get()
+                ->getFirstRow('array');
+
+            $seq = 1;
+            if ($maxRow && !empty($maxRow['kode_asset'])) {
+                $parts = explode('-', $maxRow['kode_asset']);
+                $lastNum = (int)end($parts);
+                if ($lastNum > 0) {
+                    $seq = $lastNum + 1;
+                }
+            }
+            return $basePattern . sprintf('%03d', $seq);
+        } catch (\Throwable $e) {
+            $rand = sprintf('%03d', mt_rand(1, 999));
+            return $basePattern . $rand;
+        }
     }
 
     /**

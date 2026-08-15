@@ -94,10 +94,11 @@ class AssetImportService
             }
         }
 
-        $validBatch  = [];
-        $errorReport = [];
-        $inserted    = 0;
-        $failed      = 0;
+        $batchSequenceCache = [];
+        $validBatch         = [];
+        $errorReport        = [];
+        $inserted           = 0;
+        $failed             = 0;
         $now         = date('Y-m-d H:i:s');
         $rowIndex    = 0;
 
@@ -134,7 +135,7 @@ class AssetImportService
             $errors = [];
 
             if (empty($kodeAsset)) {
-                $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset ?: 'Gardu', $ulpName, $penyulangName);
+                $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset ?: 'Gardu', $ulpName, $penyulangName, $batchSequenceCache);
             } else {
                 $codeUpper = strtoupper($kodeAsset);
                 if (isset($existingCodes[$codeUpper])) {

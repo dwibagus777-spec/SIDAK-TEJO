@@ -104,10 +104,11 @@ class DynamicAssetImportService
             }
         }
 
-        // Intra-batch duplicate tracker: "ulpId_jenisAsset_namaAsset"
-        $batchComposites = [];
-        $validBatch      = [];
-        $errorReport     = [];
+        // Intra-batch duplicate tracker & sequence cache
+        $batchComposites    = [];
+        $batchSequenceCache = [];
+        $validBatch         = [];
+        $errorReport        = [];
         $inserted        = 0;
         $failed          = 0;
         $now             = date('Y-m-d H:i:s');
@@ -215,7 +216,7 @@ class DynamicAssetImportService
             $batchComposites[$compositeKey] = true;
 
             // Auto Generate Kode Asset (e.g. AST-KOTA-BNJRKMTREN-GRD-001)
-            $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset, $ulpName, $penyulangName);
+            $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset, $ulpName, $penyulangName, $batchSequenceCache);
 
             $validBatch[] = [
                 'kode_asset'      => $kodeAsset,

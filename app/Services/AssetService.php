@@ -126,7 +126,7 @@ class AssetService
         return $asset;
     }
 
-    public function generateKodeAsset(string $jenis, ?string $namaUlp = null, ?string $namaPenyulang = null): string
+    public function generateKodeAsset(string $jenis, ?string $namaUlp = null, ?string $namaPenyulang = null, array &$runtimeCache = []): string
     {
         // 1. Sanitize Jenis Code
         $jenisCode = match(strtoupper(trim($jenis))) {
@@ -182,29 +182,34 @@ class AssetService
 
         $basePattern = "AST-{$ulpCode}-{$penyulangCode}-{$jenisCode}-";
 
-        // 4. Query database to find sequence number
-        try {
-            $db = \Config\Database::connect();
-            $maxRow = $db->table('assets')
-                ->select('kode_asset')
-                ->like('kode_asset', $basePattern, 'after')
-                ->orderBy('id', 'DESC')
-                ->get()
-                ->getFirstRow('array');
+        // 4. Batch sequence cache logic to prevent duplicate entries during batch import
+        if (!isset($runtimeCache[$basePattern])) {
+            $lastSeq = 0;
+            try {
+                $db = \Config\Database::connect();
+                $rows = $db->table('assets')
+                    ->select('kode_asset')
+                    ->like('kode_asset', $basePattern, 'after')
+                    ->get()
+                    ->getResultArray();
 
-            $seq = 1;
-            if ($maxRow && !empty($maxRow['kode_asset'])) {
-                $parts = explode('-', $maxRow['kode_asset']);
-                $lastNum = (int)end($parts);
-                if ($lastNum > 0) {
-                    $seq = $lastNum + 1;
+                foreach ($rows as $row) {
+                    if (!empty($row['kode_asset'])) {
+                        $parts = explode('-', $row['kode_asset']);
+                        $num = (int)end($parts);
+                        if ($num > $lastSeq) {
+                            $lastSeq = $num;
+                        }
+                    }
                 }
+            } catch (\Throwable $e) {
+                log_message('error', '[generateKodeAsset] Exception query: ' . $e->getMessage());
             }
-            return $basePattern . sprintf('%03d', $seq);
-        } catch (\Throwable $e) {
-            $rand = sprintf('%03d', mt_rand(1, 999));
-            return $basePattern . $rand;
+            $runtimeCache[$basePattern] = $lastSeq;
         }
+
+        $runtimeCache[$basePattern]++;
+        return $basePattern . sprintf('%03d', $runtimeCache[$basePattern]);
     }
 
     /**

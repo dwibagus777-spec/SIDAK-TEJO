@@ -408,8 +408,11 @@ class AssetImportController extends BaseController
         // Ensure assets table exists in DB when visiting import
         new AssetModel();
 
+        $ulpModel = new \App\Models\UlpModel();
+
         return view('assets/import', [
             'title' => 'Import Master Asset PLN',
+            'ulps'  => $ulpModel->where('status', 'AKTIF')->findAll(),
         ]);
     }
 

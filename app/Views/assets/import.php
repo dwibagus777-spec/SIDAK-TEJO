@@ -142,9 +142,9 @@
                             <button type="submit" class="btn btn-primary py-2 rounded-pill font-weight-bold shadow-sm">
                                 <i class="fas fa-upload me-1"></i> Mulai Proses Import
                             </button>
-                            <a href="<?= site_url('master-assets/template') ?>" class="btn btn-outline-success py-2 rounded-pill font-weight-bold">
+                            <button type="button" class="btn btn-outline-success py-2 rounded-pill font-weight-bold" data-bs-toggle="modal" data-bs-target="#modalDownloadTemplate">
                                 <i class="fas fa-download me-1"></i> Unduh Format Template Excel (.xlsx)
-                            </a>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -165,7 +165,7 @@
                             <span class="badge bg-primary me-2">1</span> Gunakan template resmi dengan tombol <strong>"Unduh Format Template Excel"</strong>.
                         </li>
                         <li class="list-group-item bg-transparent px-0 py-2 border-bottom">
-                            <span class="badge bg-primary me-2">2</span> <strong>Kode Asset</strong> bersifat UNIK (wajib diisi & belum digunakan).
+                            <span class="badge bg-primary me-2">2</span> <strong>Kode Asset</strong> akan <strong>digenerate otomatis oleh sistem</strong> secara unik untuk setiap asset.
                         </li>
                         <li class="list-group-item bg-transparent px-0 py-2 border-bottom">
                             <span class="badge bg-primary me-2">3</span> NAMA ULP, Penyulang, dan Section disesuaikan dengan nama yang terdaftar di database.
@@ -182,6 +182,8 @@
         </div>
     </div>
 </div>
+
+<?= view('assets/modal_download_template', ['ulps' => $ulps ?? []]) ?>
 
 <script>
 document.getElementById('file_excel').addEventListener('change', function(e) {

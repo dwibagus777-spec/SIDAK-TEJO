@@ -44,7 +44,6 @@ class AssetTemplateMetadata
             ['key' => 'lokasi',          'label' => 'Alamat / Lokasi',     'required' => false],
             ['key' => 'latitude',        'label' => 'Latitude',            'required' => false],
             ['key' => 'longitude',       'label' => 'Longitude',           'required' => false],
-            ['key' => 'section',         'label' => 'Section (Opsional)',  'required' => false],
         ],
         'TIANG' => [
             ['key' => 'up3',             'label' => 'UP3',                 'required' => true],
@@ -57,7 +56,6 @@ class AssetTemplateMetadata
             ['key' => 'lokasi',          'label' => 'Alamat / Lokasi',     'required' => false],
             ['key' => 'latitude',        'label' => 'Latitude',            'required' => false],
             ['key' => 'longitude',       'label' => 'Longitude',           'required' => false],
-            ['key' => 'section',         'label' => 'Section (Opsional)',  'required' => false],
         ],
         'TRAFO' => [
             ['key' => 'up3',             'label' => 'UP3',                 'required' => true],
@@ -73,7 +71,6 @@ class AssetTemplateMetadata
             ['key' => 'lokasi',          'label' => 'Alamat / Lokasi',     'required' => false],
             ['key' => 'latitude',        'label' => 'Latitude',            'required' => false],
             ['key' => 'longitude',       'label' => 'Longitude',           'required' => false],
-            ['key' => 'section',         'label' => 'Section (Opsional)',  'required' => false],
         ],
         'DEFAULT' => [
             ['key' => 'up3',             'label' => 'UP3',                 'required' => true],
@@ -89,7 +86,6 @@ class AssetTemplateMetadata
             ['key' => 'lokasi',          'label' => 'Alamat / Lokasi',     'required' => false],
             ['key' => 'latitude',        'label' => 'Latitude',            'required' => false],
             ['key' => 'longitude',       'label' => 'Longitude',           'required' => false],
-            ['key' => 'section',         'label' => 'Section (Opsional)',  'required' => false],
         ],
     ];
 

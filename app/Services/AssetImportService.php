@@ -172,15 +172,11 @@ class AssetImportService
                 }
             }
 
-            // Section lookup
+            // Section lookup (Optional: if empty or not found in DB -> fallback to NULL gracefully)
             $sectionId = null;
             if (!empty($sectionName)) {
-                $sKey = strtolower($sectionName);
-                if (isset($sectionMap[$sKey])) {
-                    $sectionId = $sectionMap[$sKey];
-                } else {
-                    $errors[] = "Section '{$sectionName}' tidak ditemukan di database.";
-                }
+                $sKey = strtolower(trim($sectionName));
+                $sectionId = $sectionMap[$sKey] ?? null;
             }
 
             // Status validation

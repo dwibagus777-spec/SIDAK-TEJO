@@ -434,11 +434,11 @@ class AssetImportController extends BaseController
                 'label' => 'Berkas Excel',
                 'rules' => 'uploaded[file_excel]'
                     . '|max_size[file_excel,10240]'
-                    . '|ext_in[file_excel,xlsx,xls]',
+                    . '|ext_in[file_excel,xlsx,xls,csv]',
                 'errors' => [
-                    'uploaded' => 'Silakan pilih berkas Excel terlebih dahulu.',
+                    'uploaded' => 'Silakan pilih berkas Excel atau CSV terlebih dahulu.',
                     'max_size' => 'Ukuran berkas maksimal adalah 10 MB.',
-                    'ext_in'   => 'Format berkas harus berupa .xlsx atau .xls.',
+                    'ext_in'   => 'Format berkas harus berupa .xlsx, .xls, atau .csv.',
                 ]
             ]
         ];

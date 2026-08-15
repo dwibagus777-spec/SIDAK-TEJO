@@ -127,10 +127,10 @@
 
                         <div class="mb-4 text-center p-4 border border-2 border-dashed rounded-4 bg-light" id="drop-area">
                             <i class="fas fa-file-excel text-success display-4 mb-3 d-block"></i>
-                            <h6 class="fw-bold text-dark mb-1">Pilih Berkas Excel (.xlsx / .xls)</h6>
+                            <h6 class="fw-bold text-dark mb-1">Pilih Berkas Excel / CSV (.xlsx / .xls / .csv)</h6>
                             <p class="text-muted small mb-3">Maksimum ukuran berkas 10 MB</p>
 
-                            <input type="file" name="file_excel" id="file_excel" class="form-control d-none" accept=".xlsx, .xls" required>
+                            <input type="file" name="file_excel" id="file_excel" class="form-control d-none" accept=".xlsx, .xls, .csv" required>
                             
                             <button type="button" class="btn btn-outline-primary rounded-pill px-4 font-weight-bold shadow-sm" onclick="document.getElementById('file_excel').click();">
                                 <i class="fas fa-folder-open me-1"></i> Cari Berkas

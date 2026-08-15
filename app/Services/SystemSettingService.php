@@ -51,9 +51,12 @@ class SystemSettingService
     {
         $res = $this->repository->set($key, $value, $updatedBy);
         if ($res) {
-            // Invalidate Cache
+            // Instantly overwrite cache with new value & invalidate aliases
             $cacheKey = self::CACHE_PREFIX . $key;
-            cache()->delete($cacheKey);
+            cache()->save($cacheKey, $value, self::CACHE_TTL);
+            cache()->delete($key);
+            cache()->delete('daily_announcement');
+            cache()->delete('daily_motivation');
         }
         return $res;
     }

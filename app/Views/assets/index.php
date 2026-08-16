@@ -112,8 +112,20 @@
                 <div class="col-md-2 col-6">
                     <select name="jenis_asset" class="form-select form-select-sm">
                         <option value="">-- Semua Jenis --</option>
-                        <?php foreach (['JTM', 'Gardu', 'Trafo', 'Kubikel', 'LBS', 'LBSM', 'Recloser', 'Sectionalizer', 'Section', 'Penyulang', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'] as $j): ?>
-                            <option value="<?= $j ?>" <?= ($filters['jenis_asset'] ?? '') === $j ? 'selected' : '' ?>><?= $j ?></option>
+                        <?php 
+                        $jenisOptions = [
+                            'JTM'           => 'JTM & Tiang',
+                            'GARDU'         => 'Gardu',
+                            'TRAFO'         => 'Trafo',
+                            'KUBIKEL'       => 'Kubikel',
+                            'LBS'           => 'LBS',
+                            'LBSM'          => 'LBSM',
+                            'RECLOSER'      => 'Recloser',
+                            'SECTIONALIZER' => 'Sectionalizer',
+                            'JTR'           => 'JTR',
+                        ];
+                        foreach ($jenisOptions as $val => $label): ?>
+                            <option value="<?= $val ?>" <?= strtoupper($filters['jenis_asset'] ?? '') === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>

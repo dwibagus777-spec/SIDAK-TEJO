@@ -25,314 +25,210 @@ class GISService
             case 'CRITICAL':
                 return '#dc2626'; // Red
             case 'MAINTENANCE':
-                return '#d97706'; // Orange / Yellow
-            case 'MENUNGGU_VERIFIKASI':
-                return '#ea580c'; // Dark Orange
+                return '#d97706'; // Orange
             default:
-                return '#64748b'; // Grey for Non-aktif / Retired
+                return '#64748b'; // Grey
         }
     }
 
     /**
-     * Release D: Map Construction Type code/name to Leaflet marker shape & icon class
+     * Map Construction Type & Asset Family to Leaflet Marker Specifications
      */
     public function getConstructionMarkerSpec(?string $jenisAsset, ?string $constructionType = null): array
     {
         $jenis = strtoupper(trim((string)$jenisAsset));
         $type  = strtoupper(trim((string)$constructionType));
 
-        // Priority Level 1: Primary Asset Category Family
+        // Level 1 Priority: Primary Asset Category Family
         if ($jenis === 'TRAFO') {
             return [
                 'shape'      => 'trafo',
-                'icon_class' => 'fas fa-bolt',
+                'icon_class' => 'fa-bolt',
+                'color'      => '#d97706',
                 'label'      => 'TRAFO'
             ];
         }
         if ($jenis === 'GARDU') {
             return [
                 'shape'      => 'gardu',
-                'icon_class' => 'fas fa-building-columns',
+                'icon_class' => 'fa-building-columns',
+                'color'      => '#0284c7',
                 'label'      => 'GARDU'
             ];
         }
         if ($jenis === 'KUBIKEL') {
             return [
                 'shape'      => 'kubikel',
-                'icon_class' => 'fas fa-box-archive',
+                'icon_class' => 'fa-box-archive',
+                'color'      => '#475569',
                 'label'      => 'KUBIKEL'
             ];
         }
-        if ($jenis === 'LBS' || $jenis === 'LBSM') {
+        if ($jenis === 'LBS' || $jenis === 'LBSM' || $jenis === 'RECLOSER' || $jenis === 'SECTIONALIZER') {
             return [
-                'shape'      => 'lbs',
-                'icon_class' => 'fas fa-toggle-on',
+                'shape'      => 'switch',
+                'icon_class' => 'fa-toggle-on',
+                'color'      => '#dc2626',
                 'label'      => $jenis
             ];
         }
-        if ($jenis === 'RECLOSER') {
-            return [
-                'shape'      => 'recloser',
-                'icon_class' => 'fas fa-rotate',
-                'label'      => 'RECLOSER'
-            ];
-        }
 
-        // Priority Level 2: JTM / Network Construction Sub-variations
+        // Level 2 Priority: JTM Construction Sub-variations
         if (str_contains($type, 'PMS') || str_contains($type, 'PEMISAH')) {
             return [
                 'shape'      => 'pms',
-                'icon_class' => 'fas fa-toggle-off',
+                'icon_class' => 'fa-toggle-off',
+                'color'      => '#dc2626',
                 'label'      => 'JTM • PMS'
             ];
         }
         if (str_contains($type, 'PMT') || str_contains($type, 'PEMUTUS')) {
             return [
                 'shape'      => 'pmt',
-                'icon_class' => 'fas fa-toggle-on',
+                'icon_class' => 'fa-toggle-on',
+                'color'      => '#ea580c',
                 'label'      => 'JTM • PMT'
             ];
         }
         if (str_contains($type, 'GTT')) {
             return [
                 'shape'      => 'gtt',
-                'icon_class' => 'fas fa-charging-station',
+                'icon_class' => 'fa-charging-station',
+                'color'      => '#059669',
                 'label'      => 'JTM • GTT'
             ];
         }
         if (str_contains($type, 'TMTP') || str_contains($type, 'PORTAL')) {
             return [
                 'shape'      => 'tmtp',
-                'icon_class' => 'fas fa-archway',
+                'icon_class' => 'fa-archway',
+                'color'      => '#7c3aed',
                 'label'      => 'JTM • TMTP'
             ];
         }
 
         return [
             'shape'      => 'jtm',
-            'icon_class' => 'fas fa-square-poll-vertical',
+            'icon_class' => 'fa-square-poll-vertical',
+            'color'      => '#2563eb',
             'label'      => $jenis ?: 'JTM'
         ];
     }
 
     /**
-     * Release B - Step B2: Get Feeder Network Transline & Bounding Box
+     * Get On-Demand Network Data Segmented by Zoom LOD & Layer Filters
      */
-    public function getFeederNetwork(int $penyulangId): array
+    public function getNetworkData(array $filters = [], ?int $userUlpId = null): array
     {
-        $db = \Config\Database::connect();
-        $penyulang = $db->table('penyulang p')
-            ->select('p.id, p.kode_penyulang, p.nama_penyulang, p.gi_id, g.nama_gi')
-            ->join('gardu_induk g', 'p.gi_id = g.id', 'left')
-            ->where('p.id', $penyulangId)
-            ->get()
-            ->getRowArray();
+        $penyulangId = (int)($filters['penyulang_id'] ?? 0);
+        $zoom        = (int)($filters['zoom'] ?? 14);
+        $layerFilter = $filters['layers'] ?? ['JTM', 'GARDU', 'TRAFO', 'SWITCH'];
 
-        if (!$penyulang) {
-            return ['status' => 'error', 'message' => 'Penyulang tidak ditemukan.'];
-        }
-
-        $planning = null;
-        if ($db->tableExists('inspection_plannings')) {
-            $planning = $db->table('inspection_plannings')
-                ->where('penyulang_id', $penyulangId)
-                ->whereIn('status', ['PUBLISHED', 'IN_PROGRESS'])
-                ->orderBy('id', 'DESC')
-                ->get()
-                ->getRowArray();
+        if ($userUlpId !== null && $userUlpId > 0) {
+            $filters['ulp_id'] = $userUlpId;
         }
 
         $assets = $this->assetRepository->getFilteredAssets(['penyulang_id' => $penyulangId]);
-        
+
         $lineCoords = [];
+        $features   = [];
+        $stats      = [
+            'total_assets' => count($assets),
+            'jtm_count'    => 0,
+            'gardu_count'  => 0,
+            'trafo_count'  => 0,
+            'switch_count' => 0,
+        ];
+
         $minLat = 90.0; $maxLat = -90.0;
         $minLng = 180.0; $maxLng = -180.0;
-        $validCount = 0;
+        $validGisCount = 0;
 
-        foreach ($assets as $a) {
-            $lat = (float)($a['latitude'] ?? 0);
-            $lng = (float)($a['longitude'] ?? 0);
+        foreach ($assets as $asset) {
+            $lat = (float)($asset['latitude'] ?? 0);
+            $lng = (float)($asset['longitude'] ?? 0);
             if ($lat == 0 || $lng == 0) continue;
 
+            $validGisCount++;
             $lineCoords[] = [$lng, $lat];
-            $validCount++;
 
             if ($lat < $minLat) $minLat = $lat;
             if ($lat > $maxLat) $maxLat = $lat;
             if ($lng < $minLng) $minLng = $lng;
             if ($lng > $maxLng) $maxLng = $lng;
-        }
 
-        return [
-            'status'          => 'success',
-            'penyulang'       => $penyulang,
-            'planning'        => $planning ? [
-                'id'             => (int)$planning['id'],
-                'nomor_planning' => $planning['nomor_planning'],
-                'title'          => $planning['title'],
-                'status'         => $planning['status'],
-            ] : null,
-            'total_assets'    => count($assets),
-            'valid_gis_count' => $validCount,
-            'transline' => [
-                'type' => 'Feature',
-                'geometry' => [
-                    'type' => 'LineString',
-                    'coordinates' => $lineCoords
-                ]
-            ],
-            'bbox' => $validCount > 0 ? [
-                'min_lat' => $minLat,
-                'max_lat' => $maxLat,
-                'min_lng' => $minLng,
-                'max_lng' => $maxLng
-            ] : null
-        ];
-    }
+            $jenis = strtoupper(trim((string)($asset['jenis_asset'] ?? 'JTM')));
+            $constrName = $asset['construction_name'] ?? $jenis; // NEVER fallback to nama_asset!
 
-    /**
-     * Release D: Get Viewport Assets with Full Feeder Planning Context & Construction Shapes
-     */
-    public function getFeederViewportAssets(int $penyulangId, ?float $minLat = null, ?float $maxLat = null, ?float $minLng = null, ?float $maxLng = null, ?int $planningId = null): array
-    {
-        $db = \Config\Database::connect();
-        $planning = null;
+            if ($jenis === 'GARDU') $stats['gardu_count']++;
+            elseif ($jenis === 'TRAFO') $stats['trafo_count']++;
+            elseif (in_array($jenis, ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']) || str_contains($constrName, 'PMS') || str_contains($constrName, 'PMT')) $stats['switch_count']++;
+            else $stats['jtm_count']++;
 
-        if ($planningId > 0 && $db->tableExists('inspection_plannings')) {
-            $planning = $db->table('inspection_plannings')
-                ->where('id', $planningId)
-                ->get()
-                ->getRowArray();
-        }
-
-        if (!$planning && $penyulangId > 0 && $db->tableExists('inspection_plannings')) {
-            $planning = $db->table('inspection_plannings')
-                ->where('penyulang_id', $penyulangId)
-                ->whereIn('status', ['PUBLISHED', 'IN_PROGRESS'])
-                ->orderBy('id', 'DESC')
-                ->get()
-                ->getRowArray();
-        }
-
-        $assets = [];
-        $pointStatusMap = [];
-        $currentTargetAssetId = null;
-
-        if ($planning && $db->tableExists('inspection_planning_assets')) {
-            $builder = $db->table('inspection_planning_assets pa');
-            $builder->select('pa.sequence_no, a.*');
-            $builder->join('assets a', 'pa.asset_id = a.id');
-            $builder->where('pa.planning_id', (int)$planning['id']);
-            $builder->where('a.deleted_at IS NULL');
-            $builder->orderBy('pa.sequence_no', 'ASC');
-            $assets = $builder->get()->getResultArray();
-
-            if ($db->tableExists('inspections') && $db->tableExists('inspection_points')) {
-                $hasPlanningCol = $db->fieldExists('planning_id', 'inspections');
-                $runBuilder = $db->table('inspections');
-                if ($hasPlanningCol) {
-                    $runBuilder->where('planning_id', (int)$planning['id']);
-                } else {
-                    $runBuilder->where('penyulang_id', (int)$penyulangId);
-                }
-                $inspectionRun = $runBuilder
-                    ->whereIn('status', ['IN_PROGRESS', 'COMPLETED'])
-                    ->orderBy('id', 'DESC')
-                    ->get()
-                    ->getRowArray();
-
-                if ($inspectionRun) {
-                    $points = $db->table('inspection_points')
-                        ->where('inspection_id', (int)$inspectionRun['id'])
-                        ->get()
-                        ->getResultArray();
-
-                    foreach ($points as $pt) {
-                        $pointStatusMap[(int)$pt['asset_id']] = strtoupper((string)($pt['status'] ?? 'PENDING'));
-                    }
-                }
-            }
-
-            foreach ($assets as $astItem) {
-                $astId = (int)$astItem['id'];
-                $st = $pointStatusMap[$astId] ?? 'PENDING';
-                if ($st === 'PENDING' || $st === 'DRAFT') {
-                    $currentTargetAssetId = $astId;
-                    break;
-                }
-            }
-        }
-
-        if (empty($assets)) {
-            $assets = $this->assetRepository->getFilteredAssets(['penyulang_id' => $penyulangId]);
-        }
-
-        $markers = [];
-        $totalPlanned = count($assets);
-        $inspectedCount = 0;
-
-        foreach ($assets as $idx => $a) {
-            $lat = (float)($a['latitude'] ?? 0);
-            $lng = (float)($a['longitude'] ?? 0);
-            if ($lat == 0 || $lng == 0) continue;
-
-            $astId = (int)$a['id'];
-            $seqNo = (int)($a['sequence_no'] ?? ($idx + 1));
-            $inspStatus = $pointStatusMap[$astId] ?? 'PENDING';
-
-            if ($inspStatus === 'PASS' || $inspStatus === 'FAIL' || $inspStatus === 'COMPLETED') {
-                $inspectedCount++;
-            }
-
-            if ($currentTargetAssetId !== null && $astId === $currentTargetAssetId && ($inspStatus === 'PENDING' || $inspStatus === 'DRAFT')) {
-                $inspStatus = 'CURRENT_TARGET';
-            }
-
-            if ($minLat !== null && ($lat < $minLat || $lat > $maxLat || $lng < $minLng || $lng > $maxLng)) {
+            // Backend Level of Detail (LOD) Filtering Rules
+            // Zoom < 13: 0 Point Markers returned (Polyline & Summary ONLY!)
+            if ($zoom < 13) {
                 continue;
             }
 
-            $spec = $this->getConstructionMarkerSpec($a['jenis_asset'] ?? '', $a['nama_asset'] ?? null);
-
-            $accentColor = '#0284c7';
-            if ($inspStatus === 'PASS') {
-                $accentColor = '#10b981';
-            } elseif ($inspStatus === 'FAIL') {
-                $accentColor = '#ef4444';
-            } elseif ($inspStatus === 'CURRENT_TARGET') {
-                $accentColor = '#f59e0b';
+            // Zoom 13 - 16: Return GARDU, TRAFO, KUBIKEL, SWITCH Equipment Markers ONLY
+            if ($zoom >= 13 && $zoom <= 16) {
+                $isEquipment = in_array($jenis, ['GARDU', 'TRAFO', 'KUBIKEL', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']) 
+                            || str_contains($constrName, 'PMS') || str_contains($constrName, 'PMT') || str_contains($constrName, 'GTT');
+                if (!$isEquipment) {
+                    continue; // Skip individual JTM poles at mid zoom
+                }
             }
 
-            $markers[] = [
-                'id'                => $astId,
-                'planning_id'       => $planning ? (int)$planning['id'] : null,
-                'sequence_no'       => $seqNo,
-                'kode_asset'        => $a['kode_asset'],
-                'nama_asset'        => $a['nama_asset'],
-                'jenis'             => $a['jenis_asset'] ?: 'Gardu',
-                'status'            => $a['status'],
-                'inspection_status' => $inspStatus,
-                'lat'               => $lat,
-                'lng'               => $lng,
-                'shape'             => $spec['shape'],
-                'icon_class'        => $spec['icon_class'],
-                'shape_label'       => $spec['label'],
-                'color'             => $accentColor,
+            // Zoom >= 17: Return ALL markers including individual JTM poles
+
+            $spec = $this->getConstructionMarkerSpec($jenis, $constrName);
+
+            $features[] = [
+                'type' => 'Feature',
+                'geometry' => [
+                    'type'        => 'Point',
+                    'coordinates' => [$lng, $lat]
+                ],
+                'properties' => [
+                    'id'                => (int)$asset['id'],
+                    'kode_asset'        => $asset['kode_asset'],
+                    'nama_asset'        => $asset['nama_asset'],
+                    'jenis_asset'       => $jenis,
+                    'construction_type' => $constrName,
+                    'status'            => $asset['status'] ?? 'NORMAL',
+                    'lokasi'            => $asset['lokasi'] ?? '',
+                    'marker_spec'       => $spec
+                ]
             ];
         }
 
         return [
-            'status'          => 'success',
-            'planning'        => $planning ? [
-                'id'             => (int)$planning['id'],
-                'nomor_planning' => $planning['nomor_planning'],
-                'title'          => $planning['title'],
-                'status'         => $planning['status'],
+            'summary' => $stats,
+            'zoom'    => $zoom,
+            'transline' => [
+                'type' => 'Feature',
+                'geometry' => [
+                    'type'        => 'LineString',
+                    'coordinates' => $lineCoords
+                ]
+            ],
+            'bbox' => $validGisCount > 0 ? [
+                'min_lat' => $minLat,
+                'max_lat' => $maxLat,
+                'min_lng' => $minLng,
+                'max_lng' => $maxLng
             ] : null,
-            'total_planned'   => $totalPlanned,
-            'inspected_count' => $inspectedCount,
-            'count'           => count($markers),
-            'markers'         => $markers
+            'features' => $features
+        ];
+    }
+
+    public function getGeoJsonCollection(array $filters = [], ?int $userUlpId = null): array
+    {
+        $res = $this->getNetworkData($filters, $userUlpId);
+        return [
+            'type'     => 'FeatureCollection',
+            'features' => $res['features'] ?? []
         ];
     }
 }

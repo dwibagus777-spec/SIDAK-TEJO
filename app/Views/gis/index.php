@@ -49,16 +49,6 @@
         transition: all 0.3s ease;
     }
 
-    /* Floating Top Action Bar Right */
-    .gis-top-actions {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        z-index: 1000;
-        display: flex;
-        gap: 8px;
-    }
-
     /* Loading Overlay */
     .gis-loading-overlay {
         position: absolute;
@@ -72,7 +62,6 @@
         justify-content: center;
         color: #ffffff;
         border-radius: 18px;
-        transition: opacity 0.3s ease;
     }
 
     /* Floating Bottom Summary Pill */
@@ -142,10 +131,6 @@
         </div>
         
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <div class="input-group input-group-sm" style="width: 260px;">
-                <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                <input type="text" id="gis-search-input" class="form-control border-start-0 ps-0" placeholder="Cari Kode Asset / Penyulang...">
-            </div>
             <button type="button" id="btn-toggle-panel" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold">
                 <i class="fas fa-sliders me-1"></i> Filter Jaringan
             </button>
@@ -160,9 +145,7 @@
 
         <!-- Loading Spinner Overlay -->
         <div id="gis-loading-overlay" class="gis-loading-overlay" style="display: none;">
-            <div class="spinner-border text-warning mb-2" role="status" style="width: 2.5rem; height: 2.5rem;">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+            <div class="spinner-border text-warning mb-2" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
             <span class="fw-bold font-monospace" style="font-size: 14px;">Memuat Data Jaringan GIS...</span>
         </div>
 
@@ -170,7 +153,7 @@
         <div id="gis-filter-panel" class="gis-filter-panel">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="fw-bold text-dark mb-0"><i class="fas fa-filter text-primary me-2"></i> Filter Jaringan PLN</h6>
-                <button type="button" id="btn-close-panel" class="btn-close d-md-none" aria-label="Close"></button>
+                <button type="button" id="btn-close-panel" class="btn-close d-md-none"></button>
             </div>
 
             <!-- Step 1: Select ULP -->
@@ -193,13 +176,6 @@
                 <label class="small text-muted font-weight-bold d-block mb-1">2. Pilih Penyulang / Feeder:</label>
                 <select id="feeder-select" class="form-select form-select-sm fw-bold text-primary border-primary">
                     <option value="">-- Pilih Penyulang --</option>
-                    <?php if (!empty($penyulangs)): ?>
-                        <?php foreach ($penyulangs as $p): ?>
-                            <option value="<?= $p['id'] ?>" data-ulp-id="<?= $p['ulp_id'] ?? '' ?>" <?= (isset($selectedPenyulangId) && (int)$selectedPenyulangId === (int)$p['id']) ? 'selected' : '' ?>>
-                                <?= esc($p['nama_penyulang']) ?> (<?= esc($p['nama_ulp'] ?: 'ULP') ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
                 </select>
             </div>
 
@@ -210,13 +186,13 @@
                     <div class="form-check form-switch mb-0">
                         <input class="form-check-input layer-toggle" type="checkbox" id="layer-jtm" value="JTM" checked>
                         <label class="form-check-label small fw-bold text-dark" for="layer-jtm">
-                            <i class="fas fa-square-poll-vertical text-info me-1"></i> JTM & Tiang
+                            <i class="fas fa-square-poll-vertical text-primary me-1"></i> JTM & Tiang
                         </label>
                     </div>
                     <div class="form-check form-switch mb-0">
                         <input class="form-check-input layer-toggle" type="checkbox" id="layer-gardu" value="GARDU" checked>
                         <label class="form-check-label small fw-bold text-dark" for="layer-gardu">
-                            <i class="fas fa-building-columns text-success me-1"></i> Gardu Distribusi
+                            <i class="fas fa-building-columns text-info me-1"></i> Gardu Distribusi
                         </label>
                     </div>
                     <div class="form-check form-switch mb-0">
@@ -242,7 +218,7 @@
 
         <!-- Summary Floating Bottom Bar -->
         <div id="gis-summary-bar" class="gis-summary-bar">
-            <span id="summary-text" class="fw-bold font-monospace"><i class="fas fa-network-wired text-warning me-2"></i> Memuat...</span>
+            <span id="summary-text" class="fw-bold font-monospace">Memuat Data Jaringan...</span>
         </div>
 
         <!-- Leaflet Map Element -->
@@ -259,18 +235,17 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    // Center Coordinate (Sidoarjo Kota Default)
+    // Default Center (Sidoarjo Kota)
     var defaultLat = -7.4523;
     var defaultLng = 112.7161;
 
-    // Initialize Leaflet Map
+    // Initialize Map
     var map = L.map('gisMap', {
         center: [defaultLat, defaultLng],
-        zoom: 13,
+        zoom: 14,
         zoomControl: false
     });
 
-    // Tile Layer: OpenStreetMap Standard
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; PLN SIDAK TEJO GIS'
@@ -278,7 +253,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // Layer Groups & Cluster
     var markerCluster = L.markerClusterGroup({
         chunkedLoading: true,
         maxClusterRadius: 40,
@@ -289,66 +263,36 @@ document.addEventListener("DOMContentLoaded", function () {
     var translinePolylineLayer = L.featureGroup().addTo(map);
     var userLocationMarker = null;
 
-    var currentFeederId = <?= (int)($selectedPenyulangId ?? 0) ?>;
-    var rawFeatures = [];
+    var currentFeederId = 0;
+    var currentData = null;
 
-    // Helper: Show/Hide Spinner Loading Overlay
     function toggleLoading(show) {
         document.getElementById('gis-loading-overlay').style.display = show ? 'flex' : 'none';
     }
 
-    // Helper: Marker Spec Resolver
-    function getMarkerStyle(jenis, type) {
-        var j = (jenis || '').toUpperCase();
-        var t = (type || '').toUpperCase();
-
-        if (t.includes('PMS') || t.includes('PEMISAH')) {
-            return { color: '#dc2626', icon: 'fa-toggle-off', label: 'PMS' };
-        }
-        if (t.includes('PMT') || t.includes('PEMUTUS')) {
-            return { color: '#ea580c', icon: 'fa-toggle-on', label: 'PMT' };
-        }
-        if (t.includes('GTT') || t.includes('GARDU TRAFO')) {
-            return { color: '#059669', icon: 'fa-charging-station', label: 'GTT' };
-        }
-        if (t.includes('TMTP') || t.includes('PORTAL')) {
-            return { color: '#7c3aed', icon: 'fa-archway', label: 'TMTP' };
-        }
-        if (j === 'TRAFO') {
-            return { color: '#d97706', icon: 'fa-bolt', label: 'TRAFO' };
-        }
-        if (j === 'GARDU') {
-            return { color: '#0284c7', icon: 'fa-building-columns', label: 'GARDU' };
-        }
-        if (j === 'KUBIKEL') {
-            return { color: '#475569', icon: 'fa-box-archive', label: 'KUBIKEL' };
-        }
-        if (j === 'LBS' || j === 'LBSM' || j === 'RECLOSER') {
-            return { color: '#dc2626', icon: 'fa-toggle-on', label: j };
-        }
-
-        return { color: '#2563eb', icon: 'fa-square-poll-vertical', label: 'JTM' };
+    // Get Active Layers Array
+    function getSelectedLayers() {
+        var layers = [];
+        if (document.getElementById('layer-jtm').checked) layers.push('JTM');
+        if (document.getElementById('layer-gardu').checked) layers.push('GARDU');
+        if (document.getElementById('layer-trafo').checked) layers.push('TRAFO');
+        if (document.getElementById('layer-switch').checked) layers.push('SWITCH');
+        return layers;
     }
 
     // 1. Cascading ULP -> Penyulang (AJAX Options)
     document.getElementById('ulp-select').addEventListener('change', function () {
         var selectedUlpId = this.value;
         var feederSelect = document.getElementById('feeder-select');
-        
-        if (!selectedUlpId) {
-            // Show all options
-            Array.from(feederSelect.options).forEach(opt => opt.style.display = 'block');
-            feederSelect.value = '';
-            return;
-        }
+        feederSelect.innerHTML = '<option value="">-- Pilih Penyulang --</option>';
 
-        // Fetch Penyulangs under selected ULP
+        if (!selectedUlpId) return;
+
         fetch(`<?= site_url('gis/api-penyulangs') ?>?ulp_id=${selectedUlpId}`)
             .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success' && data.penyulangs) {
-                    feederSelect.innerHTML = '<option value="">-- Pilih Penyulang --</option>';
-                    data.penyulangs.forEach(p => {
+            .then(res => {
+                if (res.status === 'success' && res.penyulangs) {
+                    res.penyulangs.forEach(p => {
                         var opt = document.createElement('option');
                         opt.value = p.id;
                         opt.textContent = `${p.nama_penyulang} (${p.nama_ulp || 'ULP'})`;
@@ -358,80 +302,51 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     });
 
-    // 2. On Demand Network Fetch (Triggered ONLY when TAMPILKAN PETA is clicked!)
-    function loadGisNetworkOnDemand() {
-        var feederId = document.getElementById('feeder-select').value;
-        if (!feederId) {
-            alert('Silakan pilih Penyulang terlebih dahulu!');
-            return;
-        }
-
-        currentFeederId = feederId;
-        toggleLoading(true);
-
-        // Fetch Network GeoJSON
-        fetch(`<?= site_url('gis/api-data') ?>?penyulang_id=${feederId}`)
-            .then(res => res.json())
-            .then(data => {
-                toggleLoading(false);
-                if (data.status === 'success' && data.features) {
-                    rawFeatures = data.features;
-                    renderFilteredLayers();
-                    
-                    // Show Summary Bar
-                    var total = rawFeatures.length;
-                    var summaryBar = document.getElementById('gis-summary-bar');
-                    summaryBar.style.display = 'block';
-                    document.getElementById('summary-text').innerHTML = 
-                        `<i class="fas fa-network-wired text-warning me-2"></i> FEEDER READY • Total Asset: <strong>${total}</strong> Unit`;
-                }
-            })
-            .catch(err => {
-                toggleLoading(false);
-                console.error(err);
-                alert('Gagal memuat data GIS. Pastikan koneksi internet stabil.');
-            });
-    }
-
-    // Render Markers & Network Lines Based on Selected Layer Toggles & Zoom LOD
+    // Render Markers & Polyline LineString into Map Canvas
     function renderFilteredLayers() {
         markerCluster.clearLayers();
         translinePolylineLayer.clearLayers();
 
-        if (!rawFeatures || rawFeatures.length === 0) return;
+        if (!currentData) return;
 
-        // Get Active Layer Checkboxes
-        var activeLayers = [];
-        if (document.getElementById('layer-jtm').checked) activeLayers.push('JTM');
-        if (document.getElementById('layer-gardu').checked) activeLayers.push('GARDU');
-        if (document.getElementById('layer-trafo').checked) activeLayers.push('TRAFO');
-        if (document.getElementById('layer-switch').checked) {
-            activeLayers.push('SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'PMS', 'PMT');
+        // Render Feeder Transline Polyline
+        if (currentData.transline && currentData.transline.geometry && currentData.transline.geometry.coordinates) {
+            var rawCoords = currentData.transline.geometry.coordinates;
+            if (rawCoords.length > 1) {
+                var leafletCoords = rawCoords.map(pt => [pt[1], pt[0]]);
+                var polyline = L.polyline(leafletCoords, {
+                    color: '#0284c7',
+                    weight: 4,
+                    opacity: 0.85,
+                    lineJoin: 'round'
+                });
+                translinePolylineLayer.addLayer(polyline);
+            }
         }
 
-        var bounds = [];
-        var polylineCoords = [];
+        // Render Feature Point Markers
+        var features = currentData.features || [];
+        var activeLayers = getSelectedLayers();
 
-        rawFeatures.forEach(function (f) {
+        features.forEach(function (f) {
             var props = f.properties || {};
-            var geom = f.geometry || {};
+            var geom  = f.geometry || {};
             var jenis = (props.jenis_asset || '').toUpperCase();
-            var constr = (props.construction_type || '').toUpperCase();
+            var spec  = props.marker_spec || {};
 
-            // Check layer filter
-            var matched = activeLayers.some(l => jenis.includes(l) || constr.includes(l));
-            if (!matched && activeLayers.length > 0) return;
+            // Client-side Layer Toggle Filter Check
+            var isMatched = activeLayers.some(l => jenis.includes(l) || (l === 'SWITCH' && (jenis.includes('LBS') || jenis.includes('RECLOSER') || jenis.includes('SECTIONALIZER'))));
+            if (!isMatched && activeLayers.length > 0) return;
 
             if (geom.type === 'Point' && geom.coordinates) {
                 var lat = geom.coordinates[1];
                 var lng = geom.coordinates[0];
-                bounds.push([lat, lng]);
-                polylineCoords.push([lat, lng]);
 
-                var style = getMarkerStyle(jenis, constr);
+                var bgColor = spec.color || '#2563eb';
+                var iconClass = spec.icon_class || 'fa-square-poll-vertical';
 
-                var iconHtml = `<div class="gis-marker-badge" style="background-color: ${style.color}; width: 28px; height: 28px;">
-                                    <i class="fas ${style.icon}"></i>
+                var iconHtml = `<div class="gis-marker-badge" style="background-color: ${bgColor}; width: 28px; height: 28px;">
+                                    <i class="fas ${iconClass}"></i>
                                 </div>`;
 
                 var customIcon = L.divIcon({
@@ -456,36 +371,69 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // Render Polyline Transline Connection
-        if (polylineCoords.length > 1) {
-            var line = L.polyline(polylineCoords, {
-                color: '#0284c7',
-                weight: 4,
-                opacity: 0.8,
-                lineJoin: 'round'
-            });
-            translinePolylineLayer.addLayer(line);
-        }
-
-        // Fit Map Bounds
-        if (bounds.length > 0) {
-            map.fitBounds(bounds, { padding: [40, 40] });
+        // Fit Bounds
+        if (currentData.bbox) {
+            var b = currentData.bbox;
+            map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [40, 40] });
         }
     }
 
-    // Trigger Action on Click TAMPILKAN PETA
+    // 2. Fetch Network Data On-Demand (Triggered ONLY on [TAMPILKAN PETA JARINGAN] Click!)
+    function loadGisNetworkOnDemand() {
+        var feederId = document.getElementById('feeder-select').value;
+        if (!feederId) {
+            alert('Silakan pilih Penyulang terlebih dahulu!');
+            return;
+        }
+
+        currentFeederId = feederId;
+        var currentZoom = map.getZoom();
+        var layersParam = getSelectedLayers().join(',');
+
+        toggleLoading(true);
+
+        fetch(`<?= site_url('gis/api-network') ?>?penyulang_id=${feederId}&zoom=${currentZoom}&layers=${layersParam}`)
+            .then(res => res.json())
+            .then(res => {
+                toggleLoading(false);
+                if (res.status === 'success' && res.data) {
+                    currentData = res.data;
+                    renderFilteredLayers();
+
+                    var summaryBar = document.getElementById('gis-summary-bar');
+                    summaryBar.style.display = 'block';
+
+                    var sum = currentData.summary || {};
+                    document.getElementById('summary-text').innerHTML = 
+                        `<i class="fas fa-network-wired text-warning me-2"></i> FEEDER READY • Total Aset: <strong>${sum.total_assets || 0}</strong> (JTM: ${sum.jtm_count || 0}, Gardu: ${sum.gardu_count || 0}, Trafo: ${sum.trafo_count || 0}, Switch: ${sum.switch_count || 0})`;
+                }
+            })
+            .catch(err => {
+                toggleLoading(false);
+                console.error(err);
+            });
+    }
+
+    // Action Triggers
     document.getElementById('btn-apply-gis').addEventListener('click', function () {
         loadGisNetworkOnDemand();
     });
 
-    // Re-render markers on layer toggle change
+    // Re-filter layers dynamically when layer toggles change
     document.querySelectorAll('.layer-toggle').forEach(el => {
         el.addEventListener('change', function () {
             renderFilteredLayers();
         });
     });
 
-    // Panel Toggle Buttons
+    // Dynamic Zoom Level of Detail Listener
+    map.on('zoomend', function () {
+        if (currentFeederId > 0) {
+            loadGisNetworkOnDemand();
+        }
+    });
+
+    // Panel Toggle
     document.getElementById('btn-toggle-panel').addEventListener('click', function () {
         var panel = document.getElementById('gis-filter-panel');
         panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
@@ -499,22 +447,17 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('btn-locate-me').addEventListener('click', function () {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(function (pos) {
-                var userLat = pos.coords.latitude;
-                var userLng = pos.coords.longitude;
+                var uLat = pos.coords.latitude;
+                var uLng = pos.coords.longitude;
                 if (userLocationMarker) map.removeLayer(userLocationMarker);
-                userLocationMarker = L.circleMarker([userLat, userLng], {
+                userLocationMarker = L.circleMarker([uLat, uLng], {
                     radius: 10, fillColor: '#3b82f6', color: '#ffffff', weight: 3, fillOpacity: 1
                 }).addTo(map);
 
-                map.setView([userLat, userLng], 16);
+                map.setView([uLat, uLng], 16);
             });
         }
     });
-
-    // Auto-select Feeder if parameter passed
-    if (currentFeederId > 0) {
-        loadGisNetworkOnDemand();
-    }
 });
 </script>
 <?= $this->endSection() ?>

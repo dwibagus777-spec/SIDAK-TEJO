@@ -38,71 +38,80 @@ class GISService
      */
     public function getConstructionMarkerSpec(?string $jenisAsset, ?string $constructionType = null): array
     {
-        $jenis = strtoupper((string)$jenisAsset);
-        $type  = strtoupper((string)$constructionType);
-        $combined = $jenis . ' ' . $type;
+        $jenis = strtoupper(trim((string)$jenisAsset));
+        $type  = strtoupper(trim((string)$constructionType));
 
-        if (str_contains($combined, 'PMS') || str_contains($combined, 'PEMISAH')) {
-            return [
-                'shape'      => 'pms',
-                'icon_class' => 'fas fa-toggle-off',
-                'label'      => 'PMS (PEMISAH)'
-            ];
-        }
-        if (str_contains($combined, 'PMT') || str_contains($combined, 'PEMUTUS')) {
-            return [
-                'shape'      => 'pmt',
-                'icon_class' => 'fas fa-toggle-on',
-                'label'      => 'PMT (PEMUTUS)'
-            ];
-        }
-        if (str_contains($combined, 'GTT') || str_contains($combined, 'GARDU TRAFO')) {
-            return [
-                'shape'      => 'gtt',
-                'icon_class' => 'fas fa-charging-station',
-                'label'      => 'GTT (GARDU TRAFO TIANG)'
-            ];
-        }
-        if (str_contains($combined, 'TMTP') || str_contains($combined, 'PORTAL')) {
-            return [
-                'shape'      => 'tmtp',
-                'icon_class' => 'fas fa-archway',
-                'label'      => 'TMTP (PORTAL)'
-            ];
-        }
-        if (str_contains($combined, 'TRAFO')) {
+        // Priority Level 1: Primary Asset Category Family
+        if ($jenis === 'TRAFO') {
             return [
                 'shape'      => 'trafo',
                 'icon_class' => 'fas fa-bolt',
                 'label'      => 'TRAFO'
             ];
         }
-        if (str_contains($combined, 'GARDU') || str_contains($combined, 'GDG')) {
+        if ($jenis === 'GARDU') {
             return [
                 'shape'      => 'gardu',
                 'icon_class' => 'fas fa-building-columns',
                 'label'      => 'GARDU'
             ];
         }
-        if (str_contains($combined, 'KUBIKEL') || str_contains($combined, 'SWITCH') || str_contains($combined, 'LBS') || str_contains($combined, 'RECLOSER')) {
+        if ($jenis === 'KUBIKEL') {
             return [
                 'shape'      => 'kubikel',
                 'icon_class' => 'fas fa-box-archive',
                 'label'      => 'KUBIKEL'
             ];
         }
-        if (str_contains($combined, 'TIANG') || str_contains($combined, 'POLE')) {
+        if ($jenis === 'LBS' || $jenis === 'LBSM') {
             return [
-                'shape'      => 'pole',
-                'icon_class' => 'fas fa-square-poll-vertical',
-                'label'      => 'TIANG'
+                'shape'      => 'lbs',
+                'icon_class' => 'fas fa-toggle-on',
+                'label'      => $jenis
+            ];
+        }
+        if ($jenis === 'RECLOSER') {
+            return [
+                'shape'      => 'recloser',
+                'icon_class' => 'fas fa-rotate',
+                'label'      => 'RECLOSER'
+            ];
+        }
+
+        // Priority Level 2: JTM / Network Construction Sub-variations
+        if (str_contains($type, 'PMS') || str_contains($type, 'PEMISAH')) {
+            return [
+                'shape'      => 'pms',
+                'icon_class' => 'fas fa-toggle-off',
+                'label'      => 'JTM • PMS'
+            ];
+        }
+        if (str_contains($type, 'PMT') || str_contains($type, 'PEMUTUS')) {
+            return [
+                'shape'      => 'pmt',
+                'icon_class' => 'fas fa-toggle-on',
+                'label'      => 'JTM • PMT'
+            ];
+        }
+        if (str_contains($type, 'GTT')) {
+            return [
+                'shape'      => 'gtt',
+                'icon_class' => 'fas fa-charging-station',
+                'label'      => 'JTM • GTT'
+            ];
+        }
+        if (str_contains($type, 'TMTP') || str_contains($type, 'PORTAL')) {
+            return [
+                'shape'      => 'tmtp',
+                'icon_class' => 'fas fa-archway',
+                'label'      => 'JTM • TMTP'
             ];
         }
 
         return [
-            'shape'      => 'generic',
-            'icon_class' => 'fas fa-location-dot',
-            'label'      => $jenis ?: 'ASET'
+            'shape'      => 'jtm',
+            'icon_class' => 'fas fa-square-poll-vertical',
+            'label'      => $jenis ?: 'JTM'
         ];
     }
 

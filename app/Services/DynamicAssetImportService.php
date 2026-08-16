@@ -140,20 +140,27 @@ class DynamicAssetImportService
             $longitude      = trim((string)($row[$columnMap['longitude'] ?? 'M'] ?? ''));
             $sectionName    = trim((string)($row[$columnMap['section'] ?? 'N'] ?? ''));
 
-            // Equipment Domain Classification & Normalization
-            $kLower = strtolower($konstruksiName);
-            $jLower = strtolower($jenisAsset);
+            // Level 1: Priority 1 — Jenis Asset Normalization (Source of Truth from Excel Jenis Column)
+            $jLower = strtolower(trim($jenisAsset));
 
-            if (preg_match('/gtt/i', $kLower) || preg_match('/gtt/i', $jLower)) {
-                $jenisAsset = 'GARDU';
-            } elseif (preg_match('/pms|pemisah/i', $kLower) || preg_match('/pms|pemisah/i', $jLower)) {
-                $jenisAsset = 'JTM';
-            } elseif (preg_match('/pmt|pemutus/i', $kLower) || preg_match('/pmt|pemutus/i', $jLower)) {
-                $jenisAsset = 'JTM';
-            } elseif (preg_match('/^jtm/i', $jLower)) {
+            if (preg_match('/^jtm/i', $jLower) || $jLower === 'jtm_tiang' || $jLower === 'tiang') {
                 $jenisAsset = 'JTM';
             } elseif (preg_match('/^jtr/i', $jLower)) {
                 $jenisAsset = 'JTR';
+            } elseif (preg_match('/^gardu/i', $jLower) || $jLower === 'gd') {
+                $jenisAsset = 'GARDU';
+            } elseif (preg_match('/^trafo/i', $jLower)) {
+                $jenisAsset = 'TRAFO';
+            } elseif (preg_match('/^lbsm/i', $jLower)) {
+                $jenisAsset = 'LBSM';
+            } elseif (preg_match('/^lbs/i', $jLower)) {
+                $jenisAsset = 'LBS';
+            } elseif (preg_match('/^recloser/i', $jLower)) {
+                $jenisAsset = 'RECLOSER';
+            } elseif (preg_match('/^kubikel/i', $jLower)) {
+                $jenisAsset = 'KUBIKEL';
+            } else {
+                $jenisAsset = !empty($jenisAsset) ? strtoupper(trim($jenisAsset)) : 'JTM';
             }
 
             // Skip entirely empty row

@@ -105,7 +105,7 @@
     <!-- Filter Card -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-3">
-            <form method="GET" action="<?= site_url('assets') ?>" class="row g-2 align-items-center">
+            <form method="GET" action="<?= site_url('master-assets') ?>" class="row g-2 align-items-center">
                 <div class="col-md-3 col-12">
                     <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari Kode / Nama Asset / Merk / No. Seri..." value="<?= esc($filters['search'] ?? '') ?>">
                 </div>
@@ -135,7 +135,7 @@
                 </div>
                 <div class="col-md-2 col-6 d-flex gap-1">
                     <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold"><i class="fas fa-filter me-1"></i> Filter</button>
-                    <a href="<?= site_url('assets') ?>" class="btn btn-outline-secondary btn-sm"><i class="fas fa-rotate-left"></i></a>
+                    <a href="<?= site_url('master-assets') ?>" class="btn btn-outline-secondary btn-sm"><i class="fas fa-rotate-left"></i></a>
                 </div>
             </form>
         </div>

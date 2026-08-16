@@ -52,6 +52,27 @@ class GisController extends BaseController
         ]);
     }
 
+    public function apiPenyulangs(): ResponseInterface
+    {
+        $ulpId = (int)($this->request->getGet('ulp_id') ?? 0);
+        $db = \Config\Database::connect();
+
+        $builder = $db->table('penyulang p')
+            ->select('p.id, p.kode_penyulang, p.nama_penyulang, p.ulp_id, u.nama_ulp')
+            ->join('ulps u', 'p.ulp_id = u.id', 'left');
+
+        if ($ulpId > 0) {
+            $builder->where('p.ulp_id', $ulpId);
+        }
+
+        $penyulangs = $builder->get()->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'success',
+            'penyulangs' => $penyulangs
+        ]);
+    }
+
     public function apiData(): ResponseInterface
     {
         $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);

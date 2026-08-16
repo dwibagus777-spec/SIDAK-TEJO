@@ -1,28 +1,28 @@
 <?= $this->extend('layouts/admin') ?>
 
-<?= $this->section('title') ?>GIS Network Intelligence Center Enterprise<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>SIDAK TEJO Enterprise Intelligent GIS & Power Grid Topology<?= $this->endSection() ?>
+<?= $this->section('title') ?>GIS Network Intelligence<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>GIS NETWORK — PETA JARINGAN DISTRIBUSI 20KV<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<!-- Leaflet, MarkerCluster, Draw & Heatmap CSS -->
+<!-- Leaflet, MarkerCluster CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
 
 <style>
-    .gis-ni-container {
+    .gis-container {
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     #gis-master-wrapper {
         position: relative;
         width: 100%;
-        height: calc(100vh - 120px);
-        min-height: 580px;
+        height: calc(100vh - 130px);
+        min-height: 600px;
         border-radius: 18px;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+        background-color: #e2e8f0;
     }
 
     #gisMap {
@@ -31,194 +31,151 @@
         z-index: 1;
     }
 
-    /* Floating Panel Left */
-    .gis-panel-left {
+    /* Floating Filter Card Desktop */
+    .gis-filter-panel {
         position: absolute;
         top: 16px;
         left: 16px;
         z-index: 1000;
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(12px);
         border-radius: 16px;
-        padding: 16px;
-        width: 360px;
+        padding: 18px;
+        width: 350px;
         max-height: calc(100% - 32px);
         overflow-y: auto;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         border: 1px solid rgba(226, 232, 240, 0.8);
+        transition: all 0.3s ease;
     }
 
-    /* Floating Controls Right */
-    .gis-panel-right {
+    /* Floating Top Action Bar Right */
+    .gis-top-actions {
         position: absolute;
         top: 16px;
         right: 16px;
         z-index: 1000;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(12px);
-        border-radius: 14px;
-        padding: 10px 14px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        display: flex;
+        gap: 8px;
     }
 
-    /* Floating Bottom Stats Bar */
-    .gis-panel-bottom {
+    /* Loading Overlay */
+    .gis-loading-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 2000;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        border-radius: 18px;
+        transition: opacity 0.3s ease;
+    }
+
+    /* Floating Bottom Summary Pill */
+    .gis-summary-bar {
         position: absolute;
         bottom: 20px;
-        left: 16px;
+        left: 50%;
+        transform: translateX(-50%);
         z-index: 1000;
         background: rgba(15, 23, 42, 0.92);
         backdrop-filter: blur(10px);
         color: #ffffff;
-        border-radius: 14px;
-        padding: 10px 18px;
-        font-size: 12px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        border-radius: 30px;
+        padding: 8px 24px;
+        font-size: 13px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+        display: none;
     }
 
-    /* Construction-Specific SVG/HTML Marker Icons */
+    /* Custom Div Markers */
     .custom-gis-div-icon {
         background: transparent;
         border: none;
     }
-    .gis-construction-marker {
+    .gis-marker-badge {
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #ffffff;
         font-size: 11px;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border-radius: 50%;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s ease;
     }
-    .gis-construction-marker:hover {
-        transform: scale(1.25);
+    .gis-marker-badge:hover {
+        transform: scale(1.3);
         z-index: 9999 !important;
     }
 
-    /* Shapes based on construction type */
-    .shape-pole {
-        width: 28px; height: 28px;
-        border-radius: 50%; /* Circle for Tiang */
-    }
-    .shape-gtt {
-        width: 28px; height: 28px;
-        border-radius: 6px; /* Square/Shield for GTT */
-    }
-    .shape-gardu {
-        width: 32px; height: 26px;
-        border-radius: 4px; /* Rectangular Building for Gardu */
-    }
-    .shape-kubikel {
-        width: 26px; height: 30px;
-        border-radius: 5px; /* Cubicle Panel */
-    }
-    .shape-trafo {
-        width: 28px; height: 28px;
-        transform: rotate(45deg); /* Diamond for Trafo */
-    }
-    .shape-trafo i {
-        transform: rotate(-45deg);
-    }
-    .shape-generic {
-        width: 28px; height: 28px;
-        border-radius: 50%;
-    }
-
-    /* Secondary Inspection State Accent Borders & Badges */
-    .state-pending {
-        background-color: #0284c7;
-        border: 2px solid #ffffff;
-    }
-    .state-pass {
-        background-color: #10b981;
-        border: 2px solid #ffffff;
-    }
-    .state-fail {
-        background-color: #ef4444;
-        border: 2px solid #ffffff;
-    }
-    .state-current-target {
-        background-color: #f59e0b;
-        border: 3px solid #ffffff;
-        animation: target-pulse 1.5s infinite;
-    }
-
-    @keyframes target-pulse {
-        0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-    }
-
-    .marker-seq-badge {
-        position: absolute;
-        top: -8px; right: -8px;
-        background: #0f172a;
-        color: #f59e0b;
-        font-size: 9px;
-        font-weight: bold;
-        padding: 1px 4px;
-        border-radius: 8px;
-        border: 1px solid #f59e0b;
-        line-height: 1;
-        z-index: 10;
-    }
-    .marker-status-badge {
-        position: absolute;
-        bottom: -4px; right: -4px;
-        width: 13px; height: 13px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        border: 1px solid #fff;
-    }
-
-    /* Mobile Bottom Sheet */
-    .mobile-bottom-sheet {
-        position: absolute;
-        bottom: 0; left: 0; right: 0;
-        z-index: 1050;
-        background: #ffffff;
-        border-top-left-radius: 24px;
-        border-top-right-radius: 24px;
-        padding: 20px;
-        box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25);
-        display: none;
+    /* Mobile Sheet Drawer */
+    @media (max-width: 767.98px) {
+        .gis-filter-panel {
+            top: auto;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            border-radius: 24px 24px 0 0;
+            max-height: 80vh;
+        }
+        #gis-master-wrapper {
+            height: calc(100vh - 90px);
+        }
     }
 </style>
 
-<div class="gis-ni-container container-fluid py-3">
+<div class="gis-container container-fluid py-2">
 
-    <!-- Top Header Toolbar -->
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap" style="gap: 8px;">
-        <div>
-            <h3 class="fw-bold mb-1 text-primary d-flex align-items-center">
-                <i class="fas fa-network-wired text-warning me-2 fs-3"></i> GIS NETWORK INTELLIGENCE CENTER
-                <span class="badge bg-primary ms-2 rounded-pill font-weight-normal" style="font-size: 10px;">ENTERPRISE V40</span>
-            </h3>
-            <p class="text-muted small mb-0">Smart Cluster Markers, Heatmap Density, Radius Buffer Search, Live GPS Tracking, & Multi-Tile Maps</p>
-        </div>
+    <!-- Compact Header Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap" style="gap: 8px;">
         <div class="d-flex align-items-center gap-2">
-            <button type="button" id="btn-mission-mode" class="btn btn-outline-danger btn-sm rounded-pill font-weight-bold">
-                <i class="fas fa-triangle-exclamation me-1"></i> Mission Mode (Emergency Only)
+            <h4 class="fw-bold mb-0 text-primary d-flex align-items-center">
+                <i class="fas fa-network-wired text-warning me-2 fs-4"></i> GIS NETWORK
+            </h4>
+            <span class="badge bg-primary rounded-pill font-weight-normal px-2 py-1" style="font-size: 11px;">PETA OPERASIONAL PLN</span>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="input-group input-group-sm" style="width: 260px;">
+                <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" id="gis-search-input" class="form-control border-start-0 ps-0" placeholder="Cari Kode Asset / Penyulang...">
+            </div>
+            <button type="button" id="btn-toggle-panel" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold">
+                <i class="fas fa-sliders me-1"></i> Filter Jaringan
             </button>
             <button type="button" id="btn-locate-me" class="btn btn-primary btn-sm rounded-pill font-weight-bold">
-                <i class="fas fa-location-crosshairs me-1"></i> Posisi Saya
+                <i class="fas fa-crosshairs me-1"></i> Posisi Saya
             </button>
         </div>
     </div>
 
-    <!-- GIS Master Wrapper -->
+    <!-- GIS Master Map Wrapper -->
     <div id="gis-master-wrapper">
 
-        <!-- Left Search, Cascading Filters & Layers Panel -->
-        <div class="gis-panel-left d-block">
-            <h6 class="fw-bold text-dark mb-2"><i class="fas fa-network-wired text-primary me-1"></i> Filter Jaringan GIS</h6>
-            
-            <div class="mb-2">
-                <label class="small text-muted font-weight-bold d-block mb-1" style="font-size: 11px;">1. Pilih ULP:</label>
+        <!-- Loading Spinner Overlay -->
+        <div id="gis-loading-overlay" class="gis-loading-overlay" style="display: none;">
+            <div class="spinner-border text-warning mb-2" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="fw-bold font-monospace" style="font-size: 14px;">Memuat Data Jaringan GIS...</span>
+        </div>
+
+        <!-- Filter & Layer Panel (Desktop Floating Left / Mobile Bottom Sheet) -->
+        <div id="gis-filter-panel" class="gis-filter-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-dark mb-0"><i class="fas fa-filter text-primary me-2"></i> Filter Jaringan PLN</h6>
+                <button type="button" id="btn-close-panel" class="btn-close d-md-none" aria-label="Close"></button>
+            </div>
+
+            <!-- Step 1: Select ULP -->
+            <div class="mb-3">
+                <label class="small text-muted font-weight-bold d-block mb-1">1. Pilih Unit Layanan Pelanggan (ULP):</label>
                 <select id="ulp-select" class="form-select form-select-sm fw-bold text-dark border-secondary">
                     <option value="">-- Semua ULP --</option>
                     <?php if (!empty($ulps)): ?>
@@ -231,10 +188,11 @@
                 </select>
             </div>
 
-            <div class="mb-2">
-                <label class="small text-muted font-weight-bold d-block mb-1" style="font-size: 11px;">2. Pilih Penyulang / Feeder:</label>
+            <!-- Step 2: Select Penyulang -->
+            <div class="mb-3">
+                <label class="small text-muted font-weight-bold d-block mb-1">2. Pilih Penyulang / Feeder:</label>
                 <select id="feeder-select" class="form-select form-select-sm fw-bold text-primary border-primary">
-                    <option value="">-- Pilih Penyulang (GI -> Ujung) --</option>
+                    <option value="">-- Pilih Penyulang --</option>
                     <?php if (!empty($penyulangs)): ?>
                         <?php foreach ($penyulangs as $p): ?>
                             <option value="<?= $p['id'] ?>" data-ulp-id="<?= $p['ulp_id'] ?? '' ?>" <?= (isset($selectedPenyulangId) && (int)$selectedPenyulangId === (int)$p['id']) ? 'selected' : '' ?>>
@@ -245,389 +203,318 @@
                 </select>
             </div>
 
-            <!-- Feeder Inspection Journey Card Panel -->
-            <div id="feeder-inspection-card" class="p-3 bg-white rounded-3 border border-info shadow-sm mb-2" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <small class="fw-bold text-primary font-monospace" id="fic-planning-no">PLN-20260809-001</small>
-                    <span class="badge bg-warning text-dark font-weight-bold" id="fic-progress-badge">0 / 0 Selesai</span>
-                </div>
-                <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;" id="fic-title">Planning Inspections</h6>
-                <div class="progress mb-2" style="height: 6px;">
-                    <div class="progress-bar bg-success" id="fic-progress-bar" role="progressbar" style="width: 0%;"></div>
-                </div>
-                <div class="p-2 bg-light rounded border" style="font-size: 11px;">
-                    <span class="text-muted d-block" style="font-size: 10px;">Target Inspeksi Saat Ini:</span>
-                    <strong class="text-dark font-monospace d-block" id="fic-current-target">#001 GDG-001</strong>
+            <!-- Step 3: Layer Selection Checkboxes -->
+            <div class="mb-3">
+                <label class="small text-muted font-weight-bold d-block mb-1">3. Pilih Layer Peta Aset:</label>
+                <div class="d-flex flex-column gap-2 bg-light p-2 rounded-3 border">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input layer-toggle" type="checkbox" id="layer-jtm" value="JTM" checked>
+                        <label class="form-check-label small fw-bold text-dark" for="layer-jtm">
+                            <i class="fas fa-square-poll-vertical text-info me-1"></i> JTM & Tiang
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input layer-toggle" type="checkbox" id="layer-gardu" value="GARDU" checked>
+                        <label class="form-check-label small fw-bold text-dark" for="layer-gardu">
+                            <i class="fas fa-building-columns text-success me-1"></i> Gardu Distribusi
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input layer-toggle" type="checkbox" id="layer-trafo" value="TRAFO" checked>
+                        <label class="form-check-label small fw-bold text-dark" for="layer-trafo">
+                            <i class="fas fa-bolt text-warning me-1"></i> Trafo Distribusi
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input layer-toggle" type="checkbox" id="layer-switch" value="SWITCH" checked>
+                        <label class="form-check-label small fw-bold text-dark" for="layer-switch">
+                            <i class="fas fa-toggle-on text-danger me-1"></i> Peralatan (PMS/PMT/LBS/ACR)
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <div class="mb-2">
-                <input type="text" id="gis-search-input" class="form-control form-control-sm" placeholder="Cari Kode Asset, Penyulang, Section...">
-            </div>
-
-            <!-- Multi-Layer Switches -->
-            <div class="p-2 bg-light rounded-3 mb-2 border" style="font-size: 11px;">
-                <div class="form-check form-switch mb-1">
-                    <input class="form-check-input" type="checkbox" id="layer-transline-poly" checked>
-                    <label class="form-check-label fw-bold text-dark" for="layer-transline-poly"><i class="fas fa-route text-primary me-1"></i> Feeder Transline Polyline</label>
-                </div>
-                <div class="form-check form-switch mb-0">
-                    <input class="form-check-input" type="checkbox" id="layer-viewport-assets" checked>
-                    <label class="form-check-label fw-bold text-dark" for="layer-viewport-assets"><i class="fas fa-location-dot text-warning me-1"></i> Viewport Asset Markers</label>
-                </div>
-            </div>
-
-            <!-- Nearest Asset Card Panel -->
-            <div id="nearest-asset-card" class="p-3 bg-white rounded-3 border border-primary shadow-sm" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge bg-primary rounded-pill font-monospace" id="na-seq">#001</span>
-                    <span class="badge bg-success" id="na-status">AKTIF</span>
-                </div>
-                <h6 class="fw-bold text-dark mb-0" id="na-kode">GDG-001</h6>
-                <small class="text-muted d-block mb-2" id="na-jenis">Tiang Sutet</small>
-                <div class="d-flex align-items-center text-info small fw-bold mb-2">
-                    <i class="fas fa-location-arrow me-1"></i> <span id="na-distance">18 m dari posisi Anda</span>
-                </div>
-                <a href="#" id="na-inspect-btn" class="btn btn-sm btn-primary w-100 rounded-pill font-weight-bold">
-                    <i class="fas fa-clipboard-check me-1"></i> MULAI INSPEKSI
-                </a>
-            </div>
+            <!-- Step 4: Execute Action Button -->
+            <button type="button" id="btn-apply-gis" class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm py-2">
+                <i class="fas fa-play me-2"></i> TAMPILKAN PETA JARINGAN
+            </button>
         </div>
 
-        <!-- Floating Right Controls (Tile Layer Switcher & Heatmap) -->
-        <div class="gis-panel-right d-flex gap-2 align-items-center">
-            <select id="tile-switcher" class="form-select form-select-sm border-0 bg-transparent fw-bold text-primary" style="font-size: 12px; cursor: pointer;">
-                <option value="street">🗺️ Street Map</option>
-                <option value="satellite">🛰️ Satellite View</option>
-                <option value="dark">🌙 Dark Mode Map</option>
-            </select>
+        <!-- Summary Floating Bottom Bar -->
+        <div id="gis-summary-bar" class="gis-summary-bar">
+            <span id="summary-text" class="fw-bold font-monospace"><i class="fas fa-network-wired text-warning me-2"></i> Memuat...</span>
         </div>
 
-        <!-- Floating Bottom Stats Bar -->
-        <div class="gis-panel-bottom d-flex align-items-center gap-3">
-            <div><i class="fas fa-tower-cell text-warning me-1"></i> Asset Visible: <strong id="stat-total-pins" class="text-white">0</strong></div>
-            <div class="vr bg-secondary"></div>
-            <div><i class="fas fa-route text-success me-1"></i> Feeder: <strong class="text-success" id="stat-feeder-name">Semua</strong></div>
-        </div>
-
-        <!-- Leaflet Map Container -->
+        <!-- Leaflet Map Element -->
         <div id="gisMap"></div>
-
-        <!-- Mobile Bottom Sheet for Tap Asset -->
-        <div class="mobile-bottom-sheet" id="gis-bottom-sheet">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <div>
-                    <span class="badge bg-primary font-monospace" id="bs-seq">#001</span>
-                    <h6 class="fw-bold mb-0 d-inline ms-1" id="bs-kode">GDG-001</h6>
-                </div>
-                <button type="button" class="btn-close" id="bs-close-btn"></button>
-            </div>
-            <p class="text-muted small mb-2" id="bs-nama">Tiang 20kV Gedangan</p>
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="text-info small fw-bold"><i class="fas fa-location-arrow me-1"></i><span id="bs-distance">12 m</span></span>
-                <a href="#" id="bs-inspect-action" class="btn btn-primary btn-sm rounded-pill font-weight-bold px-3">
-                    <i class="fas fa-play me-1"></i> MULAI INSPEKSI
-                </a>
-            </div>
-        </div>
 
     </div>
 
 </div>
 
-<!-- Leaflet, MarkerCluster JS -->
+<!-- Leaflet & JS Plugins -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    var streetTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; SIDAK TEJO GIS' });
-    var satelliteTile = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri Satellite' });
-    var darkTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CartoDB Dark' });
+document.addEventListener("DOMContentLoaded", function () {
 
+    // Center Coordinate (Sidoarjo Kota Default)
+    var defaultLat = -7.4523;
+    var defaultLng = 112.7161;
+
+    // Initialize Leaflet Map
     var map = L.map('gisMap', {
-        center: [-7.4478, 112.7183],
-        zoom: 12,
-        layers: [streetTile]
+        center: [defaultLat, defaultLng],
+        zoom: 13,
+        zoomControl: false
     });
 
-    document.getElementById('tile-switcher').addEventListener('change', function(e) {
-        var val = e.target.value;
-        map.removeLayer(streetTile);
-        map.removeLayer(satelliteTile);
-        map.removeLayer(darkTile);
+    // Tile Layer: OpenStreetMap Standard
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; PLN SIDAK TEJO GIS'
+    }).addTo(map);
 
-        if (val === 'satellite') satelliteTile.addTo(map);
-        else if (val === 'dark') darkTile.addTo(map);
-        else streetTile.addTo(map);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    // Layer Groups & Cluster
+    var markerCluster = L.markerClusterGroup({
+        chunkedLoading: true,
+        maxClusterRadius: 40,
+        disableClusteringAtZoom: 17
     });
+    map.addLayer(markerCluster);
 
-    // Defensive MarkerCluster Capability Detection
-    var markerCluster = (typeof L.markerClusterGroup === 'function')
-        ? L.markerClusterGroup({ disableClusteringAtZoom: 16 })
-        : L.layerGroup();
-    var translinePolylineLayer = L.layerGroup().addTo(map);
+    var translinePolylineLayer = L.featureGroup().addTo(map);
     var userLocationMarker = null;
-    var currentFeederId = <?= json_encode((int)($selectedPenyulangId ?? 0)) ?> || null;
-    var currentPlanningId = <?= json_encode((int)($selectedPlanningId ?? 0)) ?> || null;
-    var userCoords = null;
-    var currentVisibleMarkers = [];
 
-    // Haversine Distance Formula in meters
-    function getHaversineDistance(lat1, lon1, lat2, lon2) {
-        var R = 6371000;
-        var dLat = (lat2 - lat1) * Math.PI / 180;
-        var dLon = (lon2 - lon1) * Math.PI / 180;
-        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return Math.round(R * c);
+    var currentFeederId = <?= (int)($selectedPenyulangId ?? 0) ?>;
+    var rawFeatures = [];
+
+    // Helper: Show/Hide Spinner Loading Overlay
+    function toggleLoading(show) {
+        document.getElementById('gis-loading-overlay').style.display = show ? 'flex' : 'none';
     }
 
-    // Release D: Construction-Specific HTML DivIcon Marker Builder
-    function createConstructionIcon(m) {
-        var shapeClass = 'shape-' + (m.shape || 'generic');
-        var statusClass = 'state-' + String(m.inspection_status || 'PENDING').toLowerCase().replace('_', '-');
-        var iconClass = m.icon_class || 'fas fa-location-dot';
+    // Helper: Marker Spec Resolver
+    function getMarkerStyle(jenis, type) {
+        var j = (jenis || '').toUpperCase();
+        var t = (type || '').toUpperCase();
 
-        var badgeHtml = '';
-        if (m.inspection_status === 'CURRENT_TARGET') {
-            badgeHtml = `<span class="marker-seq-badge">#${String(m.sequence_no).padStart(3, '0')}</span>`;
-        } else if (m.inspection_status === 'PASS') {
-            badgeHtml = `<span class="marker-status-badge bg-success"><i class="fas fa-check" style="font-size:7px;"></i></span>`;
-        } else if (m.inspection_status === 'FAIL') {
-            badgeHtml = `<span class="marker-status-badge bg-danger"><i class="fas fa-exclamation" style="font-size:7px;"></i></span>`;
+        if (t.includes('PMS') || t.includes('PEMISAH')) {
+            return { color: '#dc2626', icon: 'fa-toggle-off', label: 'PMS' };
+        }
+        if (t.includes('PMT') || t.includes('PEMUTUS')) {
+            return { color: '#ea580c', icon: 'fa-toggle-on', label: 'PMT' };
+        }
+        if (t.includes('GTT') || t.includes('GARDU TRAFO')) {
+            return { color: '#059669', icon: 'fa-charging-station', label: 'GTT' };
+        }
+        if (t.includes('TMTP') || t.includes('PORTAL')) {
+            return { color: '#7c3aed', icon: 'fa-archway', label: 'TMTP' };
+        }
+        if (j === 'TRAFO') {
+            return { color: '#d97706', icon: 'fa-bolt', label: 'TRAFO' };
+        }
+        if (j === 'GARDU') {
+            return { color: '#0284c7', icon: 'fa-building-columns', label: 'GARDU' };
+        }
+        if (j === 'KUBIKEL') {
+            return { color: '#475569', icon: 'fa-box-archive', label: 'KUBIKEL' };
+        }
+        if (j === 'LBS' || j === 'LBSM' || j === 'RECLOSER') {
+            return { color: '#dc2626', icon: 'fa-toggle-on', label: j };
         }
 
-        var html = `
-            <div class="gis-construction-marker ${shapeClass} ${statusClass}" title="${m.shape_label || ''}: ${m.kode_asset}">
-                <i class="${iconClass}"></i>
-                ${badgeHtml}
-            </div>
-        `;
-
-        var iconSize = (m.shape === 'gardu') ? [32, 26] : (m.shape === 'kubikel') ? [26, 30] : [28, 28];
-        return L.divIcon({
-            className: 'custom-gis-div-icon',
-            html: html,
-            iconSize: iconSize,
-            iconAnchor: [iconSize[0]/2, iconSize[1]/2]
-        });
+        return { color: '#2563eb', icon: 'fa-square-poll-vertical', label: 'JTM' };
     }
 
-    // Load Feeder Network Transline & Bounds
-    function loadFeederNetwork(feederId, planningId) {
-        if (!feederId) return;
+    // 1. Cascading ULP -> Penyulang (AJAX Options)
+    document.getElementById('ulp-select').addEventListener('change', function () {
+        var selectedUlpId = this.value;
+        var feederSelect = document.getElementById('feeder-select');
+        
+        if (!selectedUlpId) {
+            // Show all options
+            Array.from(feederSelect.options).forEach(opt => opt.style.display = 'block');
+            feederSelect.value = '';
+            return;
+        }
+
+        // Fetch Penyulangs under selected ULP
+        fetch(`<?= site_url('gis/api-penyulangs') ?>?ulp_id=${selectedUlpId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.penyulangs) {
+                    feederSelect.innerHTML = '<option value="">-- Pilih Penyulang --</option>';
+                    data.penyulangs.forEach(p => {
+                        var opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = `${p.nama_penyulang} (${p.nama_ulp || 'ULP'})`;
+                        feederSelect.appendChild(opt);
+                    });
+                }
+            });
+    });
+
+    // 2. On Demand Network Fetch (Triggered ONLY when TAMPILKAN PETA is clicked!)
+    function loadGisNetworkOnDemand() {
+        var feederId = document.getElementById('feeder-select').value;
+        if (!feederId) {
+            alert('Silakan pilih Penyulang terlebih dahulu!');
+            return;
+        }
+
         currentFeederId = feederId;
-        if (planningId) currentPlanningId = planningId;
+        toggleLoading(true);
+
+        // Fetch Network GeoJSON
+        fetch(`<?= site_url('gis/api-data') ?>?penyulang_id=${feederId}`)
+            .then(res => res.json())
+            .then(data => {
+                toggleLoading(false);
+                if (data.status === 'success' && data.features) {
+                    rawFeatures = data.features;
+                    renderFilteredLayers();
+                    
+                    // Show Summary Bar
+                    var total = rawFeatures.length;
+                    var summaryBar = document.getElementById('gis-summary-bar');
+                    summaryBar.style.display = 'block';
+                    document.getElementById('summary-text').innerHTML = 
+                        `<i class="fas fa-network-wired text-warning me-2"></i> FEEDER READY • Total Asset: <strong>${total}</strong> Unit`;
+                }
+            })
+            .catch(err => {
+                toggleLoading(false);
+                console.error(err);
+                alert('Gagal memuat data GIS. Pastikan koneksi internet stabil.');
+            });
+    }
+
+    // Render Markers & Network Lines Based on Selected Layer Toggles & Zoom LOD
+    function renderFilteredLayers() {
+        markerCluster.clearLayers();
         translinePolylineLayer.clearLayers();
 
-        var url = "<?= site_url('master-assets/feeder-network') ?>?penyulang_id=" + feederId;
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    if (data.penyulang) {
-                        document.getElementById('stat-feeder-name').innerText = data.penyulang.nama_penyulang;
-                    }
-                    if (data.planning) {
-                        currentPlanningId = data.planning.id;
-                    }
+        if (!rawFeatures || rawFeatures.length === 0) return;
 
-                    // Render 1 Single LineString Transline Polyline Layer
-                    if (data.transline && data.transline.geometry && data.transline.geometry.coordinates.length > 0) {
-                        var latLngs = data.transline.geometry.coordinates.map(c => [c[1], c[0]]);
-                        var polyline = L.polyline(latLngs, {
-                            color: '#0284c7',
-                            weight: 5,
-                            opacity: 0.85,
-                            lineJoin: 'round'
-                        });
-                        translinePolylineLayer.addLayer(polyline);
-                    }
-
-                    // Fit Map Bounds
-                    if (data.bbox) {
-                        map.fitBounds([
-                            [data.bbox.min_lat, data.bbox.min_lng],
-                            [data.bbox.max_lat, data.bbox.max_lng]
-                        ], { padding: [40, 40] });
-                    }
-
-                    // Trigger Viewport Markers Load
-                    loadViewportAssets();
-                }
-            });
-    }
-
-    // Viewport Bounding Box Asset Loader with Full Feeder Planning Context
-    function loadViewportAssets() {
-        if (!currentFeederId) return;
-        var bounds = map.getBounds();
-        var url = `<?= site_url('master-assets/feeder-assets') ?>?penyulang_id=${currentFeederId}&min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lng=${bounds.getWest()}&max_lng=${bounds.getEast()}`;
-        if (currentPlanningId) {
-            url += `&planning_id=${currentPlanningId}`;
+        // Get Active Layer Checkboxes
+        var activeLayers = [];
+        if (document.getElementById('layer-jtm').checked) activeLayers.push('JTM');
+        if (document.getElementById('layer-gardu').checked) activeLayers.push('GARDU');
+        if (document.getElementById('layer-trafo').checked) activeLayers.push('TRAFO');
+        if (document.getElementById('layer-switch').checked) {
+            activeLayers.push('SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'PMS', 'PMT');
         }
 
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success' && data.markers) {
-                    markerCluster.clearLayers();
-                    currentVisibleMarkers = data.markers;
-                    document.getElementById('stat-total-pins').innerText = data.total_planned || data.count;
+        var bounds = [];
+        var polylineCoords = [];
 
-                    if (data.planning) {
-                        var fic = document.getElementById('feeder-inspection-card');
-                        if (fic) {
-                            fic.style.display = 'block';
-                            document.getElementById('fic-planning-no').innerText = data.planning.nomor_planning;
-                            document.getElementById('fic-title').innerText = data.planning.title;
-                            var inspected = data.inspected_count || 0;
-                            var total = data.total_planned || data.count;
-                            document.getElementById('fic-progress-badge').innerText = inspected + ' / ' + total + ' Selesai';
-                            var pct = total > 0 ? Math.round((inspected / total) * 100) : 0;
-                            document.getElementById('fic-progress-bar').style.width = pct + '%';
-                        }
-                    }
+        rawFeatures.forEach(function (f) {
+            var props = f.properties || {};
+            var geom = f.geometry || {};
+            var jenis = (props.jenis_asset || '').toUpperCase();
+            var constr = (props.construction_type || '').toUpperCase();
 
-                    var currentTargetObj = null;
+            // Check layer filter
+            var matched = activeLayers.some(l => jenis.includes(l) || constr.includes(l));
+            if (!matched && activeLayers.length > 0) return;
 
-                    data.markers.forEach(function(m) {
-                        var icon = createConstructionIcon(m);
-                        var marker = L.marker([m.lat, m.lng], { icon: icon });
+            if (geom.type === 'Point' && geom.coordinates) {
+                var lat = geom.coordinates[1];
+                var lng = geom.coordinates[0];
+                bounds.push([lat, lng]);
+                polylineCoords.push([lat, lng]);
 
-                        if (m.inspection_status === 'CURRENT_TARGET') {
-                            currentTargetObj = m;
-                        }
+                var style = getMarkerStyle(jenis, constr);
 
-                        marker.on('click', function() {
-                            openAssetBottomSheet(m);
-                        });
+                var iconHtml = `<div class="gis-marker-badge" style="background-color: ${style.color}; width: 28px; height: 28px;">
+                                    <i class="fas ${style.icon}"></i>
+                                </div>`;
 
-                        markerCluster.addLayer(marker);
-                    });
+                var customIcon = L.divIcon({
+                    html: iconHtml,
+                    className: 'custom-gis-div-icon',
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
+                });
 
-                    if (currentTargetObj) {
-                        document.getElementById('fic-current-target').innerText = '#' + String(currentTargetObj.sequence_no).padStart(3, '0') + ' ' + currentTargetObj.kode_asset + ' (' + currentTargetObj.jenis + ')';
-                    } else if (data.inspected_count === data.total_planned && data.total_planned > 0) {
-                        document.getElementById('fic-current-target').innerText = '🎉 Seluruh penyulang selesai diinspeksi!';
-                    }
+                var popupHtml = `
+                    <div class="p-1 font-sans">
+                        <strong class="text-primary font-monospace d-block">${props.kode_asset || '-'}</strong>
+                        <h6 class="fw-bold mb-1" style="font-size: 13px;">${props.nama_asset || '-'}</h6>
+                        <span class="badge bg-secondary mb-1">${jenis} • ${props.construction_type || 'TM'}</span>
+                        <div class="small text-muted mb-2">${props.lokasi || 'Lokasi PLN'}</div>
+                        <a href="<?= site_url('master-assets/detail') ?>/${props.id}" class="btn btn-xs btn-primary w-100 fw-bold rounded-pill">Detail Digital Twin &rarr;</a>
+                    </div>
+                `;
 
-                    map.addLayer(markerCluster);
-                    updateNearestAsset();
-                }
-            });
-    }
-
-    // Nearest Asset Calculator
-    function updateNearestAsset() {
-        if (!userCoords || currentVisibleMarkers.length === 0) return;
-
-        var minDistance = Infinity;
-        var nearest = null;
-
-        currentVisibleMarkers.forEach(function(m) {
-            var dist = getHaversineDistance(userCoords.lat, userCoords.lng, m.lat, m.lng);
-            if (dist < minDistance) {
-                minDistance = dist;
-                nearest = m;
-                nearest.calculated_distance = dist;
+                var marker = L.marker([lat, lng], { icon: customIcon }).bindPopup(popupHtml);
+                markerCluster.addLayer(marker);
             }
         });
 
-        if (nearest) {
-            var card = document.getElementById('nearest-asset-card');
-            card.style.display = 'block';
-            document.getElementById('na-seq').innerText = '#' + String(nearest.sequence_no).padStart(3, '0');
-            document.getElementById('na-kode').innerText = nearest.kode_asset;
-            document.getElementById('na-jenis').innerText = (nearest.shape_label || nearest.jenis) + ' • ' + nearest.nama_asset;
-            document.getElementById('na-status').innerText = nearest.inspection_status || nearest.status;
-            document.getElementById('na-distance').innerText = nearest.calculated_distance + ' m dari posisi Anda';
-            
-            var naUrl = `<?= site_url('inspections/start-by-asset') ?>?asset_id=${nearest.id}`;
-            if (nearest.planning_id) {
-                naUrl += `&planning_id=${nearest.planning_id}`;
-            }
-            document.getElementById('na-inspect-btn').href = naUrl;
-        }
-    }
-
-    function openAssetBottomSheet(m) {
-        var distText = userCoords ? getHaversineDistance(userCoords.lat, userCoords.lng, m.lat, m.lng) + ' m' : '-';
-        document.getElementById('bs-seq').innerText = '#' + String(m.sequence_no).padStart(3, '0');
-        document.getElementById('bs-kode').innerText = m.kode_asset;
-        document.getElementById('bs-nama').innerText = (m.shape_label || m.jenis) + ' • ' + m.nama_asset;
-        document.getElementById('bs-distance').innerText = distText;
-        
-        var inspectUrl = `<?= site_url('inspections/start-by-asset') ?>?asset_id=${m.id}`;
-        if (m.planning_id) {
-            inspectUrl += `&planning_id=${m.planning_id}`;
-        }
-        document.getElementById('bs-inspect-action').href = inspectUrl;
-        document.getElementById('gis-bottom-sheet').style.display = 'block';
-    }
-
-    document.getElementById('bs-close-btn').addEventListener('click', function() {
-        document.getElementById('gis-bottom-sheet').style.display = 'none';
-    });
-
-    // Cascading ULP -> Penyulang Filter
-    var ulpSelectEl = document.getElementById('ulp-select');
-    if (ulpSelectEl) {
-        ulpSelectEl.addEventListener('change', function() {
-            var selectedUlpId = this.value;
-            var feederSelect = document.getElementById('feeder-select');
-            var options = feederSelect.querySelectorAll('option');
-
-            options.forEach(function(opt) {
-                var optUlpId = opt.getAttribute('data-ulp-id');
-                if (!selectedUlpId || !optUlpId || optUlpId == selectedUlpId || opt.value === '') {
-                    opt.style.display = 'block';
-                } else {
-                    opt.style.display = 'none';
-                }
+        // Render Polyline Transline Connection
+        if (polylineCoords.length > 1) {
+            var line = L.polyline(polylineCoords, {
+                color: '#0284c7',
+                weight: 4,
+                opacity: 0.8,
+                lineJoin: 'round'
             });
+            translinePolylineLayer.addLayer(line);
+        }
 
-            feederSelect.value = '';
+        // Fit Map Bounds
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [40, 40] });
+        }
+    }
+
+    // Trigger Action on Click TAMPILKAN PETA
+    document.getElementById('btn-apply-gis').addEventListener('click', function () {
+        loadGisNetworkOnDemand();
+    });
+
+    // Re-render markers on layer toggle change
+    document.querySelectorAll('.layer-toggle').forEach(el => {
+        el.addEventListener('change', function () {
+            renderFilteredLayers();
         });
-    }
-
-    document.getElementById('feeder-select').addEventListener('change', function(e) {
-        var feederId = e.target.value;
-        if (feederId) {
-            loadFeederNetwork(feederId, null);
-        }
     });
 
-    map.on('moveend zoomend', function() {
-        if (currentFeederId) {
-            loadViewportAssets();
-        }
+    // Panel Toggle Buttons
+    document.getElementById('btn-toggle-panel').addEventListener('click', function () {
+        var panel = document.getElementById('gis-filter-panel');
+        panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
     });
 
-    // Auto-select Feeder and Planning on page load if parameters passed
-    if (currentFeederId) {
-        loadFeederNetwork(currentFeederId, currentPlanningId);
-    }
+    document.getElementById('btn-close-panel').addEventListener('click', function () {
+        document.getElementById('gis-filter-panel').style.display = 'none';
+    });
 
-    // Live GPS Location Tracking
-    document.getElementById('btn-locate-me').addEventListener('click', function() {
+    // Location Tracking
+    document.getElementById('btn-locate-me').addEventListener('click', function () {
         if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                var userLat = pos.coords.latitude;
+                var userLng = pos.coords.longitude;
                 if (userLocationMarker) map.removeLayer(userLocationMarker);
-                userLocationMarker = L.circleMarker([userCoords.lat, userCoords.lng], {
+                userLocationMarker = L.circleMarker([userLat, userLng], {
                     radius: 10, fillColor: '#3b82f6', color: '#ffffff', weight: 3, fillOpacity: 1
                 }).addTo(map);
 
-                map.setView([userCoords.lat, userCoords.lng], 16);
-                updateNearestAsset();
+                map.setView([userLat, userLng], 16);
             });
         }
     });
+
+    // Auto-select Feeder if parameter passed
+    if (currentFeederId > 0) {
+        loadGisNetworkOnDemand();
+    }
 });
 </script>
-
 <?= $this->endSection() ?>

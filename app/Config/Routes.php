@@ -129,6 +129,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('api/network/ulps', 'Api::getNetworkUlps');
 
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
+    $routes->get('gis/api-penyulangs', 'GisController::apiPenyulangs');
     $routes->get('master-assets/geojson', 'GisController::geoJson');
     $routes->get('master-assets/feeder-network', 'GisController::feederNetwork');
     $routes->get('master-assets/feeder-assets', 'GisController::feederAssets');

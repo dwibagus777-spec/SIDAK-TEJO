@@ -123,8 +123,26 @@ class AssetRepository
     }
 
     /**
+     * Calculate exact Haversine distance in meters between two lat/lng coordinates
+     */
+    private function haversineDistanceMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371000.0;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) ** 2 +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) ** 2;
+
+        return 2 * $earthRadius * atan2(sqrt($a), sqrt(1 - $a));
+    }
+
+    /**
      * Get Complete Feeder Topology Network MultiLineString Segments & Nodes
-     * Eliminates spiderweb starbursts by connecting parent-child edges and distance-checked segments!
+     * Priority 1: parent_asset_id Tree Edges
+     * Priority 2: sequence_no ASC (500m max span)
+     * Priority 3: Spatial Nearest-Neighbor Traversal with 350m Haversine Distance Guard
      */
     public function getFeederNetworkSegments(int $penyulangId, ?int $userUlpId = null): array
     {
@@ -138,7 +156,7 @@ class AssetRepository
             $hasSeqCol    = $db->fieldExists('sequence_no', 'assets');
 
             $builder = $db->table('assets a');
-            $builder->select('a.id, a.parent_asset_id, a.latitude, a.longitude, a.sequence_no');
+            $builder->select('a.id, a.parent_asset_id, a.jenis_asset, a.latitude, a.longitude, a.sequence_no');
             $builder->where('a.penyulang_id', $penyulangId);
             $builder->where('a.deleted_at IS NULL');
             $builder->where('a.latitude !=', 0);
@@ -159,56 +177,138 @@ class AssetRepository
                 return ['type' => 'MultiLineString', 'coordinates' => [], 'nodes' => []];
             }
 
-            $nodeMap = [];
+            $nodeMap   = [];
             $allPoints = [];
+            $unvisited = [];
+
             foreach ($nodes as $n) {
-                $lng = (float)$n['longitude'];
-                $lat = (float)$n['latitude'];
-                $nodeMap[(int)$n['id']] = [$lng, $lat];
-                $allPoints[]            = [$lng, $lat];
+                $id     = (int)$n['id'];
+                $lng    = (float)$n['longitude'];
+                $lat    = (float)$n['latitude'];
+                $seq    = (int)($n['sequence_no'] ?? 0);
+                $parent = (int)($n['parent_asset_id'] ?? 0);
+                $jenis  = strtoupper((string)($n['jenis_asset'] ?? 'JTM'));
+
+                $nodeMap[$id] = [
+                    'id'       => $id,
+                    'parent'   => $parent,
+                    'seq'      => $seq,
+                    'jenis'    => $jenis,
+                    'lat'      => $lat,
+                    'lng'      => $lng,
+                    'coord'    => [$lng, $lat]
+                ];
+                $allPoints[] = [$lng, $lat];
+                $unvisited[$id] = $nodeMap[$id];
             }
 
             $multiLineCoords = [];
             $hasValidParents = false;
 
-            // 1. Build Exact Parent-Child Edge Segments (Topology Tree Edges)
+            // =========================================================================
+            // PRIORITY 1: Explicit Topology Tree Edges (parent_asset_id)
+            // =========================================================================
             if ($hasParentCol) {
-                foreach ($nodes as $n) {
-                    $parentId = (int)($n['parent_asset_id'] ?? 0);
+                foreach ($nodeMap as $id => $n) {
+                    $parentId = $n['parent'];
                     if ($parentId > 0 && isset($nodeMap[$parentId])) {
-                        $parentCoord = $nodeMap[$parentId];
-                        $childCoord  = $nodeMap[(int)$n['id']];
+                        $parentCoord = $nodeMap[$parentId]['coord'];
+                        $childCoord  = $n['coord'];
                         $multiLineCoords[] = [$parentCoord, $childCoord];
                         $hasValidParents = true;
                     }
                 }
             }
 
-            // 2. Fallback for Sequential Main Trunk if parent_asset_id relationships are not set
-            if (!$hasValidParents && count($allPoints) > 1) {
-                $trunk = [];
-                for ($i = 0; $i < count($allPoints); $i++) {
-                    if ($i == 0) {
-                        $trunk[] = $allPoints[$i];
-                        continue;
-                    }
-                    $prev = $allPoints[$i - 1];
-                    $curr = $allPoints[$i];
-
-                    $distLat = abs($curr[1] - $prev[1]);
-                    $distLng = abs($curr[0] - $prev[0]);
-
-                    if ($distLat < 0.05 && $distLng < 0.05) {
-                        $trunk[] = $curr;
-                    } else {
-                        if (count($trunk) > 1) {
-                            $multiLineCoords[] = $trunk;
-                        }
-                        $trunk = [$curr];
+            // =========================================================================
+            // PRIORITY 2 & 3: Sequence / Spatial Nearest-Neighbor Reconstruction
+            // =========================================================================
+            if (!$hasValidParents) {
+                $hasValidSequence = false;
+                $seqNodes = [];
+                foreach ($nodeMap as $n) {
+                    if ($n['seq'] > 0) {
+                        $seqNodes[] = $n;
                     }
                 }
-                if (count($trunk) > 1) {
-                    $multiLineCoords[] = $trunk;
+
+                if (count($seqNodes) > 1) {
+                    usort($seqNodes, fn($a, $b) => $a['seq'] <=> $b['seq']);
+                    $seqLine = [];
+                    for ($i = 0; $i < count($seqNodes); $i++) {
+                        if ($i === 0) {
+                            $seqLine[] = $seqNodes[$i]['coord'];
+                            continue;
+                        }
+                        $prev = $seqNodes[$i - 1];
+                        $curr = $seqNodes[$i];
+                        $dist = $this->haversineDistanceMeters($prev['lat'], $prev['lng'], $curr['lat'], $curr['lng']);
+
+                        if ($dist <= 500.0) {
+                            $seqLine[] = $curr['coord'];
+                        } else {
+                            if (count($seqLine) > 1) {
+                                $multiLineCoords[] = $seqLine;
+                            }
+                            $seqLine = [$curr['coord']];
+                        }
+                    }
+                    if (count($seqLine) > 1) {
+                        $multiLineCoords[] = $seqLine;
+                    }
+                    $hasValidSequence = true;
+                }
+
+                // PRIORITY 3: Spatial Nearest-Neighbor Traversal with 350m Distance Guard
+                if (!$hasValidSequence && count($nodes) > 1) {
+                    $startId = null;
+                    foreach ($unvisited as $id => $n) {
+                        if (in_array($n['jenis'], ['GI', 'GARDU', 'SUBSTATION', 'GH'])) {
+                            $startId = $id;
+                            break;
+                        }
+                    }
+                    if ($startId === null) {
+                        usort($nodes, fn($a, $b) => $a['latitude'] <=> $b['latitude']);
+                        $startId = (int)$nodes[0]['id'];
+                    }
+
+                    while (!empty($unvisited)) {
+                        if (!isset($unvisited[$startId])) {
+                            $keys = array_keys($unvisited);
+                            $startId = $keys[0];
+                        }
+
+                        $current = $unvisited[$startId];
+                        unset($unvisited[$startId]);
+
+                        $segment = [$current['coord']];
+
+                        while (true) {
+                            $nearestId   = null;
+                            $minDistance = 99999999.0;
+
+                            foreach ($unvisited as $candidateId => $cand) {
+                                $d = $this->haversineDistanceMeters($current['lat'], $current['lng'], $cand['lat'], $cand['lng']);
+                                if ($d < $minDistance && $d <= 350.0) {
+                                    $minDistance = $d;
+                                    $nearestId   = $candidateId;
+                                }
+                            }
+
+                            if ($nearestId !== null) {
+                                $current = $unvisited[$nearestId];
+                                unset($unvisited[$nearestId]);
+                                $segment[] = $current['coord'];
+                            } else {
+                                break;
+                            }
+                        }
+
+                        if (count($segment) > 1) {
+                            $multiLineCoords[] = $segment;
+                        }
+                    }
                 }
             }
 

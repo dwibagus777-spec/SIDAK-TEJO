@@ -128,18 +128,18 @@ class GISService
             $filters['ulp_id'] = $userUlpId;
         }
 
-        // 1. Fetch Independent Feeder Network Polyline Coordinates (Topology Sequence Ordered & ULP Authorized)
-        $rawPolyline = $this->assetRepository->getFeederPolylineCoords($penyulangId, $userUlpId);
-        $lineCoords  = [];
+        // 1. Fetch Independent Feeder Network Topology Segments (MultiLineString Edge Tree)
+        $segmentData = $this->assetRepository->getFeederNetworkSegments($penyulangId, $userUlpId);
+        $nodes       = $segmentData['nodes'] ?? [];
+        
         $minLat = 90.0; $maxLat = -90.0;
         $minLng = 180.0; $maxLng = -180.0;
         $validGisCount = 0;
 
-        foreach ($rawPolyline as $pNode) {
-            $pLat = (float)($pNode['latitude'] ?? 0);
-            $pLng = (float)($pNode['longitude'] ?? 0);
+        foreach ($nodes as $pNode) {
+            $pLng = (float)($pNode[0] ?? 0);
+            $pLat = (float)($pNode[1] ?? 0);
             if ($pLat != 0 && $pLng != 0) {
-                $lineCoords[] = [$pLng, $pLat];
                 $validGisCount++;
                 if ($pLat < $minLat) $minLat = $pLat;
                 if ($pLat > $maxLat) $maxLat = $pLat;
@@ -217,8 +217,8 @@ class GISService
             'transline' => [
                 'type' => 'Feature',
                 'geometry' => [
-                    'type'        => 'LineString',
-                    'coordinates' => $lineCoords
+                    'type'        => $segmentData['type'] ?? 'MultiLineString',
+                    'coordinates' => $segmentData['coordinates'] ?? []
                 ]
             ],
             'bbox' => $validGisCount > 0 ? [

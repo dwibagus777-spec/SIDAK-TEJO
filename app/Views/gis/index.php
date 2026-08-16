@@ -333,7 +333,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Render Markers & Network Lines
-    function renderFilteredLayers() {
+    function renderFilteredLayers(autoFitBounds) {
+        if (typeof autoFitBounds === 'undefined') autoFitBounds = false;
+
         if (markerCluster && typeof markerCluster.clearLayers === 'function') {
             markerCluster.clearLayers();
         }
@@ -341,17 +343,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!currentData) return;
 
-        // Render Feeder LineString
-        if (currentData.transline && currentData.transline.geometry && currentData.transline.geometry.coordinates) {
-            var rawCoords = currentData.transline.geometry.coordinates;
-            if (rawCoords.length > 1) {
-                var polyline = L.polyline(rawCoords.map(pt => [pt[1], pt[0]]), {
+        // Render Feeder LineString / MultiLineString Segments
+        if (currentData.transline && currentData.transline.geometry) {
+            var geom = currentData.transline.geometry;
+            if (geom.type === 'MultiLineString' && geom.coordinates) {
+                geom.coordinates.forEach(function (segment) {
+                    if (segment.length > 1) {
+                        var poly = L.polyline(segment.map(pt => [pt[1], pt[0]]), {
+                            color: '#0284c7',
+                            weight: 4,
+                            opacity: 0.85,
+                            lineJoin: 'round'
+                        });
+                        translinePolylineLayer.addLayer(poly);
+                    }
+                });
+            } else if (geom.type === 'LineString' && geom.coordinates && geom.coordinates.length > 1) {
+                var poly = L.polyline(geom.coordinates.map(pt => [pt[1], pt[0]]), {
                     color: '#0284c7',
                     weight: 4,
                     opacity: 0.85,
                     lineJoin: 'round'
                 });
-                translinePolylineLayer.addLayer(polyline);
+                translinePolylineLayer.addLayer(poly);
             }
         }
 
@@ -397,8 +411,8 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // Fit Bounds
-        if (currentData.bbox) {
+        // Fit Bounds ONLY on explicit initial user selection (prevents fitBounds zoomend infinite loop!)
+        if (autoFitBounds && currentData.bbox) {
             var b = currentData.bbox;
             map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [40, 40] });
         }
@@ -407,7 +421,9 @@ document.addEventListener("DOMContentLoaded", function () {
     var currentRequestId = 0;
 
     // 2. Fetch Network Data On-Demand
-    function loadGisNetworkOnDemand() {
+    function loadGisNetworkOnDemand(autoFitBounds) {
+        if (typeof autoFitBounds === 'undefined') autoFitBounds = true;
+
         var feederId = document.getElementById('feeder-select').value;
         if (!feederId) {
             alert('Silakan pilih Penyulang terlebih dahulu!');
@@ -416,7 +432,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var thisRequestId = ++currentRequestId;
         currentFeederId = feederId;
-        currentLOD = getLODCategory(map.getZoom()); // Set LOD BEFORE fetch to prevent double request from fitBounds!
+        currentLOD = getLODCategory(map.getZoom());
 
         var layersParam = getSelectedLayers().join(',');
         toggleLoading(true);
@@ -430,7 +446,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 toggleLoading(false);
                 if (res.status === 'success' && res.data) {
                     currentData = res.data;
-                    renderFilteredLayers();
+                    renderFilteredLayers(autoFitBounds);
 
                     var summaryBar = document.getElementById('gis-summary-bar');
                     summaryBar.style.display = 'block';
@@ -450,24 +466,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Action Triggers
     document.getElementById('btn-apply-gis').addEventListener('click', function () {
-        loadGisNetworkOnDemand();
+        loadGisNetworkOnDemand(true);
     });
 
     // Instant client-side Layer Toggle Event Handler
     document.querySelectorAll('.layer-toggle').forEach(el => {
         el.addEventListener('change', function () {
             if (currentData) {
-                renderFilteredLayers();
+                renderFilteredLayers(false);
             }
         });
     });
 
-    // Smart LOD Debounce Zoom Listener (ONLY triggers API request when crossing LOD boundary!)
+    // Smart LOD Debounce Zoom Listener (ONLY triggers API request when crossing LOD boundary, autoFitBounds = false!)
     map.on('zoomend', function () {
         if (currentFeederId > 0) {
             var newLOD = getLODCategory(map.getZoom());
             if (newLOD !== currentLOD) {
-                loadGisNetworkOnDemand();
+                loadGisNetworkOnDemand(false);
             }
         }
     });

@@ -398,11 +398,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 var popupHtml = `
                     <div class="p-1 font-sans">
-                        <strong class="text-primary font-monospace d-block">${props.kode_asset || '-'}</strong>
-                        <h6 class="fw-bold mb-1" style="font-size: 13px;">${props.nama_asset || '-'}</h6>
-                        <span class="badge bg-secondary mb-1">${jenis} • ${props.construction_type || 'TM'}</span>
-                        <div class="small text-muted mb-2">${props.lokasi || 'Lokasi PLN'}</div>
-                        <a href="<?= site_url('master-assets/detail') ?>/${props.id}" class="btn btn-xs btn-primary w-100 fw-bold rounded-pill">Detail Digital Twin &rarr;</a>
+                        <strong class="text-primary font-monospace d-block" style="font-size: 11px; color: #0284c7 !important;">${props.kode_asset || '-'}</strong>
+                        <h6 class="fw-bold mb-1 text-dark" style="font-size: 13px; color: #1e293b !important;">${props.nama_asset || '-'}</h6>
+                        <span class="badge rounded-pill px-2 py-1 mb-1 text-white fw-bold d-inline-block" style="background-color: #475569 !important; color: #ffffff !important; font-size: 10px;">${jenis} &bull; ${props.construction_type || 'TM'}</span>
+                        <div class="small text-secondary mb-2" style="font-size: 11px; color: #64748b !important;">${props.lokasi || 'Lokasi PLN'}</div>
+                        <a href="<?= site_url('master-assets/detail') ?>/${props.id}" class="btn btn-sm btn-primary w-100 fw-bold rounded-pill text-white py-1 shadow-sm" style="background-color: #00B5B8 !important; color: #ffffff !important; border: none; font-size: 11px;">Detail Digital Twin &rarr;</a>
                     </div>
                 `;
 

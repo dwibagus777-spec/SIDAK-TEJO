@@ -41,14 +41,14 @@
     <!-- KPI Stats Cards -->
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-primary text-white overflow-hidden position-relative">
+            <div class="card border rounded-4 overflow-hidden position-relative shadow-sm" style="background-color: #ffffff !important; border-color: #e2e8f0 !important;">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="text-white-50 small mb-1 font-weight-bold text-uppercase">Total Asset</p>
-                            <h2 class="fw-bold mb-0 text-white font-outfit"><?= number_format($stats['total']) ?></h2>
+                            <p class="small mb-1 font-weight-bold text-uppercase" style="color: #64748b !important; font-size: 0.75rem; letter-spacing: 0.05em;">Total Asset</p>
+                            <h2 class="fw-bold mb-0 font-outfit" style="color: #0f172a !important; font-size: 1.75rem;"><?= number_format($stats['total']) ?></h2>
                         </div>
-                        <div class="bg-white bg-opacity-20 rounded-circle p-3 text-white">
+                        <div class="rounded-circle p-3 d-flex align-items-center justify-content-center" style="background-color: #eff6ff !important; color: #2563eb !important; width: 48px; height: 48px;">
                             <i class="fas fa-cubes fs-4"></i>
                         </div>
                     </div>
@@ -56,14 +56,14 @@
             </div>
         </div>
         <div class="col-xl-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-success text-white overflow-hidden position-relative">
+            <div class="card border rounded-4 overflow-hidden position-relative shadow-sm" style="background-color: #ffffff !important; border-color: #e2e8f0 !important;">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="text-white-50 small mb-1 font-weight-bold text-uppercase">Status Normal</p>
-                            <h2 class="fw-bold mb-0 text-white font-outfit"><?= number_format($stats['normal']) ?></h2>
+                            <p class="small mb-1 font-weight-bold text-uppercase" style="color: #166534 !important; font-size: 0.75rem; letter-spacing: 0.05em;">Status Normal</p>
+                            <h2 class="fw-bold mb-0 font-outfit" style="color: #0f172a !important; font-size: 1.75rem;"><?= number_format($stats['normal']) ?></h2>
                         </div>
-                        <div class="bg-white bg-opacity-20 rounded-circle p-3 text-white">
+                        <div class="rounded-circle p-3 d-flex align-items-center justify-content-center" style="background-color: #f0fdf4 !important; color: #16a34a !important; width: 48px; height: 48px;">
                             <i class="fas fa-check-circle fs-4"></i>
                         </div>
                     </div>
@@ -71,14 +71,14 @@
             </div>
         </div>
         <div class="col-xl-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-warning text-dark overflow-hidden position-relative">
+            <div class="card border rounded-4 overflow-hidden position-relative shadow-sm" style="background-color: #ffffff !important; border-color: #e2e8f0 !important;">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="text-dark-50 small mb-1 font-weight-bold text-uppercase">Bermasalah</p>
-                            <h2 class="fw-bold mb-0 text-dark font-outfit"><?= number_format($stats['bermasalah']) ?></h2>
+                            <p class="small mb-1 font-weight-bold text-uppercase" style="color: #854d0e !important; font-size: 0.75rem; letter-spacing: 0.05em;">Bermasalah</p>
+                            <h2 class="fw-bold mb-0 font-outfit" style="color: #0f172a !important; font-size: 1.75rem;"><?= number_format($stats['bermasalah']) ?></h2>
                         </div>
-                        <div class="bg-dark bg-opacity-10 rounded-circle p-3 text-dark">
+                        <div class="rounded-circle p-3 d-flex align-items-center justify-content-center" style="background-color: #fefce8 !important; color: #ca8a04 !important; width: 48px; height: 48px;">
                             <i class="fas fa-triangle-exclamation fs-4"></i>
                         </div>
                     </div>
@@ -86,14 +86,14 @@
             </div>
         </div>
         <div class="col-xl-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-danger text-white overflow-hidden position-relative">
+            <div class="card border rounded-4 overflow-hidden position-relative shadow-sm" style="background-color: #ffffff !important; border-color: #e2e8f0 !important;">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="text-white-50 small mb-1 font-weight-bold text-uppercase">Critical</p>
-                            <h2 class="fw-bold mb-0 text-white font-outfit"><?= number_format($stats['critical']) ?></h2>
+                            <p class="small mb-1 font-weight-bold text-uppercase" style="color: #991b1b !important; font-size: 0.75rem; letter-spacing: 0.05em;">Critical</p>
+                            <h2 class="fw-bold mb-0 font-outfit" style="color: #0f172a !important; font-size: 1.75rem;"><?= number_format($stats['critical']) ?></h2>
                         </div>
-                        <div class="bg-white bg-opacity-20 rounded-circle p-3 text-white">
+                        <div class="rounded-circle p-3 d-flex align-items-center justify-content-center" style="background-color: #fef2f2 !important; color: #dc2626 !important; width: 48px; height: 48px;">
                             <i class="fas fa-radiation fs-4"></i>
                         </div>
                     </div>

@@ -63,21 +63,21 @@
             <div class="card-body">
                 <div class="row g-3 text-center mb-3">
                     <div class="col-md-4">
-                        <div class="p-3 bg-light rounded-3 border">
-                            <span class="text-muted small d-block font-weight-bold">TOTAL DATA DIPROSES</span>
-                            <h4 class="fw-bold text-dark mb-0"><?= number_format($summary['total']) ?></h4>
+                        <div class="p-3 rounded-3 border" style="background-color: #f8fafc !important; border-color: #cbd5e1 !important;">
+                            <span class="small d-block font-weight-bold" style="color: #475569 !important;">TOTAL DATA DIPROSES</span>
+                            <h4 class="fw-bold mb-0" style="color: #0f172a !important; font-size: 1.5rem;"><?= number_format($summary['total']) ?></h4>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25">
-                            <span class="text-success small d-block font-weight-bold">BERHASIL DIIMPORT</span>
-                            <h4 class="fw-bold text-success mb-0"><?= number_format($summary['inserted']) ?></h4>
+                        <div class="p-3 rounded-3 border" style="background-color: #f0fdf4 !important; border-color: #86efac !important;">
+                            <span class="small d-block font-weight-bold" style="color: #15803d !important;">BERHASIL DIIMPORT</span>
+                            <h4 class="fw-bold mb-0" style="color: #166534 !important; font-size: 1.5rem;"><?= number_format($summary['inserted']) ?></h4>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="p-3 bg-danger bg-opacity-10 rounded-3 border border-danger border-opacity-25">
-                            <span class="text-danger small d-block font-weight-bold">GAGAL / SKIPPED</span>
-                            <h4 class="fw-bold text-danger mb-0"><?= number_format($summary['failed']) ?></h4>
+                        <div class="p-3 rounded-3 border" style="background-color: #fef2f2 !important; border-color: #fca5a5 !important;">
+                            <span class="small d-block font-weight-bold" style="color: #b91c1c !important;">GAGAL / SKIPPED</span>
+                            <h4 class="fw-bold mb-0" style="color: #991b1b !important; font-size: 1.5rem;"><?= number_format($summary['failed']) ?></h4>
                         </div>
                     </div>
                 </div>

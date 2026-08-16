@@ -206,16 +206,24 @@ class DynamicAssetImportService
                 $sectionId = $sectionMap[$sKey] ?? null;
             }
 
-            // Construction Type lookup (Validates against Master Konstruksi)
+            // Construction Type lookup (Validates against Master Konstruksi & Compatibility Matrix)
             $constructionTypeId = null;
             if (!empty($konstruksiName)) {
-                $cKey  = strtolower($konstruksiName);
+                $cKey  = strtolower(trim($konstruksiName));
                 $cNorm = preg_replace('/[^a-z0-9]/', '', $cKey);
 
-                if (isset($constructionMap[$cKey])) {
-                    $constructionTypeId = $constructionMap[$cKey];
-                } elseif (isset($constructionMap[$cNorm])) {
-                    $constructionTypeId = $constructionMap[$cNorm];
+                $matchedObj = $constructionMap[$cKey] ?? ($constructionMap[$cNorm] ?? null);
+
+                if ($matchedObj !== null) {
+                    $cId   = $matchedObj['id'];
+                    $cCode = $matchedObj['code'];
+
+                    // Central Compatibility Matrix Check
+                    if (!\App\Services\AssetMatrixService::isCompatible($jenisAsset, $cCode)) {
+                        $errors[] = "Konstruksi '{$konstruksiName}' ({$cCode}) tidak cocok untuk Jenis Asset '{$jenisAsset}'.";
+                    } else {
+                        $constructionTypeId = $cId;
+                    }
                 } else {
                     $errors[] = "Konstruksi '{$konstruksiName}' tidak ditemukan di Master Konstruksi.";
                 }
@@ -437,17 +445,20 @@ class DynamicAssetImportService
             if ($db->tableExists('construction_types')) {
                 $items = $db->table('construction_types')->select('id, code, name')->get()->getResultArray();
                 foreach ($items as $item) {
-                    $itemId = (int)$item['id'];
+                    $obj = [
+                        'id'   => (int)$item['id'],
+                        'code' => (string)$item['code'],
+                    ];
                     if (!empty($item['code'])) {
                         $rawCode = strtolower(trim($item['code']));
-                        $map[$rawCode] = $itemId;
+                        $map[$rawCode] = $obj;
 
                         $normCode = preg_replace('/[^a-z0-9]/', '', $rawCode);
-                        $map[$normCode] = $itemId;
+                        $map[$normCode] = $obj;
                     }
                     if (!empty($item['name'])) {
                         $rawName = strtolower(trim($item['name']));
-                        $map[$rawName] = $itemId;
+                        $map[$rawName] = $obj;
                     }
                 }
 

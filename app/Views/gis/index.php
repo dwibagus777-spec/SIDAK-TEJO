@@ -4,7 +4,7 @@
 <?= $this->section('page_title') ?>GIS NETWORK — PETA JARINGAN DISTRIBUSI 20KV<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<!-- Leaflet, MarkerCluster CSS -->
+<!-- Leaflet & MarkerCluster CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -227,8 +227,10 @@
     </div>
 
 </div>
+<?= $this->endSection() ?>
 
-<!-- Leaflet & JS Plugins -->
+<?= $this->section('scripts') ?>
+<!-- Strict Order Dependency Injection: Leaflet Core JS followed by Leaflet MarkerCluster Plugin -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
@@ -251,11 +253,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    var markerCluster = L.markerClusterGroup({
-        chunkedLoading: true,
-        maxClusterRadius: 40,
-        disableClusteringAtZoom: 17
-    });
+    // Runtime Guard & Fallback for Leaflet.MarkerCluster Plugin
+    var markerCluster;
+    if (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function') {
+        markerCluster = L.markerClusterGroup({
+            chunkedLoading: true,
+            maxClusterRadius: 40,
+            disableClusteringAtZoom: 17
+        });
+    } else {
+        console.warn('[GIS Engine] Leaflet MarkerCluster plugin tidak berhasil dimuat. Fallback ke L.featureGroup()');
+        markerCluster = L.featureGroup();
+    }
     map.addLayer(markerCluster);
 
     var translinePolylineLayer = L.featureGroup().addTo(map);
@@ -299,7 +308,9 @@ document.addEventListener("DOMContentLoaded", function () {
         var thisUlpRequestId = ++currentUlpRequestId; // ULP Race Guard!
 
         toggleLoading(false);
-        markerCluster.clearLayers();
+        if (markerCluster && typeof markerCluster.clearLayers === 'function') {
+            markerCluster.clearLayers();
+        }
         translinePolylineLayer.clearLayers();
         document.getElementById('gis-summary-bar').style.display = 'none';
 
@@ -323,7 +334,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Render Markers & Network Lines
     function renderFilteredLayers() {
-        markerCluster.clearLayers();
+        if (markerCluster && typeof markerCluster.clearLayers === 'function') {
+            markerCluster.clearLayers();
+        }
         translinePolylineLayer.clearLayers();
 
         if (!currentData) return;

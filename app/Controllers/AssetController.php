@@ -91,7 +91,7 @@ class AssetController extends BaseController
             'assetTypes'        => $constructionService->getAssetTypes(),
             'constructionTypes' => $constructionService->getConstructionTypes(),
             'parentAssets'      => $this->repository->getFilteredAssets([], null),
-            'jenisList'         => ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'],
+            'jenisList'         => ['JTM', 'Gardu', 'Trafo', 'Kubikel', 'LBS', 'LBSM', 'Recloser', 'Sectionalizer', 'Section', 'Penyulang', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'],
             'generatedKode'     => $this->service->generateKodeAsset('Gardu'),
         ]);
     }
@@ -192,7 +192,7 @@ class AssetController extends BaseController
             'assetTypes'        => $constructionService->getAssetTypes(),
             'constructionTypes' => $constructionService->getConstructionTypes(),
             'parentAssets'      => $this->repository->getFilteredAssets([], null),
-            'jenisList'         => ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'],
+            'jenisList'         => ['JTM', 'Gardu', 'Trafo', 'Kubikel', 'LBS', 'LBSM', 'Recloser', 'Sectionalizer', 'Section', 'Penyulang', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'],
             'generatedKode'     => $asset['kode_asset'],
         ]);
     }

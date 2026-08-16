@@ -128,14 +128,23 @@ class GISService
             $filters['ulp_id'] = $userUlpId;
         }
 
-        // 1. Fetch Independent Feeder Network Polyline Coordinates (Topology Sequence Ordered)
-        $rawPolyline = $this->assetRepository->getFeederPolylineCoords($penyulangId);
+        // 1. Fetch Independent Feeder Network Polyline Coordinates (Topology Sequence Ordered & ULP Authorized)
+        $rawPolyline = $this->assetRepository->getFeederPolylineCoords($penyulangId, $userUlpId);
         $lineCoords  = [];
+        $minLat = 90.0; $maxLat = -90.0;
+        $minLng = 180.0; $maxLng = -180.0;
+        $validGisCount = 0;
+
         foreach ($rawPolyline as $pNode) {
             $pLat = (float)($pNode['latitude'] ?? 0);
             $pLng = (float)($pNode['longitude'] ?? 0);
             if ($pLat != 0 && $pLng != 0) {
                 $lineCoords[] = [$pLng, $pLat];
+                $validGisCount++;
+                if ($pLat < $minLat) $minLat = $pLat;
+                if ($pLat > $maxLat) $maxLat = $pLat;
+                if ($pLng < $minLng) $minLng = $pLng;
+                if ($pLng > $maxLng) $maxLng = $pLng;
             }
         }
 
@@ -151,21 +160,10 @@ class GISService
             'switch_count' => 0,
         ];
 
-        $minLat = 90.0; $maxLat = -90.0;
-        $minLng = 180.0; $maxLng = -180.0;
-        $validGisCount = 0;
-
         foreach ($assets as $asset) {
             $lat = (float)($asset['latitude'] ?? 0);
             $lng = (float)($asset['longitude'] ?? 0);
             if ($lat == 0 || $lng == 0) continue;
-
-            $validGisCount++;
-
-            if ($lat < $minLat) $minLat = $lat;
-            if ($lat > $maxLat) $maxLat = $lat;
-            if ($lng < $minLng) $minLng = $lng;
-            if ($lng > $maxLng) $maxLng = $lng;
 
             $jenis = strtoupper(trim((string)($asset['jenis_asset'] ?? 'JTM')));
             $constrName = $asset['construction_name'] ?? $jenis; // NEVER fallback to nama_asset!

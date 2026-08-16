@@ -124,9 +124,9 @@ class AssetRepository
 
     /**
      * Get Complete Feeder Topology Network Polyline Coordinates (Topology Sequence Ordered)
-     * Independent of Marker Layer Filters!
+     * Independent of Marker Layer Filters with ULP Scope Authorization!
      */
-    public function getFeederPolylineCoords(int $penyulangId): array
+    public function getFeederPolylineCoords(int $penyulangId, ?int $userUlpId = null): array
     {
         try {
             $db = \Config\Database::connect();
@@ -142,6 +142,10 @@ class AssetRepository
             $builder->where('deleted_at IS NULL');
             $builder->where('latitude !=', 0);
             $builder->where('longitude !=', 0);
+
+            if (!empty($userUlpId)) {
+                $builder->where('ulp_id', $userUlpId);
+            }
 
             if ($hasSeqCol) {
                 $builder->orderBy('sequence_no', 'ASC');
@@ -175,6 +179,35 @@ class AssetRepository
                 return [];
             }
 
+            // Build Strict Layer Filter Mapping BEFORE Zoom LOD Evaluation
+            $allowedJenisList = [];
+            $includeGtt = false;
+            $includeSwitchEquipment = false;
+
+            if (in_array('JTM', $layers)) {
+                $allowedJenisList[] = 'JTM';
+                $includeGtt = true;
+            }
+            if (in_array('GARDU', $layers)) {
+                $allowedJenisList[] = 'GARDU';
+                $includeGtt = true;
+            }
+            if (in_array('TRAFO', $layers)) {
+                $allowedJenisList[] = 'TRAFO';
+            }
+            if (in_array('KUBIKEL', $layers)) {
+                $allowedJenisList[] = 'KUBIKEL';
+            }
+            if (in_array('SWITCH', $layers)) {
+                $includeSwitchEquipment = true;
+                $allowedJenisList = array_merge($allowedJenisList, ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']);
+            }
+
+            // Patch 2: Empty Layer Guard (Evaluated BEFORE Zoom LOD Return!)
+            if (empty($allowedJenisList) && !$includeGtt && !$includeSwitchEquipment) {
+                return [];
+            }
+
             $hasSeqCol = $db->fieldExists('sequence_no', 'assets');
 
             $builder = $db->table('assets a');
@@ -203,35 +236,6 @@ class AssetRepository
                     $builder->orderBy('a.id', 'ASC');
                 }
                 return $builder->get()->getResultArray();
-            }
-
-            // Build Strict Layer Filter Mapping
-            $allowedJenisList = [];
-            $includeGtt = false;
-            $includeSwitchEquipment = false;
-
-            if (in_array('JTM', $layers)) {
-                $allowedJenisList[] = 'JTM';
-                $includeGtt = true;
-            }
-            if (in_array('GARDU', $layers)) {
-                $allowedJenisList[] = 'GARDU';
-                $includeGtt = true;
-            }
-            if (in_array('TRAFO', $layers)) {
-                $allowedJenisList[] = 'TRAFO';
-            }
-            if (in_array('KUBIKEL', $layers)) {
-                $allowedJenisList[] = 'KUBIKEL';
-            }
-            if (in_array('SWITCH', $layers)) {
-                $includeSwitchEquipment = true;
-                $allowedJenisList = array_merge($allowedJenisList, ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']);
-            }
-
-            // Hardening 1: Empty Layer Guard — If all layers unchecked, return [] immediately
-            if (empty($allowedJenisList) && !$includeGtt && !$includeSwitchEquipment) {
-                return [];
             }
 
             // 2. Zoom 13 - 16: SQL-level Equipment Filter (Strictly respecting active layers!)

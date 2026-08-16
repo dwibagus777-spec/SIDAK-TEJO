@@ -264,6 +264,8 @@ document.addEventListener("DOMContentLoaded", function () {
     var currentFeederId = 0;
     var currentData = null;
     var currentLOD = null;
+    var currentRequestId = 0;
+    var currentUlpRequestId = 0;
 
     function toggleLoading(show) {
         document.getElementById('gis-loading-overlay').style.display = show ? 'flex' : 'none';
@@ -284,7 +286,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return 'detail';
     }
 
-    // 1. Cascading ULP -> Penyulang (With Complete State Reset!)
+    // 1. Cascading ULP -> Penyulang (With ULP Race Guard & Complete State Reset!)
     document.getElementById('ulp-select').addEventListener('change', function () {
         var selectedUlpId = this.value;
         var feederSelect = document.getElementById('feeder-select');
@@ -293,6 +295,10 @@ document.addEventListener("DOMContentLoaded", function () {
         currentFeederId = 0;
         currentData = null;
         currentLOD = null;
+        currentRequestId++; // Invalidate stale network requests!
+        var thisUlpRequestId = ++currentUlpRequestId; // ULP Race Guard!
+
+        toggleLoading(false);
         markerCluster.clearLayers();
         translinePolylineLayer.clearLayers();
         document.getElementById('gis-summary-bar').style.display = 'none';
@@ -303,6 +309,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch(`<?= site_url('gis/api-penyulangs') ?>?ulp_id=${selectedUlpId}`)
             .then(res => res.json())
             .then(res => {
+                if (thisUlpRequestId !== currentUlpRequestId) return; // Ignore stale ULP response!
                 if (res.status === 'success' && res.penyulangs) {
                     res.penyulangs.forEach(p => {
                         var opt = document.createElement('option');
@@ -343,9 +350,11 @@ document.addEventListener("DOMContentLoaded", function () {
             var props = f.properties || {};
             var geom  = f.geometry || {};
             var jenis = (props.jenis_asset || '').toUpperCase();
+            var constr = (props.construction_type || '').toUpperCase();
             var spec  = props.marker_spec || {};
 
-            var isMatched = activeLayers.some(l => jenis.includes(l) || (l === 'SWITCH' && (jenis.includes('LBS') || jenis.includes('RECLOSER') || jenis.includes('SECTIONALIZER'))));
+            var isSwitchType = ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER'].includes(jenis);
+            var isMatched = activeLayers.includes(jenis) || (activeLayers.includes('SWITCH') && (isSwitchType || constr.includes('PMS') || constr.includes('PMT')));
             if (!isMatched && activeLayers.length > 0) return;
 
             if (geom.type === 'Point' && geom.coordinates) {

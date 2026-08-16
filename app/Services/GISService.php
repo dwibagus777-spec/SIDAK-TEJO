@@ -128,7 +128,7 @@ class GISService
             $filters['ulp_id'] = $userUlpId;
         }
 
-        $assets = $this->assetRepository->getFilteredAssets(['penyulang_id' => $penyulangId]);
+        $assets = $this->assetRepository->getGisNetworkAssets($filters, $userUlpId);
 
         $lineCoords = [];
         $features   = [];

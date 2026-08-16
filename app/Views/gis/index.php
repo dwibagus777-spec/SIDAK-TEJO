@@ -426,10 +426,22 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Dynamic Zoom Level of Detail Listener
+    function getLODCategory(zoom) {
+        if (zoom < 13) return 'overview';
+        if (zoom < 17) return 'equipment';
+        return 'detail';
+    }
+
+    var currentLOD = null;
+
+    // Dynamic Zoom Level of Detail Listener (ONLY triggers network load when crossing LOD boundary!)
     map.on('zoomend', function () {
         if (currentFeederId > 0) {
-            loadGisNetworkOnDemand();
+            var newLOD = getLODCategory(map.getZoom());
+            if (newLOD !== currentLOD) {
+                currentLOD = newLOD;
+                loadGisNetworkOnDemand();
+            }
         }
     });
 

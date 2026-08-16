@@ -421,16 +421,32 @@ class DynamicAssetImportService
             if ($db->tableExists('construction_types')) {
                 $items = $db->table('construction_types')->select('id, code, name')->get()->getResultArray();
                 foreach ($items as $item) {
+                    $itemId = (int)$item['id'];
                     if (!empty($item['code'])) {
                         $rawCode = strtolower(trim($item['code']));
-                        $map[$rawCode] = (int)$item['id'];
+                        $map[$rawCode] = $itemId;
 
                         $normCode = preg_replace('/[^a-z0-9]/', '', $rawCode);
-                        $map[$normCode] = (int)$item['id'];
+                        $map[$normCode] = $itemId;
                     }
                     if (!empty($item['name'])) {
                         $rawName = strtolower(trim($item['name']));
-                        $map[$rawName] = (int)$item['id'];
+                        $map[$rawName] = $itemId;
+                    }
+                }
+
+                // Legacy spreadsheet alias mapping (e.g. TMVITC -> TMMVTIC, GTT2/GT2 -> TM8)
+                $aliasMap = [
+                    'tmvitc'   => 'tmmvtic',
+                    'tm-vitc'  => 'tmmvtic',
+                    'mvtic'    => 'tmmvtic',
+                    'gt2'      => 'tm8',
+                    'gtt2'     => 'tm8',
+                ];
+
+                foreach ($aliasMap as $alias => $targetCode) {
+                    if (isset($map[$targetCode])) {
+                        $map[$alias] = $map[$targetCode];
                     }
                 }
             }

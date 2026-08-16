@@ -53,7 +53,7 @@
                             <i class="fas fa-cubes text-primary me-1"></i> Jenis Asset PLN <span class="text-danger">*</span>
                         </label>
                         <?php 
-                        $jenisList = ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'Tiang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'];
+                        $jenisList = ['Gardu', 'Trafo', 'Kubikel', 'LBS', 'Recloser', 'Section', 'Penyulang', 'JTM', 'JTR', 'PHB', 'APP', 'Meter', 'Grounding'];
                         ?>
                         <select class="form-select fw-bold text-primary" id="template_jenis_asset" name="jenis_asset" required>
                             <?php foreach ($jenisList as $j): ?>

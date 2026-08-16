@@ -235,11 +235,9 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    // Default Center (Sidoarjo Kota)
     var defaultLat = -7.4523;
     var defaultLng = 112.7161;
 
-    // Initialize Map
     var map = L.map('gisMap', {
         center: [defaultLat, defaultLng],
         zoom: 14,
@@ -265,12 +263,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var currentFeederId = 0;
     var currentData = null;
+    var currentLOD = null;
 
     function toggleLoading(show) {
         document.getElementById('gis-loading-overlay').style.display = show ? 'flex' : 'none';
     }
 
-    // Get Active Layers Array
     function getSelectedLayers() {
         var layers = [];
         if (document.getElementById('layer-jtm').checked) layers.push('JTM');
@@ -280,12 +278,26 @@ document.addEventListener("DOMContentLoaded", function () {
         return layers;
     }
 
-    // 1. Cascading ULP -> Penyulang (AJAX Options)
+    function getLODCategory(zoom) {
+        if (zoom < 13) return 'overview';
+        if (zoom < 17) return 'equipment';
+        return 'detail';
+    }
+
+    // 1. Cascading ULP -> Penyulang (With Complete State Reset!)
     document.getElementById('ulp-select').addEventListener('change', function () {
         var selectedUlpId = this.value;
         var feederSelect = document.getElementById('feeder-select');
-        feederSelect.innerHTML = '<option value="">-- Pilih Penyulang --</option>';
 
+        // State Reset on ULP Change
+        currentFeederId = 0;
+        currentData = null;
+        currentLOD = null;
+        markerCluster.clearLayers();
+        translinePolylineLayer.clearLayers();
+        document.getElementById('gis-summary-bar').style.display = 'none';
+
+        feederSelect.innerHTML = '<option value="">-- Pilih Penyulang --</option>';
         if (!selectedUlpId) return;
 
         fetch(`<?= site_url('gis/api-penyulangs') ?>?ulp_id=${selectedUlpId}`)
@@ -302,19 +314,18 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     });
 
-    // Render Markers & Polyline LineString into Map Canvas
+    // Render Markers & Network Lines
     function renderFilteredLayers() {
         markerCluster.clearLayers();
         translinePolylineLayer.clearLayers();
 
         if (!currentData) return;
 
-        // Render Feeder Transline Polyline
+        // Render Feeder LineString
         if (currentData.transline && currentData.transline.geometry && currentData.transline.geometry.coordinates) {
             var rawCoords = currentData.transline.geometry.coordinates;
             if (rawCoords.length > 1) {
-                var leafletCoords = rawCoords.map(pt => [pt[1], pt[0]]);
-                var polyline = L.polyline(leafletCoords, {
+                var polyline = L.polyline(rawCoords.map(pt => [pt[1], pt[0]]), {
                     color: '#0284c7',
                     weight: 4,
                     opacity: 0.85,
@@ -324,7 +335,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Render Feature Point Markers
+        // Render Markers
         var features = currentData.features || [];
         var activeLayers = getSelectedLayers();
 
@@ -334,19 +345,12 @@ document.addEventListener("DOMContentLoaded", function () {
             var jenis = (props.jenis_asset || '').toUpperCase();
             var spec  = props.marker_spec || {};
 
-            // Client-side Layer Toggle Filter Check
             var isMatched = activeLayers.some(l => jenis.includes(l) || (l === 'SWITCH' && (jenis.includes('LBS') || jenis.includes('RECLOSER') || jenis.includes('SECTIONALIZER'))));
             if (!isMatched && activeLayers.length > 0) return;
 
             if (geom.type === 'Point' && geom.coordinates) {
-                var lat = geom.coordinates[1];
-                var lng = geom.coordinates[0];
-
-                var bgColor = spec.color || '#2563eb';
-                var iconClass = spec.icon_class || 'fa-square-poll-vertical';
-
-                var iconHtml = `<div class="gis-marker-badge" style="background-color: ${bgColor}; width: 28px; height: 28px;">
-                                    <i class="fas ${iconClass}"></i>
+                var iconHtml = `<div class="gis-marker-badge" style="background-color: ${spec.color || '#2563eb'}; width: 28px; height: 28px;">
+                                    <i class="fas ${spec.icon_class || 'fa-square-poll-vertical'}"></i>
                                 </div>`;
 
                 var customIcon = L.divIcon({
@@ -366,7 +370,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                 `;
 
-                var marker = L.marker([lat, lng], { icon: customIcon }).bindPopup(popupHtml);
+                var marker = L.marker([geom.coordinates[1], geom.coordinates[0]], { icon: customIcon }).bindPopup(popupHtml);
                 markerCluster.addLayer(marker);
             }
         });
@@ -378,7 +382,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // 2. Fetch Network Data On-Demand (Triggered ONLY on [TAMPILKAN PETA JARINGAN] Click!)
+    // 2. Fetch Network Data On-Demand
     function loadGisNetworkOnDemand() {
         var feederId = document.getElementById('feeder-select').value;
         if (!feederId) {
@@ -387,12 +391,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         currentFeederId = feederId;
-        var currentZoom = map.getZoom();
-        var layersParam = getSelectedLayers().join(',');
+        currentLOD = getLODCategory(map.getZoom()); // Set LOD BEFORE fetch to prevent double request from fitBounds!
 
+        var layersParam = getSelectedLayers().join(',');
         toggleLoading(true);
 
-        fetch(`<?= site_url('gis/api-network') ?>?penyulang_id=${feederId}&zoom=${currentZoom}&layers=${layersParam}`)
+        fetch(`<?= site_url('gis/api-network') ?>?penyulang_id=${feederId}&zoom=${map.getZoom()}&layers=${layersParam}`)
             .then(res => res.json())
             .then(res => {
                 toggleLoading(false);
@@ -419,27 +423,20 @@ document.addEventListener("DOMContentLoaded", function () {
         loadGisNetworkOnDemand();
     });
 
-    // Re-filter layers dynamically when layer toggles change
+    // Instant client-side Layer Toggle Event Handler
     document.querySelectorAll('.layer-toggle').forEach(el => {
         el.addEventListener('change', function () {
-            renderFilteredLayers();
+            if (currentData) {
+                renderFilteredLayers();
+            }
         });
     });
 
-    function getLODCategory(zoom) {
-        if (zoom < 13) return 'overview';
-        if (zoom < 17) return 'equipment';
-        return 'detail';
-    }
-
-    var currentLOD = null;
-
-    // Dynamic Zoom Level of Detail Listener (ONLY triggers network load when crossing LOD boundary!)
+    // Smart LOD Debounce Zoom Listener (ONLY triggers API request when crossing LOD boundary!)
     map.on('zoomend', function () {
         if (currentFeederId > 0) {
             var newLOD = getLODCategory(map.getZoom());
             if (newLOD !== currentLOD) {
-                currentLOD = newLOD;
                 loadGisNetworkOnDemand();
             }
         }

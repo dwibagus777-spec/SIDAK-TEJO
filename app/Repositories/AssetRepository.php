@@ -31,8 +31,6 @@ class AssetRepository
 
             $query = $builder->get();
             if ($query === false || !($query instanceof BaseResult)) {
-                $error = $db->error();
-                log_message('error', '[AssetRepository::find] Query gagal | Code: ' . ($error['code'] ?? 'N/A') . ' | Message: ' . ($error['message'] ?? 'Unknown') . ' | SQL: ' . (string)$db->getLastQuery());
                 return null;
             }
 
@@ -60,8 +58,6 @@ class AssetRepository
 
             $query = $builder->get();
             if ($query === false || !($query instanceof BaseResult)) {
-                $error = $db->error();
-                log_message('error', '[AssetRepository::findByKode] Query gagal | Code: ' . ($error['code'] ?? 'N/A') . ' | Message: ' . ($error['message'] ?? 'Unknown') . ' | SQL: ' . (string)$db->getLastQuery());
                 return null;
             }
 
@@ -100,7 +96,7 @@ class AssetRepository
                 $builder->where('a.section_id', (int)$filters['section_id']);
             }
             if (!empty($filters['jenis_asset'])) {
-                $builder->where('a.jenis_asset', $filters['jenis_asset']);
+                $builder->where('a.jenis_asset', strtoupper($filters['jenis_asset']));
             }
             if (!empty($filters['status'])) {
                 $builder->where('a.status', strtoupper($filters['status']));
@@ -117,15 +113,9 @@ class AssetRepository
             }
 
             $builder->orderBy('a.id', 'DESC');
-
             $query = $builder->get();
-            if ($query === false || !($query instanceof BaseResult)) {
-                $error = $db->error();
-                log_message('error', '[AssetRepository::getFilteredAssets] Query gagal | Code: ' . ($error['code'] ?? 'N/A') . ' | Message: ' . ($error['message'] ?? 'Unknown') . ' | SQL: ' . (string)$db->getLastQuery());
-                return [];
-            }
 
-            return $query->getResultArray();
+            return ($query && $query instanceof BaseResult) ? $query->getResultArray() : [];
         } catch (\Throwable $e) {
             log_message('error', '[AssetRepository::getFilteredAssets] Exception: ' . $e->getMessage());
             return [];
@@ -133,7 +123,7 @@ class AssetRepository
     }
 
     /**
-     * Optimized SQL-level GIS query engine supporting SQL-level LOD and Layer filtering
+     * Optimized SQL-level GIS query engine with Strict Layer Mapping & Topology Ordering
      */
     public function getGisNetworkAssets(array $filters = [], ?int $userUlpId = null): array
     {
@@ -151,8 +141,14 @@ class AssetRepository
                 return [];
             }
 
+            $hasSeqCol = $db->fieldExists('sequence_no', 'assets');
+
             $builder = $db->table('assets a');
-            $builder->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.latitude, a.longitude, a.lokasi, ct.name as construction_name, ct.code as construction_code');
+            $selectFields = 'a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.latitude, a.longitude, a.lokasi, ct.name as construction_name, ct.code as construction_code';
+            if ($hasSeqCol) {
+                $selectFields .= ', a.sequence_no';
+            }
+            $builder->select($selectFields);
             $builder->join('construction_types ct', 'a.construction_type_id = ct.id', 'left');
             $builder->where('a.penyulang_id', $penyulangId);
             $builder->where('a.deleted_at IS NULL');
@@ -165,24 +161,41 @@ class AssetRepository
 
             // 1. Zoom < 13: SQL returns ONLY lat/lng for Polyline (0 point markers processed)
             if ($zoom < 13) {
-                $builder->select('a.latitude, a.longitude, a.jenis_asset');
+                if ($hasSeqCol) {
+                    $builder->select('a.latitude, a.longitude, a.jenis_asset, a.sequence_no');
+                    $builder->orderBy('a.sequence_no', 'ASC');
+                } else {
+                    $builder->select('a.latitude, a.longitude, a.jenis_asset');
+                    $builder->orderBy('a.id', 'ASC');
+                }
                 return $builder->get()->getResultArray();
             }
 
-            // Build Layer Filter Mapping
+            // Build Strict Layer Filter Mapping
             $allowedJenisList = [];
-            $hasSwitch = false;
+            $includeGtt = false;
+            $includeSwitchEquipment = false;
 
-            if (in_array('JTM', $layers)) $allowedJenisList[] = 'JTM';
-            if (in_array('GARDU', $layers)) $allowedJenisList[] = 'GARDU';
-            if (in_array('TRAFO', $layers)) $allowedJenisList[] = 'TRAFO';
-            if (in_array('KUBIKEL', $layers)) $allowedJenisList[] = 'KUBIKEL';
+            if (in_array('JTM', $layers)) {
+                $allowedJenisList[] = 'JTM';
+                $includeGtt = true;
+            }
+            if (in_array('GARDU', $layers)) {
+                $allowedJenisList[] = 'GARDU';
+                $includeGtt = true;
+            }
+            if (in_array('TRAFO', $layers)) {
+                $allowedJenisList[] = 'TRAFO';
+            }
+            if (in_array('KUBIKEL', $layers)) {
+                $allowedJenisList[] = 'KUBIKEL';
+            }
             if (in_array('SWITCH', $layers)) {
-                $hasSwitch = true;
+                $includeSwitchEquipment = true;
                 $allowedJenisList = array_merge($allowedJenisList, ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']);
             }
 
-            // 2. Zoom 13 - 16: SQL-level Equipment Filter (EXCLUDE individual JTM poles at SQL level!)
+            // 2. Zoom 13 - 16: SQL-level Equipment Filter (Strictly respecting active layers!)
             if ($zoom >= 13 && $zoom <= 16) {
                 $equipTypes = ['GARDU', 'TRAFO', 'KUBIKEL', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER'];
                 if (!empty($allowedJenisList)) {
@@ -193,27 +206,32 @@ class AssetRepository
                 if (!empty($equipTypes)) {
                     $builder->whereIn('a.jenis_asset', $equipTypes);
                 }
-                // Include GTT/PMS/PMT construction equipment poles
-                $builder->orLike('ct.code', 'GTT')
-                        ->orLike('ct.code', 'PMS')
-                        ->orLike('ct.code', 'PMT');
+                if ($includeGtt) {
+                    $builder->orLike('ct.code', 'GTT');
+                }
+                if ($includeSwitchEquipment) {
+                    $builder->orLike('ct.code', 'PMS')->orLike('ct.code', 'PMT');
+                }
                 $builder->groupEnd();
             } else {
-                // Zoom >= 17: Apply standard layer filters at SQL level
+                // Zoom >= 17: Apply strict layer filters at SQL level
                 if (!empty($allowedJenisList)) {
                     $builder->groupStart();
                     $builder->whereIn('a.jenis_asset', $allowedJenisList);
-                    if ($hasSwitch) {
-                        $builder->orLike('ct.code', 'PMS')
-                                ->orLike('ct.code', 'PMT');
+                    if ($includeSwitchEquipment) {
+                        $builder->orLike('ct.code', 'PMS')->orLike('ct.code', 'PMT');
                     }
                     $builder->groupEnd();
                 }
             }
 
-            $builder->orderBy('a.id', 'ASC');
-            $query = $builder->get();
+            if ($hasSeqCol) {
+                $builder->orderBy('a.sequence_no', 'ASC');
+            } else {
+                $builder->orderBy('a.id', 'ASC');
+            }
 
+            $query = $builder->get();
             return ($query && $query instanceof BaseResult) ? $query->getResultArray() : [];
         } catch (\Throwable $e) {
             log_message('error', '[AssetRepository::getGisNetworkAssets] Exception: ' . $e->getMessage());
@@ -230,35 +248,15 @@ class AssetRepository
             }
             $builder = $db->table('assets');
             $builder->where('deleted_at IS NULL');
-
             if (!empty($userUlpId)) {
                 $builder->where('ulp_id', $userUlpId);
             }
 
-            $query = $builder->get();
-            if ($query === false || !($query instanceof BaseResult)) {
-                $error = $db->error();
-                log_message('error', '[AssetRepository::getAssetStats] Query gagal | Code: ' . ($error['code'] ?? 'N/A') . ' | Message: ' . ($error['message'] ?? 'Unknown') . ' | SQL: ' . (string)$db->getLastQuery());
-                return ['total' => 0, 'normal' => 0, 'bermasalah' => 0, 'critical' => 0];
-            }
+            $total = $builder->countAllResults(false);
 
-            $all = $query->getResultArray();
-
-            $total = count($all);
-            $normal = 0;
-            $bermasalah = 0;
-            $critical = 0;
-
-            foreach ($all as $row) {
-                $st = strtoupper($row['status'] ?? 'NORMAL');
-                if ($st === 'BERMASALAH') {
-                    $bermasalah++;
-                } elseif ($st === 'CRITICAL') {
-                    $critical++;
-                } else {
-                    $normal++;
-                }
-            }
+            $normal = (clone $builder)->where('status', 'NORMAL')->countAllResults();
+            $bermasalah = (clone $builder)->where('status', 'BERMASALAH')->countAllResults();
+            $critical = (clone $builder)->where('status', 'CRITICAL')->countAllResults();
 
             return [
                 'total'      => $total,
@@ -270,20 +268,5 @@ class AssetRepository
             log_message('error', '[AssetRepository::getAssetStats] Exception: ' . $e->getMessage());
             return ['total' => 0, 'normal' => 0, 'bermasalah' => 0, 'critical' => 0];
         }
-    }
-
-    public function insert(array $data): int
-    {
-        return (int)$this->model->insert($data, true);
-    }
-
-    public function update(int $id, array $data): bool
-    {
-        return (bool)$this->model->update($id, $data);
-    }
-
-    public function delete(int $id): bool
-    {
-        return (bool)$this->model->delete($id);
     }
 }

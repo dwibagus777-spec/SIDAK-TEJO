@@ -111,9 +111,66 @@ class GisController extends BaseController
         ]);
     }
 
-    public function apiData(): ResponseInterface
+    public function apiGenerateCandidates(): ResponseInterface
     {
-        return $this->apiNetwork();
+        $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
+        if ($penyulangId <= 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'message' => 'Penyulang wajib dipilih.'
+            ]);
+        }
+
+        $userUlpId = session()->get('ulp_id');
+        $res = $this->topologyService->generateFeederTopologyCandidates($penyulangId, $userUlpId);
+
+        return $this->response->setJSON($res);
+    }
+
+    public function apiConnectTopology(): ResponseInterface
+    {
+        $parentId = (int)($this->request->getPost('parent_id') ?? $this->request->getVar('parent_id') ?? 0);
+        $childId  = (int)($this->request->getPost('child_id') ?? $this->request->getVar('child_id') ?? 0);
+
+        if ($parentId <= 0 || $childId <= 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'message' => 'Parent ID dan Child ID wajib diisi.'
+            ]);
+        }
+
+        if ($this->topologyService->wouldCreateCycle($parentId, $childId)) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'Penambahan relasi ditolak: Terdeteksi circular topology (loop tertutup)!'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $db->table('assets')->where('id', $childId)->update(['parent_asset_id' => $parentId]);
+
+        $relModel = new \App\Models\AssetRelationshipModel();
+        $existing = $relModel->where('parent_asset_id', $parentId)->where('child_asset_id', $childId)->first();
+
+        $data = [
+            'parent_asset_id' => $parentId,
+            'child_asset_id'  => $childId,
+            'source'          => 'MANUAL',
+            'status'          => 'VERIFIED',
+            'verified_at'     => date('Y-m-d H:i:s'),
+            'is_active'       => 1,
+        ];
+
+        if ($existing) {
+            $relModel->update($existing['id'], $data);
+        } else {
+            $relModel->insert($data);
+        }
+
+        return $this->response->setJSON([
+            'status'  => 'success',
+            'message' => "Relasi topologi berhasil divalidasi & diverifikasi ($parentId -> $childId)."
+        ]);
     }
 
     public function geoJson(): ResponseInterface

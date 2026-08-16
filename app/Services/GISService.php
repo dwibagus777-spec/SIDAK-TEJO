@@ -42,18 +42,39 @@ class GISService
         $type  = strtoupper((string)$constructionType);
         $combined = $jenis . ' ' . $type;
 
-        if (str_contains($combined, 'TRAFO')) {
+        if (str_contains($combined, 'PMS') || str_contains($combined, 'PEMISAH')) {
             return [
-                'shape'      => 'trafo',
-                'icon_class' => 'fas fa-bolt',
-                'label'      => 'TRAFO'
+                'shape'      => 'pms',
+                'icon_class' => 'fas fa-toggle-off',
+                'label'      => 'PMS (PEMISAH)'
+            ];
+        }
+        if (str_contains($combined, 'PMT') || str_contains($combined, 'PEMUTUS')) {
+            return [
+                'shape'      => 'pmt',
+                'icon_class' => 'fas fa-toggle-on',
+                'label'      => 'PMT (PEMUTUS)'
             ];
         }
         if (str_contains($combined, 'GTT') || str_contains($combined, 'GARDU TRAFO')) {
             return [
                 'shape'      => 'gtt',
                 'icon_class' => 'fas fa-charging-station',
-                'label'      => 'GTT'
+                'label'      => 'GTT (GARDU TRAFO TIANG)'
+            ];
+        }
+        if (str_contains($combined, 'TMTP') || str_contains($combined, 'PORTAL')) {
+            return [
+                'shape'      => 'tmtp',
+                'icon_class' => 'fas fa-archway',
+                'label'      => 'TMTP (PORTAL)'
+            ];
+        }
+        if (str_contains($combined, 'TRAFO')) {
+            return [
+                'shape'      => 'trafo',
+                'icon_class' => 'fas fa-bolt',
+                'label'      => 'TRAFO'
             ];
         }
         if (str_contains($combined, 'GARDU') || str_contains($combined, 'GDG')) {

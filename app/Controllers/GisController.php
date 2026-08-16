@@ -26,8 +26,17 @@ class GisController extends BaseController
         $penyulangs = [];
         if ($db->tableExists('penyulang')) {
             $penyulangs = $db->table('penyulang p')
-                ->select('p.id, p.kode_penyulang, p.nama_penyulang, u.nama_ulp')
+                ->select('p.id, p.kode_penyulang, p.nama_penyulang, p.ulp_id, u.nama_ulp')
                 ->join('ulps u', 'p.ulp_id = u.id', 'left')
+                ->get()
+                ->getResultArray();
+        }
+
+        $ulps = [];
+        if ($db->tableExists('ulps')) {
+            $ulps = $db->table('ulps')
+                ->select('id, kode_ulp, nama_ulp')
+                ->where('status', 'AKTIF')
                 ->get()
                 ->getResultArray();
         }
@@ -36,6 +45,7 @@ class GisController extends BaseController
         $selectedPlanningId  = (int)($this->request->getGet('planning_id') ?? 0);
 
         return view('gis/index', [
+            'ulps'                => $ulps,
             'penyulangs'          => $penyulangs,
             'selectedPenyulangId' => $selectedPenyulangId,
             'selectedPlanningId'  => $selectedPlanningId,

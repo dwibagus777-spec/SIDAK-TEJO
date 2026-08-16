@@ -213,16 +213,31 @@
     <!-- GIS Master Wrapper -->
     <div id="gis-master-wrapper">
 
-        <!-- Floating Left Search, Filters & Layers Panel -->
-        <div class="gis-panel-left d-none d-md-block">
-            <h6 class="fw-bold text-dark mb-2"><i class="fas fa-network-wired text-primary me-1"></i> Pilih Feeder / Penyulang</h6>
+        <!-- Left Search, Cascading Filters & Layers Panel -->
+        <div class="gis-panel-left d-block">
+            <h6 class="fw-bold text-dark mb-2"><i class="fas fa-network-wired text-primary me-1"></i> Filter Jaringan GIS</h6>
             
             <div class="mb-2">
+                <label class="small text-muted font-weight-bold d-block mb-1" style="font-size: 11px;">1. Pilih ULP:</label>
+                <select id="ulp-select" class="form-select form-select-sm fw-bold text-dark border-secondary">
+                    <option value="">-- Semua ULP --</option>
+                    <?php if (!empty($ulps)): ?>
+                        <?php foreach ($ulps as $u): ?>
+                            <option value="<?= $u['id'] ?>">
+                                <?= esc($u['nama_ulp']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            </div>
+
+            <div class="mb-2">
+                <label class="small text-muted font-weight-bold d-block mb-1" style="font-size: 11px;">2. Pilih Penyulang / Feeder:</label>
                 <select id="feeder-select" class="form-select form-select-sm fw-bold text-primary border-primary">
                     <option value="">-- Pilih Penyulang (GI -> Ujung) --</option>
                     <?php if (!empty($penyulangs)): ?>
                         <?php foreach ($penyulangs as $p): ?>
-                            <option value="<?= $p['id'] ?>" <?= (isset($selectedPenyulangId) && (int)$selectedPenyulangId === (int)$p['id']) ? 'selected' : '' ?>>
+                            <option value="<?= $p['id'] ?>" data-ulp-id="<?= $p['ulp_id'] ?? '' ?>" <?= (isset($selectedPenyulangId) && (int)$selectedPenyulangId === (int)$p['id']) ? 'selected' : '' ?>>
                                 <?= esc($p['nama_penyulang']) ?> (<?= esc($p['nama_ulp'] ?: 'ULP') ?>)
                             </option>
                         <?php endforeach; ?>
@@ -557,6 +572,27 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('bs-close-btn').addEventListener('click', function() {
         document.getElementById('gis-bottom-sheet').style.display = 'none';
     });
+
+    // Cascading ULP -> Penyulang Filter
+    var ulpSelectEl = document.getElementById('ulp-select');
+    if (ulpSelectEl) {
+        ulpSelectEl.addEventListener('change', function() {
+            var selectedUlpId = this.value;
+            var feederSelect = document.getElementById('feeder-select');
+            var options = feederSelect.querySelectorAll('option');
+
+            options.forEach(function(opt) {
+                var optUlpId = opt.getAttribute('data-ulp-id');
+                if (!selectedUlpId || !optUlpId || optUlpId == selectedUlpId || opt.value === '') {
+                    opt.style.display = 'block';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+
+            feederSelect.value = '';
+        });
+    }
 
     document.getElementById('feeder-select').addEventListener('change', function(e) {
         var feederId = e.target.value;

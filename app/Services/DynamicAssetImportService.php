@@ -63,9 +63,10 @@ class DynamicAssetImportService
     {
         $db = \Config\Database::connect();
 
-        $ulpMap       = $this->getUlpLookupMap();
-        $penyulangMap = $this->getPenyulangLookupMap();
-        $sectionMap   = $this->getSectionLookupMap();
+        $ulpMap          = $this->getUlpLookupMap();
+        $penyulangMap    = $this->getPenyulangLookupMap();
+        $sectionMap      = $this->getSectionLookupMap();
+        $constructionMap = $this->getConstructionTypeLookupMap();
 
         // Parse header row 1 to map column letter -> field key
         $headerRow = $rows[1] ?? [];
@@ -83,6 +84,8 @@ class DynamicAssetImportService
                 $columnMap['nama_asset'] = $colLetter;
             } elseif (str_contains($h, 'penyulang')) {
                 $columnMap['penyulang'] = $colLetter;
+            } elseif (str_contains($h, 'konstruksi')) {
+                $columnMap['konstruksi'] = $colLetter;
             } elseif (str_contains($h, 'merk')) {
                 $columnMap['merk'] = $colLetter;
             } elseif (str_contains($h, 'tipe') || str_contains($h, 'material')) {
@@ -126,6 +129,7 @@ class DynamicAssetImportService
             $jenisAsset     = trim((string)($row[$columnMap['jenis_asset'] ?? 'C'] ?? ''));
             $namaAsset      = trim((string)($row[$columnMap['nama_asset'] ?? 'D'] ?? ''));
             $penyulangName  = trim((string)($row[$columnMap['penyulang'] ?? 'E'] ?? ''));
+            $konstruksiName = trim((string)($row[$columnMap['konstruksi'] ?? ''] ?? ''));
             $merk           = trim((string)($row[$columnMap['merk'] ?? 'F'] ?? ''));
             $type           = trim((string)($row[$columnMap['type'] ?? 'G'] ?? ''));
             $nomorSeri      = trim((string)($row[$columnMap['nomor_seri'] ?? 'H'] ?? ''));
@@ -135,6 +139,13 @@ class DynamicAssetImportService
             $latitude       = trim((string)($row[$columnMap['latitude'] ?? 'L'] ?? ''));
             $longitude      = trim((string)($row[$columnMap['longitude'] ?? 'M'] ?? ''));
             $sectionName    = trim((string)($row[$columnMap['section'] ?? 'N'] ?? ''));
+
+            // Normalize jenis_asset (e.g. jtm_tiang -> JTM)
+            if (preg_match('/^jtm/i', $jenisAsset)) {
+                $jenisAsset = 'JTM';
+            } elseif (preg_match('/^jtr/i', $jenisAsset)) {
+                $jenisAsset = 'JTR';
+            }
 
             // Skip entirely empty row
             if (empty($namaAsset) && empty($jenisAsset) && empty($ulpName)) {
@@ -179,6 +190,21 @@ class DynamicAssetImportService
                 $sectionId = $sectionMap[$sKey] ?? null;
             }
 
+            // Construction Type lookup (Validates against Master Konstruksi)
+            $constructionTypeId = null;
+            if (!empty($konstruksiName)) {
+                $cKey  = strtolower($konstruksiName);
+                $cNorm = preg_replace('/[^a-z0-9]/', '', $cKey);
+
+                if (isset($constructionMap[$cKey])) {
+                    $constructionTypeId = $constructionMap[$cKey];
+                } elseif (isset($constructionMap[$cNorm])) {
+                    $constructionTypeId = $constructionMap[$cNorm];
+                } else {
+                    $errors[] = "Konstruksi '{$konstruksiName}' tidak ditemukan di Master Konstruksi.";
+                }
+            }
+
             // Composite Duplicate Check: ULP + Jenis Asset + Nama Asset (Case-insensitive, Soft-delete aware)
             if (!empty($ulpId) && !empty($jenisAsset) && !empty($namaAsset)) {
                 $compositeKey = strtolower($ulpId . '_' . $jenisAsset . '_' . $namaAsset);
@@ -219,23 +245,24 @@ class DynamicAssetImportService
             $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset, $ulpName, $penyulangName, $batchSequenceCache);
 
             $validBatch[] = [
-                'kode_asset'      => $kodeAsset,
-                'nama_asset'      => $namaAsset,
-                'jenis_asset'     => $jenisAsset,
-                'ulp_id'          => $ulpId,
-                'penyulang_id'    => $penyulangId,
-                'section_id'      => $sectionId,
-                'lokasi'          => $alamat ?: null,
-                'latitude'        => $latitude ?: null,
-                'longitude'       => $longitude ?: null,
-                'tahun_instalasi' => is_numeric($tahunInstalasi) ? (int)$tahunInstalasi : null,
-                'merk'            => $merk ?: null,
-                'type'            => $type ?: null,
-                'nomor_seri'      => $nomorSeri ?: null,
-                'kapasitas'       => $kapasitas ?: null,
-                'status'          => 'NORMAL',
-                'created_at'      => $now,
-                'updated_at'      => $now,
+                'kode_asset'           => $kodeAsset,
+                'nama_asset'           => $namaAsset,
+                'jenis_asset'          => $jenisAsset,
+                'ulp_id'               => $ulpId,
+                'penyulang_id'         => $penyulangId,
+                'section_id'           => $sectionId,
+                'construction_type_id' => $constructionTypeId,
+                'lokasi'               => $alamat ?: null,
+                'latitude'             => $latitude ?: null,
+                'longitude'            => $longitude ?: null,
+                'tahun_instalasi'      => is_numeric($tahunInstalasi) ? (int)$tahunInstalasi : null,
+                'merk'                 => $merk ?: null,
+                'type'                 => $type ?: null,
+                'nomor_seri'           => $nomorSeri ?: null,
+                'kapasitas'            => $kapasitas ?: null,
+                'status'               => 'NORMAL',
+                'created_at'           => $now,
+                'updated_at'           => $now,
             ];
         }
 
@@ -382,6 +409,33 @@ class DynamicAssetImportService
             }
         } catch (\Throwable $e) {
             log_message('error', '[DynamicAssetImportService] Gagal fetch Section map: ' . $e->getMessage());
+        }
+        return $map;
+    }
+
+    private function getConstructionTypeLookupMap(): array
+    {
+        $map = [];
+        try {
+            $db = \Config\Database::connect();
+            if ($db->tableExists('construction_types')) {
+                $items = $db->table('construction_types')->select('id, code, name')->get()->getResultArray();
+                foreach ($items as $item) {
+                    if (!empty($item['code'])) {
+                        $rawCode = strtolower(trim($item['code']));
+                        $map[$rawCode] = (int)$item['id'];
+
+                        $normCode = preg_replace('/[^a-z0-9]/', '', $rawCode);
+                        $map[$normCode] = (int)$item['id'];
+                    }
+                    if (!empty($item['name'])) {
+                        $rawName = strtolower(trim($item['name']));
+                        $map[$rawName] = (int)$item['id'];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', '[DynamicAssetImportService] Gagal fetch Construction map: ' . $e->getMessage());
         }
         return $map;
     }

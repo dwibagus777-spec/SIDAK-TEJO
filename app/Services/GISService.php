@@ -128,11 +128,22 @@ class GISService
             $filters['ulp_id'] = $userUlpId;
         }
 
+        // 1. Fetch Independent Feeder Network Polyline Coordinates (Topology Sequence Ordered)
+        $rawPolyline = $this->assetRepository->getFeederPolylineCoords($penyulangId);
+        $lineCoords  = [];
+        foreach ($rawPolyline as $pNode) {
+            $pLat = (float)($pNode['latitude'] ?? 0);
+            $pLng = (float)($pNode['longitude'] ?? 0);
+            if ($pLat != 0 && $pLng != 0) {
+                $lineCoords[] = [$pLng, $pLat];
+            }
+        }
+
+        // 2. Fetch Marker Features Filtered Strictly by Zoom LOD & Layer Selection
         $assets = $this->assetRepository->getGisNetworkAssets($filters, $userUlpId);
 
-        $lineCoords = [];
-        $features   = [];
-        $stats      = [
+        $features = [];
+        $stats    = [
             'total_assets' => count($assets),
             'jtm_count'    => 0,
             'gardu_count'  => 0,
@@ -150,7 +161,6 @@ class GISService
             if ($lat == 0 || $lng == 0) continue;
 
             $validGisCount++;
-            $lineCoords[] = [$lng, $lat];
 
             if ($lat < $minLat) $minLat = $lat;
             if ($lat > $maxLat) $maxLat = $lat;

@@ -382,6 +382,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    var currentRequestId = 0;
+
     // 2. Fetch Network Data On-Demand
     function loadGisNetworkOnDemand() {
         var feederId = document.getElementById('feeder-select').value;
@@ -390,6 +392,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        var thisRequestId = ++currentRequestId;
         currentFeederId = feederId;
         currentLOD = getLODCategory(map.getZoom()); // Set LOD BEFORE fetch to prevent double request from fitBounds!
 
@@ -399,6 +402,9 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch(`<?= site_url('gis/api-network') ?>?penyulang_id=${feederId}&zoom=${map.getZoom()}&layers=${layersParam}`)
             .then(res => res.json())
             .then(res => {
+                if (thisRequestId !== currentRequestId) {
+                    return; // Ignore stale out-of-order response!
+                }
                 toggleLoading(false);
                 if (res.status === 'success' && res.data) {
                     currentData = res.data;
@@ -413,7 +419,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             })
             .catch(err => {
-                toggleLoading(false);
+                if (thisRequestId === currentRequestId) {
+                    toggleLoading(false);
+                }
                 console.error(err);
             });
     }

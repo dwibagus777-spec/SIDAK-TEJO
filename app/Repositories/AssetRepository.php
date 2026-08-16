@@ -123,6 +123,40 @@ class AssetRepository
     }
 
     /**
+     * Get Complete Feeder Topology Network Polyline Coordinates (Topology Sequence Ordered)
+     * Independent of Marker Layer Filters!
+     */
+    public function getFeederPolylineCoords(int $penyulangId): array
+    {
+        try {
+            $db = \Config\Database::connect();
+            if (!$db->tableExists('assets') || $penyulangId <= 0) {
+                return [];
+            }
+
+            $hasSeqCol = $db->fieldExists('sequence_no', 'assets');
+
+            $builder = $db->table('assets');
+            $builder->select('longitude, latitude');
+            $builder->where('penyulang_id', $penyulangId);
+            $builder->where('deleted_at IS NULL');
+            $builder->where('latitude !=', 0);
+            $builder->where('longitude !=', 0);
+
+            if ($hasSeqCol) {
+                $builder->orderBy('sequence_no', 'ASC');
+            } else {
+                $builder->orderBy('id', 'ASC');
+            }
+
+            return $builder->get()->getResultArray();
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetRepository::getFeederPolylineCoords] Exception: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Optimized SQL-level GIS query engine with Strict Layer Mapping & Topology Ordering
      */
     public function getGisNetworkAssets(array $filters = [], ?int $userUlpId = null): array
@@ -193,6 +227,11 @@ class AssetRepository
             if (in_array('SWITCH', $layers)) {
                 $includeSwitchEquipment = true;
                 $allowedJenisList = array_merge($allowedJenisList, ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']);
+            }
+
+            // Hardening 1: Empty Layer Guard — If all layers unchecked, return [] immediately
+            if (empty($allowedJenisList) && !$includeGtt && !$includeSwitchEquipment) {
+                return [];
             }
 
             // 2. Zoom 13 - 16: SQL-level Equipment Filter (Strictly respecting active layers!)

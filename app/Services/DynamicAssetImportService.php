@@ -140,10 +140,19 @@ class DynamicAssetImportService
             $longitude      = trim((string)($row[$columnMap['longitude'] ?? 'M'] ?? ''));
             $sectionName    = trim((string)($row[$columnMap['section'] ?? 'N'] ?? ''));
 
-            // Normalize jenis_asset (e.g. jtm_tiang -> JTM)
-            if (preg_match('/^jtm/i', $jenisAsset)) {
+            // Equipment Domain Classification & Normalization
+            $kLower = strtolower($konstruksiName);
+            $jLower = strtolower($jenisAsset);
+
+            if (preg_match('/gtt/i', $kLower) || preg_match('/gtt/i', $jLower)) {
+                $jenisAsset = 'GARDU';
+            } elseif (preg_match('/pms|pemisah/i', $kLower) || preg_match('/pms|pemisah/i', $jLower)) {
                 $jenisAsset = 'JTM';
-            } elseif (preg_match('/^jtr/i', $jenisAsset)) {
+            } elseif (preg_match('/pmt|pemutus/i', $kLower) || preg_match('/pmt|pemutus/i', $jLower)) {
+                $jenisAsset = 'JTM';
+            } elseif (preg_match('/^jtm/i', $jLower)) {
+                $jenisAsset = 'JTM';
+            } elseif (preg_match('/^jtr/i', $jLower)) {
                 $jenisAsset = 'JTR';
             }
 
@@ -435,13 +444,25 @@ class DynamicAssetImportService
                     }
                 }
 
-                // Legacy spreadsheet alias mapping (e.g. TMVITC -> TMMVTIC, GTT2/GT2 -> TM8)
+                // Legacy spreadsheet alias & equipment name mapping
                 $aliasMap = [
-                    'tmvitc'   => 'tmmvtic',
-                    'tm-vitc'  => 'tmmvtic',
-                    'mvtic'    => 'tmmvtic',
-                    'gt2'      => 'tm8',
-                    'gtt2'     => 'tm8',
+                    'gtt 1 tiang' => 'gtt1',
+                    'gtt 1'       => 'gtt1',
+                    'gtt1 tiang'  => 'gtt1',
+                    'gtt 2 tiang' => 'gtt2',
+                    'gtt 2'       => 'gtt2',
+                    'gtt2 tiang'  => 'gtt2',
+                    'gt2'         => 'gtt2',
+                    'pemisah'     => 'pms',
+                    'pemutus'     => 'pmt',
+                    'tmtp3'       => 'tmtp',
+                    'tm-tp'       => 'tmtp',
+                    'tm-tp3'      => 'tmtp',
+                    'tm-16'       => 'tm16',
+                    'tm-16a'      => 'tm16a',
+                    'tmvitc'      => 'tmmvtic',
+                    'tm-vitc'     => 'tmmvtic',
+                    'mvtic'       => 'tmmvtic',
                 ];
 
                 foreach ($aliasMap as $alias => $targetCode) {

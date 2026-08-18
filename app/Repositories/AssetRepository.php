@@ -108,33 +108,33 @@ class AssetRepository
             $jVal = trim($filters['jenis_asset']);
             if (strcasecmp($jVal, 'JTM') === 0) {
                 $builder->groupStart()
-                    ->where('LOWER(a.jenis_asset)', 'jtm')
-                    ->orLike('LOWER(a.jenis_asset)', 'tiang')
-                    ->orLike('LOWER(a.jenis_asset)', 'pole')
-                    ->orLike('LOWER(a.jenis_asset)', 'sutm')
-                    ->orLike('LOWER(a.jenis_asset)', 'sktm')
+                    ->like('a.jenis_asset', 'JTM')
+                    ->orLike('a.jenis_asset', 'TIANG')
+                    ->orLike('a.jenis_asset', 'POLE')
+                    ->orLike('a.jenis_asset', 'SUTM')
+                    ->orLike('a.jenis_asset', 'SKTM')
                 ->groupEnd();
             } elseif (strcasecmp($jVal, 'GARDU') === 0) {
                 $builder->groupStart()
-                    ->where('LOWER(a.jenis_asset)', 'gardu')
-                    ->orLike('LOWER(a.jenis_asset)', 'gh')
-                    ->orLike('LOWER(a.jenis_asset)', 'gd')
-                    ->orLike('LOWER(a.jenis_asset)', 'gi')
+                    ->like('a.jenis_asset', 'Gardu')
+                    ->orLike('a.jenis_asset', 'GH')
+                    ->orLike('a.jenis_asset', 'GD')
+                    ->orLike('a.jenis_asset', 'GI')
                 ->groupEnd();
             } elseif (strcasecmp($jVal, 'TRAFO') === 0) {
                 $builder->groupStart()
-                    ->where('LOWER(a.jenis_asset)', 'trafo')
-                    ->orLike('LOWER(a.jenis_asset)', 'transformator')
-                    ->orLike('LOWER(a.jenis_asset)', 'gtt')
+                    ->like('a.jenis_asset', 'Trafo')
+                    ->orLike('a.jenis_asset', 'Transformator')
+                    ->orLike('a.jenis_asset', 'GTT')
                 ->groupEnd();
             } elseif (strcasecmp($jVal, 'LBS') === 0) {
                 $builder->groupStart()
-                    ->where('LOWER(a.jenis_asset)', 'lbs')
-                    ->orLike('LOWER(a.jenis_asset)', 'lbsm')
-                    ->orLike('LOWER(a.jenis_asset)', 'switch')
+                    ->like('a.jenis_asset', 'LBS')
+                    ->orLike('a.jenis_asset', 'LBSM')
+                    ->orLike('a.jenis_asset', 'Switch')
                 ->groupEnd();
             } else {
-                $builder->where('LOWER(a.jenis_asset)', strtolower($jVal));
+                $builder->like('a.jenis_asset', $jVal);
             }
         }
         if (!empty($filters['status']) && trim($filters['status']) !== '') {

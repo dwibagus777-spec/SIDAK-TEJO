@@ -44,11 +44,12 @@
         /* ── Left Panel ─────────────────────────────── */
         .login-hero {
             flex: 1;
-            background: linear-gradient(145deg, #0A1628 0%, #00313A 45%, #004d4f 100%);
+            background: linear-gradient(135deg, #04101A 0%, #08283C 50%, #020F1A 100%);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 48px 56px;
+            justify-content: center;
+            align-items: center;
+            padding: 48px;
             position: relative;
             overflow: hidden;
         }
@@ -59,65 +60,63 @@
             position: absolute;
             inset: 0;
             background-image:
-                linear-gradient(rgba(0,181,184,0.07) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,181,184,0.07) 1px, transparent 1px);
-            background-size: 48px 48px;
+                linear-gradient(rgba(0,181,184,0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,181,184,0.08) 1px, transparent 1px);
+            background-size: 44px 44px;
             animation: gridMove 20s linear infinite;
             z-index: 0;
         }
         @keyframes gridMove {
             0%   { background-position: 0 0; }
-            100% { background-position: 48px 48px; }
+            100% { background-position: 44px 44px; }
         }
 
-        /* Glowing orbs */
+        /* Glowing center orb */
         .login-hero::after {
             content: '';
             position: absolute;
-            width: 550px;
-            height: 550px;
+            width: 600px;
+            height: 600px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(0,181,184,0.15) 0%, transparent 70%);
-            top: -150px;
-            right: -150px;
+            background: radial-gradient(circle, rgba(0,181,184,0.22) 0%, rgba(0,112,122,0.08) 50%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             z-index: 0;
+            pointer-events: none;
         }
 
-        .orb-bottom {
-            position: absolute;
-            width: 350px;
-            height: 350px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,107,53,0.12) 0%, transparent 70%);
-            bottom: -80px;
-            left: -60px;
-            z-index: 0;
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
         }
 
-        .hero-content { position: relative; z-index: 2; }
-
-        /* Large Prominent Official System Emblem (Gambar No. 3) */
+        /* Dominant Official System Emblem Logo (Gambar No. 3) */
         .hero-logo-wrap {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             width: 100%;
-            margin-bottom: 24px;
         }
         .hero-logo-img-large {
-            max-width: 360px;
+            max-width: 440px;
             width: 100%;
             height: auto;
-            border-radius: 24px;
-            border: 2px solid rgba(0, 181, 184, 0.35);
-            box-shadow: 0 14px 40px rgba(0, 181, 184, 0.45), 0 0 20px rgba(255, 255, 255, 0.1);
-            transition: all 0.35s ease;
+            border-radius: 28px;
+            border: 2px solid rgba(0, 225, 230, 0.45);
+            box-shadow: 0 20px 60px rgba(0, 181, 184, 0.55), 0 0 30px rgba(0, 225, 230, 0.2);
+            transition: all 0.4s ease;
             object-fit: cover;
         }
         .hero-logo-img-large:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 18px 50px rgba(0, 181, 184, 0.6);
+            transform: translateY(-4px) scale(1.025);
+            box-shadow: 0 24px 70px rgba(0, 225, 230, 0.7);
         }
         .hero-logo-text { line-height: 1; }
         .hero-brand-name {
@@ -417,47 +416,12 @@
 
 <div class="login-wrap">
 
-    <!-- ──────────── LEFT HERO PANEL ──────────── -->
+    <!-- ──────────── LEFT HERO PANEL (Focused Dominant Emblem) ──────────── -->
     <div class="login-hero animate__animated animate__fadeIn">
-        <div class="orb-bottom"></div>
-
         <div class="hero-content">
-            <!-- Prominent Branding Logo (Gambar No. 3 / High-Res Official Emblem) -->
-            <div class="hero-logo-wrap animate__animated animate__fadeInDown">
+            <!-- Dominant Official Branding Logo (Gambar No. 3 / High-Res Official Emblem) -->
+            <div class="hero-logo-wrap animate__animated animate__zoomIn">
                 <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Enterprise Official Emblem" class="hero-logo-img-large">
-            </div>
-
-            <!-- Headline -->
-            <h1 class="hero-headline animate__animated animate__fadeInUp">
-                Inspeksi Lebih<br><span>Cerdas & Terstruktur</span>
-            </h1>
-            <p class="hero-desc animate__animated animate__fadeIn animate__delay-1s">
-                Platform digital terintegrasi untuk manajemen, pemantauan, dan tindak lanjut temuan inspeksi jaringan distribusi PLN Sidoarjo secara real-time.
-            </p>
-
-            <!-- Feature Badges -->
-            <div class="feature-badges animate__animated animate__fadeInUp animate__delay-1s">
-                <div class="badge-item">
-                    <div class="badge-icon teal"><i class="fas fa-map-marked-alt"></i></div>
-                    <div>
-                        <div class="badge-text-title">Peta Temuan Interaktif</div>
-                        <div class="badge-text-desc">Visualisasi lokasi temuan berbasis GPS secara real-time</div>
-                    </div>
-                </div>
-                <div class="badge-item">
-                    <div class="badge-icon green"><i class="fas fa-chart-line"></i></div>
-                    <div>
-                        <div class="badge-text-title">Dashboard Analitik</div>
-                        <div class="badge-text-desc">Laporan & tren temuan per ULP, penyulang, dan pelaksana</div>
-                    </div>
-                </div>
-                <div class="badge-item">
-                    <div class="badge-icon orange"><i class="fas fa-bolt"></i></div>
-                    <div>
-                        <div class="badge-text-title">Update Pekerjaan Cepat</div>
-                        <div class="badge-text-desc">Tindak lanjut dan bukti eviden langsung dari lapangan</div>
-                    </div>
-                </div>
             </div>
         </div>
 

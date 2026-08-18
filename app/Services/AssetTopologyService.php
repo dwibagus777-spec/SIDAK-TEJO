@@ -140,6 +140,16 @@ class AssetTopologyService
             return ['status' => 'success', 'generated_count' => 0, 'candidates' => []];
         }
 
+        // Clean up stale unverified CANDIDATE edges for this feeder before regenerating (preserves VERIFIED edges)
+        $allFeederAssetIds = array_column($assets, 'id');
+        if (!empty($allFeederAssetIds) && $db->tableExists('asset_relationships')) {
+            $db->table('asset_relationships')
+                ->whereIn('parent_asset_id', $allFeederAssetIds)
+                ->where('status', 'CANDIDATE')
+                ->where('source', 'AUTO')
+                ->delete();
+        }
+
         $createdCandidates = [];
         $savedCount = 0;
 

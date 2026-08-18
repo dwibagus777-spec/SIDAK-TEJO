@@ -66,7 +66,7 @@ class AssetController extends BaseController
     }
 
     /**
-     * Mass Soft-Delete Endpoint (Bulk Delete by Selection or Feeder Filter)
+     * Mass Soft-Delete Endpoint (Bulk Delete by Selection or Feeder Filter with Strict ULP Authorization)
      */
     public function bulkDelete()
     {
@@ -74,10 +74,22 @@ class AssetController extends BaseController
             return redirect()->back()->with('error', 'Akses ditolak. Anda tidak memiliki wewenang untuk hapus massal.');
         }
 
-        $deleteType = $this->request->getPost('delete_type'); // 'selected' OR 'feeder'
-        $assetIds   = $this->request->getPost('asset_ids') ?? [];
-        $confirmTxt = strtoupper(trim((string)$this->request->getPost('confirm_text')));
-        $userId     = (int)session()->get('user_id');
+        $session   = session();
+        $userRole  = strtolower((string)$session->get('user_role'));
+        $userUlpId = $session->get('user_ulp_id');
+        $ulpScope  = !in_array($userRole, ['administrator', 'admin_pusat']) ? (int)$userUlpId : null;
+
+        $deleteType  = $this->request->getPost('delete_type');
+        $confirmTxt  = strtoupper(trim((string)$this->request->getPost('confirm_text')));
+        $userId      = (int)$session->get('user_id');
+
+        $selectedRaw = $this->request->getPost('selected_ids') ?? $this->request->getPost('asset_ids');
+        $assetIds = [];
+        if (is_string($selectedRaw)) {
+            $assetIds = array_filter(array_map('intval', explode(',', $selectedRaw)));
+        } elseif (is_array($selectedRaw)) {
+            $assetIds = array_filter(array_map('intval', $selectedRaw));
+        }
 
         if ($deleteType === 'feeder') {
             $penyulangId = (int)$this->request->getPost('penyulang_id');
@@ -89,14 +101,14 @@ class AssetController extends BaseController
             }
 
             $filters = ['penyulang_id' => $penyulangId];
-            $affected = $this->repository->bulkSoftDeleteByFilter($filters, session()->get('user_ulp_id'), $userId, 'MASS_FEEDER_DELETE');
+            $affected = $this->repository->bulkSoftDeleteByFilter($filters, $ulpScope, $userId, 'MASS_FEEDER_DELETE');
             return redirect()->back()->with('success', "Berhasil melakukan Soft Delete massal pada penyulang. Total {$affected} aset berhasil di-soft delete secara aman.");
         } elseif ($deleteType === 'selected') {
             if (empty($assetIds)) {
                 return redirect()->back()->with('error', 'Pilih minimal satu aset untuk dihapus.');
             }
 
-            $affected = $this->repository->bulkSoftDeleteByIds($assetIds, $userId, 'MASS_SELECTED_DELETE');
+            $affected = $this->repository->bulkSoftDeleteByIds($assetIds, $ulpScope, $userId, 'MASS_SELECTED_DELETE');
             return redirect()->back()->with('success', "Berhasil melakukan Soft Delete massal. Total {$affected} aset terpilih berhasil dihapus secara aman.");
         }
 
@@ -104,10 +116,15 @@ class AssetController extends BaseController
     }
 
     /**
-     * Import Batches List Endpoint
+     * Import Batches List Endpoint (ULP Scoped)
      */
     public function importBatches()
     {
+        $session   = session();
+        $userRole  = strtolower((string)$session->get('user_role'));
+        $userUlpId = $session->get('user_ulp_id');
+        $ulpScope  = !in_array($userRole, ['administrator', 'admin_pusat']) ? (int)$userUlpId : null;
+
         $db = \Config\Database::connect();
         $batches = [];
         if ($db->tableExists('asset_import_batches')) {
@@ -115,6 +132,9 @@ class AssetController extends BaseController
             $builder->select('b.*, u.nama_ulp, p.nama_penyulang');
             $builder->join('ulps u', 'b.ulp_id = u.id', 'left');
             $builder->join('penyulang p', 'b.penyulang_id = p.id', 'left');
+            if (!empty($ulpScope)) {
+                $builder->where('b.ulp_id', $ulpScope);
+            }
             $builder->orderBy('b.id', 'DESC');
             $batches = $builder->get()->getResultArray();
         }
@@ -126,7 +146,7 @@ class AssetController extends BaseController
     }
 
     /**
-     * Rollback Specific Import Batch Endpoint
+     * Rollback Specific Import Batch Endpoint (ULP Scoped)
      */
     public function rollbackBatch(int $id)
     {
@@ -134,8 +154,13 @@ class AssetController extends BaseController
             return redirect()->back()->with('error', 'Akses ditolak.');
         }
 
-        $userId = (int)session()->get('user_id');
-        $res = $this->repository->rollbackImportBatch($id, $userId);
+        $session   = session();
+        $userRole  = strtolower((string)$session->get('user_role'));
+        $userUlpId = $session->get('user_ulp_id');
+        $ulpScope  = !in_array($userRole, ['administrator', 'admin_pusat']) ? (int)$userUlpId : null;
+
+        $userId = (int)$session->get('user_id');
+        $res = $this->repository->rollbackImportBatch($id, $userId, $ulpScope);
 
         if ($res['success'] ?? false) {
             return redirect()->back()->with('success', $res['message']);

@@ -189,9 +189,9 @@ class AssetRepository
     }
 
     /**
-     * Bulk Soft-Delete by Asset IDs
+     * Bulk Soft-Delete by Asset IDs (ULP Security Scoped)
      */
-    public function bulkSoftDeleteByIds(array $assetIds, int $userId = 0, string $reason = 'BULK_DELETE_SELECTED'): int
+    public function bulkSoftDeleteByIds(array $assetIds, ?int $userUlpId = null, int $userId = 0, string $reason = 'BULK_DELETE_SELECTED'): int
     {
         try {
             if (empty($assetIds)) return 0;
@@ -201,6 +201,10 @@ class AssetRepository
             $builder = $db->table('assets');
             $builder->whereIn('id', array_map('intval', $assetIds));
             $builder->where('deleted_at IS NULL');
+
+            if (!empty($userUlpId)) {
+                $builder->where('ulp_id', $userUlpId);
+            }
 
             $updateData = [
                 'deleted_at'     => date('Y-m-d H:i:s'),
@@ -217,9 +221,9 @@ class AssetRepository
     }
 
     /**
-     * Rollback Specific Import Batch (Transaction & Topology Clean Up)
+     * Rollback Specific Import Batch (Transaction, Topology Clean Up & ULP Security Scoped)
      */
-    public function rollbackImportBatch(int $batchId, int $userId = 0): array
+    public function rollbackImportBatch(int $batchId, int $userId = 0, ?int $userUlpId = null): array
     {
         try {
             $db = \Config\Database::connect();
@@ -227,35 +231,43 @@ class AssetRepository
                 return ['success' => false, 'message' => 'Tabel assets atau import batch tidak ditemukan.'];
             }
 
-            $batch = $db->table('asset_import_batches')->where('id', $batchId)->get()->getRowArray();
+            $batchQuery = $db->table('asset_import_batches')->where('id', $batchId);
+            if (!empty($userUlpId)) {
+                $batchQuery->where('ulp_id', $userUlpId);
+            }
+            $batch = $batchQuery->get()->getRowArray();
             if (!$batch) {
-                return ['success' => false, 'message' => 'Import batch tidak ditemukan.'];
+                return ['success' => false, 'message' => 'Import batch tidak ditemukan atau Anda tidak memiliki akses ke ULP ini.'];
             }
             if (($batch['status'] ?? 'ACTIVE') === 'ROLLED_BACK') {
                 return ['success' => false, 'message' => 'Import batch ini sudah pernah di-rollback sebelumnya.'];
             }
 
             // Find all asset IDs attached to this import_batch_id
-            $assetRows = $db->table('assets')
+            $assetQuery = $db->table('assets')
                 ->select('id')
                 ->where('import_batch_id', $batchId)
-                ->where('deleted_at IS NULL')
-                ->get()
-                ->getResultArray();
-
+                ->where('deleted_at IS NULL');
+            if (!empty($userUlpId)) {
+                $assetQuery->where('ulp_id', $userUlpId);
+            }
+            $assetRows = $assetQuery->get()->getResultArray();
             $deletedAssetIds = array_column($assetRows, 'id');
 
             $db->transBegin();
 
             // 1. Soft-delete assets attached to this import_batch_id
-            $db->table('assets')
+            $assetUpdate = $db->table('assets')
                 ->where('import_batch_id', $batchId)
-                ->where('deleted_at IS NULL')
-                ->update([
-                    'deleted_at'     => date('Y-m-d H:i:s'),
-                    'deleted_by'     => $userId > 0 ? $userId : null,
-                    'deleted_reason' => 'ROLLBACK_IMPORT_BATCH_' . $batchId,
-                ]);
+                ->where('deleted_at IS NULL');
+            if (!empty($userUlpId)) {
+                $assetUpdate->where('ulp_id', $userUlpId);
+            }
+            $assetUpdate->update([
+                'deleted_at'     => date('Y-m-d H:i:s'),
+                'deleted_by'     => $userId > 0 ? $userId : null,
+                'deleted_reason' => 'ROLLBACK_IMPORT_BATCH_' . $batchId,
+            ]);
 
             $affectedCount = $db->affectedRows();
 

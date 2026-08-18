@@ -96,24 +96,28 @@
 
         .hero-content { position: relative; z-index: 2; }
 
-        /* Large Branding Logo Block (Task 3) */
+        /* Large Prominent Official System Emblem (Gambar No. 3) */
         .hero-logo-wrap {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 28px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 24px;
         }
         .hero-logo-img-large {
-            max-width: 280px;
+            max-width: 360px;
             width: 100%;
             height: auto;
-            border-radius: 20px;
-            filter: drop-shadow(0 10px 30px rgba(0, 181, 184, 0.4));
-            transition: transform 0.3s ease;
+            border-radius: 24px;
+            border: 2px solid rgba(0, 181, 184, 0.35);
+            box-shadow: 0 14px 40px rgba(0, 181, 184, 0.45), 0 0 20px rgba(255, 255, 255, 0.1);
+            transition: all 0.35s ease;
+            object-fit: cover;
         }
         .hero-logo-img-large:hover {
-            transform: scale(1.03);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 18px 50px rgba(0, 181, 184, 0.6);
         }
         .hero-logo-text { line-height: 1; }
         .hero-brand-name {

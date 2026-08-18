@@ -30,6 +30,17 @@ class MigrateController extends BaseController
         }
 
         try {
+            // Auto-heal orphan asset penyulang_ids by matching kode_asset with penyulang table
+            if ($db->tableExists('assets') && $db->tableExists('penyulang')) {
+                $db->query("UPDATE assets a 
+                    JOIN penyulang p ON (
+                        a.kode_asset LIKE CONCAT('%', p.kode_penyulang, '%') 
+                        OR (a.kode_asset LIKE '%BNJRKMNTRN%' AND p.id = 15)
+                    ) 
+                    SET a.penyulang_id = p.id 
+                    WHERE (a.penyulang_id IS NULL OR a.penyulang_id = 0) AND a.deleted_at IS NULL");
+            }
+
             // 0. Table gardu_induk (Master Gardu Induk)
             $db->query("CREATE TABLE IF NOT EXISTS `gardu_induk` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

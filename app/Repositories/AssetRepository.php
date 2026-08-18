@@ -95,7 +95,11 @@ class AssetRepository
         }
         if (!empty($filters['penyulang_id']) && is_numeric($filters['penyulang_id']) && (int)$filters['penyulang_id'] > 0) {
             $pId = (int)$filters['penyulang_id'];
-            $builder->where('a.penyulang_id', $pId);
+            $builder->groupStart()
+                ->where('a.penyulang_id', $pId)
+                ->orWhere('a.penyulang_id IS NULL')
+                ->orWhere('a.penyulang_id', 0)
+            ->groupEnd();
         }
         if (!empty($filters['section_id']) && is_numeric($filters['section_id']) && (int)$filters['section_id'] > 0) {
             $builder->where('a.section_id', (int)$filters['section_id']);

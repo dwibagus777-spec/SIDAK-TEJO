@@ -23,11 +23,11 @@
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --brand-navy: #09172A;
-            --brand-blue: #0F294A;
+            --brand-navy: #040E1A;
+            --brand-blue: #0A223B;
             --brand-teal: #00B5B8;
             --brand-cyan: #38BDF8;
-            --brand-accent: #F59E0B;
+            --brand-gold: #F59E0B;
             --gray-50: #F8FAFC;
             --gray-100: #F1F5F9;
             --gray-200: #E2E8F0;
@@ -52,40 +52,43 @@
             overflow: hidden;
         }
 
-        /* ── Left Column: Brand & Visual Identity ────── */
+        /* ── Left Column: Brand & High-Vis Visual Identity ────── */
         .auth-brand-side {
-            flex: 1.1;
-            background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-blue) 60%, #061120 100%);
+            flex: 1.25;
+            background: radial-gradient(circle at 40% 40%, #0F2D4A 0%, #081B30 65%, #040E1A 100%);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 56px 64px;
+            align-items: center;
+            padding: 48px 56px;
             position: relative;
             overflow: hidden;
-            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            border-right: 1px solid rgba(56, 189, 248, 0.15);
+            text-align: center;
         }
 
-        /* Subtle Background Grid & Ambient Glow */
+        /* Subtle Background Grid Overlay */
         .auth-brand-side::before {
             content: '';
             position: absolute;
             inset: 0;
             background-image:
-                linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
-            background-size: 36px 36px;
+                linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
             z-index: 0;
         }
 
+        /* Ambient Glow Effect */
         .auth-brand-side::after {
             content: '';
             position: absolute;
-            width: 500px;
-            height: 500px;
+            width: 650px;
+            height: 650px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(0, 181, 184, 0.18) 0%, rgba(15, 41, 74, 0.05) 60%, transparent 80%);
-            top: 40%;
-            left: 40%;
+            background: radial-gradient(circle, rgba(0, 181, 184, 0.25) 0%, rgba(245, 158, 11, 0.08) 45%, transparent 70%);
+            top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
             z-index: 0;
             pointer-events: none;
@@ -94,107 +97,114 @@
         .brand-header, .brand-body, .brand-footer {
             position: relative;
             z-index: 2;
+            width: 100%;
         }
 
-        /* Top Corporate PLN Header */
+        /* Top Corporate Badge */
         .pln-corporate-tag {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 6px 14px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-        }
-        .pln-logo-mini {
-            height: 18px;
-            width: auto;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 18px;
+            border-radius: 24px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         .pln-corporate-text {
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 1.2px;
+            color: #ffffff;
             text-transform: uppercase;
         }
 
-        /* Center Brand Identity & Emblem */
+        /* High-Visibility Hero Emblem Center */
         .brand-body {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: center;
             margin: auto 0;
-            padding: 32px 0;
+            padding: 24px 0;
         }
 
-        .brand-title {
+        .hero-emblem-wrapper {
+            position: relative;
+            margin-bottom: 24px;
+            display: inline-block;
+        }
+
+        .emblem-img-prominent {
+            max-width: 440px;
+            width: 100%;
+            height: auto;
+            border-radius: 24px;
+            border: 2px solid rgba(0, 225, 230, 0.5);
+            box-shadow:
+                0 20px 60px rgba(0, 181, 184, 0.55),
+                0 0 35px rgba(245, 158, 11, 0.3),
+                0 0 15px rgba(255, 255, 255, 0.2);
+            filter: contrast(1.05) brightness(1.02);
+            transition: all 0.35s ease;
+        }
+        .emblem-img-prominent:hover {
+            transform: scale(1.025) translateY(-3px);
+            box-shadow:
+                0 25px 70px rgba(0, 225, 230, 0.7),
+                0 0 45px rgba(245, 158, 11, 0.4);
+        }
+
+        .brand-title-prominent {
             font-family: 'Outfit', sans-serif;
-            font-size: 2.5rem;
+            font-size: 2.6rem;
             font-weight: 900;
             letter-spacing: 3px;
             color: #ffffff;
             line-height: 1.1;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        .brand-title span {
+        .brand-title-prominent span {
             color: var(--brand-teal);
+            background: linear-gradient(135deg, #00B5B8 0%, #38BDF8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .brand-subtitle {
+        .brand-subtitle-prominent {
             font-size: 0.88rem;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.7);
-            letter-spacing: 0.5px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: 0.8px;
             text-transform: uppercase;
-            margin-bottom: 28px;
-        }
-
-        /* Controlled Enterprise Badge Logo */
-        .emblem-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1.5px solid rgba(56, 189, 248, 0.25);
-            border-radius: 20px;
-            padding: 12px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 25px rgba(0, 181, 184, 0.15);
-            backdrop-filter: blur(12px);
-            transition: all 0.3s ease;
-            max-width: 290px;
-            width: 100%;
-        }
-        .emblem-card:hover {
-            border-color: rgba(56, 189, 248, 0.45);
-            transform: translateY(-2px);
-            box-shadow: 0 20px 50px rgba(0, 181, 184, 0.3);
-        }
-        .emblem-img {
-            width: 100%;
-            height: auto;
-            border-radius: 12px;
-            display: block;
+            max-width: 420px;
+            line-height: 1.4;
         }
 
         /* System Version Fingerprint Footer */
         .brand-fingerprint {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 12px;
-            font-size: 0.72rem;
-            color: rgba(255, 255, 255, 0.45);
+            font-size: 0.74rem;
+            color: rgba(255, 255, 255, 0.5);
             font-family: monospace;
         }
         .version-badge {
-            background: rgba(0, 181, 184, 0.15);
+            background: rgba(0, 181, 184, 0.2);
             color: var(--brand-teal);
-            padding: 2px 8px;
-            border-radius: 6px;
+            padding: 3px 10px;
+            border-radius: 8px;
             font-weight: 700;
-            border: 1px solid rgba(0, 181, 184, 0.3);
+            border: 1px solid rgba(0, 181, 184, 0.4);
         }
 
-        /* ── Right Column: Compact Form Panel ────────── */
+        /* ── Right Column: Compact Login Form ────────── */
         .auth-form-side {
-            flex: 0.9;
+            flex: 0.95;
             background: #ffffff;
             display: flex;
             flex-direction: column;
@@ -240,7 +250,7 @@
             margin-top: 4px;
         }
 
-        /* Modern Compact Input Groups */
+        /* Input Groups */
         .form-group-modern {
             margin-bottom: 22px;
         }
@@ -296,7 +306,7 @@
         }
         .pw-toggle-btn:hover { color: var(--brand-teal); }
 
-        /* Modern CTA Button */
+        /* CTA Button */
         .btn-submit-modern {
             width: 100%;
             height: 48px;
@@ -324,7 +334,7 @@
         }
         .btn-submit-modern:active { transform: translateY(0); }
 
-        /* Alert Styling */
+        /* Alerts */
         .alert-enterprise {
             border-radius: 10px;
             padding: 12px 16px;
@@ -355,12 +365,12 @@
                 border-right: none;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             }
-            .brand-body { padding: 16px 0; align-items: center; text-align: center; }
-            .emblem-card { max-width: 220px; }
+            .emblem-img-prominent { max-width: 320px; }
             .auth-form-side { padding: 40px 24px; }
         }
         @media (max-width: 480px) {
-            .brand-title { font-size: 1.85rem; }
+            .brand-title-prominent { font-size: 1.95rem; }
+            .emblem-img-prominent { max-width: 260px; }
             .form-header-heading { font-size: 1.5rem; }
             .auth-form-side { padding: 32px 18px; }
         }
@@ -370,24 +380,23 @@
 
 <div class="auth-container">
 
-    <!-- ──────────── LEFT COLUMN: BRAND & VISUAL IDENTITY ──────────── -->
+    <!-- ──────────── LEFT COLUMN: HIGH-VISIBILITY BRAND IDENTITY ──────────── -->
     <div class="auth-brand-side">
         <!-- Top Corporate Badge -->
         <div class="brand-header animate__animated animate__fadeInDown">
             <div class="pln-corporate-tag">
-                <i class="fas fa-bolt text-warning" style="font-size: 12px;"></i>
+                <i class="fas fa-bolt text-warning" style="font-size: 13px;"></i>
                 <span class="pln-corporate-text">PT PLN (Persero) UP3 Sidoarjo</span>
             </div>
         </div>
 
-        <!-- Center Identity & Controlled Emblem -->
-        <div class="brand-body animate__animated animate__fadeIn">
-            <h1 class="brand-title">SIDAK <span>TEJO</span></h1>
-            <div class="brand-subtitle">Sistem Data &amp; Tindak Lanjut Temuan Inspeksi Sidoarjo</div>
-
-            <div class="emblem-card">
-                <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Emblem" class="emblem-img">
+        <!-- Prominent Center Logo Emblem & Titles -->
+        <div class="brand-body animate__animated animate__zoomIn">
+            <div class="hero-emblem-wrapper">
+                <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Enterprise Emblem" class="emblem-img-prominent">
             </div>
+            <h1 class="brand-title-prominent">SIDAK <span>TEJO</span></h1>
+            <div class="brand-subtitle-prominent">Sistem Data &amp; Tindak Lanjut Temuan Inspeksi Sidoarjo</div>
         </div>
 
         <!-- System Version Fingerprint Footer -->

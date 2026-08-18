@@ -74,6 +74,42 @@ class AssetRepository
         return $res['data'] ?? [];
     }
 
+    private function applyAssetFilters($builder, array $filters = [], ?int $userUlpId = null): void
+    {
+        $builder->where('a.deleted_at IS NULL');
+
+        if (!empty($userUlpId)) {
+            $builder->where('a.ulp_id', $userUlpId);
+        }
+        if (!empty($filters['ulp_id'])) {
+            $builder->where('a.ulp_id', (int)$filters['ulp_id']);
+        }
+        if (!empty($filters['penyulang_id'])) {
+            $builder->where('a.penyulang_id', (int)$filters['penyulang_id']);
+        }
+        if (!empty($filters['section_id'])) {
+            $builder->where('a.section_id', (int)$filters['section_id']);
+        }
+        if (!empty($filters['jenis_asset'])) {
+            $builder->where('a.jenis_asset', strtoupper($filters['jenis_asset']));
+        }
+        if (!empty($filters['status'])) {
+            $builder->where('a.status', strtoupper($filters['status']));
+        }
+        if (!empty($filters['search'])) {
+            $s = trim((string)$filters['search']);
+            if ($s !== '') {
+                $builder->groupStart()
+                    ->like('a.kode_asset', $s)
+                    ->orLike('a.nama_asset', $s)
+                    ->orLike('a.lokasi', $s)
+                    ->orLike('a.merk', $s)
+                    ->orLike('a.nomor_seri', $s)
+                ->groupEnd();
+            }
+        }
+    }
+
     /**
      * Optimized Paginated Query (Server-Side Pagination for Fast Rendering)
      */
@@ -85,52 +121,29 @@ class AssetRepository
                 return ['data' => [], 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'last_page' => 1];
             }
 
-            $builder = $db->table('assets a');
-            $builder->where('a.deleted_at IS NULL');
+            // 1. Separate Clean Count Query
+            $countBuilder = $db->table('assets a');
+            $this->applyAssetFilters($countBuilder, $filters, $userUlpId);
+            $total = $countBuilder->countAllResults();
 
-            if (!empty($userUlpId)) {
-                $builder->where('a.ulp_id', $userUlpId);
-            }
-            if (!empty($filters['ulp_id'])) {
-                $builder->where('a.ulp_id', (int)$filters['ulp_id']);
-            }
-            if (!empty($filters['penyulang_id'])) {
-                $builder->where('a.penyulang_id', (int)$filters['penyulang_id']);
-            }
-            if (!empty($filters['section_id'])) {
-                $builder->where('a.section_id', (int)$filters['section_id']);
-            }
-            if (!empty($filters['jenis_asset'])) {
-                $builder->where('a.jenis_asset', strtoupper($filters['jenis_asset']));
-            }
-            if (!empty($filters['status'])) {
-                $builder->where('a.status', strtoupper($filters['status']));
-            }
-            if (!empty($filters['search'])) {
-                $s = $filters['search'];
-                $builder->groupStart()
-                    ->like('a.kode_asset', $s)
-                    ->orLike('a.nama_asset', $s)
-                    ->orLike('a.lokasi', $s)
-                    ->orLike('a.merk', $s)
-                    ->orLike('a.nomor_seri', $s)
-                ->groupEnd();
+            if ($total === 0) {
+                return ['data' => [], 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'last_page' => 1];
             }
 
-            $total = $builder->countAllResults(false);
-
-            // Select ONLY lightweight list columns (NO large BLOBs / unneeded text fields)
-            $builder->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.lokasi, a.latitude, a.longitude, a.import_batch_id, a.created_at, u.nama_ulp, p.nama_penyulang, s.nama_section');
-            $builder->join('ulps u', 'a.ulp_id = u.id', 'left');
-            $builder->join('penyulang p', 'a.penyulang_id = p.id', 'left');
-            $builder->join('sections s', 'a.section_id = s.id', 'left');
+            // 2. Separate Clean Data Query
+            $dataBuilder = $db->table('assets a');
+            $dataBuilder->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.lokasi, a.latitude, a.longitude, a.import_batch_id, a.created_at, u.nama_ulp, p.nama_penyulang, s.nama_section');
+            $dataBuilder->join('ulps u', 'a.ulp_id = u.id', 'left');
+            $dataBuilder->join('penyulang p', 'a.penyulang_id = p.id', 'left');
+            $dataBuilder->join('sections s', 'a.section_id = s.id', 'left');
+            $this->applyAssetFilters($dataBuilder, $filters, $userUlpId);
 
             $page = max(1, $page);
             $offset = ($page - 1) * $perPage;
-            $builder->orderBy('a.id', 'DESC');
-            $builder->limit($perPage, $offset);
+            $dataBuilder->orderBy('a.id', 'DESC');
+            $dataBuilder->limit($perPage, $offset);
 
-            $query = $builder->get();
+            $query = $dataBuilder->get();
             $data = ($query && $query instanceof BaseResult) ? $query->getResultArray() : [];
 
             return [

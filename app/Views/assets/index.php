@@ -175,7 +175,38 @@
                     <tbody>
                         <?php if (empty($assets)): ?>
                             <tr>
-                                <td colspan="8" class="text-center py-4 text-muted">Belum ada data asset PLN.</td>
+                                <td colspan="8" class="text-center py-5">
+                                    <?php if (empty($hasFilter)): ?>
+                                        <div class="py-3">
+                                            <div class="rounded-circle bg-light d-inline-flex p-3 mb-3 text-primary shadow-sm">
+                                                <i class="fas fa-sliders-h fs-2"></i>
+                                            </div>
+                                            <h5 class="fw-bold text-dark mb-2">Silakan Pilih Filter untuk Menampilkan Aset</h5>
+                                            <p class="text-muted small mb-4 style="max-width: 500px; margin: 0 auto;">
+                                                Pilih ULP, Penyulang, atau Jenis Aset di atas untuk memuat daftar aset secara cepat & ringan, atau klik pintasan di bawah ini.
+                                            </p>
+                                            <div class="d-flex justify-content-center flex-wrap gap-2">
+                                                <a href="?jenis_asset=JTM" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold px-3">
+                                                    <i class="fas fa-bolt me-1"></i> JTM & Tiang
+                                                </a>
+                                                <a href="?jenis_asset=GARDU" class="btn btn-outline-success btn-sm rounded-pill font-weight-bold px-3">
+                                                    <i class="fas fa-building me-1"></i> Gardu Distribusi
+                                                </a>
+                                                <a href="?jenis_asset=TRAFO" class="btn btn-outline-warning btn-sm rounded-pill font-weight-bold px-3">
+                                                    <i class="fas fa-plug me-1"></i> Trafo
+                                                </a>
+                                                <a href="?show_all=1" class="btn btn-primary btn-sm rounded-pill font-weight-bold px-3 shadow-sm">
+                                                    <i class="fas fa-eye me-1"></i> Tampilkan Semua Aset (<?= number_format($stats['total'] ?? 0) ?>)
+                                                </a>
+                                            </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="py-3 text-muted">
+                                            <i class="fas fa-inbox fs-3 d-block mb-2 text-secondary"></i>
+                                            Tidak ada data aset PLN yang cocok dengan kriteria filter Anda.
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($assets as $a): ?>

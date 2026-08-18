@@ -39,11 +39,32 @@ class AssetController extends BaseController
             'search'      => $this->request->getGet('search'),
         ];
 
+        $showAll = (int)($this->request->getGet('show_all') ?? 0);
+
+        $hasFilter = !empty($filters['ulp_id']) ||
+                     !empty($filters['penyulang_id']) ||
+                     !empty($filters['section_id']) ||
+                     !empty($filters['jenis_asset']) ||
+                     !empty($filters['status']) ||
+                     !empty($filters['search']) ||
+                     $showAll === 1;
+
         $page    = max(1, (int)($this->request->getGet('page') ?? 1));
         $perPage = max(10, min(200, (int)($this->request->getGet('per_page') ?? 50)));
 
-        $paginationRes = $this->repository->getFilteredAssetsPaginated($filters, $ulpIdFilter, $page, $perPage);
-        $stats         = $this->repository->getAssetStats($ulpIdFilter);
+        $paginationRes = [
+            'data'      => [],
+            'total'     => 0,
+            'page'      => $page,
+            'per_page'  => $perPage,
+            'last_page' => 1
+        ];
+
+        if ($hasFilter) {
+            $paginationRes = $this->repository->getFilteredAssetsPaginated($filters, $ulpIdFilter, $page, $perPage);
+        }
+
+        $stats = $this->repository->getAssetStats($ulpIdFilter);
 
         $ulpModel = new UlpModel();
         $penyulangModel = new PenyulangModel();
@@ -57,6 +78,8 @@ class AssetController extends BaseController
         return view('assets/index', [
             'assets'     => $paginationRes['data'],
             'pagination' => $paginationRes,
+            'hasFilter'  => $hasFilter,
+            'showAll'    => $showAll,
             'stats'      => $stats,
             'filters'    => $filters,
             'ulps'       => $ulpModel->where('status', 'AKTIF')->orderBy('nama_ulp', 'ASC')->findAll(),

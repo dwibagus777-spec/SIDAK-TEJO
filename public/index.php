@@ -101,6 +101,9 @@ $paths = new Paths();
     }
 })($paths->writableDirectory);
 
+// LOAD THE FRAMEWORK BOOTSTRAP FILE
+require $paths->systemDirectory . '/Boot.php';
+
 try {
     exit(Boot::bootWeb($paths));
 } catch (\Throwable $e) {

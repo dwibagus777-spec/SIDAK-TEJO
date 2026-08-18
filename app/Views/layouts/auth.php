@@ -422,9 +422,9 @@
         <div class="orb-bottom"></div>
 
         <div class="hero-content">
-            <!-- Prominent Branding Logo (Task 3 / image_1.png) -->
+            <!-- Prominent Branding Logo (Gambar No. 3 / High-Res Official Emblem) -->
             <div class="hero-logo-wrap animate__animated animate__fadeInDown">
-                <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="SIDAK TEJO Enterprise Branding" class="hero-logo-img-large">
+                <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Enterprise Official Emblem" class="hero-logo-img-large">
             </div>
 
             <!-- Headline -->

@@ -698,7 +698,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 <!-- Brand Logo & Identity -->
                 <h1 class="navbar-brand navbar-brand-autodark">
                     <a href="<?= site_url('dashboard') ?>" class="d-flex align-items-center text-white" style="text-decoration: none;">
-                        <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="Logo" class="navbar-brand-image me-2" style="max-height: 38px;">
+                        <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Emblem" class="navbar-brand-image me-2" style="max-height: 42px; border-radius: 8px;">
                         <div class="text-start">
                             <div class="font-weight-black lh-1" style="font-size: 1.0rem; letter-spacing: 1.5px; background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SIDAK TEJO</div>
                             <div class="lh-1" style="font-size: 0.45rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: rgba(255,255,255,0.75); line-height: 1.3;">Sistem Data dan Tindak Lanjut<br>Temuan Inspeksi Sidoarjo</div>

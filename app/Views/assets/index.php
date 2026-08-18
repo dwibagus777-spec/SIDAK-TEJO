@@ -148,16 +148,16 @@
                         <?php 
                         $jenisOptions = [
                             'JTM'           => '🔌 JTM & Tiang',
-                            'GARDU'         => '🏭 Gardu Distribusi',
-                            'TRAFO'         => '⚡ Trafo',
-                            'KUBIKEL'       => '📦 Kubikel',
+                            'Gardu'         => '🏭 Gardu Distribusi',
+                            'Trafo'         => '⚡ Trafo',
+                            'Kubikel'       => '📦 Kubikel',
                             'LBS'           => '🔀 LBS / LBSM',
-                            'RECLOSER'      => '🔄 Recloser',
-                            'SECTIONALIZER' => '✂️ Sectionalizer',
+                            'Recloser'      => '🔄 Recloser',
+                            'Sectionalizer' => '✂️ Sectionalizer',
                             'JTR'           => '🏠 JTR',
                         ];
                         foreach ($jenisOptions as $val => $label): ?>
-                            <option value="<?= $val ?>" <?= strtoupper($filters['jenis_asset'] ?? '') === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
+                            <option value="<?= $val ?>" <?= strcasecmp(($filters['jenis_asset'] ?? ''), $val) === 0 ? 'selected' : '' ?>><?= esc($label) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>

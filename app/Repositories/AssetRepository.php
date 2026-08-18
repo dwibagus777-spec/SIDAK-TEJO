@@ -95,46 +95,42 @@ class AssetRepository
         }
         if (!empty($filters['penyulang_id']) && is_numeric($filters['penyulang_id']) && (int)$filters['penyulang_id'] > 0) {
             $pId = (int)$filters['penyulang_id'];
-            $builder->groupStart()
-                ->where('a.penyulang_id', $pId)
-                ->orWhere('a.penyulang_id IS NULL')
-                ->orWhere('a.penyulang_id', 0)
-            ->groupEnd();
+            $builder->where('a.penyulang_id', $pId);
         }
         if (!empty($filters['section_id']) && is_numeric($filters['section_id']) && (int)$filters['section_id'] > 0) {
             $builder->where('a.section_id', (int)$filters['section_id']);
         }
         if (!empty($filters['jenis_asset']) && trim($filters['jenis_asset']) !== '') {
-            $jVal = strtoupper(trim($filters['jenis_asset']));
-            if ($jVal === 'JTM') {
+            $jVal = trim($filters['jenis_asset']);
+            if (strcasecmp($jVal, 'JTM') === 0) {
                 $builder->groupStart()
-                    ->where('a.jenis_asset', 'JTM')
-                    ->orLike('a.jenis_asset', 'TIANG')
-                    ->orLike('a.jenis_asset', 'POLE')
-                    ->orLike('a.jenis_asset', 'SUTM')
-                    ->orLike('a.jenis_asset', 'SKTM')
+                    ->where('LOWER(a.jenis_asset)', 'jtm')
+                    ->orLike('LOWER(a.jenis_asset)', 'tiang')
+                    ->orLike('LOWER(a.jenis_asset)', 'pole')
+                    ->orLike('LOWER(a.jenis_asset)', 'sutm')
+                    ->orLike('LOWER(a.jenis_asset)', 'sktm')
                 ->groupEnd();
-            } elseif ($jVal === 'GARDU') {
+            } elseif (strcasecmp($jVal, 'GARDU') === 0) {
                 $builder->groupStart()
-                    ->where('a.jenis_asset', 'GARDU')
-                    ->orLike('a.jenis_asset', 'GH')
-                    ->orLike('a.jenis_asset', 'GD')
-                    ->orLike('a.jenis_asset', 'GI')
+                    ->where('LOWER(a.jenis_asset)', 'gardu')
+                    ->orLike('LOWER(a.jenis_asset)', 'gh')
+                    ->orLike('LOWER(a.jenis_asset)', 'gd')
+                    ->orLike('LOWER(a.jenis_asset)', 'gi')
                 ->groupEnd();
-            } elseif ($jVal === 'TRAFO') {
+            } elseif (strcasecmp($jVal, 'TRAFO') === 0) {
                 $builder->groupStart()
-                    ->where('a.jenis_asset', 'TRAFO')
-                    ->orLike('a.jenis_asset', 'TRANSFORMATOR')
-                    ->orLike('a.jenis_asset', 'GTT')
+                    ->where('LOWER(a.jenis_asset)', 'trafo')
+                    ->orLike('LOWER(a.jenis_asset)', 'transformator')
+                    ->orLike('LOWER(a.jenis_asset)', 'gtt')
                 ->groupEnd();
-            } elseif ($jVal === 'LBS') {
+            } elseif (strcasecmp($jVal, 'LBS') === 0) {
                 $builder->groupStart()
-                    ->where('a.jenis_asset', 'LBS')
-                    ->orLike('a.jenis_asset', 'LBSM')
-                    ->orLike('a.jenis_asset', 'SWITCH')
+                    ->where('LOWER(a.jenis_asset)', 'lbs')
+                    ->orLike('LOWER(a.jenis_asset)', 'lbsm')
+                    ->orLike('LOWER(a.jenis_asset)', 'switch')
                 ->groupEnd();
             } else {
-                $builder->where('a.jenis_asset', $jVal);
+                $builder->where('LOWER(a.jenis_asset)', strtolower($jVal));
             }
         }
         if (!empty($filters['status']) && trim($filters['status']) !== '') {

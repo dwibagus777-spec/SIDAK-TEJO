@@ -79,22 +79,29 @@ class AssetRepository
         $builder->where('a.deleted_at IS NULL');
 
         if (!empty($userUlpId)) {
-            $builder->where('a.ulp_id', $userUlpId);
+            $builder->groupStart()
+                ->where('a.ulp_id', $userUlpId)
+                ->orWhere('a.ulp_id IS NULL')
+            ->groupEnd();
         }
-        if (!empty($filters['ulp_id'])) {
-            $builder->where('a.ulp_id', (int)$filters['ulp_id']);
+        if (!empty($filters['ulp_id']) && is_numeric($filters['ulp_id']) && (int)$filters['ulp_id'] > 0) {
+            $uId = (int)$filters['ulp_id'];
+            $builder->groupStart()
+                ->where('a.ulp_id', $uId)
+                ->orWhere('a.ulp_id IS NULL')
+            ->groupEnd();
         }
-        if (!empty($filters['penyulang_id'])) {
+        if (!empty($filters['penyulang_id']) && is_numeric($filters['penyulang_id']) && (int)$filters['penyulang_id'] > 0) {
             $builder->where('a.penyulang_id', (int)$filters['penyulang_id']);
         }
-        if (!empty($filters['section_id'])) {
+        if (!empty($filters['section_id']) && is_numeric($filters['section_id']) && (int)$filters['section_id'] > 0) {
             $builder->where('a.section_id', (int)$filters['section_id']);
         }
-        if (!empty($filters['jenis_asset'])) {
-            $builder->where('a.jenis_asset', strtoupper($filters['jenis_asset']));
+        if (!empty($filters['jenis_asset']) && trim($filters['jenis_asset']) !== '') {
+            $builder->where('a.jenis_asset', strtoupper(trim($filters['jenis_asset'])));
         }
-        if (!empty($filters['status'])) {
-            $builder->where('a.status', strtoupper($filters['status']));
+        if (!empty($filters['status']) && trim($filters['status']) !== '') {
+            $builder->where('a.status', strtoupper(trim($filters['status'])));
         }
         if (!empty($filters['search'])) {
             $s = trim((string)$filters['search']);

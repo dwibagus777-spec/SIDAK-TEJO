@@ -55,6 +55,13 @@ if (getcwd() . DIRECTORY_SEPARATOR !== FCPATH) {
     chdir(FCPATH);
 }
 
+// Fail-safe check for vendor symfony deprecation-contracts function file
+$depContractsFile = FCPATH . '../vendor/symfony/deprecation-contracts/function.php';
+if (!file_exists($depContractsFile)) {
+    @mkdir(dirname($depContractsFile), 0777, true);
+    @file_put_contents($depContractsFile, "<?php if (!function_exists('trigger_deprecation')) { function trigger_deprecation() {} }");
+}
+
 /*
  *---------------------------------------------------------------
  * BOOTSTRAP THE APPLICATION

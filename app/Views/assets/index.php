@@ -102,34 +102,67 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-3">
-            <form method="GET" action="<?= site_url('master-assets') ?>" class="row g-2 align-items-center">
-                <div class="col-md-3 col-12">
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari Kode / Nama Asset / Merk / No. Seri..." value="<?= esc($filters['search'] ?? '') ?>">
+    <!-- Filter & Selection Confirmation Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 5px solid #2563eb !important;">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-primary mb-1 d-flex align-items-center">
+                        <i class="fas fa-sliders text-warning me-2 fs-4"></i> PANEL KONFIRMASI SELEKSI KELUARKAN DATA ASET
+                    </h5>
+                    <p class="text-muted small mb-0">Pilih kriteria ULP, Penyulang, Jenis Aset, atau Status terlebih dahulu, lalu klik tombol <strong>Konfirmasi & Tampilkan Data</strong> untuk memuat daftar aset secara aman dan ringan.</p>
                 </div>
-                <div class="col-md-2 col-6">
+                <div class="d-flex gap-2">
+                    <a href="<?= site_url('master-assets?show_all=1') ?>" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold shadow-sm">
+                        <i class="fas fa-eye me-1"></i> Tampilkan Semua Aset (<?= number_format($stats['total'] ?? 0) ?>)
+                    </a>
+                    <a href="<?= site_url('master-assets') ?>" class="btn btn-outline-secondary btn-sm rounded-pill">
+                        <i class="fas fa-rotate-left me-1"></i> Reset
+                    </a>
+                </div>
+            </div>
+
+            <form action="<?= site_url('master-assets') ?>" method="GET" class="row g-2">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label small fw-bold text-muted mb-1">1. Unit (ULP)</label>
+                    <select name="ulp_id" class="form-select form-select-sm font-weight-bold" id="filter_ulp_id">
+                        <option value="">-- Semua ULP --</option>
+                        <?php foreach ($ulps as $u): ?>
+                            <option value="<?= $u['id'] ?>" <?= ($filters['ulp_id'] ?? '') == $u['id'] ? 'selected' : '' ?>><?= esc($u['nama_ulp']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label small fw-bold text-muted mb-1">2. Penyulang (Feeder)</label>
+                    <select name="penyulang_id" class="form-select form-select-sm font-weight-bold" id="filter_penyulang_id">
+                        <option value="">-- Semua Penyulang --</option>
+                        <?php foreach ($penyulangs as $p): ?>
+                            <option value="<?= $p['id'] ?>" <?= ($filters['penyulang_id'] ?? '') == $p['id'] ? 'selected' : '' ?>><?= esc($p['nama_penyulang']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label small fw-bold text-muted mb-1">3. Jenis Aset</label>
                     <select name="jenis_asset" class="form-select form-select-sm">
                         <option value="">-- Semua Jenis --</option>
                         <?php 
                         $jenisOptions = [
-                            'JTM'           => 'JTM & Tiang',
-                            'GARDU'         => 'Gardu',
-                            'TRAFO'         => 'Trafo',
-                            'KUBIKEL'       => 'Kubikel',
-                            'LBS'           => 'LBS',
-                            'LBSM'          => 'LBSM',
-                            'RECLOSER'      => 'Recloser',
-                            'SECTIONALIZER' => 'Sectionalizer',
-                            'JTR'           => 'JTR',
+                            'JTM'           => '🔌 JTM & Tiang',
+                            'GARDU'         => '🏭 Gardu Distribusi',
+                            'TRAFO'         => '⚡ Trafo',
+                            'KUBIKEL'       => '📦 Kubikel',
+                            'LBS'           => '🔀 LBS / LBSM',
+                            'RECLOSER'      => '🔄 Recloser',
+                            'SECTIONALIZER' => '✂️ Sectionalizer',
+                            'JTR'           => '🏠 JTR',
                         ];
                         foreach ($jenisOptions as $val => $label): ?>
                             <option value="<?= $val ?>" <?= strtoupper($filters['jenis_asset'] ?? '') === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-md-2 col-6">
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label small fw-bold text-muted mb-1">4. Status</label>
                     <select name="status" class="form-select form-select-sm">
                         <option value="">-- Semua Status --</option>
                         <option value="NORMAL" <?= ($filters['status'] ?? '') === 'NORMAL' ? 'selected' : '' ?>>NORMAL</option>
@@ -137,17 +170,15 @@
                         <option value="CRITICAL" <?= ($filters['status'] ?? '') === 'CRITICAL' ? 'selected' : '' ?>>CRITICAL</option>
                     </select>
                 </div>
-                <div class="col-md-3 col-6">
-                    <select name="ulp_id" class="form-select form-select-sm">
-                        <option value="">-- Semua ULP --</option>
-                        <?php foreach ($ulps as $u): ?>
-                            <option value="<?= $u['id'] ?>" <?= ($filters['ulp_id'] ?? '') == $u['id'] ? 'selected' : '' ?>><?= esc($u['nama_ulp']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label small fw-bold text-muted mb-1">5. Cari Kode / Nama</label>
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari Kode / Nama..." value="<?= esc($filters['search'] ?? '') ?>">
                 </div>
-                <div class="col-md-2 col-6 d-flex gap-1">
-                    <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold"><i class="fas fa-filter me-1"></i> Filter</button>
-                    <a href="<?= site_url('master-assets') ?>" class="btn btn-outline-secondary btn-sm"><i class="fas fa-rotate-left"></i></a>
+
+                <div class="col-12 mt-3 text-end">
+                    <button type="submit" class="btn btn-primary btn-sm font-weight-bold px-4 rounded-pill shadow-sm">
+                        <i class="fas fa-check-circle me-1"></i> KONFIRMASI & TAMPILKAN DATA ASET
+                    </button>
                 </div>
             </form>
         </div>

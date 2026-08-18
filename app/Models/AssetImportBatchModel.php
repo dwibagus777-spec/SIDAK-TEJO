@@ -161,6 +161,11 @@ class AssetImportBatchModel extends Model
                         ]
                     ]);
                 }
+                // Ensure composite indexes exist on assets table for lightning fast queries
+                try { $db->query("CREATE INDEX `idx_penyulang_deleted` ON `assets` (`penyulang_id`, `deleted_at`)"); } catch (\Throwable $ex) {}
+                try { $db->query("CREATE INDEX `idx_ulp_deleted` ON `assets` (`ulp_id`, `deleted_at`)"); } catch (\Throwable $ex) {}
+                try { $db->query("CREATE INDEX `idx_batch_deleted` ON `assets` (`import_batch_id`, `deleted_at`)"); } catch (\Throwable $ex) {}
+                try { $db->query("CREATE INDEX `idx_jenis_deleted` ON `assets` (`jenis_asset`, `deleted_at`)"); } catch (\Throwable $ex) {}
             }
         } catch (\Throwable $e) {
             log_message('error', '[AssetImportBatchModel::ensureTableExists] Exception: ' . $e->getMessage());

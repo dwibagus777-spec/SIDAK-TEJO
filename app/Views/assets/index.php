@@ -160,7 +160,10 @@
                 <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
                     <thead class="bg-light text-secondary">
                         <tr>
-                            <th class="ps-3 py-3">Kode Asset</th>
+                            <th class="ps-3 text-center" style="width: 40px;">
+                                <input type="checkbox" id="check-all-assets" class="form-check-input">
+                            </th>
+                            <th class="py-3">Kode Asset</th>
                             <th>Nama Asset & SN</th>
                             <th>Jenis</th>
                             <th>ULP & Lokasi</th>
@@ -172,12 +175,14 @@
                     <tbody>
                         <?php if (empty($assets)): ?>
                             <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">Belum ada data asset PLN.</td>
+                                <td colspan="8" class="text-center py-4 text-muted">Belum ada data asset PLN.</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($assets as $a): ?>
                                 <tr>
-                                    <td class="ps-3">
+                                    <td class="ps-3 text-center">
+                                        <input type="checkbox" class="check-asset-item form-check-input" value="<?= $a['id'] ?>">
+                                    </td>
                                         <a href="<?= site_url('assets/detail/' . $a['id']) ?>" class="fw-bold font-monospace text-primary text-decoration-none">
                                             <?= esc($a['kode_asset']) ?>
                                         </a>
@@ -373,6 +378,13 @@
 
 <?= $this->section('scripts') ?>
 <script>
+function toggleBulkDeleteMode(val) {
+    var feederSec = document.getElementById('section_feeder_delete');
+    if (feederSec) {
+        feederSec.style.display = (val === 'feeder') ? 'block' : 'none';
+    }
+}
+
 (function() {
     function initDeleteModal() {
         if (typeof jQuery === 'undefined') {
@@ -381,6 +393,27 @@
         }
         var $ = jQuery;
         $(function() {
+            $('#check-all-assets').on('change', function() {
+                var checked = this.checked;
+                $('.check-asset-item').prop('checked', checked);
+            });
+
+            $('#formBulkDelete').on('submit', function(e) {
+                var deleteType = $('#delete_type_select').val();
+                if (deleteType === 'selected') {
+                    var selectedIds = [];
+                    $('.check-asset-item:checked').each(function() {
+                        selectedIds.push($(this).val());
+                    });
+                    if (selectedIds.length === 0) {
+                        e.preventDefault();
+                        alert('Silakan pilih minimal 1 aset pada tabel (centang checkbox) terlebih dahulu!');
+                        return false;
+                    }
+                    $('#selected_ids').val(selectedIds.join(','));
+                }
+            });
+
             $('.btn-delete-asset').on('click', function() {
                 var id = $(this).data('id');
                 var kode = $(this).data('kode');

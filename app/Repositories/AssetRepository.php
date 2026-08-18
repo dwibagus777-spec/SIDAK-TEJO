@@ -217,7 +217,7 @@ class AssetRepository
     }
 
     /**
-     * Rollback Specific Import Batch
+     * Rollback Specific Import Batch (Transaction & Topology Clean Up)
      */
     public function rollbackImportBatch(int $batchId, int $userId = 0): array
     {
@@ -235,7 +235,19 @@ class AssetRepository
                 return ['success' => false, 'message' => 'Import batch ini sudah pernah di-rollback sebelumnya.'];
             }
 
-            // Soft-delete assets attached to this import_batch_id
+            // Find all asset IDs attached to this import_batch_id
+            $assetRows = $db->table('assets')
+                ->select('id')
+                ->where('import_batch_id', $batchId)
+                ->where('deleted_at IS NULL')
+                ->get()
+                ->getResultArray();
+
+            $deletedAssetIds = array_column($assetRows, 'id');
+
+            $db->transBegin();
+
+            // 1. Soft-delete assets attached to this import_batch_id
             $db->table('assets')
                 ->where('import_batch_id', $batchId)
                 ->where('deleted_at IS NULL')
@@ -247,7 +259,21 @@ class AssetRepository
 
             $affectedCount = $db->affectedRows();
 
-            // Mark batch status as ROLLED_BACK
+            // 2. Clean up orphaned topology relationships in asset_relationships
+            if (!empty($deletedAssetIds) && $db->tableExists('asset_relationships')) {
+                $db->table('asset_relationships')
+                    ->groupStart()
+                        ->whereIn('parent_asset_id', $deletedAssetIds)
+                        ->orWhereIn('child_asset_id', $deletedAssetIds)
+                    ->groupEnd()
+                    ->update([
+                        'is_active'  => 0,
+                        'status'     => 'REJECTED',
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+            }
+
+            // 3. Mark batch status as ROLLED_BACK
             $db->table('asset_import_batches')
                 ->where('id', $batchId)
                 ->update([
@@ -255,11 +281,18 @@ class AssetRepository
                     'updated_at' => date('Y-m-d H:i:s'),
                 ]);
 
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                return ['success' => false, 'message' => 'Gagal melakukan rollback: DB Transaction error.'];
+            }
+
+            $db->transCommit();
+
             return [
                 'success'        => true,
                 'affected_count' => $affectedCount,
                 'batch_code'     => $batch['batch_code'],
-                'message'        => "Import Batch #{$batch['batch_code']} berhasil di-rollback. Total {$affectedCount} aset di-soft delete secara aman."
+                'message'        => "Import Batch #{$batch['batch_code']} berhasil di-rollback. Total {$affectedCount} aset di-soft delete dan topologi terkait dibersihkan secara aman."
             ];
         } catch (\Throwable $e) {
             log_message('error', '[AssetRepository::rollbackImportBatch] Exception: ' . $e->getMessage());

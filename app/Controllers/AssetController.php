@@ -149,26 +149,24 @@ class AssetController extends BaseController
         $totalRaw = $db->table('assets')->countAllResults();
         $totalActive = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
 
-        $builder = $db->table('assets a');
-        $builder->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.lokasi, a.latitude, a.longitude, a.import_batch_id, a.created_at, u.nama_ulp, p.nama_penyulang, s.nama_section');
-        $builder->join('ulps u', 'a.ulp_id = u.id', 'left');
-        $builder->join('penyulang p', 'a.penyulang_id = p.id', 'left');
-        $builder->join('sections s', 'a.section_id = s.id', 'left');
-        $builder->where('a.deleted_at IS NULL');
-        $builder->orderBy('a.id', 'DESC');
-        $builder->limit(50, 0);
+        $distinctJenis = $db->table('assets')->select('jenis_asset, count(*) as count')->where('deleted_at IS NULL')->groupBy('jenis_asset')->get()->getResultArray();
+        $distinctPenyulang = $db->table('assets')->select('penyulang_id, count(*) as count')->where('deleted_at IS NULL')->groupBy('penyulang_id')->limit(10)->get()->getResultArray();
 
-        $sql = $builder->getCompiledSelect(false);
-        $rows = $builder->get()->getResultArray();
+        $testFilters = [
+            'ulp_id' => $this->request->getGet('ulp_id') ?? 1,
+            'penyulang_id' => $this->request->getGet('penyulang_id') ?? 15,
+            'jenis_asset' => $this->request->getGet('jenis_asset') ?? 'JTM',
+        ];
+
+        $res = $this->repository->getFilteredAssetsPaginated($testFilters, null, 1, 50);
 
         return $this->response->setJSON([
-            'total_raw'    => $totalRaw,
-            'total_active' => $totalActive,
-            'sql'          => $sql,
-            'rows_count'   => count($rows),
-            'sample_rows'  => array_slice($rows, 0, 3),
-            'session_ulp'  => session()->get('user_ulp_id'),
-            'session_role' => session()->get('user_role')
+            'total_raw'        => $totalRaw,
+            'total_active'     => $totalActive,
+            'distinct_jenis'   => $distinctJenis,
+            'distinct_penyulang' => $distinctPenyulang,
+            'test_filters'     => $testFilters,
+            'filtered_result'  => $res,
         ]);
     }
 

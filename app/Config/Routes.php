@@ -20,6 +20,7 @@ $routes->get('queue/run', 'QueueWorker::run');
 
 // Production Database DDL Auto-Migrate & Catalog Seeder Route (Publicly callable for deployment sync)
 $routes->get('master-assets/auto-migrate', 'MigrateController::autoMigrate');
+$routes->get('api/debug-assets', 'Api::debugAssets');
 
 // Persistent Photo Streaming Route (Public)
 $routes->get('foto/(:any)', 'PhotoController::show/$1');

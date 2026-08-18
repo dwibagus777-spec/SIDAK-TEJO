@@ -74,9 +74,10 @@ class AssetController extends BaseController
         $penyulangModel = new PenyulangModel();
 
         $selectedUlpId = !empty($filters['ulp_id']) ? (int)$filters['ulp_id'] : $ulpIdFilter;
-        $penyulangs = [];
         if ($selectedUlpId > 0) {
             $penyulangs = $penyulangModel->where('ulp_id', $selectedUlpId)->where('status', 'AKTIF')->orderBy('nama_penyulang', 'ASC')->findAll();
+        } else {
+            $penyulangs = $penyulangModel->where('status', 'AKTIF')->orderBy('nama_penyulang', 'ASC')->findAll();
         }
 
         return view('assets/index', [

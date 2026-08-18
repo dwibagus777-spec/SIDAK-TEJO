@@ -455,6 +455,30 @@ function toggleBulkDeleteMode(val) {
         }
         var $ = jQuery;
         $(function() {
+            $('#filter_ulp_id').on('change', function() {
+                var ulpId = $(this).val();
+                var $penyulangSelect = $('#filter_penyulang_id');
+                $penyulangSelect.html('<option value="">-- Loading Penyulang... --</option>');
+
+                var apiUrl = '<?= site_url("api/network/penyulang") ?>' + (ulpId ? '?ulp_id=' + ulpId : '');
+                $.ajax({
+                    url: apiUrl,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(res) {
+                        $penyulangSelect.html('<option value="">-- Semua Penyulang --</option>');
+                        if (res && res.data && res.data.length > 0) {
+                            $.each(res.data, function(idx, item) {
+                                $penyulangSelect.append('<option value="' + item.id + '">' + item.nama_penyulang + '</option>');
+                            });
+                        }
+                    },
+                    error: function() {
+                        $penyulangSelect.html('<option value="">-- Semua Penyulang --</option>');
+                    }
+                });
+            });
+
             $('#check-all-assets').on('change', function() {
                 var checked = this.checked;
                 $('.check-asset-item').prop('checked', checked);

@@ -39,20 +39,108 @@ class AssetController extends BaseController
             'search'      => $this->request->getGet('search'),
         ];
 
-        $assets = $this->repository->getFilteredAssets($filters, $ulpIdFilter);
-        $stats  = $this->repository->getAssetStats($ulpIdFilter);
+        $page    = max(1, (int)($this->request->getGet('page') ?? 1));
+        $perPage = max(10, min(200, (int)($this->request->getGet('per_page') ?? 50)));
+
+        $paginationRes = $this->repository->getFilteredAssetsPaginated($filters, $ulpIdFilter, $page, $perPage);
+        $stats         = $this->repository->getAssetStats($ulpIdFilter);
 
         $ulpModel = new UlpModel();
         $penyulangModel = new PenyulangModel();
 
+        $selectedUlpId = !empty($filters['ulp_id']) ? (int)$filters['ulp_id'] : $ulpIdFilter;
+        $penyulangs = [];
+        if ($selectedUlpId > 0) {
+            $penyulangs = $penyulangModel->where('ulp_id', $selectedUlpId)->where('status', 'AKTIF')->orderBy('nama_penyulang', 'ASC')->findAll();
+        }
+
         return view('assets/index', [
-            'assets'     => $assets,
+            'assets'     => $paginationRes['data'],
+            'pagination' => $paginationRes,
             'stats'      => $stats,
             'filters'    => $filters,
-            'ulps'       => $ulpModel->where('status', 'AKTIF')->findAll(),
-            'penyulangs' => $penyulangModel->where('status', 'AKTIF')->findAll(),
+            'ulps'       => $ulpModel->where('status', 'AKTIF')->orderBy('nama_ulp', 'ASC')->findAll(),
+            'penyulangs' => $penyulangs,
             'userRole'   => $role,
         ]);
+    }
+
+    /**
+     * Mass Soft-Delete Endpoint (Bulk Delete by Selection or Feeder Filter)
+     */
+    public function bulkDelete()
+    {
+        if (!check_role(['administrator', 'admin_ulp'])) {
+            return redirect()->back()->with('error', 'Akses ditolak. Anda tidak memiliki wewenang untuk hapus massal.');
+        }
+
+        $deleteType = $this->request->getPost('delete_type'); // 'selected' OR 'feeder'
+        $assetIds   = $this->request->getPost('asset_ids') ?? [];
+        $confirmTxt = strtoupper(trim((string)$this->request->getPost('confirm_text')));
+        $userId     = (int)session()->get('user_id');
+
+        if ($deleteType === 'feeder') {
+            $penyulangId = (int)$this->request->getPost('penyulang_id');
+            if ($penyulangId <= 0) {
+                return redirect()->back()->with('error', 'Pilih penyulang terlebih dahulu untuk menghapus aset penyulang.');
+            }
+            if ($confirmTxt !== 'HAPUS') {
+                return redirect()->back()->with('error', 'Konfirmasi gagal. Anda harus mengetik kata "HAPUS" untuk mengonfirmasi hapus massal penyulang.');
+            }
+
+            $filters = ['penyulang_id' => $penyulangId];
+            $affected = $this->repository->bulkSoftDeleteByFilter($filters, session()->get('user_ulp_id'), $userId, 'MASS_FEEDER_DELETE');
+            return redirect()->back()->with('success', "Berhasil melakukan Soft Delete massal pada penyulang. Total {$affected} aset berhasil di-soft delete secara aman.");
+        } elseif ($deleteType === 'selected') {
+            if (empty($assetIds)) {
+                return redirect()->back()->with('error', 'Pilih minimal satu aset untuk dihapus.');
+            }
+
+            $affected = $this->repository->bulkSoftDeleteByIds($assetIds, $userId, 'MASS_SELECTED_DELETE');
+            return redirect()->back()->with('success', "Berhasil melakukan Soft Delete massal. Total {$affected} aset terpilih berhasil dihapus secara aman.");
+        }
+
+        return redirect()->back()->with('error', 'Metode hapus massal tidak valid.');
+    }
+
+    /**
+     * Import Batches List Endpoint
+     */
+    public function importBatches()
+    {
+        $db = \Config\Database::connect();
+        $batches = [];
+        if ($db->tableExists('asset_import_batches')) {
+            $builder = $db->table('asset_import_batches b');
+            $builder->select('b.*, u.nama_ulp, p.nama_penyulang');
+            $builder->join('ulps u', 'b.ulp_id = u.id', 'left');
+            $builder->join('penyulang p', 'b.penyulang_id = p.id', 'left');
+            $builder->orderBy('b.id', 'DESC');
+            $batches = $builder->get()->getResultArray();
+        }
+
+        return view('assets/import_batches', [
+            'batches'  => $batches,
+            'userRole' => session()->get('user_role'),
+        ]);
+    }
+
+    /**
+     * Rollback Specific Import Batch Endpoint
+     */
+    public function rollbackBatch(int $id)
+    {
+        if (!check_role(['administrator', 'admin_ulp'])) {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
+        $userId = (int)session()->get('user_id');
+        $res = $this->repository->rollbackImportBatch($id, $userId);
+
+        if ($res['success'] ?? false) {
+            return redirect()->back()->with('success', $res['message']);
+        }
+        return redirect()->back()->with('error', $res['message'] ?? 'Rollback gagal.');
     }
 
     public function detail(int $id)

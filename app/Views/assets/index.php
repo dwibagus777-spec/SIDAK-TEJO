@@ -247,7 +247,89 @@
              </div>
          </div>
      </div>
- </div>
+
+     <!-- Pagination & Summary Footer -->
+    <?php if (!empty($pagination) && $pagination['last_page'] > 1): ?>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 p-3 bg-light rounded-4 border mt-3 mb-4">
+            <div class="small text-muted font-monospace">
+                Menampilkan Halaman <strong><?= $pagination['page'] ?></strong> dari <strong><?= $pagination['last_page'] ?></strong> (Total: <strong><?= number_format($pagination['total']) ?></strong> Aset)
+            </div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <?php
+                    $queryParams = $_GET;
+                    $currentPage = $pagination['page'];
+                    $lastPage    = $pagination['last_page'];
+                    
+                    $prevParams = array_merge($queryParams, ['page' => max(1, $currentPage - 1)]);
+                    $nextParams = array_merge($queryParams, ['page' => min($lastPage, $currentPage + 1)]);
+                    ?>
+                    <li class="page-item <?= $currentPage <= 1 ? 'disabled' : '' ?>">
+                        <a class="page-link rounded-pill px-3" href="?<?= http_build_query($prevParams) ?>">&laquo; Prev</a>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link border-0 text-dark fw-bold"><?= $currentPage ?> / <?= $lastPage ?></span>
+                    </li>
+                    <li class="page-item <?= $currentPage >= $lastPage ? 'disabled' : '' ?>">
+                        <a class="page-link rounded-pill px-3" href="?<?= http_build_query($nextParams) ?>">Next &raquo;</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    <?php endif; ?>
+
+</div>
+
+<!-- Modal Bulk Delete -->
+<div class="modal fade" id="modalBulkDelete" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white border-0 rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-trash-can me-2"></i> Hapus Massal / Mass Soft Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="<?= site_url('master-assets/bulk-delete') ?>" method="POST" id="formBulkDelete">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="selected_ids" id="selected_ids">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Pilih Mode Hapus Massal:</label>
+                        <select name="delete_type" id="delete_type_select" class="form-select font-weight-bold" onchange="toggleBulkDeleteMode(this.value)">
+                            <option value="feeder">1. Hapus Seluruh Aset Satu Penyulang (Feeder Rollback)</option>
+                            <option value="selected">2. Hapus Aset Terpilih (Checkbox)</option>
+                        </select>
+                    </div>
+
+                    <!-- Feeder Mode Section -->
+                    <div id="section_feeder_delete" class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Pilih Penyulang:</label>
+                            <select name="penyulang_id" class="form-select">
+                                <option value="">-- Pilih Penyulang --</option>
+                                <?php foreach ($penyulangs as $p): ?>
+                                    <option value="<?= $p['id'] ?>" <?= ($filters['penyulang_id'] ?? '') == $p['id'] ? 'selected' : '' ?>><?= esc($p['nama_penyulang']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-danger">Ketik kata "HAPUS" untuk mengonfirmasi hapus massal penyulang:</label>
+                            <input type="text" name="confirm_text" class="form-control text-uppercase font-monospace fw-bold" placeholder="Ketik HAPUS di sini...">
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning small mb-0 rounded-3">
+                        <i class="fas fa-shield-alt text-warning me-1"></i> Data aset akan di-soft delete secara aman (dapat di-restore kembali) dan tercatat dalam log audit.
+                    </div>
+
+                    <div class="modal-footer bg-light border-0 rounded-bottom-4 mt-3 px-0 pb-0">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger font-weight-bold px-4 rounded-pill"><i class="fas fa-trash-can me-1"></i> Jalankan Hapus Massal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Soft Delete Asset -->
 <div class="modal fade" id="modalSoftDeleteAsset" tabindex="-1" aria-hidden="true">
@@ -260,18 +342,16 @@
             <form id="formSoftDeleteAsset" action="" method="POST">
                 <?= csrf_field() ?>
                 <div class="modal-body p-4">
-                    <p class="text-dark fw-bold mb-2">Apakah Anda yakin ingin menghapus Master Asset berikut?</p>
-                    <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="alert alert-light border rounded-3 p-3 mb-3">
                         <div class="row g-2 small">
                             <div class="col-4 text-muted">Kode Asset:</div>
-                            <div class="col-8 fw-bold text-dark font-monospace" id="delKodeAsset">-</div>
+                            <div class="col-8 font-monospace fw-bold text-primary" id="delKodeAsset">-</div>
                             <div class="col-4 text-muted">Nama Asset:</div>
-                            <div class="col-8 fw-bold text-dark" id="delNamaAsset">-</div>
-                            <div class="col-4 text-muted">Serial Number:</div>
-                            <div class="col-8 fw-bold text-dark font-monospace" id="delSnAsset">-</div>
+                            <div class="col-8 fw-bold" id="delNamaAsset">-</div>
+                            <div class="col-4 text-muted">Nomor Seri:</div>
+                            <div class="col-8 font-monospace" id="delSnAsset">-</div>
                         </div>
                     </div>
-                    
                     <div class="mb-3">
                         <label class="form-label fw-bold text-danger">Alasan Penghapusan (Wajib) <span class="text-danger">*</span></label>
                         <textarea name="reason" class="form-control" rows="3" placeholder="Contoh: Aset di-scrap karena rusak berat / diganti dengan unit baru..." required></textarea>

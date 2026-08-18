@@ -70,22 +70,27 @@ class AssetRepository
 
     public function getFilteredAssets(array $filters = [], ?int $userUlpId = null): array
     {
+        $res = $this->getFilteredAssetsPaginated($filters, $userUlpId, 1, 10000);
+        return $res['data'] ?? [];
+    }
+
+    /**
+     * Optimized Paginated Query (Server-Side Pagination for Fast Rendering)
+     */
+    public function getFilteredAssetsPaginated(array $filters = [], ?int $userUlpId = null, int $page = 1, int $perPage = 50): array
+    {
         try {
             $db = \Config\Database::connect();
             if (!$db->tableExists('assets')) {
-                return [];
+                return ['data' => [], 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'last_page' => 1];
             }
+
             $builder = $db->table('assets a');
-            $builder->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section');
-            $builder->join('ulps u', 'a.ulp_id = u.id', 'left');
-            $builder->join('penyulang p', 'a.penyulang_id = p.id', 'left');
-            $builder->join('sections s', 'a.section_id = s.id', 'left');
             $builder->where('a.deleted_at IS NULL');
 
             if (!empty($userUlpId)) {
                 $builder->where('a.ulp_id', $userUlpId);
             }
-
             if (!empty($filters['ulp_id'])) {
                 $builder->where('a.ulp_id', (int)$filters['ulp_id']);
             }
@@ -112,13 +117,153 @@ class AssetRepository
                 ->groupEnd();
             }
 
-            $builder->orderBy('a.id', 'DESC');
-            $query = $builder->get();
+            $total = $builder->countAllResults(false);
 
-            return ($query && $query instanceof BaseResult) ? $query->getResultArray() : [];
+            // Select ONLY lightweight list columns (NO large BLOBs / unneeded text fields)
+            $builder->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.lokasi, a.latitude, a.longitude, a.import_batch_id, a.created_at, u.nama_ulp, p.nama_penyulang, s.nama_section');
+            $builder->join('ulps u', 'a.ulp_id = u.id', 'left');
+            $builder->join('penyulang p', 'a.penyulang_id = p.id', 'left');
+            $builder->join('sections s', 'a.section_id = s.id', 'left');
+
+            $page = max(1, $page);
+            $offset = ($page - 1) * $perPage;
+            $builder->orderBy('a.id', 'DESC');
+            $builder->limit($perPage, $offset);
+
+            $query = $builder->get();
+            $data = ($query && $query instanceof BaseResult) ? $query->getResultArray() : [];
+
+            return [
+                'data'      => $data,
+                'total'     => $total,
+                'page'      => $page,
+                'per_page'  => $perPage,
+                'last_page' => max(1, ceil($total / $perPage))
+            ];
         } catch (\Throwable $e) {
-            log_message('error', '[AssetRepository::getFilteredAssets] Exception: ' . $e->getMessage());
-            return [];
+            log_message('error', '[AssetRepository::getFilteredAssetsPaginated] Exception: ' . $e->getMessage());
+            return ['data' => [], 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'last_page' => 1];
+        }
+    }
+
+    /**
+     * Bulk Soft-Delete by Feeder / Filter
+     */
+    public function bulkSoftDeleteByFilter(array $filters = [], ?int $userUlpId = null, int $userId = 0, string $reason = 'BULK_DELETE_FILTER'): int
+    {
+        try {
+            $db = \Config\Database::connect();
+            if (!$db->tableExists('assets')) return 0;
+
+            $builder = $db->table('assets');
+            $builder->where('deleted_at IS NULL');
+
+            if (!empty($userUlpId)) {
+                $builder->where('ulp_id', $userUlpId);
+            }
+            if (!empty($filters['ulp_id'])) {
+                $builder->where('ulp_id', (int)$filters['ulp_id']);
+            }
+            if (!empty($filters['penyulang_id'])) {
+                $builder->where('penyulang_id', (int)$filters['penyulang_id']);
+            }
+            if (!empty($filters['section_id'])) {
+                $builder->where('section_id', (int)$filters['section_id']);
+            }
+            if (!empty($filters['jenis_asset'])) {
+                $builder->where('jenis_asset', strtoupper($filters['jenis_asset']));
+            }
+
+            $updateData = [
+                'deleted_at'     => date('Y-m-d H:i:s'),
+                'deleted_by'     => $userId > 0 ? $userId : null,
+                'deleted_reason' => $reason,
+            ];
+
+            $builder->update($updateData);
+            return $db->affectedRows();
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetRepository::bulkSoftDeleteByFilter] Exception: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Bulk Soft-Delete by Asset IDs
+     */
+    public function bulkSoftDeleteByIds(array $assetIds, int $userId = 0, string $reason = 'BULK_DELETE_SELECTED'): int
+    {
+        try {
+            if (empty($assetIds)) return 0;
+            $db = \Config\Database::connect();
+            if (!$db->tableExists('assets')) return 0;
+
+            $builder = $db->table('assets');
+            $builder->whereIn('id', array_map('intval', $assetIds));
+            $builder->where('deleted_at IS NULL');
+
+            $updateData = [
+                'deleted_at'     => date('Y-m-d H:i:s'),
+                'deleted_by'     => $userId > 0 ? $userId : null,
+                'deleted_reason' => $reason,
+            ];
+
+            $builder->update($updateData);
+            return $db->affectedRows();
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetRepository::bulkSoftDeleteByIds] Exception: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Rollback Specific Import Batch
+     */
+    public function rollbackImportBatch(int $batchId, int $userId = 0): array
+    {
+        try {
+            $db = \Config\Database::connect();
+            if (!$db->tableExists('assets') || !$db->tableExists('asset_import_batches')) {
+                return ['success' => false, 'message' => 'Tabel assets atau import batch tidak ditemukan.'];
+            }
+
+            $batch = $db->table('asset_import_batches')->where('id', $batchId)->get()->getRowArray();
+            if (!$batch) {
+                return ['success' => false, 'message' => 'Import batch tidak ditemukan.'];
+            }
+            if (($batch['status'] ?? 'ACTIVE') === 'ROLLED_BACK') {
+                return ['success' => false, 'message' => 'Import batch ini sudah pernah di-rollback sebelumnya.'];
+            }
+
+            // Soft-delete assets attached to this import_batch_id
+            $db->table('assets')
+                ->where('import_batch_id', $batchId)
+                ->where('deleted_at IS NULL')
+                ->update([
+                    'deleted_at'     => date('Y-m-d H:i:s'),
+                    'deleted_by'     => $userId > 0 ? $userId : null,
+                    'deleted_reason' => 'ROLLBACK_IMPORT_BATCH_' . $batchId,
+                ]);
+
+            $affectedCount = $db->affectedRows();
+
+            // Mark batch status as ROLLED_BACK
+            $db->table('asset_import_batches')
+                ->where('id', $batchId)
+                ->update([
+                    'status'     => 'ROLLED_BACK',
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+
+            return [
+                'success'        => true,
+                'affected_count' => $affectedCount,
+                'batch_code'     => $batch['batch_code'],
+                'message'        => "Import Batch #{$batch['batch_code']} berhasil di-rollback. Total {$affectedCount} aset di-soft delete secara aman."
+            ];
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetRepository::rollbackImportBatch] Exception: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()];
         }
     }
 

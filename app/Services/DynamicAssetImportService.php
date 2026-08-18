@@ -290,8 +290,34 @@ class DynamicAssetImportService
             ];
         }
 
-        // DB Transaction for safe batch insert
+        // DB Transaction for safe batch insert with Import Batch Tracking
         if (!empty($validBatch)) {
+            $batchCode = 'BATCH-' . date('Ymd-His') . '-' . rand(100, 999);
+            $sampleRow = $validBatch[0];
+            $batchUlp  = $sampleRow['ulp_id'] ?? null;
+            $batchPen  = $sampleRow['penyulang_id'] ?? null;
+
+            $batchModel = new \App\Models\AssetImportBatchModel();
+            $batchId = $batchModel->insert([
+                'batch_code'   => $batchCode,
+                'ulp_id'       => $batchUlp,
+                'penyulang_id' => $batchPen,
+                'file_name'    => basename($filePath),
+                'total_rows'   => count($rows) - 1,
+                'success_rows' => count($validBatch),
+                'failed_rows'  => $failed,
+                'imported_by'  => session()->get('user_id') ?? null,
+                'imported_at'  => date('Y-m-d H:i:s'),
+                'status'       => 'ACTIVE',
+            ]);
+
+            if ($batchId) {
+                foreach ($validBatch as &$vItem) {
+                    $vItem['import_batch_id'] = $batchId;
+                }
+                unset($vItem);
+            }
+
             $db->transBegin();
             try {
                 $chunks = array_chunk($validBatch, 500);

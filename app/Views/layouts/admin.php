@@ -1045,8 +1045,11 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                                 </span>
                                 <input type="text" name="q" id="global-search-input" class="form-control"
                                        placeholder="Cari temuan, WO, penyulang..."
-                                       style="border-left: none; border-radius: 0 10px 10px 0; border-color: #e2e8f0; font-size: 12px;"
+                                       style="border-left: none; border-right: none; border-color: #e2e8f0; font-size: 12px;"
                                        autocomplete="off">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-qr-scan-header" title="Scan QR Code Asset / Temuan" style="border-radius: 0 10px 10px 0; border-color: #e2e8f0; background: #f8fafc;" onclick="triggerQrScanModal()">
+                                    <i class="fas fa-qrcode text-primary" style="font-size: 13px;"></i>
+                                </button>
                             </div>
                         </form>
                         <!-- Autocomplete Dropdown -->
@@ -2103,6 +2106,50 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             <span>Menu</span>
         </a>
     </div>
+
+    <!-- Modal QR Code Scanner (Release v2.4.0) -->
+    <div class="modal fade" id="modalQrScannerHeader" tabindex="-1" aria-labelledby="modalQrScannerHeaderLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white rounded-top-4 border-0">
+                    <h5 class="modal-title font-weight-bold" id="modalQrScannerHeaderLabel">
+                        <i class="fas fa-qrcode text-primary me-2"></i> Scanner QR Code Asset & Temuan
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div id="qr-reader-container" class="rounded-3 overflow-hidden bg-light p-3 border mb-3" style="min-height: 220px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <i class="fas fa-camera text-primary fa-3x mb-3 animate__animated animate__pulse animate__infinite"></i>
+                        <p class="text-muted small mb-0">Memuat Kamera Scanner QR Code...</p>
+                    </div>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-barcode text-muted"></i></span>
+                        <input type="text" id="manual-qr-input" class="form-control" placeholder="Atau ketik Kode Asset / Serial Number..." onkeyup="if(event.key==='Enter') executeQrLookup(this.value)">
+                        <button class="btn btn-primary" type="button" onclick="executeQrLookup(document.getElementById('manual-qr-input').value)">Cari Asset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function triggerQrScanModal() {
+        var modalEl = document.getElementById('modalQrScannerHeader');
+        if (modalEl) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var myModal = new bootstrap.Modal(modalEl);
+                myModal.show();
+            } else if (typeof jQuery !== 'undefined') {
+                jQuery('#modalQrScannerHeader').modal('show');
+            }
+        }
+    }
+    function executeQrLookup(code) {
+        if (!code || !code.trim()) return;
+        var cleanCode = code.trim();
+        window.location.href = '<?= site_url("master-assets") ?>?search=' + encodeURIComponent(cleanCode) + '&show_all=1';
+    }
+    </script>
 
     <?= $this->renderSection('scripts') ?>
 </body>

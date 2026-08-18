@@ -96,21 +96,24 @@
 
         .hero-content { position: relative; z-index: 2; }
 
-        /* Logo Block */
+        /* Large Branding Logo Block (Task 3) */
         .hero-logo-wrap {
             display: flex;
-            align-items: center;
-            gap: 18px;
-            margin-bottom: 64px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 28px;
         }
-        .hero-logo-img {
-            width: 64px;
-            height: 64px;
-            border-radius: 16px;
-            background: rgba(0,181,184,0.15);
-            border: 1.5px solid rgba(0,181,184,0.4);
-            padding: 8px;
-            box-shadow: 0 0 24px rgba(0,181,184,0.25);
+        .hero-logo-img-large {
+            max-width: 280px;
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
+            filter: drop-shadow(0 10px 30px rgba(0, 181, 184, 0.4));
+            transition: transform 0.3s ease;
+        }
+        .hero-logo-img-large:hover {
+            transform: scale(1.03);
         }
         .hero-logo-text { line-height: 1; }
         .hero-brand-name {
@@ -415,13 +418,9 @@
         <div class="orb-bottom"></div>
 
         <div class="hero-content">
-            <!-- Logo -->
+            <!-- Prominent Branding Logo (Task 3 / image_1.png) -->
             <div class="hero-logo-wrap animate__animated animate__fadeInDown">
-                <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="SIDAK TEJO" class="hero-logo-img">
-                <div class="hero-logo-text">
-                    <div class="hero-brand-name">SIDAK TEJO</div>
-                    <div class="hero-brand-sub">Sistem Data & Tindak Lanjut<br>Temuan Inspeksi Sidoarjo</div>
-                </div>
+                <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="SIDAK TEJO Enterprise Branding" class="hero-logo-img-large">
             </div>
 
             <!-- Headline -->

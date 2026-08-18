@@ -138,6 +138,35 @@ class AssetController extends BaseController
         return redirect()->back()->with('error', 'Metode hapus massal tidak valid.');
     }
 
+    public function debugSql()
+    {
+        $db = \Config\Database::connect();
+        $totalRaw = $db->table('assets')->countAllResults();
+        $totalActive = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
+
+        $builder = $db->table('assets a');
+        $builder->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.lokasi, a.latitude, a.longitude, a.import_batch_id, a.created_at, u.nama_ulp, p.nama_penyulang, s.nama_section');
+        $builder->join('ulps u', 'a.ulp_id = u.id', 'left');
+        $builder->join('penyulang p', 'a.penyulang_id = p.id', 'left');
+        $builder->join('sections s', 'a.section_id = s.id', 'left');
+        $builder->where('a.deleted_at IS NULL');
+        $builder->orderBy('a.id', 'DESC');
+        $builder->limit(50, 0);
+
+        $sql = $builder->getCompiledSelect(false);
+        $rows = $builder->get()->getResultArray();
+
+        return $this->response->setJSON([
+            'total_raw'    => $totalRaw,
+            'total_active' => $totalActive,
+            'sql'          => $sql,
+            'rows_count'   => count($rows),
+            'sample_rows'  => array_slice($rows, 0, 3),
+            'session_ulp'  => session()->get('user_ulp_id'),
+            'session_role' => session()->get('user_role')
+        ]);
+    }
+
     /**
      * Import Batches List Endpoint (ULP Scoped)
      */

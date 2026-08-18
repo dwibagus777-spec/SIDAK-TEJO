@@ -105,6 +105,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('master-assets/bulk-delete', 'AssetController::bulkDelete');
     $routes->get('master-assets/import-batches', 'AssetController::importBatches');
     $routes->post('master-assets/rollback-batch/(:num)', 'AssetController::rollbackBatch/$1');
+    $routes->get('master-assets/debug-sql', 'AssetController::debugSql');
 
     // Release v2.3.0.25 - Master Gardu Induk (GI) Management Routes
     $routes->get('master-gi', 'GarduIndukController::index');

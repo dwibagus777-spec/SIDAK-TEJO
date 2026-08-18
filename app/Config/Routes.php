@@ -131,6 +131,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Release v2.3.0.29 - Network Cascading Selection APIs
     $routes->get('api/network/penyulang', 'Api::getNetworkPenyulangs');
     $routes->get('api/network/ulps', 'Api::getNetworkUlps');
+    $routes->get('api/debug-assets', 'Api::debugAssets');
 
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
     $routes->get('gis/api-penyulangs', 'GisController::apiPenyulangs');

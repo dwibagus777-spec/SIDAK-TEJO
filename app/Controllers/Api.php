@@ -407,4 +407,27 @@ class Api extends BaseController
             ]
         ]);
     }
+
+    public function debugAssets()
+    {
+        $db = \Config\Database::connect();
+        $totalRaw = $db->table('assets')->countAllResults();
+        $totalActive = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
+
+        $samplePenyulang15 = $db->table('assets')->where('penyulang_id', 15)->where('deleted_at IS NULL')->limit(5)->get()->getResultArray();
+        $distinctJenis = $db->table('assets')->select('jenis_asset, count(*) as cnt')->where('deleted_at IS NULL')->groupBy('jenis_asset')->get()->getResultArray();
+        $distinctPenyulang = $db->table('assets')->select('penyulang_id, count(*) as cnt')->where('deleted_at IS NULL')->groupBy('penyulang_id')->limit(20)->get()->getResultArray();
+
+        $sampleAssets = $db->table('assets')->select('id, kode_asset, nama_asset, jenis_asset, ulp_id, penyulang_id, deleted_at')->where('deleted_at IS NULL')->limit(5)->get()->getResultArray();
+
+        return $this->respond([
+            'total_raw'            => $totalRaw,
+            'total_active'         => $totalActive,
+            'penyulang_15_count'   => count($samplePenyulang15),
+            'penyulang_15_samples' => $samplePenyulang15,
+            'distinct_jenis'       => $distinctJenis,
+            'distinct_penyulang'   => $distinctPenyulang,
+            'sample_assets'        => $sampleAssets,
+        ]);
+    }
 }

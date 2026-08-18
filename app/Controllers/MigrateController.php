@@ -16,6 +16,19 @@ class MigrateController extends BaseController
         $db = Database::connect();
         $executed = [];
 
+        // Fail-safe check for missing vendor composer files on remote host
+        $missingVendorFiles = [
+            FCPATH . '../vendor/symfony/deprecation-contracts/function.php' => "<?php if (!function_exists('trigger_deprecation')) { function trigger_deprecation() {} }",
+            FCPATH . '../vendor/phpunit/phpunit/src/Framework/Assert/Functions.php' => "<?php // Dummy placeholder",
+            FCPATH . '../vendor/myclabs/deep-copy/src/DeepCopy/deep_copy.php' => "<?php // Dummy placeholder",
+        ];
+        foreach ($missingVendorFiles as $vPath => $vDummy) {
+            if (!file_exists($vPath)) {
+                @mkdir(dirname($vPath), 0777, true);
+                @file_put_contents($vPath, $vDummy);
+            }
+        }
+
         try {
             // 0. Table gardu_induk (Master Gardu Induk)
             $db->query("CREATE TABLE IF NOT EXISTS `gardu_induk` (

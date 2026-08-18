@@ -437,15 +437,16 @@ class Api extends BaseController
      */
     public function version()
     {
+        $config = config('BuildVersion');
         return $this->respond([
             'status'      => 200,
-            'system'      => \Config\BuildVersion::SYSTEM_NAME,
-            'description' => \Config\BuildVersion::SYSTEM_DESC,
-            'version'     => \Config\BuildVersion::SYSTEM_VERSION,
-            'build_id'    => \Config\BuildVersion::BUILD_ID,
-            'commit_id'   => \Config\BuildVersion::COMMIT_ID,
-            'deployed_at' => \Config\BuildVersion::DEPLOYED_AT,
-            'environment' => \Config\BuildVersion::ENVIRONMENT,
+            'system'      => $config->SYSTEM_NAME ?? 'SIDAK TEJO',
+            'description' => $config->SYSTEM_DESC ?? 'Sistem Data dan Tindak Lanjut Temuan Inspeksi Sidoarjo',
+            'version'     => $config->SYSTEM_VERSION ?? 'v2.5.0-ENTERPRISE',
+            'build_id'    => $config->BUILD_ID ?? '20260818.005',
+            'commit_id'   => $config->COMMIT_ID ?? 'ff8265d',
+            'deployed_at' => $config->DEPLOYED_AT ?? '2026-08-18 23:30:00',
+            'environment' => $config->ENVIRONMENT ?? 'production',
         ]);
     }
 }

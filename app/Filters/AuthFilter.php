@@ -13,7 +13,8 @@ class AuthFilter implements FilterInterface
         $session = session();
 
         // 0. Check Build Version — Automatic Session Invalidation on Deployment Build Update
-        $currentBuild = \Config\BuildVersion::BUILD_ID;
+        $buildConfig = config('BuildVersion');
+        $currentBuild = $buildConfig->BUILD_ID ?? '20260818.005';
         if ($session->get('logged_in')) {
             $sessionBuild = $session->get('session_build');
             if (!empty($sessionBuild) && $sessionBuild !== $currentBuild) {

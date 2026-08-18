@@ -55,11 +55,17 @@ if (getcwd() . DIRECTORY_SEPARATOR !== FCPATH) {
     chdir(FCPATH);
 }
 
-// Fail-safe check for vendor symfony deprecation-contracts function file
-$depContractsFile = FCPATH . '../vendor/symfony/deprecation-contracts/function.php';
-if (!file_exists($depContractsFile)) {
-    @mkdir(dirname($depContractsFile), 0777, true);
-    @file_put_contents($depContractsFile, "<?php if (!function_exists('trigger_deprecation')) { function trigger_deprecation() {} }");
+// Fail-safe check for missing vendor composer autoload files on remote production
+$missingVendorFiles = [
+    FCPATH . '../vendor/symfony/deprecation-contracts/function.php' => "<?php if (!function_exists('trigger_deprecation')) { function trigger_deprecation() {} }",
+    FCPATH . '../vendor/phpunit/phpunit/src/Framework/Assert/Functions.php' => "<?php // Dummy placeholder for missing dev file",
+    FCPATH . '../vendor/myclabs/deep-copy/src/DeepCopy/deep_copy.php' => "<?php // Dummy placeholder for missing dev file",
+];
+foreach ($missingVendorFiles as $vPath => $vDummy) {
+    if (!file_exists($vPath)) {
+        @mkdir(dirname($vPath), 0777, true);
+        @file_put_contents($vPath, $vDummy);
+    }
 }
 
 /*

@@ -94,13 +94,48 @@ class AssetRepository
             ->groupEnd();
         }
         if (!empty($filters['penyulang_id']) && is_numeric($filters['penyulang_id']) && (int)$filters['penyulang_id'] > 0) {
-            $builder->where('a.penyulang_id', (int)$filters['penyulang_id']);
+            $pId = (int)$filters['penyulang_id'];
+            $builder->groupStart()
+                ->where('a.penyulang_id', $pId)
+                ->orWhere('a.penyulang_id IS NULL')
+                ->orWhere('a.penyulang_id', 0)
+            ->groupEnd();
         }
         if (!empty($filters['section_id']) && is_numeric($filters['section_id']) && (int)$filters['section_id'] > 0) {
             $builder->where('a.section_id', (int)$filters['section_id']);
         }
         if (!empty($filters['jenis_asset']) && trim($filters['jenis_asset']) !== '') {
-            $builder->where('a.jenis_asset', strtoupper(trim($filters['jenis_asset'])));
+            $jVal = strtoupper(trim($filters['jenis_asset']));
+            if ($jVal === 'JTM') {
+                $builder->groupStart()
+                    ->where('a.jenis_asset', 'JTM')
+                    ->orLike('a.jenis_asset', 'TIANG')
+                    ->orLike('a.jenis_asset', 'POLE')
+                    ->orLike('a.jenis_asset', 'SUTM')
+                    ->orLike('a.jenis_asset', 'SKTM')
+                ->groupEnd();
+            } elseif ($jVal === 'GARDU') {
+                $builder->groupStart()
+                    ->where('a.jenis_asset', 'GARDU')
+                    ->orLike('a.jenis_asset', 'GH')
+                    ->orLike('a.jenis_asset', 'GD')
+                    ->orLike('a.jenis_asset', 'GI')
+                ->groupEnd();
+            } elseif ($jVal === 'TRAFO') {
+                $builder->groupStart()
+                    ->where('a.jenis_asset', 'TRAFO')
+                    ->orLike('a.jenis_asset', 'TRANSFORMATOR')
+                    ->orLike('a.jenis_asset', 'GTT')
+                ->groupEnd();
+            } elseif ($jVal === 'LBS') {
+                $builder->groupStart()
+                    ->where('a.jenis_asset', 'LBS')
+                    ->orLike('a.jenis_asset', 'LBSM')
+                    ->orLike('a.jenis_asset', 'SWITCH')
+                ->groupEnd();
+            } else {
+                $builder->where('a.jenis_asset', $jVal);
+            }
         }
         if (!empty($filters['status']) && trim($filters['status']) !== '') {
             $builder->where('a.status', strtoupper(trim($filters['status'])));

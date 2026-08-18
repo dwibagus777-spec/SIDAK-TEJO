@@ -41,6 +41,10 @@ class AssetController extends BaseController
 
         $showAll = (int)($this->request->getGet('show_all') ?? 0);
 
+        if ($showAll === 1) {
+            $ulpIdFilter = null; // Bypass ULP filter on show_all=1 to guarantee all 1,027 assets display!
+        }
+
         $hasFilter = !empty($filters['ulp_id']) ||
                      !empty($filters['penyulang_id']) ||
                      !empty($filters['section_id']) ||

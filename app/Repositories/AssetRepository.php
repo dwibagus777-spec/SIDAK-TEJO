@@ -82,6 +82,7 @@ class AssetRepository
             $builder->groupStart()
                 ->where('a.ulp_id', $userUlpId)
                 ->orWhere('a.ulp_id IS NULL')
+                ->orWhere('a.ulp_id', 0)
             ->groupEnd();
         }
         if (!empty($filters['ulp_id']) && is_numeric($filters['ulp_id']) && (int)$filters['ulp_id'] > 0) {
@@ -89,6 +90,7 @@ class AssetRepository
             $builder->groupStart()
                 ->where('a.ulp_id', $uId)
                 ->orWhere('a.ulp_id IS NULL')
+                ->orWhere('a.ulp_id', 0)
             ->groupEnd();
         }
         if (!empty($filters['penyulang_id']) && is_numeric($filters['penyulang_id']) && (int)$filters['penyulang_id'] > 0) {

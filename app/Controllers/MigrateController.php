@@ -528,6 +528,28 @@ class MigrateController extends BaseController
             ]);
         }
     }
+
+    public function debugJson()
+    {
+        $db = Database::connect();
+        $totalRaw = $db->table('assets')->countAllResults();
+        $totalActive = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
+
+        $distinctJenis = $db->table('assets')->select('jenis_asset, count(*) as cnt')->where('deleted_at IS NULL')->groupBy('jenis_asset')->get()->getResultArray();
+        $distinctPenyulang = $db->table('assets')->select('penyulang_id, count(*) as cnt')->where('deleted_at IS NULL')->groupBy('penyulang_id')->limit(20)->get()->getResultArray();
+        $sample15 = $db->table('assets')->where('penyulang_id', 15)->where('deleted_at IS NULL')->limit(5)->get()->getResultArray();
+        $sampleAssets = $db->table('assets')->select('id, kode_asset, nama_asset, jenis_asset, ulp_id, penyulang_id, deleted_at')->where('deleted_at IS NULL')->limit(5)->get()->getResultArray();
+
+        return $this->response->setJSON([
+            'total_raw'          => $totalRaw,
+            'total_active'       => $totalActive,
+            'distinct_jenis'     => $distinctJenis,
+            'distinct_penyulang' => $distinctPenyulang,
+            'sample_15_cnt'      => count($sample15),
+            'sample_15'          => $sample15,
+            'sample_assets'      => $sampleAssets,
+        ]);
+    }
 }
 
 

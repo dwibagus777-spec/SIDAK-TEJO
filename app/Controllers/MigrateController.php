@@ -571,25 +571,32 @@ class MigrateController extends BaseController
     public function autoDeploy()
     {
         $output = [];
-        $cmd = 'cd ' . escapeshellarg(FCPATH . '..') . ' && git fetch origin main 2>&1 && git reset --hard origin/main 2>&1';
-        
-        if (function_exists('shell_exec')) {
-            $res = @shell_exec($cmd);
-            $output[] = $res;
-        } elseif (function_exists('exec')) {
-            @exec($cmd, $outLines);
-            $output = $outLines;
+        try {
+            $cmd = 'cd ' . escapeshellarg(FCPATH . '..') . ' && git fetch origin main 2>&1 && git reset --hard origin/main 2>&1';
+            
+            if (function_exists('shell_exec')) {
+                $res = @shell_exec($cmd);
+                $output[] = (string)$res;
+            } elseif (function_exists('exec')) {
+                $outLines = [];
+                @exec($cmd, $outLines);
+                $output = $outLines;
+            }
+        } catch (\Throwable $e) {
+            $output[] = 'Shell exec notice: ' . $e->getMessage();
         }
 
-        // Purge CodeIgniter view cache if any
-        $cacheFiles = glob(WRITEPATH . 'cache/*');
-        if (is_array($cacheFiles)) {
-            foreach ($cacheFiles as $cf) {
-                if (is_file($cf) && !str_contains($cf, 'index.html')) {
-                    @unlink($cf);
+        // Purge CodeIgniter view cache
+        try {
+            $cacheFiles = glob(WRITEPATH . 'cache/*');
+            if (is_array($cacheFiles)) {
+                foreach ($cacheFiles as $cf) {
+                    if (is_file($cf) && !str_contains($cf, 'index.html')) {
+                        @unlink($cf);
+                    }
                 }
             }
-        }
+        } catch (\Throwable $e) {}
 
         return $this->response->setJSON([
             'status'     => 'success',

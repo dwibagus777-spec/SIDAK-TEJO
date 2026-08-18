@@ -30,6 +30,9 @@ class MigrateController extends BaseController
         }
 
         try {
+            // Auto-deploy git sync on Hostinger production
+            $this->autoDeploy();
+
             // Auto-heal orphan asset penyulang_ids by matching kode_asset with penyulang table
             if ($db->tableExists('assets') && $db->tableExists('penyulang')) {
                 $db->query("UPDATE assets a 
@@ -559,6 +562,39 @@ class MigrateController extends BaseController
             'sample_15_cnt'      => count($sample15),
             'sample_15'          => $sample15,
             'sample_assets'      => $sampleAssets,
+        ]);
+    }
+
+    /**
+     * Automatic Git Deployment Sync for Hostinger
+     */
+    public function autoDeploy()
+    {
+        $output = [];
+        $cmd = 'cd ' . escapeshellarg(FCPATH . '..') . ' && git fetch origin main 2>&1 && git reset --hard origin/main 2>&1';
+        
+        if (function_exists('shell_exec')) {
+            $res = @shell_exec($cmd);
+            $output[] = $res;
+        } elseif (function_exists('exec')) {
+            @exec($cmd, $outLines);
+            $output = $outLines;
+        }
+
+        // Purge CodeIgniter view cache if any
+        $cacheFiles = glob(WRITEPATH . 'cache/*');
+        if (is_array($cacheFiles)) {
+            foreach ($cacheFiles as $cf) {
+                if (is_file($cf) && !str_contains($cf, 'index.html')) {
+                    @unlink($cf);
+                }
+            }
+        }
+
+        return $this->response->setJSON([
+            'status'     => 'success',
+            'message'    => 'Hostinger Git deployment synced & view cache purged!',
+            'git_output' => implode("\n", (array)$output)
         ]);
     }
 }

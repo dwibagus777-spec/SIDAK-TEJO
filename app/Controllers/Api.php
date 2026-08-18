@@ -430,4 +430,22 @@ class Api extends BaseController
             'sample_assets'        => $sampleAssets,
         ]);
     }
+
+    /**
+     * GET /api/system/version
+     * Public deployment fingerprint endpoint
+     */
+    public function version()
+    {
+        return $this->respond([
+            'status'      => 200,
+            'system'      => \Config\BuildVersion::SYSTEM_NAME,
+            'description' => \Config\BuildVersion::SYSTEM_DESC,
+            'version'     => \Config\BuildVersion::SYSTEM_VERSION,
+            'build_id'    => \Config\BuildVersion::BUILD_ID,
+            'commit_id'   => \Config\BuildVersion::COMMIT_ID,
+            'deployed_at' => \Config\BuildVersion::DEPLOYED_AT,
+            'environment' => \Config\BuildVersion::ENVIRONMENT,
+        ]);
+    }
 }

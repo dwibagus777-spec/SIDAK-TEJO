@@ -63,16 +63,17 @@ class AuthService
         // Set session
         $session = session();
         $session->set([
-            'user_id'      => $user['id'],
-            'user_name'    => !empty($user['nama_pegawai']) ? $user['nama_pegawai'] : $user['nama'],
-            'nama_pegawai' => !empty($user['nama_pegawai']) ? $user['nama_pegawai'] : $user['nama'],
-            'nip'          => $user['nip'] ?? '',
-            'user_role'    => strtolower($user['role']),
-            'user_ulp_id'  => $user['ulp_id'],
-            'ulp_id'       => $user['ulp_id'],
-            'user_ulp'     => $user['ulp'] ?? '',
-            'logged_in'    => true,
-            'last_activity'=> time()
+            'user_id'       => $user['id'],
+            'user_name'     => !empty($user['nama_pegawai']) ? $user['nama_pegawai'] : $user['nama'],
+            'nama_pegawai'  => !empty($user['nama_pegawai']) ? $user['nama_pegawai'] : $user['nama'],
+            'nip'           => $user['nip'] ?? '',
+            'user_role'     => strtolower($user['role']),
+            'user_ulp_id'   => $user['ulp_id'],
+            'ulp_id'        => $user['ulp_id'],
+            'user_ulp'      => $user['ulp'] ?? '',
+            'logged_in'     => true,
+            'session_build' => \Config\BuildVersion::BUILD_ID,
+            'last_activity' => time()
         ]);
 
         // Catat Audit Log

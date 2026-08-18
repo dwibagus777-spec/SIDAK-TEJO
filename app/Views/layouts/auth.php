@@ -4,15 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="SIDAK TEJO - Sistem Data dan Tindak Lanjut Temuan Inspeksi Sidoarjo">
-    <title>Login | SIDAK TEJO</title>
+    <title>Login | SIDAK TEJO Enterprise</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicon_sidak.png') ?>">
     <link rel="shortcut icon" href="<?= base_url('assets/img/favicon_sidak.png') ?>">
 
-    <!-- Local Google Fonts: Outfit & Inter -->
+    <!-- Local Fonts: Outfit & Inter -->
     <link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
-
     <!-- Font Awesome Local -->
     <link rel="stylesheet" href="<?= base_url('plugins/fontawesome-free/css/all.min.css') ?>">
     <!-- Bootstrap Local -->
@@ -24,315 +23,310 @@
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --teal-dark:  #00707A;
-            --teal-main:  #00B5B8;
-            --teal-light: #E0F7F7;
-            --accent:     #FF6B35;
-            --green:      #22C55E;
-            --navy:       #0A1628;
-            --navy-mid:   #0D1F3C;
+            --brand-navy: #09172A;
+            --brand-blue: #0F294A;
+            --brand-teal: #00B5B8;
+            --brand-cyan: #38BDF8;
+            --brand-accent: #F59E0B;
+            --gray-50: #F8FAFC;
+            --gray-100: #F1F5F9;
+            --gray-200: #E2E8F0;
+            --gray-500: #64748B;
+            --gray-800: #1E293B;
+            --gray-900: #0F172A;
         }
 
-        html, body { height: 100%; font-family: 'Inter', sans-serif; }
+        html, body {
+            height: 100%;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--brand-navy);
+            color: var(--gray-900);
+            -webkit-font-smoothing: antialiased;
+        }
 
-        /* ── Layout ─────────────────────────────────── */
-        .login-wrap {
+        /* ── Split Screen Container ──────────────────── */
+        .auth-container {
             display: flex;
             min-height: 100vh;
+            width: 100%;
+            overflow: hidden;
         }
 
-        /* ── Left Panel ─────────────────────────────── */
-        .login-hero {
-            flex: 1;
-            background: linear-gradient(135deg, #04101A 0%, #08283C 50%, #020F1A 100%);
+        /* ── Left Column: Brand & Visual Identity ────── */
+        .auth-brand-side {
+            flex: 1.1;
+            background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-blue) 60%, #061120 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 56px 64px;
+            position: relative;
+            overflow: hidden;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Subtle Background Grid & Ambient Glow */
+        .auth-brand-side::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+            background-size: 36px 36px;
+            z-index: 0;
+        }
+
+        .auth-brand-side::after {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 181, 184, 0.18) 0%, rgba(15, 41, 74, 0.05) 60%, transparent 80%);
+            top: 40%;
+            left: 40%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .brand-header, .brand-body, .brand-footer {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Top Corporate PLN Header */
+        .pln-corporate-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 14px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .pln-logo-mini {
+            height: 18px;
+            width: auto;
+        }
+        .pln-corporate-text {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.9);
+            text-transform: uppercase;
+        }
+
+        /* Center Brand Identity & Emblem */
+        .brand-body {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin: auto 0;
+            padding: 32px 0;
+        }
+
+        .brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: #ffffff;
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+        .brand-title span {
+            color: var(--brand-teal);
+        }
+
+        .brand-subtitle {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+
+        /* Controlled Enterprise Badge Logo */
+        .emblem-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1.5px solid rgba(56, 189, 248, 0.25);
+            border-radius: 20px;
+            padding: 12px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 25px rgba(0, 181, 184, 0.15);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+            max-width: 290px;
+            width: 100%;
+        }
+        .emblem-card:hover {
+            border-color: rgba(56, 189, 248, 0.45);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 50px rgba(0, 181, 184, 0.3);
+        }
+        .emblem-img {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            display: block;
+        }
+
+        /* System Version Fingerprint Footer */
+        .brand-fingerprint {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.45);
+            font-family: monospace;
+        }
+        .version-badge {
+            background: rgba(0, 181, 184, 0.15);
+            color: var(--brand-teal);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            border: 1px solid rgba(0, 181, 184, 0.3);
+        }
+
+        /* ── Right Column: Compact Form Panel ────────── */
+        .auth-form-side {
+            flex: 0.9;
+            background: #ffffff;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 48px;
             position: relative;
-            overflow: hidden;
         }
 
-        /* Animated mesh grid overlay */
-        .login-hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(0,181,184,0.08) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,181,184,0.08) 1px, transparent 1px);
-            background-size: 44px 44px;
-            animation: gridMove 20s linear infinite;
-            z-index: 0;
-        }
-        @keyframes gridMove {
-            0%   { background-position: 0 0; }
-            100% { background-position: 44px 44px; }
-        }
-
-        /* Glowing center orb */
-        .login-hero::after {
-            content: '';
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(0,181,184,0.22) 0%, rgba(0,112,122,0.08) 50%, transparent 70%);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .auth-form-card {
             width: 100%;
+            max-width: 400px;
         }
 
-        /* Dominant Official System Emblem Logo (Gambar No. 3) */
-        .hero-logo-wrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
+        .form-title-wrap {
+            margin-bottom: 32px;
         }
-        .hero-logo-img-large {
-            max-width: 440px;
-            width: 100%;
-            height: auto;
-            border-radius: 28px;
-            border: 2px solid rgba(0, 225, 230, 0.45);
-            box-shadow: 0 20px 60px rgba(0, 181, 184, 0.55), 0 0 30px rgba(0, 225, 230, 0.2);
-            transition: all 0.4s ease;
-            object-fit: cover;
-        }
-        .hero-logo-img-large:hover {
-            transform: translateY(-4px) scale(1.025);
-            box-shadow: 0 24px 70px rgba(0, 225, 230, 0.7);
-        }
-        .hero-logo-text { line-height: 1; }
-        .hero-brand-name {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.6rem;
-            font-weight: 900;
-            letter-spacing: 2.5px;
-            background: linear-gradient(135deg, #ffffff 0%, #7ee8ea 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .hero-brand-sub {
-            font-size: 0.55rem;
-            font-weight: 600;
-            letter-spacing: 0.8px;
-            color: rgba(0,181,184,0.75);
-            text-transform: uppercase;
-            margin-top: 3px;
-        }
-
-        /* Headline */
-        .hero-headline {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2.4rem;
-            font-weight: 800;
-            color: #ffffff;
-            line-height: 1.2;
-            margin-bottom: 20px;
-        }
-        .hero-headline span {
-            background: linear-gradient(135deg, #00B5B8 0%, #22C55E 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .hero-desc {
-            font-size: 0.92rem;
-            color: rgba(255,255,255,0.55);
-            line-height: 1.7;
-            max-width: 380px;
-            margin-bottom: 44px;
-        }
-
-        /* Feature badges */
-        .feature-badges {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-        .badge-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 12px 18px;
-            backdrop-filter: blur(8px);
-            transition: all 0.3s;
-        }
-        .badge-item:hover {
-            background: rgba(0,181,184,0.1);
-            border-color: rgba(0,181,184,0.3);
-            transform: translateX(4px);
-        }
-        .badge-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            flex-shrink: 0;
-        }
-        .badge-icon.teal  { background: rgba(0,181,184,0.2); color: #00B5B8; }
-        .badge-icon.green { background: rgba(34,197,94,0.2);  color: #22C55E; }
-        .badge-icon.orange{ background: rgba(255,107,53,0.2); color: #FF6B35; }
-        .badge-text-title { font-size: 0.78rem; font-weight: 700; color: #ffffff; }
-        .badge-text-desc  { font-size: 0.68rem; color: rgba(255,255,255,0.45); }
-
-        /* Marquee ticker at bottom */
-        .marquee-wrap {
-            margin-top: 40px;
-            border-top: 1px solid rgba(255,255,255,0.07);
-            padding-top: 18px;
-            overflow: hidden;
-        }
-        .marquee-label {
-            font-size: 0.6rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            color: rgba(0,181,184,0.7);
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-        .marquee-track { overflow: hidden; white-space: nowrap; }
-        .marquee-inner {
+        .status-dot-online {
             display: inline-block;
-            animation: marquee 28s linear infinite;
-        }
-        .marquee-inner:hover { animation-play-state: paused; }
-        @keyframes marquee {
-            0%   { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-        .marquee-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-right: 40px;
-            font-size: 0.72rem;
-            color: rgba(255,255,255,0.5);
-            font-weight: 500;
-        }
-        .marquee-dot {
-            width: 5px;
-            height: 5px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background: #00B5B8;
-            flex-shrink: 0;
+            background: #22C55E;
+            margin-right: 6px;
+            animation: pulseDot 2s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.3); }
         }
 
-        /* ── Right Panel (Form) ──────────────────────── */
-        .login-form-panel {
-            width: 480px;
-            flex-shrink: 0;
-            background: #f8fafb;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 60px 52px;
-            position: relative;
-        }
-        .login-form-panel::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #00B5B8, #22C55E, #FF6B35);
-        }
-
-        .form-header { margin-bottom: 36px; }
-        .form-header-title {
+        .form-header-heading {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.75rem;
+            font-size: 1.85rem;
             font-weight: 800;
-            color: #0A1628;
+            color: var(--gray-900);
             letter-spacing: -0.5px;
-        }
-        .form-header-sub {
-            font-size: 0.85rem;
-            color: #64748b;
             margin-top: 6px;
         }
+        .form-header-subtext {
+            font-size: 0.88rem;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
 
-        .form-label-modern {
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: #374151;
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
-            margin-bottom: 7px;
-            display: block;
-        }
-        .input-modern {
-            width: 100%;
-            height: 52px;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 0 16px 0 48px;
-            font-size: 0.95rem;
-            font-family: 'Inter', sans-serif;
-            background: #ffffff;
-            color: #1e293b;
-            outline: none;
-            transition: all 0.25s;
-        }
-        .input-modern:focus {
-            border-color: #00B5B8;
-            box-shadow: 0 0 0 3.5px rgba(0,181,184,0.15);
-        }
-        .input-wrap {
-            position: relative;
+        /* Modern Compact Input Groups */
+        .form-group-modern {
             margin-bottom: 22px;
         }
-        .input-icon {
+        .form-label-modern {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .input-group-custom {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-icon-left {
             position: absolute;
             left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-size: 0.9rem;
-            pointer-events: none;
-            transition: color 0.25s;
+            color: #94A3B8;
+            font-size: 0.95rem;
+            transition: color 0.2s ease;
         }
-        .input-wrap:focus-within .input-icon { color: #00B5B8; }
+        .input-field-custom {
+            width: 100%;
+            height: 48px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 10px;
+            padding: 0 16px 0 46px;
+            font-size: 0.92rem;
+            color: var(--gray-900);
+            background: #ffffff;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .input-field-custom:focus {
+            border-color: var(--brand-teal);
+            box-shadow: 0 0 0 3.5px rgba(0, 181, 184, 0.15);
+        }
+        .input-group-custom:focus-within .input-icon-left {
+            color: var(--brand-teal);
+        }
 
-        /* password toggle */
-        .input-toggle-pw {
+        .pw-toggle-btn {
             position: absolute;
             right: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
+            color: #94A3B8;
             cursor: pointer;
+            padding: 6px;
             font-size: 0.9rem;
-            transition: color 0.2s;
+            transition: color 0.2s ease;
         }
-        .input-toggle-pw:hover { color: #00B5B8; }
+        .pw-toggle-btn:hover { color: var(--brand-teal); }
 
-        /* Alert */
-        .alert-modern {
+        /* Modern CTA Button */
+        .btn-submit-modern {
+            width: 100%;
+            height: 48px;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--brand-teal) 0%, #00878A 100%);
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 20px rgba(0, 181, 184, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-submit-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(0, 181, 184, 0.45);
+        }
+        .btn-submit-modern:active { transform: translateY(0); }
+
+        /* Alert Styling */
+        .alert-enterprise {
+            border-radius: 10px;
             padding: 12px 16px;
             font-size: 0.84rem;
             font-weight: 600;
@@ -340,217 +334,176 @@
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-        .alert-danger-modern { background: #fef2f2; color: #dc2626; }
-        .alert-success-modern { background: #f0fdf4; color: #16a34a; }
-
-        /* Button */
-        .btn-login-modern {
-            width: 100%;
-            height: 52px;
             border: none;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #00B5B8 0%, #00707A 100%);
-            color: #ffffff;
-            font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 20px rgba(0,181,184,0.35);
-            margin-top: 8px;
         }
-        .btn-login-modern:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 28px rgba(0,181,184,0.5);
-        }
-        .btn-login-modern:active { transform: translateY(0); }
+        .alert-enterprise-danger { background: #FEF2F2; color: #DC2626; border-left: 4px solid #EF4444; }
+        .alert-enterprise-success { background: #F0FDF4; color: #16A34A; border-left: 4px solid #22C55E; }
 
-        /* Footer */
-        .form-footer {
-            position: absolute;
-            bottom: 28px;
-            left: 52px;
-            right: 52px;
+        .form-footer-copyright {
+            margin-top: 36px;
             text-align: center;
-            font-size: 0.72rem;
-            color: #94a3b8;
+            font-size: 0.74rem;
+            color: var(--gray-500);
+            line-height: 1.5;
         }
 
-        /* Status bar dot */
-        .status-dot {
-            display: inline-block;
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #22C55E;
-            margin-right: 5px;
-            animation: pulse-dot 2s ease-in-out infinite;
-            vertical-align: middle;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.4); }
-        }
-
-        /* ── Responsive ─────────────────────────────── */
-        @media (max-width: 900px) {
-            .login-hero { display: none; }
-            .login-form-panel {
-                width: 100%;
-                padding: 48px 32px;
+        /* ── Responsive Rules ────────────────────────── */
+        @media (max-width: 992px) {
+            .auth-container { flex-direction: column; }
+            .auth-brand-side {
+                padding: 32px 24px;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             }
+            .brand-body { padding: 16px 0; align-items: center; text-align: center; }
+            .emblem-card { max-width: 220px; }
+            .auth-form-side { padding: 40px 24px; }
         }
         @media (max-width: 480px) {
-            .login-form-panel { padding: 40px 24px; }
+            .brand-title { font-size: 1.85rem; }
+            .form-header-heading { font-size: 1.5rem; }
+            .auth-form-side { padding: 32px 18px; }
         }
     </style>
 </head>
 <body>
 
-<div class="login-wrap">
+<div class="auth-container">
 
-    <!-- ──────────── LEFT HERO PANEL (Focused Dominant Emblem) ──────────── -->
-    <div class="login-hero animate__animated animate__fadeIn">
-        <div class="hero-content">
-            <!-- Dominant Official Branding Logo (Gambar No. 3 / High-Res Official Emblem) -->
-            <div class="hero-logo-wrap animate__animated animate__zoomIn">
-                <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Enterprise Official Emblem" class="hero-logo-img-large">
+    <!-- ──────────── LEFT COLUMN: BRAND & VISUAL IDENTITY ──────────── -->
+    <div class="auth-brand-side">
+        <!-- Top Corporate Badge -->
+        <div class="brand-header animate__animated animate__fadeInDown">
+            <div class="pln-corporate-tag">
+                <i class="fas fa-bolt text-warning" style="font-size: 12px;"></i>
+                <span class="pln-corporate-text">PT PLN (Persero) UP3 Sidoarjo</span>
             </div>
         </div>
 
-        <!-- Marquee ticker -->
-        <div class="marquee-wrap animate__animated animate__fadeIn animate__delay-2s">
-            <div class="marquee-label">&#9654; Info Sistem</div>
-            <div class="marquee-track">
-                <div class="marquee-inner">
-                    <?php
-                    $items = [
-                        'Inspeksi Jaringan Distribusi Sidoarjo',
-                        'ULP Sidoarjo Kota · ULP Krian · ULP Porong',
-                        'Pantau Status Temuan Real-Time',
-                        'Eviden Kubikel & Trafo Terdokumentasi',
-                        'Laporan Eksekutif & Cetak PDF',
-                        'Temuan Terdekat Berbasis GPS',
-                        'Identifikasi Gangguan Terintegrasi',
-                        'Sistem Inspeksi Digital PLN Sidoarjo',
-                    ];
-                    // Duplicate items for seamless loop
-                    $all = array_merge($items, $items);
-                    foreach ($all as $item):
-                    ?>
-                    <span class="marquee-item">
-                        <span class="marquee-dot"></span><?= esc($item) ?>
-                    </span>
-                    <?php endforeach; ?>
-                </div>
+        <!-- Center Identity & Controlled Emblem -->
+        <div class="brand-body animate__animated animate__fadeIn">
+            <h1 class="brand-title">SIDAK <span>TEJO</span></h1>
+            <div class="brand-subtitle">Sistem Data &amp; Tindak Lanjut Temuan Inspeksi Sidoarjo</div>
+
+            <div class="emblem-card">
+                <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Emblem" class="emblem-img">
             </div>
+        </div>
+
+        <!-- System Version Fingerprint Footer -->
+        <div class="brand-fingerprint animate__animated animate__fadeInUp">
+            <span class="version-badge"><?= esc(\Config\BuildVersion::SYSTEM_VERSION) ?></span>
+            <span>Build: <?= esc(\Config\BuildVersion::BUILD_ID) ?></span>
+            <span>•</span>
+            <span>Commit: <?= esc(\Config\BuildVersion::COMMIT_ID) ?></span>
         </div>
     </div>
 
-    <!-- ──────────── RIGHT FORM PANEL ──────────── -->
-    <div class="login-form-panel">
-        <div class="form-header animate__animated animate__fadeInDown">
-            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#00B5B8; margin-bottom:8px;">
-                <span class="status-dot"></span> Sistem Aktif
-            </div>
-            <div class="form-header-title">Selamat Datang 👋</div>
-            <div class="form-header-sub">Masuk ke akun SIDAK TEJO Anda untuk melanjutkan.</div>
-        </div>
-
-        <?php if (isset($error)): ?>
-        <div class="alert-modern alert-danger-modern animate__animated animate__shakeX">
-            <i class="fas fa-exclamation-circle"></i> <?= esc($error) ?>
-        </div>
-        <?php endif; ?>
-
-        <?php if (session()->getFlashdata('error')): ?>
-        <div class="alert-modern alert-danger-modern animate__animated animate__shakeX">
-            <i class="fas fa-exclamation-circle"></i> <?= esc(session()->getFlashdata('error')) ?>
-        </div>
-        <?php endif; ?>
-
-        <?php if (session()->getFlashdata('success')): ?>
-        <div class="alert-modern alert-success-modern">
-            <i class="fas fa-check-circle"></i> <?= esc(session()->getFlashdata('success')) ?>
-        </div>
-        <?php endif; ?>
-
-        <form action="<?= site_url('login') ?>" method="post" id="login-form">
-            <?= csrf_field() ?>
-
-            <!-- Username -->
-            <label class="form-label-modern" for="username">Username</label>
-            <div class="input-wrap">
-                <i class="fas fa-user input-icon"></i>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    class="input-modern"
-                    placeholder="Masukkan username Anda"
-                    required
-                    autofocus
-                    autocomplete="username"
-                    value="<?= old('username') ?>"
-                >
-            </div>
-
-            <!-- Password -->
-            <label class="form-label-modern" for="password">Password</label>
-            <div class="input-wrap">
-                <i class="fas fa-lock input-icon"></i>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    class="input-modern"
-                    placeholder="Masukkan password Anda"
-                    required
-                    autocomplete="current-password"
-                    style="padding-right: 48px;"
-                >
-                <span class="input-toggle-pw" id="toggle-pw" title="Tampilkan/sembunyikan password">
-                    <i class="fas fa-eye" id="toggle-pw-icon"></i>
-                </span>
-            </div>
-
-            <!-- Ingat Saya (30 Hari Token) Task 13 -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="remember_me" checked style="cursor: pointer;">
-                    <label class="form-check-label text-dark font-weight-bold small ms-1" for="remember_me" style="cursor: pointer; font-size: 13px;">
-                        Ingat Saya (Aktif 30 Hari)
-                    </label>
+    <!-- ──────────── RIGHT COLUMN: COMPACT LOGIN FORM ──────────── -->
+    <div class="auth-form-side">
+        <div class="auth-form-card animate__animated animate__fadeInRight">
+            
+            <div class="form-title-wrap">
+                <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--brand-teal);">
+                    <span class="status-dot-online"></span> Sistem Aktif &amp; Terbuka
                 </div>
+                <h2 class="form-header-heading">Selamat Datang 👋</h2>
+                <p class="form-header-subtext">Masuk dengan akun SIDAK TEJO Anda untuk melanjutkan.</p>
             </div>
 
-            <!-- Submit -->
-            <button type="submit" class="btn-login-modern" id="btn-submit">
-                <i class="fas fa-sign-in-alt"></i>
-                <span id="btn-label">MASUK KE SISTEM</span>
-            </button>
-        </form>
+            <?php if (isset($error)): ?>
+            <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX">
+                <i class="fas fa-exclamation-circle"></i> <?= esc($error) ?>
+            </div>
+            <?php endif; ?>
 
-        <div class="form-footer">
-            &copy; <?= date('Y') ?> SIDAK TEJO &mdash; PT PLN (Persero) UP3 Sidoarjo
+            <?php if (session()->getFlashdata('error')): ?>
+            <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX">
+                <i class="fas fa-exclamation-circle"></i> <?= esc(session()->getFlashdata('error')) ?>
+            </div>
+            <?php endif; ?>
+
+            <?php if (session()->getFlashdata('success')): ?>
+            <div class="alert-enterprise alert-enterprise-success">
+                <i class="fas fa-check-circle"></i> <?= esc(session()->getFlashdata('success')) ?>
+            </div>
+            <?php endif; ?>
+
+            <form action="<?= site_url('login') ?>" method="post" id="login-form" autocomplete="off">
+                <?= csrf_field() ?>
+
+                <!-- Username -->
+                <div class="form-group-modern">
+                    <label class="form-label-modern" for="username">Username</label>
+                    <div class="input-group-custom">
+                        <i class="fas fa-user input-icon-left"></i>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            class="input-field-custom"
+                            placeholder="Masukkan username Anda"
+                            required
+                            autofocus
+                            autocomplete="username"
+                            value="<?= old('username') ?>"
+                        >
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group-modern">
+                    <label class="form-label-modern" for="password">Password</label>
+                    <div class="input-group-custom">
+                        <i class="fas fa-lock input-icon-left"></i>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="input-field-custom"
+                            placeholder="Masukkan password Anda"
+                            required
+                            autocomplete="current-password"
+                            style="padding-right: 44px;"
+                        >
+                        <span class="pw-toggle-btn" id="toggle-pw" title="Tampilkan/sembunyikan password">
+                            <i class="fas fa-eye" id="toggle-pw-icon"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Remember Me Token -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="remember_me" checked style="cursor: pointer;">
+                        <label class="form-check-label text-dark font-weight-bold small ms-1" for="remember_me" style="cursor: pointer; font-size: 13px;">
+                            Ingat Saya (Aktif 30 Hari)
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit CTA Button -->
+                <button type="submit" class="btn-submit-modern" id="btn-submit">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span id="btn-label">MASUK KE SISTEM</span>
+                </button>
+            </form>
+
+            <div class="form-footer-copyright">
+                &copy; <?= date('Y') ?> SIDAK TEJO &bull; PT PLN (Persero) UP3 Sidoarjo<br>
+                <span style="font-size: 0.68rem; color: #94A3B8;">Build <?= esc(\Config\BuildVersion::BUILD_ID) ?> &bull; Enterprise Network Inspection</span>
+            </div>
         </div>
     </div>
 
 </div>
 
-<!-- jQuery & Bootstrap JS Local -->
+<!-- Scripts -->
 <script src="<?= base_url('plugins/jquery/jquery.min.js') ?>"></script>
 <script src="<?= base_url('plugins/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
 
 <script>
-    // Password toggle
+    // Password visibility toggle
     document.getElementById('toggle-pw').addEventListener('click', function() {
         const pw = document.getElementById('password');
         const icon = document.getElementById('toggle-pw-icon');
@@ -563,12 +516,11 @@
         }
     });
 
-    // Loading state on submit
+    // Submit loading state
     document.getElementById('login-form').addEventListener('submit', function() {
         const btn = document.getElementById('btn-submit');
-        const lbl = document.getElementById('btn-label');
         btn.disabled = true;
-        btn.style.opacity = '0.8';
+        btn.style.opacity = '0.85';
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>MEMVERIFIKASI...</span>';
     });
 </script>

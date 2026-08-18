@@ -12,6 +12,19 @@ class AuthFilter implements FilterInterface
     {
         $session = session();
 
+        // 0. Check Build Version — Automatic Session Invalidation on Deployment Build Update
+        $currentBuild = \Config\BuildVersion::BUILD_ID;
+        if ($session->get('logged_in')) {
+            $sessionBuild = $session->get('session_build');
+            if (!empty($sessionBuild) && $sessionBuild !== $currentBuild) {
+                $session->destroy();
+                if (isset($_COOKIE['sidaktejo_remember'])) {
+                    setcookie('sidaktejo_remember', '', time() - 3600, '/');
+                }
+                return redirect()->to(site_url('login?session_expired=build_update'))->with('error', 'Sistem telah diperbarui ke versi enterprise terbaru (' . $currentBuild . '). Silakan login kembali.');
+            }
+        }
+
         // 1. Cek jika session logged_in belum ada, periksa Cookie "Ingat Saya" (Remember Me 30 Hari)
         if (!$session->get('logged_in')) {
             $rememberCookie = $_COOKIE['sidaktejo_remember'] ?? null;

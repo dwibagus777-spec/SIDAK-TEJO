@@ -78,17 +78,16 @@ class AssetRepository
     {
         $builder->where('a.deleted_at IS NULL');
 
-        if (!empty($userUlpId)) {
-            $builder->groupStart()
-                ->where('a.ulp_id', $userUlpId)
-                ->orWhere('a.ulp_id IS NULL')
-                ->orWhere('a.ulp_id', 0)
-            ->groupEnd();
-        }
         if (!empty($filters['ulp_id']) && is_numeric($filters['ulp_id']) && (int)$filters['ulp_id'] > 0) {
             $uId = (int)$filters['ulp_id'];
             $builder->groupStart()
                 ->where('a.ulp_id', $uId)
+                ->orWhere('a.ulp_id IS NULL')
+                ->orWhere('a.ulp_id', 0)
+            ->groupEnd();
+        } elseif (!empty($userUlpId)) {
+            $builder->groupStart()
+                ->where('a.ulp_id', $userUlpId)
                 ->orWhere('a.ulp_id IS NULL')
                 ->orWhere('a.ulp_id', 0)
             ->groupEnd();

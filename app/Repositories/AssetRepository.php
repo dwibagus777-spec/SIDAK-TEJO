@@ -198,7 +198,7 @@ class AssetRepository
 
             // 2. Separate Clean Data Query
             $dataBuilder = $db->table('assets a');
-            $dataBuilder->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.lokasi, a.latitude, a.longitude, a.import_batch_id, a.created_at, u.nama_ulp, p.nama_penyulang, s.nama_section');
+            $dataBuilder->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section');
             $dataBuilder->join('ulps u', 'a.ulp_id = u.id', 'left');
             $dataBuilder->join('penyulang p', 'a.penyulang_id = p.id', 'left');
             $dataBuilder->join('sections s', 'a.section_id = s.id', 'left');

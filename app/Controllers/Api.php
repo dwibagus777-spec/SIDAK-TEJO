@@ -507,16 +507,22 @@ class Api extends BaseController
                 $strList[] = "'" . ($j['jenis_asset'] ?? 'NULL') . "':" . $j['cnt'];
             }
 
-            $rawCount = $db->table('assets')->where('penyulang_id', 15)->countAllResults();
-            $notDeletedCount = $db->table('assets')->where('penyulang_id', 15)->where('deleted_at IS NULL')->countAllResults();
-            $deletedCount = $db->table('assets')->where('penyulang_id', 15)->where('deleted_at IS NOT NULL')->countAllResults();
-            
-            $jtmNotDeleted = $db->table('assets')->where('penyulang_id', 15)->where('jenis_asset', 'JTM')->where('deleted_at IS NULL')->countAllResults();
-            $jtmDeleted = $db->table('assets')->where('penyulang_id', 15)->where('jenis_asset', 'JTM')->where('deleted_at IS NOT NULL')->countAllResults();
+            $repo = new \App\Repositories\AssetRepository();
+            $filters = [
+                'ulp_id'      => $ulpId,
+                'penyulang_id'=> $penyulangId,
+                'jenis_asset' => $jenisAsset,
+                'status'      => $status,
+                'search'      => $search
+            ];
+
+            $res = $repo->getFilteredAssetsPaginated($filters, null, 1, 50);
 
             return $this->respond([
                 'status' => 200,
-                'audit'  => "RAW:{$rawCount}|NOT_DEL:{$notDeletedCount}|DEL:{$deletedCount}|JTM_ACTIVE:{$jtmNotDeleted}|JTM_DEL:{$jtmDeleted}",
+                'total'  => $res['total'],
+                'count'  => count($res['data']),
+                'sample' => !empty($res['data']) ? array_slice($res['data'], 0, 2) : [],
             ]);
         } catch (\Throwable $e) {
             return $this->respond([

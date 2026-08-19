@@ -245,6 +245,7 @@
                                     <td class="ps-3 text-center">
                                         <input type="checkbox" class="check-asset-item form-check-input" value="<?= $a['id'] ?>">
                                     </td>
+                                    <td>
                                         <a href="<?= site_url('assets/detail/' . $a['id']) ?>" class="fw-bold font-monospace text-primary text-decoration-none">
                                             <?= esc($a['kode_asset']) ?>
                                         </a>

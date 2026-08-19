@@ -134,6 +134,7 @@
                     <button type="button" class="btn btn-success mr-1" id="btn-print"><i class="fas fa-print mr-1"></i> Cetak / PDF</button>
                     <button type="button" class="btn btn-warning text-dark mr-1" id="btn-excel"><i class="fas fa-file-excel mr-1"></i> Unduh Excel</button>
                     <button type="button" class="btn btn-secondary text-white mr-1" id="btn-csv"><i class="fas fa-file-csv mr-1"></i> Unduh CSV</button>
+                    <button type="button" class="btn btn-danger text-white mr-1" id="btn-pptx"><i class="fas fa-file-powerpoint mr-1"></i> Unduh PPT (.pptx)</button>
                 </div>
             </form>
         </div>
@@ -200,20 +201,24 @@
         $('#btn-excel').click(function() {
             const form = $('#form-laporan');
             form.attr('action', '<?= site_url('laporan/excel') ?>');
-            // Remove target blank temporarily for download
             form.removeAttr('target');
             form.submit();
-            // Restore target blank
             form.attr('target', '_blank');
         });
 
         $('#btn-csv').click(function() {
             const form = $('#form-laporan');
             form.attr('action', '<?= site_url('laporan/csv') ?>');
-            // Remove target blank temporarily for download
             form.removeAttr('target');
             form.submit();
-            // Restore target blank
+            form.attr('target', '_blank');
+        });
+
+        $('#btn-pptx').click(function() {
+            const form = $('#form-laporan');
+            form.attr('action', '<?= site_url('laporan/pptx') ?>');
+            form.removeAttr('target');
+            form.submit();
             form.attr('target', '_blank');
         });
 

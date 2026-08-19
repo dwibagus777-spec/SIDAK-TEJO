@@ -285,6 +285,156 @@ class Laporan extends BaseController
         exit;
     }
 
+    public function pptx()
+    {
+        $session = session();
+        $role = $session->get('user_role');
+        $userUlpId = $session->get('user_ulp_id');
+
+        $ulpIdFilter = null;
+        if ($role !== 'administrator' && $role !== 'har_crane' && $role !== 'inspeksi' && $userUlpId !== null) {
+            $ulpIdFilter = (int)$userUlpId;
+        }
+
+        $filters = $this->getFiltersFromRequest();
+        $data = $this->temuanRepository->getFilteredTemuan($filters, $ulpIdFilter);
+
+        log_activity('EXPORT_PPTX_REPORT', 'Mengekspor laporan temuan ke PowerPoint (.pptx).');
+
+        $objPHPPowerPoint = new \PhpOffice\PhpPresentation\PhpPresentation();
+        
+        // ── SLIDE 1: COVER SLIDE (Matching User Master Template) ──
+        $coverSlide = $objPHPPowerPoint->getActiveSlide();
+
+        $titleShape = $coverSlide->createRichTextShape()
+            ->setHeight(180)
+            ->setWidth(680)
+            ->setOffsetX(40)
+            ->setOffsetY(140);
+        $titleShape->getActiveParagraph()->getAlignment()->setHorizontal(\PhpOffice\PhpPresentation\Style\Alignment::HORIZONTAL_LEFT);
+        
+        $textRun1 = $titleShape->createTextRun("LAPORAN TEMUAN EMERGENCY\n");
+        $textRun1->getFont()->setBold(true)->setSize(32)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF008080'));
+
+        $textRun2 = $titleShape->createTextRun("UP3 SIDOARJO\nULP SIDOARJO KOTA");
+        $textRun2->getFont()->setBold(true)->setSize(24)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF003637'));
+
+        $plnLogoPath = FCPATH . 'dist/img/logo_pln.png';
+        if (file_exists($plnLogoPath)) {
+            $logoShape = new \PhpOffice\PhpPresentation\Shape\Drawing\File();
+            $logoShape->setName('PLN Logo')
+                ->setPath($plnLogoPath)
+                ->setHeight(70)
+                ->setOffsetX(780)
+                ->setOffsetY(40);
+            $coverSlide->addShape($logoShape);
+        }
+
+        $isoShape = $coverSlide->createRichTextShape()
+            ->setHeight(40)
+            ->setWidth(450)
+            ->setOffsetX(40)
+            ->setOffsetY(480);
+        $isoText = $isoShape->createTextRun("ISO 37001 Sistem Manajemen Anti Penyuapan (SMAP)");
+        $isoText->getFont()->setSize(10)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF64748B'));
+
+        $webShape = $coverSlide->createRichTextShape()
+            ->setHeight(30)
+            ->setWidth(200)
+            ->setOffsetX(740)
+            ->setOffsetY(480);
+        $webText = $webShape->createTextRun("www.pln.co.id");
+        $webText->getFont()->setBold(true)->setSize(11)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF008080'));
+
+        // ── SLIDES 2 TO N: ITEM SLIDES (1 Slide per Temuan Record) ──
+        foreach ($data as $row) {
+            $slide = $objPHPPowerPoint->createSlide();
+
+            $headerShape = $slide->createRichTextShape()
+                ->setHeight(60)
+                ->setWidth(720)
+                ->setOffsetX(40)
+                ->setOffsetY(25);
+            $headerRun = $headerShape->createTextRun("LIST TO EMERGENCY " . strtoupper($row['nama_ulp'] ?? 'SIDOARJO') . " P . " . strtoupper($row['nama_penyulang'] ?? 'SURABAYA'));
+            $headerRun->getFont()->setBold(true)->setSize(16)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF0F172A'));
+
+            if (file_exists($plnLogoPath)) {
+                $itemLogo = new \PhpOffice\PhpPresentation\Shape\Drawing\File();
+                $itemLogo->setName('PLN Logo')
+                    ->setPath($plnLogoPath)
+                    ->setHeight(50)
+                    ->setOffsetX(800)
+                    ->setOffsetY(20);
+                $slide->addShape($itemLogo);
+            }
+
+            // Photo 1 (foto_sebelum)
+            $img1Path = !empty($row['foto_sebelum']) ? FCPATH . 'uploads/' . $row['foto_sebelum'] : null;
+            if ($img1Path && file_exists($img1Path)) {
+                $drawing1 = new \PhpOffice\PhpPresentation\Shape\Drawing\File();
+                $drawing1->setName('Foto Sebelum')
+                    ->setPath($img1Path)
+                    ->setWidth(210)
+                    ->setHeight(330)
+                    ->setOffsetX(40)
+                    ->setOffsetY(100);
+                $slide->addShape($drawing1);
+            }
+
+            // Photo 2 (foto_sesudah or foto_detail)
+            $img2Path = !empty($row['foto_sesudah']) ? FCPATH . 'uploads/' . $row['foto_sesudah'] : (!empty($row['foto_detail']) ? FCPATH . 'uploads/' . $row['foto_detail'] : null);
+            if ($img2Path && file_exists($img2Path)) {
+                $drawing2 = new \PhpOffice\PhpPresentation\Shape\Drawing\File();
+                $drawing2->setName('Foto Detail')
+                    ->setPath($img2Path)
+                    ->setWidth(210)
+                    ->setHeight(330)
+                    ->setOffsetX(265)
+                    ->setOffsetY(100);
+                $slide->addShape($drawing2);
+            }
+
+            // Right-side Description & Metadata Box
+            $descShape = $slide->createRichTextShape()
+                ->setHeight(330)
+                ->setWidth(420)
+                ->setOffsetX(495)
+                ->setOffsetY(100);
+            
+            $p = $descShape->getActiveParagraph();
+            $p->getAlignment()->setHorizontal(\PhpOffice\PhpPresentation\Style\Alignment::HORIZONTAL_LEFT);
+
+            $runDetail = $descShape->createTextRun(esc($row['detail_temuan']) . "\n\n");
+            $runDetail->getFont()->setBold(true)->setSize(16)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF0F172A'));
+
+            $runMeta = $descShape->createTextRun(
+                "Nomor Temuan: " . esc($row['nomor_temuan']) . "\n" .
+                "Jenis Temuan: " . esc($row['jenis_temuan']) . " | Prioritas: " . esc($row['prioritas']) . "\n" .
+                "Pelaksana: " . esc($row['pelaksana']) . "\n" .
+                "Tanggal: " . date('d-m-Y', strtotime($row['tanggal_temuan'])) . " | Status: " . esc($row['status'])
+            );
+            $runMeta->getFont()->setSize(11)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF475569'));
+
+            $itemWebShape = $slide->createRichTextShape()
+                ->setHeight(30)
+                ->setWidth(200)
+                ->setOffsetX(740)
+                ->setOffsetY(480);
+            $itemWebRun = $itemWebShape->createTextRun("www.pln.co.id");
+            $itemWebRun->getFont()->setBold(true)->setSize(11)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF008080'));
+        }
+
+        $filename = 'Laporan_Sidak_Tejo_' . date('Ymd_His') . '.pptx';
+        
+        header('Content-Type: application/vnd.openxmlformats-officedocument.presentationml.presentation');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $oWriter = \PhpOffice\PhpPresentation\IOFactory::createWriter($objPHPPowerPoint, 'PowerPoint2007');
+        $oWriter->save('php://output');
+        exit;
+    }
+
     // ==========================================
     // LAPORAN EVIDEN
     // ==========================================

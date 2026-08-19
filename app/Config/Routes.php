@@ -311,6 +311,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('print', 'Laporan::print');
         $routes->post('excel', 'Laporan::excel');
         $routes->post('csv', 'Laporan::csv');
+        $routes->post('pptx', 'Laporan::pptx');
 
         // Laporan Eviden
         $routes->get('eviden', 'Laporan::eviden');

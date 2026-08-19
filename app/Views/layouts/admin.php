@@ -2291,8 +2291,111 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 stopQrCameraScanner();
             });
         }
+
+        // ── ENTERPRISE LOGOUT INTERCEPTOR ──
+        var logoutLinks = document.querySelectorAll('a[href*="logout"]');
+        logoutLinks.forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                if (this.dataset.loggingOut) return;
+                this.dataset.loggingOut = 'true';
+                this.style.pointerEvents = 'none';
+                this.style.opacity = '0.5';
+
+                var overlay = document.getElementById('logout-overlay');
+                var pageWrapper = document.querySelector('.page') || document.body;
+
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                    overlay.offsetHeight;
+                    overlay.classList.add('show');
+                }
+
+                if (pageWrapper) {
+                    pageWrapper.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
+                    pageWrapper.style.transform = 'scale(0.98)';
+                    pageWrapper.style.opacity = '0.4';
+                }
+
+                var targetUrl = this.getAttribute('href');
+                setTimeout(function() {
+                    window.location.href = targetUrl;
+                }, 300);
+
+                e.preventDefault();
+            });
+        });
     });
     </script>
+
+    <!-- Enterprise Logout Transition Overlay (Pure CSS & JS) -->
+    <div id="logout-overlay" class="logout-overlay" style="display: none;">
+        <div class="logout-overlay-content text-center">
+            <div class="logout-spinner-wrap mb-3">
+                <div class="logout-pulse-ring"></div>
+                <img src="<?= base_url('assets/img/favicon_sidak.png') ?>" alt="SIDAK TEJO Logo" class="logout-brand-logo">
+            </div>
+            <h5 class="font-weight-bold text-white mb-1" style="letter-spacing: 1.5px; font-family: 'Outfit', sans-serif;">SIDAK TEJO</h5>
+            <p class="text-white-50 small mb-3">Mengakhiri sesi dengan aman...</p>
+            <div class="logout-dots-loader">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    .logout-overlay {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle at 50% 50%, #0F2D4A 0%, #081B30 65%, #040E1A 95%);
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        pointer-events: none;
+    }
+    .logout-overlay.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .logout-spinner-wrap {
+        position: relative;
+        display: inline-block;
+    }
+    .logout-pulse-ring {
+        position: absolute;
+        inset: -8px;
+        border-radius: 20px;
+        border: 2px solid rgba(0, 181, 184, 0.4);
+        animation: logoutPulse 1.6s ease-out infinite;
+    }
+    @keyframes logoutPulse {
+        0% { transform: scale(0.95); opacity: 0.8; }
+        100% { transform: scale(1.3); opacity: 0; }
+    }
+    .logout-brand-logo {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        box-shadow: 0 0 25px rgba(0, 181, 184, 0.5);
+    }
+    .logout-dots-loader span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin: 0 4px;
+        border-radius: 50%;
+        background-color: #00B5B8;
+        animation: logoutDotBounce 1.2s infinite ease-in-out both;
+    }
+    .logout-dots-loader span:nth-child(1) { animation-delay: -0.32s; }
+    .logout-dots-loader span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes logoutDotBounce {
+        0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+        40% { transform: scale(1); opacity: 1; }
+    }
+    </style>
 
     <?= $this->renderSection('scripts') ?>
 </body>

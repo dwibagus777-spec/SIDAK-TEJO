@@ -458,16 +458,68 @@
             .auth-form-side { padding: 32px 18px; }
         }
 
+        /* ── GPU-ACCELERATED CINEMATIC REVEAL ANIMATIONS ── */
+        .auth-brand-side {
+            animation: loginBrandFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .auth-form-card {
+            animation: loginCardFadeIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+        }
+
+        .form-stagger-1 { animation: loginItemSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both; }
+        .form-stagger-2 { animation: loginItemSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both; }
+        .form-stagger-3 { animation: loginItemSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both; }
+
+        @keyframes loginBrandFadeIn {
+            0% { opacity: 0; transform: translateY(-16px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes loginCardFadeIn {
+            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes loginItemSlide {
+            0% { opacity: 0; transform: translateY(12px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Subtle Pure CSS Infrastructure Light Line Effect */
+        .infra-scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #00B5B8 50%, transparent 100%);
+            opacity: 0.7;
+            animation: infraLineMove 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        @keyframes infraLineMove {
+            0% { transform: translateY(0); opacity: 0; }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.8; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-            .auth-brand-side, .auth-form-side, .auth-container {
+            .auth-brand-side, .auth-form-side, .auth-container, .auth-form-card, .form-stagger-1, .form-stagger-2, .form-stagger-3 {
+                animation: none !important;
                 transition: none !important;
             }
+            .infra-scan-line { display: none !important; }
         }
     </style>
 </head>
 <body>
 
 <div class="auth-viewport-wrapper" id="auth-viewport">
+    <div class="infra-scan-line"></div>
 
     <!-- Seamless Deep Backdrop Revealed During Book Opening -->
     <div class="book-spine-backdrop" id="spine-backdrop">
@@ -551,7 +603,7 @@
                     <?= csrf_field() ?>
 
                     <!-- Username -->
-                    <div class="form-group-modern">
+                    <div class="form-group-modern form-stagger-1">
                         <label class="form-label-modern" for="username">Username</label>
                         <div class="input-group-custom">
                             <i class="fas fa-user input-icon-left"></i>
@@ -570,7 +622,7 @@
                     </div>
 
                     <!-- Password -->
-                    <div class="form-group-modern">
+                    <div class="form-group-modern form-stagger-2">
                         <label class="form-label-modern" for="password">Password</label>
                         <div class="input-group-custom">
                             <i class="fas fa-lock input-icon-left"></i>

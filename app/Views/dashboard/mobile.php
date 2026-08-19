@@ -176,7 +176,7 @@
             <a href="<?= site_url('temuan/update-pekerjaan') ?>" class="quick-emc-m-item">
                 <i class="fas fa-pen-to-square text-warning"></i><span>Update</span>
             </a>
-            <a href="<?= site_url('assets') ?>" class="quick-emc-m-item">
+            <a href="javascript:void(0)" onclick="triggerQrScanModal()" class="quick-emc-m-item">
                 <i class="fas fa-qrcode text-purple"></i><span>QR Scan</span>
             </a>
             <a href="<?= site_url('ai-copilot') ?>" class="quick-emc-m-item">

@@ -1176,6 +1176,11 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             <i class="fas fa-print"></i>
             <span>Laporan</span>
         </a>
+        <!-- Logout Mobile -->
+        <a href="<?= site_url('logout') ?>" class="mob-nav-item text-danger" title="Keluar dari Sistem">
+            <i class="fas fa-power-off text-danger"></i>
+            <span class="text-danger fw-bold">Logout</span>
+        </a>
     </nav>
 
     <!-- Local JS Files (Offline-Safe & Correct Scope) -->

@@ -8,7 +8,7 @@
             <i class="fas <?= $isEdit ? 'fa-pen-to-square text-warning' : 'fa-plus-circle text-primary' ?> me-2"></i> 
             <?= $isEdit ? 'Edit Master Asset: ' . esc($asset['kode_asset']) : 'Tambah Master Asset Baru' ?>
         </h3>
-        <a href="<?= site_url('assets') ?>" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="fas fa-arrow-left me-1"></i> Batal</a>
+        <a href="<?= site_url('master-assets') ?>" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="fas fa-arrow-left me-1"></i> Batal</a>
     </div>
 
     <div class="card border-0 shadow-sm rounded-4">

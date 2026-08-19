@@ -507,28 +507,27 @@ class Api extends BaseController
                 $strList[] = "'" . ($j['jenis_asset'] ?? 'NULL') . "':" . $j['cnt'];
             }
 
-            $countBuilder = $db->table('assets a');
             $repo = new \App\Repositories\AssetRepository();
             $filters = [
-                'ulp_id'      => $ulpId,
-                'penyulang_id'=> $penyulangId,
-                'jenis_asset' => $jenisAsset,
-                'status'      => $status,
-                'search'      => $search
+                'ulp_id'      => '1',
+                'penyulang_id'=> '15',
+                'jenis_asset' => 'JTM',
+                'status'      => '',
+                'search'      => '',
             ];
-            
-            // Reflection or public test of applyAssetFilters
-            $refMethod = new \ReflectionMethod($repo, 'applyAssetFilters');
-            $refMethod->setAccessible(true);
-            $refMethod->invoke($repo, $countBuilder, $filters, null);
-            
-            $compiledSql = $countBuilder->getCompiledSelect();
-            $testCountResult = $db->query($compiledSql)->getResultArray();
+            $resNull = $repo->getFilteredAssetsPaginated($filters, null, 1, 50);
+            $res1    = $repo->getFilteredAssetsPaginated($filters, 1, 1, 50);
+            $res3    = $repo->getFilteredAssetsPaginated($filters, 3, 1, 50);
 
             return $this->respond([
                 'status' => 200,
-                'sql' => $compiledSql,
-                'cnt' => count($testCountResult),
+                'null_total' => $resNull['total'],
+                'null_cnt'   => count($resNull['data']),
+                'ulp1_total' => $res1['total'],
+                'ulp1_cnt'   => count($res1['data']),
+                'ulp3_total' => $res3['total'],
+                'ulp3_cnt'   => count($res3['data']),
+                'sample_row' => $resNull['data'][0] ?? null
             ]);
         } catch (\Throwable $e) {
             return $this->respond([

@@ -458,68 +458,77 @@
             .auth-form-side { padding: 32px 18px; }
         }
 
-        /* ── GPU-ACCELERATED CINEMATIC REVEAL ANIMATIONS ── */
-        .auth-brand-side {
-            animation: loginBrandFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-
-        .auth-form-card {
-            animation: loginCardFadeIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
-        }
-
-        .form-stagger-1 { animation: loginItemSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both; }
-        .form-stagger-2 { animation: loginItemSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both; }
-        .form-stagger-3 { animation: loginItemSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both; }
-
-        @keyframes loginBrandFadeIn {
-            0% { opacity: 0; transform: translateY(-16px) scale(0.98); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes loginCardFadeIn {
-            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes loginItemSlide {
-            0% { opacity: 0; transform: translateY(12px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Subtle Pure CSS Infrastructure Light Line Effect */
-        .infra-scan-line {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent 0%, #00B5B8 50%, transparent 100%);
-            opacity: 0.7;
-            animation: infraLineMove 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-            z-index: 5;
+        /* ── CINEMATIC DOOR REVEAL (PURE CSS & GPU ACCELERATED) ── */
+        .cinematic-reveal {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            display: flex;
             pointer-events: none;
         }
+        .cinematic-panel {
+            width: 50vw;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 50%, #0F2D4A 0%, #081B30 65%, #040E1A 100%);
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform;
+        }
+        .cinematic-panel-left {
+            transform: translateX(0);
+            border-right: 1px solid rgba(0, 181, 184, 0.2);
+        }
+        .cinematic-panel-right {
+            transform: translateX(0);
+            border-left: 1px solid rgba(0, 181, 184, 0.2);
+        }
 
-        @keyframes infraLineMove {
-            0% { transform: translateY(0); opacity: 0; }
-            20% { opacity: 0.8; }
-            80% { opacity: 0.8; }
-            100% { transform: translateY(100vh); opacity: 0; }
+        /* Door Open State */
+        body.cinematic-door-open .cinematic-panel-left {
+            transform: translateX(-100%);
+        }
+        body.cinematic-door-open .cinematic-panel-right {
+            transform: translateX(100%);
+        }
+
+        /* Login Content Reveal */
+        .auth-brand-side {
+            opacity: 0;
+            transform: translateY(-12px) scale(0.985);
+            transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, opacity 0.65s ease 0.15s;
+        }
+        .auth-form-card {
+            opacity: 0;
+            transform: translateY(16px) scale(0.985);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s, opacity 0.6s ease 0.25s;
+        }
+
+        body.cinematic-door-open .auth-brand-side {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        body.cinematic-door-open .auth-form-card {
+            opacity: 1;
+            transform: translateY(0) scale(1);
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .auth-brand-side, .auth-form-side, .auth-container, .auth-form-card, .form-stagger-1, .form-stagger-2, .form-stagger-3 {
-                animation: none !important;
+            .cinematic-panel, .auth-brand-side, .auth-form-card {
                 transition: none !important;
+                transform: none !important;
+                opacity: 1 !important;
             }
-            .infra-scan-line { display: none !important; }
+            .cinematic-reveal { display: none !important; }
         }
     </style>
 </head>
 <body>
 
 <div class="auth-viewport-wrapper" id="auth-viewport">
-    <div class="infra-scan-line"></div>
+    <!-- Cinematic Door Reveal Overlay (Symmetrical Door Opening) -->
+    <div class="cinematic-reveal" id="cinematic-reveal-overlay">
+        <div class="cinematic-panel cinematic-panel-left"></div>
+        <div class="cinematic-panel cinematic-panel-right"></div>
+    </div>
 
     <!-- Seamless Deep Backdrop Revealed During Book Opening -->
     <div class="book-spine-backdrop" id="spine-backdrop">
@@ -756,6 +765,12 @@
         .catch(err => {
             console.warn('[AUTH_AJAX_FALLBACK] Retrying standard submit:', err);
             form.submit();
+    // Trigger Cinematic Door Open Reveal on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        requestAnimationFrame(function() {
+            setTimeout(function() {
+                document.body.classList.add('cinematic-door-open');
+            }, 50);
         });
     });
 </script>

@@ -413,15 +413,17 @@
             line-height: 1.5;
         }
 
-        /* ── 3D BOOK OPENING ANIMATION ACTIVE STATES ──── */
+        /* ── TWO-DOOR OPENING ACTIVE STATES ON LOGIN SUBMIT ──── */
         .book-opening-active .auth-brand-side {
-            transform: rotateY(-90deg);
-            opacity: 0;
+            transform: translateX(-100%) !important;
+            opacity: 0 !important;
+            transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.75s ease !important;
         }
 
         .book-opening-active .auth-form-side {
-            transform: rotateY(90deg);
-            opacity: 0;
+            transform: translateX(100%) !important;
+            opacity: 0 !important;
+            transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.75s ease !important;
         }
 
         /* ── Responsive Rules ────────────────────────── */
@@ -431,18 +433,14 @@
                 padding: 32px 24px;
                 border-right: none;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                transform-origin: top center;
-            }
-            .auth-form-side {
-                transform-origin: bottom center;
             }
             .book-opening-active .auth-brand-side {
-                transform: translateY(-100%) scale(0.9);
-                opacity: 0;
+                transform: translateY(-100%) !important;
+                opacity: 0 !important;
             }
             .book-opening-active .auth-form-side {
-                transform: translateY(100%) scale(0.9);
-                opacity: 0;
+                transform: translateY(100%) !important;
+                opacity: 0 !important;
             }
             .emblem-img-prominent { max-width: 320px; }
             .auth-form-side { padding: 40px 24px; }

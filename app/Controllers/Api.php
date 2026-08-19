@@ -477,6 +477,13 @@ class Api extends BaseController
                 ->groupBy('jenis_asset')
                 ->get()->getResultArray();
 
+            $distinctUlpForPenyulang15 = $db->table('assets')
+                ->select('ulp_id, count(*) as cnt')
+                ->where('deleted_at IS NULL')
+                ->where('penyulang_id', 15)
+                ->groupBy('ulp_id')
+                ->get()->getResultArray();
+
             $repo = new \App\Repositories\AssetRepository();
             $filters = [
                 'ulp_id'      => $ulpId,
@@ -485,13 +492,14 @@ class Api extends BaseController
                 'status'      => $status,
                 'search'      => $search
             ];
-            $repoResult = $repo->getFilteredAssetsPaginated($filters, null, 1, 50);
+            $repoResultNull = $repo->getFilteredAssetsPaginated($filters, null, 1, 50);
+            $repoResult3    = $repo->getFilteredAssetsPaginated($filters, 3, 1, 50);
 
             return $this->respond([
                 'status' => 200,
-                'distribution' => $jenisInPenyulang15,
-                'repo_total'   => $repoResult['total'],
-                'data_sample'  => array_slice($repoResult['data'], 0, 3),
+                'ulp_dist_penyulang_15' => $distinctUlpForPenyulang15,
+                'repo_total_null'       => $repoResultNull['total'],
+                'repo_total_role_ulp_3' => $repoResult3['total'],
             ]);
         } catch (\Throwable $e) {
             return $this->respond([

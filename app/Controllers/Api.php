@@ -507,9 +507,19 @@ class Api extends BaseController
                 $strList[] = "'" . ($j['jenis_asset'] ?? 'NULL') . "':" . $j['cnt'];
             }
 
+            $distinctJenis = $db->table('assets')
+                ->select('jenis_asset, count(*) as cnt')
+                ->where('deleted_at IS NULL')
+                ->where('penyulang_id', 15)
+                ->groupBy('jenis_asset')
+                ->get()->getResultArray();
+
+            $resTrafo = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'Trafo'], null, 1, 50);
+
             return $this->respond([
                 'status' => 200,
-                'jenis_list' => implode(' | ', $strList),
+                'distinct_jenis' => $distinctJenis,
+                'trafo_count'    => $resTrafo['total'],
             ]);
         } catch (\Throwable $e) {
             return $this->respond([

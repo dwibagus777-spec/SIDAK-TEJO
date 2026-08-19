@@ -2319,8 +2319,24 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 e.preventDefault();
             });
         });
+
+        // ── TRUE TWO-DOOR REVEAL ON DASHBOARD ENTRY ──
+        var revealEl = document.getElementById('cinematicReveal');
+        if (revealEl) {
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    revealEl.classList.add('is-open');
+                });
+            });
+        }
     });
     </script>
+
+    <!-- True Two-Door Reveal Overlay on Dashboard Entry -->
+    <div class="cinematic-reveal" id="cinematicReveal">
+        <div class="cinematic-panel cinematic-panel-left"></div>
+        <div class="cinematic-panel cinematic-panel-right"></div>
+    </div>
 
     <!-- Cinematic Door Close Overlay for Logout -->
     <div class="cinematic-logout-overlay" id="cinematic-logout-overlay" style="display: none;">
@@ -2334,6 +2350,49 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     </div>
 
     <style>
+    /* ── TRUE TWO-DOOR REVEAL FROM CENTER ── */
+    .cinematic-reveal {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        display: flex;
+        z-index: 99999;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .cinematic-reveal .cinematic-panel-left {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 100%;
+        background: radial-gradient(circle at 70% 50%, #0F2D4A 0%, #081B30 65%, #040E1A 100%);
+        border-right: 1px solid rgba(0, 181, 184, 0.3);
+        transition: transform 850ms cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: transform;
+        transform: translateX(0);
+    }
+    .cinematic-reveal .cinematic-panel-right {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 50%;
+        height: 100%;
+        background: radial-gradient(circle at 30% 50%, #0F2D4A 0%, #081B30 65%, #040E1A 100%);
+        border-left: 1px solid rgba(0, 181, 184, 0.3);
+        transition: transform 850ms cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: transform;
+        transform: translateX(0);
+    }
+    .cinematic-reveal.is-open .cinematic-panel-left {
+        transform: translateX(-100%);
+    }
+    .cinematic-reveal.is-open .cinematic-panel-right {
+        transform: translateX(100%);
+    }
+
     .cinematic-logout-overlay {
         position: fixed;
         inset: 0;
@@ -2389,11 +2448,12 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .cinematic-logout-overlay .cinematic-panel, .cinematic-logout-brand {
+        .cinematic-reveal, .cinematic-logout-overlay .cinematic-panel, .cinematic-logout-brand {
             transition: none !important;
             transform: none !important;
             opacity: 1 !important;
         }
+        .cinematic-reveal { display: none !important; }
     }
     </style>
 

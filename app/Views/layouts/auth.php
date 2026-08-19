@@ -38,20 +38,24 @@
 
         html, body {
             height: 100%;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--brand-navy);
             color: var(--gray-900);
             -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
+            overflow: hidden;
         }
 
         /* ── 3D Viewport Wrapper for Book Opening Animation ── */
         .auth-viewport-wrapper {
             position: relative;
             width: 100%;
-            min-height: 100vh;
+            height: 100vh;
+            height: 100dvh;
+            max-height: 100dvh;
             overflow: hidden;
-            perspective: 1600px;
             background: #040E1A;
         }
 
@@ -96,30 +100,28 @@
         /* ── Split Screen Container ──────────────────── */
         .auth-container {
             display: flex;
-            min-height: 100vh;
+            height: 100vh;
+            height: 100dvh;
+            max-height: 100dvh;
             width: 100%;
             position: relative;
             z-index: 2;
-            transform-style: preserve-3d;
-            transition: transform 0.85s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+            overflow: hidden;
         }
 
         /* ── Left Column: Brand & High-Vis Visual Identity ────── */
         .auth-brand-side {
-            flex: 1.25;
+            flex: 1.2;
             background: radial-gradient(circle at 40% 40%, #0F2D4A 0%, #081B30 65%, #040E1A 100%);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 48px 56px;
+            padding: 32px 40px;
             position: relative;
             overflow: hidden;
             border-right: 1px solid rgba(56, 189, 248, 0.15);
             text-align: center;
-            transform-origin: left center;
-            transition: transform 0.85s cubic-bezier(0.645, 0.045, 0.355, 1.000), opacity 0.85s ease;
-            backface-visibility: hidden;
         }
 
         /* Subtle Background Grid Overlay */
@@ -138,8 +140,8 @@
         .auth-brand-side::after {
             content: '';
             position: absolute;
-            width: 650px;
-            height: 650px;
+            width: 500px;
+            height: 500px;
             border-radius: 50%;
             background: radial-gradient(circle, rgba(0, 181, 184, 0.25) 0%, rgba(245, 158, 11, 0.08) 45%, transparent 70%);
             top: 50%;
@@ -159,18 +161,18 @@
         .pln-corporate-tag {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 8px 18px;
-            border-radius: 24px;
+            padding: 6px 16px;
+            border-radius: 20px;
             backdrop-filter: blur(12px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         .pln-corporate-text {
-            font-size: 0.76rem;
+            font-size: 0.74rem;
             font-weight: 800;
-            letter-spacing: 1.2px;
+            letter-spacing: 1px;
             color: #ffffff;
             text-transform: uppercase;
         }
@@ -182,43 +184,39 @@
             align-items: center;
             justify-content: center;
             margin: auto 0;
-            padding: 24px 0;
+            padding: 16px 0;
         }
 
         .hero-emblem-wrapper {
             position: relative;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
             display: inline-block;
         }
 
         .emblem-img-prominent {
-            max-width: 440px;
+            max-width: 290px;
             width: 100%;
             height: auto;
-            border-radius: 24px;
+            border-radius: 20px;
             border: 2px solid rgba(0, 225, 230, 0.5);
             box-shadow:
-                0 20px 60px rgba(0, 181, 184, 0.55),
-                0 0 35px rgba(245, 158, 11, 0.3),
-                0 0 15px rgba(255, 255, 255, 0.2);
+                0 15px 45px rgba(0, 181, 184, 0.45),
+                0 0 25px rgba(245, 158, 11, 0.25);
             filter: contrast(1.05) brightness(1.02);
             transition: all 0.35s ease;
         }
         .emblem-img-prominent:hover {
-            transform: scale(1.025) translateY(-3px);
-            box-shadow:
-                0 25px 70px rgba(0, 225, 230, 0.7),
-                0 0 45px rgba(245, 158, 11, 0.4);
+            transform: scale(1.02) translateY(-2px);
         }
 
         .brand-title-prominent {
             font-family: 'Outfit', sans-serif;
-            font-size: 2.6rem;
+            font-size: 2.2rem;
             font-weight: 900;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             color: #ffffff;
             line-height: 1.1;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             text-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         .brand-title-prominent span {
@@ -229,13 +227,13 @@
         }
 
         .brand-subtitle-prominent {
-            font-size: 0.88rem;
+            font-size: 0.82rem;
             font-weight: 700;
             color: rgba(255, 255, 255, 0.85);
-            letter-spacing: 0.8px;
+            letter-spacing: 0.6px;
             text-transform: uppercase;
-            max-width: 420px;
-            line-height: 1.4;
+            max-width: 380px;
+            line-height: 1.35;
         }
 
         /* System Version Fingerprint Footer */
@@ -243,16 +241,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            font-size: 0.74rem;
+            gap: 10px;
+            font-size: 0.72rem;
             color: rgba(255, 255, 255, 0.5);
             font-family: monospace;
         }
         .version-badge {
             background: rgba(0, 181, 184, 0.2);
             color: var(--brand-teal);
-            padding: 3px 10px;
-            border-radius: 8px;
+            padding: 2px 8px;
+            border-radius: 6px;
             font-weight: 700;
             border: 1px solid rgba(0, 181, 184, 0.4);
         }
@@ -265,11 +263,9 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 48px;
+            padding: 36px;
             position: relative;
-            transform-origin: right center;
-            transition: transform 0.85s cubic-bezier(0.645, 0.045, 0.355, 1.000), opacity 0.85s ease;
-            backface-visibility: hidden;
+            overflow-y: auto;
         }
 
         .auth-form-card {

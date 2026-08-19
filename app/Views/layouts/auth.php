@@ -765,6 +765,9 @@
         .catch(err => {
             console.warn('[AUTH_AJAX_FALLBACK] Retrying standard submit:', err);
             form.submit();
+        });
+    });
+
     // Trigger Cinematic Door Open Reveal on page load
     document.addEventListener('DOMContentLoaded', function() {
         requestAnimationFrame(function() {

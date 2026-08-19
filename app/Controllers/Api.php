@@ -456,58 +456,68 @@ class Api extends BaseController
      */
     public function debugFilter()
     {
-        $db = \Config\Database::connect();
-        
-        $ulpId      = $this->request->getGet('ulp_id');
-        $penyulangId= $this->request->getGet('penyulang_id');
-        $jenisAsset = $this->request->getGet('jenis_asset');
-        $status     = $this->request->getGet('status');
-        $search     = $this->request->getGet('search');
+        try {
+            $db = \Config\Database::connect();
+            
+            $ulpId      = $this->request->getGet('ulp_id');
+            $penyulangId= $this->request->getGet('penyulang_id');
+            $jenisAsset = $this->request->getGet('jenis_asset');
+            $status     = $this->request->getGet('status');
+            $search     = $this->request->getGet('search');
 
-        $countAll = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
-        $countUlp = $db->table('assets')->where('deleted_at IS NULL')->where('ulp_id', 1)->countAllResults();
-        $countPenyulang = $db->table('assets')->where('deleted_at IS NULL')->where('penyulang_id', 15)->countAllResults();
-        $countUlpAndPenyulang = $db->table('assets')->where('deleted_at IS NULL')->where('ulp_id', 1)->where('penyulang_id', 15)->countAllResults();
-        
-        $jenisInPenyulang15 = $db->table('assets')
-            ->select('jenis_asset, count(*) as cnt')
-            ->where('deleted_at IS NULL')
-            ->where('penyulang_id', 15)
-            ->groupBy('jenis_asset')
-            ->get()->getResultArray();
+            $countAll = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
+            $countUlp = $db->table('assets')->where('deleted_at IS NULL')->where('ulp_id', 1)->countAllResults();
+            $countPenyulang = $db->table('assets')->where('deleted_at IS NULL')->where('penyulang_id', 15)->countAllResults();
+            $countUlpAndPenyulang = $db->table('assets')->where('deleted_at IS NULL')->where('ulp_id', 1)->where('penyulang_id', 15)->countAllResults();
+            
+            $jenisInPenyulang15 = $db->table('assets')
+                ->select('jenis_asset, count(*) as cnt')
+                ->where('deleted_at IS NULL')
+                ->where('penyulang_id', 15)
+                ->groupBy('jenis_asset')
+                ->get()->getResultArray();
 
-        $repo = new \App\Repositories\AssetRepository();
-        $filters = [
-            'ulp_id'      => $ulpId,
-            'penyulang_id'=> $penyulangId,
-            'jenis_asset' => $jenisAsset,
-            'status'      => $status,
-            'search'      => $search
-        ];
-        $repoResult = $repo->getFilteredAssetsPaginated($filters, null, 1, 50);
-
-        return $this->respond([
-            'status' => 200,
-            'input_get' => [
+            $repo = new \App\Repositories\AssetRepository();
+            $filters = [
                 'ulp_id'      => $ulpId,
                 'penyulang_id'=> $penyulangId,
                 'jenis_asset' => $jenisAsset,
                 'status'      => $status,
-                'search'      => $search,
-            ],
-            'progressive_isolation_counts' => [
-                'total_active_in_db'            => $countAll,
-                'where_ulp_id_1'                => $countUlp,
-                'where_penyulang_id_15'         => $countPenyulang,
-                'where_ulp_1_AND_penyulang_15'  => $countUlpAndPenyulang,
-            ],
-            'jenis_asset_distribution_penyulang_15' => $jenisInPenyulang15,
-            'repository_result' => [
-                'total_found' => $repoResult['total'],
-                'data_count'  => count($repoResult['data']),
-                'sample_row'  => $repoResult['data'][0] ?? null,
-                'fallback'    => $repoResult['fallback'] ?? false,
-            ]
-        ]);
+                'search'      => $search
+            ];
+            $repoResult = $repo->getFilteredAssetsPaginated($filters, null, 1, 50);
+
+            return $this->respond([
+                'status' => 200,
+                'input_get' => [
+                    'ulp_id'      => $ulpId,
+                    'penyulang_id'=> $penyulangId,
+                    'jenis_asset' => $jenisAsset,
+                    'status'      => $status,
+                    'search'      => $search,
+                ],
+                'progressive_isolation_counts' => [
+                    'total_active_in_db'            => $countAll,
+                    'where_ulp_id_1'                => $countUlp,
+                    'where_penyulang_id_15'         => $countPenyulang,
+                    'where_ulp_1_AND_penyulang_15'  => $countUlpAndPenyulang,
+                ],
+                'jenis_asset_distribution_penyulang_15' => $jenisInPenyulang15,
+                'repository_result' => [
+                    'total_found' => $repoResult['total'],
+                    'data_count'  => count($repoResult['data']),
+                    'sample_row'  => $repoResult['data'][0] ?? null,
+                    'fallback'    => $repoResult['fallback'] ?? false,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respond([
+                'status'  => 500,
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ]);
+        }
     }
 }

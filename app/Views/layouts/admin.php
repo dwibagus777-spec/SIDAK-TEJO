@@ -681,9 +681,14 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="Logo" style="height: 22px; margin-right: 6px;">
             <span>SIDAK TEJO</span>
         </a>
-        <a href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>" class="mobile-desktop-btn" title="Ganti ke Versi Desktop">
-            <i class="fas fa-desktop"></i>
-        </a>
+        <div class="d-flex align-items-center" style="gap: 6px;">
+            <a href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>" class="mobile-desktop-btn" title="Ganti ke Versi Desktop">
+                <i class="fas fa-desktop"></i>
+            </a>
+            <a href="<?= site_url('logout') ?>" class="btn btn-sm btn-outline-danger text-white border-white py-0 px-2 font-weight-bold" title="Keluar dari Sistem" style="font-size: 11px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: rgba(220, 38, 38, 0.85);">
+                <i class="fas fa-power-off me-1"></i> Logout
+            </a>
+        </div>
     </div>
 
     <div class="page">
@@ -2137,17 +2142,26 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         var modalEl = document.getElementById('modalQrScannerHeader');
         if (modalEl) {
             if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                var myModal = new bootstrap.Modal(modalEl);
+                var myModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                 myModal.show();
             } else if (typeof jQuery !== 'undefined') {
                 jQuery('#modalQrScannerHeader').modal('show');
             }
         }
     }
+
     function executeQrLookup(code) {
         if (!code || !code.trim()) return;
         var cleanCode = code.trim();
-        window.location.href = '<?= site_url("master-assets") ?>?search=' + encodeURIComponent(cleanCode) + '&show_all=1';
+        
+        // Smart QR Route Dispatcher
+        if (cleanCode.toUpperCase().indexOf('TMN-') === 0 || cleanCode.toUpperCase().indexOf('TEMUAN-') === 0) {
+            window.location.href = '<?= site_url("temuan") ?>?search=' + encodeURIComponent(cleanCode);
+        } else if (cleanCode.toUpperCase().indexOf('WO-') === 0) {
+            window.location.href = '<?= site_url("work-orders") ?>?search=' + encodeURIComponent(cleanCode);
+        } else {
+            window.location.href = '<?= site_url("master-assets") ?>?search=' + encodeURIComponent(cleanCode) + '&show_all=1';
+        }
     }
     </script>
 

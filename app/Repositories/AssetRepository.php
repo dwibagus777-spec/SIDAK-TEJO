@@ -80,11 +80,7 @@ class AssetRepository
 
         if (!empty($filters['ulp_id']) && is_numeric($filters['ulp_id']) && (int)$filters['ulp_id'] > 0) {
             $uId = (int)$filters['ulp_id'];
-            $builder->groupStart()
-                ->where('a.ulp_id', $uId)
-                ->orWhere('a.ulp_id IS NULL')
-                ->orWhere('a.ulp_id', 0)
-            ->groupEnd();
+            $builder->where('a.ulp_id', $uId);
         } elseif (!empty($userUlpId)) {
             $builder->groupStart()
                 ->where('a.ulp_id', $userUlpId)
@@ -94,11 +90,7 @@ class AssetRepository
         }
         if (!empty($filters['penyulang_id']) && is_numeric($filters['penyulang_id']) && (int)$filters['penyulang_id'] > 0) {
             $pId = (int)$filters['penyulang_id'];
-            $builder->groupStart()
-                ->where('a.penyulang_id', $pId)
-                ->orWhere('a.penyulang_id IS NULL')
-                ->orWhere('a.penyulang_id', 0)
-            ->groupEnd();
+            $builder->where('a.penyulang_id', $pId);
         }
         if (!empty($filters['section_id']) && is_numeric($filters['section_id']) && (int)$filters['section_id'] > 0) {
             $builder->where('a.section_id', (int)$filters['section_id']);

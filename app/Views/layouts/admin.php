@@ -1133,7 +1133,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         <strong>Copyright &copy; 2026 <span style="color: #005eb8;">SIDAK TEJO</span>.</strong> All rights reserved.
                     </div>
                     <div>
-                        <span class="badge bg-primary text-white" style="font-size: 11px; padding: 4px 8px;">Build: 998b582 - Enterprise PLN Mobile</span>
+                        <span class="badge bg-primary text-white" style="font-size: 11px; padding: 4px 8px;">Build: <?= \Config\BuildVersion::COMMIT_ID ?> - Enterprise PLN Mobile</span>
                     </div>
                 </div>
             </footer>

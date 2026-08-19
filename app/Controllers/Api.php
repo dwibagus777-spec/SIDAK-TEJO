@@ -569,23 +569,22 @@ class Api extends BaseController
 
             return $this->respond([
                 'status' => 200,
-                'forensic_test_asset' => [
+                'test_asset' => [
                     'id'          => $testAsset['id'],
                     'kode_asset'  => $testAsset['kode_asset'],
                     'nama_asset'  => $testAsset['nama_asset'],
                     'jenis_asset' => $testAsset['jenis_asset'],
                     'ulp_id'      => $testAsset['ulp_id'],
                     'penyulang_id'=> $testAsset['penyulang_id'],
-                    'latitude'    => $testAsset['latitude'],
-                    'longitude'   => $testAsset['longitude'],
+                    'lat_lng'     => $testAsset['latitude'] . ',' . $testAsset['longitude'],
                 ],
-                'progressive_isolation_results' => [
-                    'step_0_no_filter'  => ['count' => $res0['total'], 'test_asset_found' => $found0 ? 'YES' : 'NO'],
-                    'step_1_ulp'        => ['count' => $res1['total'], 'test_asset_found' => $found1 ? 'YES' : 'NO'],
-                    'step_2_penyulang'  => ['count' => $res2['total'], 'test_asset_found' => $found2 ? 'YES' : 'NO'],
-                    'step_3_jenis_asset'=> ['count' => $res3['total'], 'test_asset_found' => $found3 ? 'YES' : 'NO'],
-                    'step_4_status'     => ['count' => $res4['total'], 'test_asset_found' => $found4 ? 'YES' : 'NO'],
-                    'step_5_search'     => ['count' => $res5['total'], 'test_asset_found' => $found5 ? 'YES' : 'NO'],
+                'isolation' => [
+                    'step_0_no_filter' => ['cnt' => $res0['total'], 'test_found' => $found0 ? 'YES' : 'NO'],
+                    'step_1_ulp_1'     => ['cnt' => $res1['total'], 'test_found' => $found1 ? 'YES' : 'NO'],
+                    'step_2_penyulang_15' => ['cnt' => $res2['total'], 'test_found' => $found2 ? 'YES' : 'NO'],
+                    'step_3_jenis_Trafo'  => ['cnt' => $res3['total'], 'test_found' => $found3 ? 'YES' : 'NO'],
+                    'step_4_status_empty' => ['cnt' => $res4['total'], 'test_found' => $found4 ? 'YES' : 'NO'],
+                    'step_5_search_empty' => ['cnt' => $res5['total'], 'test_found' => $found5 ? 'YES' : 'NO'],
                 ]
             ]);
         } catch (\Throwable $e) {

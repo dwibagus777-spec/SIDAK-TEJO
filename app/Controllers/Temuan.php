@@ -275,6 +275,57 @@ class Temuan extends BaseController
         return redirect()->to(site_url('temuan/create'))->withInput()->with('error', $res['message']);
     }
 
+    /**
+     * Smart QR Code Lookup Dispatcher for Temuan
+     */
+    public function lookup()
+    {
+        $code = trim((string)$this->request->getGet('code'));
+        if (empty($code)) {
+            return redirect()->to(site_url('temuan'))->with('error', 'Silakan ketik atau scan Kode Temuan.');
+        }
+
+        $session = session();
+        $role = (string)$session->get('user_role');
+        $userUlpId = $session->get('user_ulp_id');
+
+        $ulpIdFilter = null;
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'har_crane', 'inspeksi']) && $userUlpId !== null) {
+            $ulpIdFilter = (int)$userUlpId;
+        }
+
+        // 1. If numeric ID passed directly
+        if (is_numeric($code) && (int)$code > 0) {
+            $t = $this->temuanRepository->getDetail((int)$code, $ulpIdFilter);
+            if ($t) {
+                return redirect()->to(site_url('temuan/detail/' . $t['id']));
+            }
+        }
+
+        // 2. Query DB by nomor_temuan
+        $db = \Config\Database::connect();
+        $builder = $db->table('temuan t')
+            ->select('t.id')
+            ->where('t.deleted_at IS NULL')
+            ->groupStart()
+                ->where('t.nomor_temuan', $code)
+                ->orLike('t.nomor_temuan', $code)
+            ->groupEnd();
+
+        if ($ulpIdFilter !== null) {
+            $builder->where('t.ulp_id', $ulpIdFilter);
+        }
+
+        $row = $builder->get()->getRowArray();
+        if ($row && !empty($row['id'])) {
+            return redirect()->to(site_url('temuan/detail/' . $row['id']));
+        }
+
+        // 3. Fallback to /temuan?search=code
+        return redirect()->to(site_url('temuan') . '?search=' . urlencode($code))
+            ->with('info', 'Mencari data temuan dengan kata kunci: ' . esc($code));
+    }
+
     public function detail(int $id)
     {
         $session = session();

@@ -248,6 +248,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('temuan/ajax-detail/(:num)', 'Temuan::ajaxDetail/$1');
     $routes->get('temuan/create', 'Temuan::create', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->post('temuan/store', 'Temuan::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->get('temuan/lookup', 'Temuan::lookup');
     $routes->get('temuan/detail/(:num)', 'Temuan::detail/$1');
     $routes->post('temuan/tindak-lanjut/(:num)', 'Temuan::tindakLanjut/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->match(['GET', 'POST'], 'temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);

@@ -1187,6 +1187,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <?php foreach ($jsFiles as $file): ?>
         <script src="<?= base_url($file) ?>"></script>
     <?php endforeach; ?>
+    <script src="<?= base_url('plugins/html5-qrcode.min.js') ?>"></script>
 
     <script>
         // Sembunyikan spinner pemuatan (Clean & Consolidated)
@@ -2117,57 +2118,180 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         </a>
     </div>
 
-    <!-- Modal QR Code Scanner (Release v2.4.0) -->
+    <!-- Modal QR Code Scanner (Release v2.5.0 Enterprise) -->
     <div class="modal fade" id="modalQrScannerHeader" tabindex="-1" aria-labelledby="modalQrScannerHeaderLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 shadow-lg">
-                <div class="modal-header bg-dark text-white rounded-top-4 border-0">
-                    <h5 class="modal-title font-weight-bold" id="modalQrScannerHeaderLabel">
-                        <i class="fas fa-qrcode text-primary me-2"></i> Scanner QR Code Asset & Temuan
+                <div class="modal-header bg-dark text-white rounded-top-4 border-0 py-3">
+                    <h5 class="modal-title font-weight-bold d-flex align-items-center mb-0" id="modalQrScannerHeaderLabel">
+                        <i class="fas fa-qrcode text-primary me-2 fs-4"></i> Scan QR Code Temuan & Asset
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="stopQrCameraScanner()"></button>
                 </div>
                 <div class="modal-body text-center p-4">
-                    <div id="qr-reader-container" class="rounded-3 overflow-hidden bg-light p-3 border mb-3" style="min-height: 220px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                        <i class="fas fa-camera text-primary fa-3x mb-3 animate__animated animate__pulse animate__infinite"></i>
-                        <p class="text-muted small mb-0">Memuat Kamera Scanner QR Code...</p>
+                    <div id="qr-reader-container" class="rounded-4 overflow-hidden bg-black p-2 border mb-3 shadow-inner" style="min-height: 250px; position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <div id="qr-video-reader" style="width: 100%;"></div>
+                        <div id="qr-scan-placeholder" class="py-4 text-white">
+                            <i class="fas fa-camera text-primary fa-3x mb-3 animate__animated animate__pulse animate__infinite"></i>
+                            <p class="text-white-50 small mb-0 font-weight-bold">Arahkan kamera HP ke QR Code pada Detail Temuan / Asset...</p>
+                        </div>
                     </div>
+                    
+                    <div id="qr-scan-status-alert" class="alert alert-info py-2 px-3 small fw-bold mb-3 d-none"></div>
+                    
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white"><i class="fas fa-barcode text-muted"></i></span>
-                        <input type="text" id="manual-qr-input" class="form-control" placeholder="Atau ketik Kode Asset / Serial Number..." onkeyup="if(event.key==='Enter') executeQrLookup(this.value)">
-                        <button class="btn btn-primary" type="button" onclick="executeQrLookup(document.getElementById('manual-qr-input').value)">Cari Asset</button>
+                        <input type="text" id="manual-qr-input" class="form-control" placeholder="Atau ketik Nomor Temuan (TMN-...) / Kode Asset..." onkeyup="if(event.key==='Enter') executeQrLookup(this.value)">
+                        <button class="btn btn-primary font-weight-bold" type="button" onclick="executeQrLookup(document.getElementById('manual-qr-input').value)">Proses Kode</button>
                     </div>
+                </div>
+                <div class="modal-footer bg-light rounded-bottom-4 py-2 px-3 justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill font-weight-bold" data-bs-dismiss="modal" onclick="stopQrCameraScanner()">
+                        <i class="fas fa-times me-1"></i> Tutup
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold" onclick="restartQrCameraScanner()">
+                        <i class="fas fa-sync me-1"></i> Scan Ulang
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+    var html5QrCodeScannerInstance = null;
+    var isQrProcessingLock = false;
+
     function triggerQrScanModal() {
         var modalEl = document.getElementById('modalQrScannerHeader');
-        if (modalEl) {
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                var myModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                myModal.show();
-            } else if (typeof jQuery !== 'undefined') {
-                jQuery('#modalQrScannerHeader').modal('show');
+        if (!modalEl) return;
+
+        isQrProcessingLock = false;
+        var statusAlert = document.getElementById('qr-scan-status-alert');
+        if (statusAlert) {
+            statusAlert.classList.add('d-none');
+        }
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var myModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            myModal.show();
+        } else if (typeof jQuery !== 'undefined') {
+            jQuery('#modalQrScannerHeader').modal('show');
+        }
+
+        setTimeout(function() {
+            startQrCameraScanner();
+        }, 300);
+    }
+
+    function startQrCameraScanner() {
+        var container = document.getElementById('qr-video-reader');
+        var placeholder = document.getElementById('qr-scan-placeholder');
+        if (!container) return;
+
+        stopQrCameraScanner();
+
+        if (typeof Html5Qrcode !== 'undefined') {
+            if (placeholder) placeholder.style.display = 'none';
+            html5QrCodeScannerInstance = new Html5Qrcode("qr-video-reader");
+            
+            var config = { fps: 10, qrbox: { width: 220, height: 220 } };
+            
+            html5QrCodeScannerInstance.start(
+                { facingMode: "environment" },
+                config,
+                function(decodedText, decodedResult) {
+                    if (isQrProcessingLock) return;
+                    isQrProcessingLock = true;
+                    
+                    showQrScanStatus('✅ QR Code Terbaca! Memproses data...', 'success');
+                    stopQrCameraScanner();
+                    executeQrLookup(decodedText);
+                },
+                function(errorMessage) {
+                    // Frame-by-frame scanner log noise ignored
+                }
+            ).catch(function(err) {
+                console.warn("Kamera belakang tidak dapat diakses langsung, mencoba mode otomatis...", err);
+                if (placeholder) placeholder.style.display = 'block';
+                showQrScanStatus('Izin kamera diperlukan. Gunakan input kode di bawah jika kamera tidak aktif.', 'warning');
+            });
+        } else {
+            if (placeholder) placeholder.style.display = 'block';
+            showQrScanStatus('Gunakan input manual di bawah untuk memasukkan kode temuan.', 'info');
+        }
+    }
+
+    function stopQrCameraScanner() {
+        if (html5QrCodeScannerInstance) {
+            try {
+                html5QrCodeScannerInstance.stop().then(function() {
+                    html5QrCodeScannerInstance.clear();
+                    html5QrCodeScannerInstance = null;
+                }).catch(function(err) {
+                    html5QrCodeScannerInstance = null;
+                });
+            } catch(e) {
+                html5QrCodeScannerInstance = null;
             }
         }
     }
 
+    function restartQrCameraScanner() {
+        stopQrCameraScanner();
+        isQrProcessingLock = false;
+        startQrCameraScanner();
+    }
+
+    function showQrScanStatus(msg, type) {
+        var el = document.getElementById('qr-scan-status-alert');
+        if (!el) return;
+        el.className = 'alert alert-' + (type || 'info') + ' py-2 px-3 small fw-bold mb-3';
+        el.innerText = msg;
+        el.classList.remove('d-none');
+    }
+
     function executeQrLookup(code) {
-        if (!code || !code.trim()) return;
+        if (!code || !code.trim()) {
+            showQrScanStatus('Silakan ketik atau arahkan kamera ke QR Code Temuan/Asset.', 'warning');
+            return;
+        }
+
         var cleanCode = code.trim();
+        showQrScanStatus('Mencari data: ' + cleanCode + '...', 'info');
+
+        // 1. Direct URL (e.g., https://sidaktejo.site/temuan/detail/123)
+        if (cleanCode.indexOf('http://') === 0 || cleanCode.indexOf('https://') === 0) {
+            window.location.href = cleanCode;
+            return;
+        }
+
+        // 2. Smart Format Dispatcher
+        var upperCode = cleanCode.toUpperCase();
         
-        // Smart QR Route Dispatcher
-        if (cleanCode.toUpperCase().indexOf('TMN-') === 0 || cleanCode.toUpperCase().indexOf('TEMUAN-') === 0) {
-            window.location.href = '<?= site_url("temuan") ?>?search=' + encodeURIComponent(cleanCode);
-        } else if (cleanCode.toUpperCase().indexOf('WO-') === 0) {
+        if (upperCode.indexOf('TMN-') === 0 || upperCode.indexOf('TEMUAN-') === 0) {
+            window.location.href = '<?= site_url("temuan/lookup") ?>?code=' + encodeURIComponent(cleanCode);
+        } else if (upperCode.indexOf('WO-') === 0 || upperCode.indexOf('TRF-') === 0) {
             window.location.href = '<?= site_url("work-orders") ?>?search=' + encodeURIComponent(cleanCode);
+        } else if (isNumeric(cleanCode)) {
+            // Numeric Temuan ID or Asset ID
+            window.location.href = '<?= site_url("temuan/lookup") ?>?code=' + encodeURIComponent(cleanCode);
         } else {
             window.location.href = '<?= site_url("master-assets") ?>?search=' + encodeURIComponent(cleanCode) + '&show_all=1';
         }
     }
+
+    function isNumeric(val) {
+        return /^\d+$/.test(val);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var modalEl = document.getElementById('modalQrScannerHeader');
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                stopQrCameraScanner();
+            });
+        }
+    });
     </script>
 
     <?= $this->renderSection('scripts') ?>

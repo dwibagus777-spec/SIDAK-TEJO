@@ -495,9 +495,21 @@ class Api extends BaseController
             $repoResultNull = $repo->getFilteredAssetsPaginated($filters, null, 1, 50);
             $repoResult3    = $repo->getFilteredAssetsPaginated($filters, 3, 1, 50);
 
+            $jenisDist = $db->table('assets')
+                ->select('jenis_asset, count(*) as cnt')
+                ->where('deleted_at IS NULL')
+                ->where('penyulang_id', 15)
+                ->groupBy('jenis_asset')
+                ->get()->getResultArray();
+
+            $strList = [];
+            foreach ($jenisDist as $j) {
+                $strList[] = "'" . ($j['jenis_asset'] ?? 'NULL') . "':" . $j['cnt'];
+            }
+
             return $this->respond([
                 'status' => 200,
-                'summary' => "ULP_1_CNT:229|NULL_TOTAL:{$repoResultNull['total']}|ULP3_TOTAL:{$repoResult3['total']}",
+                'jenis_list' => implode(' | ', $strList),
             ]);
         } catch (\Throwable $e) {
             return $this->respond([

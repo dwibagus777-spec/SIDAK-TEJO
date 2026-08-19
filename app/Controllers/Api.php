@@ -516,18 +516,10 @@ class Api extends BaseController
                 'search'      => '',
             ];
             $resNull = $repo->getFilteredAssetsPaginated($filters, null, 1, 50);
-            $res1    = $repo->getFilteredAssetsPaginated($filters, 1, 1, 50);
-            $res3    = $repo->getFilteredAssetsPaginated($filters, 3, 1, 50);
 
             return $this->respond([
                 'status' => 200,
-                'null_total' => $resNull['total'],
-                'null_cnt'   => count($resNull['data']),
-                'ulp1_total' => $res1['total'],
-                'ulp1_cnt'   => count($res1['data']),
-                'ulp3_total' => $res3['total'],
-                'ulp3_cnt'   => count($res3['data']),
-                'sample_row' => $resNull['data'][0] ?? null
+                'res'    => "TOTAL:{$resNull['total']}|CNT:" . count($resNull['data']) . "|SAMPLE:" . ($resNull['data'][0]['kode_asset'] ?? 'NONE'),
             ]);
         } catch (\Throwable $e) {
             return $this->respond([

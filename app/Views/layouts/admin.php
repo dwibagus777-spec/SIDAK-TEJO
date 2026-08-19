@@ -49,6 +49,19 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicon_sidak.png') ?>">
     <link rel="shortcut icon" href="<?= base_url('assets/img/favicon_sidak.png') ?>">
 
+    <!-- PWA & Android Native App Shell Integration -->
+    <link rel="manifest" href="<?= base_url('manifest.json') ?>">
+    <meta name="theme-color" content="#003637">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('<?= base_url('sw.js') ?>').catch(function(err) {});
+        });
+    }
+    </script>
+
     <!-- Local Google Fonts: Outfit & Inter -->
     <link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
 

@@ -1,0 +1,25 @@
+{
+  "short_name": "SIDAK TEJO",
+  "name": "SIDAK TEJO Enterprise - System Data & Temuan Sidoarjo",
+  "description": "Sistem Data dan Tindak Lanjut Temuan Inspeksi Sidoarjo",
+  "icons": [
+    {
+      "src": "assets/img/logo_sidak_hd.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "dist/img/logo_pln.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/dashboard",
+  "background_color": "#003637",
+  "theme_color": "#003637",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/"
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SidakTejo.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary_teal</item>
+        <item name="colorPrimaryDark">@color/primary_teal</item>
+        <item name="colorAccent">@color/accent_yellow</item>
+        <item name="android:statusBarColor">@color/primary_teal</item>
+    </style>
+
+    <style name="Theme.SidakTejo.Splash" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/primary_teal</item>
+        <item name="android:windowBackground">@color/primary_teal</item>
+    </style>
+</resources>

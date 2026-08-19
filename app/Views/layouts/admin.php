@@ -2099,27 +2099,34 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     </script>
 
     <!-- Mobile Field Bottom Navigation Bar (< 992px) -->
-    <div class="mobile-bottom-nav d-lg-none d-print-none fixed-bottom border-top border-secondary py-1 px-2 d-flex justify-content-around align-items-center" style="z-index: 1040; background-color: #003637 !important; height: 56px; box-shadow: 0 -4px 12px rgba(0,0,0,0.15);">
-        <a href="<?= site_url('dashboard') ?>" class="text-center text-white text-decoration-none <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 22%;">
+    <div class="mobile-bottom-nav d-lg-none d-print-none fixed-bottom border-top border-secondary py-1 px-2 d-flex justify-content-around align-items-center" style="z-index: 1040; background-color: #003637 !important; height: 58px; box-shadow: 0 -4px 12px rgba(0,0,0,0.25);">
+        <a href="<?= site_url('dashboard') ?>" class="text-center text-white text-decoration-none <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 18%;">
             <i class="fas fa-gauge-high d-block fs-5 mb-1 <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'text-warning' : 'text-white' ?>"></i>
             <span>Home</span>
         </a>
-        <a href="<?= site_url('gis') ?>" class="text-center text-white text-decoration-none <?= url_is('gis*') ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 22%;">
+        <a href="<?= site_url('gis') ?>" class="text-center text-white text-decoration-none <?= url_is('gis*') ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 18%;">
             <i class="fas fa-map-marked-alt d-block fs-5 mb-1 <?= url_is('gis*') ? 'text-warning' : 'text-success' ?>"></i>
             <span>GIS</span>
         </a>
-        <a href="<?= site_url('my-inspections') ?>" class="text-center text-white text-decoration-none <?= (url_is('my-inspections*') || url_is('planning*') || url_is('inspections*')) ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 22%;">
+        <!-- PROMINENT MOBILE QR CODE SCANNER BUTTON -->
+        <button type="button" class="btn text-center text-white p-0 border-0 text-decoration-none" onclick="triggerQrScanModal()" style="font-size: 10px; width: 24%; background: transparent;" title="Scan QR Code">
+            <div class="bg-warning text-dark rounded-circle mx-auto d-flex align-items-center justify-content-center shadow-lg" style="width: 40px; height: 40px; margin-top: -14px; border: 2px solid #003637;">
+                <i class="fas fa-qrcode fs-5 text-dark"></i>
+            </div>
+            <span class="fw-bold text-warning" style="font-size: 9px; line-height: 1;">Scan QR</span>
+        </button>
+        <a href="<?= site_url('my-inspections') ?>" class="text-center text-white text-decoration-none <?= (url_is('my-inspections*') || url_is('planning*') || url_is('inspections*')) ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 18%;">
             <i class="fas fa-tasks d-block fs-5 mb-1 <?= (url_is('my-inspections*') || url_is('planning*') || url_is('inspections*')) ? 'text-warning' : 'text-info' ?>"></i>
             <span>Inspeksi</span>
         </a>
-        <a href="#sidebar-menu" class="text-center text-white text-decoration-none opacity-75" data-bs-toggle="collapse" role="button" aria-controls="sidebar-menu" aria-expanded="false" style="font-size: 10px; width: 22%;">
-            <i class="fas fa-bars d-block fs-5 mb-1 text-warning"></i>
-            <span>Menu</span>
+        <a href="<?= site_url('logout') ?>" class="text-center text-white text-decoration-none opacity-75" style="font-size: 10px; width: 18%;">
+            <i class="fas fa-power-off d-block fs-5 mb-1 text-danger"></i>
+            <span class="text-danger fw-bold">Logout</span>
         </a>
     </div>
 
     <!-- Modal QR Code Scanner (Release v2.5.0 Enterprise) -->
-    <div class="modal fade" id="modalQrScannerHeader" tabindex="-1" aria-labelledby="modalQrScannerHeaderLabel" aria-hidden="true">
+    <div class="modal fade" id="modalQrScannerHeader" tabindex="-1" aria-labelledby="modalQrScannerHeaderLabel" aria-hidden="true" style="z-index: 1055;">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 shadow-lg">
                 <div class="modal-header bg-dark text-white rounded-top-4 border-0 py-3">
@@ -2172,10 +2179,13 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         }
 
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            var myModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            var myModal = bootstrap.Modal.getOrCreateInstance ? bootstrap.Modal.getOrCreateInstance(modalEl) : (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl));
             myModal.show();
-        } else if (typeof jQuery !== 'undefined') {
-            jQuery('#modalQrScannerHeader').modal('show');
+        } else if (window.jQuery || window.$) {
+            (window.jQuery || window.$)('#modalQrScannerHeader').modal('show');
+        } else {
+            modalEl.classList.add('show');
+            modalEl.style.display = 'block';
         }
 
         setTimeout(function() {

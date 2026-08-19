@@ -426,13 +426,83 @@
             transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.75s ease !important;
         }
 
-        /* ── Responsive Rules ────────────────────────── */
-        @media (max-width: 992px) {
-            .auth-container { flex-direction: column; }
+        /* ── MOBILE-ONLY RESPONSIVE REFINEMENT (max-width: 768px) ── */
+        @media (max-width: 768px) {
+            html, body {
+                height: 100%;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+            .auth-viewport-wrapper, .auth-container {
+                height: auto;
+                min-height: 100vh;
+                min-height: 100dvh;
+                max-height: none;
+                flex-direction: column;
+                justify-content: space-between;
+            }
             .auth-brand-side {
-                padding: 32px 24px;
+                padding: 20px 16px 8px 16px;
                 border-right: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+                flex: none;
+            }
+            .pln-corporate-tag {
+                padding: 4px 12px;
+                font-size: 0.68rem;
+            }
+            .brand-body {
+                padding: 6px 0;
+                margin: 0;
+            }
+            .hero-emblem-wrapper {
+                margin-bottom: 6px;
+            }
+            .emblem-img-prominent {
+                max-width: 100px;
+                border-radius: 12px;
+                border-width: 1.5px;
+                box-shadow: 0 8px 25px rgba(0, 181, 184, 0.35);
+            }
+            .brand-title-prominent {
+                font-size: 1.45rem;
+                letter-spacing: 1.5px;
+                margin-bottom: 2px;
+            }
+            .brand-subtitle-prominent {
+                font-size: 0.68rem;
+                max-width: 320px;
+                line-height: 1.25;
+                letter-spacing: 0.4px;
+            }
+            .brand-fingerprint {
+                display: none;
+            }
+            .auth-form-side {
+                padding: 16px 16px max(24px, env(safe-area-inset-bottom)) 16px;
+                flex: 1;
+                justify-content: center;
+                background: #f8fafc;
+            }
+            .auth-form-card {
+                width: min(100%, 400px);
+                margin: 0 auto;
+                padding: 20px;
+                background: #ffffff;
+                border-radius: 16px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+                border: 1px solid #e2e8f0;
+            }
+            .form-header-heading {
+                font-size: 1.35rem;
+            }
+            .form-control-enterprise {
+                height: 48px;
+                font-size: 16px !important; /* Prevents iOS Safari auto-zoom */
+            }
+            .btn-enterprise-primary {
+                height: 48px;
+                font-size: 0.92rem;
             }
             .book-opening-active .auth-brand-side {
                 transform: translateY(-100%) !important;
@@ -442,14 +512,6 @@
                 transform: translateY(100%) !important;
                 opacity: 0 !important;
             }
-            .emblem-img-prominent { max-width: 320px; }
-            .auth-form-side { padding: 40px 24px; }
-        }
-        @media (max-width: 480px) {
-            .brand-title-prominent { font-size: 1.95rem; }
-            .emblem-img-prominent { max-width: 260px; }
-            .form-header-heading { font-size: 1.5rem; }
-            .auth-form-side { padding: 32px 18px; }
         }
 
         /* ── CINEMATIC DOOR REVEAL (PURE CSS & GPU ACCELERATED) ── */

@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webView)
+        setupCookieManager()
         setupWebView()
         setupBackPressHandler()
         checkCameraPermission()
@@ -53,6 +54,12 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             webView.loadUrl(TARGET_URL)
         }
+    }
+
+    private fun setupCookieManager() {
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true)
+        cookieManager.setAcceptThirdPartyCookies(webView, true)
     }
 
     private fun checkCameraPermission() {
@@ -90,8 +97,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                super.onReceivedError(view, request, error)
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                // Flush CodeIgniter 4 session cookies to persistent storage
+                CookieManager.getInstance().flush()
             }
         }
 
@@ -155,11 +164,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Native Android DownloadManager Listener (.pptx, .xlsx, .csv, .pdf)
+        // Native Android DownloadManager Listener with Authenticated Cookie Header (.pptx, .xlsx, .csv, .pdf)
         webView.setDownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
             try {
                 val request = DownloadManager.Request(Uri.parse(url))
                 val filename = URLUtil.guessFileName(url, contentDisposition, mimetype)
+
+                // Pass CodeIgniter 4 session cookie to DownloadManager request
+                val cookie = CookieManager.getInstance().getCookie(url)
+                if (!cookie.isNullOrEmpty()) {
+                    request.addRequestHeader("Cookie", cookie)
+                }
 
                 request.setMimeType(mimetype)
                 request.addRequestHeader("User-Agent", userAgent)

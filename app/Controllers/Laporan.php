@@ -367,18 +367,24 @@ class Laporan extends BaseController
 
         $objPHPPowerPoint = new \PhpOffice\PhpPresentation\PhpPresentation();
         
-        // ── SLIDE 1: COVER SLIDE (Matching User Master Reference Slide 1) ──
+        // ── SLIDE 1: COVER SLIDE (Exact Visual Replica of Master Reference Slide 1) ──
         $coverSlide = $objPHPPowerPoint->getActiveSlide();
 
-        $titleShape = $coverSlide->createRichTextShape()
-            ->setHeight(180)
-            ->setWidth(680)
-            ->setOffsetX(40)
-            ->setOffsetY(140);
-        $titleShape->getActiveParagraph()->getAlignment()->setHorizontal(\PhpOffice\PhpPresentation\Style\Alignment::HORIZONTAL_LEFT);
-        
-        $textRun1 = $titleShape->createTextRun("LAPORAN TEMUAN EMERGENCY\n");
-        $textRun1->getFont()->setBold(true)->setSize(32)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF008080'));
+        // 1. Corporate Teal Main Hero Box (Cover Card)
+        $heroCard = $coverSlide->createRichTextShape()
+            ->setHeight(370)
+            ->setWidth(560)
+            ->setOffsetX(0)
+            ->setOffsetY(60);
+        $heroCard->getFill()
+            ->setFillType(\PhpOffice\PhpPresentation\Style\Fill::FILL_SOLID)
+            ->setStartColor(new \PhpOffice\PhpPresentation\Style\Color('FF009BAA')); // PLN Corporate Teal
+
+        $pCover = $heroCard->getActiveParagraph();
+        $pCover->getAlignment()->setHorizontal(\PhpOffice\PhpPresentation\Style\Alignment::HORIZONTAL_LEFT);
+
+        $runCoverTitle = $heroCard->createTextRun("\n LAPORAN TEMUAN\n EMERGENCY\n\n");
+        $runCoverTitle->getFont()->setBold(true)->setSize(34)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FFFFFFFF'));
 
         $ulpNameText = 'UP3 SIDOARJO';
         if (!empty($filters['ulp_id'])) {
@@ -390,10 +396,10 @@ class Laporan extends BaseController
             $ulpNameText .= "\nULP SIDOARJO KOTA";
         }
 
-        $textRun2 = $titleShape->createTextRun($ulpNameText);
-        $textRun2->getFont()->setBold(true)->setSize(24)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF003637'));
+        $runCoverSub = $heroCard->createTextRun(" " . $ulpNameText);
+        $runCoverSub->getFont()->setBold(true)->setSize(22)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FFFFFFFF'));
 
-        // Top Right PLN Logo
+        // Top Right Corporate PLN Logo
         $plnLogoPath = FCPATH . 'dist/img/logo_pln.png';
         if (!file_exists($plnLogoPath)) {
             $plnLogoPath = FCPATH . 'assets/img/logo_sidak.png';
@@ -403,53 +409,77 @@ class Laporan extends BaseController
             $logoShape = new \PhpOffice\PhpPresentation\Shape\Drawing\File();
             $logoShape->setName('PLN Logo')
                 ->setPath($plnLogoPath)
-                ->setHeight(70)
-                ->setOffsetX(780)
+                ->setHeight(75)
+                ->setOffsetX(760)
                 ->setOffsetY(40);
             $coverSlide->addShape($logoShape);
         }
 
-        // Bottom Left ISO SMAP Text
+        // Bottom Left ISO SMAP Text / Badge
         $isoShape = $coverSlide->createRichTextShape()
             ->setHeight(40)
-            ->setWidth(450)
+            ->setWidth(480)
             ->setOffsetX(40)
-            ->setOffsetY(480);
+            ->setOffsetY(475);
         $isoText = $isoShape->createTextRun("ISO 37001 Sistem Manajemen Anti Penyuapan (SMAP)");
         $isoText->getFont()->setSize(10)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF64748B'));
 
-        // Bottom Right Website Link
+        // Bottom Right Decorative Footer Bar & Link
+        $coverFooterBar = $coverSlide->createRichTextShape()
+            ->setHeight(30)
+            ->setWidth(380)
+            ->setOffsetX(480)
+            ->setOffsetY(475);
+        $coverFooterBar->getFill()
+            ->setFillType(\PhpOffice\PhpPresentation\Style\Fill::FILL_SOLID)
+            ->setStartColor(new \PhpOffice\PhpPresentation\Style\Color('FF009BAA'));
+
         $webShape = $coverSlide->createRichTextShape()
             ->setHeight(30)
-            ->setWidth(200)
-            ->setOffsetX(740)
+            ->setWidth(180)
+            ->setOffsetX(760)
             ->setOffsetY(480);
         $webText = $webShape->createTextRun("www.pln.co.id");
         $webText->getFont()->setBold(true)->setSize(11)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF008080'));
 
-        // ── SLIDES 2 TO N: ITEM SLIDES (Matching User Master Reference Slide 2) ──
+        // ── SLIDES 2 TO N: ITEM SLIDES (Exact Visual Replica of Master Reference Slide 2) ──
         foreach ($data as $row) {
             $slide = $objPHPPowerPoint->createSlide();
 
             // Header Title Line
             $headerShape = $slide->createRichTextShape()
-                ->setHeight(50)
-                ->setWidth(720)
+                ->setHeight(45)
+                ->setWidth(740)
                 ->setOffsetX(40)
-                ->setOffsetY(25);
+                ->setOffsetY(20);
             
             $headerTitleStr = "LIST TO EMERGENCY " . strtoupper($row['nama_ulp'] ?? 'SIDOARJO KOTA') . " P . " . strtoupper($row['nama_penyulang'] ?? 'SURABAYA');
             $headerRun = $headerShape->createTextRun($headerTitleStr);
-            $headerRun->getFont()->setBold(true)->setSize(16)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF0F172A'));
+            $headerRun->getFont()->setBold(true)->setSize(17)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF0F172A'));
 
-            // Top Right PLN Logo on item slide
+            // Multi-Color 4-Strip Header Accent Line (Teal, Cyan, Yellow, Dark Blue)
+            $colors = ['FF008080', 'FF00A3B4', 'FFFCBF49', 'FF003637'];
+            $startPos = 40;
+            foreach ($colors as $c) {
+                $strip = $slide->createRichTextShape()
+                    ->setHeight(4)
+                    ->setWidth(60)
+                    ->setOffsetX($startPos)
+                    ->setOffsetY(60);
+                $strip->getFill()
+                    ->setFillType(\PhpOffice\PhpPresentation\Style\Fill::FILL_SOLID)
+                    ->setStartColor(new \PhpOffice\PhpPresentation\Style\Color($c));
+                $startPos += 62;
+            }
+
+            // Top Right Corporate PLN Logo on item slide
             if (file_exists($plnLogoPath)) {
                 $itemLogo = new \PhpOffice\PhpPresentation\Shape\Drawing\File();
                 $itemLogo->setName('PLN Logo')
                     ->setPath($plnLogoPath)
-                    ->setHeight(46)
-                    ->setOffsetX(810)
-                    ->setOffsetY(20);
+                    ->setHeight(48)
+                    ->setOffsetX(800)
+                    ->setOffsetY(18);
                 $slide->addShape($itemLogo);
             }
 
@@ -457,60 +487,63 @@ class Laporan extends BaseController
             $photoPaths = $this->getTemuanPhotoPaths($row);
 
             if (count($photoPaths) >= 2) {
-                // Photo 1 (Left)
+                // Photo 1 (Left Frame)
                 $drawing1 = new \PhpOffice\PhpPresentation\Shape\Drawing\File();
                 $drawing1->setName('Foto 1')
                     ->setPath($photoPaths[0])
-                    ->setWidth(190)
-                    ->setHeight(310)
+                    ->setWidth(195)
+                    ->setHeight(320)
                     ->setOffsetX(40)
-                    ->setOffsetY(95);
+                    ->setOffsetY(85);
                 $slide->addShape($drawing1);
 
-                // Photo 2 (Right)
+                // Photo 2 (Right Frame)
                 $drawing2 = new \PhpOffice\PhpPresentation\Shape\Drawing\File();
                 $drawing2->setName('Foto 2')
                     ->setPath($photoPaths[1])
-                    ->setWidth(190)
-                    ->setHeight(310)
+                    ->setWidth(195)
+                    ->setHeight(320)
                     ->setOffsetX(245)
-                    ->setOffsetY(95);
+                    ->setOffsetY(85);
                 $slide->addShape($drawing2);
             } elseif (count($photoPaths) === 1) {
                 // Single Photo Centered on Left Half
                 $drawingSingle = new \PhpOffice\PhpPresentation\Shape\Drawing\File();
                 $drawingSingle->setName('Foto Temuan')
                     ->setPath($photoPaths[0])
-                    ->setWidth(240)
-                    ->setHeight(310)
+                    ->setWidth(250)
+                    ->setHeight(320)
                     ->setOffsetX(110)
-                    ->setOffsetY(95);
+                    ->setOffsetY(85);
                 $slide->addShape($drawingSingle);
             } else {
-                // Fallback Placeholder Box when photo does not exist on disk
+                // Fallback Placeholder Box when photo is absent
                 $noImgShape = $slide->createRichTextShape()
-                    ->setHeight(310)
-                    ->setWidth(395)
+                    ->setHeight(320)
+                    ->setWidth(400)
                     ->setOffsetX(40)
-                    ->setOffsetY(95);
+                    ->setOffsetY(85);
+                $noImgShape->getFill()
+                    ->setFillType(\PhpOffice\PhpPresentation\Style\Fill::FILL_SOLID)
+                    ->setStartColor(new \PhpOffice\PhpPresentation\Style\Color('FFF1F5F9'));
                 $noImgShape->getActiveParagraph()->getAlignment()->setHorizontal(\PhpOffice\PhpPresentation\Style\Alignment::HORIZONTAL_CENTER);
                 $noImgRun = $noImgShape->createTextRun("\n\n\n\n[ Dokumentasi Foto Lapangan ]");
-                $noImgRun->getFont()->setSize(12)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF94A3B8'));
+                $noImgRun->getFont()->setSize(12)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF64748B'));
             }
 
             // Description & Metadata Box (Right Half)
             $descShape = $slide->createRichTextShape()
-                ->setHeight(320)
+                ->setHeight(330)
                 ->setWidth(460)
-                ->setOffsetX(460)
-                ->setOffsetY(95);
+                ->setOffsetX(465)
+                ->setOffsetY(85);
             
             $p = $descShape->getActiveParagraph();
             $p->getAlignment()->setHorizontal(\PhpOffice\PhpPresentation\Style\Alignment::HORIZONTAL_LEFT);
 
             // Primary Detail Text
             $runDetail = $descShape->createTextRun(esc($row['detail_temuan']) . "\n\n");
-            $runDetail->getFont()->setBold(true)->setSize(16)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF000000'));
+            $runDetail->getFont()->setBold(true)->setSize(18)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF000000'));
 
             // Metadata Block
             $runMeta = $descShape->createTextRun(
@@ -521,12 +554,21 @@ class Laporan extends BaseController
             );
             $runMeta->getFont()->setSize(11)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF334155'));
 
-            // Bottom Right Footer Link
+            // Bottom Right Decorative Footer Strip
+            $itemFooterBar = $slide->createRichTextShape()
+                ->setHeight(25)
+                ->setWidth(320)
+                ->setOffsetX(480)
+                ->setOffsetY(485);
+            $itemFooterBar->getFill()
+                ->setFillType(\PhpOffice\PhpPresentation\Style\Fill::FILL_SOLID)
+                ->setStartColor(new \PhpOffice\PhpPresentation\Style\Color('FF00A3B4'));
+
             $itemWebShape = $slide->createRichTextShape()
                 ->setHeight(30)
-                ->setWidth(200)
-                ->setOffsetX(750)
-                ->setOffsetY(490);
+                ->setWidth(180)
+                ->setOffsetX(760)
+                ->setOffsetY(485);
             $itemWebRun = $itemWebShape->createTextRun("www.pln.co.id");
             $itemWebRun->getFont()->setBold(true)->setSize(11)->setColor(new \PhpOffice\PhpPresentation\Style\Color('FF008080'));
         }

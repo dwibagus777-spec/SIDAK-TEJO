@@ -210,7 +210,7 @@ class AssetRepository
             $dataBuilder->limit($perPage, $offset);
 
             $query = $dataBuilder->get();
-            $data = ($query && $query instanceof BaseResult) ? $query->getResultArray() : [];
+            $data = $query ? $query->getResultArray() : [];
 
             return [
                 'data'      => $data,

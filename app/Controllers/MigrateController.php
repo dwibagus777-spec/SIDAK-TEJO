@@ -571,22 +571,37 @@ class MigrateController extends BaseController
     public function autoDeploy()
     {
         $output = [];
-        try {
-            $cmd = 'cd ' . escapeshellarg(FCPATH . '..') . ' && git fetch origin main 2>&1 && git reset --hard origin/main 2>&1';
-            
-            if (function_exists('shell_exec')) {
-                $res = @shell_exec($cmd);
-                $output[] = (string)$res;
-            } elseif (function_exists('exec')) {
-                $outLines = [];
-                @exec($cmd, $outLines);
-                $output = $outLines;
+        $possiblePaths = [
+            realpath(FCPATH . '..'),
+            '/home/u532206332/public_html',
+            '/home/u532206332/domains/sidaktejo.site/public_html',
+            '/home/u532206332/domains/sidaktejo.site/public',
+        ];
+
+        foreach ($possiblePaths as $path) {
+            if (!empty($path) && is_dir($path)) {
+                $cmd = 'cd ' . escapeshellarg($path) . ' && git fetch origin main 2>&1 && git reset --hard origin/main 2>&1';
+                if (function_exists('shell_exec')) {
+                    $res = @shell_exec($cmd);
+                    if (!empty($res)) {
+                        $output[] = "Path [{$path}]: " . trim($res);
+                    }
+                } elseif (function_exists('exec')) {
+                    $outLines = [];
+                    @exec($cmd, $outLines);
+                    if (!empty($outLines)) {
+                        $output[] = "Path [{$path}]: " . implode(' | ', $outLines);
+                    }
+                }
             }
-        } catch (\Throwable $e) {
-            $output[] = 'Shell exec notice: ' . $e->getMessage();
         }
 
-        // Purge CodeIgniter view cache
+        // Purge OPcache & CodeIgniter view cache
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+            $output[] = "OPcache reset successfully!";
+        }
+
         try {
             $cacheFiles = glob(WRITEPATH . 'cache/*');
             if (is_array($cacheFiles)) {
@@ -600,7 +615,7 @@ class MigrateController extends BaseController
 
         return $this->response->setJSON([
             'status'     => 'success',
-            'message'    => 'Hostinger Git deployment synced & view cache purged!',
+            'message'    => 'Hostinger Git deployment synced & OPcache purged!',
             'git_output' => implode("\n", (array)$output)
         ]);
     }

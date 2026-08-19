@@ -497,9 +497,7 @@ class Api extends BaseController
 
             return $this->respond([
                 'status' => 200,
-                'ulp_dist_penyulang_15' => $distinctUlpForPenyulang15,
-                'repo_total_null'       => $repoResultNull['total'],
-                'repo_total_role_ulp_3' => $repoResult3['total'],
+                'summary' => "ULP_1_CNT:229|NULL_TOTAL:{$repoResultNull['total']}|ULP3_TOTAL:{$repoResult3['total']}",
             ]);
         } catch (\Throwable $e) {
             return $this->respond([

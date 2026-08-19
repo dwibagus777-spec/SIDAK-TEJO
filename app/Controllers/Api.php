@@ -533,29 +533,39 @@ class Api extends BaseController
 
             $repo = new \App\Repositories\AssetRepository();
 
+            // Helper closure to check if asset ID exists in data array
+            $checkFound = function(array $dataArray, $targetId): bool {
+                foreach ($dataArray as $row) {
+                    if (isset($row['id']) && (int)$row['id'] === (int)$targetId) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
             // STEP 0: NO FILTER
-            $res0 = $repo->getFilteredAssetsPaginated([], null, 1, 1000);
-            $found0 = array_values(array_filter($res0['data'], fn($r) => $r['id'] == $assetId));
+            $res0 = $repo->getFilteredAssetsPaginated([], null, 1, 2000);
+            $found0 = $checkFound($res0['data'], $assetId);
 
             // STEP 1: ULP ONLY (ulp_id = 1)
-            $res1 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1], null, 1, 1000);
-            $found1 = array_values(array_filter($res1['data'], fn($r) => $r['id'] == $assetId));
+            $res1 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1], null, 1, 2000);
+            $found1 = $checkFound($res1['data'], $assetId);
 
             // STEP 2: ULP + PENYULANG (ulp_id = 1 & penyulang_id = 15)
-            $res2 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15], null, 1, 1000);
-            $found2 = array_values(array_filter($res2['data'], fn($r) => $r['id'] == $assetId));
+            $res2 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15], null, 1, 2000);
+            $found2 = $checkFound($res2['data'], $assetId);
 
             // STEP 3: ULP + PENYULANG + JENIS ASSET (ulp_id = 1 & penyulang_id = 15 & jenis_asset = JTM)
-            $res3 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM'], null, 1, 1000);
-            $found3 = array_values(array_filter($res3['data'], fn($r) => $r['id'] == $assetId));
+            $res3 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM'], null, 1, 2000);
+            $found3 = $checkFound($res3['data'], $assetId);
 
             // STEP 4: STATUS KOSONG (status = '')
-            $res4 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM', 'status' => ''], null, 1, 1000);
-            $found4 = array_values(array_filter($res4['data'], fn($r) => $r['id'] == $assetId));
+            $res4 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM', 'status' => ''], null, 1, 2000);
+            $found4 = $checkFound($res4['data'], $assetId);
 
             // STEP 5: SEARCH KOSONG (search = '')
-            $res5 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM', 'status' => '', 'search' => ''], null, 1, 1000);
-            $found5 = array_values(array_filter($res5['data'], fn($r) => $r['id'] == $assetId));
+            $res5 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM', 'status' => '', 'search' => ''], null, 1, 2000);
+            $found5 = $checkFound($res5['data'], $assetId);
 
             return $this->respond([
                 'status' => 200,
@@ -570,12 +580,12 @@ class Api extends BaseController
                     'longitude'   => $testAsset['longitude'],
                 ],
                 'progressive_isolation_results' => [
-                    'step_0_no_filter'  => ['count' => $res0['total'], 'test_asset_found' => !empty($found0)],
-                    'step_1_ulp'        => ['count' => $res1['total'], 'test_asset_found' => !empty($found1)],
-                    'step_2_penyulang'  => ['count' => $res2['total'], 'test_asset_found' => !empty($found2)],
-                    'step_3_jenis_asset'=> ['count' => $res3['total'], 'test_asset_found' => !empty($found3)],
-                    'step_4_status'     => ['count' => $res4['total'], 'test_asset_found' => !empty($found4)],
-                    'step_5_search'     => ['count' => $res5['total'], 'test_asset_found' => !empty($found5)],
+                    'step_0_no_filter'  => ['count' => $res0['total'], 'test_asset_found' => $found0 ? 'YES' : 'NO'],
+                    'step_1_ulp'        => ['count' => $res1['total'], 'test_asset_found' => $found1 ? 'YES' : 'NO'],
+                    'step_2_penyulang'  => ['count' => $res2['total'], 'test_asset_found' => $found2 ? 'YES' : 'NO'],
+                    'step_3_jenis_asset'=> ['count' => $res3['total'], 'test_asset_found' => $found3 ? 'YES' : 'NO'],
+                    'step_4_status'     => ['count' => $res4['total'], 'test_asset_found' => $found4 ? 'YES' : 'NO'],
+                    'step_5_search'     => ['count' => $res5['total'], 'test_asset_found' => $found5 ? 'YES' : 'NO'],
                 ]
             ]);
         } catch (\Throwable $e) {

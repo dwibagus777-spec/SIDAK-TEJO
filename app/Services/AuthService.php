@@ -61,6 +61,7 @@ class AuthService
         }
 
         // Set session
+        $currentBuild = \Config\BuildVersion::BUILD_ID;
         $session = session();
         $session->set([
             'user_id'       => $user['id'],
@@ -72,9 +73,11 @@ class AuthService
             'ulp_id'        => $user['ulp_id'],
             'user_ulp'      => $user['ulp'] ?? '',
             'logged_in'     => true,
-            'session_build' => \Config\BuildVersion::BUILD_ID,
+            'session_build' => $currentBuild,
             'last_activity' => time()
         ]);
+
+        log_message('info', "[AUTH_LOGIN_SUCCESS] Username: {$user['username']} | SESSION_CREATED: YES | SESSION_BUILD: '{$currentBuild}'");
 
         // Catat Audit Log
         log_activity('LOGIN', 'User ' . $user['username'] . ' berhasil login.');

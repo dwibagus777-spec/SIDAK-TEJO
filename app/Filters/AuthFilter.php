@@ -13,11 +13,18 @@ class AuthFilter implements FilterInterface
         $session = session();
 
         // 0. Check Build Version — Automatic Session Invalidation on Deployment Build Update
-        $buildConfig = config('BuildVersion');
-        $currentBuild = $buildConfig->BUILD_ID ?? '20260818.005';
+        $currentBuild = \Config\BuildVersion::BUILD_ID;
         if ($session->get('logged_in')) {
-            $sessionBuild = $session->get('session_build');
-            if (!empty($sessionBuild) && $sessionBuild !== $currentBuild) {
+            $sessionBuild = (string)$session->get('session_build');
+            
+            // Temporary Debug Logging (Section 13 Master Prompt)
+            log_message('info', "[DASHBOARD_AUTH_CHECK] User: {$session->get('user_name')} | SESSION_BUILD: '{$sessionBuild}' | CURRENT_BUILD: '{$currentBuild}'");
+
+            if ($sessionBuild === '') {
+                // Assign current build ID if missing on active session
+                $session->set('session_build', $currentBuild);
+            } elseif ($sessionBuild !== $currentBuild) {
+                log_message('notice', "[SESSION_INVALIDATED] Build mismatch: Session '{$sessionBuild}' vs Current '{$currentBuild}'");
                 $session->destroy();
                 if (isset($_COOKIE['sidaktejo_remember'])) {
                     setcookie('sidaktejo_remember', '', time() - 3600, '/');

@@ -48,7 +48,30 @@ class Auth extends BaseController
                 $res = $this->authService->login($username, $password, $rememberMe);
 
                 if ($res['success']) {
+                    $isAjax = $this->request->isAJAX() 
+                        || str_contains((string)$this->request->getHeaderLine('X-Requested-With'), 'XMLHttpRequest')
+                        || str_contains((string)$this->request->getHeaderLine('Accept'), 'application/json');
+
+                    if ($isAjax) {
+                        return $this->response->setJSON([
+                            'success'     => true,
+                            'message'     => 'Otentikasi berhasil.',
+                            'redirectUrl' => site_url('dashboard')
+                        ]);
+                    }
+
                     return redirect()->to(site_url('dashboard'));
+                }
+
+                $isAjax = $this->request->isAJAX() 
+                    || str_contains((string)$this->request->getHeaderLine('X-Requested-With'), 'XMLHttpRequest')
+                    || str_contains((string)$this->request->getHeaderLine('Accept'), 'application/json');
+
+                if ($isAjax) {
+                    return $this->response->setStatusCode(401)->setJSON([
+                        'success' => false,
+                        'message' => $res['message']
+                    ]);
                 }
 
                 return view('layouts/auth', [

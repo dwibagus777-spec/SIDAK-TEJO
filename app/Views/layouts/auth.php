@@ -42,6 +42,55 @@
             background-color: var(--brand-navy);
             color: var(--gray-900);
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ── 3D Viewport Wrapper for Book Opening Animation ── */
+        .auth-viewport-wrapper {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            overflow: hidden;
+            perspective: 1600px;
+            background: #040E1A;
+        }
+
+        /* Deep Seamless Backdrop behind Opening Book Covers */
+        .book-spine-backdrop {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, #0F2D4A 0%, #081B30 65%, #040E1A 100%);
+            z-index: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .book-opening-active .book-spine-backdrop {
+            opacity: 1;
+        }
+
+        .spine-loading-content {
+            text-align: center;
+            color: #ffffff;
+        }
+        .spine-loading-logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: var(--brand-teal);
+            margin-bottom: 8px;
+        }
+        .spine-loading-text {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         /* ── Split Screen Container ──────────────────── */
@@ -49,7 +98,10 @@
             display: flex;
             min-height: 100vh;
             width: 100%;
-            overflow: hidden;
+            position: relative;
+            z-index: 2;
+            transform-style: preserve-3d;
+            transition: transform 0.85s cubic-bezier(0.645, 0.045, 0.355, 1.000);
         }
 
         /* ── Left Column: Brand & High-Vis Visual Identity ────── */
@@ -65,6 +117,9 @@
             overflow: hidden;
             border-right: 1px solid rgba(56, 189, 248, 0.15);
             text-align: center;
+            transform-origin: left center;
+            transition: transform 0.85s cubic-bezier(0.645, 0.045, 0.355, 1.000), opacity 0.85s ease;
+            backface-visibility: hidden;
         }
 
         /* Subtle Background Grid Overlay */
@@ -212,11 +267,15 @@
             align-items: center;
             padding: 48px;
             position: relative;
+            transform-origin: right center;
+            transition: transform 0.85s cubic-bezier(0.645, 0.045, 0.355, 1.000), opacity 0.85s ease;
+            backface-visibility: hidden;
         }
 
         .auth-form-card {
             width: 100%;
             max-width: 400px;
+            transition: opacity 0.3s ease;
         }
 
         .form-title-wrap {
@@ -348,6 +407,7 @@
         }
         .alert-enterprise-danger { background: #FEF2F2; color: #DC2626; border-left: 4px solid #EF4444; }
         .alert-enterprise-success { background: #F0FDF4; color: #16A34A; border-left: 4px solid #22C55E; }
+        .alert-enterprise-info { background: #EFF6FF; color: #2563EB; border-left: 4px solid #3B82F6; }
 
         .form-footer-copyright {
             margin-top: 36px;
@@ -357,6 +417,17 @@
             line-height: 1.5;
         }
 
+        /* ── 3D BOOK OPENING ANIMATION ACTIVE STATES ──── */
+        .book-opening-active .auth-brand-side {
+            transform: rotateY(-90deg);
+            opacity: 0;
+        }
+
+        .book-opening-active .auth-form-side {
+            transform: rotateY(90deg);
+            opacity: 0;
+        }
+
         /* ── Responsive Rules ────────────────────────── */
         @media (max-width: 992px) {
             .auth-container { flex-direction: column; }
@@ -364,6 +435,18 @@
                 padding: 32px 24px;
                 border-right: none;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                transform-origin: top center;
+            }
+            .auth-form-side {
+                transform-origin: bottom center;
+            }
+            .book-opening-active .auth-brand-side {
+                transform: translateY(-100%) scale(0.9);
+                opacity: 0;
+            }
+            .book-opening-active .auth-form-side {
+                transform: translateY(100%) scale(0.9);
+                opacity: 0;
             }
             .emblem-img-prominent { max-width: 320px; }
             .auth-form-side { padding: 40px 24px; }
@@ -374,137 +457,164 @@
             .form-header-heading { font-size: 1.5rem; }
             .auth-form-side { padding: 32px 18px; }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            .auth-brand-side, .auth-form-side, .auth-container {
+                transition: none !important;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="auth-container">
+<div class="auth-viewport-wrapper" id="auth-viewport">
 
-    <!-- ──────────── LEFT COLUMN: HIGH-VISIBILITY BRAND IDENTITY ──────────── -->
-    <div class="auth-brand-side">
-        <!-- Top Corporate Badge -->
-        <div class="brand-header animate__animated animate__fadeInDown">
-            <div class="pln-corporate-tag">
-                <i class="fas fa-bolt text-warning" style="font-size: 13px;"></i>
-                <span class="pln-corporate-text">PT PLN (Persero) UP3 Sidoarjo</span>
-            </div>
-        </div>
-
-        <!-- Prominent Center Logo Emblem & Titles -->
-        <div class="brand-body animate__animated animate__zoomIn">
-            <div class="hero-emblem-wrapper">
-                <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Enterprise Emblem" class="emblem-img-prominent">
-            </div>
-            <h1 class="brand-title-prominent">SIDAK <span>TEJO</span></h1>
-            <div class="brand-subtitle-prominent">Sistem Data &amp; Tindak Lanjut Temuan Inspeksi Sidoarjo</div>
-        </div>
-
-        <!-- System Version Fingerprint Footer -->
-        <div class="brand-fingerprint animate__animated animate__fadeInUp">
-            <span class="version-badge"><?= esc(\Config\BuildVersion::SYSTEM_VERSION) ?></span>
-            <span>Build: <?= esc(\Config\BuildVersion::BUILD_ID) ?></span>
-            <span>•</span>
-            <span>Commit: <?= esc(\Config\BuildVersion::COMMIT_ID) ?></span>
+    <!-- Seamless Deep Backdrop Revealed During Book Opening -->
+    <div class="book-spine-backdrop" id="spine-backdrop">
+        <div class="spine-loading-content animate__animated animate__pulse animate__infinite">
+            <div class="spine-loading-logo"><i class="fas fa-bolt text-warning me-2"></i>SIDAK TEJO</div>
+            <div class="spine-loading-text"><i class="fas fa-spinner fa-spin me-2"></i>Membuka Dashboard Inspeksi...</div>
         </div>
     </div>
 
-    <!-- ──────────── RIGHT COLUMN: COMPACT LOGIN FORM ──────────── -->
-    <div class="auth-form-side">
-        <div class="auth-form-card animate__animated animate__fadeInRight">
-            
-            <div class="form-title-wrap">
-                <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--brand-teal);">
-                    <span class="status-dot-online"></span> Sistem Aktif &amp; Terbuka
+    <!-- ── 3D Split Screen Book Container ── -->
+    <div class="auth-container" id="book-container">
+
+        <!-- ──────────── LEFT COLUMN: HIGH-VISIBILITY BRAND IDENTITY ──────────── -->
+        <div class="auth-brand-side" id="left-cover">
+            <!-- Top Corporate Badge -->
+            <div class="brand-header animate__animated animate__fadeInDown">
+                <div class="pln-corporate-tag">
+                    <i class="fas fa-bolt text-warning" style="font-size: 13px;"></i>
+                    <span class="pln-corporate-text">PT PLN (Persero) UP3 Sidoarjo</span>
                 </div>
-                <h2 class="form-header-heading">Selamat Datang 👋</h2>
-                <p class="form-header-subtext">Masuk dengan akun SIDAK TEJO Anda untuk melanjutkan.</p>
             </div>
 
-            <?php if (isset($error)): ?>
-            <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX">
-                <i class="fas fa-exclamation-circle"></i> <?= esc($error) ?>
-            </div>
-            <?php endif; ?>
-
-            <?php if (session()->getFlashdata('error')): ?>
-            <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX">
-                <i class="fas fa-exclamation-circle"></i> <?= esc(session()->getFlashdata('error')) ?>
-            </div>
-            <?php endif; ?>
-
-            <?php if (session()->getFlashdata('success')): ?>
-            <div class="alert-enterprise alert-enterprise-success">
-                <i class="fas fa-check-circle"></i> <?= esc(session()->getFlashdata('success')) ?>
-            </div>
-            <?php endif; ?>
-
-            <form action="<?= site_url('login') ?>" method="post" id="login-form" autocomplete="off">
-                <?= csrf_field() ?>
-
-                <!-- Username -->
-                <div class="form-group-modern">
-                    <label class="form-label-modern" for="username">Username</label>
-                    <div class="input-group-custom">
-                        <i class="fas fa-user input-icon-left"></i>
-                        <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            class="input-field-custom"
-                            placeholder="Masukkan username Anda"
-                            required
-                            autofocus
-                            autocomplete="username"
-                            value="<?= old('username') ?>"
-                        >
-                    </div>
+            <!-- Prominent Center Logo Emblem & Titles -->
+            <div class="brand-body animate__animated animate__zoomIn">
+                <div class="hero-emblem-wrapper">
+                    <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Enterprise Emblem" class="emblem-img-prominent">
                 </div>
+                <h1 class="brand-title-prominent">SIDAK <span>TEJO</span></h1>
+                <div class="brand-subtitle-prominent">Sistem Data &amp; Tindak Lanjut Temuan Inspeksi Sidoarjo</div>
+            </div>
 
-                <!-- Password -->
-                <div class="form-group-modern">
-                    <label class="form-label-modern" for="password">Password</label>
-                    <div class="input-group-custom">
-                        <i class="fas fa-lock input-icon-left"></i>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            class="input-field-custom"
-                            placeholder="Masukkan password Anda"
-                            required
-                            autocomplete="current-password"
-                            style="padding-right: 44px;"
-                        >
-                        <span class="pw-toggle-btn" id="toggle-pw" title="Tampilkan/sembunyikan password">
-                            <i class="fas fa-eye" id="toggle-pw-icon"></i>
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Remember Me Token -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="remember_me" checked style="cursor: pointer;">
-                        <label class="form-check-label text-dark font-weight-bold small ms-1" for="remember_me" style="cursor: pointer; font-size: 13px;">
-                            Ingat Saya (Aktif 30 Hari)
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Submit CTA Button -->
-                <button type="submit" class="btn-submit-modern" id="btn-submit">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span id="btn-label">MASUK KE SISTEM</span>
-                </button>
-            </form>
-
-            <div class="form-footer-copyright">
-                &copy; <?= date('Y') ?> SIDAK TEJO &bull; PT PLN (Persero) UP3 Sidoarjo<br>
-                <span style="font-size: 0.68rem; color: #94A3B8;">Build <?= esc(\Config\BuildVersion::BUILD_ID) ?> &bull; Enterprise Network Inspection</span>
+            <!-- System Version Fingerprint Footer -->
+            <div class="brand-fingerprint animate__animated animate__fadeInUp">
+                <span class="version-badge"><?= esc(\Config\BuildVersion::SYSTEM_VERSION) ?></span>
+                <span>Build: <?= esc(\Config\BuildVersion::BUILD_ID) ?></span>
+                <span>•</span>
+                <span>Commit: <?= esc(\Config\BuildVersion::COMMIT_ID) ?></span>
             </div>
         </div>
-    </div>
 
+        <!-- ──────────── RIGHT COLUMN: COMPACT LOGIN FORM ──────────── -->
+        <div class="auth-form-side" id="right-cover">
+            <div class="auth-form-card animate__animated animate__fadeInRight" id="form-card">
+                
+                <div class="form-title-wrap">
+                    <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--brand-teal);">
+                        <span class="status-dot-online"></span> Sistem Aktif &amp; Terbuka
+                    </div>
+                    <h2 class="form-header-heading">Selamat Datang 👋</h2>
+                    <p class="form-header-subtext">Masuk dengan akun SIDAK TEJO Anda untuk melanjutkan.</p>
+                </div>
+
+                <!-- Ajax & Server Message Container -->
+                <div id="ajax-alert" style="display: none;"></div>
+
+                <?php if (isset($error)): ?>
+                <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX">
+                    <i class="fas fa-exclamation-circle"></i> <?= esc($error) ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (session()->getFlashdata('error')): ?>
+                <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX">
+                    <i class="fas fa-exclamation-circle"></i> <?= esc(session()->getFlashdata('error')) ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (session()->getFlashdata('success')): ?>
+                <div class="alert-enterprise alert-enterprise-success">
+                    <i class="fas fa-check-circle"></i> <?= esc(session()->getFlashdata('success')) ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (isset($_GET['session_expired']) && $_GET['session_expired'] === 'build_update'): ?>
+                <div class="alert-enterprise alert-enterprise-info">
+                    <i class="fas fa-info-circle"></i> Sesi Anda diperbarui untuk rilis versi sistem terbaru. Silakan login kembali.
+                </div>
+                <?php endif; ?>
+
+                <form action="<?= site_url('login') ?>" method="post" id="login-form" autocomplete="off">
+                    <?= csrf_field() ?>
+
+                    <!-- Username -->
+                    <div class="form-group-modern">
+                        <label class="form-label-modern" for="username">Username</label>
+                        <div class="input-group-custom">
+                            <i class="fas fa-user input-icon-left"></i>
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                class="input-field-custom"
+                                placeholder="Masukkan username Anda"
+                                required
+                                autofocus
+                                autocomplete="username"
+                                value="<?= old('username') ?>"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group-modern">
+                        <label class="form-label-modern" for="password">Password</label>
+                        <div class="input-group-custom">
+                            <i class="fas fa-lock input-icon-left"></i>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                class="input-field-custom"
+                                placeholder="Masukkan password Anda"
+                                required
+                                autocomplete="current-password"
+                                style="padding-right: 44px;"
+                            >
+                            <span class="pw-toggle-btn" id="toggle-pw" title="Tampilkan/sembunyikan password">
+                                <i class="fas fa-eye" id="toggle-pw-icon"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me Token -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="remember_me" checked style="cursor: pointer;">
+                            <label class="form-check-label text-dark font-weight-bold small ms-1" for="remember_me" style="cursor: pointer; font-size: 13px;">
+                                Ingat Saya (Aktif 30 Hari)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit CTA Button -->
+                    <button type="submit" class="btn-submit-modern" id="btn-submit">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span id="btn-label">MASUK KE SISTEM</span>
+                    </button>
+                </form>
+
+                <div class="form-footer-copyright">
+                    &copy; <?= date('Y') ?> SIDAK TEJO &bull; PT PLN (Persero) UP3 Sidoarjo<br>
+                    <span style="font-size: 0.68rem; color: #94A3B8;">Build <?= esc(\Config\BuildVersion::BUILD_ID) ?> &bull; Enterprise Network Inspection</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <!-- Scripts -->
@@ -525,12 +635,76 @@
         }
     });
 
-    // Submit loading state
-    document.getElementById('login-form').addEventListener('submit', function() {
+    // Handle Login AJAX & 3D Book Opening Animation Pipeline
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
         const btn = document.getElementById('btn-submit');
+        const btnLabel = document.getElementById('btn-label');
+        const alertBox = document.getElementById('ajax-alert');
+        const formCard = document.getElementById('form-card');
+        
+        // 1. Loading Spinner State
         btn.disabled = true;
         btn.style.opacity = '0.85';
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>MEMVERIFIKASI...</span>';
+        alertBox.style.display = 'none';
+
+        const formData = new FormData(form);
+
+        // 2. Perform AJAX Credential Authentication
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(response => {
+            return response.json().then(data => ({ status: response.status, body: data }));
+        })
+        .then(res => {
+            if (res.status === 200 && res.body.success) {
+                // AUTHENTICATION SUCCESS!
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> <span>OTENTIKASI BERHASIL...</span>';
+                formCard.style.opacity = '0.7';
+
+                const redirectUrl = res.body.redirectUrl || '<?= site_url('dashboard') ?>';
+                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                if (prefersReducedMotion) {
+                    window.location.href = redirectUrl;
+                    return;
+                }
+
+                // 3. Trigger 3D Book Opening Transition
+                setTimeout(function() {
+                    document.body.classList.add('book-opening-active');
+                }, 150);
+
+                // 4. Smooth Redirect After 3D Book Animation Completes (850ms)
+                setTimeout(function() {
+                    window.location.href = redirectUrl;
+                }, 850);
+
+            } else {
+                // AUTHENTICATION FAILED: NO BOOK ANIMATION!
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> <span>MASUK KE SISTEM</span>';
+                
+                const errMsg = (res.body && res.body.message) ? res.body.message : 'Username atau password salah.';
+                alertBox.className = 'alert-enterprise alert-enterprise-danger animate__animated animate__shakeX';
+                alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + errMsg;
+                alertBox.style.display = 'flex';
+            }
+        })
+        .catch(err => {
+            console.warn('[AUTH_AJAX_FALLBACK] Retrying standard submit:', err);
+            form.submit();
+        });
     });
 </script>
 </body>

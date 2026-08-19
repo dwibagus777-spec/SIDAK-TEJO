@@ -2424,9 +2424,12 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         <div class="cinematic-panel cinematic-panel-left"></div>
         <div class="cinematic-panel cinematic-panel-right"></div>
         <div class="cinematic-logout-brand">
-            <img src="<?= base_url('assets/img/favicon_sidak.png') ?>" alt="SIDAK TEJO Logo" class="cinematic-logout-logo">
-            <h5 class="font-weight-bold text-white mb-1" style="letter-spacing: 1.5px; font-family: 'Outfit', sans-serif;">SIDAK TEJO</h5>
-            <p class="text-white-50 small mb-0 font-weight-bold">Mengakhiri sesi dengan aman...</p>
+            <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Enterprise Emblem" class="cinematic-logout-logo shadow-lg">
+            <h4 class="font-weight-bold text-white mb-1" style="letter-spacing: 2px; font-family: 'Outfit', sans-serif; text-transform: uppercase;">SIDAK TEJO</h4>
+            <p class="text-white-50 small mb-2 font-weight-bold" style="letter-spacing: 0.5px;">Mengakhiri sesi dengan aman...</p>
+            <div class="logout-word-art mt-3 px-3 py-2 rounded-3">
+                <span class="logout-thankyou-text"><i class="fas fa-heart text-danger me-1"></i> TERIMA KASIH ATAS KERJA KERAS NYA, ANDA YANG TERBAIK</span>
+            </div>
         </div>
     </div>
 
@@ -2521,17 +2524,51 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         opacity: 1;
     }
     .cinematic-logout-logo {
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
-        box-shadow: 0 0 25px rgba(0, 181, 184, 0.5);
+        width: 72px;
+        height: 72px;
+        object-fit: cover;
+        border-radius: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 0 30px rgba(0, 181, 184, 0.6);
         margin-bottom: 12px;
+    }
+    .logout-word-art {
+        background: rgba(0, 54, 55, 0.75);
+        border: 1px solid rgba(255, 215, 0, 0.45);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 215, 0, 0.15);
+        max-width: 420px;
+        margin: 0 auto;
+    }
+    .logout-thankyou-text {
+        font-family: 'Outfit', 'Montserrat', sans-serif;
+        font-weight: 800;
+        font-size: 13px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #00F2FE 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        animation: logoutWordArtGlow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes logoutWordArtGlow {
+        0% {
+            filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.4));
+            transform: scale(1);
+        }
+        100% {
+            filter: drop-shadow(0 0 14px rgba(0, 242, 254, 0.8));
+            transform: scale(1.02);
+        }
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .cinematic-reveal, .cinematic-logout-overlay .cinematic-panel, .cinematic-logout-brand {
+        .cinematic-reveal, .cinematic-logout-overlay .cinematic-panel, .cinematic-logout-brand, .logout-thankyou-text {
             transition: none !important;
             transform: none !important;
+            animation: none !important;
             opacity: 1 !important;
         }
         .cinematic-reveal { display: none !important; }

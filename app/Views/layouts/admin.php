@@ -2168,6 +2168,15 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     var html5QrCodeScannerInstance = null;
     var isQrProcessingLock = false;
 
+    // Global Event Delegation for ALL QR Scanner buttons (Mobile & Desktop)
+    document.addEventListener('click', function(e) {
+        var qrBtn = e.target.closest('[data-action="qr-scan"], .btn-qr-scan, [onclick*="triggerQrScanModal"], #btn-qr-scan-header');
+        if (qrBtn) {
+            e.preventDefault();
+            triggerQrScanModal();
+        }
+    });
+
     function triggerQrScanModal() {
         var modalEl = document.getElementById('modalQrScannerHeader');
         if (!modalEl) return;
@@ -2190,7 +2199,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 
         setTimeout(function() {
             startQrCameraScanner();
-        }, 300);
+        }, 250);
     }
 
     function startQrCameraScanner() {
@@ -2204,27 +2213,89 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             if (placeholder) placeholder.style.display = 'none';
             html5QrCodeScannerInstance = new Html5Qrcode("qr-video-reader");
             
-            var config = { fps: 10, qrbox: { width: 220, height: 220 } };
-            
-            html5QrCodeScannerInstance.start(
-                { facingMode: "environment" },
-                config,
-                function(decodedText, decodedResult) {
-                    if (isQrProcessingLock) return;
-                    isQrProcessingLock = true;
-                    
-                    showQrScanStatus('✅ QR Code Terbaca! Memproses data...', 'success');
-                    stopQrCameraScanner();
-                    executeQrLookup(decodedText);
+            // High Resolution Camera Constraints (HD/FHD) for crisp QR focus
+            var cameraConstraints = {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920, min: 1280 },
+                height: { ideal: 1080, min: 720 }
+            };
+
+            var config = {
+                fps: 15,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    var minDimension = Math.min(viewfinderWidth, viewfinderHeight);
+                    var boxSize = Math.max(220, Math.floor(minDimension * 0.72));
+                    return { width: boxSize, height: boxSize };
                 },
-                function(errorMessage) {
-                    // Frame-by-frame scanner log noise ignored
+                aspectRatio: 1.0,
+                videoConstraints: cameraConstraints
+            };
+
+            var onScanSuccess = function(decodedText, decodedResult) {
+                if (isQrProcessingLock) return;
+                isQrProcessingLock = true;
+                
+                showQrScanStatus('✅ QR Code Terbaca! Memproses data...', 'success');
+                stopQrCameraScanner();
+                executeQrLookup(decodedText);
+            };
+
+            var onScanError = function(errorMessage) {
+                // Ignore frame-by-frame decoding attempt noise
+            };
+
+            var applyStreamOptimizations = function() {
+                try {
+                    var track = html5QrCodeScannerInstance.getRunningTrack ? html5QrCodeScannerInstance.getRunningTrack() : null;
+                    if (track) {
+                        var settings = track.getSettings ? track.getSettings() : {};
+                        console.log('[QR_CAMERA_STREAM_PROFILES]', settings);
+
+                        // Request Continuous Auto-Focus if supported by device
+                        if (track.applyConstraints && track.getCapabilities) {
+                            var caps = track.getCapabilities() || {};
+                            if (caps.focusMode && caps.focusMode.indexOf('continuous') !== -1) {
+                                track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function(){});
+                            }
+                        }
+                    }
+                } catch(e) {}
+            };
+
+            var fallbackStart = function() {
+                html5QrCodeScannerInstance.start(
+                    { facingMode: { ideal: "environment" } },
+                    config,
+                    onScanSuccess,
+                    onScanError
+                ).then(applyStreamOptimizations).catch(function(err) {
+                    console.warn("[QR_CAMERA_FALLBACK_ERR]", err);
+                    if (placeholder) placeholder.style.display = 'block';
+                    showQrScanStatus('Izin kamera diperlukan. Gunakan input kode manual di bawah jika kamera tidak aktif.', 'warning');
+                });
+            };
+
+            // Enumerate cameras to pick true rear high-resolution camera on smartphones
+            Html5Qrcode.getCameras().then(function(cameras) {
+                if (cameras && cameras.length > 0) {
+                    var rearCam = cameras.find(function(c) {
+                        var label = (c.label || '').toLowerCase();
+                        return label.indexOf('back') !== -1 || label.indexOf('rear') !== -1 || label.indexOf('environment') !== -1 || label.indexOf('0') !== -1;
+                    });
+                    
+                    var targetCamId = rearCam ? rearCam.id : (cameras.length > 1 ? cameras[cameras.length - 1].id : cameras[0].id);
+                    
+                    html5QrCodeScannerInstance.start(
+                        targetCamId,
+                        config,
+                        onScanSuccess,
+                        onScanError
+                    ).then(applyStreamOptimizations).catch(fallbackStart);
+                } else {
+                    fallbackStart();
                 }
-            ).catch(function(err) {
-                console.warn("Kamera belakang tidak dapat diakses langsung, mencoba mode otomatis...", err);
-                if (placeholder) placeholder.style.display = 'block';
-                showQrScanStatus('Izin kamera diperlukan. Gunakan input kode di bawah jika kamera tidak aktif.', 'warning');
-            });
+            }).catch(fallbackStart);
+
         } else {
             if (placeholder) placeholder.style.display = 'block';
             showQrScanStatus('Gunakan input manual di bawah untuk memasukkan kode temuan.', 'info');

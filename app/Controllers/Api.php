@@ -569,22 +569,14 @@ class Api extends BaseController
 
             return $this->respond([
                 'status' => 200,
-                'test_asset' => [
-                    'id'          => $testAsset['id'],
-                    'kode_asset'  => $testAsset['kode_asset'],
-                    'nama_asset'  => $testAsset['nama_asset'],
-                    'jenis_asset' => $testAsset['jenis_asset'],
-                    'ulp_id'      => $testAsset['ulp_id'],
-                    'penyulang_id'=> $testAsset['penyulang_id'],
-                    'lat_lng'     => $testAsset['latitude'] . ',' . $testAsset['longitude'],
-                ],
-                'isolation' => [
-                    'step_0_no_filter' => ['cnt' => $res0['total'], 'test_found' => $found0 ? 'YES' : 'NO'],
-                    'step_1_ulp_1'     => ['cnt' => $res1['total'], 'test_found' => $found1 ? 'YES' : 'NO'],
-                    'step_2_penyulang_15' => ['cnt' => $res2['total'], 'test_found' => $found2 ? 'YES' : 'NO'],
-                    'step_3_jenis_Trafo'  => ['cnt' => $res3['total'], 'test_found' => $found3 ? 'YES' : 'NO'],
-                    'step_4_status_empty' => ['cnt' => $res4['total'], 'test_found' => $found4 ? 'YES' : 'NO'],
-                    'step_5_search_empty' => ['cnt' => $res5['total'], 'test_found' => $found5 ? 'YES' : 'NO'],
+                'asset'  => "ID:{$testAsset['id']}|KODE:{$testAsset['kode_asset']}|JENIS:{$testAsset['jenis_asset']}|ULP:{$testAsset['ulp_id']}|PENYULANG:{$testAsset['penyulang_id']}",
+                'iso'    => [
+                    's0_none'   => "cnt:{$res0['total']}|found:" . ($found0 ? 'YES' : 'NO'),
+                    's1_ulp'    => "cnt:{$res1['total']}|found:" . ($found1 ? 'YES' : 'NO'),
+                    's2_peny'   => "cnt:{$res2['total']}|found:" . ($found2 ? 'YES' : 'NO'),
+                    's3_jenis'  => "cnt:{$res3['total']}|found:" . ($found3 ? 'YES' : 'NO'),
+                    's4_status' => "cnt:{$res4['total']}|found:" . ($found4 ? 'YES' : 'NO'),
+                    's5_search' => "cnt:{$res5['total']}|found:" . ($found5 ? 'YES' : 'NO'),
                 ]
             ]);
         } catch (\Throwable $e) {

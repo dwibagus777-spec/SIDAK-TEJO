@@ -25,6 +25,7 @@ $routes->get('auto-deploy', 'MigrateController::autoDeploy');
 $routes->get('master-assets/debug-json', 'MigrateController::debugJson');
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
+$routes->get('api/forensic-asset-trace', 'Api::forensicTrace');
 $routes->get('api/system/version', 'Api::version');
 
 // Persistent Photo Streaming Route (Public)

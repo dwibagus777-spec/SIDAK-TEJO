@@ -1,47 +1,109 @@
 <?php
 
 define('FCPATH', __DIR__ . '/public/');
-require __DIR__ . '/app/Config/Paths.php';
+chdir(__DIR__);
+
+require 'app/Config/Paths.php';
 $paths = new Config\Paths();
-require $paths->systemDirectory . '/Boot.php';
-CodeIgniter\Boot::bootCli($paths);
+
+// Define constants
+define('APPPATH', realpath($paths->appDirectory) . DIRECTORY_SEPARATOR);
+define('ROOTPATH', realpath($paths->appDirectory . '/../') . DIRECTORY_SEPARATOR);
+define('SYSTEMPATH', realpath($paths->systemDirectory) . DIRECTORY_SEPARATOR);
+define('WRITEPATH', realpath($paths->writableDirectory) . DIRECTORY_SEPARATOR);
+
+require SYSTEMPATH . 'bootstrap.php';
 
 $db = \Config\Database::connect();
 
-echo "=== DISTINCT JENIS ASSET IN DB ===\n";
-$distinctJenis = $db->table('assets')
-    ->select('jenis_asset, count(*) as cnt')
-    ->where('deleted_at IS NULL')
-    ->groupBy('jenis_asset')
-    ->get()->getResultArray();
-print_r($distinctJenis);
+echo "========================================\n";
+echo "SIDAK TEJO FORENSIC ASSET TRACE\n";
+echo "========================================\n\n";
 
-echo "\n=== ASSETS FOR PENYULANG_ID = 15 ===\n";
-$penyulang15 = $db->table('assets')
-    ->select('id, kode_asset, nama_asset, jenis_asset, ulp_id, penyulang_id')
-    ->where('penyulang_id', 15)
-    ->where('deleted_at IS NULL')
-    ->get()->getResultArray();
-print_r($penyulang15);
+// 1. SELECT FORENSIC TEST ASSET FROM GIS QUERY RESULT (penyulang_id = 15)
+$gisAssets = $db->table('assets a')
+    ->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.ulp_id, a.penyulang_id, a.latitude, a.longitude, a.deleted_at')
+    ->where('a.penyulang_id', 15)
+    ->where('a.deleted_at IS NULL')
+    ->where('a.latitude !=', 0)
+    ->where('a.longitude !=', 0)
+    ->limit(1)
+    ->get()
+    ->getResultArray();
 
-echo "\n=== ASSETS FOR ULP_ID = 1 AND PENYULANG_ID = 15 ===\n";
-$ulp1penyulang15 = $db->table('assets')
-    ->select('id, kode_asset, nama_asset, jenis_asset, ulp_id, penyulang_id')
-    ->where('ulp_id', 1)
-    ->where('penyulang_id', 15)
-    ->where('deleted_at IS NULL')
-    ->get()->getResultArray();
-print_r($ulp1penyulang15);
+if (empty($gisAssets)) {
+    echo "ERROR: No GIS assets found with penyulang_id = 15!\n";
+    exit(1);
+}
 
-echo "\n=== PENYULANG TABLE ID 15 DETAILS ===\n";
-$pDetails = $db->table('penyulang')
-    ->where('id', 15)
-    ->get()->getRowArray();
-print_r($pDetails);
+$testAsset = $gisAssets[0];
+$assetId   = $testAsset['id'];
 
-echo "\n=== ALL PENYULANG IN ULP_ID = 1 ===\n";
-$allP = $db->table('penyulang')
-    ->select('id, nama_penyulang, ulp_id, status')
-    ->where('ulp_id', 1)
-    ->get()->getResultArray();
-print_r($allP);
+echo "----------------------------------------\n";
+echo "FORENSIC TEST ASSET IDENTIFIED FROM GIS:\n";
+echo "----------------------------------------\n";
+echo "ID          : " . $testAsset['id'] . "\n";
+echo "Kode Asset  : " . $testAsset['kode_asset'] . "\n";
+echo "Nama Asset  : " . $testAsset['nama_asset'] . "\n";
+echo "Jenis Asset : '" . $testAsset['jenis_asset'] . "'\n";
+echo "Status      : '" . $testAsset['status'] . "'\n";
+echo "ULP ID      : " . $testAsset['ulp_id'] . "\n";
+echo "Penyulang ID: " . $testAsset['penyulang_id'] . "\n";
+echo "Latitude    : " . $testAsset['latitude'] . "\n";
+echo "Longitude   : " . $testAsset['longitude'] . "\n";
+echo "Deleted At  : " . var_export($testAsset['deleted_at'], true) . "\n\n";
+
+// 2. PROGRESSIVE ISOLATION STEPS ON MASTER ASSET QUERY
+
+$repo = new \App\Repositories\AssetRepository();
+
+// STEP 0: NO FILTER
+$b0 = $db->table('assets a');
+$b0->where('a.deleted_at IS NULL');
+$sql0 = $b0->getCompiledSelect();
+$res0 = $b0->get()->getResultArray();
+$count0 = count($res0);
+$found0 = array_filter($res0, fn($r) => $r['id'] == $assetId);
+
+echo "STEP 0 [No Filter]:\n";
+echo "Count: " . $count0 . " rows | Test Asset Found: " . (!empty($found0) ? "YES" : "NO") . "\n\n";
+
+// STEP 1: ULP FILTER ONLY (ulp_id = 1)
+$filters1 = ['ulp_id' => 1];
+$res1 = $repo->getFilteredAssetsPaginated($filters1, null, 1, 1000);
+$found1 = array_filter($res1['data'], fn($r) => $r['id'] == $assetId);
+
+echo "STEP 1 [ulp_id = 1]:\n";
+echo "Count: " . $res1['total'] . " rows | Test Asset Found: " . (!empty($found1) ? "YES" : "NO") . "\n\n";
+
+// STEP 2: ULP + PENYULANG (ulp_id = 1 & penyulang_id = 15)
+$filters2 = ['ulp_id' => 1, 'penyulang_id' => 15];
+$res2 = $repo->getFilteredAssetsPaginated($filters2, null, 1, 1000);
+$found2 = array_filter($res2['data'], fn($r) => $r['id'] == $assetId);
+
+echo "STEP 2 [ulp_id = 1 & penyulang_id = 15]:\n";
+echo "Count: " . $res2['total'] . " rows | Test Asset Found: " . (!empty($found2) ? "YES" : "NO") . "\n\n";
+
+// STEP 3: ULP + PENYULANG + JENIS ASSET (ulp_id = 1 & penyulang_id = 15 & jenis_asset = JTM)
+$filters3 = ['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM'];
+$res3 = $repo->getFilteredAssetsPaginated($filters3, null, 1, 1000);
+$found3 = array_filter($res3['data'], fn($r) => $r['id'] == $assetId);
+
+echo "STEP 3 [ulp_id = 1 & penyulang_id = 15 & jenis_asset = JTM]:\n";
+echo "Count: " . $res3['total'] . " rows | Test Asset Found: " . (!empty($found3) ? "YES" : "NO") . "\n\n";
+
+// STEP 4: ULP + PENYULANG + JENIS ASSET + STATUS KOSONG (status = '')
+$filters4 = ['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM', 'status' => ''];
+$res4 = $repo->getFilteredAssetsPaginated($filters4, null, 1, 1000);
+$found4 = array_filter($res4['data'], fn($r) => $r['id'] == $assetId);
+
+echo "STEP 4 [ulp_id = 1 & penyulang_id = 15 & jenis_asset = JTM & status = '']:\n";
+echo "Count: " . $res4['total'] . " rows | Test Asset Found: " . (!empty($found4) ? "YES" : "NO") . "\n\n";
+
+// STEP 5: ULP + PENYULANG + JENIS ASSET + STATUS KOSONG + SEARCH KOSONG (search = '')
+$filters5 = ['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM', 'status' => '', 'search' => ''];
+$res5 = $repo->getFilteredAssetsPaginated($filters5, null, 1, 1000);
+$found5 = array_filter($res5['data'], fn($r) => $r['id'] == $assetId);
+
+echo "STEP 5 [FULL URL PARAMETERS: ulp_id=1&penyulang_id=15&jenis_asset=JTM&status=&search=]:\n";
+echo "Count: " . $res5['total'] . " rows | Test Asset Found: " . (!empty($found5) ? "YES" : "NO") . "\n\n";

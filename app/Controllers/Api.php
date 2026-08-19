@@ -503,4 +503,88 @@ class Api extends BaseController
             ]);
         }
     }
+
+    /**
+     * GET /api/forensic-asset-trace
+     * Mandatory Forensic Deep Inspection Endpoint (1 Test Asset Tracing)
+     */
+    public function forensicTrace()
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            // 1. Pick 1 Forensic Test Asset from GIS result (penyulang_id = 15)
+            $gisAssets = $db->table('assets a')
+                ->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.ulp_id, a.penyulang_id, a.latitude, a.longitude, a.deleted_at')
+                ->where('a.penyulang_id', 15)
+                ->where('a.deleted_at IS NULL')
+                ->where('a.latitude !=', 0)
+                ->where('a.longitude !=', 0)
+                ->limit(1)
+                ->get()
+                ->getResultArray();
+
+            if (empty($gisAssets)) {
+                return $this->respond(['status' => 404, 'error' => 'No GIS test assets found for penyulang_id = 15']);
+            }
+
+            $testAsset = $gisAssets[0];
+            $assetId   = $testAsset['id'];
+
+            $repo = new \App\Repositories\AssetRepository();
+
+            // STEP 0: NO FILTER
+            $res0 = $repo->getFilteredAssetsPaginated([], null, 1, 1000);
+            $found0 = array_values(array_filter($res0['data'], fn($r) => $r['id'] == $assetId));
+
+            // STEP 1: ULP ONLY (ulp_id = 1)
+            $res1 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1], null, 1, 1000);
+            $found1 = array_values(array_filter($res1['data'], fn($r) => $r['id'] == $assetId));
+
+            // STEP 2: ULP + PENYULANG (ulp_id = 1 & penyulang_id = 15)
+            $res2 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15], null, 1, 1000);
+            $found2 = array_values(array_filter($res2['data'], fn($r) => $r['id'] == $assetId));
+
+            // STEP 3: ULP + PENYULANG + JENIS ASSET (ulp_id = 1 & penyulang_id = 15 & jenis_asset = JTM)
+            $res3 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM'], null, 1, 1000);
+            $found3 = array_values(array_filter($res3['data'], fn($r) => $r['id'] == $assetId));
+
+            // STEP 4: STATUS KOSONG (status = '')
+            $res4 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM', 'status' => ''], null, 1, 1000);
+            $found4 = array_values(array_filter($res4['data'], fn($r) => $r['id'] == $assetId));
+
+            // STEP 5: SEARCH KOSONG (search = '')
+            $res5 = $repo->getFilteredAssetsPaginated(['ulp_id' => 1, 'penyulang_id' => 15, 'jenis_asset' => 'JTM', 'status' => '', 'search' => ''], null, 1, 1000);
+            $found5 = array_values(array_filter($res5['data'], fn($r) => $r['id'] == $assetId));
+
+            return $this->respond([
+                'status' => 200,
+                'forensic_test_asset' => [
+                    'id'          => $testAsset['id'],
+                    'kode_asset'  => $testAsset['kode_asset'],
+                    'nama_asset'  => $testAsset['nama_asset'],
+                    'jenis_asset' => $testAsset['jenis_asset'],
+                    'ulp_id'      => $testAsset['ulp_id'],
+                    'penyulang_id'=> $testAsset['penyulang_id'],
+                    'latitude'    => $testAsset['latitude'],
+                    'longitude'   => $testAsset['longitude'],
+                ],
+                'progressive_isolation_results' => [
+                    'step_0_no_filter'  => ['count' => $res0['total'], 'test_asset_found' => !empty($found0)],
+                    'step_1_ulp'        => ['count' => $res1['total'], 'test_asset_found' => !empty($found1)],
+                    'step_2_penyulang'  => ['count' => $res2['total'], 'test_asset_found' => !empty($found2)],
+                    'step_3_jenis_asset'=> ['count' => $res3['total'], 'test_asset_found' => !empty($found3)],
+                    'step_4_status'     => ['count' => $res4['total'], 'test_asset_found' => !empty($found4)],
+                    'step_5_search'     => ['count' => $res5['total'], 'test_asset_found' => !empty($found5)],
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respond([
+                'status'  => 500,
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+        }
+    }
 }

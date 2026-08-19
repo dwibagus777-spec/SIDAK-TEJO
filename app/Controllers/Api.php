@@ -489,26 +489,9 @@ class Api extends BaseController
 
             return $this->respond([
                 'status' => 200,
-                'input_get' => [
-                    'ulp_id'      => $ulpId,
-                    'penyulang_id'=> $penyulangId,
-                    'jenis_asset' => $jenisAsset,
-                    'status'      => $status,
-                    'search'      => $search,
-                ],
-                'progressive_isolation_counts' => [
-                    'total_active_in_db'            => $countAll,
-                    'where_ulp_id_1'                => $countUlp,
-                    'where_penyulang_id_15'         => $countPenyulang,
-                    'where_ulp_1_AND_penyulang_15'  => $countUlpAndPenyulang,
-                ],
-                'jenis_asset_distribution_penyulang_15' => $jenisInPenyulang15,
-                'repository_result' => [
-                    'total_found' => $repoResult['total'],
-                    'data_count'  => count($repoResult['data']),
-                    'sample_row'  => $repoResult['data'][0] ?? null,
-                    'fallback'    => $repoResult['fallback'] ?? false,
-                ]
+                'distribution' => $jenisInPenyulang15,
+                'repo_total'   => $repoResult['total'],
+                'data_sample'  => array_slice($repoResult['data'], 0, 3),
             ]);
         } catch (\Throwable $e) {
             return $this->respond([

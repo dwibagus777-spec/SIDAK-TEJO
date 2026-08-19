@@ -507,19 +507,16 @@ class Api extends BaseController
                 $strList[] = "'" . ($j['jenis_asset'] ?? 'NULL') . "':" . $j['cnt'];
             }
 
-            $repo = new \App\Repositories\AssetRepository();
-            $filters = [
-                'ulp_id'      => '1',
-                'penyulang_id'=> '15',
-                'jenis_asset' => 'JTM',
-                'status'      => '',
-                'search'      => '',
-            ];
-            $resNull = $repo->getFilteredAssetsPaginated($filters, null, 1, 50);
+            $rawCount = $db->table('assets')->where('penyulang_id', 15)->countAllResults();
+            $notDeletedCount = $db->table('assets')->where('penyulang_id', 15)->where('deleted_at IS NULL')->countAllResults();
+            $deletedCount = $db->table('assets')->where('penyulang_id', 15)->where('deleted_at IS NOT NULL')->countAllResults();
+            
+            $jtmNotDeleted = $db->table('assets')->where('penyulang_id', 15)->where('jenis_asset', 'JTM')->where('deleted_at IS NULL')->countAllResults();
+            $jtmDeleted = $db->table('assets')->where('penyulang_id', 15)->where('jenis_asset', 'JTM')->where('deleted_at IS NOT NULL')->countAllResults();
 
             return $this->respond([
                 'status' => 200,
-                'res'    => "TOTAL:{$resNull['total']}|CNT:" . count($resNull['data']) . "|SAMPLE:" . ($resNull['data'][0]['kode_asset'] ?? 'NONE'),
+                'audit'  => "RAW:{$rawCount}|NOT_DEL:{$notDeletedCount}|DEL:{$deletedCount}|JTM_ACTIVE:{$jtmNotDeleted}|JTM_DEL:{$jtmDeleted}",
             ]);
         } catch (\Throwable $e) {
             return $this->respond([

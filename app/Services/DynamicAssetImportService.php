@@ -59,7 +59,7 @@ class DynamicAssetImportService
     /**
      * Process Uploaded New Template Excel File
      */
-    public function processImport(array $rows): array
+    public function processImport(array $rows, string $originalFileName = ''): array
     {
         $db = \Config\Database::connect();
 
@@ -304,7 +304,7 @@ class DynamicAssetImportService
                     'batch_code'   => $batchCode,
                     'ulp_id'       => $batchUlp,
                     'penyulang_id' => $batchPen,
-                    'file_name'    => basename($filePath),
+                    'file_name'    => !empty($originalFileName) ? basename($originalFileName) : ('Import_Asset_' . date('Ymd_His') . '.xlsx'),
                     'total_rows'   => count($rows) - 1,
                     'success_rows' => count($validBatch),
                     'failed_rows'  => $failed,

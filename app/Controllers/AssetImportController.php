@@ -484,7 +484,8 @@ class AssetImportController extends BaseController
             $result = $this->importService->processImport($tempPath);
         } else {
             // New Dynamic Template Flow -> Delegate to DynamicAssetImportService
-            $result = $this->dynamicImportService->processImport($rows);
+            $originalName = $file->getClientName() ?: 'import_asset.xlsx';
+            $result = $this->dynamicImportService->processImport($rows, $originalName);
         }
 
         if (!$result['success']) {

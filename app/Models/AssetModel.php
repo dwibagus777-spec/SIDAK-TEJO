@@ -159,6 +159,30 @@ class AssetModel extends Model
 
                 $this->seedDefaults();
             }
+
+            // Ensure dynamic columns exist on assets table
+            if ($db->tableExists('assets')) {
+                $forge = \Config\Database::forge();
+                if (!$db->fieldExists('construction_type_id', 'assets')) {
+                    $forge->addColumn('assets', [
+                        'construction_type_id' => [
+                            'type'       => 'INT',
+                            'constraint' => 11,
+                            'null'       => true,
+                        ]
+                    ]);
+                }
+                if (!$db->fieldExists('import_batch_id', 'assets')) {
+                    $forge->addColumn('assets', [
+                        'import_batch_id' => [
+                            'type'       => 'BIGINT',
+                            'constraint' => 20,
+                            'unsigned'   => true,
+                            'null'       => true,
+                        ]
+                    ]);
+                }
+            }
         } catch (\Throwable $e) {
             log_message('error', '[AssetModel] Gagal membuat tabel assets: ' . $e->getMessage());
         }

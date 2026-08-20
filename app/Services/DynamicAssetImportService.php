@@ -300,6 +300,8 @@ class DynamicAssetImportService
                 $batchPen  = $sampleRow['penyulang_id'] ?? null;
 
                 $batchModel = new \App\Models\AssetImportBatchModel();
+                $assetModel = new \App\Models\AssetModel(); // Ensure assets table columns exist
+
                 $batchId = $batchModel->insert([
                     'batch_code'   => $batchCode,
                     'ulp_id'       => $batchUlp,
@@ -313,21 +315,28 @@ class DynamicAssetImportService
                     'status'       => 'ACTIVE',
                 ]);
 
-                if ($batchId) {
-                    foreach ($validBatch as &$vItem) {
-                        $vItem['import_batch_id'] = $batchId;
-                    }
-                    unset($vItem);
+                if (!$batchId) {
+                    $err = $db->error();
+                    throw new \Exception('Gagal membuat log import batch: [' . ($err['code'] ?? '0') . '] ' . ($err['message'] ?? 'Insert batch log gagal'));
                 }
+
+                foreach ($validBatch as &$vItem) {
+                    $vItem['import_batch_id'] = $batchId;
+                }
+                unset($vItem);
 
                 $chunks = array_chunk($validBatch, 500);
                 foreach ($chunks as $chunk) {
-                    $db->table('assets')->insertBatch($chunk);
+                    $insertedCount = $db->table('assets')->insertBatch($chunk);
+                    if ($insertedCount === false) {
+                        $err = $db->error();
+                        throw new \Exception('Gagal insert batch assets: [' . ($err['code'] ?? '0') . '] ' . ($err['message'] ?? 'Query insertBatch gagal'));
+                    }
                 }
                 
                 if ($db->transStatus() === false) {
                     $dbError = $db->error();
-                    $dbErrorMsg = !empty($dbError['message']) ? $dbError['message'] : 'Transaction Rollback';
+                    $dbErrorMsg = !empty($dbError['message']) ? ('[' . ($dbError['code'] ?? '') . '] ' . $dbError['message']) : 'Transaction Rollback';
                     log_message('error', '[DynamicAssetImportService] Transaction Failed: ' . json_encode($dbError));
                     $db->transRollback();
                     return [

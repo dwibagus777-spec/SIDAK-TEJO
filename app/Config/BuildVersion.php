@@ -8,18 +8,18 @@ class BuildVersion extends BaseConfig
 {
     // Public Instance Properties (Required for CI4 config() helper)
     public string $SYSTEM_VERSION = 'v2.5.0-ENTERPRISE';
-    public string $BUILD_ID       = '20260820.002';
-    public string $COMMIT_ID     = '0d081b6';
-    public string $DEPLOYED_AT   = '2026-08-20 11:51:00';
+    public string $BUILD_ID       = '20260820.003';
+    public string $COMMIT_ID     = 'f87007e';
+    public string $DEPLOYED_AT   = '2026-08-20 11:56:00';
     public string $ENVIRONMENT   = 'production';
     public string $SYSTEM_NAME   = 'SIDAK TEJO';
     public string $SYSTEM_DESC   = 'Sistem Data dan Tindak Lanjut Temuan Inspeksi Sidoarjo';
 
     // Public Class Constants (Required for direct Class::CONST access)
     public const SYSTEM_VERSION  = 'v2.5.0-ENTERPRISE';
-    public const BUILD_ID        = '20260820.002';
-    public const COMMIT_ID      = '0d081b6';
-    public const DEPLOYED_AT    = '2026-08-20 11:51:00';
+    public const BUILD_ID        = '20260820.003';
+    public const COMMIT_ID      = 'f87007e';
+    public const DEPLOYED_AT    = '2026-08-20 11:56:00';
     public const ENVIRONMENT    = 'production';
     public const SYSTEM_NAME    = 'SIDAK TEJO';
     public const SYSTEM_DESC    = 'Sistem Data dan Tindak Lanjut Temuan Inspeksi Sidoarjo';

@@ -22,5 +22,5 @@ class Security extends BaseConfig
     public string $cookieName = 'csrf_cookie_name';
     public int $expires = 7200;
     public bool $regenerate = false;
-    public bool $redirect = (ENVIRONMENT === 'production');
+    public bool $redirect = true;
 }

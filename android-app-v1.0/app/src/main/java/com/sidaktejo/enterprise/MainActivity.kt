@@ -33,11 +33,16 @@ class MainActivity : AppCompatActivity() {
 
     private val TARGET_URL = "https://sidaktejo.site/dashboard"
 
-    private val cameraPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            Toast.makeText(this, "Izin kamera aktif", Toast.LENGTH_SHORT).show()
+    // Request Camera, Fine Location, Coarse Location, and Storage permissions on app startup
+    private val appPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val cameraGranted = permissions[Manifest.permission.CAMERA] ?: false
+        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+
+        if (cameraGranted && (fineLocationGranted || coarseLocationGranted)) {
+            Toast.makeText(this, "Izin Kamera & Lokasi Aktif", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -49,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         setupCookieManager()
         setupWebView()
         setupBackPressHandler()
-        checkCameraPermission()
+        checkAndRequestAppPermissions()
 
         if (savedInstanceState == null) {
             webView.loadUrl(TARGET_URL)
@@ -62,9 +67,25 @@ class MainActivity : AppCompatActivity() {
         cookieManager.setAcceptThirdPartyCookies(webView, true)
     }
 
-    private fun checkCameraPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+    private fun checkAndRequestAppPermissions() {
+        val requiredPermissions = mutableListOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requiredPermissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            requiredPermissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+
+        val missingPermissions = requiredPermissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (missingPermissions.isNotEmpty()) {
+            appPermissionsLauncher.launch(missingPermissions.toTypedArray())
         }
     }
 
@@ -73,6 +94,7 @@ class MainActivity : AppCompatActivity() {
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
         settings.databaseEnabled = true
+        settings.setGeolocationEnabled(true)
         settings.mediaPlaybackRequiresUserGesture = false
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         settings.allowFileAccess = true
@@ -105,6 +127,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.webChromeClient = object : WebChromeClient() {
+            // Auto-grant Geolocation permission to Web Page when "Ambil Lokasi Saya" is clicked
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+                callback?.invoke(origin, true, false)
+            }
+
             // Auto-grant WebRTC camera permission for HTML5 QR Code Scanner
             override fun onPermissionRequest(request: PermissionRequest?) {
                 request?.let {

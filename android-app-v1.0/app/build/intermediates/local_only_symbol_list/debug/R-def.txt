@@ -1,0 +1,13 @@
+R_DEF: Internal format may change without notice
+local
+color accent_cyan
+color accent_yellow
+color black
+color primary_teal
+color white
+id webView
+layout activity_main
+layout activity_splash
+style Theme.SidakTejo.NoActionBar
+style Theme.SidakTejo.Splash
+xml file_paths

@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.sidaktejo.enterprise.app-merged_res-36:/layout_activity_splash.xml.flat",
+        "source": "com.sidaktejo.enterprise.app-main-38:/layout/activity_splash.xml"
+    },
+    {
+        "merged": "com.sidaktejo.enterprise.app-merged_res-36:/layout_activity_main.xml.flat",
+        "source": "com.sidaktejo.enterprise.app-main-38:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.sidaktejo.enterprise.app-merged_res-36:/xml_file_paths.xml.flat",
+        "source": "com.sidaktejo.enterprise.app-main-38:/xml/file_paths.xml"
+    }
+]

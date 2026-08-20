@@ -780,9 +780,23 @@
             body: formData
         })
         .then(response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (response.status === 403 || !response.ok || !contentType.includes('application/json')) {
+                // CSRF Token or Session Expired due to long standby
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> <span>MEMPERBARUI SESI...</span>';
+                alertBox.className = 'alert-enterprise alert-enterprise-danger animate__animated animate__fadeIn';
+                alertBox.innerHTML = '<i class="fas fa-history"></i> Sesi halaman login telah berakhir karena lama tidak aktif. Memperbarui halaman otomatis...';
+                alertBox.style.display = 'flex';
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1400);
+                return null;
+            }
             return response.json().then(data => ({ status: response.status, body: data }));
         })
         .then(res => {
+            if (!res) return;
             if (res.status === 200 && res.body.success) {
                 // AUTHENTICATION SUCCESS!
                 btn.innerHTML = '<i class="fas fa-check-circle"></i> <span>OTENTIKASI BERHASIL...</span>';
@@ -819,17 +833,31 @@
             }
         })
         .catch(err => {
-            console.warn('[AUTH_AJAX_FALLBACK] Retrying standard submit:', err);
-            form.submit();
+            console.warn('[AUTH_AJAX_FALLBACK] Error occurred, refreshing session:', err);
+            window.location.reload();
         });
     });
 
-    // Trigger Cinematic Door Open Reveal on page load
+    // Trigger Cinematic Door Open Reveal & Idle CSRF Refresh on page load
     document.addEventListener('DOMContentLoaded', function() {
         requestAnimationFrame(function() {
             setTimeout(function() {
                 document.body.classList.add('cinematic-door-open');
             }, 50);
+        });
+
+        // Auto-refresh login page after 30 minutes of idle standby to keep CSRF token 100% fresh
+        let idleTimer = setTimeout(function() {
+            window.location.reload();
+        }, 30 * 60 * 1000);
+
+        ['mousemove', 'keydown', 'touchstart'].forEach(function(evt) {
+            window.addEventListener(evt, function() {
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(function() {
+                    window.location.reload();
+                }, 30 * 60 * 1000);
+            }, { passive: true });
         });
     });
 </script>

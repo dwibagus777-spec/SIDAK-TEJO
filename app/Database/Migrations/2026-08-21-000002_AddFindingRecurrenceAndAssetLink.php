@@ -99,15 +99,7 @@ class AddFindingRecurrenceAndAssetLink extends Migration
                 }
             }
 
-            // Safe Foreign Key Addition (FK asset_id -> assets.id)
-            if ($this->db->tableExists('assets') && $this->db->fieldExists('asset_id', 'temuan')) {
-                $fkCheck = $this->db->query("SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'temuan' AND CONSTRAINT_NAME = 'fk_temuan_asset'")->getRow();
-                if (!$fkCheck) {
-                    $this->db->query("ALTER TABLE `temuan` ADD CONSTRAINT `fk_temuan_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;");
-                }
-            }
-
-            // Deterministic Index Creation with INFORMATION_SCHEMA check
+            // Deterministic Index Creation with INFORMATION_SCHEMA check (Created BEFORE FK)
             $indexes = [
                 'idx_temuan_asset'       => "CREATE INDEX `idx_temuan_asset` ON `temuan` (`asset_id`)",
                 'idx_temuan_fingerprint' => "CREATE INDEX `idx_temuan_fingerprint` ON `temuan` (`finding_fingerprint`)",
@@ -119,6 +111,25 @@ class AddFindingRecurrenceAndAssetLink extends Migration
                 $idxCheck = $this->db->query("SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'temuan' AND INDEX_NAME = '$indexName'")->getRow();
                 if (!$idxCheck) {
                     $this->db->query($createSql);
+                }
+            }
+
+            // Safe Foreign Key Addition (FK asset_id -> assets.id) with Type Harmonization & Graceful Fallback
+            if ($this->db->tableExists('assets') && $this->db->fieldExists('asset_id', 'temuan')) {
+                try {
+                    $assetCol = $this->db->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'assets' AND COLUMN_NAME = 'id'")->getRow();
+                    if ($assetCol) {
+                        $isUnsigned = stripos($assetCol->COLUMN_TYPE, 'unsigned') !== false;
+                        if (!$isUnsigned) {
+                            $this->db->query("ALTER TABLE `temuan` MODIFY `asset_id` INT(11) NULL;");
+                        }
+                    }
+                    $fkCheck = $this->db->query("SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'temuan' AND CONSTRAINT_NAME = 'fk_temuan_asset'")->getRow();
+                    if (!$fkCheck) {
+                        $this->db->query("ALTER TABLE `temuan` ADD CONSTRAINT `fk_temuan_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;");
+                    }
+                } catch (\Throwable $e) {
+                    log_message('warning', 'Foreign key fk_temuan_asset bypassed gracefully: ' . $e->getMessage());
                 }
             }
 
@@ -188,12 +199,24 @@ class AddFindingRecurrenceAndAssetLink extends Migration
             ]);
             $this->forge->addKey('id', true);
             $this->forge->addKey(['temuan_id', 'observed_at'], false, false, 'idx_obs_temuan_date');
+            $this->forge->addKey('observed_by', false, false, 'idx_obs_user');
             $this->forge->createTable('temuan_observations');
 
             if ($this->db->tableExists('users')) {
-                $fkCheck = $this->db->query("SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'temuan_observations' AND CONSTRAINT_NAME = 'fk_obs_user'")->getRow();
-                if (!$fkCheck) {
-                    $this->db->query("ALTER TABLE `temuan_observations` ADD CONSTRAINT `fk_obs_user` FOREIGN KEY (`observed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;");
+                try {
+                    $userCol = $this->db->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'id'")->getRow();
+                    if ($userCol) {
+                        $isUnsigned = stripos($userCol->COLUMN_TYPE, 'unsigned') !== false;
+                        if (!$isUnsigned) {
+                            $this->db->query("ALTER TABLE `temuan_observations` MODIFY `observed_by` INT(11) NULL;");
+                        }
+                    }
+                    $fkCheck = $this->db->query("SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'temuan_observations' AND CONSTRAINT_NAME = 'fk_obs_user'")->getRow();
+                    if (!$fkCheck) {
+                        $this->db->query("ALTER TABLE `temuan_observations` ADD CONSTRAINT `fk_obs_user` FOREIGN KEY (`observed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;");
+                    }
+                } catch (\Throwable $e) {
+                    log_message('warning', 'Foreign key fk_obs_user bypassed gracefully: ' . $e->getMessage());
                 }
             }
 

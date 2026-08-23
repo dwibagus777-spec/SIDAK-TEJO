@@ -115,7 +115,18 @@ class CreateObservationActionFoundation extends Migration
             $this->forge->createTable('observation_action_cases');
 
             if ($this->db->tableExists('assets')) {
-                $this->db->query("ALTER TABLE `observation_action_cases` ADD CONSTRAINT `fk_actioncase_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;");
+                try {
+                    $assetCol = $this->db->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'assets' AND COLUMN_NAME = 'id'")->getRow();
+                    if ($assetCol) {
+                        $isUnsigned = stripos($assetCol->COLUMN_TYPE, 'unsigned') !== false;
+                        if (!$isUnsigned) {
+                            $this->db->query("ALTER TABLE `observation_action_cases` MODIFY `asset_id` INT(11);");
+                        }
+                    }
+                    $this->db->query("ALTER TABLE `observation_action_cases` ADD CONSTRAINT `fk_actioncase_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;");
+                } catch (\Throwable $e) {
+                    log_message('warning', 'Foreign key fk_actioncase_asset bypassed gracefully: ' . $e->getMessage());
+                }
             }
         }
 

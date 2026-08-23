@@ -69,7 +69,11 @@ class CreateObservationActionWorkOrders extends Migration
             $this->forge->addKey('id', true);
             $this->forge->createTable('observation_action_work_orders');
 
-            $this->db->query("ALTER TABLE `observation_action_work_orders` ADD CONSTRAINT `fk_actwo_actioncase` FOREIGN KEY (`action_case_id`) REFERENCES `observation_action_cases` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;");
+            try {
+                $this->db->query("ALTER TABLE `observation_action_work_orders` ADD CONSTRAINT `fk_actwo_actioncase` FOREIGN KEY (`action_case_id`) REFERENCES `observation_action_cases` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;");
+            } catch (\Throwable $e) {
+                log_message('warning', 'Foreign key fk_actwo_actioncase bypassed gracefully: ' . $e->getMessage());
+            }
         }
     }
 

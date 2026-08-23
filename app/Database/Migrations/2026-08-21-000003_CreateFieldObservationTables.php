@@ -187,7 +187,18 @@ class CreateFieldObservationTables extends Migration
             $this->forge->createTable('thermovision_observations');
 
             if ($this->db->tableExists('assets')) {
-                $this->db->query("ALTER TABLE `thermovision_observations` ADD CONSTRAINT `fk_thermoobs_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;");
+                try {
+                    $assetCol = $this->db->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'assets' AND COLUMN_NAME = 'id'")->getRow();
+                    if ($assetCol) {
+                        $isUnsigned = stripos($assetCol->COLUMN_TYPE, 'unsigned') !== false;
+                        if (!$isUnsigned) {
+                            $this->db->query("ALTER TABLE `thermovision_observations` MODIFY `asset_id` INT(11);");
+                        }
+                    }
+                    $this->db->query("ALTER TABLE `thermovision_observations` ADD CONSTRAINT `fk_thermoobs_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;");
+                } catch (\Throwable $e) {
+                    log_message('warning', 'Foreign key fk_thermoobs_asset bypassed gracefully: ' . $e->getMessage());
+                }
             }
         }
     }

@@ -233,9 +233,65 @@ class AssetController extends BaseController
         $topologyService = new \App\Services\AssetTopologyService();
         $topologyTree = $topologyService->getTopologyTree($id);
 
+        $db = \Config\Database::connect();
+
+        // Phase 1D: Read Official Persisted Calculation History
+        $latestHistory = null;
+        $history = [];
+        if ($db->tableExists('asset_health_history')) {
+            $latestHistory = $db->table('asset_health_history')
+                ->where('asset_id', $id)
+                ->orderBy('calculated_at', 'DESC')
+                ->orderBy('id', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+
+            $history = $db->table('asset_health_history')
+                ->where('asset_id', $id)
+                ->orderBy('calculated_at', 'DESC')
+                ->orderBy('id', 'DESC')
+                ->limit(10)
+                ->get()
+                ->getResultArray();
+        }
+
+        // Active Master Finding Cases Summary
+        $activeCases = [];
+        if ($db->tableExists('temuan')) {
+            $activeCases = $db->table('temuan')
+                ->where('asset_id', $id)
+                ->where('deleted_at IS NULL')
+                ->whereIn('case_status', ['OPEN', 'IN_PROGRESS', 'WAITING_EXECUTION'])
+                ->orderBy('first_detected_at', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->get()
+                ->getResultArray();
+        }
+
+        $hiData = null;
+        if ($latestHistory) {
+            $hiData = [
+                'asset_id'            => (int)$id,
+                'base_score'          => (float)$latestHistory['base_score'],
+                'total_deduction'     => (float)$latestHistory['total_deduction'],
+                'final_score'         => (float)$latestHistory['health_score'],
+                'category'            => $latestHistory['health_category'],
+                'explanation_json'    => json_decode($latestHistory['explanation_json'], true) ?? [],
+                'rules_snapshot_json' => json_decode($latestHistory['rules_snapshot_json'], true) ?? [],
+                'calculation_hash'    => $latestHistory['calculation_hash'],
+                'engine_version'      => $latestHistory['engine_version'],
+                'trigger_event'       => $latestHistory['trigger_event'],
+                'calculated_at'       => $latestHistory['calculated_at'],
+            ];
+        }
+
         return view('assets/detail', [
             'asset'        => $asset,
             'topologyTree' => $topologyTree,
+            'hi_data'      => $hiData,
+            'history'      => $history,
+            'activeCases'  => $activeCases,
             'userRole'     => session()->get('user_role'),
         ]);
     }

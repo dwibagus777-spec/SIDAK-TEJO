@@ -11,7 +11,7 @@
 
 <style>
     /* ==========================================================================
-       PH-MOB-GIS-UX-01: Two-Stage Workflow Architecture (Setup vs Full Map Workspace)
+       PH-MOB-GIS-UX-02: Progressive Disclosure & Compact Enterprise Quick Card
        ========================================================================== */
     .gis-master-container {
         position: relative;
@@ -150,7 +150,7 @@
         position: absolute;
         bottom: 14px;
         left: 14px;
-        z-index: 1000;
+        z-index: 999;
         background: rgba(15, 23, 42, 0.92);
         backdrop-filter: blur(10px);
         color: #ffffff;
@@ -174,8 +174,8 @@
         gap: 10px;
     }
     .gis-fab-main {
-        width: 52px;
-        height: 52px;
+        width: 50px;
+        height: 50px;
         border-radius: 50%;
         background: #0284c7;
         color: #ffffff;
@@ -217,32 +217,119 @@
         transform: scale(1.05);
     }
 
-    /* 1️⃣ Compact Asset Quick Card (Bottom Card <= 30-35% Height) */
+    /* ==========================================================================
+       PH-MOB-GIS-UX-02: Compact Enterprise GIS Quick Card (Max 180-210px / <=30vh)
+       ========================================================================== */
     .gis-asset-quick-card {
         position: absolute;
-        bottom: 16px;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         left: 50%;
         transform: translateX(-50%);
-        z-index: 1003;
-        width: calc(100% - 32px);
-        max-width: 440px;
+        z-index: 1004;
+        width: calc(100% - 28px);
+        max-width: 540px;
+        max-height: 210px;
         background: rgba(255, 255, 255, 0.98);
         backdrop-filter: blur(14px);
         border-radius: 18px;
-        padding: 14px;
-        box-shadow: 0 12px 35px rgba(15, 23, 42, 0.25);
+        padding: 12px 14px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.22);
         border: 1px solid rgba(226, 232, 240, 0.9);
         display: none;
-        animation: slideUpQuickCard 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: slideUpQuickCard 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     @keyframes slideUpQuickCard {
-        from { transform: translate(-50%, 30px); opacity: 0; }
+        from { transform: translate(-50%, 25px); opacity: 0; }
         to { transform: translate(-50%, 0); opacity: 1; }
     }
 
-    /* ==========================================================================
-       PH-VIS-02: Pure Flat SVG Marker & Condition Halo Architecture (Zero Cards)
-       ========================================================================== */
+    /* Quick Card Info Layout */
+    .quick-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+    .quick-card-badges {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+    .quick-card-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Floating Microphone Collision-Aware Elevation */
+    body.gis-quickcard-active #btn-global-mic {
+        bottom: calc(220px + env(safe-area-inset-bottom, 0px)) !important;
+        transition: bottom 0.25s ease, opacity 0.2s ease;
+    }
+    body.gis-drawer-active #btn-global-mic {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.2s ease;
+    }
+
+    /* Offcanvas Bottom Sheets (Detail & Action Menus) */
+    .offcanvas-compact-sheet {
+        height: auto !important;
+        max-height: 75vh !important;
+        border-radius: 20px 20px 0 0 !important;
+        border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
+        box-shadow: 0 -10px 35px rgba(15, 23, 42, 0.25) !important;
+    }
+    .sheet-drag-handle {
+        width: 38px;
+        height: 4px;
+        background: #cbd5e1;
+        border-radius: 3px;
+        margin: 0 auto 10px;
+    }
+    .sheet-action-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+        background: #ffffff;
+        font-weight: 600;
+        font-size: 13px;
+        color: #1e293b;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        text-decoration: none !important;
+    }
+    .sheet-action-item:hover {
+        background: #f8fafc;
+    }
+    .sheet-action-item.destructive {
+        color: #dc2626;
+        border-color: #fee2e2;
+        background: #fef2f2;
+    }
+    .sheet-action-item.destructive:hover {
+        background: #fee2e2;
+    }
+
+    /* Sticky Footer for Detail Sheet */
+    .sheet-sticky-footer {
+        position: sticky;
+        bottom: 0;
+        background: #ffffff;
+        padding-top: 10px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid #f1f5f9;
+        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+    }
+
+    /* Flat SVG Marker & Halo Ring System */
     .custom-gis-div-icon {
         background: transparent !important;
         border: none !important;
@@ -267,37 +354,13 @@
         transition: all 0.2s ease;
         z-index: 1;
     }
-    .asset-ring-good {
-        border: 2px solid #10b981;
-        background: rgba(16, 185, 129, 0.12);
-    }
-    .asset-ring-fair {
-        border: 2px solid #0ea5e9;
-        background: rgba(14, 165, 233, 0.12);
-    }
-    .asset-ring-poor {
-        border: 2px solid #f59e0b;
-        background: rgba(245, 158, 11, 0.15);
-    }
-    .asset-ring-critical {
-        border: 2.5px solid #ef4444;
-        background: rgba(239, 68, 68, 0.2);
-        animation: pulse-critical-flat 2s infinite;
-    }
-    .asset-ring-emergency {
-        border: 3px solid #dc2626;
-        background: rgba(220, 38, 38, 0.25);
-        animation: pulse-emergency-flat 1.4s infinite;
-    }
-    .asset-ring-inactive {
-        border: 2px solid #64748b;
-        opacity: 0.6;
-    }
-    .asset-ring-proposed {
-        border: 2.5px dashed #8b5cf6;
-        background: rgba(139, 92, 246, 0.15);
-        animation: pulse-proposed-flat 2s infinite;
-    }
+    .asset-ring-good { border: 2px solid #10b981; background: rgba(16, 185, 129, 0.12); }
+    .asset-ring-fair { border: 2px solid #0ea5e9; background: rgba(14, 165, 233, 0.12); }
+    .asset-ring-poor { border: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.15); }
+    .asset-ring-critical { border: 2.5px solid #ef4444; background: rgba(239, 68, 68, 0.2); animation: pulse-critical-flat 2s infinite; }
+    .asset-ring-emergency { border: 3px solid #dc2626; background: rgba(220, 38, 38, 0.25); animation: pulse-emergency-flat 1.4s infinite; }
+    .asset-ring-inactive { border: 2px solid #64748b; opacity: 0.6; }
+    .asset-ring-proposed { border: 2.5px dashed #8b5cf6; background: rgba(139, 92, 246, 0.15); animation: pulse-proposed-flat 2s infinite; }
 
     @keyframes pulse-critical-flat {
         0%, 100% { transform: scale(1); opacity: 0.8; }
@@ -327,7 +390,7 @@
         z-index: 1000 !important;
     }
 
-    /* Floating Legend Panel */
+    /* Floating Legend Card */
     .gis-legend-card {
         position: absolute;
         bottom: 80px;
@@ -591,29 +654,39 @@
             </div>
         </div>
 
-        <!-- 1️⃣ Compact Asset Quick Card (Tap Marker) -->
+        <!-- ========================================================
+             1️⃣ COMPACT ENTERPRISE ASSET QUICK CARD (Progressive Disclosure)
+             ======================================================== -->
         <div id="asset-quick-card" class="gis-asset-quick-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="d-flex align-items-center gap-2">
-                    <img id="quick-card-img" src="" alt="Icon" style="width: 32px; height: 32px; object-fit: contain;">
-                    <div>
-                        <strong id="quick-card-code" class="text-primary font-monospace d-block" style="font-size: 12px; color: #0284c7 !important;">-</strong>
-                        <h6 id="quick-card-name" class="fw-bold mb-0 text-dark" style="font-size: 13px;">-</h6>
+            <!-- Row 1: Icon + Identity + Close -->
+            <div class="quick-card-header">
+                <div class="d-flex align-items-center gap-2" style="min-width: 0;">
+                    <img id="quick-card-img" src="" alt="Icon" class="flex-shrink-0" style="width: 28px; height: 28px; object-fit: contain;">
+                    <div style="min-width: 0; line-height: 1.15;">
+                        <h6 id="quick-card-name" class="fw-bold mb-0 text-dark text-truncate" style="font-size: 13px;">-</h6>
+                        <span id="quick-card-code" class="text-primary font-monospace small d-block" style="font-size: 11px; color: #0284c7 !important;">-</span>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-sm" style="font-size: 10px;" onclick="closeAssetQuickCard()"></button>
+                <button type="button" class="btn-close btn-close-sm flex-shrink-0 ms-2" style="font-size: 9px;" onclick="closeAssetQuickCard()"></button>
             </div>
-            <div class="d-flex align-items-center gap-1 mb-3">
-                <span id="quick-card-badge" class="badge bg-success" style="font-size: 10px;">GOOD</span>
+
+            <!-- Row 2: Status & Technical Badges -->
+            <div class="quick-card-badges">
+                <span id="quick-card-badge" class="badge bg-success" style="font-size: 10px; font-weight: 700;">● GOOD</span>
                 <span id="quick-card-type" class="badge bg-light text-dark border font-monospace" style="font-size: 10px;">TM-1</span>
-                <span id="quick-card-loc" class="small text-muted text-truncate" style="font-size: 10px; max-width: 180px;">-</span>
+                <span id="quick-card-jenis" class="badge bg-light text-secondary border" style="font-size: 10px;">JTM</span>
             </div>
-            <div class="d-flex gap-2">
-                <button type="button" id="btn-quick-detail" class="btn btn-sm btn-primary w-50 fw-bold rounded-pill shadow-sm" style="font-size: 11px;">
-                    <i class="fas fa-eye me-1"></i> Lihat Detail
+
+            <!-- Row 3: 3 Equal Distinct Action Buttons -->
+            <div class="quick-card-actions">
+                <button type="button" id="btn-quick-detail" class="btn btn-sm btn-primary flex-fill fw-bold rounded-pill shadow-sm py-1" style="font-size: 11px;">
+                    <i class="fas fa-eye me-1"></i> Detail
                 </button>
-                <button type="button" id="btn-quick-edit" class="btn btn-sm btn-outline-primary w-50 fw-bold rounded-pill" style="font-size: 11px;">
+                <button type="button" id="btn-quick-edit-sheet" class="btn btn-sm btn-outline-primary flex-fill fw-bold rounded-pill py-1" style="font-size: 11px;">
                     <i class="fas fa-edit me-1"></i> Edit Aset
+                </button>
+                <button type="button" id="btn-quick-more-sheet" class="btn btn-sm btn-outline-secondary flex-fill fw-bold rounded-pill py-1" style="font-size: 11px;">
+                    <i class="fas fa-ellipsis-h me-1"></i> Lainnya
                 </button>
             </div>
         </div>
@@ -626,14 +699,142 @@
 </div>
 
 <!-- ========================================================
+     ACTION SHEET: EDIT ASET (Progressive Intent)
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-edit-menu">
+    <div class="offcanvas-body p-3">
+        <div class="sheet-drag-handle"></div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-edit text-primary me-2"></i> Pilih Aksi Edit Aset</h6>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="d-flex flex-column gap-2">
+            <div class="sheet-action-item" id="act-edit-params">
+                <i class="fas fa-tools text-primary fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold">Koreksi Konstruksi & Kondisi Fisik</span>
+                    <span class="small text-muted">Ubah tipe tiang (TM-1 s.d. TM-11, LBS) & status</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted small"></i>
+            </div>
+            <div class="sheet-action-item" id="act-edit-coords">
+                <i class="fas fa-map-marker-alt text-danger fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold">Koreksi Posisi Koordinat GPS</span>
+                    <span class="small text-muted">Perbarui titik latitude & longitude tiang</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted small"></i>
+            </div>
+            <div class="sheet-action-item" id="act-edit-transline-from-edit">
+                <i class="fas fa-route text-info fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold">Koreksi Rute Transline Terkait</span>
+                    <span class="small text-muted">Tarik dan sesuaikan jalur konduktor sekitar tiang</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted small"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     ACTION SHEET: LAINNYA / MORE (Secondary & Destructive Actions)
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-more-menu">
+    <div class="offcanvas-body p-3">
+        <div class="sheet-drag-handle"></div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-ellipsis-h text-secondary me-2"></i> Menu Aksi Lainnya</h6>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="d-flex flex-column gap-2">
+            <div class="sheet-action-item" id="act-more-transline">
+                <i class="fas fa-route text-info fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold">Koreksi Jalur di Sekitar Aset</span>
+                    <span class="small text-muted">Buka editor jalur konduktor</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted small"></i>
+            </div>
+            <a id="act-more-dt-link" href="#" class="sheet-action-item">
+                <i class="fas fa-cube text-primary fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold">Buka Lembar Full Digital Twin</span>
+                    <span class="small text-muted">Histori inspeksi, health index & analitik</span>
+                </div>
+                <i class="fas fa-arrow-up-right-from-square text-muted small"></i>
+            </a>
+            <div class="sheet-action-item destructive mt-1" id="act-more-missing">
+                <i class="fas fa-trash-alt text-danger fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold text-danger">Laporkan Aset Sudah Tidak Ada</span>
+                    <span class="small text-danger opacity-75">Tandai soft-missing jika tiang dibongkar</span>
+                </div>
+                <i class="fas fa-chevron-right text-danger small"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     2️⃣ FULL ASSET DETAIL BOTTOM SHEET (Scrollable with Sticky Footer)
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-detail">
+    <div class="offcanvas-body p-3 pb-0" style="overflow-y: auto;">
+        <div class="sheet-drag-handle"></div>
+        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+            <div class="d-flex align-items-center gap-2">
+                <img id="detail-sheet-img" src="" alt="Icon" style="width: 32px; height: 32px; object-fit: contain;">
+                <div>
+                    <h6 class="fw-bold text-dark mb-0" id="detail-sheet-title" style="font-size: 14px;">-</h6>
+                    <span id="detail-sheet-subtitle" class="small text-primary font-monospace" style="font-size: 11px;">-</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <span id="detail-sheet-badge" class="badge bg-success px-3 py-1">● GOOD</span>
+            <span id="detail-sheet-construction" class="badge bg-light text-dark border font-monospace px-3 py-1">TM-1</span>
+        </div>
+
+        <div class="card bg-light border-0 rounded-3 p-3 mb-2">
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Lokasi Aset</span>
+                <span id="detail-sheet-loc" class="small fw-bold text-dark text-truncate" style="max-width: 220px;">-</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Koordinat GPS</span>
+                <span id="detail-sheet-coords" class="small fw-bold font-monospace text-primary">-</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="small text-muted">Jenis Aset</span>
+                <span id="detail-sheet-jenis" class="small fw-bold text-dark">-</span>
+            </div>
+        </div>
+
+        <!-- Sticky Action Footer above Android safe area -->
+        <div class="sheet-sticky-footer">
+            <a id="detail-sheet-dt-link" href="#" class="btn btn-primary flex-fill fw-bold rounded-pill text-white py-2 shadow-sm" style="font-size: 12px;">
+                <i class="fas fa-cube me-1"></i> Digital Twin &rarr;
+            </a>
+            <button type="button" id="btn-sheet-open-edit" class="btn btn-outline-primary flex-fill fw-bold rounded-pill py-2" style="font-size: 12px;">
+                <i class="fas fa-edit me-1"></i> Edit Aset
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
      DRAWER: UBAH FILTER (Offcanvas Sheet)
      ======================================================== -->
-<div class="offcanvas offcanvas-bottom rounded-top-4" tabindex="-1" id="offcanvas-filter-sheet" style="height: auto; max-height: 80vh;">
-    <div class="offcanvas-header border-bottom py-3">
-        <h6 class="offcanvas-title fw-bold text-dark mb-0"><i class="fas fa-filter text-primary me-2"></i> Ubah Filter Jaringan</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body p-4">
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-filter-sheet">
+    <div class="offcanvas-body p-3">
+        <div class="sheet-drag-handle"></div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-dark mb-0"><i class="fas fa-filter text-primary me-2"></i> Ubah Filter Jaringan</h6>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
+        </div>
         <div class="mb-3">
             <label class="small text-muted font-weight-bold d-block mb-1">Pilih Penyulang:</label>
             <select id="drawer-feeder-select" class="form-select form-select-sm fw-bold border-primary text-primary">
@@ -672,60 +873,6 @@
         <button type="button" id="btn-apply-drawer-filter" class="btn btn-primary w-100 fw-bold rounded-pill py-2 shadow-sm">
             <i class="fas fa-check-circle me-1"></i> Terapkan Filter & Buka Peta
         </button>
-    </div>
-</div>
-
-<!-- ========================================================
-     2️⃣ FULL ASSET DETAIL BOTTOM SHEET
-     ======================================================== -->
-<div class="offcanvas offcanvas-bottom rounded-top-4" tabindex="-1" id="offcanvas-asset-detail" style="height: auto; max-height: 85vh;">
-    <div class="offcanvas-header border-bottom py-3">
-        <div class="d-flex align-items-center gap-2">
-            <img id="detail-sheet-img" src="" alt="Icon" style="width: 32px; height: 32px; object-fit: contain;">
-            <div>
-                <h6 class="offcanvas-title fw-bold text-dark mb-0" id="detail-sheet-title">-</h6>
-                <span id="detail-sheet-subtitle" class="small text-muted font-monospace">-</span>
-            </div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body p-4">
-        <div class="d-flex align-items-center gap-2 mb-3">
-            <span id="detail-sheet-badge" class="badge bg-success px-3 py-1">● GOOD</span>
-            <span id="detail-sheet-construction" class="badge bg-light text-dark border font-monospace px-3 py-1">TM-1</span>
-        </div>
-
-        <div class="card bg-light border-0 rounded-3 p-3 mb-3">
-            <div class="d-flex justify-content-between mb-1">
-                <span class="small text-muted">Lokasi</span>
-                <span id="detail-sheet-loc" class="small fw-bold text-dark">-</span>
-            </div>
-            <div class="d-flex justify-content-between mb-1">
-                <span class="small text-muted">Koordinat</span>
-                <span id="detail-sheet-coords" class="small fw-bold font-monospace text-primary">-</span>
-            </div>
-            <div class="d-flex justify-content-between">
-                <span class="small text-muted">Jenis Aset</span>
-                <span id="detail-sheet-jenis" class="small fw-bold text-dark">-</span>
-            </div>
-        </div>
-
-        <div class="d-flex flex-column gap-2">
-            <a id="detail-sheet-dt-link" href="#" class="btn btn-primary w-100 fw-bold rounded-pill text-white py-2 shadow-sm">
-                <i class="fas fa-cube me-1"></i> Buka Full Digital Twin &rarr;
-            </a>
-            <div class="d-flex gap-2">
-                <button type="button" id="btn-sheet-koreksi" class="btn btn-outline-primary w-50 fw-bold rounded-pill py-2">
-                    <i class="fas fa-edit me-1"></i> Koreksi Aset
-                </button>
-                <button type="button" id="btn-sheet-hilang" class="btn btn-outline-danger w-50 fw-bold rounded-pill py-2">
-                    <i class="fas fa-trash-alt me-1"></i> Aset Hilang
-                </button>
-            </div>
-            <button type="button" id="btn-sheet-transline" class="btn btn-outline-info w-100 fw-bold rounded-pill py-2 text-dark" style="background: rgba(6, 182, 212, 0.1); border-color: #06b6d4;">
-                <i class="fas fa-route me-1 text-info"></i> 🔀 Koreksi Jalur di Sekitar Aset
-            </button>
-        </div>
     </div>
 </div>
 
@@ -1071,7 +1218,6 @@ document.addEventListener("DOMContentLoaded", function () {
         loadPenyulangsForUlp(ulpId, true);
     });
 
-    // Auto load first ULP if available
     if (setupUlpSelect.value) {
         loadPenyulangsForUlp(setupUlpSelect.value, true);
     }
@@ -1094,16 +1240,15 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('topbar-feeder-title').textContent = currentFeederName;
         document.getElementById('topbar-ulp-subtitle').textContent = currentUlpName;
 
-        // Switch Screen Views
         document.getElementById('gis-setup-screen').style.display = 'none';
         document.getElementById('gis-workspace-screen').style.display = 'block';
 
-        // Lazy initialize Leaflet map
         initializeMapWorkspace();
         loadGisNetworkOnDemand(true);
     });
 
     document.getElementById('btn-back-to-setup').addEventListener('click', function () {
+        closeAssetQuickCard();
         document.getElementById('gis-workspace-screen').style.display = 'none';
         document.getElementById('gis-setup-screen').style.display = 'block';
     });
@@ -1185,7 +1330,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /**
-     * PH-VIS-02: Pure Flat SVG Marker with Condition Halo Ring (Zero Card Container)
+     * Flat 2D SVG Marker Creation with Condition Ring
      */
     function createAssetVisualMarker(feature) {
         var props   = feature.properties || {};
@@ -1214,7 +1359,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var marker = L.marker([geom.coordinates[1], geom.coordinates[0]], { icon: customIcon });
 
-        // 1️⃣ Marker Tap Interaction: Open Compact Quick Card (Not giant Leaflet popup)
+        // 1️⃣ Progressive Disclosure: Marker Tap Opens Compact Quick Card
         marker.on('click', function (e) {
             L.DomEvent.stopPropagation(e);
             openAssetQuickCard(props, svgPath, geom.coordinates);
@@ -1224,7 +1369,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // ========================================================
-    // 1️⃣ COMPACT ASSET QUICK CARD & 2️⃣ DETAIL SHEET HANDLERS
+    // 1️⃣ COMPACT ASSET QUICK CARD (Progressive Disclosure)
     // ========================================================
     function openAssetQuickCard(props, svgPath, coords) {
         activeAssetProps = props;
@@ -1236,19 +1381,22 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('quick-card-name').textContent = props.nama_asset || '-';
         
         var badge = document.getElementById('quick-card-badge');
-        badge.textContent = props.status || 'GOOD';
+        badge.textContent = `● ${props.status || 'GOOD'}`;
         badge.className = `badge ${(props.condition_overlay && props.condition_overlay.badge_class) || 'bg-success'}`;
         
         document.getElementById('quick-card-type').textContent = props.construction_type || props.type || 'TM';
-        document.getElementById('quick-card-loc').textContent = props.lokasi || 'Jaringan SUTM PLN';
+        document.getElementById('quick-card-jenis').textContent = props.jenis_asset || 'JTM';
 
         document.getElementById('asset-quick-card').style.display = 'block';
+        document.body.classList.add('gis-quickcard-active');
     }
 
     window.closeAssetQuickCard = function () {
         document.getElementById('asset-quick-card').style.display = 'none';
+        document.body.classList.remove('gis-quickcard-active');
     };
 
+    // Quick Action 1: Open Full Detail Sheet
     document.getElementById('btn-quick-detail').addEventListener('click', function () {
         if (!activeAssetProps) return;
         closeAssetQuickCard();
@@ -1271,28 +1419,63 @@ document.addEventListener("DOMContentLoaded", function () {
         detailSheet.show();
     });
 
-    document.getElementById('btn-quick-edit').addEventListener('click', function () {
+    // Quick Action 2: Open Edit Action Sheet
+    document.getElementById('btn-quick-edit-sheet').addEventListener('click', function () {
         if (!activeAssetProps) return;
         closeAssetQuickCard();
+        var editMenu = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-edit-menu'));
+        editMenu.show();
+    });
+
+    // Quick Action 3: Open More Action Sheet
+    document.getElementById('btn-quick-more-sheet').addEventListener('click', function () {
+        if (!activeAssetProps) return;
+        closeAssetQuickCard();
+        document.getElementById('act-more-dt-link').href = `<?= site_url('master-assets/detail') ?>/${activeAssetProps.id}`;
+        var moreMenu = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-more-menu'));
+        moreMenu.show();
+    });
+
+    // Manage Body Classes for Floating Mic Collisions
+    ['offcanvas-asset-detail', 'offcanvas-asset-edit-menu', 'offcanvas-asset-more-menu', 'offcanvas-filter-sheet'].forEach(id => {
+        var el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('show.bs.offcanvas', () => document.body.classList.add('gis-drawer-active'));
+            el.addEventListener('hidden.bs.offcanvas', () => document.body.classList.remove('gis-drawer-active'));
+        }
+    });
+
+    // Sub-actions in Edit Menu
+    document.getElementById('act-edit-params').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-edit-menu')).hide();
         openCorrectionModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
     });
 
-    document.getElementById('btn-sheet-koreksi').addEventListener('click', function () {
-        if (!activeAssetProps) return;
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-detail')).hide();
+    document.getElementById('act-edit-coords').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-edit-menu')).hide();
         openCorrectionModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
     });
 
-    document.getElementById('btn-sheet-hilang').addEventListener('click', function () {
-        if (!activeAssetProps) return;
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-detail')).hide();
-        openMissingModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
-    });
-
-    document.getElementById('btn-sheet-transline').addEventListener('click', function () {
-        if (!activeAssetProps) return;
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-detail')).hide();
+    document.getElementById('act-edit-transline-from-edit').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-edit-menu')).hide();
         startTranslineEditAroundAsset(activeAssetProps.latitude, activeAssetProps.longitude);
+    });
+
+    document.getElementById('btn-sheet-open-edit').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-detail')).hide();
+        var editMenu = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-edit-menu'));
+        editMenu.show();
+    });
+
+    // Sub-actions in More Menu
+    document.getElementById('act-more-transline').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-more-menu')).hide();
+        startTranslineEditAroundAsset(activeAssetProps.latitude, activeAssetProps.longitude);
+    });
+
+    document.getElementById('act-more-missing').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-more-menu')).hide();
+        openMissingModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
     });
 
     // Render Markers & Network Lines

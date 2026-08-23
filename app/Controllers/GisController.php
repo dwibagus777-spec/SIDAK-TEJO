@@ -46,6 +46,16 @@ class GisController extends BaseController
         $userRole = strtoupper((string)($session->get('role') ?? $session->get('level') ?? 'PETUGAS_LAPANGAN'));
         $isAdmin  = (str_contains($userRole, 'ADMIN') || in_array($userRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
 
+        // Defensive initialization & resolution of legend items
+        $legendItems = [];
+        try {
+            $visualRegistry = new \App\Services\AssetVisualRegistryService();
+            $legendItems    = $visualRegistry->getLegendItems();
+        } catch (\Throwable $e) {
+            log_message('error', '[GisController::index] Failed to load legend items: ' . $e->getMessage());
+            $legendItems = [];
+        }
+
         return view('gis/index', [
             'ulps'                => $ulps,
             'penyulangs'          => [], // Initial load: EMPTY array for Penyulangs!

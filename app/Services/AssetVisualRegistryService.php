@@ -3,11 +3,11 @@
 namespace App\Services;
 
 /**
- * Centralized Asset Visual Identity & Network Symbol System (Wave 3 Phase PH-VIS-01)
+ * Centralized Asset Visual Identity & Network Symbol System (Wave 3 Phase PH-VIS-01 Hotfix)
  *
  * Responsibilities:
  * - Single source of truth for asset visual identities, SVG symbols, map markers, and condition overlays.
- * - Deterministic normalization and alias resolution for 10 PLN distribution network asset types + 1 default.
+ * - Family-based visual resolution: Preserves canonical master silhouette (TM-1 ring) across all TM construction variants (TM-5, TM-8, TM-10, TM-11).
  * - Zero external CDN dependencies, 100% locally hosted SVG assets.
  */
 class AssetVisualRegistryService
@@ -18,10 +18,102 @@ class AssetVisualRegistryService
      * Master Definitions for Network Asset Visual Symbols
      */
     public const SYMBOLS = [
+        // ==========================================================
+        // 1. TM CONSTRUCTION FAMILY (Canonical Donut Ring Silhouette)
+        // ==========================================================
+        'TM_1' => [
+            'symbol_key'    => 'TM_1',
+            'label'         => 'Konstruksi TM-1 (Tiang Tumpu)',
+            'category'      => 'structural',
+            'family'        => 'TM',
+            'svg_file'      => 'tm-1.svg',
+            'svg_path'      => '/assets/icons/network/tm-1.svg',
+            'color'         => '#111827',
+            'shape'         => 'circle-donut',
+            'map_priority'  => 40,
+            'marker_anchor' => [22, 22],
+            'popup_anchor'  => [0, -22],
+            'description'   => 'Tiang tumpu garis lurus penumpu konduktor SUTM 20kV (Master Shape)',
+        ],
+        'TM_5' => [
+            'symbol_key'    => 'TM_5',
+            'label'         => 'Konstruksi TM-5 (Tiang Sudut)',
+            'category'      => 'structural',
+            'family'        => 'TM',
+            'svg_file'      => 'tm-5.svg',
+            'svg_path'      => '/assets/icons/network/tm-5.svg',
+            'color'         => '#111827',
+            'shape'         => 'circle-donut-angle',
+            'map_priority'  => 45,
+            'marker_anchor' => [22, 22],
+            'popup_anchor'  => [0, -22],
+            'description'   => 'Tiang sudut kecil / belokan rute SUTM 20kV',
+        ],
+        'TM_8' => [
+            'symbol_key'    => 'TM_8',
+            'label'         => 'Konstruksi TM-8 (Gardu Tiang Portal)',
+            'category'      => 'structural',
+            'family'        => 'TM',
+            'svg_file'      => 'tm-8.svg',
+            'svg_path'      => '/assets/icons/network/tm-8.svg',
+            'color'         => '#111827',
+            'shape'         => 'circle-donut-portal',
+            'map_priority'  => 82,
+            'marker_anchor' => [22, 22],
+            'popup_anchor'  => [0, -22],
+            'description'   => 'Tiang ganda portal penumpu trafo gardu distribusi 20kV',
+        ],
+        'TM_10' => [
+            'symbol_key'    => 'TM_10',
+            'label'         => 'Konstruksi TM-10 (Tiang Akhir)',
+            'category'      => 'structural',
+            'family'        => 'TM',
+            'svg_file'      => 'tm-10.svg',
+            'svg_path'      => '/assets/icons/network/tm-10.svg',
+            'color'         => '#111827',
+            'shape'         => 'circle-donut-deadend',
+            'map_priority'  => 48,
+            'marker_anchor' => [22, 22],
+            'popup_anchor'  => [0, -22],
+            'description'   => 'Tiang penegang akhir / terminasi penyulang SUTM 20kV',
+        ],
+        'TM_11' => [
+            'symbol_key'    => 'TM_11',
+            'label'         => 'Konstruksi TM-11 (Tiang Percabangan)',
+            'category'      => 'structural',
+            'family'        => 'TM',
+            'svg_file'      => 'tm-11.svg',
+            'svg_path'      => '/assets/icons/network/tm-11.svg',
+            'color'         => '#111827',
+            'shape'         => 'circle-donut-branch',
+            'map_priority'  => 55,
+            'marker_anchor' => [22, 22],
+            'popup_anchor'  => [0, -22],
+            'description'   => 'Tiang percabangan 3 arah (T-Off) penyulang SUTM 20kV',
+        ],
+        'TIANG' => [
+            'symbol_key'    => 'TIANG',
+            'label'         => 'Tiang Distribusi (TM)',
+            'category'      => 'structural',
+            'family'        => 'TM',
+            'svg_file'      => 'tm-1.svg',
+            'svg_path'      => '/assets/icons/network/tm-1.svg',
+            'color'         => '#111827',
+            'shape'         => 'circle-donut',
+            'map_priority'  => 40,
+            'marker_anchor' => [22, 22],
+            'popup_anchor'  => [0, -22],
+            'description'   => 'Tiang beton / besi penumpu jaringan SUTM 20kV',
+        ],
+
+        // ==========================================================
+        // 2. NETWORK EQUIPMENT & SUBSTATIONS (Operator Reference)
+        // ==========================================================
         'LBS' => [
             'symbol_key'    => 'LBS',
             'label'         => 'Load Break Switch',
             'category'      => 'switching',
+            'family'        => 'SWITCH',
             'svg_file'      => 'lbs.svg',
             'svg_path'      => '/assets/icons/network/lbs.svg',
             'color'         => '#111827',
@@ -35,6 +127,7 @@ class AssetVisualRegistryService
             'symbol_key'    => 'GI',
             'label'         => 'Gardu Induk',
             'category'      => 'substation',
+            'family'        => 'SUBSTATION',
             'svg_file'      => 'gardu-induk.svg',
             'svg_path'      => '/assets/icons/network/gardu-induk.svg',
             'color'         => '#dc2626',
@@ -48,6 +141,7 @@ class AssetVisualRegistryService
             'symbol_key'    => 'LBSM',
             'label'         => 'LBS Manual / PMS',
             'category'      => 'switching_manual',
+            'family'        => 'SWITCH',
             'svg_file'      => 'lbsm.svg',
             'svg_path'      => '/assets/icons/network/lbsm.svg',
             'color'         => '#111827',
@@ -61,6 +155,7 @@ class AssetVisualRegistryService
             'symbol_key'    => 'CO_BRANCH',
             'label'         => 'Cut Out Branch',
             'category'      => 'protection_branch',
+            'family'        => 'PROTECTION',
             'svg_file'      => 'co-branch.svg',
             'svg_path'      => '/assets/icons/network/co-branch.svg',
             'color'         => '#111827',
@@ -70,23 +165,11 @@ class AssetVisualRegistryService
             'popup_anchor'  => [0, -22],
             'description'   => 'Pengaman percabangan / Fuse Cut Out cabang',
         ],
-        'TIANG' => [
-            'symbol_key'    => 'TIANG',
-            'label'         => 'Tiang Distribusi',
-            'category'      => 'structural',
-            'svg_file'      => 'tiang.svg',
-            'svg_path'      => '/assets/icons/network/tiang.svg',
-            'color'         => '#111827',
-            'shape'         => 'circle-donut',
-            'map_priority'  => 40,
-            'marker_anchor' => [22, 22],
-            'popup_anchor'  => [0, -22],
-            'description'   => 'Tiang beton / besi penumpu jaringan SUTM',
-        ],
         'PMCB_REC' => [
             'symbol_key'    => 'PMCB_REC',
             'label'         => 'PMCB / Recloser',
             'category'      => 'recloser_protection',
+            'family'        => 'PROTECTION',
             'svg_file'      => 'pmcb-recloser.svg',
             'svg_path'      => '/assets/icons/network/pmcb-recloser.svg',
             'color'         => '#dc2626',
@@ -100,6 +183,7 @@ class AssetVisualRegistryService
             'symbol_key'    => 'I3',
             'label'         => 'Indikator 3 (FPI 3-Phase)',
             'category'      => 'indicator',
+            'family'        => 'INDICATOR',
             'svg_file'      => 'indicator-3.svg',
             'svg_path'      => '/assets/icons/network/indicator-3.svg',
             'color'         => '#2563eb',
@@ -113,6 +197,7 @@ class AssetVisualRegistryService
             'symbol_key'    => 'GH',
             'label'         => 'Gardu Hubung',
             'category'      => 'switching_station',
+            'family'        => 'SUBSTATION',
             'svg_file'      => 'gardu-hubung.svg',
             'svg_path'      => '/assets/icons/network/gardu-hubung.svg',
             'color'         => '#ea580c',
@@ -126,6 +211,7 @@ class AssetVisualRegistryService
             'symbol_key'    => 'I2',
             'label'         => 'Indikator 2 (FPI 2-Phase)',
             'category'      => 'indicator',
+            'family'        => 'INDICATOR',
             'svg_file'      => 'indicator-2.svg',
             'svg_path'      => '/assets/icons/network/indicator-2.svg',
             'color'         => '#3b82f6',
@@ -139,6 +225,7 @@ class AssetVisualRegistryService
             'symbol_key'    => 'DISTRIBUSI',
             'label'         => 'Trafo Distribusi',
             'category'      => 'transformer',
+            'family'        => 'TRANSFORMER',
             'svg_file'      => 'distribusi.svg',
             'svg_path'      => '/assets/icons/network/distribusi.svg',
             'color'         => '#111827',
@@ -146,12 +233,13 @@ class AssetVisualRegistryService
             'map_priority'  => 80,
             'marker_anchor' => [22, 22],
             'popup_anchor'  => [0, -22],
-            'description'   => 'Gardu trafo distribusi penurun tegangan 20kV ke 380V/220V',
+            'description'   => 'Trafo distribusi penurun tegangan 20kV ke 380V/220V',
         ],
         'DEFAULT' => [
             'symbol_key'    => 'DEFAULT',
             'label'         => 'Aset Jaringan',
             'category'      => 'general',
+            'family'        => 'GENERAL',
             'svg_file'      => 'generic-network-asset.svg',
             'svg_path'      => '/assets/icons/network/generic-network-asset.svg',
             'color'         => '#475569',
@@ -164,7 +252,7 @@ class AssetVisualRegistryService
     ];
 
     /**
-     * Resolve Visual Identity from Asset Attributes (Data-Driven with Aliases)
+     * Resolve Visual Identity from Asset Attributes (Family-Based Visual Resolution)
      *
      * @param string|null $jenisAsset
      * @param string|null $constructionType
@@ -177,59 +265,78 @@ class AssetVisualRegistryService
         $c = strtoupper(trim(str_replace(['-', ' '], '_', (string)$constructionType)));
         $k = strtoupper(trim((string)$kode));
 
-        // 1. Exact & Alias Mapping on Jenis Asset
+        // -------------------------------------------------------------
+        // STEP 1: TM CONSTRUCTION FAMILY RESOLUTION (Highest Priority)
+        // Preserves Canonical Donut Ring Shape with Internal Accents
+        // -------------------------------------------------------------
+        $tmMatched = match(true) {
+            // TM-8 / Portal Double Pole
+            str_contains($c, 'TM_8') || str_contains($c, 'TM8') || str_contains($c, 'PORTAL') || str_contains($j, 'TM_8') || str_contains($j, 'TM8') || str_contains($k, 'TM8') || str_contains($k, 'TM-8') => 'TM_8',
+
+            // TM-5 / Pole Angle
+            str_contains($c, 'TM_5') || str_contains($c, 'TM5') || str_contains($c, 'SUDUT') || str_contains($j, 'TM_5') || str_contains($j, 'TM5') => 'TM_5',
+
+            // TM-10 / Dead-End Pole
+            str_contains($c, 'TM_10') || str_contains($c, 'TM10') || str_contains($c, 'AKHIR') || str_contains($c, 'DEAD_END') || str_contains($j, 'TM_10') || str_contains($j, 'TM10') => 'TM_10',
+
+            // TM-11 / Branch Pole (T-Off)
+            str_contains($c, 'TM_11') || str_contains($c, 'TM11') || str_contains($c, 'PERCABANGAN') || str_contains($j, 'TM_11') || str_contains($j, 'TM11') => 'TM_11',
+
+            // TM-1 / Tangent Pole Standard
+            str_contains($c, 'TM_1') || str_contains($c, 'TM1') || str_contains($c, 'TUMPU') || str_contains($j, 'TM_1') || str_contains($j, 'TM1') => 'TM_1',
+
+            default => null,
+        };
+
+        if ($tmMatched !== null) {
+            $spec = self::SYMBOLS[$tmMatched];
+            return array_merge($spec, [
+                'fallback'        => false,
+                'family'          => 'TM',
+                'base_silhouette' => 'TM_1',
+            ]);
+        }
+
+        // -------------------------------------------------------------
+        // STEP 2: PRIMARY ASSET CATEGORY RESOLUTION (Switching/Substation/Protection/Indicators)
+        // -------------------------------------------------------------
         $matchedKey = match(true) {
             // LBS
-            in_array($j, ['LBS', 'LOAD_BREAK_SWITCH', 'LBS_MOTOR', 'LBS_MOTORIZED', 'LBS_OTOMATIS'], true) => 'LBS',
+            in_array($j, ['LBS', 'LOAD_BREAK_SWITCH', 'LBS_MOTOR', 'LBS_MOTORIZED', 'LBS_OTOMATIS'], true) || str_contains($c, 'LBS_MOTOR') => 'LBS',
             
             // GI
-            in_array($j, ['GI', 'GARDU_INDUK', 'SUBSTATION', 'BAY_TRAFO'], true) => 'GI',
+            in_array($j, ['GI', 'GARDU_INDUK', 'SUBSTATION', 'BAY_TRAFO'], true) || str_contains($c, 'GARDU_INDUK') || str_contains($c, 'GI') => 'GI',
             
             // LBSM
-            in_array($j, ['LBSM', 'LBS_MANUAL', 'LOAD_BREAK_SWITCH_MANUAL', 'PMS', 'PEMISAH', 'SEKSI'], true) => 'LBSM',
+            in_array($j, ['LBSM', 'LBS_MANUAL', 'LOAD_BREAK_SWITCH_MANUAL', 'PMS', 'PEMISAH', 'SEKSI'], true) || str_contains($c, 'PMS') || str_contains($c, 'LBSM') => 'LBSM',
             
             // CO_BRANCH
-            in_array($j, ['CO_BRANCH', 'CUT_OUT_BRANCH', 'FCO', 'FUSE_CUT_OUT', 'CO', 'PERCABANGAN_CO'], true) => 'CO_BRANCH',
-            
-            // TIANG
-            in_array($j, ['TIANG', 'POLE', 'TIANG_BETON', 'TIANG_BESI', 'TIANG_SUTM'], true) => 'TIANG',
+            in_array($j, ['CO_BRANCH', 'CUT_OUT_BRANCH', 'FCO', 'FUSE_CUT_OUT', 'CO', 'PERCABANGAN_CO'], true) || str_contains($c, 'FCO') || str_contains($c, 'CUT_OUT') => 'CO_BRANCH',
             
             // PMCB / RECLOSER
-            in_array($j, ['PMCB_REC', 'PMCB', 'RECLOSER', 'REC', 'ACR', 'AUTO_RECLOSER', 'PMT', 'PEMUTUS'], true) => 'PMCB_REC',
+            in_array($j, ['PMCB_REC', 'PMCB', 'RECLOSER', 'REC', 'ACR', 'AUTO_RECLOSER', 'PMT', 'PEMUTUS'], true) || str_contains($c, 'RECLOSER') || str_contains($c, 'PMCB') || str_contains($c, 'PMT') => 'PMCB_REC',
             
             // I3
-            in_array($j, ['I3', 'INDIKATOR_3', 'FAULT_INDICATOR_3', 'FPI_3', 'FPI_3PHASE'], true) => 'I3',
+            in_array($j, ['I3', 'INDIKATOR_3', 'FAULT_INDICATOR_3', 'FPI_3', 'FPI_3PHASE'], true) || str_contains($c, 'FPI_3') => 'I3',
             
             // GH
-            in_array($j, ['GH', 'GARDU_HUBUNG', 'SWITCHING_STATION', 'KUBIKEL_GH'], true) => 'GH',
+            in_array($j, ['GH', 'GARDU_HUBUNG', 'SWITCHING_STATION', 'KUBIKEL_GH'], true) || str_contains($c, 'GARDU_HUBUNG') || str_contains($c, 'GH') => 'GH',
             
             // I2
-            in_array($j, ['I2', 'INDIKATOR_2', 'FAULT_INDICATOR_2', 'FPI_2', 'FPI_2PHASE'], true) => 'I2',
+            in_array($j, ['I2', 'INDIKATOR_2', 'FAULT_INDICATOR_2', 'FPI_2', 'FPI_2PHASE'], true) || str_contains($c, 'FPI_2') => 'I2',
+
+            // TIANG / STRUCTURAL POLES
+            in_array($j, ['TIANG', 'POLE', 'TIANG_BETON', 'TIANG_BESI', 'TIANG_SUTM', 'JTM'], true) || str_contains($c, 'TIANG') || str_contains($c, 'POLE') => 'TM_1',
             
             // DISTRIBUSI / TRAFO
-            in_array($j, ['DISTRIBUSI', 'TRAFO', 'TRAFO_DISTRIBUSI', 'GARDU', 'GARDU_DISTRIBUSI', 'GTT', 'GTM', 'TRANSFORMER'], true) => 'DISTRIBUSI',
+            in_array($j, ['DISTRIBUSI', 'TRAFO', 'TRAFO_DISTRIBUSI', 'GARDU', 'GARDU_DISTRIBUSI', 'GTT', 'GTM', 'TRANSFORMER'], true) || str_contains($c, 'TRAFO') || str_contains($c, 'GTT') => 'DISTRIBUSI',
             
             default => null,
         };
 
-        // 2. Fallback to Construction Type inspection if not resolved
-        if ($matchedKey === null && !empty($c)) {
-            $matchedKey = match(true) {
-                str_contains($c, 'RECLOSER') || str_contains($c, 'PMCB') || str_contains($c, 'PMT') => 'PMCB_REC',
-                str_contains($c, 'LBSM') || str_contains($c, 'PMS') || str_contains($c, 'MANUAL') => 'LBSM',
-                str_contains($c, 'LBS') => 'LBS',
-                str_contains($c, 'CO') || str_contains($c, 'FUSE') || str_contains($c, 'BRANCH') => 'CO_BRANCH',
-                str_contains($c, 'GARDU_INDUK') || str_contains($c, 'GI') => 'GI',
-                str_contains($c, 'GARDU_HUBUNG') || str_contains($c, 'GH') => 'GH',
-                str_contains($c, 'TRAFO') || str_contains($c, 'GTT') || str_contains($c, 'DISTRIBUSI') => 'DISTRIBUSI',
-                str_contains($c, 'TIANG') || str_contains($c, 'POLE') => 'TIANG',
-                str_contains($c, 'FPI_3') || str_contains($c, 'I3') => 'I3',
-                str_contains($c, 'FPI_2') || str_contains($c, 'I2') => 'I2',
-                default => null,
-            };
-        }
-
-        // 3. Fallback to Asset Code Prefix inspection
+        // -------------------------------------------------------------
+        // STEP 3: ASSET CODE PREFIX INSPECTION (Fallback)
+        // -------------------------------------------------------------
         if ($matchedKey === null && !empty($k)) {
             $matchedKey = match(true) {
                 str_starts_with($k, 'LBS-') || str_starts_with($k, 'LBSM-') => str_starts_with($k, 'LBSM-') ? 'LBSM' : 'LBS',
@@ -237,7 +344,7 @@ class AssetVisualRegistryService
                 str_starts_with($k, 'GH-') => 'GH',
                 str_starts_with($k, 'REC-') || str_starts_with($k, 'PMCB-') => 'PMCB_REC',
                 str_starts_with($k, 'CO-') => 'CO_BRANCH',
-                str_starts_with($k, 'TG-') || str_starts_with($k, 'T-') => 'TIANG',
+                str_starts_with($k, 'TG-') || str_starts_with($k, 'T-') => 'TM_1',
                 str_starts_with($k, 'SDJ-') || str_starts_with($k, 'GD-') || str_starts_with($k, 'TR-') => 'DISTRIBUSI',
                 default => null,
             };
@@ -263,7 +370,6 @@ class AssetVisualRegistryService
         $cond = strtoupper(trim((string)$condition));
         $sev  = strtoupper(trim((string)$severity));
 
-        // Determine effective status level
         if ($sev === 'EMERGENCY' || $cond === 'EMERGENCY') {
             return [
                 'condition'    => 'EMERGENCY',
@@ -343,7 +449,11 @@ class AssetVisualRegistryService
      */
     public function getLegendItems(): array
     {
-        $keys = ['LBS', 'GI', 'LBSM', 'CO_BRANCH', 'TIANG', 'PMCB_REC', 'I3', 'GH', 'I2', 'DISTRIBUSI', 'DEFAULT'];
+        $keys = [
+            'TM_1', 'TM_5', 'TM_8', 'TM_10', 'TM_11',
+            'LBS', 'GI', 'LBSM', 'CO_BRANCH', 'PMCB_REC',
+            'I3', 'GH', 'I2', 'DISTRIBUSI'
+        ];
         $items = [];
 
         foreach ($keys as $key) {

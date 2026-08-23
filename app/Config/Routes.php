@@ -386,6 +386,17 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('assets/network/(:num)', 'GisController::network/$1');
     $routes->get('assets/baseline/(:num)', 'GisController::baseline/$1');
 
+    // Wave 3 Phase PH-AI-GIS-01 - Field Asset Lifecycle & Transline Editor APIs
+    $routes->post('gis/api-propose-correction', 'GisController::apiProposeCorrection');
+    $routes->post('gis/api-propose-new-asset', 'GisController::apiProposeNewAsset');
+    $routes->post('gis/api-report-missing', 'GisController::apiReportMissingAsset');
+    $routes->post('gis/api-propose-transline', 'GisController::apiProposeTransline');
+    $routes->post('gis/api-apply-correction', 'GisController::apiApplyCorrection');
+    $routes->post('gis/api-reject-correction', 'GisController::apiRejectCorrection');
+    $routes->get('gis/api-next-code', 'GisController::apiNextCode');
+    $routes->get('gis/api-pending-corrections', 'GisController::apiPendingCorrections');
+    $routes->get('gis/api-asset-history/(:num)', 'GisController::apiAssetHistory/$1');
+
     // Release v2.2.0 - Guided Inspection Execution Engine Routes
     $routes->get('inspections', 'InspectionController::index');
     $routes->get('inspections/start', 'InspectionController::start');

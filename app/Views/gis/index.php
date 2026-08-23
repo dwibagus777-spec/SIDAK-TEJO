@@ -10,16 +10,20 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
 <style>
-    /* ==========================================================================
-       PH-MOB-GIS-UX-02: Progressive Disclosure & Compact Enterprise Quick Card
-       ========================================================================== */
+    :root {
+        --gis-mob-bottom-nav: 62px;
+    }
+
+    /* Container Master */
     .gis-master-container {
         position: relative;
         width: 100%;
         min-height: calc(100vh - 150px);
     }
 
-    /* STAGE 1: Lightweight Mobile Setup Screen (No Leaflet Map rendered) */
+    /* ==========================================================================
+       STAGE 1: Lightweight Mobile Setup Screen (No Leaflet Map rendered)
+       ========================================================================== */
     .gis-setup-screen {
         width: 100%;
         padding: 12px 4px 40px;
@@ -44,7 +48,9 @@
         box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
     }
 
-    /* STAGE 2: Fullscreen GIS Map Workspace */
+    /* ==========================================================================
+       STAGE 2: Fullscreen GIS Map Workspace
+       ========================================================================== */
     .gis-workspace-screen {
         position: relative;
         width: 100%;
@@ -79,7 +85,7 @@
     }
     .gis-topbar-pill {
         pointer-events: auto;
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(12px);
         border-radius: 30px;
         padding: 6px 14px;
@@ -174,15 +180,15 @@
         gap: 10px;
     }
     .gis-fab-main {
-        width: 50px;
-        height: 50px;
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         background: #0284c7;
         color: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 18px;
         box-shadow: 0 8px 25px rgba(2, 132, 199, 0.5);
         border: 2px solid #ffffff;
         cursor: pointer;
@@ -218,30 +224,58 @@
     }
 
     /* ==========================================================================
-       PH-MOB-GIS-UX-02: Compact Enterprise GIS Quick Card (Max 180-210px / <=30vh)
+       PH-MOB-GIS-UX-02: Strict Compact Asset Quick Card (< 210px Height)
        ========================================================================== */
     .gis-asset-quick-card {
         position: absolute;
-        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1004;
-        width: calc(100% - 28px);
-        max-width: 540px;
-        max-height: 210px;
+        z-index: 1045 !important;
         background: rgba(255, 255, 255, 0.98);
         backdrop-filter: blur(14px);
-        border-radius: 18px;
+        border-radius: 16px;
         padding: 12px 14px;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.22);
+        box-shadow: 0 12px 35px rgba(15, 23, 42, 0.25);
         border: 1px solid rgba(226, 232, 240, 0.9);
         display: none;
-        animation: slideUpQuickCard 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: 220px !important;
+        overflow: hidden;
+        animation: slideUpQuickCard 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     @keyframes slideUpQuickCard {
-        from { transform: translate(-50%, 25px); opacity: 0; }
-        to { transform: translate(-50%, 0); opacity: 1; }
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Mobile Viewport: Bottom-Centered above Mobile Bottom Navigation */
+    @media (max-width: 768px) {
+        .gis-asset-quick-card {
+            position: fixed !important;
+            left: 10px !important;
+            right: 10px !important;
+            bottom: calc(var(--gis-mob-bottom-nav) + env(safe-area-inset-bottom, 0px) + 8px) !important;
+            width: auto !important;
+            max-width: none !important;
+        }
+        .gis-summary-bar {
+            bottom: calc(var(--gis-mob-bottom-nav) + env(safe-area-inset-bottom, 0px) + 8px) !important;
+        }
+        .gis-fab-container {
+            bottom: calc(var(--gis-mob-bottom-nav) + env(safe-area-inset-bottom, 0px) + 8px) !important;
+        }
+    }
+
+    /* Desktop Viewport: Floating Bottom-Right Inspection Card (NOT Full Width!) */
+    @media (min-width: 769px) {
+        .gis-asset-quick-card {
+            position: absolute !important;
+            bottom: 24px !important;
+            right: 24px !important;
+            left: auto !important;
+            width: 380px !important;
+            max-width: 420px !important;
+        }
     }
 
     /* Quick Card Info Layout */
@@ -263,25 +297,39 @@
         gap: 6px;
     }
 
-    /* Floating Microphone Collision-Aware Elevation */
-    body.gis-quickcard-active #btn-global-mic {
-        bottom: calc(220px + env(safe-area-inset-bottom, 0px)) !important;
-        transition: bottom 0.25s ease, opacity 0.2s ease;
-    }
+    /* Collision-Aware Global Voice Mic Elimination */
+    body.gis-quickcard-active #btn-global-mic,
     body.gis-drawer-active #btn-global-mic {
         opacity: 0 !important;
         pointer-events: none !important;
+        visibility: hidden !important;
         transition: opacity 0.2s ease;
     }
 
-    /* Offcanvas Bottom Sheets (Detail & Action Menus) */
+    /* ==========================================================================
+       Progressive Disclosure Offcanvas Sheets
+       ========================================================================== */
     .offcanvas-compact-sheet {
         height: auto !important;
-        max-height: 75vh !important;
+        max-height: 70vh !important;
         border-radius: 20px 20px 0 0 !important;
         border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
         box-shadow: 0 -10px 35px rgba(15, 23, 42, 0.25) !important;
+        z-index: 1055 !important;
     }
+
+    @media (min-width: 769px) {
+        .offcanvas-compact-sheet {
+            max-width: 440px !important;
+            margin: 0 auto !important;
+            left: 50% !important;
+            transform: translateX(-50%) translateY(100%) !important;
+        }
+        .offcanvas-compact-sheet.show {
+            transform: translateX(-50%) translateY(0) !important;
+        }
+    }
+
     .sheet-drag-handle {
         width: 38px;
         height: 4px;
@@ -316,13 +364,13 @@
         background: #fee2e2;
     }
 
-    /* Sticky Footer for Detail Sheet */
+    /* Sticky Footer for Detail Sheet above Android Nav */
     .sheet-sticky-footer {
         position: sticky;
         bottom: 0;
         background: #ffffff;
         padding-top: 10px;
-        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(var(--gis-mob-bottom-nav) + env(safe-area-inset-bottom, 0px) + 10px);
         border-top: 1px solid #f1f5f9;
         margin-top: 12px;
         display: flex;
@@ -656,34 +704,35 @@
 
         <!-- ========================================================
              1️⃣ COMPACT ENTERPRISE ASSET QUICK CARD (Progressive Disclosure)
+             Max Visual Height: 200px - Peta Tetap Dominan (>=70% Viewport)
              ======================================================== -->
         <div id="asset-quick-card" class="gis-asset-quick-card">
-            <!-- Row 1: Icon + Identity + Close -->
+            <!-- Row 1: Icon + Name + Code + Close -->
             <div class="quick-card-header">
                 <div class="d-flex align-items-center gap-2" style="min-width: 0;">
                     <img id="quick-card-img" src="" alt="Icon" class="flex-shrink-0" style="width: 28px; height: 28px; object-fit: contain;">
                     <div style="min-width: 0; line-height: 1.15;">
                         <h6 id="quick-card-name" class="fw-bold mb-0 text-dark text-truncate" style="font-size: 13px;">-</h6>
-                        <span id="quick-card-code" class="text-primary font-monospace small d-block" style="font-size: 11px; color: #0284c7 !important;">-</span>
+                        <span id="quick-card-code" class="text-primary font-monospace small d-block text-truncate" style="font-size: 11px; color: #0284c7 !important;">-</span>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-sm flex-shrink-0 ms-2" style="font-size: 9px;" onclick="closeAssetQuickCard()"></button>
+                <button type="button" class="btn-close btn-close-sm flex-shrink-0 ms-2" style="font-size: 10px;" onclick="closeAssetQuickCard()"></button>
             </div>
 
-            <!-- Row 2: Status & Technical Badges -->
+            <!-- Row 2: Status Badges -->
             <div class="quick-card-badges">
                 <span id="quick-card-badge" class="badge bg-success" style="font-size: 10px; font-weight: 700;">● GOOD</span>
                 <span id="quick-card-type" class="badge bg-light text-dark border font-monospace" style="font-size: 10px;">TM-1</span>
                 <span id="quick-card-jenis" class="badge bg-light text-secondary border" style="font-size: 10px;">JTM</span>
             </div>
 
-            <!-- Row 3: 3 Equal Distinct Action Buttons -->
+            <!-- Row 3: 3 Action Buttons -->
             <div class="quick-card-actions">
                 <button type="button" id="btn-quick-detail" class="btn btn-sm btn-primary flex-fill fw-bold rounded-pill shadow-sm py-1" style="font-size: 11px;">
                     <i class="fas fa-eye me-1"></i> Detail
                 </button>
                 <button type="button" id="btn-quick-edit-sheet" class="btn btn-sm btn-outline-primary flex-fill fw-bold rounded-pill py-1" style="font-size: 11px;">
-                    <i class="fas fa-edit me-1"></i> Edit Aset
+                    <i class="fas fa-edit me-1"></i> Edit
                 </button>
                 <button type="button" id="btn-quick-more-sheet" class="btn btn-sm btn-outline-secondary flex-fill fw-bold rounded-pill py-1" style="font-size: 11px;">
                     <i class="fas fa-ellipsis-h me-1"></i> Lainnya
@@ -1359,7 +1408,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var marker = L.marker([geom.coordinates[1], geom.coordinates[0]], { icon: customIcon });
 
-        // 1️⃣ Progressive Disclosure: Marker Tap Opens Compact Quick Card
+        // 1️⃣ Progressive Disclosure: Marker Tap Opens ONLY Compact Quick Card
         marker.on('click', function (e) {
             L.DomEvent.stopPropagation(e);
             openAssetQuickCard(props, svgPath, geom.coordinates);
@@ -1369,7 +1418,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // ========================================================
-    // 1️⃣ COMPACT ASSET QUICK CARD (Progressive Disclosure)
+    // 1️⃣ COMPACT ASSET QUICK CARD LOGIC
     // ========================================================
     function openAssetQuickCard(props, svgPath, coords) {
         activeAssetProps = props;

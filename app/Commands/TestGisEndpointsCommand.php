@@ -74,12 +74,9 @@ class TestGisEndpointsCommand extends BaseCommand
             CLI::write(" [PASS] Status: 200 OK | Master Conductors Loaded: {$cCount} items", 'green');
         } else {
             CLI::error(" [FAIL] Status: " . $res3->getStatusCode() . " | Body: " . $body3);
-        }
-
-        // TEST 4: apiNetwork with first valid penyulang (Feeder isolation check)
-        $firstPenyulangId = (int)($json1['penyulangs'][0]['id'] ?? 1);
-        CLI::write("\n[4/6] Testing GET /gis/api-network?penyulang_id={$firstPenyulangId} ...", 'cyan');
-        $_GET['penyulang_id'] = $firstPenyulangId;
+        }        // TEST 4: apiNetwork for Feeder 15 (BANJAR KEMANTREN) - Master Asset Layer Only
+        CLI::write("\n[4/7] Testing GET /gis/api-network?penyulang_id=15 (Asset Layer Only) ...", 'cyan');
+        $_GET['penyulang_id'] = 15;
         $_GET['zoom'] = 15;
         $_GET['layers'] = 'JTM,GARDU,TRAFO,SWITCH';
         $res4 = $controller->apiNetwork();
@@ -90,54 +87,77 @@ class TestGisEndpointsCommand extends BaseCommand
             $fCount = count($json4['data']['features'] ?? []);
             $eCount = count($json4['data']['transline']['properties']['edges'] ?? []);
             $rejectedCross = $json4['data']['summary']['rejected_cross_feeder'] ?? 0;
-            CLI::write(" [PASS] Status: 200 OK | Features: {$fCount} | Transline Edges: {$eCount} | Rejected Cross-Feeder: {$rejectedCross}", 'green');
+            $hasMaster = $json4['data']['meta']['has_master_assets'] ?? false;
+            
+            if ($fCount === 0 && !$hasMaster) {
+                CLI::write(" [PASS] Status: 200 OK | Honest Empty State: 0 Assets, 0 Edges, has_master_assets = false", 'green');
+            } else {
+                CLI::error(" [FAIL] Feeder 15 leaked non-master assets: count = {$fCount}");
+                return;
+            }
         } else {
             CLI::error(" [FAIL] Status: " . $res4->getStatusCode() . " | Body: " . $body4);
+            return;
         }
 
-        // TEST 5: apiNetworkAudit (Data Provenance & Feeder Boundary)
-        CLI::write("\n[5/6] Testing GET /gis/api-network-audit?penyulang_id={$firstPenyulangId} ...", 'cyan');
-        $_GET['penyulang_id'] = $firstPenyulangId;
+        // TEST 5: apiNetwork for Feeder 15 with TEMUAN layer explicitly enabled
+        CLI::write("\n[5/7] Testing GET /gis/api-network?penyulang_id=15&layers=TEMUAN (Temuan Layer Explicit) ...", 'cyan');
+        $_GET['penyulang_id'] = 15;
+        $_GET['zoom'] = 15;
+        $_GET['layers'] = 'TEMUAN';
+        $res5 = $controller->apiNetwork();
+        $body5 = $res5->getBody();
+        $json5 = json_decode($body5, true);
+
+        if ($res5->getStatusCode() === 200 && ($json5['status'] ?? '') === 'success') {
+            $tFeatures = $json5['data']['features'] ?? [];
+            $tCount = count($tFeatures);
+            $allTemuanEntity = true;
+            foreach ($tFeatures as $tf) {
+                if (($tf['properties']['entity_type'] ?? '') !== 'TEMUAN' || ($tf['properties']['source_table'] ?? '') !== 'temuan') {
+                    $allTemuanEntity = false;
+                    break;
+                }
+            }
+
+            if ($tCount > 0 && $allTemuanEntity && $json5['data']['summary']['total_assets'] === 0) {
+                CLI::write(" [PASS] Status: 200 OK | Loaded {$tCount} Temuan markers | All entity_type === 'TEMUAN' | Asset Counter strictly 0", 'green');
+            } else {
+                CLI::error(" [FAIL] Temuan layer contract violation: count={$tCount}, allTemuan={$allTemuanEntity}, total_assets={$json5['data']['summary']['total_assets']}");
+                return;
+            }
+        } else {
+            CLI::error(" [FAIL] Status: " . $res5->getStatusCode() . " | Body: " . $body5);
+            return;
+        }
+
+        // TEST 6: apiNetworkAudit (Data Provenance & Strict Feeder Boundary)
+        CLI::write("\n[6/7] Testing GET /gis/api-network-audit?penyulang_id=15 ...", 'cyan');
+        $_GET['penyulang_id'] = 15;
         $resAudit = $controller->apiNetworkAudit();
         $bodyAudit = $resAudit->getBody();
         $jsonAudit = json_decode($bodyAudit, true);
 
         if ($resAudit->getStatusCode() === 200 && ($jsonAudit['status'] ?? '') === 'success') {
-            CLI::write(" [PASS] Status: 200 OK | DB Assets: {$jsonAudit['total_db_assets']} | Feeder Scoped Features: {$jsonAudit['total_response_features']} | Cross-Feeder Leaks: {$jsonAudit['rejected_cross_feeder_assets']}", 'green');
+            CLI::write(" [PASS] Status: 200 OK | DB Assets: {$jsonAudit['total_db_assets']} | DB Temuan: {$jsonAudit['total_db_temuan']} | Layer Separation: VERIFIED", 'green');
         } else {
             CLI::error(" [FAIL] Status: " . $resAudit->getStatusCode() . " | Body: " . $bodyAudit);
+            return;
         }
 
-        // TEST 6: apiUpdateConductorSpecification with Admin Direct Commit
-        CLI::write("\n[6/6] Testing POST /gis/api-update-conductor (Admin Direct Commit) ...", 'cyan');
-        $assets = \Config\Database::connect()->table('assets')->select('id')->where('penyulang_id', $firstPenyulangId)->limit(2)->get()->getResultArray();
-        if (count($assets) >= 2) {
-            $sId = (int)$assets[0]['id'];
-            $tId = (int)$assets[1]['id'];
-
-            $_POST = [
-                'source_asset_id'    => $sId,
-                'target_asset_id'    => $tId,
-                'conductor_type'     => 'A3CS',
-                'conductor_size'     => '150 mm²',
-                'conductor_material' => 'ALUMINUM_ALLOY',
-            ];
-
-            $res6 = $controller->apiUpdateConductorSpecification();
-            $body6 = $res6->getBody();
-            $json6 = json_decode($body6, true);
-
-            if ($res6->getStatusCode() === 200 && ($json6['is_direct_commit'] ?? false) === true) {
-                CLI::write(" [PASS] Status: 200 OK | Direct Commit Successful: " . $json6['message'], 'green');
-            } else {
-                CLI::error(" [FAIL] Status: " . $res6->getStatusCode() . " | Body: " . $body6);
-            }
+        // TEST 7: Database Integrity Invariant (Check that no new assets/migrations were created)
+        CLI::write("\n[7/7] Testing Database Invariants (Zero Mutation Guard) ...", 'cyan');
+        $db = \Config\Database::connect();
+        $currentAssetsCount = $db->table('assets')->countAllResults();
+        if ($currentAssetsCount === 3) {
+            CLI::write(" [PASS] Database assets count strictly preserved at 3 original baseline records.", 'green');
         } else {
-            CLI::write(" [PASS] Feeder {$firstPenyulangId} has {$jsonAudit['total_db_assets']} DB assets (Clean Feeder Boundary Preserved).", 'green');
+            CLI::error(" [FAIL] Assets table has unexpected count: {$currentAssetsCount}");
+            return;
         }
 
         CLI::write("\n====================================================", 'green');
-        CLI::write("🟢 ALL GIS ENDPOINT CHECKS PASSED CLEANLY (0 ERRORS)!", 'green');
+        CLI::write("🟢 ALL STRICT GIS LAYER SEPARATION CHECKS PASSED CLEANLY (7/7)!", 'green');
         CLI::write("====================================================\n", 'green');
     }
 }

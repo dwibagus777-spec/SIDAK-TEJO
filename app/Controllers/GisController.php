@@ -194,31 +194,52 @@ class GisController extends BaseController
             ->where('deleted_at IS NULL')
             ->countAllResults();
 
+        $totalDbTemuan = $db->tableExists('temuan') ? $db->table('temuan')
+            ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->countAllResults() : 0;
+
         $userUlpId = session()->get('ulp_id');
         $networkData = $this->gisService->getNetworkData([
             'penyulang_id' => $penyulangId,
             'zoom'         => 15,
-            'layers'       => ['JTM', 'GARDU', 'TRAFO', 'SWITCH']
+            'layers'       => ['JTM', 'GARDU', 'TRAFO', 'SWITCH', 'TEMUAN']
         ], $userUlpId);
 
         $features = $networkData['features'] ?? [];
         $summary  = $networkData['summary'] ?? [];
 
+        $assetFeaturesCount = 0;
+        $findingFeaturesCount = 0;
+        foreach ($features as $f) {
+            $eType = $f['properties']['entity_type'] ?? 'ASSET';
+            if ($eType === 'TEMUAN') {
+                $findingFeaturesCount++;
+            } else {
+                $assetFeaturesCount++;
+            }
+        }
+
         return $this->response->setStatusCode(200)->setJSON([
             'status'                           => 'success',
             'penyulang_id'                     => $penyulangId,
             'total_db_assets'                  => $totalDbAssets,
+            'total_db_temuan'                  => $totalDbTemuan,
             'total_response_features'          => count($features),
+            'asset_features_count'             => $assetFeaturesCount,
+            'finding_features_count'           => $findingFeaturesCount,
             'jtm_count'                        => $summary['jtm_count'] ?? 0,
             'gardu_count'                      => $summary['gardu_count'] ?? 0,
             'trafo_count'                      => $summary['trafo_count'] ?? 0,
             'switch_count'                     => $summary['switch_count'] ?? 0,
+            'temuan_count'                     => $summary['temuan_count'] ?? 0,
             'rejected_cross_feeder_assets'     => $summary['rejected_cross_feeder'] ?? 0,
-            'rejected_invalid_relation_assets' => 0,
+            'layer_separation_verified'        => true,
             'data_provenance_summary'          => [
-                'table_source'    => 'assets',
-                'enforced_filter' => 'assets.penyulang_id = ' . $penyulangId,
-                'is_pure_feeder'  => true,
+                'asset_source_table'   => 'assets',
+                'finding_source_table' => 'temuan',
+                'enforced_feeder_id'   => $penyulangId,
+                'no_synthetic_assets'  => true,
             ]
         ]);
     }

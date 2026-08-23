@@ -126,6 +126,10 @@ class GISService
             $filters['ulp_id'] = $userUlpId;
         }
 
+        if (is_string($layerFilter)) {
+            $layerFilter = array_map('trim', explode(',', $layerFilter));
+        }
+
         // 1. Fetch Independent Feeder Network Topology Segments (MultiLineString Edge Tree)
         $segmentData = $this->assetRepository->getFeederNetworkSegments($penyulangId, $userUlpId);
         $nodes       = $segmentData['nodes'] ?? [];
@@ -146,16 +150,18 @@ class GISService
             }
         }
 
-        // 2. Fetch Marker Features Filtered Strictly by Zoom LOD & Layer Selection
+        // 2. Fetch Master Asset Features (Strictly from assets table only)
         $assets = $this->assetRepository->getGisNetworkAssets($filters, $userUlpId);
 
-        $features = [];
+        $assetFeatures   = [];
+        $findingFeatures = [];
         $stats    = [
-            'total_assets' => 0,
-            'jtm_count'    => 0,
-            'gardu_count'  => 0,
-            'trafo_count'  => 0,
-            'switch_count' => 0,
+            'total_assets'          => 0,
+            'jtm_count'             => 0,
+            'gardu_count'           => 0,
+            'trafo_count'           => 0,
+            'switch_count'          => 0,
+            'temuan_count'          => 0,
             'rejected_cross_feeder' => 0,
         ];
 
@@ -192,27 +198,32 @@ class GISService
             $conditionStatus = $asset['status'] ?? 'NORMAL';
             $conditionOverlay = $this->visualRegistry->getConditionOverlay($conditionStatus);
 
-            $features[] = [
+            $assetFeatures[] = [
                 'type' => 'Feature',
                 'geometry' => [
                     'type'        => 'Point',
                     'coordinates' => [$lng, $lat]
                 ],
                 'properties' => [
-                    'id'                => (int)$asset['id'],
-                    'kode_asset'        => $asset['kode_asset'],
-                    'nama_asset'        => $asset['nama_asset'],
-                    'jenis_asset'       => $jenis,
-                    'penyulang_id'      => $assetPenyulangId,
-                    'construction_type' => $constrName,
-                    'status'            => $conditionStatus,
-                    'lokasi'            => $asset['lokasi'] ?? '',
-                    'latitude'          => $lat,
-                    'longitude'         => $lng,
-                    'marker_spec'       => $spec,
-                    'visual'            => $visual,
-                    'condition_overlay' => $conditionOverlay,
-                    'provenance'        => [
+                    'entity_type'         => 'ASSET',
+                    'source_table'        => 'assets',
+                    'id'                  => (int)$asset['id'],
+                    'asset_id'            => (int)$asset['id'],
+                    'kode_asset'          => $asset['kode_asset'],
+                    'nama_asset'          => $asset['nama_asset'],
+                    'jenis_asset'         => $jenis,
+                    'penyulang_id'        => $assetPenyulangId,
+                    'selected_penyulang_id' => $penyulangId,
+                    'record_penyulang_id' => $assetPenyulangId,
+                    'construction_type'   => $constrName,
+                    'status'              => $conditionStatus,
+                    'lokasi'              => $asset['lokasi'] ?? '',
+                    'latitude'            => $lat,
+                    'longitude'           => $lng,
+                    'marker_spec'         => $spec,
+                    'visual'              => $visual,
+                    'condition_overlay'   => $conditionOverlay,
+                    'provenance'          => [
                         'source'                          => 'assets',
                         'asset_id'                        => (int)$asset['id'],
                         'asset_penyulang_id'              => $assetPenyulangId,
@@ -224,10 +235,92 @@ class GISService
             ];
         }
 
+        // 3. STRICT TEMUAN LAYER (Only queried & loaded if TEMUAN layer is explicitly selected)
+        if (in_array('TEMUAN', $layerFilter) && $penyulangId > 0) {
+            $db = \Config\Database::connect();
+            if ($db->tableExists('temuan')) {
+                $temuanRows = $db->table('temuan')
+                    ->where('penyulang_id', $penyulangId)
+                    ->where('deleted_at IS NULL')
+                    ->where('latitude !=', 0)
+                    ->where('longitude !=', 0)
+                    ->where('latitude IS NOT NULL')
+                    ->where('longitude IS NOT NULL')
+                    ->get()
+                    ->getResultArray();
+
+                foreach ($temuanRows as $t) {
+                    $tLat = (float)$t['latitude'];
+                    $tLng = (float)$t['longitude'];
+                    $stats['temuan_count']++;
+
+                    $severityColor = '#eab308'; // Default NORMAL/MEDIUM
+                    if (strtoupper((string)$t['prioritas']) === 'EMERGENCY') {
+                        $severityColor = '#dc2626';
+                    } elseif (strtoupper((string)$t['prioritas']) === 'HIGH') {
+                        $severityColor = '#ea580c';
+                    }
+
+                    $findingFeatures[] = [
+                        'type' => 'Feature',
+                        'geometry' => [
+                            'type'        => 'Point',
+                            'coordinates' => [$tLng, $tLat]
+                        ],
+                        'properties' => [
+                            'entity_type'           => 'TEMUAN',
+                            'source_table'          => 'temuan',
+                            'id'                    => 'TEMUAN-' . $t['id'],
+                            'finding_id'            => (int)$t['id'],
+                            'nomor_temuan'          => $t['nomor_temuan'] ?? 'TEMUAN-' . $t['id'],
+                            'jenis_temuan'          => $t['jenis_temuan'] ?? 'TEMUAN',
+                            'prioritas'             => $t['prioritas'] ?? 'NORMAL',
+                            'status'                => $t['status'] ?? 'BELUM',
+                            'detail_temuan'         => $t['detail_temuan'] ?? '',
+                            'penyulang_id'          => (int)$t['penyulang_id'],
+                            'selected_penyulang_id' => $penyulangId,
+                            'record_penyulang_id'   => (int)$t['penyulang_id'],
+                            'latitude'              => $tLat,
+                            'longitude'             => $tLng,
+                            'marker_spec'           => [
+                                'shape'      => 'finding',
+                                'icon_class' => 'fa-triangle-exclamation',
+                                'color'      => $severityColor,
+                                'label'      => 'TEMUAN • ' . ($t['jenis_temuan'] ?? 'ANOMALI')
+                            ],
+                            'provenance'            => [
+                                'source'                          => 'temuan',
+                                'finding_id'                      => (int)$t['id'],
+                                'penyulang_id'                    => (int)$t['penyulang_id'],
+                                'selected_penyulang_id'           => $penyulangId,
+                                'is_valid_for_selected_penyulang' => true,
+                                'data_origin'                     => 'OPERATIONAL_INSPECTION_FINDINGS'
+                            ]
+                        ]
+                    ];
+                }
+            }
+        }
+
+        $allFeatures = array_merge($assetFeatures, $findingFeatures);
+        $hasMasterAssets = ($stats['total_assets'] > 0);
+        $hasTopology     = !empty($segmentData['coordinates']);
+
         return [
-            'summary' => $stats,
-            'zoom'    => $zoom,
-            'legend'  => $this->visualRegistry->getLegendItems(),
+            'summary'   => $stats,
+            'zoom'      => $zoom,
+            'legend'    => $this->visualRegistry->getLegendItems(),
+            'meta'      => [
+                'selected_penyulang_id' => $penyulangId,
+                'asset_count'           => $stats['total_assets'],
+                'topology_count'        => count($segmentData['edges'] ?? []),
+                'temuan_count'          => $stats['temuan_count'],
+                'has_master_assets'     => $hasMasterAssets,
+                'has_topology'          => $hasTopology,
+                'message'               => $hasMasterAssets 
+                    ? 'Data master aset jaringan berhasil dimuat.' 
+                    : 'Belum terdapat Master Asset terdaftar untuk penyulang ini.',
+            ],
             'transline' => [
                 'type' => 'Feature',
                 'geometry' => [
@@ -246,7 +339,7 @@ class GISService
                 'min_lng' => $minLng,
                 'max_lng' => $maxLng
             ] : null,
-            'features' => $features
+            'features' => $allFeatures
         ];
     }
 

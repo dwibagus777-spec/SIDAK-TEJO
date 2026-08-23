@@ -588,6 +588,14 @@
                             </label>
                         </div>
                     </div>
+                    <div class="col-12">
+                        <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
+                            <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-temuan" value="TEMUAN">
+                            <label class="form-check-label small fw-bold text-danger ms-2 mb-0" for="setup-layer-temuan">
+                                <i class="fas fa-triangle-exclamation text-danger me-1"></i> Layer Temuan Inspeksi (Defect / Anomali)
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -623,6 +631,43 @@
                     <i class="fas fa-clipboard-check text-warning me-1"></i> Usulan
                     <span id="pending-badge-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none; font-size:9px;">0</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- Honest Empty State Overlay for Unregistered Master Feeder -->
+        <div id="gis-empty-feeder-banner" class="gis-empty-feeder-banner" style="display: none; position: absolute; top: 68px; left: 50%; transform: translateX(-50%); z-index: 1040; width: 92%; max-width: 440px;">
+            <div class="card border-0 shadow-lg rounded-4 p-3 p-md-4 text-center" style="background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(16px); border: 1px solid rgba(226, 232, 240, 0.9);">
+                <div class="mb-2">
+                    <div class="d-inline-flex p-2 rounded-circle bg-primary bg-opacity-10 text-primary mb-2">
+                        <i class="fas fa-satellite-dish fs-3"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">NETWORK BELUM TERDAFTAR</h6>
+                    <span class="small text-muted d-block" style="font-size: 11px;">Belum terdapat Master Asset terdaftar untuk:</span>
+                    <span id="empty-feeder-name" class="badge bg-primary fs-6 px-3 py-1 mt-1 font-monospace">-</span>
+                </div>
+
+                <div class="bg-light p-2 rounded-3 border mb-3 text-start" style="font-size: 12px;">
+                    <div class="d-flex justify-content-between small fw-bold text-secondary mb-1">
+                        <span><i class="fas fa-cubes me-1"></i> Master Asset:</span>
+                        <span class="text-dark">0 Unit</span>
+                    </div>
+                    <div class="d-flex justify-content-between small fw-bold text-secondary mb-1">
+                        <span><i class="fas fa-route me-1"></i> Transline:</span>
+                        <span class="text-dark">0 Segmen</span>
+                    </div>
+                    <div class="small text-muted mt-2 border-top pt-2" style="font-size: 10px; line-height: 1.3;">
+                        <i class="fas fa-shield-halved text-success me-1"></i> <em>Integritas Terjaga: Data temuan inspeksi lapangan tidak disamarkan sebagai Master Asset.</em>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="<?= base_url('master-assets/template') ?>" class="btn btn-primary btn-sm rounded-pill fw-bold flex-grow-1 py-2 shadow-sm" style="font-size: 11px;">
+                        <i class="fas fa-file-import me-1"></i> Impor Master Asset PLN
+                    </a>
+                    <button type="button" id="btn-empty-back-setup" class="btn btn-outline-secondary btn-sm rounded-pill fw-bold px-3 py-2" style="font-size: 11px;">
+                        <i class="fas fa-arrow-left me-1"></i> Setup
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1090,6 +1135,14 @@
                         <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-switch">Peralatan</label>
                     </div>
                 </div>
+                <div class="col-12">
+                    <div class="form-check p-2 bg-light rounded-3 border">
+                        <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-temuan" value="TEMUAN">
+                        <label class="form-check-label small fw-bold text-danger ms-2" for="drawer-layer-temuan">
+                            <i class="fas fa-triangle-exclamation text-danger me-1"></i> Layer Temuan Inspeksi
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
         <button type="button" id="btn-apply-drawer-filter" class="btn btn-primary w-100 fw-bold rounded-pill py-2 shadow-sm">
@@ -1530,12 +1583,17 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('gis-setup-screen').style.display = 'block';
     });
 
+    document.getElementById('btn-empty-back-setup').addEventListener('click', function () {
+        document.getElementById('btn-back-to-setup').click();
+    });
+
     function getSelectedSetupLayers() {
         var layers = [];
-        if (document.getElementById('setup-layer-jtm').checked) layers.push('JTM');
-        if (document.getElementById('setup-layer-gardu').checked) layers.push('GARDU');
-        if (document.getElementById('setup-layer-trafo').checked) layers.push('TRAFO');
-        if (document.getElementById('setup-layer-switch').checked) layers.push('SWITCH');
+        if (document.getElementById('setup-layer-jtm') && document.getElementById('setup-layer-jtm').checked) layers.push('JTM');
+        if (document.getElementById('setup-layer-gardu') && document.getElementById('setup-layer-gardu').checked) layers.push('GARDU');
+        if (document.getElementById('setup-layer-trafo') && document.getElementById('setup-layer-trafo').checked) layers.push('TRAFO');
+        if (document.getElementById('setup-layer-switch') && document.getElementById('setup-layer-switch').checked) layers.push('SWITCH');
+        if (document.getElementById('setup-layer-temuan') && document.getElementById('setup-layer-temuan').checked) layers.push('TEMUAN');
         return layers;
     }
 
@@ -1579,6 +1637,7 @@ document.addEventListener("DOMContentLoaded", function () {
         translinePolylineLayer = L.featureGroup().addTo(map);
         previewConnectionLayer = L.featureGroup().addTo(map);
         segmentEditLayer = L.featureGroup().addTo(map);
+        findingLayer = L.featureGroup().addTo(map);
 
         map.on('click', function () {
             if (translineEditor.state === TRANSLINE_STATE.IDLE) {
@@ -2164,6 +2223,50 @@ document.addEventListener("DOMContentLoaded", function () {
         editMenu.show();
     });
 
+    function createTemuanVisualMarker(norm) {
+        var props = norm.properties || {};
+        var geom = norm.geometry || {};
+        if (!geom.coordinates || !isValidLatLng(geom.coordinates[1], geom.coordinates[0])) {
+            return null;
+        }
+
+        var lat = geom.coordinates[1];
+        var lng = geom.coordinates[0];
+        var sevColor = (props.prioritas === 'EMERGENCY') ? '#dc2626' : ((props.prioritas === 'HIGH') ? '#ea580c' : '#eab308');
+
+        var iconHtml = `
+            <div class="temuan-marker-wrap" style="position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: ${sevColor}; color: #ffffff; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.35); cursor: pointer;" title="TEMUAN: ${props.nomor_temuan || ''} (${props.jenis_temuan || ''})">
+                <i class="fas fa-triangle-exclamation" style="font-size: 13px;"></i>
+            </div>
+        `;
+
+        var customIcon = L.divIcon({
+            html: iconHtml,
+            className: 'custom-temuan-div-icon',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15]
+        });
+
+        var marker = L.marker([lat, lng], { icon: customIcon });
+        marker.bindPopup(`
+            <div class="p-2" style="max-width: 260px; font-family: system-ui, sans-serif;">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="badge bg-danger font-monospace" style="font-size: 10px;">TEMUAN INSPEKSI</span>
+                    <span class="badge bg-dark font-monospace" style="font-size: 10px;">${props.prioritas || 'NORMAL'}</span>
+                </div>
+                <strong class="d-block text-dark font-monospace small mb-1">${props.nomor_temuan || '-'}</strong>
+                <p class="small text-secondary mb-1" style="font-size: 11px;">${props.detail_temuan || props.jenis_temuan || '-'}</p>
+                <div class="d-flex justify-content-between small text-muted border-top pt-1" style="font-size: 10px;">
+                    <span>Status:</span>
+                    <strong class="${props.status === 'SELESAI' ? 'text-success' : 'text-danger'}">${props.status || 'BELUM'}</strong>
+                </div>
+            </div>
+        `);
+
+        return marker;
+    }
+
     // Render Markers & Network Lines with Conductor Popup Tooltips
     function renderFilteredLayers(autoFitBounds) {
         if (typeof autoFitBounds === 'undefined') autoFitBounds = false;
@@ -2171,16 +2274,21 @@ document.addEventListener("DOMContentLoaded", function () {
         if (markerCluster && typeof markerCluster.clearLayers === 'function') {
             markerCluster.clearLayers();
         }
+        if (findingLayer && typeof findingLayer.clearLayers === 'function') {
+            findingLayer.clearLayers();
+        }
         if (translinePolylineLayer) translinePolylineLayer.clearLayers();
 
         if (!currentData) return;
 
         // Render Feeder LineString / MultiLineString Segments with high clarity
+        var hasTopology = false;
         if (currentData.transline && currentData.transline.geometry) {
             var geom = currentData.transline.geometry;
             var edges = (currentData.transline.properties && currentData.transline.properties.edges) || [];
 
             if (edges.length > 0) {
+                hasTopology = true;
                 edges.forEach(function (e) {
                     var c = e.coordinates;
                     if (c && c.length === 2 && isValidLatLng(c[0][1], c[0][0]) && isValidLatLng(c[1][1], c[1][0])) {
@@ -2197,10 +2305,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         translinePolylineLayer.addLayer(poly);
                     }
                 });
-            } else if (geom.type === 'MultiLineString' && geom.coordinates) {
+            } else if (geom.type === 'MultiLineString' && geom.coordinates && geom.coordinates.length > 0) {
                 geom.coordinates.forEach(function (segment) {
                     var validSeg = segment.filter(pt => isValidLatLng(pt[1], pt[0]));
                     if (validSeg.length > 1) {
+                        hasTopology = true;
                         var poly = L.polyline(validSeg.map(pt => [pt[1], pt[0]]), {
                             color: '#0284c7',
                             weight: 3.5,
@@ -2210,9 +2319,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         translinePolylineLayer.addLayer(poly);
                     }
                 });
-            } else if (geom.type === 'LineString' && geom.coordinates) {
+            } else if (geom.type === 'LineString' && geom.coordinates && geom.coordinates.length > 0) {
                 var validSeg = geom.coordinates.filter(pt => isValidLatLng(pt[1], pt[0]));
                 if (validSeg.length > 1) {
+                    hasTopology = true;
                     var poly = L.polyline(validSeg.map(pt => [pt[1], pt[0]]), {
                         color: '#0284c7',
                         weight: 3.5,
@@ -2224,23 +2334,35 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Render Markers
+        // Render Markers strictly separated by entity_type
         var rawFeatures = currentData.features || [];
         var activeLayers = getSelectedSetupLayers();
-        var renderedCount = 0;
+        var renderedAssetCount = 0;
+        var renderedTemuanCount = 0;
         var renderedJtm = 0;
         var renderedGardu = 0;
         var renderedTrafo = 0;
         var renderedSwitch = 0;
 
-        console.group('[GIS ASSET RENDER DEBUG]');
-        console.log('Total API features:', rawFeatures.length);
-        console.log('Active layer filters:', activeLayers);
-
         rawFeatures.forEach(function (f) {
             var norm = normalizeAssetFeature(f);
             var props = norm.properties || {};
             var geom  = norm.geometry || {};
+            var entityType = props.entity_type || 'ASSET';
+
+            // 1. STRICT FINDING LAYER
+            if (entityType === 'TEMUAN') {
+                if (activeLayers.includes('TEMUAN') && geom.coordinates && isValidLatLng(geom.coordinates[1], geom.coordinates[0])) {
+                    var tMarker = createTemuanVisualMarker(norm);
+                    if (tMarker) {
+                        findingLayer.addLayer(tMarker);
+                        renderedTemuanCount++;
+                    }
+                }
+                return;
+            }
+
+            // 2. STRICT MASTER ASSET LAYER
             var jenis = (props.jenis_asset || '').toUpperCase();
             var constr = (props.construction_type || '').toUpperCase();
 
@@ -2259,7 +2381,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 var marker = createAssetVisualMarker(norm);
                 if (marker) {
                     markerCluster.addLayer(marker);
-                    renderedCount++;
+                    renderedAssetCount++;
                     if (isGarduType) renderedGardu++;
                     else if (isTrafoType) renderedTrafo++;
                     else if (isSwitchType) renderedSwitch++;
@@ -2268,15 +2390,35 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        console.log('Rendered markers count:', renderedCount);
+        // 📡 Honest Empty State Check
+        var emptyFeederBanner = document.getElementById('gis-empty-feeder-banner');
+        if (emptyFeederBanner) {
+            if (renderedAssetCount === 0 && !hasTopology) {
+                emptyFeederBanner.style.display = 'block';
+                document.getElementById('empty-feeder-name').textContent = currentFeederName || 'Penyulang Ini';
+            } else {
+                emptyFeederBanner.style.display = 'none';
+            }
+        }
+
+        // 🔒 Console Data Contract Debug Group
+        console.group('[GIS DATA CONTRACT]');
+        console.log('Selected Feeder:', currentFeederId + ' (' + (currentFeederName || '-') + ')');
+        console.log('Asset Features:', renderedAssetCount);
+        console.log('Temuan Features:', renderedTemuanCount);
+        console.log('Topology Edges:', (currentData.transline && currentData.transline.properties && currentData.transline.properties.edges ? currentData.transline.properties.edges.length : 0));
+        console.log('Cross Feeder Rejected:', (currentData.summary && currentData.summary.rejected_cross_feeder ? currentData.summary.rejected_cross_feeder : 0));
         console.groupEnd();
 
         // Update live summary bar accurately
         var summaryBar = document.getElementById('gis-summary-bar');
         if (summaryBar) {
             summaryBar.style.display = 'block';
-            document.getElementById('summary-text').innerHTML = 
-                `<i class="fas fa-network-wired text-warning me-1"></i> Aset: <strong>${renderedCount}</strong> (TM: ${renderedJtm}, GTT: ${renderedGardu}, Trafo: ${renderedTrafo}, Sw: ${renderedSwitch})`;
+            var summaryHtml = `<i class="fas fa-network-wired text-warning me-1"></i> Aset: <strong>${renderedAssetCount}</strong> (TM: ${renderedJtm}, GTT: ${renderedGardu}, Trafo: ${renderedTrafo}, Sw: ${renderedSwitch})`;
+            if (renderedTemuanCount > 0) {
+                summaryHtml += ` | <i class="fas fa-triangle-exclamation text-danger ms-2 me-1"></i> Temuan: <strong>${renderedTemuanCount}</strong>`;
+            }
+            document.getElementById('summary-text').innerHTML = summaryHtml;
         }
 
         if (autoFitBounds && map) {
@@ -2284,6 +2426,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
             } else if (translinePolylineLayer && translinePolylineLayer.getLayers().length > 0) {
                 map.fitBounds(translinePolylineLayer.getBounds(), { padding: [40, 40] });
+            } else if (findingLayer && findingLayer.getLayers().length > 0) {
+                map.fitBounds(findingLayer.getBounds(), { padding: [40, 40] });
             }
         }
     }
@@ -2358,6 +2502,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function openFilterDrawer() {
         document.getElementById('drawer-feeder-select').value = currentFeederId;
+        if (document.getElementById('drawer-layer-jtm') && document.getElementById('setup-layer-jtm')) {
+            document.getElementById('drawer-layer-jtm').checked = document.getElementById('setup-layer-jtm').checked;
+        }
+        if (document.getElementById('drawer-layer-gardu') && document.getElementById('setup-layer-gardu')) {
+            document.getElementById('drawer-layer-gardu').checked = document.getElementById('setup-layer-gardu').checked;
+        }
+        if (document.getElementById('drawer-layer-trafo') && document.getElementById('setup-layer-trafo')) {
+            document.getElementById('drawer-layer-trafo').checked = document.getElementById('setup-layer-trafo').checked;
+        }
+        if (document.getElementById('drawer-layer-switch') && document.getElementById('setup-layer-switch')) {
+            document.getElementById('setup-layer-switch').checked = document.getElementById('drawer-layer-switch').checked;
+        }
+        if (document.getElementById('drawer-layer-temuan') && document.getElementById('setup-layer-temuan')) {
+            document.getElementById('drawer-layer-temuan').checked = document.getElementById('setup-layer-temuan').checked;
+        }
         var drawer = new bootstrap.Offcanvas(document.getElementById('offcanvas-filter-sheet'));
         drawer.show();
     }
@@ -2370,6 +2529,22 @@ document.addEventListener("DOMContentLoaded", function () {
             currentFeederName = opt.dataset.feederName || opt.text;
             document.getElementById('topbar-feeder-title').textContent = currentFeederName;
             setupFeederSelect.value = newFeederId;
+        }
+
+        if (document.getElementById('drawer-layer-jtm') && document.getElementById('setup-layer-jtm')) {
+            document.getElementById('setup-layer-jtm').checked = document.getElementById('drawer-layer-jtm').checked;
+        }
+        if (document.getElementById('drawer-layer-gardu') && document.getElementById('setup-layer-gardu')) {
+            document.getElementById('setup-layer-gardu').checked = document.getElementById('drawer-layer-gardu').checked;
+        }
+        if (document.getElementById('drawer-layer-trafo') && document.getElementById('setup-layer-trafo')) {
+            document.getElementById('setup-layer-trafo').checked = document.getElementById('drawer-layer-trafo').checked;
+        }
+        if (document.getElementById('drawer-layer-switch') && document.getElementById('setup-layer-switch')) {
+            document.getElementById('setup-layer-switch').checked = document.getElementById('drawer-layer-switch').checked;
+        }
+        if (document.getElementById('drawer-layer-temuan') && document.getElementById('setup-layer-temuan')) {
+            document.getElementById('setup-layer-temuan').checked = document.getElementById('drawer-layer-temuan').checked;
         }
 
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-filter-sheet')).hide();

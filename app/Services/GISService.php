@@ -151,18 +151,32 @@ class GISService
         }
 
         // 2. Fetch Master Asset Features (Strictly from assets table only)
+        $db = \Config\Database::connect();
+        $feederUlpId = (int)($filters['ulp_id'] ?? $userUlpId ?? 0);
+        if ($penyulangId > 0 && $feederUlpId <= 0 && $db->tableExists('penyulang')) {
+            $fRow = $db->table('penyulang')->select('ulp_id')->where('id', $penyulangId)->get()->getRowArray();
+            if (!empty($fRow['ulp_id'])) {
+                $feederUlpId = (int)$fRow['ulp_id'];
+            }
+        }
+
         $assets = $this->assetRepository->getGisNetworkAssets($filters, $userUlpId);
 
         $assetFeatures   = [];
         $findingFeatures = [];
         $stats    = [
-            'total_assets'          => 0,
-            'jtm_count'             => 0,
-            'gardu_count'           => 0,
-            'trafo_count'           => 0,
-            'switch_count'          => 0,
-            'temuan_count'          => 0,
-            'rejected_cross_feeder' => 0,
+            'feeder_asset_count'         => 0,
+            'unassigned_ulp_asset_count' => 0,
+            'total_assets'               => 0,
+            'jtm_count'                  => 0,
+            'gardu_count'                => 0,
+            'trafo_count'                => 0,
+            'switch_count'               => 0,
+            'temuan_count'               => 0,
+            'rejected_cross_feeder'      => 0,
+            'rejected_cross_ulp'         => ($feederUlpId > 0 && $db->tableExists('assets'))
+                ? $db->table('assets')->where('ulp_id !=', $feederUlpId)->where('deleted_at IS NULL')->countAllResults()
+                : 0,
         ];
 
         foreach ($assets as $asset) {
@@ -170,12 +184,26 @@ class GISService
             $lng = (float)($asset['longitude'] ?? 0);
             if ($lat == 0 || $lng == 0) continue;
 
-            $assetPenyulangId = (int)($asset['penyulang_id'] ?? 0);
+            $assetPenyulangId = !empty($asset['penyulang_id']) ? (int)$asset['penyulang_id'] : null;
+            $assetUlpId       = (int)($asset['ulp_id'] ?? 0);
 
-            // STRICT DATA INTEGRITY GUARD:
-            // Reject any asset where penyulang_id does not strictly match the requested feeder
-            if ($penyulangId > 0 && $assetPenyulangId > 0 && $assetPenyulangId !== $penyulangId) {
+            // Scope Classification
+            if ($penyulangId > 0 && $assetPenyulangId === $penyulangId) {
+                $assetScope = 'FEEDER';
+                $isFeederAsset = true;
+                $stats['feeder_asset_count']++;
+            } elseif ($feederUlpId > 0 && $assetUlpId === $feederUlpId && ($assetPenyulangId === null || $assetPenyulangId === 0)) {
+                $assetScope = 'ULP_UNASSIGNED';
+                $isFeederAsset = false;
+                $stats['unassigned_ulp_asset_count']++;
+            } elseif ($penyulangId > 0 && $assetPenyulangId !== null && $assetPenyulangId > 0 && $assetPenyulangId !== $penyulangId) {
                 $stats['rejected_cross_feeder']++;
+                continue;
+            } elseif ($feederUlpId > 0 && $assetUlpId > 0 && $assetUlpId !== $feederUlpId) {
+                $stats['rejected_cross_ulp']++;
+                continue;
+            } else {
+                $stats['rejected_cross_ulp']++;
                 continue;
             }
 
@@ -198,6 +226,12 @@ class GISService
             $conditionStatus = $asset['status'] ?? 'NORMAL';
             $conditionOverlay = $this->visualRegistry->getConditionOverlay($conditionStatus);
 
+            if ($assetScope === 'ULP_UNASSIGNED') {
+                $conditionOverlay['ring_class'] = 'asset-ring-unassigned';
+                $spec['scope_label'] = 'Belum Terhubung ke Penyulang';
+                $spec['is_unassigned'] = true;
+            }
+
             $assetFeatures[] = [
                 'type' => 'Feature',
                 'geometry' => [
@@ -205,31 +239,37 @@ class GISService
                     'coordinates' => [$lng, $lat]
                 ],
                 'properties' => [
-                    'entity_type'         => 'ASSET',
-                    'source_table'        => 'assets',
-                    'id'                  => (int)$asset['id'],
-                    'asset_id'            => (int)$asset['id'],
-                    'kode_asset'          => $asset['kode_asset'],
-                    'nama_asset'          => $asset['nama_asset'],
-                    'jenis_asset'         => $jenis,
-                    'penyulang_id'        => $assetPenyulangId,
+                    'entity_type'           => 'ASSET',
+                    'asset_scope'           => $assetScope,
+                    'is_feeder_asset'       => $isFeederAsset,
+                    'source_table'          => 'assets',
+                    'id'                    => (int)$asset['id'],
+                    'asset_id'              => (int)$asset['id'],
+                    'kode_asset'            => $asset['kode_asset'],
+                    'nama_asset'            => $asset['nama_asset'],
+                    'jenis_asset'           => $jenis,
+                    'penyulang_id'          => $assetPenyulangId,
+                    'ulp_id'                => $assetUlpId,
                     'selected_penyulang_id' => $penyulangId,
-                    'record_penyulang_id' => $assetPenyulangId,
-                    'construction_type'   => $constrName,
-                    'status'              => $conditionStatus,
-                    'lokasi'              => $asset['lokasi'] ?? '',
-                    'latitude'            => $lat,
-                    'longitude'           => $lng,
-                    'marker_spec'         => $spec,
-                    'visual'              => $visual,
-                    'condition_overlay'   => $conditionOverlay,
-                    'provenance'          => [
+                    'record_penyulang_id'   => $assetPenyulangId,
+                    'construction_type'     => $constrName,
+                    'status'                => $conditionStatus,
+                    'lokasi'                => $asset['lokasi'] ?? '',
+                    'latitude'              => $lat,
+                    'longitude'             => $lng,
+                    'marker_spec'           => $spec,
+                    'visual'                => $visual,
+                    'condition_overlay'     => $conditionOverlay,
+                    'provenance'            => [
                         'source'                          => 'assets',
                         'asset_id'                        => (int)$asset['id'],
+                        'asset_scope'                     => $assetScope,
                         'asset_penyulang_id'              => $assetPenyulangId,
+                        'asset_ulp_id'                    => $assetUlpId,
                         'selected_penyulang_id'           => $penyulangId,
-                        'is_valid_for_selected_penyulang' => true,
-                        'data_origin'                     => 'MASTER_ASSET_REGISTER'
+                        'selected_ulp_id'                 => $feederUlpId,
+                        'is_valid_for_selected_scope'     => true,
+                        'data_origin'                     => ($assetScope === 'FEEDER') ? 'FEEDER_ASSIGNED_MASTER_ASSET' : 'ULP_UNASSIGNED_MASTER_ASSET'
                     ]
                 ]
             ];
@@ -304,6 +344,7 @@ class GISService
 
         $allFeatures = array_merge($assetFeatures, $findingFeatures);
         $hasMasterAssets = ($stats['total_assets'] > 0);
+        $hasFeederAssets = ($stats['feeder_asset_count'] > 0);
         $hasTopology     = !empty($segmentData['coordinates']);
 
         return [
@@ -311,15 +352,21 @@ class GISService
             'zoom'      => $zoom,
             'legend'    => $this->visualRegistry->getLegendItems(),
             'meta'      => [
-                'selected_penyulang_id' => $penyulangId,
-                'asset_count'           => $stats['total_assets'],
-                'topology_count'        => count($segmentData['edges'] ?? []),
-                'temuan_count'          => $stats['temuan_count'],
-                'has_master_assets'     => $hasMasterAssets,
-                'has_topology'          => $hasTopology,
-                'message'               => $hasMasterAssets 
-                    ? 'Data master aset jaringan berhasil dimuat.' 
-                    : 'Belum terdapat Master Asset terdaftar untuk penyulang ini.',
+                'selected_penyulang_id'      => $penyulangId,
+                'selected_ulp_id'            => $feederUlpId,
+                'feeder_asset_count'         => $stats['feeder_asset_count'],
+                'unassigned_ulp_asset_count' => $stats['unassigned_ulp_asset_count'],
+                'total_assets'               => $stats['total_assets'],
+                'topology_count'             => count($segmentData['edges'] ?? []),
+                'temuan_count'               => $stats['temuan_count'],
+                'has_master_assets'          => $hasMasterAssets,
+                'has_feeder_assets'          => $hasFeederAssets,
+                'has_topology'               => $hasTopology,
+                'message'                    => $hasFeederAssets 
+                    ? 'Data master aset feeder berhasil dimuat.' 
+                    : (($stats['unassigned_ulp_asset_count'] > 0)
+                        ? "Terdapat {$stats['unassigned_ulp_asset_count']} Master Asset ULP yang belum terhubung ke penyulang."
+                        : 'Belum terdapat Master Asset terdaftar untuk penyulang ini.'),
             ],
             'transline' => [
                 'type' => 'Feature',

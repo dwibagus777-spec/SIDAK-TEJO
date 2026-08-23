@@ -753,16 +753,39 @@ class AssetRepository
             }
             $builder->select($selectFields);
             $builder->join('construction_types ct', 'a.construction_type_id = ct.id', 'left');
-            $builder->where('a.penyulang_id', $penyulangId);
+
+            // Resolve ULP ID for the selected feeder if not provided
+            $effectiveUlpId = (int)($filters['ulp_id'] ?? $userUlpId ?? 0);
+            if ($penyulangId > 0 && $effectiveUlpId <= 0 && $db->tableExists('penyulang')) {
+                $fRow = $db->table('penyulang')->select('ulp_id')->where('id', $penyulangId)->get()->getRowArray();
+                if (!empty($fRow['ulp_id'])) {
+                    $effectiveUlpId = (int)$fRow['ulp_id'];
+                }
+            }
+
+            // Scope filter: Feeder Assets OR Unassigned Assets of the SAME ULP
+            if ($penyulangId > 0 && $effectiveUlpId > 0) {
+                $builder->groupStart();
+                $builder->where('a.penyulang_id', $penyulangId);
+                $builder->orGroupStart()
+                    ->where('a.ulp_id', $effectiveUlpId)
+                    ->groupStart()
+                        ->where('a.penyulang_id IS NULL')
+                        ->orWhere('a.penyulang_id', 0)
+                    ->groupEnd()
+                ->groupEnd();
+                $builder->groupEnd();
+            } elseif ($penyulangId > 0) {
+                $builder->where('a.penyulang_id', $penyulangId);
+            } elseif ($effectiveUlpId > 0) {
+                $builder->where('a.ulp_id', $effectiveUlpId);
+            }
+
             $builder->where('a.deleted_at IS NULL');
             $builder->where('a.latitude !=', 0);
             $builder->where('a.longitude !=', 0);
             $builder->where('a.latitude IS NOT NULL');
             $builder->where('a.longitude IS NOT NULL');
-
-            if (!empty($userUlpId)) {
-                $builder->where('a.ulp_id', $userUlpId);
-            }
 
             $builder->groupStart();
             $builder->whereIn('a.jenis_asset', $allowedJenisList);

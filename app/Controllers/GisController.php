@@ -189,8 +189,17 @@ class GisController extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $totalDbAssets = $db->table('assets')
+        $feederRow = $db->table('penyulang')->where('id', $penyulangId)->get()->getRowArray();
+        $feederUlpId = (int)($feederRow['ulp_id'] ?? 1);
+
+        $totalDbFeederAssets = $db->table('assets')
             ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->countAllResults();
+
+        $totalDbUnassignedAssets = $db->table('assets')
+            ->where('ulp_id', $feederUlpId)
+            ->where('(penyulang_id IS NULL OR penyulang_id = 0)')
             ->where('deleted_at IS NULL')
             ->countAllResults();
 
@@ -202,6 +211,7 @@ class GisController extends BaseController
         $userUlpId = session()->get('ulp_id');
         $networkData = $this->gisService->getNetworkData([
             'penyulang_id' => $penyulangId,
+            'ulp_id'       => $feederUlpId,
             'zoom'         => 15,
             'layers'       => ['JTM', 'GARDU', 'TRAFO', 'SWITCH', 'TEMUAN']
         ], $userUlpId);
@@ -209,24 +219,34 @@ class GisController extends BaseController
         $features = $networkData['features'] ?? [];
         $summary  = $networkData['summary'] ?? [];
 
-        $assetFeaturesCount = 0;
-        $findingFeaturesCount = 0;
+        $feederFeaturesCount     = 0;
+        $unassignedFeaturesCount = 0;
+        $findingFeaturesCount    = 0;
+
         foreach ($features as $f) {
             $eType = $f['properties']['entity_type'] ?? 'ASSET';
             if ($eType === 'TEMUAN') {
                 $findingFeaturesCount++;
             } else {
-                $assetFeaturesCount++;
+                $scope = $f['properties']['asset_scope'] ?? 'FEEDER';
+                if ($scope === 'FEEDER') {
+                    $feederFeaturesCount++;
+                } else {
+                    $unassignedFeaturesCount++;
+                }
             }
         }
 
         return $this->response->setStatusCode(200)->setJSON([
             'status'                           => 'success',
             'penyulang_id'                     => $penyulangId,
-            'total_db_assets'                  => $totalDbAssets,
+            'feeder_ulp_id'                    => $feederUlpId,
+            'total_db_feeder_assets'           => $totalDbFeederAssets,
+            'total_db_unassigned_ulp_assets'   => $totalDbUnassignedAssets,
             'total_db_temuan'                  => $totalDbTemuan,
             'total_response_features'          => count($features),
-            'asset_features_count'             => $assetFeaturesCount,
+            'feeder_features_count'            => $feederFeaturesCount,
+            'unassigned_features_count'        => $unassignedFeaturesCount,
             'finding_features_count'           => $findingFeaturesCount,
             'jtm_count'                        => $summary['jtm_count'] ?? 0,
             'gardu_count'                      => $summary['gardu_count'] ?? 0,
@@ -234,12 +254,15 @@ class GisController extends BaseController
             'switch_count'                     => $summary['switch_count'] ?? 0,
             'temuan_count'                     => $summary['temuan_count'] ?? 0,
             'rejected_cross_feeder_assets'     => $summary['rejected_cross_feeder'] ?? 0,
+            'rejected_cross_ulp_assets'        => $summary['rejected_cross_ulp'] ?? 0,
             'layer_separation_verified'        => true,
             'data_provenance_summary'          => [
-                'asset_source_table'   => 'assets',
-                'finding_source_table' => 'temuan',
-                'enforced_feeder_id'   => $penyulangId,
-                'no_synthetic_assets'  => true,
+                'feeder_source_table'     => 'assets',
+                'unassigned_source_table' => 'assets',
+                'finding_source_table'    => 'temuan',
+                'enforced_feeder_id'      => $penyulangId,
+                'enforced_ulp_id'         => $feederUlpId,
+                'no_synthetic_assets'     => true,
             ]
         ]);
     }

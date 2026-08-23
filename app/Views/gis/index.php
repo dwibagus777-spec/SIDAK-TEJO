@@ -419,6 +419,7 @@
     .asset-ring-emergency { border: 3px solid #dc2626; background: rgba(220, 38, 38, 0.25); animation: pulse-emergency-flat 1.4s infinite; }
     .asset-ring-inactive { border: 2px solid #64748b; opacity: 0.6; }
     .asset-ring-proposed { border: 3px dashed #10b981; background: rgba(16, 185, 129, 0.25); animation: pulse-proposed-flat 1.5s infinite; }
+    .asset-ring-unassigned { border: 2.5px dashed #f59e0b; background: rgba(245, 158, 11, 0.2); animation: pulse-proposed-flat 2s infinite; }
 
     @keyframes pulse-critical-flat {
         0%, 100% { transform: scale(1); opacity: 0.8; }
@@ -1741,11 +1742,17 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('quick-card-code').textContent = props.kode_asset || '-';
         document.getElementById('quick-card-name').textContent = props.nama_asset || '-';
         
+        var isUnassigned = (props.asset_scope === 'ULP_UNASSIGNED');
         var badge = document.getElementById('quick-card-badge');
-        badge.textContent = `● ${props.status || 'GOOD'}`;
-        badge.className = `badge ${(props.condition_overlay && props.condition_overlay.badge_class) || 'bg-success'}`;
+        if (isUnassigned) {
+            badge.textContent = '● BELUM TERHUBUNG KE PENYULANG';
+            badge.className = 'badge bg-warning text-dark font-monospace';
+        } else {
+            badge.textContent = `● ${props.status || 'GOOD'}`;
+            badge.className = `badge ${(props.condition_overlay && props.condition_overlay.badge_class) || 'bg-success'}`;
+        }
         
-        document.getElementById('quick-card-type').textContent = props.construction_type || props.type || 'TM';
+        document.getElementById('quick-card-type').textContent = (props.construction_type || props.type || 'TM') + (isUnassigned ? ' (Master ULP)' : '');
         document.getElementById('quick-card-jenis').textContent = props.jenis_asset || 'JTM';
 
         document.getElementById('asset-quick-card').style.display = 'block';
@@ -1762,15 +1769,21 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!activeAssetProps) return;
         closeAssetQuickCard();
 
+        var isUnassigned = (activeAssetProps.asset_scope === 'ULP_UNASSIGNED');
         document.getElementById('detail-sheet-img').src = activeAssetProps._svgPath;
         document.getElementById('detail-sheet-title').textContent = activeAssetProps.nama_asset || '-';
         document.getElementById('detail-sheet-subtitle').textContent = activeAssetProps.kode_asset || '-';
 
         var badge = document.getElementById('detail-sheet-badge');
-        badge.textContent = `● ${activeAssetProps.status || 'NORMAL'}`;
-        badge.className = `badge ${(activeAssetProps.condition_overlay && activeAssetProps.condition_overlay.badge_class) || 'bg-success'} px-3 py-1`;
+        if (isUnassigned) {
+            badge.textContent = '● BELUM TERHUBUNG KE PENYULANG';
+            badge.className = 'badge bg-warning text-dark font-monospace px-3 py-1';
+        } else {
+            badge.textContent = `● ${activeAssetProps.status || 'NORMAL'}`;
+            badge.className = `badge ${(activeAssetProps.condition_overlay && activeAssetProps.condition_overlay.badge_class) || 'bg-success'} px-3 py-1`;
+        }
 
-        document.getElementById('detail-sheet-construction').textContent = activeAssetProps.construction_type || activeAssetProps.type || 'TM';
+        document.getElementById('detail-sheet-construction').textContent = (activeAssetProps.construction_type || activeAssetProps.type || 'TM') + (isUnassigned ? ' (Master Asset Belum Terhubung)' : '');
         document.getElementById('detail-sheet-loc').textContent = activeAssetProps.lokasi || 'Jaringan SUTM PLN';
         document.getElementById('detail-sheet-coords').textContent = `${activeAssetProps.latitude || '-'}, ${activeAssetProps.longitude || '-'}`;
         document.getElementById('detail-sheet-jenis').textContent = activeAssetProps.jenis_asset || 'JTM';
@@ -2334,15 +2347,19 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Render Markers strictly separated by entity_type
+        // Render Markers strictly separated by entity_type and asset_scope
         var rawFeatures = currentData.features || [];
         var activeLayers = getSelectedSetupLayers();
-        var renderedAssetCount = 0;
+        var renderedFeederAssetCount = 0;
+        var renderedUnassignedAssetCount = 0;
         var renderedTemuanCount = 0;
         var renderedJtm = 0;
         var renderedGardu = 0;
         var renderedTrafo = 0;
         var renderedSwitch = 0;
+        var feederAssetIds = [];
+        var unassignedAssetIds = [];
+        var findingIds = [];
 
         rawFeatures.forEach(function (f) {
             var norm = normalizeAssetFeature(f);
@@ -2357,14 +2374,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (tMarker) {
                         findingLayer.addLayer(tMarker);
                         renderedTemuanCount++;
+                        findingIds.push(props.finding_id || props.id);
                     }
                 }
                 return;
             }
 
-            // 2. STRICT MASTER ASSET LAYER
+            // 2. STRICT MASTER ASSET LAYER (Feeder vs ULP Unassigned)
             var jenis = (props.jenis_asset || '').toUpperCase();
             var constr = (props.construction_type || '').toUpperCase();
+            var scope = props.asset_scope || 'FEEDER';
 
             var isSwitchType = ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION'].includes(jenis) || strContainsAny(constr, ['PMS', 'PMT', 'LBS', 'REC']);
             var isGarduType  = ['GARDU', 'SUBSTATION'].includes(jenis) || strContainsAny(constr, ['TM-8', 'TM-9', 'GTT', 'GARDU']);
@@ -2381,7 +2400,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 var marker = createAssetVisualMarker(norm);
                 if (marker) {
                     markerCluster.addLayer(marker);
-                    renderedAssetCount++;
+                    if (scope === 'FEEDER') {
+                        renderedFeederAssetCount++;
+                        feederAssetIds.push(props.id);
+                    } else {
+                        renderedUnassignedAssetCount++;
+                        unassignedAssetIds.push(props.id);
+                    }
+
                     if (isGarduType) renderedGardu++;
                     else if (isTrafoType) renderedTrafo++;
                     else if (isSwitchType) renderedSwitch++;
@@ -2390,10 +2416,10 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // 📡 Honest Empty State Check
+        // 📡 Honest Empty State Check (Only show if both Feeder and Unassigned Master Assets are 0)
         var emptyFeederBanner = document.getElementById('gis-empty-feeder-banner');
         if (emptyFeederBanner) {
-            if (renderedAssetCount === 0 && !hasTopology) {
+            if (renderedFeederAssetCount === 0 && renderedUnassignedAssetCount === 0 && !hasTopology) {
                 emptyFeederBanner.style.display = 'block';
                 document.getElementById('empty-feeder-name').textContent = currentFeederName || 'Penyulang Ini';
             } else {
@@ -2402,19 +2428,24 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // 🔒 Console Data Contract Debug Group
-        console.group('[GIS DATA CONTRACT]');
-        console.log('Selected Feeder:', currentFeederId + ' (' + (currentFeederName || '-') + ')');
-        console.log('Asset Features:', renderedAssetCount);
-        console.log('Temuan Features:', renderedTemuanCount);
-        console.log('Topology Edges:', (currentData.transline && currentData.transline.properties && currentData.transline.properties.edges ? currentData.transline.properties.edges.length : 0));
-        console.log('Cross Feeder Rejected:', (currentData.summary && currentData.summary.rejected_cross_feeder ? currentData.summary.rejected_cross_feeder : 0));
+        console.group('[GIS ASSET SCOPE DEBUG]');
+        console.log('Selected Penyulang:', currentFeederId + ' (' + (currentFeederName || '-') + ')');
+        console.log('Selected ULP:', (currentData.meta && currentData.meta.selected_ulp_id) || 1);
+        console.log('Feeder Assets:', renderedFeederAssetCount, 'IDs:', feederAssetIds);
+        console.log('ULP Unassigned Assets:', renderedUnassignedAssetCount, 'IDs:', unassignedAssetIds);
+        console.log('Rejected Cross-Feeder Assets:', (currentData.summary && currentData.summary.rejected_cross_feeder ? currentData.summary.rejected_cross_feeder : 0));
+        console.log('Rejected Cross-ULP Assets:', (currentData.summary && currentData.summary.rejected_cross_ulp ? currentData.summary.rejected_cross_ulp : 0));
+        console.log('Temuan Loaded:', renderedTemuanCount, 'IDs:', findingIds);
         console.groupEnd();
 
         // Update live summary bar accurately
         var summaryBar = document.getElementById('gis-summary-bar');
         if (summaryBar) {
             summaryBar.style.display = 'block';
-            var summaryHtml = `<i class="fas fa-network-wired text-warning me-1"></i> Aset: <strong>${renderedAssetCount}</strong> (TM: ${renderedJtm}, GTT: ${renderedGardu}, Trafo: ${renderedTrafo}, Sw: ${renderedSwitch})`;
+            var summaryHtml = `<i class="fas fa-network-wired text-primary me-1"></i> Asset Penyulang: <strong>${renderedFeederAssetCount}</strong>`;
+            if (renderedUnassignedAssetCount > 0) {
+                summaryHtml += ` | <i class="fas fa-link-slash text-warning ms-2 me-1"></i> Belum Terhubung: <strong>${renderedUnassignedAssetCount}</strong>`;
+            }
             if (renderedTemuanCount > 0) {
                 summaryHtml += ` | <i class="fas fa-triangle-exclamation text-danger ms-2 me-1"></i> Temuan: <strong>${renderedTemuanCount}</strong>`;
             }

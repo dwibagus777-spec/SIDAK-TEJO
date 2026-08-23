@@ -74,8 +74,8 @@ class TestGisEndpointsCommand extends BaseCommand
             CLI::write(" [PASS] Status: 200 OK | Master Conductors Loaded: {$cCount} items", 'green');
         } else {
             CLI::error(" [FAIL] Status: " . $res3->getStatusCode() . " | Body: " . $body3);
-        }        // TEST 4: apiNetwork for Feeder 15 (BANJAR KEMANTREN) - Master Asset Layer Only
-        CLI::write("\n[4/7] Testing GET /gis/api-network?penyulang_id=15 (Asset Layer Only) ...", 'cyan');
+        }        // TEST 4: apiNetwork for Feeder 15 (BANJAR KEMANTREN) - Master Asset Layer
+        CLI::write("\n[4/7] Testing GET /gis/api-network?penyulang_id=15 (Asset Layer) ...", 'cyan');
         $_GET['penyulang_id'] = 15;
         $_GET['zoom'] = 15;
         $_GET['layers'] = 'JTM,GARDU,TRAFO,SWITCH';
@@ -85,14 +85,28 @@ class TestGisEndpointsCommand extends BaseCommand
 
         if ($res4->getStatusCode() === 200 && ($json4['status'] ?? '') === 'success') {
             $fCount = count($json4['data']['features'] ?? []);
-            $eCount = count($json4['data']['transline']['properties']['edges'] ?? []);
-            $rejectedCross = $json4['data']['summary']['rejected_cross_feeder'] ?? 0;
-            $hasMaster = $json4['data']['meta']['has_master_assets'] ?? false;
+            $feederAssetCount = $json4['data']['meta']['feeder_asset_count'] ?? 0;
+            $unassignedAssetCount = $json4['data']['meta']['unassigned_ulp_asset_count'] ?? 0;
+            $rejectedCrossUlp = $json4['data']['summary']['rejected_cross_ulp'] ?? 0;
             
-            if ($fCount === 0 && !$hasMaster) {
-                CLI::write(" [PASS] Status: 200 OK | Honest Empty State: 0 Assets, 0 Edges, has_master_assets = false", 'green');
+            $validScopes = true;
+            foreach ($json4['data']['features'] as $feat) {
+                $p = $feat['properties'] ?? [];
+                if ($p['entity_type'] !== 'ASSET') {
+                    $validScopes = false;
+                    break;
+                }
+                if ($p['asset_scope'] === 'ULP_UNASSIGNED' && $p['is_feeder_asset'] !== false) {
+                    $validScopes = false;
+                    break;
+                }
+            }
+
+            if ($feederAssetCount === 0 && $unassignedAssetCount === 1 && $rejectedCrossUlp === 2 && $validScopes) {
+                CLI::write(" [PASS] Status: 200 OK | Feeder Asset: 0 | Unassigned ULP 1 Asset: 1 | Rejected Other ULPs: 2", 'green');
+                CLI::write("   Rendered: " . $json4['data']['features'][0]['properties']['nama_asset'] . " (Scope: ULP_UNASSIGNED, Feeder: NULL)", 'white');
             } else {
-                CLI::error(" [FAIL] Feeder 15 leaked non-master assets: count = {$fCount}");
+                CLI::error(" [FAIL] Feeder 15 scope violation: feederCount={$feederAssetCount}, unassignedCount={$unassignedAssetCount}, rejectedUlp={$rejectedCrossUlp}");
                 return;
             }
         } else {
@@ -131,7 +145,7 @@ class TestGisEndpointsCommand extends BaseCommand
             return;
         }
 
-        // TEST 6: apiNetworkAudit (Data Provenance & Strict Feeder Boundary)
+        // TEST 6: apiNetworkAudit (Data Provenance & 3-Scope Asset Boundary)
         CLI::write("\n[6/7] Testing GET /gis/api-network-audit?penyulang_id=15 ...", 'cyan');
         $_GET['penyulang_id'] = 15;
         $resAudit = $controller->apiNetworkAudit();
@@ -139,7 +153,7 @@ class TestGisEndpointsCommand extends BaseCommand
         $jsonAudit = json_decode($bodyAudit, true);
 
         if ($resAudit->getStatusCode() === 200 && ($jsonAudit['status'] ?? '') === 'success') {
-            CLI::write(" [PASS] Status: 200 OK | DB Assets: {$jsonAudit['total_db_assets']} | DB Temuan: {$jsonAudit['total_db_temuan']} | Layer Separation: VERIFIED", 'green');
+            CLI::write(" [PASS] Status: 200 OK | DB Feeder Assets: {$jsonAudit['total_db_feeder_assets']} | DB Unassigned ULP Assets: {$jsonAudit['total_db_unassigned_ulp_assets']} | Rejected Other ULPs: {$jsonAudit['rejected_cross_ulp_assets']} | Layer Separation: VERIFIED", 'green');
         } else {
             CLI::error(" [FAIL] Status: " . $resAudit->getStatusCode() . " | Body: " . $bodyAudit);
             return;
@@ -157,7 +171,7 @@ class TestGisEndpointsCommand extends BaseCommand
         }
 
         CLI::write("\n====================================================", 'green');
-        CLI::write("🟢 ALL STRICT GIS LAYER SEPARATION CHECKS PASSED CLEANLY (7/7)!", 'green');
+        CLI::write("🟢 ALL STRICT GIS 3-SCOPE & LAYER SEPARATION CHECKS PASSED CLEANLY (7/7)!", 'green');
         CLI::write("====================================================\n", 'green');
     }
 }

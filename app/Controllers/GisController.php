@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Services\GISService;
 use App\Services\AssetTopologyService;
 use App\Services\BaselineService;
+use App\Repositories\PenyulangRepository;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class GisController extends BaseController
@@ -12,12 +13,14 @@ class GisController extends BaseController
     private GISService $gisService;
     private AssetTopologyService $topologyService;
     private BaselineService $baselineService;
+    private PenyulangRepository $penyulangRepository;
 
     public function __construct()
     {
         $this->gisService = new GISService();
         $this->topologyService = new AssetTopologyService();
         $this->baselineService = new BaselineService();
+        $this->penyulangRepository = new PenyulangRepository();
     }
 
     /**
@@ -74,21 +77,34 @@ class GisController extends BaseController
      */
     public function apiPenyulangs(): ResponseInterface
     {
-        $ulpId = (int)($this->request->getGet('ulp_id') ?? 0);
-        if ($ulpId <= 0) {
-            return $this->response->setStatusCode(422)->setJSON([
+        try {
+            $ulpId = (int)(
+                (method_exists($this->request, 'getGet') ? $this->request->getGet('ulp_id') : null)
+                ?? ($_GET['ulp_id'] ?? 0)
+            );
+
+            if ($ulpId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'     => 'error',
+                    'message'    => 'ULP wajib dipilih.',
+                    'penyulangs' => []
+                ]);
+            }
+
+            $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($ulpId);
+
+            return $this->response->setJSON([
+                'status'     => 'success',
+                'penyulangs' => $penyulangs
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', '[GisController::apiPenyulangs] Exception: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
                 'status'     => 'error',
-                'message'    => 'ULP wajib dipilih.',
+                'message'    => 'Gagal memuat data penyulang: ' . $e->getMessage(),
                 'penyulangs' => []
             ]);
         }
-
-        $penyulangs = $this->assetRepository->getActivePenyulangsByUlp($ulpId);
-
-        return $this->response->setJSON([
-            'status'     => 'success',
-            'penyulangs' => $penyulangs
-        ]);
     }
 
     /**
@@ -118,7 +134,11 @@ class GisController extends BaseController
      */
     public function apiNetwork(): ResponseInterface
     {
-        $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
+        $penyulangId = (int)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+            ?? ($_GET['penyulang_id'] ?? 0)
+        );
+
         if ($penyulangId <= 0) {
             return $this->response->setStatusCode(422)->setJSON([
                 'status'  => 'error',
@@ -126,8 +146,15 @@ class GisController extends BaseController
             ]);
         }
 
-        $zoom   = (int)($this->request->getGet('zoom') ?? 14);
-        $layers = (string)($this->request->getGet('layers') ?? 'JTM,GARDU,TRAFO,SWITCH');
+        $zoom = (int)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('zoom') : null)
+            ?? ($_GET['zoom'] ?? 14)
+        );
+
+        $layers = (string)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('layers') : null)
+            ?? ($_GET['layers'] ?? 'JTM,GARDU,TRAFO,SWITCH')
+        );
 
         $filters = [
             'penyulang_id' => $penyulangId,

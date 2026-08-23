@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('title') ?>Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>Peta Jaringan Distribusi (GIS) & Field Network Editor<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>Peta Jaringan Distribusi (GIS) & Field Network Workspace<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <!-- Strict Order Dependency Injection: Leaflet Core CSS followed by Leaflet MarkerCluster CSS -->
@@ -10,16 +10,51 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
 <style>
-    /* Full Responsive Height Container */
-    #gis-master-wrapper {
+    /* ==========================================================================
+       PH-MOB-GIS-UX-01: Two-Stage Workflow Architecture (Setup vs Full Map Workspace)
+       ========================================================================== */
+    .gis-master-container {
         position: relative;
         width: 100%;
-        height: calc(100vh - 170px);
+        min-height: calc(100vh - 150px);
+    }
+
+    /* STAGE 1: Lightweight Mobile Setup Screen (No Leaflet Map rendered) */
+    .gis-setup-screen {
+        width: 100%;
+        padding: 12px 4px 40px;
+        transition: opacity 0.25s ease;
+    }
+
+    .feeder-chip-btn {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 20px;
+        transition: all 0.2s ease;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+        cursor: pointer;
+    }
+    .feeder-chip-btn.active {
+        background: #0284c7;
+        color: #ffffff;
+        border-color: #0284c7;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+
+    /* STAGE 2: Fullscreen GIS Map Workspace */
+    .gis-workspace-screen {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 140px);
         min-height: 560px;
-        border-radius: 16px;
+        border-radius: 18px;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
         border: 1px solid rgba(226, 232, 240, 0.8);
+        background: #f8fafc;
     }
 
     #gisMap {
@@ -29,24 +64,33 @@
         background: #f1f5f9;
     }
 
-    /* Floating Left Filter Panel */
-    .gis-filter-panel {
+    /* Compact Mobile Map Top Navigation Bar */
+    .gis-compact-topbar {
         position: absolute;
-        top: 20px;
-        left: 20px;
+        top: 14px;
+        left: 14px;
+        right: 14px;
         z-index: 1000;
-        width: 330px;
-        max-width: calc(100vw - 40px);
-        background: rgba(255, 255, 255, 0.96);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        pointer-events: none;
+    }
+    .gis-topbar-pill {
+        pointer-events: auto;
+        background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(12px);
-        border-radius: 16px;
-        padding: 16px;
-        box-shadow: 0 12px 35px rgba(0,0,0,0.18);
+        border-radius: 30px;
+        padding: 6px 14px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
         border: 1px solid rgba(255, 255, 255, 0.8);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    /* Loading Overlay */
+    /* Loading Spinner Overlay */
     .gis-loading-overlay {
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
@@ -58,32 +102,13 @@
         align-items: center;
         justify-content: center;
         color: #ffffff;
-        border-radius: 16px;
+        border-radius: 18px;
     }
 
-    /* Floating Bottom Summary Pill */
-    .gis-summary-bar {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1000;
-        background: rgba(15, 23, 42, 0.92);
-        backdrop-filter: blur(10px);
-        color: #ffffff;
-        border-radius: 30px;
-        padding: 8px 24px;
-        font-size: 13px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-        display: none;
-    }
-
-    /* ==========================================================================
-       PH-AI-GIS-01B: Floating Transline Geometry Editor Toolbar & Guidance Banner
-       ========================================================================== */
+    /* Floating Transline Geometry Editor Toolbar */
     .gis-transline-toolbar {
         position: absolute;
-        top: 15px;
+        top: 12px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 1005;
@@ -91,10 +116,10 @@
         backdrop-filter: blur(14px);
         color: #ffffff;
         border-radius: 40px;
-        padding: 8px 20px;
+        padding: 8px 18px;
         display: none;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         box-shadow: 0 10px 35px rgba(0,0,0,0.5);
         border: 2px solid #10b981;
         max-width: 95vw;
@@ -103,20 +128,116 @@
 
     .gis-editor-guide-banner {
         position: absolute;
-        top: 75px;
+        top: 70px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 1004;
         background: rgba(16, 185, 129, 0.95);
         color: #ffffff;
         border-radius: 25px;
-        padding: 6px 18px;
-        font-size: 12px;
+        padding: 6px 16px;
+        font-size: 11px;
         font-weight: 600;
         box-shadow: 0 6px 20px rgba(0,0,0,0.25);
         display: none;
         align-items: center;
         gap: 8px;
+        max-width: 90vw;
+    }
+
+    /* Floating Summary Pill */
+    .gis-summary-bar {
+        position: absolute;
+        bottom: 14px;
+        left: 14px;
+        z-index: 1000;
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(10px);
+        color: #ffffff;
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 11px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        display: none;
+        max-width: calc(100vw - 120px);
+    }
+
+    /* Floating Action Button (FAB) Menu */
+    .gis-fab-container {
+        position: absolute;
+        bottom: 18px;
+        right: 18px;
+        z-index: 1002;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+    }
+    .gis-fab-main {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #0284c7;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        box-shadow: 0 8px 25px rgba(2, 132, 199, 0.5);
+        border: 2px solid #ffffff;
+        cursor: pointer;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .gis-fab-main:hover, .gis-fab-main.active {
+        transform: rotate(45deg);
+        background: #0369a1;
+    }
+    .gis-fab-menu {
+        display: none;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+    }
+    .gis-fab-item {
+        background: rgba(255, 255, 255, 0.96);
+        color: #1e293b;
+        border-radius: 25px;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        cursor: pointer;
+        transition: transform 0.15s ease;
+    }
+    .gis-fab-item:hover {
+        transform: scale(1.05);
+    }
+
+    /* 1️⃣ Compact Asset Quick Card (Bottom Card <= 30-35% Height) */
+    .gis-asset-quick-card {
+        position: absolute;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1003;
+        width: calc(100% - 32px);
+        max-width: 440px;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(14px);
+        border-radius: 18px;
+        padding: 14px;
+        box-shadow: 0 12px 35px rgba(15, 23, 42, 0.25);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        display: none;
+        animation: slideUpQuickCard 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUpQuickCard {
+        from { transform: translate(-50%, 30px); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
     }
 
     /* ==========================================================================
@@ -126,8 +247,6 @@
         background: transparent !important;
         border: none !important;
     }
-
-    /* Transparent Touch Target (44x44px for Android WebView & Field Tap) */
     .asset-network-marker-wrap {
         position: relative;
         width: 44px;
@@ -139,8 +258,6 @@
         background: transparent !important;
         border: none !important;
     }
-
-    /* Condition Halo Ring (Directly behind SVG icon, no white box) */
     .asset-condition-halo {
         position: absolute;
         width: 32px;
@@ -150,7 +267,6 @@
         transition: all 0.2s ease;
         z-index: 1;
     }
-
     .asset-ring-good {
         border: 2px solid #10b981;
         background: rgba(16, 185, 129, 0.12);
@@ -196,7 +312,6 @@
         50% { transform: scale(1.2); opacity: 0.4; }
     }
 
-    /* Flat SVG Symbol (Zero card, zero white box, sits directly on map) */
     .asset-flat-svg {
         position: relative;
         width: 28px;
@@ -207,33 +322,26 @@
         transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         z-index: 2;
     }
-
     .asset-network-marker-wrap:hover .asset-flat-svg {
         transform: scale(1.35);
         z-index: 1000 !important;
     }
 
-    /* Floating Collapsible Legend Panel */
-    .gis-legend-container {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 8px;
-    }
+    /* Floating Legend Panel */
     .gis-legend-card {
+        position: absolute;
+        bottom: 80px;
+        right: 18px;
+        z-index: 1001;
         background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(12px);
         border-radius: 14px;
         padding: 12px 16px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.8);
-        max-height: 380px;
+        max-height: 360px;
         overflow-y: auto;
-        width: 250px;
+        width: 240px;
         display: none;
     }
     .legend-item-row {
@@ -244,125 +352,60 @@
         padding: 4px 0;
     }
     .legend-icon-preview {
-        width: 24px;
-        height: 24px;
+        width: 22px;
+        height: 22px;
         object-fit: contain;
         flex-shrink: 0;
         filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
     }
-
-    /* Custom Popup Card Styling */
-    .leaflet-popup-content-wrapper {
-        border-radius: 16px !important;
-        padding: 4px !important;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25) !important;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-    }
-    .gis-popup-container {
-        padding: 8px;
-        font-family: 'Outfit', sans-serif;
-        min-width: 240px;
-    }
-    .gis-popup-badge {
-        display: inline-block !important;
-        font-weight: 700 !important;
-        font-size: 11px !important;
-        padding: 3px 8px !important;
-        border-radius: 8px !important;
-        line-height: 1.2 !important;
-    }
 </style>
 
-<div class="gis-container container-fluid py-2">
+<div class="gis-master-container">
 
-    <!-- Compact Header Toolbar -->
-    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap" style="gap: 8px;">
-        <div class="d-flex align-items-center gap-2">
-            <h4 class="fw-bold mb-0 text-primary d-flex align-items-center">
-                <i class="fas fa-network-wired text-warning me-2 fs-4"></i> GIS NETWORK
-            </h4>
-            <span class="badge bg-primary rounded-pill font-weight-normal px-2 py-1" style="font-size: 11px;">DIGITAL TWIN EDITOR</span>
-        </div>
-        
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-            <!-- Distinct Action 1: Add New Physical Asset -->
-            <button type="button" id="btn-add-asset-map" class="btn btn-success btn-sm rounded-pill font-weight-bold shadow-sm">
-                <i class="fas fa-plus-circle me-1"></i> Tambah Aset
-            </button>
+    <!-- ========================================================
+         STAGE 1: GIS NETWORK SETUP (Default Mobile View)
+         ======================================================== -->
+    <div id="gis-setup-screen" class="gis-setup-screen">
+        <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mx-auto" style="max-width: 580px; background: #ffffff;">
             
-            <!-- Distinct Action 2: Transline Geometry Editor Mode -->
-            <button type="button" id="btn-toggle-edit-transline" class="btn btn-info text-dark btn-sm rounded-pill font-weight-bold shadow-sm" style="background-color: #06b6d4; border-color: #06b6d4; color: #ffffff !important;">
-                <i class="fas fa-route me-1"></i> 🔀 Edit Jalur Transline
-            </button>
-            
-            <!-- Supervisor Approval Queue -->
-            <button type="button" id="btn-view-corrections" class="btn btn-outline-warning btn-sm rounded-pill font-weight-bold position-relative">
-                <i class="fas fa-clipboard-check me-1"></i> Usulan Koreksi
-                <span id="pending-badge-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none; font-size:9px;">0</span>
-            </button>
-            <button type="button" id="btn-toggle-legend-top" class="btn btn-outline-secondary btn-sm rounded-pill font-weight-bold">
-                <i class="fas fa-layer-group me-1 text-primary"></i> Legenda
-            </button>
-            <button type="button" id="btn-toggle-panel" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold">
-                <i class="fas fa-sliders me-1"></i> Filter
-            </button>
-            <button type="button" id="btn-locate-me" class="btn btn-primary btn-sm rounded-pill font-weight-bold">
-                <i class="fas fa-crosshairs me-1"></i> GPS Saya
-            </button>
-        </div>
-    </div>
-
-    <!-- GIS Master Map Wrapper -->
-    <div id="gis-master-wrapper">
-
-        <!-- Loading Spinner Overlay -->
-        <div id="gis-loading-overlay" class="gis-loading-overlay" style="display: none;">
-            <div class="spinner-border text-warning mb-2" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
-            <span class="fw-bold font-monospace" style="font-size: 14px;">Memuat Data Jaringan GIS...</span>
-        </div>
-
-        <!-- Floating Transline Geometry Editor Toolbar -->
-        <div id="gis-transline-toolbar" class="gis-transline-toolbar">
-            <span class="badge bg-success font-monospace px-3 py-1 fw-bold"><i class="fas fa-draw-polygon me-1"></i> MODE EDIT TRANSLINE AKTIF</span>
-            <span id="transline-points-info" class="small text-light font-monospace">0 Titik Vertex</span>
-            
-            <button type="button" id="btn-undo-transline" class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" title="Undo Perubahan">
-                <i class="fas fa-undo"></i>
-            </button>
-            <button type="button" id="btn-toggle-compare-transline" class="btn btn-sm btn-outline-info rounded-pill px-2 py-1" title="Bandingkan Eksisting vs Usulan">
-                <i class="fas fa-eye me-1"></i> Bandingkan
-            </button>
-            
-            <button type="button" id="btn-open-save-transline-modal" class="btn btn-sm btn-success rounded-pill fw-bold px-3 py-1 shadow">
-                <i class="fas fa-save me-1"></i> Simpan Usulan Jalur
-            </button>
-            <button type="button" id="btn-cancel-transline" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1">
-                <i class="fas fa-times me-1"></i> Batal
-            </button>
-        </div>
-
-        <!-- Guidance Banner for Transline Editing -->
-        <div id="gis-editor-guide-banner" class="gis-editor-guide-banner">
-            <i class="fas fa-info-circle"></i>
-            <span>Tarik titik bulat hijau untuk menggeser jalur, klik di tengah segmen untuk menambah titik belokan, atau klik titik untuk opsi hapus.</span>
-            <button type="button" class="btn-close btn-close-white ms-2" style="font-size: 9px;" onclick="document.getElementById('gis-editor-guide-banner').style.display='none';"></button>
-        </div>
-
-        <!-- Filter & Layer Panel (Desktop Floating Left / Mobile Bottom Sheet) -->
-        <div id="gis-filter-panel" class="gis-filter-panel">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold text-dark mb-0"><i class="fas fa-filter text-primary me-2"></i> Filter Jaringan PLN</h6>
-                <button type="button" id="btn-close-panel" class="btn-close d-md-none"></button>
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle p-2 bg-primary bg-opacity-10 text-primary">
+                        <i class="fas fa-network-wired fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">GIS Network Setup</h5>
+                        <span class="small text-muted">Pilih Area & Jaringan Inspeksi</span>
+                    </div>
+                </div>
+                <span class="badge bg-success rounded-pill px-3 py-1 font-monospace" style="font-size: 10px;">
+                    <i class="fas fa-bolt me-1"></i> READY
+                </span>
             </div>
 
-            <!-- Step 1: Select ULP -->
+            <!-- Step 1: Jenis Pekerjaan -->
             <div class="mb-3">
-                <label class="small text-muted font-weight-bold d-block mb-1">1. Pilih Unit Layanan Pelanggan (ULP):</label>
-                <select id="ulp-select" class="form-select form-select-sm fw-bold text-dark border-secondary">
-                    <option value="">-- Semua ULP --</option>
+                <label class="form-label small fw-bold text-secondary text-uppercase mb-1">
+                    <i class="fas fa-tasks text-primary me-1"></i> 1. Pekerjaan Lapangan
+                </label>
+                <select id="setup-job-type" class="form-select form-select-sm fw-bold border-secondary rounded-3 py-2">
+                    <option value="INSPEKSI_VISUAL" selected>Inspeksi Visual JTM (Rutin & Validasi)</option>
+                    <option value="INSPEKSI_TERMO">Inspeksi Termovisi (Kamera Panas)</option>
+                    <option value="INSPEKSI_ROW">Inspeksi ROW / Tebang Pohon</option>
+                    <option value="SURVEI_TWIN">Survei Digital Twin & Validasi Topologi</option>
+                </select>
+            </div>
+
+            <!-- Step 2: Pilih ULP -->
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary text-uppercase mb-1">
+                    <i class="fas fa-building text-primary me-1"></i> 2. Unit Layanan Pelanggan (ULP)
+                </label>
+                <select id="setup-ulp-select" class="form-select form-select-sm fw-bold border-secondary rounded-3 py-2">
+                    <option value="">-- Pilih ULP --</option>
                     <?php if (!empty($ulps)): ?>
                         <?php foreach ($ulps as $u): ?>
-                            <option value="<?= $u['id'] ?>">
+                            <option value="<?= $u['id'] ?>" <?= ($selectedPenyulangId === 0 && $u['id'] == 1) ? 'selected' : '' ?>>
                                 <?= esc($u['nama_ulp']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -370,102 +413,212 @@
                 </select>
             </div>
 
-            <!-- Step 2: Select Penyulang -->
+            <!-- Step 3: Pilih Penyulang -->
             <div class="mb-3">
-                <label class="small text-muted font-weight-bold d-block mb-1">2. Pilih Penyulang / Feeder:</label>
-                <select id="feeder-select" class="form-select form-select-sm fw-bold text-primary border-primary">
-                    <option value="">-- Pilih Penyulang --</option>
+                <label class="form-label small fw-bold text-secondary text-uppercase mb-1 d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-bolt text-warning me-1"></i> 3. Penyulang / Feeder</span>
+                    <span id="setup-feeder-loading" class="spinner-border spinner-border-sm text-primary" style="display:none;"></span>
+                </label>
+                <select id="setup-feeder-select" class="form-select form-select-sm fw-bold border-primary text-primary rounded-3 py-2">
+                    <option value="">-- Pilih ULP Terlebih Dahulu --</option>
                 </select>
-            </div>
-
-            <!-- Step 3: Layer Selection Checkboxes -->
-            <div class="mb-3">
-                <label class="small text-muted font-weight-bold d-block mb-1">3. Pilih Layer Peta Aset:</label>
-                <div class="d-flex flex-column gap-2 bg-light p-2 rounded-3 border">
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input layer-toggle" type="checkbox" id="layer-jtm" value="JTM" checked>
-                        <label class="form-check-label small fw-bold text-dark" for="layer-jtm">
-                            <i class="fas fa-square-poll-vertical text-primary me-1"></i> JTM & Tiang
-                        </label>
-                    </div>
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input layer-toggle" type="checkbox" id="layer-gardu" value="GARDU" checked>
-                        <label class="form-check-label small fw-bold text-dark" for="layer-gardu">
-                            <i class="fas fa-building-columns text-info me-1"></i> Gardu Distribusi
-                        </label>
-                    </div>
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input layer-toggle" type="checkbox" id="layer-trafo" value="TRAFO" checked>
-                        <label class="form-check-label small fw-bold text-dark" for="layer-trafo">
-                            <i class="fas fa-bolt text-warning me-1"></i> Trafo Distribusi
-                        </label>
-                    </div>
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input layer-toggle" type="checkbox" id="layer-switch" value="SWITCH" checked>
-                        <label class="form-check-label small fw-bold text-dark" for="layer-switch">
-                            <i class="fas fa-toggle-on text-danger me-1"></i> Peralatan (PMS/PMT/LBS/ACR)
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 4: Execute Action Button -->
-            <button type="button" id="btn-apply-gis" class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm py-2">
-                <i class="fas fa-play me-2"></i> TAMPILKAN PETA JARINGAN
-            </button>
-        </div>
-
-        <!-- Floating Collapsible Legend Panel (Bottom-Right) -->
-        <div class="gis-legend-container">
-            <div id="gis-legend-panel" class="gis-legend-card">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
-                    <span class="fw-bold text-dark" style="font-size: 12px;">
-                        <i class="fas fa-shapes text-warning me-1"></i> SIMBOL ASET JARINGAN (PLN)
-                    </span>
-                    <button type="button" id="btn-close-legend" class="btn-close btn-close-sm" style="font-size: 10px;"></button>
-                </div>
                 
-                <!-- Flat Visual Symbols from Registry -->
-                <div class="d-flex flex-column gap-1 mb-2">
-                    <?php if (!empty($legendItems)): ?>
-                        <?php foreach ($legendItems as $item): ?>
-                            <?php if ($item['symbol_key'] === 'DEFAULT') continue; ?>
-                            <div class="legend-item-row">
-                                <img src="<?= base_url($item['svg_path']) ?>" alt="<?= esc($item['label']) ?>" class="legend-icon-preview">
-                                <div class="d-flex flex-column" style="line-height: 1.1;">
-                                    <strong class="text-dark" style="font-size: 11px;"><?= esc($item['symbol_key']) ?></strong>
-                                    <span class="text-muted" style="font-size: 10px;"><?= esc($item['label']) ?></span>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                <!-- Quick Selection Chips Container -->
+                <div id="feeder-quick-chips" class="d-flex flex-wrap gap-1 mt-2">
+                    <!-- Populated dynamically -->
                 </div>
+            </div>
 
-                <!-- Condition Overlay Legend -->
-                <div class="border-top pt-2 mt-1">
-                    <span class="fw-bold text-secondary d-block mb-1" style="font-size: 10px;">STATUS & KONDISI ASET</span>
-                    <div class="d-flex flex-wrap gap-1">
-                        <span class="badge bg-success text-white" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i> GOOD</span>
-                        <span class="badge bg-info text-dark" style="font-size: 9px;"><i class="fas fa-info-circle me-1"></i> FAIR</span>
-                        <span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="fas fa-exclamation-circle me-1"></i> POOR</span>
-                        <span class="badge bg-danger text-white" style="font-size: 9px;"><i class="fas fa-triangle-exclamation me-1"></i> CRITICAL</span>
-                        <span class="badge text-white" style="background:#8b5cf6; font-size: 9px;"><i class="fas fa-clock me-1"></i> PROPOSED</span>
+            <!-- Step 4: Layer Aset yang Dimuat -->
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-secondary text-uppercase mb-2">
+                    <i class="fas fa-layer-group text-primary me-1"></i> 4. Layer Aset yang Dimuat
+                </label>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
+                            <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-jtm" value="JTM" checked>
+                            <label class="form-check-label small fw-bold text-dark ms-2 mb-0" for="setup-layer-jtm">
+                                Tiang JTM (TM)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
+                            <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-gardu" value="GARDU" checked>
+                            <label class="form-check-label small fw-bold text-dark ms-2 mb-0" for="setup-layer-gardu">
+                                Gardu Distribusi
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
+                            <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-trafo" value="TRAFO" checked>
+                            <label class="form-check-label small fw-bold text-dark ms-2 mb-0" for="setup-layer-trafo">
+                                Trafo Distribusi
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
+                            <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-switch" value="SWITCH" checked>
+                            <label class="form-check-label small fw-bold text-dark ms-2 mb-0" for="setup-layer-switch">
+                                Peralatan (LBS/REC)
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Floating Toggle Button for Legend -->
-            <button type="button" id="btn-toggle-legend" class="btn btn-dark btn-sm rounded-pill shadow px-3 py-1 font-weight-bold" style="background: rgba(15, 23, 42, 0.92); border: none;">
-                <i class="fas fa-layer-group text-warning me-1"></i> Legenda Peta
+            <!-- Primary Action CTA -->
+            <button type="button" id="btn-setup-open-map" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2" style="font-size: 15px;">
+                <i class="fas fa-map-marked-alt fs-5"></i> BUKA PETA JARINGAN
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================
+         STAGE 2: GIS MAP WORKSPACE (Fullscreen Focused View)
+         ======================================================== -->
+    <div id="gis-workspace-screen" class="gis-workspace-screen" style="display: none;">
+
+        <!-- Compact Top Navigation Bar -->
+        <div class="gis-compact-topbar">
+            <div class="gis-topbar-pill">
+                <button type="button" id="btn-back-to-setup" class="btn btn-sm btn-light rounded-circle p-1" style="width: 28px; height: 28px;" title="Kembali ke Setup">
+                    <i class="fas fa-arrow-left text-dark" style="font-size: 11px;"></i>
+                </button>
+                <div style="line-height: 1.1;">
+                    <strong id="topbar-feeder-title" class="text-primary font-monospace d-block" style="font-size: 12px; color: #0284c7 !important;">-</strong>
+                    <span id="topbar-ulp-subtitle" class="text-muted" style="font-size: 10px;">ULP PLN</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-1">
+                <button type="button" id="btn-open-filter-drawer" class="btn btn-light btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto" style="font-size: 11px;">
+                    <i class="fas fa-sliders text-primary me-1"></i> Filter
+                </button>
+                <button type="button" id="btn-view-corrections" class="btn btn-dark btn-sm rounded-pill font-weight-bold position-relative pointer-events-auto" style="font-size: 11px; background: rgba(15, 23, 42, 0.9);">
+                    <i class="fas fa-clipboard-check text-warning me-1"></i> Usulan
+                    <span id="pending-badge-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none; font-size:9px;">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="gis-loading-overlay" class="gis-loading-overlay" style="display: none;">
+            <div class="spinner-border text-warning mb-2" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+            <span class="fw-bold font-monospace" style="font-size: 13px;">Memuat Data Jaringan GIS...</span>
+        </div>
+
+        <!-- Floating Transline Geometry Editor Toolbar -->
+        <div id="gis-transline-toolbar" class="gis-transline-toolbar">
+            <span class="badge bg-success font-monospace px-2 py-1"><i class="fas fa-draw-polygon me-1"></i> EDIT JALUR</span>
+            <span id="transline-points-info" class="small text-light font-monospace" style="font-size: 11px;">0 Titik</span>
+            <button type="button" id="btn-undo-transline" class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" title="Undo">
+                <i class="fas fa-undo" style="font-size: 11px;"></i>
+            </button>
+            <button type="button" id="btn-open-save-transline-modal" class="btn btn-sm btn-success rounded-pill fw-bold px-3 py-1 shadow" style="font-size: 11px;">
+                <i class="fas fa-save me-1"></i> Simpan
+            </button>
+            <button type="button" id="btn-cancel-transline" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" style="font-size: 11px;">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <!-- Summary Floating Bottom Bar -->
+        <!-- Guidance Banner for Transline Editing -->
+        <div id="gis-editor-guide-banner" class="gis-editor-guide-banner">
+            <i class="fas fa-info-circle text-warning"></i>
+            <span>Tarik titik bulat hijau untuk menggeser jalur, klik di garis untuk tambah titik.</span>
+        </div>
+
+        <!-- Floating Bottom Summary Bar -->
         <div id="gis-summary-bar" class="gis-summary-bar">
             <span id="summary-text" class="fw-bold font-monospace">Memuat Data Jaringan...</span>
         </div>
 
-        <!-- Leaflet Map Element -->
+        <!-- Floating Action Menu (FAB) -->
+        <div class="gis-fab-container">
+            <div id="gis-fab-menu" class="gis-fab-menu">
+                <div class="gis-fab-item" id="fab-add-asset">
+                    <i class="fas fa-plus-circle text-success fs-6"></i>
+                    <span>Tambah Aset</span>
+                </div>
+                <div class="gis-fab-item" id="fab-edit-transline">
+                    <i class="fas fa-route text-info fs-6"></i>
+                    <span>Edit Transline</span>
+                </div>
+                <div class="gis-fab-item" id="fab-open-filter">
+                    <i class="fas fa-filter text-primary fs-6"></i>
+                    <span>Ubah Filter</span>
+                </div>
+                <div class="gis-fab-item" id="fab-locate-me">
+                    <i class="fas fa-crosshairs text-danger fs-6"></i>
+                    <span>GPS Saya</span>
+                </div>
+                <div class="gis-fab-item" id="fab-toggle-legend">
+                    <i class="fas fa-layer-group text-warning fs-6"></i>
+                    <span>Legenda</span>
+                </div>
+            </div>
+            
+            <button type="button" id="btn-fab-toggle" class="gis-fab-main" title="Menu Aksi GIS">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+
+        <!-- Floating Legend Card -->
+        <div id="gis-legend-panel" class="gis-legend-card">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                <span class="fw-bold text-dark" style="font-size: 11px;">
+                    <i class="fas fa-shapes text-warning me-1"></i> LEGENDA ASET
+                </span>
+                <button type="button" id="btn-close-legend" class="btn-close btn-close-sm" style="font-size: 9px;"></button>
+            </div>
+            <div class="d-flex flex-column gap-1 mb-2">
+                <?php if (!empty($legendItems)): ?>
+                    <?php foreach ($legendItems as $item): ?>
+                        <?php if ($item['symbol_key'] === 'DEFAULT') continue; ?>
+                        <div class="legend-item-row">
+                            <img src="<?= base_url($item['svg_path']) ?>" alt="<?= esc($item['label']) ?>" class="legend-icon-preview">
+                            <div class="d-flex flex-column" style="line-height: 1.1;">
+                                <strong class="text-dark" style="font-size: 10px;"><?= esc($item['symbol_key']) ?></strong>
+                                <span class="text-muted" style="font-size: 9px;"><?= esc($item['label']) ?></span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- 1️⃣ Compact Asset Quick Card (Tap Marker) -->
+        <div id="asset-quick-card" class="gis-asset-quick-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <img id="quick-card-img" src="" alt="Icon" style="width: 32px; height: 32px; object-fit: contain;">
+                    <div>
+                        <strong id="quick-card-code" class="text-primary font-monospace d-block" style="font-size: 12px; color: #0284c7 !important;">-</strong>
+                        <h6 id="quick-card-name" class="fw-bold mb-0 text-dark" style="font-size: 13px;">-</h6>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-sm" style="font-size: 10px;" onclick="closeAssetQuickCard()"></button>
+            </div>
+            <div class="d-flex align-items-center gap-1 mb-3">
+                <span id="quick-card-badge" class="badge bg-success" style="font-size: 10px;">GOOD</span>
+                <span id="quick-card-type" class="badge bg-light text-dark border font-monospace" style="font-size: 10px;">TM-1</span>
+                <span id="quick-card-loc" class="small text-muted text-truncate" style="font-size: 10px; max-width: 180px;">-</span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" id="btn-quick-detail" class="btn btn-sm btn-primary w-50 fw-bold rounded-pill shadow-sm" style="font-size: 11px;">
+                    <i class="fas fa-eye me-1"></i> Lihat Detail
+                </button>
+                <button type="button" id="btn-quick-edit" class="btn btn-sm btn-outline-primary w-50 fw-bold rounded-pill" style="font-size: 11px;">
+                    <i class="fas fa-edit me-1"></i> Edit Aset
+                </button>
+            </div>
+        </div>
+
+        <!-- Leaflet Map Container -->
         <div id="gisMap"></div>
 
     </div>
@@ -473,7 +626,111 @@
 </div>
 
 <!-- ========================================================
-     MODAL 1: KOREKSI PARAMETER ASET FISIK (CONSTRUCTION / LOCATION)
+     DRAWER: UBAH FILTER (Offcanvas Sheet)
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom rounded-top-4" tabindex="-1" id="offcanvas-filter-sheet" style="height: auto; max-height: 80vh;">
+    <div class="offcanvas-header border-bottom py-3">
+        <h6 class="offcanvas-title fw-bold text-dark mb-0"><i class="fas fa-filter text-primary me-2"></i> Ubah Filter Jaringan</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-4">
+        <div class="mb-3">
+            <label class="small text-muted font-weight-bold d-block mb-1">Pilih Penyulang:</label>
+            <select id="drawer-feeder-select" class="form-select form-select-sm fw-bold border-primary text-primary">
+                <!-- Dynamically cloned -->
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="small text-muted font-weight-bold d-block mb-1">Layer Aset:</label>
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="form-check p-2 bg-light rounded-3 border">
+                        <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-jtm" value="JTM" checked>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-jtm">Tiang JTM</label>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="form-check p-2 bg-light rounded-3 border">
+                        <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-gardu" value="GARDU" checked>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-gardu">Gardu</label>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="form-check p-2 bg-light rounded-3 border">
+                        <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-trafo" value="TRAFO" checked>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-trafo">Trafo</label>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="form-check p-2 bg-light rounded-3 border">
+                        <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-switch" value="SWITCH" checked>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-switch">Peralatan</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="button" id="btn-apply-drawer-filter" class="btn btn-primary w-100 fw-bold rounded-pill py-2 shadow-sm">
+            <i class="fas fa-check-circle me-1"></i> Terapkan Filter & Buka Peta
+        </button>
+    </div>
+</div>
+
+<!-- ========================================================
+     2️⃣ FULL ASSET DETAIL BOTTOM SHEET
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom rounded-top-4" tabindex="-1" id="offcanvas-asset-detail" style="height: auto; max-height: 85vh;">
+    <div class="offcanvas-header border-bottom py-3">
+        <div class="d-flex align-items-center gap-2">
+            <img id="detail-sheet-img" src="" alt="Icon" style="width: 32px; height: 32px; object-fit: contain;">
+            <div>
+                <h6 class="offcanvas-title fw-bold text-dark mb-0" id="detail-sheet-title">-</h6>
+                <span id="detail-sheet-subtitle" class="small text-muted font-monospace">-</span>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <span id="detail-sheet-badge" class="badge bg-success px-3 py-1">● GOOD</span>
+            <span id="detail-sheet-construction" class="badge bg-light text-dark border font-monospace px-3 py-1">TM-1</span>
+        </div>
+
+        <div class="card bg-light border-0 rounded-3 p-3 mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Lokasi</span>
+                <span id="detail-sheet-loc" class="small fw-bold text-dark">-</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Koordinat</span>
+                <span id="detail-sheet-coords" class="small fw-bold font-monospace text-primary">-</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="small text-muted">Jenis Aset</span>
+                <span id="detail-sheet-jenis" class="small fw-bold text-dark">-</span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2">
+            <a id="detail-sheet-dt-link" href="#" class="btn btn-primary w-100 fw-bold rounded-pill text-white py-2 shadow-sm">
+                <i class="fas fa-cube me-1"></i> Buka Full Digital Twin &rarr;
+            </a>
+            <div class="d-flex gap-2">
+                <button type="button" id="btn-sheet-koreksi" class="btn btn-outline-primary w-50 fw-bold rounded-pill py-2">
+                    <i class="fas fa-edit me-1"></i> Koreksi Aset
+                </button>
+                <button type="button" id="btn-sheet-hilang" class="btn btn-outline-danger w-50 fw-bold rounded-pill py-2">
+                    <i class="fas fa-trash-alt me-1"></i> Aset Hilang
+                </button>
+            </div>
+            <button type="button" id="btn-sheet-transline" class="btn btn-outline-info w-100 fw-bold rounded-pill py-2 text-dark" style="background: rgba(6, 182, 212, 0.1); border-color: #06b6d4;">
+                <i class="fas fa-route me-1 text-info"></i> 🔀 Koreksi Jalur di Sekitar Aset
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     MODAL 1: KOREKSI PARAMETER ASET FISIK
      ======================================================== -->
 <div class="modal fade" id="modal-koreksi-asset" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -607,7 +864,7 @@
 </div>
 
 <!-- ========================================================
-     MODAL 3: LAPORAN ASET HILANG / DECOMMISSIONED
+     MODAL 3: LAPORAN ASET HILANG
      ======================================================== -->
 <div class="modal fade" id="modal-laporkan-missing" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -662,7 +919,7 @@
 </div>
 
 <!-- ========================================================
-     MODAL 5: KHUSUS USULAN KOREKSI JALUR TRANSLINE (SEPARATE UX)
+     MODAL 5: KHUSUS USULAN KOREKSI JALUR TRANSLINE
      ======================================================== -->
 <div class="modal fade" id="modal-koreksi-transline" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -726,65 +983,142 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    var defaultLat = -7.4523;
-    var defaultLng = 112.7161;
-
-    var map = L.map('gisMap', {
-        center: [defaultLat, defaultLng],
-        zoom: 14,
-        zoomControl: false
-    });
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; PLN SIDAK TEJO GIS'
-    }).addTo(map);
-
-    L.control.zoom({ position: 'topright' }).addTo(map);
-
-    // Runtime Guard & Fallback for Leaflet.MarkerCluster Plugin
-    var markerCluster;
-    if (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function') {
-        markerCluster = L.markerClusterGroup({
-            chunkedLoading: true,
-            maxClusterRadius: 35,
-            disableClusteringAtZoom: 16
-        });
-    } else {
-        console.warn('[GIS Engine] Leaflet MarkerCluster plugin tidak berhasil dimuat. Fallback ke L.featureGroup()');
-        markerCluster = L.featureGroup();
-    }
-    map.addLayer(markerCluster);
-
-    var translinePolylineLayer = L.featureGroup().addTo(map);
-    var proposedTranslineLayer = L.featureGroup().addTo(map);
-    var translineEditMarkersGroup = L.featureGroup().addTo(map);
+    var map = null;
+    var markerCluster = null;
+    var translinePolylineLayer = null;
+    var proposedTranslineLayer = null;
+    var translineEditMarkersGroup = null;
     var userLocationMarker = null;
 
     var currentFeederId = 0;
+    var currentFeederName = '';
+    var currentUlpName = '';
     var currentData = null;
     var currentLOD = null;
     var currentRequestId = 0;
     var currentUlpRequestId = 0;
+    var activeAssetProps = null;
 
     // Transline Editing Mode States & History Stack
     var isEditingTransline = false;
     var originalVertices = [];
     var editedVertices = [];
     var undoStack = [];
-    var showCompareExisting = true;
+
+    // ========================================================
+    // STAGE 1: SETUP LOGIC (Cascading Options & Quick Chips)
+    // ========================================================
+    var setupUlpSelect = document.getElementById('setup-ulp-select');
+    var setupFeederSelect = document.getElementById('setup-feeder-select');
+    var feederQuickChips = document.getElementById('feeder-quick-chips');
+    var setupFeederLoading = document.getElementById('setup-feeder-loading');
+
+    function loadPenyulangsForUlp(ulpId, autoSelectFirst) {
+        setupFeederSelect.innerHTML = '<option value="">-- Memuat Penyulang... --</option>';
+        feederQuickChips.innerHTML = '';
+        setupFeederLoading.style.display = 'inline-block';
+        var thisUlpRequestId = ++currentUlpRequestId;
+
+        fetch(`<?= site_url('gis/api-penyulangs') ?>?ulp_id=${ulpId}`)
+            .then(res => res.json())
+            .then(res => {
+                if (thisUlpRequestId !== currentUlpRequestId) return;
+                setupFeederLoading.style.display = 'none';
+                setupFeederSelect.innerHTML = '<option value="">-- Pilih Penyulang --</option>';
+                
+                var drawerSelect = document.getElementById('drawer-feeder-select');
+                drawerSelect.innerHTML = '<option value="">-- Pilih Penyulang --</option>';
+
+                if (res.status === 'success' && res.penyulangs && res.penyulangs.length > 0) {
+                    res.penyulangs.forEach((p, idx) => {
+                        var opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = `${p.nama_penyulang} (${p.nama_ulp || 'ULP'})`;
+                        opt.dataset.feederName = p.nama_penyulang;
+                        opt.dataset.ulpName = p.nama_ulp || 'ULP';
+                        setupFeederSelect.appendChild(opt);
+
+                        var optDrawer = opt.cloneNode(true);
+                        drawerSelect.appendChild(optDrawer);
+
+                        // Render quick chip
+                        var chip = document.createElement('button');
+                        chip.type = 'button';
+                        chip.className = `feeder-chip-btn ${idx === 0 && autoSelectFirst ? 'active' : ''}`;
+                        chip.textContent = p.nama_penyulang;
+                        chip.onclick = function () {
+                            document.querySelectorAll('.feeder-chip-btn').forEach(b => b.classList.remove('active'));
+                            chip.classList.add('active');
+                            setupFeederSelect.value = p.id;
+                        };
+                        feederQuickChips.appendChild(chip);
+                    });
+
+                    if (autoSelectFirst) {
+                        setupFeederSelect.value = res.penyulangs[0].id;
+                    }
+                }
+            });
+    }
+
+    setupUlpSelect.addEventListener('change', function () {
+        var ulpId = this.value;
+        if (!ulpId) {
+            setupFeederSelect.innerHTML = '<option value="">-- Pilih ULP Terlebih Dahulu --</option>';
+            feederQuickChips.innerHTML = '';
+            return;
+        }
+        loadPenyulangsForUlp(ulpId, true);
+    });
+
+    // Auto load first ULP if available
+    if (setupUlpSelect.value) {
+        loadPenyulangsForUlp(setupUlpSelect.value, true);
+    }
+
+    // ========================================================
+    // STAGE 2: TRANSITION FROM SETUP TO FULL MAP WORKSPACE
+    // ========================================================
+    document.getElementById('btn-setup-open-map').addEventListener('click', function () {
+        var feederId = setupFeederSelect.value;
+        if (!feederId) {
+            alert('Silakan pilih Penyulang terlebih dahulu!');
+            return;
+        }
+
+        var opt = setupFeederSelect.options[setupFeederSelect.selectedIndex];
+        currentFeederId = feederId;
+        currentFeederName = opt.dataset.feederName || opt.text;
+        currentUlpName = opt.dataset.ulpName || 'PLN ULP';
+
+        document.getElementById('topbar-feeder-title').textContent = currentFeederName;
+        document.getElementById('topbar-ulp-subtitle').textContent = currentUlpName;
+
+        // Switch Screen Views
+        document.getElementById('gis-setup-screen').style.display = 'none';
+        document.getElementById('gis-workspace-screen').style.display = 'block';
+
+        // Lazy initialize Leaflet map
+        initializeMapWorkspace();
+        loadGisNetworkOnDemand(true);
+    });
+
+    document.getElementById('btn-back-to-setup').addEventListener('click', function () {
+        document.getElementById('gis-workspace-screen').style.display = 'none';
+        document.getElementById('gis-setup-screen').style.display = 'block';
+    });
+
+    function getSelectedSetupLayers() {
+        var layers = [];
+        if (document.getElementById('setup-layer-jtm').checked) layers.push('JTM');
+        if (document.getElementById('setup-layer-gardu').checked) layers.push('GARDU');
+        if (document.getElementById('setup-layer-trafo').checked) layers.push('TRAFO');
+        if (document.getElementById('setup-layer-switch').checked) layers.push('SWITCH');
+        return layers;
+    }
 
     function toggleLoading(show) {
         document.getElementById('gis-loading-overlay').style.display = show ? 'flex' : 'none';
-    }
-
-    function getSelectedLayers() {
-        var layers = [];
-        if (document.getElementById('layer-jtm').checked) layers.push('JTM');
-        if (document.getElementById('layer-gardu').checked) layers.push('GARDU');
-        if (document.getElementById('layer-trafo').checked) layers.push('TRAFO');
-        if (document.getElementById('layer-switch').checked) layers.push('SWITCH');
-        return layers;
     }
 
     function getLODCategory(zoom) {
@@ -793,42 +1127,62 @@ document.addEventListener("DOMContentLoaded", function () {
         return 'detail';
     }
 
-    // 1. Cascading ULP -> Penyulang (With ULP Race Guard & Complete State Reset!)
-    document.getElementById('ulp-select').addEventListener('change', function () {
-        var selectedUlpId = this.value;
-        var feederSelect = document.getElementById('feeder-select');
-
-        currentFeederId = 0;
-        currentData = null;
-        currentLOD = null;
-        currentRequestId++;
-        var thisUlpRequestId = ++currentUlpRequestId;
-
-        toggleLoading(false);
-        if (markerCluster && typeof markerCluster.clearLayers === 'function') {
-            markerCluster.clearLayers();
+    function initializeMapWorkspace() {
+        if (map !== null) {
+            map.invalidateSize();
+            return;
         }
-        translinePolylineLayer.clearLayers();
-        proposedTranslineLayer.clearLayers();
-        document.getElementById('gis-summary-bar').style.display = 'none';
 
-        feederSelect.innerHTML = '<option value="">-- Pilih Penyulang --</option>';
-        if (!selectedUlpId) return;
+        var defaultLat = -7.4523;
+        var defaultLng = 112.7161;
 
-        fetch(`<?= site_url('gis/api-penyulangs') ?>?ulp_id=${selectedUlpId}`)
-            .then(res => res.json())
-            .then(res => {
-                if (thisUlpRequestId !== currentUlpRequestId) return;
-                if (res.status === 'success' && res.penyulangs) {
-                    res.penyulangs.forEach(p => {
-                        var opt = document.createElement('option');
-                        opt.value = p.id;
-                        opt.textContent = `${p.nama_penyulang} (${p.nama_ulp || 'ULP'})`;
-                        feederSelect.appendChild(opt);
-                    });
-                }
+        map = L.map('gisMap', {
+            center: [defaultLat, defaultLng],
+            zoom: 14,
+            zoomControl: false
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; PLN SIDAK TEJO GIS'
+        }).addTo(map);
+
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        if (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function') {
+            markerCluster = L.markerClusterGroup({
+                chunkedLoading: true,
+                maxClusterRadius: 35,
+                disableClusteringAtZoom: 16
             });
-    });
+        } else {
+            markerCluster = L.featureGroup();
+        }
+        map.addLayer(markerCluster);
+
+        translinePolylineLayer = L.featureGroup().addTo(map);
+        proposedTranslineLayer = L.featureGroup().addTo(map);
+        translineEditMarkersGroup = L.featureGroup().addTo(map);
+
+        map.on('zoomend', function () {
+            if (currentFeederId > 0 && !isEditingTransline) {
+                var newLOD = getLODCategory(map.getZoom());
+                if (newLOD !== currentLOD) {
+                    loadGisNetworkOnDemand(false);
+                }
+            }
+        });
+
+        map.on('click', function (e) {
+            if (isEditingTransline) {
+                saveUndoState();
+                editedVertices.push([e.latlng.lat, e.latlng.lng]);
+                renderTranslineEditor();
+            } else {
+                closeAssetQuickCard();
+            }
+        });
+    }
 
     /**
      * PH-VIS-02: Pure Flat SVG Marker with Condition Halo Ring (Zero Card Container)
@@ -842,8 +1196,6 @@ document.addEventListener("DOMContentLoaded", function () {
         var svgPath = visual.svg_path ? `<?= base_url() ?>${visual.svg_path}` : '<?= base_url('/assets/icons/network/generic-network-asset.svg') ?>';
         var ringClass = overlay.ring_class || 'asset-ring-good';
         var symbolKey = visual.symbol_key || props.jenis_asset || 'ASET';
-        var conditionLabel = overlay.label || props.status || 'NORMAL';
-        var badgeClass = overlay.badge_class || 'bg-success text-white';
 
         var iconHtml = `
             <div class="asset-network-marker-wrap" title="${props.nama_asset || ''} (${symbolKey})">
@@ -860,52 +1212,88 @@ document.addEventListener("DOMContentLoaded", function () {
             popupAnchor: [0, -22]
         });
 
-        var safePropJson = encodeURIComponent(JSON.stringify(props));
+        var marker = L.marker([geom.coordinates[1], geom.coordinates[0]], { icon: customIcon });
 
-        var popupHtml = `
-            <div class="gis-popup-container">
-                <div class="d-flex align-items-center gap-2 mb-2 pb-1 border-bottom">
-                    <img src="${svgPath}" alt="${symbolKey}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));" />
-                    <div style="line-height: 1.1;">
-                        <strong class="text-primary font-monospace d-block" style="font-size: 11px; color: #0284c7 !important;">${props.kode_asset || '-'}</strong>
-                        <span class="text-muted" style="font-size: 10px;">${visual.label || props.jenis_asset || 'Aset Jaringan'}</span>
-                    </div>
-                </div>
-                <h6 class="fw-bold mb-1 text-dark" style="font-size: 13px; color: #1e293b !important;">${props.nama_asset || '-'}</h6>
-                <div class="d-flex align-items-center gap-1 mb-2">
-                    <span class="gis-popup-badge ${badgeClass}" style="font-size: 10px;">● ${conditionLabel}</span>
-                    <span class="badge bg-light text-dark border font-monospace" style="font-size: 10px;">${props.construction_type || 'TM'}</span>
-                </div>
-                <div class="small text-secondary mb-2" style="font-size: 11px; color: #64748b !important;">
-                    <i class="fas fa-location-dot text-danger me-1"></i> ${props.lokasi || 'Lokasi Jaringan PLN'}
-                </div>
-                
-                <div class="d-flex flex-column gap-1 mt-2">
-                    <!-- Primary Link to Digital Twin Detail -->
-                    <a href="<?= site_url('master-assets/detail') ?>/${props.id}" class="btn btn-sm btn-primary w-100 fw-bold rounded-pill text-white py-1 shadow-sm" style="font-size: 11px;">
-                        <i class="fas fa-cube me-1"></i> Detail Digital Twin &rarr;
-                    </a>
-                    
-                    <!-- Distinct Action Row 1: Koreksi Parameter Aset & Lapor Hilang -->
-                    <div class="d-flex gap-1">
-                        <button type="button" class="btn btn-sm btn-outline-primary w-50 fw-bold rounded-pill py-1" style="font-size: 10px;" onclick="openCorrectionModal('${safePropJson}')" title="Koreksi tipe tiang, konstruksi atau kondisi fisik">
-                            <i class="fas fa-edit me-1"></i> Koreksi Aset
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger w-50 fw-bold rounded-pill py-1" style="font-size: 10px;" onclick="openMissingModal('${safePropJson}')" title="Laporkan jika tiang sudah dibongkar">
-                            <i class="fas fa-trash-alt me-1"></i> Aset Hilang
-                        </button>
-                    </div>
+        // 1️⃣ Marker Tap Interaction: Open Compact Quick Card (Not giant Leaflet popup)
+        marker.on('click', function (e) {
+            L.DomEvent.stopPropagation(e);
+            openAssetQuickCard(props, svgPath, geom.coordinates);
+        });
 
-                    <!-- Distinct Action Row 2: Transline Editor Entry from Asset Node -->
-                    <button type="button" class="btn btn-sm btn-outline-info w-100 fw-bold rounded-pill py-1 text-dark" style="font-size: 10px; background: rgba(6, 182, 212, 0.1); border-color: #06b6d4;" onclick="startTranslineEditAroundAsset(${geom.coordinates[1]}, ${geom.coordinates[0]})">
-                        <i class="fas fa-route me-1 text-info"></i> 🔀 Koreksi Jalur di Sekitar Aset
-                    </button>
-                </div>
-            </div>
-        `;
-
-        return L.marker([geom.coordinates[1], geom.coordinates[0]], { icon: customIcon }).bindPopup(popupHtml);
+        return marker;
     }
+
+    // ========================================================
+    // 1️⃣ COMPACT ASSET QUICK CARD & 2️⃣ DETAIL SHEET HANDLERS
+    // ========================================================
+    function openAssetQuickCard(props, svgPath, coords) {
+        activeAssetProps = props;
+        activeAssetProps._svgPath = svgPath;
+        activeAssetProps._coords = coords;
+
+        document.getElementById('quick-card-img').src = svgPath;
+        document.getElementById('quick-card-code').textContent = props.kode_asset || '-';
+        document.getElementById('quick-card-name').textContent = props.nama_asset || '-';
+        
+        var badge = document.getElementById('quick-card-badge');
+        badge.textContent = props.status || 'GOOD';
+        badge.className = `badge ${(props.condition_overlay && props.condition_overlay.badge_class) || 'bg-success'}`;
+        
+        document.getElementById('quick-card-type').textContent = props.construction_type || props.type || 'TM';
+        document.getElementById('quick-card-loc').textContent = props.lokasi || 'Jaringan SUTM PLN';
+
+        document.getElementById('asset-quick-card').style.display = 'block';
+    }
+
+    window.closeAssetQuickCard = function () {
+        document.getElementById('asset-quick-card').style.display = 'none';
+    };
+
+    document.getElementById('btn-quick-detail').addEventListener('click', function () {
+        if (!activeAssetProps) return;
+        closeAssetQuickCard();
+
+        document.getElementById('detail-sheet-img').src = activeAssetProps._svgPath;
+        document.getElementById('detail-sheet-title').textContent = activeAssetProps.nama_asset || '-';
+        document.getElementById('detail-sheet-subtitle').textContent = activeAssetProps.kode_asset || '-';
+
+        var badge = document.getElementById('detail-sheet-badge');
+        badge.textContent = `● ${activeAssetProps.status || 'NORMAL'}`;
+        badge.className = `badge ${(activeAssetProps.condition_overlay && activeAssetProps.condition_overlay.badge_class) || 'bg-success'} px-3 py-1`;
+
+        document.getElementById('detail-sheet-construction').textContent = activeAssetProps.construction_type || activeAssetProps.type || 'TM';
+        document.getElementById('detail-sheet-loc').textContent = activeAssetProps.lokasi || 'Jaringan SUTM PLN';
+        document.getElementById('detail-sheet-coords').textContent = `${activeAssetProps.latitude || '-'}, ${activeAssetProps.longitude || '-'}`;
+        document.getElementById('detail-sheet-jenis').textContent = activeAssetProps.jenis_asset || 'JTM';
+        document.getElementById('detail-sheet-dt-link').href = `<?= site_url('master-assets/detail') ?>/${activeAssetProps.id}`;
+
+        var detailSheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-detail'));
+        detailSheet.show();
+    });
+
+    document.getElementById('btn-quick-edit').addEventListener('click', function () {
+        if (!activeAssetProps) return;
+        closeAssetQuickCard();
+        openCorrectionModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
+    });
+
+    document.getElementById('btn-sheet-koreksi').addEventListener('click', function () {
+        if (!activeAssetProps) return;
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-detail')).hide();
+        openCorrectionModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
+    });
+
+    document.getElementById('btn-sheet-hilang').addEventListener('click', function () {
+        if (!activeAssetProps) return;
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-detail')).hide();
+        openMissingModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
+    });
+
+    document.getElementById('btn-sheet-transline').addEventListener('click', function () {
+        if (!activeAssetProps) return;
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-detail')).hide();
+        startTranslineEditAroundAsset(activeAssetProps.latitude, activeAssetProps.longitude);
+    });
 
     // Render Markers & Network Lines
     function renderFilteredLayers(autoFitBounds) {
@@ -914,8 +1302,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (markerCluster && typeof markerCluster.clearLayers === 'function') {
             markerCluster.clearLayers();
         }
-        translinePolylineLayer.clearLayers();
-        proposedTranslineLayer.clearLayers();
+        if (translinePolylineLayer) translinePolylineLayer.clearLayers();
+        if (proposedTranslineLayer) proposedTranslineLayer.clearLayers();
 
         if (!currentData) return;
 
@@ -951,7 +1339,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Render Markers
         var features = currentData.features || [];
-        var activeLayers = getSelectedLayers();
+        var activeLayers = getSelectedSetupLayers();
 
         features.forEach(function (f) {
             var props = f.properties || {};
@@ -969,30 +1357,24 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        if (autoFitBounds && currentData.bbox) {
+        if (autoFitBounds && currentData.bbox && map) {
             var b = currentData.bbox;
             map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [40, 40] });
         }
     }
 
-    // 2. Fetch Network Data On-Demand
+    // Fetch Network Data On-Demand
     function loadGisNetworkOnDemand(autoFitBounds, callback) {
         if (typeof autoFitBounds === 'undefined') autoFitBounds = true;
-
-        var feederId = document.getElementById('feeder-select').value;
-        if (!feederId) {
-            alert('Silakan pilih Penyulang terlebih dahulu!');
-            return;
-        }
+        if (!currentFeederId) return;
 
         var thisRequestId = ++currentRequestId;
-        currentFeederId = feederId;
-        currentLOD = getLODCategory(map.getZoom());
+        currentLOD = getLODCategory(map ? map.getZoom() : 14);
 
-        var layersParam = getSelectedLayers().join(',');
+        var layersParam = getSelectedSetupLayers().join(',');
         toggleLoading(true);
 
-        fetch(`<?= site_url('gis/api-network') ?>?penyulang_id=${feederId}&zoom=${map.getZoom()}&layers=${layersParam}`)
+        fetch(`<?= site_url('gis/api-network') ?>?penyulang_id=${currentFeederId}&zoom=${map ? map.getZoom() : 14}&layers=${layersParam}`)
             .then(res => res.json())
             .then(res => {
                 if (thisRequestId !== currentRequestId) return;
@@ -1006,7 +1388,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     var sum = currentData.summary || {};
                     document.getElementById('summary-text').innerHTML = 
-                        `<i class="fas fa-network-wired text-warning me-2"></i> FEEDER READY • Total Aset: <strong>${sum.total_assets || 0}</strong> (JTM: ${sum.jtm_count || 0}, Gardu: ${sum.gardu_count || 0}, Trafo: ${sum.trafo_count || 0}, Switch: ${sum.switch_count || 0})`;
+                        `<i class="fas fa-network-wired text-warning me-1"></i> Aset: <strong>${sum.total_assets || 0}</strong> (JTM: ${sum.jtm_count || 0}, GTT: ${sum.gardu_count || 0}, Sw: ${sum.switch_count || 0})`;
                     
                     fetchPendingBadgeCount();
                     if (typeof callback === 'function') callback();
@@ -1018,50 +1400,62 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     }
 
-    // Action Triggers
-    document.getElementById('btn-apply-gis').addEventListener('click', function () {
+    // ========================================================
+    // FLOATING ACTION BUTTON (FAB) LOGIC
+    // ========================================================
+    var fabToggle = document.getElementById('btn-fab-toggle');
+    var fabMenu = document.getElementById('gis-fab-menu');
+
+    fabToggle.addEventListener('click', function () {
+        var isExpanded = fabMenu.style.display === 'flex';
+        fabMenu.style.display = isExpanded ? 'none' : 'flex';
+        fabToggle.classList.toggle('active', !isExpanded);
+    });
+
+    function collapseFab() {
+        fabMenu.style.display = 'none';
+        fabToggle.classList.remove('active');
+    }
+
+    document.getElementById('fab-add-asset').addEventListener('click', function () {
+        collapseFab();
+        openAddAssetModal();
+    });
+
+    document.getElementById('fab-edit-transline').addEventListener('click', function () {
+        collapseFab();
+        activateTranslineEditor();
+    });
+
+    document.getElementById('fab-open-filter').addEventListener('click', function () {
+        collapseFab();
+        openFilterDrawer();
+    });
+
+    document.getElementById('btn-open-filter-drawer').addEventListener('click', openFilterDrawer);
+
+    function openFilterDrawer() {
+        document.getElementById('drawer-feeder-select').value = currentFeederId;
+        var drawer = new bootstrap.Offcanvas(document.getElementById('offcanvas-filter-sheet'));
+        drawer.show();
+    }
+
+    document.getElementById('btn-apply-drawer-filter').addEventListener('click', function () {
+        var newFeederId = document.getElementById('drawer-feeder-select').value;
+        if (newFeederId) {
+            currentFeederId = newFeederId;
+            var opt = document.getElementById('drawer-feeder-select').options[document.getElementById('drawer-feeder-select').selectedIndex];
+            currentFeederName = opt.dataset.feederName || opt.text;
+            document.getElementById('topbar-feeder-title').textContent = currentFeederName;
+            setupFeederSelect.value = newFeederId;
+        }
+
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-filter-sheet')).hide();
         loadGisNetworkOnDemand(true);
     });
 
-    document.querySelectorAll('.layer-toggle').forEach(el => {
-        el.addEventListener('change', function () {
-            if (currentData) renderFilteredLayers(false);
-        });
-    });
-
-    map.on('zoomend', function () {
-        if (currentFeederId > 0 && !isEditingTransline) {
-            var newLOD = getLODCategory(map.getZoom());
-            if (newLOD !== currentLOD) {
-                loadGisNetworkOnDemand(false);
-            }
-        }
-    });
-
-    // Panel Toggle
-    document.getElementById('btn-toggle-panel').addEventListener('click', function () {
-        var panel = document.getElementById('gis-filter-panel');
-        panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
-    });
-
-    document.getElementById('btn-close-panel').addEventListener('click', function () {
-        document.getElementById('gis-filter-panel').style.display = 'none';
-    });
-
-    // Legend Toggle
-    function toggleLegend() {
-        var legendPanel = document.getElementById('gis-legend-panel');
-        legendPanel.style.display = (legendPanel.style.display === 'block') ? 'none' : 'block';
-    }
-    document.getElementById('btn-toggle-legend').addEventListener('click', toggleLegend);
-    var topLegendBtn = document.getElementById('btn-toggle-legend-top');
-    if (topLegendBtn) topLegendBtn.addEventListener('click', toggleLegend);
-    document.getElementById('btn-close-legend').addEventListener('click', function () {
-        document.getElementById('gis-legend-panel').style.display = 'none';
-    });
-
-    // Location Tracking
-    document.getElementById('btn-locate-me').addEventListener('click', function () {
+    document.getElementById('fab-locate-me').addEventListener('click', function () {
+        collapseFab();
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(function (pos) {
                 var uLat = pos.coords.latitude;
@@ -1074,6 +1468,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 map.setView([uLat, uLng], 16);
             });
         }
+    });
+
+    document.getElementById('fab-toggle-legend').addEventListener('click', function () {
+        collapseFab();
+        var lp = document.getElementById('gis-legend-panel');
+        lp.style.display = lp.style.display === 'block' ? 'none' : 'block';
+    });
+    document.getElementById('btn-close-legend').addEventListener('click', function () {
+        document.getElementById('gis-legend-panel').style.display = 'none';
     });
 
     // ========================================================
@@ -1125,14 +1528,13 @@ document.addEventListener("DOMContentLoaded", function () {
     // ========================================================
     // PH-AI-GIS-01C: ADD NEW ASSET WORKFLOW
     // ========================================================
-    document.getElementById('btn-add-asset-map').addEventListener('click', function () {
-        var feederId = document.getElementById('feeder-select').value;
-        if (!feederId) {
+    function openAddAssetModal() {
+        if (!currentFeederId) {
             alert('Silakan pilih penyulang terlebih dahulu!');
             return;
         }
 
-        var center = map.getCenter();
+        var center = map ? map.getCenter() : { lat: -7.4523, lng: 112.7161 };
         document.getElementById('new-lat').value = center.lat.toFixed(7);
         document.getElementById('new-lng').value = center.lng.toFixed(7);
         document.getElementById('new-name').value = '';
@@ -1142,14 +1544,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var modal = new bootstrap.Modal(document.getElementById('modal-tambah-asset'));
         modal.show();
-    });
+    }
 
     function fetchNextAssetCode() {
-        var feederId = document.getElementById('feeder-select').value;
         var jenis = document.getElementById('new-jenis').value;
-        if (!feederId) return;
+        if (!currentFeederId) return;
 
-        fetch(`<?= site_url('gis/api-next-code') ?>?penyulang_id=${feederId}&jenis_asset=${jenis}`)
+        fetch(`<?= site_url('gis/api-next-code') ?>?penyulang_id=${currentFeederId}&jenis_asset=${jenis}`)
             .then(res => res.json())
             .then(res => {
                 if (res.status === 'success') {
@@ -1163,9 +1564,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById('form-tambah-asset').addEventListener('submit', function (e) {
         e.preventDefault();
-        var feederId = document.getElementById('feeder-select').value;
         var payload = {
-            penyulang_id: feederId,
+            penyulang_id: currentFeederId,
             jenis_asset: document.getElementById('new-jenis').value,
             construction_type: document.getElementById('new-construction').value,
             nama_asset: document.getElementById('new-name').value,
@@ -1229,37 +1629,24 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ========================================================
-    // PH-AI-GIS-01B: DEDICATED TRANSLINE GEOMETRY EDITOR ENGINE
+    // PH-AI-GIS-01B: DEDICATED TRANSLINE GEOMETRY EDITOR
     // ========================================================
     window.startTranslineEditAroundAsset = function (lat, lng) {
-        map.closePopup();
+        closeAssetQuickCard();
         if (!isEditingTransline) {
             activateTranslineEditor();
         }
-        map.setView([lat, lng], 17);
+        if (map) map.setView([lat, lng], 17);
     };
 
-    document.getElementById('btn-toggle-edit-transline').addEventListener('click', function () {
-        var feederId = document.getElementById('feeder-select').value;
-        if (!feederId) {
-            alert('Silakan pilih ULP dan Penyulang terlebih dahulu untuk mengedit jalur transline!');
-            return;
-        }
-
-        if (!currentData || !currentData.transline) {
-            loadGisNetworkOnDemand(true, function () {
-                activateTranslineEditor();
-            });
-            return;
-        }
-
-        activateTranslineEditor();
-    });
-
     function activateTranslineEditor() {
+        if (!currentData || !currentData.transline) {
+            alert('Data transline penyulang belum dimuat!');
+            return;
+        }
+
         isEditingTransline = true;
         undoStack = [];
-        showCompareExisting = true;
 
         var toolbar = document.getElementById('gis-transline-toolbar');
         var banner = document.getElementById('gis-editor-guide-banner');
@@ -1267,7 +1654,7 @@ document.addEventListener("DOMContentLoaded", function () {
         banner.style.display = 'flex';
 
         editedVertices = [];
-        var geom = currentData && currentData.transline ? currentData.transline.geometry : null;
+        var geom = currentData.transline.geometry;
         if (geom && geom.coordinates) {
             if (geom.type === 'LineString') {
                 editedVertices = geom.coordinates.map(pt => [pt[1], pt[0]]);
@@ -1287,22 +1674,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById('btn-undo-transline').addEventListener('click', function () {
         if (undoStack.length > 1) {
-            undoStack.pop(); // Remove current state
+            undoStack.pop();
             editedVertices = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
             renderTranslineEditor();
         } else {
-            alert('Tidak ada aksi undo sebelumnya.');
-        }
-    });
-
-    document.getElementById('btn-toggle-compare-transline').addEventListener('click', function () {
-        showCompareExisting = !showCompareExisting;
-        if (showCompareExisting) {
-            translinePolylineLayer.setStyle({ opacity: 0.9, weight: 3.5 });
-            this.className = 'btn btn-sm btn-outline-info rounded-pill px-2 py-1 active';
-        } else {
-            translinePolylineLayer.setStyle({ opacity: 0, weight: 0 });
-            this.className = 'btn btn-sm btn-outline-info rounded-pill px-2 py-1';
+            alert('Tidak ada aksi undo.');
         }
     });
 
@@ -1321,17 +1697,15 @@ document.addEventListener("DOMContentLoaded", function () {
         proposedTranslineLayer.clearLayers();
         translineEditMarkersGroup.clearLayers();
 
-        // 1. Render Proposed Line (Bold Green Dashed)
         if (editedVertices.length > 1) {
             var proposedPoly = L.polyline(editedVertices, {
-                color: '#10b981', // Green Proposed Polyline
+                color: '#10b981',
                 weight: 5,
                 dashArray: '8, 8',
                 opacity: 0.95,
                 lineJoin: 'round'
             }).addTo(proposedTranslineLayer);
 
-            // Add click-to-insert vertex along segment
             proposedPoly.on('click', function (e) {
                 var clickedPt = [e.latlng.lat, e.latlng.lng];
                 var insertIndex = findClosestSegmentIndex(clickedPt, editedVertices);
@@ -1343,9 +1717,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var delta = editedVertices.length - originalVertices.length;
         var deltaSign = delta >= 0 ? `+${delta}` : `${delta}`;
-        document.getElementById('transline-points-info').textContent = `${editedVertices.length} Titik (${deltaSign} dari master)`;
+        document.getElementById('transline-points-info').textContent = `${editedVertices.length} Titik (${deltaSign})`;
 
-        // 2. Render Draggable Vertex Markers
         editedVertices.forEach(function (pt, idx) {
             var handle = L.circleMarker(pt, {
                 radius: 7,
@@ -1355,9 +1728,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 fillOpacity: 1
             });
 
-            // Make interactive & draggable via mouse events
             var isDragging = false;
-
             handle.on('mousedown', function () {
                 isDragging = true;
                 map.dragging.disable();
@@ -1380,11 +1751,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             });
 
-            // Click handle to delete vertex
             handle.on('contextmenu', function (e) {
                 L.DomEvent.stopPropagation(e);
                 if (editedVertices.length <= 2) {
-                    alert('Minimal 2 titik diperlukan untuk membentuk jalur transline.');
+                    alert('Minimal 2 titik diperlukan untuk jalur.');
                     return;
                 }
                 if (confirm(`Hapus titik vertex #${idx + 1}?`)) {
@@ -1392,11 +1762,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     editedVertices.splice(idx, 1);
                     renderTranslineEditor();
                 }
-            });
-
-            handle.bindTooltip(`Titik #${idx + 1}<br><span style="font-size:10px;">Tarik untuk geser • Klik kanan untuk hapus</span>`, {
-                direction: 'top',
-                offset: [0, -8]
             });
 
             translineEditMarkersGroup.addLayer(handle);
@@ -1424,26 +1789,13 @@ document.addEventListener("DOMContentLoaded", function () {
         return Math.hypot(p[0] - proj[0], p[1] - proj[1]);
     }
 
-    map.on('click', function (e) {
-        if (isEditingTransline) {
-            // Click empty map space to add connecting vertex at end of line
-            saveUndoState();
-            editedVertices.push([e.latlng.lat, e.latlng.lng]);
-            renderTranslineEditor();
-        }
-    });
-
-    // 3. Open Dedicated Transline Modal
     document.getElementById('btn-open-save-transline-modal').addEventListener('click', function () {
         if (editedVertices.length < 2) {
             alert('Minimal 2 titik diperlukan untuk membentuk jalur transline.');
             return;
         }
 
-        var feederSelect = document.getElementById('feeder-select');
-        var feederName = feederSelect.options[feederSelect.selectedIndex] ? feederSelect.options[feederSelect.selectedIndex].text : 'Penyulang';
-
-        document.getElementById('modal-transline-feeder-name').value = feederName;
+        document.getElementById('modal-transline-feeder-name').value = `${currentFeederName} (${currentUlpName})`;
         document.getElementById('modal-transline-orig-points').textContent = `${originalVertices.length} Titik`;
         document.getElementById('modal-transline-prop-points').textContent = `${editedVertices.length} Titik`;
 
@@ -1457,7 +1809,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById('form-koreksi-transline').addEventListener('submit', function (e) {
         e.preventDefault();
-        var feederId = document.getElementById('feeder-select').value;
         var rationale = document.getElementById('modal-transline-rationale').value;
 
         var geoJsonGeometry = {
@@ -1469,7 +1820,7 @@ document.addEventListener("DOMContentLoaded", function () {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                penyulang_id: feederId,
+                penyulang_id: currentFeederId,
                 geometry: geoJsonGeometry,
                 rationale: rationale
             })
@@ -1495,8 +1846,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // PH-AI-GIS-01C: PENDING CORRECTIONS & APPROVAL LAYER
     // ========================================================
     function fetchPendingBadgeCount() {
-        var feederId = document.getElementById('feeder-select').value || '';
-        fetch(`<?= site_url('gis/api-pending-corrections') ?>?penyulang_id=${feederId}`)
+        if (!currentFeederId) return;
+        fetch(`<?= site_url('gis/api-pending-corrections') ?>?penyulang_id=${currentFeederId}`)
             .then(res => res.json())
             .then(res => {
                 if (res.status === 'success') {
@@ -1508,7 +1859,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     document.getElementById('btn-view-corrections').addEventListener('click', function () {
-        var feederId = document.getElementById('feeder-select').value || '';
         var container = document.getElementById('corrections-list-container');
         var loading = document.getElementById('corrections-loading');
 
@@ -1518,7 +1868,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var modal = new bootstrap.Modal(document.getElementById('modal-pending-corrections'));
         modal.show();
 
-        fetch(`<?= site_url('gis/api-pending-corrections') ?>?penyulang_id=${feederId}`)
+        fetch(`<?= site_url('gis/api-pending-corrections') ?>?penyulang_id=${currentFeederId}`)
             .then(res => res.json())
             .then(res => {
                 loading.style.display = 'none';

@@ -7,10 +7,12 @@ use App\Repositories\AssetRepository;
 class GISService
 {
     private AssetRepository $assetRepository;
+    private AssetVisualRegistryService $visualRegistry;
 
     public function __construct()
     {
         $this->assetRepository = new AssetRepository();
+        $this->visualRegistry  = new AssetVisualRegistryService();
     }
 
     /**
@@ -34,85 +36,81 @@ class GISService
     /**
      * Map Construction Type & Asset Family to Leaflet Marker Specifications
      */
-    public function getConstructionMarkerSpec(?string $jenisAsset, ?string $constructionType = null): array
+    public function getConstructionMarkerSpec(?string $jenisAsset, ?string $constructionType = null, ?string $kode = null): array
     {
         $jenis = strtoupper(trim((string)$jenisAsset));
         $type  = strtoupper(trim((string)$constructionType));
+        $visual = $this->visualRegistry->resolveVisual($jenis, $type, $kode);
 
         // Level 1 Priority: Primary Asset Category Family
         if ($jenis === 'TRAFO') {
-            return [
+            $legacy = [
                 'shape'      => 'trafo',
                 'icon_class' => 'fa-bolt',
                 'color'      => '#d97706',
                 'label'      => 'TRAFO'
             ];
-        }
-        if ($jenis === 'GARDU') {
-            return [
+        } elseif ($jenis === 'GARDU') {
+            $legacy = [
                 'shape'      => 'gardu',
                 'icon_class' => 'fa-building-columns',
                 'color'      => '#0284c7',
                 'label'      => 'GARDU'
             ];
-        }
-        if ($jenis === 'KUBIKEL') {
-            return [
+        } elseif ($jenis === 'KUBIKEL') {
+            $legacy = [
                 'shape'      => 'kubikel',
                 'icon_class' => 'fa-box-archive',
                 'color'      => '#475569',
                 'label'      => 'KUBIKEL'
             ];
-        }
-        if ($jenis === 'LBS' || $jenis === 'LBSM' || $jenis === 'RECLOSER' || $jenis === 'SECTIONALIZER') {
-            return [
+        } elseif ($jenis === 'LBS' || $jenis === 'LBSM' || $jenis === 'RECLOSER' || $jenis === 'SECTIONALIZER') {
+            $legacy = [
                 'shape'      => 'switch',
                 'icon_class' => 'fa-toggle-on',
                 'color'      => '#dc2626',
                 'label'      => $jenis
             ];
-        }
-
-        // Level 2 Priority: JTM Construction Sub-variations
-        if (str_contains($type, 'PMS') || str_contains($type, 'PEMISAH')) {
-            return [
+        } elseif (str_contains($type, 'PMS') || str_contains($type, 'PEMISAH')) {
+            $legacy = [
                 'shape'      => 'pms',
                 'icon_class' => 'fa-toggle-off',
                 'color'      => '#dc2626',
                 'label'      => 'JTM • PMS'
             ];
-        }
-        if (str_contains($type, 'PMT') || str_contains($type, 'PEMUTUS')) {
-            return [
+        } elseif (str_contains($type, 'PMT') || str_contains($type, 'PEMUTUS')) {
+            $legacy = [
                 'shape'      => 'pmt',
                 'icon_class' => 'fa-toggle-on',
                 'color'      => '#ea580c',
                 'label'      => 'JTM • PMT'
             ];
-        }
-        if (str_contains($type, 'GTT')) {
-            return [
+        } elseif (str_contains($type, 'GTT')) {
+            $legacy = [
                 'shape'      => 'gtt',
                 'icon_class' => 'fa-charging-station',
                 'color'      => '#059669',
                 'label'      => 'JTM • GTT'
             ];
-        }
-        if (str_contains($type, 'TMTP') || str_contains($type, 'PORTAL')) {
-            return [
+        } elseif (str_contains($type, 'TMTP') || str_contains($type, 'PORTAL')) {
+            $legacy = [
                 'shape'      => 'tmtp',
                 'icon_class' => 'fa-archway',
                 'color'      => '#7c3aed',
                 'label'      => 'JTM • TMTP'
             ];
+        } else {
+            $legacy = [
+                'shape'      => 'jtm',
+                'icon_class' => 'fa-square-poll-vertical',
+                'color'      => '#2563eb',
+                'label'      => $jenis ?: 'JTM'
+            ];
         }
 
-        return [
-            'shape'      => 'jtm',
-            'icon_class' => 'fa-square-poll-vertical',
-            'color'      => '#2563eb',
-            'label'      => $jenis ?: 'JTM'
-        ];
+        return array_merge($legacy, [
+            'visual' => $visual,
+        ]);
     }
 
     /**
@@ -190,7 +188,10 @@ class GISService
 
             // Zoom >= 17: Return ALL markers including individual JTM poles
 
-            $spec = $this->getConstructionMarkerSpec($jenis, $constrName);
+            $spec = $this->getConstructionMarkerSpec($jenis, $constrName, $asset['kode_asset'] ?? null);
+            $visual = $this->visualRegistry->resolveVisual($jenis, $constrName, $asset['kode_asset'] ?? null);
+            $conditionStatus = $asset['status'] ?? 'NORMAL';
+            $conditionOverlay = $this->visualRegistry->getConditionOverlay($conditionStatus);
 
             $features[] = [
                 'type' => 'Feature',
@@ -204,9 +205,11 @@ class GISService
                     'nama_asset'        => $asset['nama_asset'],
                     'jenis_asset'       => $jenis,
                     'construction_type' => $constrName,
-                    'status'            => $asset['status'] ?? 'NORMAL',
+                    'status'            => $conditionStatus,
                     'lokasi'            => $asset['lokasi'] ?? '',
-                    'marker_spec'       => $spec
+                    'marker_spec'       => $spec,
+                    'visual'            => $visual,
+                    'condition_overlay' => $conditionOverlay,
                 ]
             ];
         }
@@ -214,6 +217,7 @@ class GISService
         return [
             'summary' => $stats,
             'zoom'    => $zoom,
+            'legend'  => $this->visualRegistry->getLegendItems(),
             'transline' => [
                 'type' => 'Feature',
                 'geometry' => [

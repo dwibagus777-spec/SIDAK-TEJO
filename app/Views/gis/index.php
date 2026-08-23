@@ -81,42 +81,145 @@
         display: none;
     }
 
-    /* Custom Div Markers */
+    /* ========================================================
+       PH-VIS-01: Asset Visual Identity & Network Symbol Styles
+       ======================================================== */
     .custom-gis-div-icon {
         background: transparent;
         border: none;
     }
-    .gis-marker-badge {
+
+    /* Touch target container (minimum 44x44px for Android WebView & Mobile) */
+    .asset-network-marker-wrap {
         position: relative;
+        width: 44px;
+        height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #ffffff;
-        font-size: 11px;
-        border-radius: 50%;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        transition: transform 0.2s ease;
+        cursor: pointer;
     }
-    .gis-marker-badge:hover {
+
+    /* Inner symbol container */
+    .asset-symbol-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 8px rgba(15, 23, 42, 0.25);
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    }
+
+    .asset-symbol-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+
+    .asset-network-marker-wrap:hover .asset-symbol-box {
         transform: scale(1.3);
         z-index: 9999 !important;
     }
 
+    /* Condition & Severity Rings */
+    .asset-ring-good {
+        box-shadow: 0 0 0 2px #10b981, 0 3px 8px rgba(15, 23, 42, 0.25);
+    }
+    .asset-ring-fair {
+        box-shadow: 0 0 0 2px #0ea5e9, 0 3px 8px rgba(15, 23, 42, 0.25);
+    }
+    .asset-ring-poor {
+        box-shadow: 0 0 0 2px #f59e0b, 0 3px 8px rgba(15, 23, 42, 0.25);
+    }
+    .asset-ring-critical {
+        box-shadow: 0 0 0 2.5px #ef4444, 0 3px 8px rgba(239, 68, 68, 0.4);
+        animation: pulse-critical 2s infinite;
+    }
+    .asset-ring-emergency {
+        box-shadow: 0 0 0 3px #dc2626, 0 0 12px #dc2626;
+        animation: pulse-emergency 1.4s infinite;
+    }
+    .asset-ring-inactive {
+        opacity: 0.65;
+        box-shadow: 0 0 0 2px #64748b;
+    }
+
+    @keyframes pulse-critical {
+        0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7), 0 3px 8px rgba(15, 23, 42, 0.25); }
+        70%  { box-shadow: 0 0 0 9px rgba(239, 68, 68, 0), 0 3px 8px rgba(15, 23, 42, 0.25); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), 0 3px 8px rgba(15, 23, 42, 0.25); }
+    }
+    @keyframes pulse-emergency {
+        0%   { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.85), 0 0 12px #dc2626; }
+        70%  { box-shadow: 0 0 0 12px rgba(220, 38, 38, 0), 0 0 12px #dc2626; }
+        100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0), 0 0 12px #dc2626; }
+    }
+
+    /* Floating Legend Panel (Bottom-Right) */
+    .gis-legend-container {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .gis-legend-card {
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(12px);
+        border-radius: 16px;
+        padding: 14px 16px;
+        width: 320px;
+        max-height: 420px;
+        overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        display: none;
+        margin-bottom: 8px;
+    }
+
+    .legend-item-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 6px;
+        border-radius: 8px;
+        transition: background 0.15s ease;
+    }
+    .legend-item-row:hover {
+        background: #f1f5f9;
+    }
+    .legend-icon-preview {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+
     /* Custom Popup Card Styling */
     .leaflet-popup-content-wrapper {
-        border-radius: 14px !important;
-        padding: 6px !important;
-        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2) !important;
+        border-radius: 16px !important;
+        padding: 4px !important;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25) !important;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .gis-popup-container {
+        padding: 8px;
+        font-family: 'Outfit', sans-serif;
     }
     .gis-popup-badge {
         display: inline-block !important;
-        background-color: #0284c7 !important;
-        color: #ffffff !important;
         font-weight: 700 !important;
         font-size: 11px !important;
-        padding: 4px 10px !important;
-        border-radius: 12px !important;
-        margin-bottom: 6px !important;
+        padding: 3px 8px !important;
+        border-radius: 8px !important;
         line-height: 1.2 !important;
     }
 </style>
@@ -129,10 +232,13 @@
             <h4 class="fw-bold mb-0 text-primary d-flex align-items-center">
                 <i class="fas fa-network-wired text-warning me-2 fs-4"></i> GIS NETWORK
             </h4>
-            <span class="badge bg-primary rounded-pill font-weight-normal px-2 py-1" style="font-size: 11px;">PETA OPERASIONAL PLN</span>
+            <span class="badge bg-primary rounded-pill font-weight-normal px-2 py-1" style="font-size: 11px;">PETA OPERASIONAL PLN 20KV</span>
         </div>
         
         <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" id="btn-toggle-legend-top" class="btn btn-outline-secondary btn-sm rounded-pill font-weight-bold">
+                <i class="fas fa-layer-group me-1 text-primary"></i> Legenda Simbol
+            </button>
             <button type="button" id="btn-toggle-panel" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold">
                 <i class="fas fa-sliders me-1"></i> Filter Jaringan
             </button>
@@ -215,6 +321,50 @@
             <!-- Step 4: Execute Action Button -->
             <button type="button" id="btn-apply-gis" class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm py-2">
                 <i class="fas fa-play me-2"></i> TAMPILKAN PETA JARINGAN
+            </button>
+        </div>
+
+        <!-- Floating Collapsible Legend Panel (Bottom-Right) -->
+        <div class="gis-legend-container">
+            <div id="gis-legend-panel" class="gis-legend-card">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                    <span class="fw-bold text-dark" style="font-size: 12px;">
+                        <i class="fas fa-shapes text-warning me-1"></i> SIMBOL ASET JARINGAN (PLN)
+                    </span>
+                    <button type="button" id="btn-close-legend" class="btn-close btn-close-sm" style="font-size: 10px;"></button>
+                </div>
+                
+                <!-- 10 Primary Asset Symbols from Visual Registry -->
+                <div class="d-flex flex-column gap-1 mb-2">
+                    <?php if (!empty($legendItems)): ?>
+                        <?php foreach ($legendItems as $item): ?>
+                            <?php if ($item['symbol_key'] === 'DEFAULT') continue; ?>
+                            <div class="legend-item-row">
+                                <img src="<?= base_url($item['svg_path']) ?>" alt="<?= esc($item['label']) ?>" class="legend-icon-preview">
+                                <div class="d-flex flex-column" style="line-height: 1.1;">
+                                    <strong class="text-dark" style="font-size: 11px;"><?= esc($item['symbol_key']) ?></strong>
+                                    <span class="text-muted" style="font-size: 10px;"><?= esc($item['label']) ?></span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Condition Overlay Legend -->
+                <div class="border-top pt-2 mt-1">
+                    <span class="fw-bold text-secondary d-block mb-1" style="font-size: 10px;">STATUS & KONDISI ASET</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-success text-white" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i> GOOD</span>
+                        <span class="badge bg-info text-dark" style="font-size: 9px;"><i class="fas fa-info-circle me-1"></i> FAIR</span>
+                        <span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="fas fa-exclamation-circle me-1"></i> POOR</span>
+                        <span class="badge bg-danger text-white" style="font-size: 9px;"><i class="fas fa-triangle-exclamation me-1"></i> CRITICAL</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Toggle Button for Legend -->
+            <button type="button" id="btn-toggle-legend" class="btn btn-dark btn-sm rounded-pill shadow px-3 py-1 font-weight-bold" style="background: rgba(15, 23, 42, 0.92); border: none;">
+                <i class="fas fa-layer-group text-warning me-1"></i> Legenda Peta
             </button>
         </div>
 
@@ -334,6 +484,64 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     });
 
+    /**
+     * PH-VIS-01: Create Reusable Asset Visual Marker with SVG Silhouette and Condition Overlay
+     */
+    function createAssetVisualMarker(feature) {
+        var props   = feature.properties || {};
+        var geom    = feature.geometry || {};
+        var visual  = props.visual || {};
+        var overlay = props.condition_overlay || {};
+        var spec    = props.marker_spec || {};
+
+        var svgPath = visual.svg_path ? `<?= base_url() ?>${visual.svg_path}` : '<?= base_url('/assets/icons/network/generic-network-asset.svg') ?>';
+        var ringClass = overlay.ring_class || 'asset-ring-good';
+        var symbolKey = visual.symbol_key || props.jenis_asset || 'ASET';
+        var conditionLabel = overlay.label || props.status || 'NORMAL';
+        var badgeClass = overlay.badge_class || 'bg-success text-white';
+
+        var iconHtml = `
+            <div class="asset-network-marker-wrap" title="${props.nama_asset || ''} (${symbolKey})">
+                <div class="asset-symbol-box ${ringClass}">
+                    <img src="${svgPath}" alt="${symbolKey}" class="asset-symbol-img" />
+                </div>
+            </div>
+        `;
+
+        var customIcon = L.divIcon({
+            html: iconHtml,
+            className: 'custom-gis-div-icon',
+            iconSize: [44, 44],
+            iconAnchor: [22, 22],
+            popupAnchor: [0, -22]
+        });
+
+        var popupHtml = `
+            <div class="gis-popup-container">
+                <div class="d-flex align-items-center gap-2 mb-2 pb-1 border-bottom">
+                    <img src="${svgPath}" alt="${symbolKey}" style="width: 32px; height: 32px; object-fit: contain;" />
+                    <div style="line-height: 1.1;">
+                        <strong class="text-primary font-monospace d-block" style="font-size: 11px; color: #0284c7 !important;">${props.kode_asset || '-'}</strong>
+                        <span class="text-muted" style="font-size: 10px;">${visual.label || props.jenis_asset || 'Aset Jaringan'}</span>
+                    </div>
+                </div>
+                <h6 class="fw-bold mb-1 text-dark" style="font-size: 13px; color: #1e293b !important;">${props.nama_asset || '-'}</h6>
+                <div class="d-flex align-items-center gap-1 mb-2">
+                    <span class="gis-popup-badge ${badgeClass}" style="font-size: 10px;">● ${conditionLabel}</span>
+                    <span class="badge bg-light text-dark border font-monospace" style="font-size: 10px;">${props.construction_type || 'TM'}</span>
+                </div>
+                <div class="small text-secondary mb-2" style="font-size: 11px; color: #64748b !important;">
+                    <i class="fas fa-location-dot text-danger me-1"></i> ${props.lokasi || 'Lokasi Jaringan PLN'}
+                </div>
+                <a href="<?= site_url('master-assets/detail') ?>/${props.id}" class="btn btn-sm btn-primary w-100 fw-bold rounded-pill text-white py-1 shadow-sm" style="background-color: #00B5B8 !important; color: #ffffff !important; border: none; font-size: 11px;">
+                    Detail Digital Twin &rarr;
+                </a>
+            </div>
+        `;
+
+        return L.marker([geom.coordinates[1], geom.coordinates[0]], { icon: customIcon }).bindPopup(popupHtml);
+    }
+
     // Render Markers & Network Lines
     function renderFilteredLayers(autoFitBounds) {
         if (typeof autoFitBounds === 'undefined') autoFitBounds = false;
@@ -380,35 +588,13 @@ document.addEventListener("DOMContentLoaded", function () {
             var geom  = f.geometry || {};
             var jenis = (props.jenis_asset || '').toUpperCase();
             var constr = (props.construction_type || '').toUpperCase();
-            var spec  = props.marker_spec || {};
 
             var isSwitchType = ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER'].includes(jenis);
             var isMatched = activeLayers.includes(jenis) || (activeLayers.includes('SWITCH') && (isSwitchType || constr.includes('PMS') || constr.includes('PMT')));
             if (!isMatched && activeLayers.length > 0) return;
 
             if (geom.type === 'Point' && geom.coordinates) {
-                var iconHtml = `<div class="gis-marker-badge" style="background-color: ${spec.color || '#2563eb'}; width: 28px; height: 28px;">
-                                    <i class="fas ${spec.icon_class || 'fa-square-poll-vertical'}"></i>
-                                </div>`;
-
-                var customIcon = L.divIcon({
-                    html: iconHtml,
-                    className: 'custom-gis-div-icon',
-                    iconSize: [28, 28],
-                    iconAnchor: [14, 14]
-                });
-
-                var popupHtml = `
-                    <div class="p-1 font-sans">
-                        <strong class="text-primary font-monospace d-block" style="font-size: 11px; color: #0284c7 !important;">${props.kode_asset || '-'}</strong>
-                        <h6 class="fw-bold mb-1 text-dark" style="font-size: 13px; color: #1e293b !important;">${props.nama_asset || '-'}</h6>
-                        <span class="gis-popup-badge">${jenis} &bull; ${props.construction_type || 'TM'}</span>
-                        <div class="small text-secondary mb-2" style="font-size: 11px; color: #64748b !important;">${props.lokasi || 'Lokasi PLN'}</div>
-                        <a href="<?= site_url('master-assets/detail') ?>/${props.id}" class="btn btn-sm btn-primary w-100 fw-bold rounded-pill text-white py-1 shadow-sm" style="background-color: #00B5B8 !important; color: #ffffff !important; border: none; font-size: 11px;">Detail Digital Twin &rarr;</a>
-                    </div>
-                `;
-
-                var marker = L.marker([geom.coordinates[1], geom.coordinates[0]], { icon: customIcon }).bindPopup(popupHtml);
+                var marker = createAssetVisualMarker(f);
                 markerCluster.addLayer(marker);
             }
         });
@@ -419,8 +605,6 @@ document.addEventListener("DOMContentLoaded", function () {
             map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [40, 40] });
         }
     }
-
-    var currentRequestId = 0;
 
     // 2. Fetch Network Data On-Demand
     function loadGisNetworkOnDemand(autoFitBounds) {
@@ -498,6 +682,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById('btn-close-panel').addEventListener('click', function () {
         document.getElementById('gis-filter-panel').style.display = 'none';
+    });
+
+    // Legend Toggle Handlers
+    function toggleLegend() {
+        var legendPanel = document.getElementById('gis-legend-panel');
+        legendPanel.style.display = (legendPanel.style.display === 'block') ? 'none' : 'block';
+    }
+
+    document.getElementById('btn-toggle-legend').addEventListener('click', toggleLegend);
+    var topLegendBtn = document.getElementById('btn-toggle-legend-top');
+    if (topLegendBtn) topLegendBtn.addEventListener('click', toggleLegend);
+    document.getElementById('btn-close-legend').addEventListener('click', function () {
+        document.getElementById('gis-legend-panel').style.display = 'none';
     });
 
     // Location Tracking

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
+  <!-- PMCB / RECLOSER: Crossed square with circular red recloser arrows -->
+  <rect x="5" y="5" width="38" height="38" fill="#ffffff" stroke="#111827" stroke-width="2.5" />
+  <!-- Left and Right Filled Triangles -->
+  <polygon points="5,5 24,24 5,43" fill="#111827" />
+  <polygon points="43,5 24,24 43,43" fill="#111827" />
+  <line x1="5" y1="5" x2="43" y2="43" stroke="#111827" stroke-width="1.5" />
+  <line x1="43" y1="5" x2="5" y2="43" stroke="#111827" stroke-width="1.5" />
+  <!-- Red Recloser Circular Arrows in Center -->
+  <!-- Top Arc Arrow -->
+  <path d="M 16 19 A 10 10 0 0 1 32 19" fill="none" stroke="#dc2626" stroke-width="3" stroke-linecap="round" />
+  <polygon points="30,13 36,19 30,22" fill="#dc2626" />
+  <!-- Bottom Arc Arrow -->
+  <path d="M 32 29 A 10 10 0 0 1 16 29" fill="none" stroke="#dc2626" stroke-width="3" stroke-linecap="round" />
+  <polygon points="18,35 12,29 18,26" fill="#dc2626" />
+</svg>

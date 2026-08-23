@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
+  <!-- LBSM (Load Break Switch Manual): Square with diagonal crossing quadrants -->
+  <rect x="5" y="5" width="38" height="38" fill="#ffffff" stroke="#111827" stroke-width="2.5" />
+  <!-- Left and Right Triangles Filled (Bowtie style) -->
+  <polygon points="5,5 24,24 5,43" fill="#111827" />
+  <polygon points="43,5 24,24 43,43" fill="#111827" />
+  <!-- Cross Lines -->
+  <line x1="5" y1="5" x2="43" y2="43" stroke="#111827" stroke-width="1.5" />
+  <line x1="43" y1="5" x2="5" y2="43" stroke="#111827" stroke-width="1.5" />
+</svg>

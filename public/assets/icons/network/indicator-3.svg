@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
+  <!-- I3 (Indikator 3): Blue square outer box, white inner margin, solid red circle in center -->
+  <rect x="5" y="5" width="38" height="38" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5" rx="3" />
+  <!-- Inner White Square Box -->
+  <rect x="13" y="13" width="22" height="22" fill="#ffffff" stroke="#1e40af" stroke-width="1" />
+  <!-- Solid Red Circle in Center -->
+  <circle cx="24" cy="24" r="8" fill="#dc2626" stroke="#991b1b" stroke-width="1" />
+</svg>

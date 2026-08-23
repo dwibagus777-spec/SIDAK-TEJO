@@ -42,11 +42,15 @@ class GisController extends BaseController
         $selectedPenyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
         $selectedPlanningId  = (int)($this->request->getGet('planning_id') ?? 0);
 
+        $visualRegistry = new \App\Services\AssetVisualRegistryService();
+        $legendItems    = $visualRegistry->getLegendItems();
+
         return view('gis/index', [
             'ulps'                => $ulps,
             'penyulangs'          => [], // Initial load: EMPTY array for Penyulangs!
             'selectedPenyulangId' => $selectedPenyulangId,
             'selectedPlanningId'  => $selectedPlanningId,
+            'legendItems'         => $legendItems,
         ]);
     }
 

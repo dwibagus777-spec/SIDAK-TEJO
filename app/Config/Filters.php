@@ -94,7 +94,8 @@ class Filters extends BaseFilters
                     'temuan/ajax-*',
                     'temuan/ajax-datatables',
                     'ai-copilot/*',
-                    'ai/recommendation'
+                    'ai/recommendation',
+                    'gis/*'
                 ]
             ],
             // 'invalidchars',

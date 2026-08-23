@@ -388,11 +388,76 @@ class FieldAssetCorrectionService
         $newVer = $latestVer + 1;
         $nodesCount = count($geoJsonGeometry['coordinates'] ?? []);
         $actorName = $actor['name'] ?? 'PETUGAS_LAPANGAN';
+        $actorRole = strtoupper((string)($actor['role'] ?? 'PETUGAS_LAPANGAN'));
+
+        // Check if actor has Admin authority (Direct Commit without Supervisor review)
+        $isAdmin = (str_contains($actorRole, 'ADMIN') || in_array($actorRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
 
         $correctionCode = 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT);
 
         $this->db->transStart();
 
+        if ($isAdmin) {
+            // ADMIN DIRECT COMMIT WORKFLOW: Supersede old active versions & activate new version immediately
+            $this->db->table('network_topology_versions')
+                     ->where('penyulang_id', $penyulangId)
+                     ->where('is_active', 1)
+                     ->update([
+                         'is_active'      => 0,
+                         'version_status' => 'SUPERSEDED',
+                         'superseded_at'  => date('Y-m-d H:i:s')
+                     ]);
+
+            $this->db->table('field_corrections')->insert([
+                'correction_code'    => $correctionCode,
+                'correction_type'    => 'TRANSLINE_TOPOLOGY',
+                'asset_id'           => null,
+                'penyulang_id'       => $penyulangId,
+                'ulp_id'             => null,
+                'before_payload'     => null,
+                'after_payload'      => json_encode($geoJsonGeometry),
+                'rationale'          => $rationale,
+                'reporter_name'      => $actorName,
+                'reporter_role'      => $actorRole,
+                'status'             => 'APPROVED',
+                'reviewer_name'      => $actorName,
+                'reviewer_role'      => $actorRole,
+                'review_notes'       => 'Direct Commit by Administrator (GIS_ADMIN_DIRECT_EDIT)',
+                'reviewed_at'        => date('Y-m-d H:i:s'),
+                'applied_at'         => date('Y-m-d H:i:s'),
+                'created_at'         => date('Y-m-d H:i:s'),
+                'updated_at'         => date('Y-m-d H:i:s'),
+            ]);
+
+            $correctionId = (int)$this->db->insertID();
+
+            $this->db->table('network_topology_versions')->insert([
+                'penyulang_id'     => $penyulangId,
+                'version_no'       => $newVer,
+                'correction_id'    => $correctionId,
+                'geojson_topology' => json_encode($geoJsonGeometry),
+                'nodes_count'      => $nodesCount,
+                'segments_count'   => max($nodesCount - 1, 0),
+                'is_active'        => 1, // Directly active!
+                'version_status'   => 'ACTIVE',
+                'created_by'       => $actorName,
+                'created_at'       => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->db->transComplete();
+
+            return [
+                'status'           => 'success',
+                'is_direct_commit' => true,
+                'message'          => "Jalur transline v{$newVer} berhasil diperbarui dan langsung aktif (Direct Commit).",
+                'correction_id'    => $correctionId,
+                'correction_code'  => $correctionCode,
+                'version_no'       => $newVer,
+                'version_status'   => 'ACTIVE',
+            ];
+        }
+
+        // NON-ADMIN PROPOSAL WORKFLOW: Requires Supervisor Review
         $this->db->table('field_corrections')->insert([
             'correction_code'    => $correctionCode,
             'correction_type'    => 'TRANSLINE_TOPOLOGY',
@@ -403,7 +468,7 @@ class FieldAssetCorrectionService
             'after_payload'      => json_encode($geoJsonGeometry),
             'rationale'          => $rationale,
             'reporter_name'      => $actorName,
-            'reporter_role'      => $actor['role'] ?? 'PETUGAS_LAPANGAN',
+            'reporter_role'      => $actorRole,
             'status'             => 'SUBMITTED',
             'created_at'         => date('Y-m-d H:i:s'),
             'updated_at'         => date('Y-m-d H:i:s'),
@@ -427,11 +492,13 @@ class FieldAssetCorrectionService
         $this->db->transComplete();
 
         return [
-            'status'          => 'success',
-            'message'         => "Usulan koreksi jalur transline v{$newVer} berhasil diajukan (Pending Approval).",
-            'correction_id'   => $correctionId,
-            'correction_code' => $correctionCode,
-            'version_no'      => $newVer,
+            'status'           => 'success',
+            'is_direct_commit' => false,
+            'message'          => "Usulan koreksi jalur transline v{$newVer} berhasil diajukan (Pending Approval).",
+            'correction_id'    => $correctionId,
+            'correction_code'  => $correctionCode,
+            'version_no'       => $newVer,
+            'version_status'   => 'PROPOSED',
         ];
     }
 

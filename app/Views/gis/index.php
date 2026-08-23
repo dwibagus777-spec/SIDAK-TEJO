@@ -1120,15 +1120,23 @@
 <div class="modal fade" id="modal-koreksi-transline" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header bg-info text-white py-3" style="background-color: #0284c7 !important;">
-                <h6 class="modal-title fw-bold mb-0 text-white"><i class="fas fa-route me-2"></i> Usulan Koreksi Jalur Transline</h6>
+            <div class="modal-header <?= !empty($isAdmin) ? 'bg-success' : 'bg-primary' ?> text-white py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h6 class="modal-title fw-bold mb-0 text-white"><i class="fas fa-route me-2"></i> <?= !empty($isAdmin) ? 'Simpan Jalur Transline Master' : 'Usulan Koreksi Jalur Transline' ?></h6>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
                 <form id="form-koreksi-transline">
-                    <div class="alert alert-info small mb-3 border-0" style="background: rgba(2, 132, 199, 0.1); color: #0369a1;">
-                        <i class="fas fa-info-circle me-1"></i> <strong>Dual-Layer Topology:</strong> Usulan jalur Anda akan dibuat sebagai versi usulan baru (garis hijau) tanpa menimpa data master secara langsung sampai disetujui Supervisor.
-                    </div>
+                    <?php if (!empty($isAdmin)): ?>
+                        <div class="alert alert-success small mb-3 border-0 bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-shield-check me-1"></i> <strong>DIRECT COMMIT (ADMIN):</strong> Sebagai Administrator, perubahan geometri jalur ini akan langsung di-commit ke database master dan aktif secara seketika pada peta.
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-info small mb-3 border-0" style="background: rgba(2, 132, 199, 0.1); color: #0369a1;">
+                            <i class="fas fa-info-circle me-1"></i> <strong>DUAL-LAYER TOPOLOGY:</strong> Usulan jalur Anda akan dibuat sebagai versi usulan baru (garis hijau) tanpa menimpa data master secara langsung sampai disetujui Supervisor.
+                        </div>
+                    <?php endif; ?>
                     
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">Penyulang Terpilih</label>
@@ -1141,7 +1149,7 @@
                             <span id="modal-transline-orig-points" class="fw-bold font-monospace small">0 Titik</span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small text-muted">Titik Jalur Usulan (Hijau)</span>
+                            <span class="small text-muted">Titik Jalur Baru (Hijau)</span>
                             <span id="modal-transline-prop-points" class="fw-bold text-success font-monospace small">0 Titik</span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center border-top pt-1 mt-1">
@@ -1150,17 +1158,21 @@
                         </div>
                     </div>
 
+                    <div id="transline-delta-warning" class="alert alert-warning small mb-3" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-1"></i> <strong>Perhatian:</strong> Perubahan ini mengurangi banyak titik dari jalur master. Pastikan perubahan memang disengaja.
+                    </div>
+
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-dark">Penjelasan & Alasan Koreksi Jalur <span class="text-danger">*</span></label>
-                        <textarea id="modal-transline-rationale" class="form-control form-control-sm" rows="3" placeholder="Contoh: Rute aktual konduktor SUTM mengikuti jalan baru di sisi timur untuk menghindari proyek saluran irigasi." required></textarea>
+                        <label class="form-label small fw-bold text-dark">Penjelasan / Catatan Perubahan <span class="text-danger">*</span></label>
+                        <textarea id="modal-transline-rationale" class="form-control form-control-sm" rows="3" placeholder="Contoh: Penyesuaian rute tiang SUTM mengikuti jalan baru di sisi timur." required></textarea>
                     </div>
 
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-outline-secondary w-50 rounded-pill" data-bs-dismiss="modal">
                             Kembali Edit
                         </button>
-                        <button type="submit" class="btn btn-success w-50 fw-bold rounded-pill shadow-sm">
-                            <i class="fas fa-paper-plane me-1"></i> Kirim Usulan Jalur
+                        <button type="submit" id="btn-submit-transline" class="btn <?= !empty($isAdmin) ? 'btn-success' : 'btn-primary' ?> w-50 fw-bold rounded-pill shadow-sm">
+                            <i class="fas <?= !empty($isAdmin) ? 'fa-check-circle' : 'fa-paper-plane' ?> me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan Jalur' ?>
                         </button>
                     </div>
                 </form>
@@ -1202,6 +1214,67 @@ document.addEventListener("DOMContentLoaded", function () {
     var undoStack = [];
 
     // ========================================================
+    // 🛡️ ZERO-ERROR RUNTIME UTILITIES & API CONTRACT HELPER
+    // ========================================================
+    function isValidLatLng(lat, lng) {
+        var latitude = Number(lat);
+        var longitude = Number(lng);
+        return (
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude) &&
+            latitude >= -90 &&
+            latitude <= 90 &&
+            longitude >= -180 &&
+            longitude <= 180 &&
+            latitude !== 0 &&
+            longitude !== 0
+        );
+    }
+
+    async function fetchJson(url, options) {
+        if (!options) options = {};
+        var defaultHeaders = {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
+        };
+        if (options.body && typeof options.body === 'string') {
+            defaultHeaders['Content-Type'] = 'application/json';
+        }
+        var mergedOptions = Object.assign({}, options, {
+            headers: Object.assign({}, defaultHeaders, options.headers || {})
+        });
+
+        var response = await fetch(url, mergedOptions);
+        var contentType = response.headers.get('content-type') || '';
+        var rawBody = await response.text();
+        var payload = null;
+
+        try {
+            payload = rawBody ? JSON.parse(rawBody) : null;
+        } catch (err) {
+            console.error('[GIS API NON-JSON RESPONSE]', {
+                url: url,
+                status: response.status,
+                contentType: contentType,
+                bodyPreview: rawBody.slice(0, 300)
+            });
+            throw new Error(`API mengembalikan response non-JSON (Status ${response.status}).`);
+        }
+
+        if (!response.ok) {
+            console.error('[GIS API ERROR]', {
+                url: url,
+                status: response.status,
+                payload: payload
+            });
+            throw new Error(payload && payload.message ? payload.message : `Request gagal (${response.status})`);
+        }
+
+        return payload;
+    }
+
+    // ========================================================
     // STAGE 1: SETUP LOGIC (Cascading Options & Quick Chips)
     // ========================================================
     var setupUlpSelect = document.getElementById('setup-ulp-select');
@@ -1215,8 +1288,7 @@ document.addEventListener("DOMContentLoaded", function () {
         setupFeederLoading.style.display = 'inline-block';
         var thisUlpRequestId = ++currentUlpRequestId;
 
-        fetch(`<?= site_url('gis/api-penyulangs') ?>?ulp_id=${ulpId}`)
-            .then(res => res.json())
+        fetchJson(`<?= site_url('gis/api-penyulangs') ?>?ulp_id=${ulpId}`)
             .then(res => {
                 if (thisUlpRequestId !== currentUlpRequestId) return;
                 setupFeederLoading.style.display = 'none';
@@ -1254,6 +1326,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         setupFeederSelect.value = res.penyulangs[0].id;
                     }
                 }
+            })
+            .catch(err => {
+                if (thisUlpRequestId === currentUlpRequestId) setupFeederLoading.style.display = 'none';
+                console.error(err);
             });
     }
 
@@ -1369,9 +1445,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         map.on('click', function (e) {
             if (isEditingTransline) {
-                saveUndoState();
-                editedVertices.push([e.latlng.lat, e.latlng.lng]);
-                renderTranslineEditor();
+                if (isValidLatLng(e.latlng.lat, e.latlng.lng)) {
+                    saveUndoState();
+                    editedVertices.push([e.latlng.lat, e.latlng.lng]);
+                    renderTranslineEditor();
+                }
             } else {
                 closeAssetQuickCard();
             }
@@ -1379,13 +1457,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /**
-     * Flat 2D SVG Marker Creation with Condition Ring
+     * Flat 2D SVG Marker Creation with Condition Ring & Robust Coordinate Guard
      */
     function createAssetVisualMarker(feature) {
         var props   = feature.properties || {};
         var geom    = feature.geometry || {};
         var visual  = props.visual || {};
         var overlay = props.condition_overlay || {};
+
+        if (!geom.coordinates || !isValidLatLng(geom.coordinates[1], geom.coordinates[0])) {
+            console.error('[GIS SKIPPED INVALID ASSET MARKER]', { id: props.id, code: props.kode_asset, coords: geom.coordinates });
+            return null;
+        }
+
+        var lat = geom.coordinates[1];
+        var lng = geom.coordinates[0];
 
         var svgPath = visual.svg_path ? `<?= base_url() ?>${visual.svg_path}` : '<?= base_url('/assets/icons/network/generic-network-asset.svg') ?>';
         var ringClass = overlay.ring_class || 'asset-ring-good';
@@ -1406,12 +1492,11 @@ document.addEventListener("DOMContentLoaded", function () {
             popupAnchor: [0, -22]
         });
 
-        var marker = L.marker([geom.coordinates[1], geom.coordinates[0]], { icon: customIcon });
+        var marker = L.marker([lat, lng], { icon: customIcon });
 
-        // 1️⃣ Progressive Disclosure: Marker Tap Opens ONLY Compact Quick Card
         marker.on('click', function (e) {
             L.DomEvent.stopPropagation(e);
-            openAssetQuickCard(props, svgPath, geom.coordinates);
+            openAssetQuickCard(props, svgPath, [lng, lat]);
         });
 
         return marker;
@@ -1421,9 +1506,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // 1️⃣ COMPACT ASSET QUICK CARD LOGIC
     // ========================================================
     function openAssetQuickCard(props, svgPath, coords) {
-        activeAssetProps = props;
+        activeAssetProps = Object.assign({}, props);
         activeAssetProps._svgPath = svgPath;
         activeAssetProps._coords = coords;
+        activeAssetProps.latitude = (props.latitude !== undefined && props.latitude !== null && isValidLatLng(props.latitude, 0)) ? Number(props.latitude) : (coords ? Number(coords[1]) : null);
+        activeAssetProps.longitude = (props.longitude !== undefined && props.longitude !== null && isValidLatLng(0, props.longitude)) ? Number(props.longitude) : (coords ? Number(coords[0]) : null);
 
         document.getElementById('quick-card-img').src = svgPath;
         document.getElementById('quick-card-code').textContent = props.kode_asset || '-';
@@ -1546,26 +1633,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (geom.type === 'MultiLineString' && geom.coordinates) {
                 geom.coordinates.forEach(function (segment) {
-                    if (segment.length > 1) {
-                        var poly = L.polyline(segment.map(pt => [pt[1], pt[0]]), {
+                    var validSeg = segment.filter(pt => isValidLatLng(pt[1], pt[0]));
+                    if (validSeg.length > 1) {
+                        var poly = L.polyline(validSeg.map(pt => [pt[1], pt[0]]), {
                             color: '#0284c7',
                             weight: 3.5,
                             opacity: 0.9,
                             lineJoin: 'round'
                         });
                         translinePolylineLayer.addLayer(poly);
-                        segment.forEach(pt => originalVertices.push([pt[1], pt[0]]));
+                        validSeg.forEach(pt => originalVertices.push([pt[1], pt[0]]));
                     }
                 });
-            } else if (geom.type === 'LineString' && geom.coordinates && geom.coordinates.length > 1) {
-                var poly = L.polyline(geom.coordinates.map(pt => [pt[1], pt[0]]), {
-                    color: '#0284c7',
-                    weight: 3.5,
-                    opacity: 0.9,
-                    lineJoin: 'round'
-                });
-                translinePolylineLayer.addLayer(poly);
-                geom.coordinates.forEach(pt => originalVertices.push([pt[1], pt[0]]));
+            } else if (geom.type === 'LineString' && geom.coordinates) {
+                var validSeg = geom.coordinates.filter(pt => isValidLatLng(pt[1], pt[0]));
+                if (validSeg.length > 1) {
+                    var poly = L.polyline(validSeg.map(pt => [pt[1], pt[0]]), {
+                        color: '#0284c7',
+                        weight: 3.5,
+                        opacity: 0.9,
+                        lineJoin: 'round'
+                    });
+                    translinePolylineLayer.addLayer(poly);
+                    validSeg.forEach(pt => originalVertices.push([pt[1], pt[0]]));
+                }
             }
         }
 
@@ -1585,13 +1676,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (geom.type === 'Point' && geom.coordinates) {
                 var marker = createAssetVisualMarker(f);
-                markerCluster.addLayer(marker);
+                if (marker) {
+                    markerCluster.addLayer(marker);
+                }
             }
         });
 
         if (autoFitBounds && currentData.bbox && map) {
             var b = currentData.bbox;
-            map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [40, 40] });
+            if (isValidLatLng(b.min_lat, b.min_lng) && isValidLatLng(b.max_lat, b.max_lng)) {
+                map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [40, 40] });
+            }
         }
     }
 
@@ -1606,8 +1701,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var layersParam = getSelectedSetupLayers().join(',');
         toggleLoading(true);
 
-        fetch(`<?= site_url('gis/api-network') ?>?penyulang_id=${currentFeederId}&zoom=${map ? map.getZoom() : 14}&layers=${layersParam}`)
-            .then(res => res.json())
+        fetchJson(`<?= site_url('gis/api-network') ?>?penyulang_id=${currentFeederId}&zoom=${map ? map.getZoom() : 14}&layers=${layersParam}`)
             .then(res => {
                 if (thisRequestId !== currentRequestId) return;
                 toggleLoading(false);
@@ -1692,6 +1786,8 @@ document.addEventListener("DOMContentLoaded", function () {
             navigator.geolocation.getCurrentPosition(function (pos) {
                 var uLat = pos.coords.latitude;
                 var uLng = pos.coords.longitude;
+                if (!isValidLatLng(uLat, uLng)) return;
+
                 if (userLocationMarker) map.removeLayer(userLocationMarker);
                 userLocationMarker = L.circleMarker([uLat, uLng], {
                     radius: 10, fillColor: '#3b82f6', color: '#ffffff', weight: 3, fillOpacity: 1
@@ -1740,12 +1836,10 @@ document.addEventListener("DOMContentLoaded", function () {
             rationale: document.getElementById('corr-rationale').value,
         };
 
-        fetch('<?= site_url('gis/api-propose-correction') ?>', {
+        fetchJson('<?= site_url('gis/api-propose-correction') ?>', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(res => res.json())
         .then(res => {
             if (res.status === 'success') {
                 bootstrap.Modal.getInstance(document.getElementById('modal-koreksi-asset')).hide();
@@ -1754,6 +1848,9 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 alert('Gagal: ' + (res.message || 'Terjadi kesalahan'));
             }
+        })
+        .catch(err => {
+            alert('Gagal mengirim usulan koreksi: ' + err.message);
         });
     });
 
@@ -1766,7 +1863,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        var center = map ? map.getCenter() : { lat: -7.4523, lng: 112.7161 };
+        var center = (map && map.getCenter && isValidLatLng(map.getCenter().lat, map.getCenter().lng)) ? map.getCenter() : { lat: -7.4523, lng: 112.7161 };
         document.getElementById('new-lat').value = center.lat.toFixed(7);
         document.getElementById('new-lng').value = center.lng.toFixed(7);
         document.getElementById('new-name').value = '';
@@ -1782,13 +1879,13 @@ document.addEventListener("DOMContentLoaded", function () {
         var jenis = document.getElementById('new-jenis').value;
         if (!currentFeederId) return;
 
-        fetch(`<?= site_url('gis/api-next-code') ?>?penyulang_id=${currentFeederId}&jenis_asset=${jenis}`)
-            .then(res => res.json())
+        fetchJson(`<?= site_url('gis/api-next-code') ?>?penyulang_id=${currentFeederId}&jenis_asset=${jenis}`)
             .then(res => {
                 if (res.status === 'success') {
                     document.getElementById('new-code').value = res.kode_asset;
                 }
-            });
+            })
+            .catch(err => console.error(err));
     }
 
     document.getElementById('new-jenis').addEventListener('change', fetchNextAssetCode);
@@ -1806,12 +1903,10 @@ document.addEventListener("DOMContentLoaded", function () {
             rationale: document.getElementById('new-rationale').value,
         };
 
-        fetch('<?= site_url('gis/api-propose-new-asset') ?>', {
+        fetchJson('<?= site_url('gis/api-propose-new-asset') ?>', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(res => res.json())
         .then(res => {
             if (res.status === 'success') {
                 bootstrap.Modal.getInstance(document.getElementById('modal-tambah-asset')).hide();
@@ -1820,6 +1915,9 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 alert('Gagal: ' + (res.message || 'Terjadi kesalahan'));
             }
+        })
+        .catch(err => {
+            alert('Gagal menambah aset: ' + err.message);
         });
     });
 
@@ -1843,12 +1941,10 @@ document.addEventListener("DOMContentLoaded", function () {
             reason: document.getElementById('missing-reason').value,
         };
 
-        fetch('<?= site_url('gis/api-report-missing') ?>', {
+        fetchJson('<?= site_url('gis/api-report-missing') ?>', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(res => res.json())
         .then(res => {
             if (res.status === 'success') {
                 bootstrap.Modal.getInstance(document.getElementById('modal-laporkan-missing')).hide();
@@ -1857,6 +1953,9 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 alert('Gagal: ' + (res.message || 'Terjadi kesalahan'));
             }
+        })
+        .catch(err => {
+            alert('Gagal melaporkan aset hilang: ' + err.message);
         });
     });
 
@@ -1868,7 +1967,14 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!isEditingTransline) {
             activateTranslineEditor();
         }
-        if (map) map.setView([lat, lng], 17);
+        if (isValidLatLng(lat, lng) && map) {
+            map.setView([lat, lng], 17);
+        } else if (currentData && currentData.bbox && map) {
+            var b = currentData.bbox;
+            if (isValidLatLng(b.min_lat, b.min_lng) && isValidLatLng(b.max_lat, b.max_lng)) {
+                map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [40, 40] });
+            }
+        }
     };
 
     function activateTranslineEditor() {
@@ -1889,10 +1995,14 @@ document.addEventListener("DOMContentLoaded", function () {
         var geom = currentData.transline.geometry;
         if (geom && geom.coordinates) {
             if (geom.type === 'LineString') {
-                editedVertices = geom.coordinates.map(pt => [pt[1], pt[0]]);
+                editedVertices = geom.coordinates.filter(pt => isValidLatLng(pt[1], pt[0])).map(pt => [pt[1], pt[0]]);
             } else if (geom.type === 'MultiLineString' && geom.coordinates.length > 0) {
-                editedVertices = geom.coordinates[0].map(pt => [pt[1], pt[0]]);
+                editedVertices = geom.coordinates[0].filter(pt => isValidLatLng(pt[1], pt[0])).map(pt => [pt[1], pt[0]]);
             }
+        }
+
+        if (originalVertices.length > 0 && editedVertices.length === 0) {
+            editedVertices = originalVertices.slice();
         }
 
         saveUndoState();
@@ -1929,8 +2039,10 @@ document.addEventListener("DOMContentLoaded", function () {
         proposedTranslineLayer.clearLayers();
         translineEditMarkersGroup.clearLayers();
 
-        if (editedVertices.length > 1) {
-            var proposedPoly = L.polyline(editedVertices, {
+        var validEdited = editedVertices.filter(pt => isValidLatLng(pt[0], pt[1]));
+
+        if (validEdited.length > 1) {
+            var proposedPoly = L.polyline(validEdited, {
                 color: '#10b981',
                 weight: 5,
                 dashArray: '8, 8',
@@ -1939,19 +2051,21 @@ document.addEventListener("DOMContentLoaded", function () {
             }).addTo(proposedTranslineLayer);
 
             proposedPoly.on('click', function (e) {
-                var clickedPt = [e.latlng.lat, e.latlng.lng];
-                var insertIndex = findClosestSegmentIndex(clickedPt, editedVertices);
-                saveUndoState();
-                editedVertices.splice(insertIndex + 1, 0, clickedPt);
-                renderTranslineEditor();
+                if (isValidLatLng(e.latlng.lat, e.latlng.lng)) {
+                    var clickedPt = [e.latlng.lat, e.latlng.lng];
+                    var insertIndex = findClosestSegmentIndex(clickedPt, validEdited);
+                    saveUndoState();
+                    editedVertices.splice(insertIndex + 1, 0, clickedPt);
+                    renderTranslineEditor();
+                }
             });
         }
 
-        var delta = editedVertices.length - originalVertices.length;
+        var delta = validEdited.length - originalVertices.length;
         var deltaSign = delta >= 0 ? `+${delta}` : `${delta}`;
-        document.getElementById('transline-points-info').textContent = `${editedVertices.length} Titik (${deltaSign})`;
+        document.getElementById('transline-points-info').textContent = `${validEdited.length} Titik (${deltaSign})`;
 
-        editedVertices.forEach(function (pt, idx) {
+        validEdited.forEach(function (pt, idx) {
             var handle = L.circleMarker(pt, {
                 radius: 7,
                 fillColor: '#10b981',
@@ -1961,20 +2075,20 @@ document.addEventListener("DOMContentLoaded", function () {
             });
 
             var isDragging = false;
-            handle.on('mousedown', function () {
+            handle.on('mousedown touchstart', function () {
                 isDragging = true;
                 map.dragging.disable();
             });
 
-            map.on('mousemove', function (e) {
-                if (isDragging) {
+            map.on('mousemove touchmove', function (e) {
+                if (isDragging && isValidLatLng(e.latlng.lat, e.latlng.lng)) {
                     handle.setLatLng(e.latlng);
                     editedVertices[idx] = [e.latlng.lat, e.latlng.lng];
                     if (proposedPoly) proposedPoly.setLatLngs(editedVertices);
                 }
             });
 
-            map.on('mouseup', function () {
+            map.on('mouseup touchend', function () {
                 if (isDragging) {
                     isDragging = false;
                     map.dragging.enable();
@@ -1985,7 +2099,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             handle.on('contextmenu', function (e) {
                 L.DomEvent.stopPropagation(e);
-                if (editedVertices.length <= 2) {
+                if (validEdited.length <= 2) {
                     alert('Minimal 2 titik diperlukan untuk jalur.');
                     return;
                 }
@@ -2022,18 +2136,26 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     document.getElementById('btn-open-save-transline-modal').addEventListener('click', function () {
-        if (editedVertices.length < 2) {
-            alert('Minimal 2 titik diperlukan untuk membentuk jalur transline.');
+        var validEdited = editedVertices.filter(pt => isValidLatLng(pt[0], pt[1]));
+        if (validEdited.length < 2) {
+            alert('Minimal 2 titik koordinat valid diperlukan untuk membentuk jalur transline.');
             return;
         }
 
         document.getElementById('modal-transline-feeder-name').value = `${currentFeederName} (${currentUlpName})`;
         document.getElementById('modal-transline-orig-points').textContent = `${originalVertices.length} Titik`;
-        document.getElementById('modal-transline-prop-points').textContent = `${editedVertices.length} Titik`;
+        document.getElementById('modal-transline-prop-points').textContent = `${validEdited.length} Titik`;
 
-        var delta = editedVertices.length - originalVertices.length;
+        var delta = validEdited.length - originalVertices.length;
         document.getElementById('modal-transline-delta').textContent = delta >= 0 ? `+${delta} Titik` : `${delta} Titik`;
         document.getElementById('modal-transline-rationale').value = '';
+
+        var deltaWarning = document.getElementById('transline-delta-warning');
+        if (delta < -10) {
+            deltaWarning.style.display = 'block';
+        } else {
+            deltaWarning.style.display = 'none';
+        }
 
         var modal = new bootstrap.Modal(document.getElementById('modal-koreksi-transline'));
         modal.show();
@@ -2042,23 +2164,34 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('form-koreksi-transline').addEventListener('submit', function (e) {
         e.preventDefault();
         var rationale = document.getElementById('modal-transline-rationale').value;
+        var validEdited = editedVertices.filter(pt => isValidLatLng(pt[0], pt[1]));
+
+        if (validEdited.length < 2) {
+            alert('Minimal 2 titik valid diperlukan.');
+            return;
+        }
 
         var geoJsonGeometry = {
             type: 'LineString',
-            coordinates: editedVertices.map(pt => [pt[1], pt[0]])
+            coordinates: validEdited.map(pt => [pt[1], pt[0]])
         };
 
-        fetch('<?= site_url('gis/api-propose-transline') ?>', {
+        var submitBtn = document.getElementById('btn-submit-transline');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+
+        fetchJson('<?= site_url('gis/api-propose-transline') ?>', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 penyulang_id: currentFeederId,
                 geometry: geoJsonGeometry,
                 rationale: rationale
             })
         })
-        .then(res => res.json())
         .then(res => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<?= !empty($isAdmin) ? '<i class="fas fa-check-circle me-1"></i> Terapkan Langsung' : '<i class="fas fa-paper-plane me-1"></i> Kirim Usulan Jalur' ?>';
+
             if (res.status === 'success') {
                 bootstrap.Modal.getInstance(document.getElementById('modal-koreksi-transline')).hide();
                 alert(res.message);
@@ -2067,10 +2200,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById('gis-editor-guide-banner').style.display = 'none';
                 proposedTranslineLayer.clearLayers();
                 translineEditMarkersGroup.clearLayers();
+                
+                // Live re-load on-demand data to render the new active/proposed topology immediately!
+                loadGisNetworkOnDemand(false);
                 fetchPendingBadgeCount();
             } else {
                 alert('Gagal: ' + (res.message || 'Terjadi kesalahan'));
             }
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<?= !empty($isAdmin) ? '<i class="fas fa-check-circle me-1"></i> Terapkan Langsung' : '<i class="fas fa-paper-plane me-1"></i> Kirim Usulan Jalur' ?>';
+            alert('Gagal memproses transline: ' + err.message);
         });
     });
 
@@ -2079,15 +2220,15 @@ document.addEventListener("DOMContentLoaded", function () {
     // ========================================================
     function fetchPendingBadgeCount() {
         if (!currentFeederId) return;
-        fetch(`<?= site_url('gis/api-pending-corrections') ?>?penyulang_id=${currentFeederId}`)
-            .then(res => res.json())
+        fetchJson(`<?= site_url('gis/api-pending-corrections') ?>?penyulang_id=${currentFeederId}`)
             .then(res => {
                 if (res.status === 'success') {
                     var badge = document.getElementById('pending-badge-count');
                     badge.textContent = res.count;
                     badge.style.display = res.count > 0 ? 'inline-block' : 'none';
                 }
-            });
+            })
+            .catch(err => console.error(err));
     }
 
     document.getElementById('btn-view-corrections').addEventListener('click', function () {
@@ -2100,8 +2241,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var modal = new bootstrap.Modal(document.getElementById('modal-pending-corrections'));
         modal.show();
 
-        fetch(`<?= site_url('gis/api-pending-corrections') ?>?penyulang_id=${currentFeederId}`)
-            .then(res => res.json())
+        fetchJson(`<?= site_url('gis/api-pending-corrections') ?>?penyulang_id=${currentFeederId}`)
             .then(res => {
                 loading.style.display = 'none';
                 if (res.status === 'success' && res.data && res.data.length > 0) {
@@ -2136,37 +2276,43 @@ document.addEventListener("DOMContentLoaded", function () {
                 } else {
                     container.innerHTML = `<div class="text-center text-muted py-4"><i class="fas fa-check-circle text-success fs-3 mb-2 d-block"></i>Tidak ada antrean usulan koreksi pending.</div>`;
                 }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                container.innerHTML = `<div class="text-center text-danger py-4">${err.message}</div>`;
             });
     });
 
     window.applyCorrectionAction = function (corrId) {
         if (!confirm('Setujui dan terapkan usulan ini ke data master jaringan?')) return;
-        fetch('<?= site_url('gis/api-apply-correction') ?>', {
+        fetchJson('<?= site_url('gis/api-apply-correction') ?>', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ correction_id: corrId })
         })
-        .then(res => res.json())
         .then(res => {
             alert(res.message);
             bootstrap.Modal.getInstance(document.getElementById('modal-pending-corrections')).hide();
             loadGisNetworkOnDemand(false);
+        })
+        .catch(err => {
+            alert('Gagal menyetujui koreksi: ' + err.message);
         });
     };
 
     window.rejectCorrectionAction = function (corrId) {
         var reason = prompt('Masukkan alasan penolakan usulan:');
         if (!reason) return;
-        fetch('<?= site_url('gis/api-reject-correction') ?>', {
+        fetchJson('<?= site_url('gis/api-reject-correction') ?>', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ correction_id: corrId, rejection_reason: reason })
         })
-        .then(res => res.json())
         .then(res => {
             alert(res.message);
             bootstrap.Modal.getInstance(document.getElementById('modal-pending-corrections')).hide();
             loadGisNetworkOnDemand(false);
+        })
+        .catch(err => {
+            alert('Gagal menolak koreksi: ' + err.message);
         });
     };
 

@@ -421,6 +421,45 @@ class AssetRepository
                 return ['type' => 'MultiLineString', 'coordinates' => [], 'nodes' => []];
             }
 
+            // =========================================================================
+            // PRIORITY 0: Committed Active Network Topology Version
+            // =========================================================================
+            if ($db->tableExists('network_topology_versions')) {
+                $activeVer = $db->table('network_topology_versions')
+                                ->where('penyulang_id', $penyulangId)
+                                ->where('is_active', 1)
+                                ->orderBy('version_no', 'DESC')
+                                ->get()
+                                ->getRowArray();
+
+                if (!empty($activeVer) && !empty($activeVer['geojson_topology'])) {
+                    $geo = json_decode($activeVer['geojson_topology'], true);
+                    if ($geo && !empty($geo['coordinates']) && is_array($geo['coordinates'])) {
+                        $coords = $geo['coordinates'];
+                        $nodes = [];
+                        if (($geo['type'] ?? '') === 'MultiLineString') {
+                            foreach ($coords as $seg) {
+                                if (is_array($seg)) {
+                                    foreach ($seg as $pt) {
+                                        $nodes[] = $pt;
+                                    }
+                                }
+                            }
+                        } else {
+                            $nodes = $coords;
+                        }
+
+                        return [
+                            'type'           => $geo['type'] ?? 'LineString',
+                            'coordinates'    => $coords,
+                            'nodes'          => $nodes,
+                            'version_no'     => (int)$activeVer['version_no'],
+                            'version_status' => $activeVer['version_status'] ?? 'ACTIVE'
+                        ];
+                    }
+                }
+            }
+
             $hasParentCol = $db->fieldExists('parent_asset_id', 'assets');
             $hasSeqCol    = $db->fieldExists('sequence_no', 'assets');
 

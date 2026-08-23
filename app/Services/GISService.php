@@ -207,6 +207,8 @@ class GISService
                     'construction_type' => $constrName,
                     'status'            => $conditionStatus,
                     'lokasi'            => $asset['lokasi'] ?? '',
+                    'latitude'          => $lat,
+                    'longitude'         => $lng,
                     'marker_spec'       => $spec,
                     'visual'            => $visual,
                     'condition_overlay' => $conditionOverlay,

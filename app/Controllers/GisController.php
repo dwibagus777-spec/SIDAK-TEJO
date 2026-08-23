@@ -42,8 +42,9 @@ class GisController extends BaseController
         $selectedPenyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
         $selectedPlanningId  = (int)($this->request->getGet('planning_id') ?? 0);
 
-        $visualRegistry = new \App\Services\AssetVisualRegistryService();
-        $legendItems    = $visualRegistry->getLegendItems();
+        $session = session();
+        $userRole = strtoupper((string)($session->get('role') ?? $session->get('level') ?? 'PETUGAS_LAPANGAN'));
+        $isAdmin  = (str_contains($userRole, 'ADMIN') || in_array($userRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
 
         return view('gis/index', [
             'ulps'                => $ulps,
@@ -51,6 +52,8 @@ class GisController extends BaseController
             'selectedPenyulangId' => $selectedPenyulangId,
             'selectedPlanningId'  => $selectedPlanningId,
             'legendItems'         => $legendItems,
+            'userRole'            => $userRole,
+            'isAdmin'             => $isAdmin,
         ]);
     }
 

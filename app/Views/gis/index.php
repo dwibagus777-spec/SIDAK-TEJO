@@ -19,7 +19,7 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
         min-height: 520px;
         border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
         border: 1px solid rgba(226, 232, 240, 0.8);
     }
 
@@ -27,7 +27,7 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
         width: 100%;
         height: 100%;
         z-index: 1;
-        background: #e2e8f0;
+        background: #f1f5f9;
     }
 
     /* Floating Left Filter Panel */
@@ -98,15 +98,15 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
         border: 1px solid rgba(16, 185, 129, 0.6);
     }
 
-    /* ========================================================
-       PH-VIS-01: Asset Visual Identity & Network Symbol Styles
-       ======================================================== */
+    /* ==========================================================================
+       PH-VIS-02: Pure Flat SVG Marker & Condition Halo Architecture (Zero Cards)
+       ========================================================================== */
     .custom-gis-div-icon {
-        background: transparent;
-        border: none;
+        background: transparent !important;
+        border: none !important;
     }
 
-    /* Touch target container (minimum 44x44px for Android WebView & Mobile) */
+    /* Transparent Touch Target (44x44px for Android WebView & Field Tap) */
     .asset-network-marker-wrap {
         position: relative;
         width: 44px;
@@ -115,72 +115,81 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        background: transparent !important;
+        border: none !important;
     }
 
-    /* Inner symbol container */
-    .asset-symbol-box {
+    /* Condition Halo Ring (Directly behind SVG icon, no white box) */
+    .asset-condition-halo {
+        position: absolute;
         width: 32px;
         height: 32px;
-        border-radius: 8px;
-        background: #ffffff;
-        padding: 3px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 3px 8px rgba(15, 23, 42, 0.25);
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+        border-radius: 50%;
+        pointer-events: none;
+        transition: all 0.2s ease;
+        z-index: 1;
     }
 
-    .asset-symbol-img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        display: block;
-    }
-
-    .asset-network-marker-wrap:hover .asset-symbol-box {
-        transform: scale(1.3);
-        z-index: 9999 !important;
-    }
-
-    /* Condition & Severity Rings */
     .asset-ring-good {
-        box-shadow: 0 0 0 2px #10b981, 0 3px 8px rgba(15, 23, 42, 0.25);
+        border: 2px solid #10b981;
+        background: rgba(16, 185, 129, 0.12);
     }
     .asset-ring-fair {
-        box-shadow: 0 0 0 2px #0ea5e9, 0 3px 8px rgba(15, 23, 42, 0.25);
+        border: 2px solid #0ea5e9;
+        background: rgba(14, 165, 233, 0.12);
     }
     .asset-ring-poor {
-        box-shadow: 0 0 0 2px #f59e0b, 0 3px 8px rgba(15, 23, 42, 0.25);
+        border: 2px solid #f59e0b;
+        background: rgba(245, 158, 11, 0.15);
     }
     .asset-ring-critical {
-        box-shadow: 0 0 0 2.5px #ef4444, 0 3px 8px rgba(239, 68, 68, 0.4);
-        animation: pulse-critical 2s infinite;
+        border: 2.5px solid #ef4444;
+        background: rgba(239, 68, 68, 0.2);
+        animation: pulse-critical-flat 2s infinite;
     }
     .asset-ring-emergency {
-        box-shadow: 0 0 0 3px #dc2626, 0 0 12px #dc2626;
-        animation: pulse-emergency 1.4s infinite;
+        border: 3px solid #dc2626;
+        background: rgba(220, 38, 38, 0.25);
+        animation: pulse-emergency-flat 1.4s infinite;
     }
     .asset-ring-inactive {
-        opacity: 0.65;
-        box-shadow: 0 0 0 2px #64748b;
+        border: 2px solid #64748b;
+        opacity: 0.6;
     }
     .asset-ring-proposed {
-        box-shadow: 0 0 0 3px #8b5cf6, 0 0 10px rgba(139, 92, 246, 0.6);
-        animation: pulse-proposed 2s infinite;
+        border: 2.5px dashed #8b5cf6;
+        background: rgba(139, 92, 246, 0.15);
+        animation: pulse-proposed-flat 2s infinite;
     }
 
-    @keyframes pulse-critical {
-        0%, 100% { box-shadow: 0 0 0 2.5px #ef4444, 0 0 0 0 rgba(239, 68, 68, 0.6); }
-        50% { box-shadow: 0 0 0 2.5px #ef4444, 0 0 0 8px rgba(239, 68, 68, 0); }
+    @keyframes pulse-critical-flat {
+        0%, 100% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.25); opacity: 0.3; }
     }
-    @keyframes pulse-emergency {
-        0%, 100% { box-shadow: 0 0 0 3px #dc2626, 0 0 12px #dc2626; }
-        50% { box-shadow: 0 0 0 5px #dc2626, 0 0 18px #dc2626; }
+    @keyframes pulse-emergency-flat {
+        0%, 100% { transform: scale(1); opacity: 0.9; }
+        50% { transform: scale(1.4); opacity: 0.2; }
     }
-    @keyframes pulse-proposed {
-        0%, 100% { box-shadow: 0 0 0 2.5px #8b5cf6, 0 0 0 0 rgba(139, 92, 246, 0.6); }
-        50% { box-shadow: 0 0 0 2.5px #8b5cf6, 0 0 0 8px rgba(139, 92, 246, 0); }
+    @keyframes pulse-proposed-flat {
+        0%, 100% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.2); opacity: 0.4; }
+    }
+
+    /* Flat SVG Symbol (Zero card, zero white box, sits directly on map) */
+    .asset-flat-svg {
+        position: relative;
+        width: 28px;
+        height: 28px;
+        display: block;
+        object-fit: contain;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        z-index: 2;
+    }
+
+    .asset-network-marker-wrap:hover .asset-flat-svg {
+        transform: scale(1.35);
+        z-index: 1000 !important;
     }
 
     /* Floating Collapsible Legend Panel */
@@ -195,7 +204,7 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
         gap: 8px;
     }
     .gis-legend-card {
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(12px);
         border-radius: 14px;
         padding: 12px 16px;
@@ -209,15 +218,16 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
     .legend-item-row {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         font-size: 11px;
-        padding: 3px 0;
+        padding: 4px 0;
     }
     .legend-icon-preview {
-        width: 22px;
-        height: 22px;
+        width: 24px;
+        height: 24px;
         object-fit: contain;
         flex-shrink: 0;
+        filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
     }
 
     /* Custom Popup Card Styling */
@@ -250,7 +260,7 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
             <h4 class="fw-bold mb-0 text-primary d-flex align-items-center">
                 <i class="fas fa-network-wired text-warning me-2 fs-4"></i> GIS NETWORK
             </h4>
-            <span class="badge bg-primary rounded-pill font-weight-normal px-2 py-1" style="font-size: 11px;">FIELD COLLABORATIVE TWIN</span>
+            <span class="badge bg-primary rounded-pill font-weight-normal px-2 py-1" style="font-size: 11px;">FLAT VECTOR TWIN</span>
         </div>
         
         <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -374,7 +384,7 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
                     <button type="button" id="btn-close-legend" class="btn-close btn-close-sm" style="font-size: 10px;"></button>
                 </div>
                 
-                <!-- Visual Symbols from Registry -->
+                <!-- Flat Visual Symbols from Registry -->
                 <div class="d-flex flex-column gap-1 mb-2">
                     <?php if (!empty($legendItems)): ?>
                         <?php foreach ($legendItems as $item): ?>
@@ -398,7 +408,7 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
                         <span class="badge bg-info text-dark" style="font-size: 9px;"><i class="fas fa-info-circle me-1"></i> FAIR</span>
                         <span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="fas fa-exclamation-circle me-1"></i> POOR</span>
                         <span class="badge bg-danger text-white" style="font-size: 9px;"><i class="fas fa-triangle-exclamation me-1"></i> CRITICAL</span>
-                        <span class="badge bg-purple text-white" style="background:#8b5cf6; font-size: 9px;"><i class="fas fa-clock me-1"></i> PROPOSED</span>
+                        <span class="badge text-white" style="background:#8b5cf6; font-size: 9px;"><i class="fas fa-clock me-1"></i> PROPOSED</span>
                     </div>
                 </div>
             </div>
@@ -641,8 +651,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function') {
         markerCluster = L.markerClusterGroup({
             chunkedLoading: true,
-            maxClusterRadius: 40,
-            disableClusteringAtZoom: 17
+            maxClusterRadius: 35,
+            disableClusteringAtZoom: 16
         });
     } else {
         console.warn('[GIS Engine] Leaflet MarkerCluster plugin tidak berhasil dimuat. Fallback ke L.featureGroup()');
@@ -722,7 +732,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     /**
-     * PH-VIS-01: Create Reusable Asset Visual Marker with SVG Silhouette, Condition Overlay, and Action Hooks
+     * PH-VIS-02: Pure Flat SVG Marker with Condition Halo Ring (Zero Card Container)
      */
     function createAssetVisualMarker(feature) {
         var props   = feature.properties || {};
@@ -738,9 +748,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var iconHtml = `
             <div class="asset-network-marker-wrap" title="${props.nama_asset || ''} (${symbolKey})">
-                <div class="asset-symbol-box ${ringClass}">
-                    <img src="${svgPath}" alt="${symbolKey}" class="asset-symbol-img" />
-                </div>
+                <span class="asset-condition-halo ${ringClass}"></span>
+                <img src="${svgPath}" alt="${symbolKey}" class="asset-flat-svg" />
             </div>
         `;
 
@@ -757,7 +766,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var popupHtml = `
             <div class="gis-popup-container">
                 <div class="d-flex align-items-center gap-2 mb-2 pb-1 border-bottom">
-                    <img src="${svgPath}" alt="${symbolKey}" style="width: 32px; height: 32px; object-fit: contain;" />
+                    <img src="${svgPath}" alt="${symbolKey}" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));" />
                     <div style="line-height: 1.1;">
                         <strong class="text-primary font-monospace d-block" style="font-size: 11px; color: #0284c7 !important;">${props.kode_asset || '-'}</strong>
                         <span class="text-muted" style="font-size: 10px;">${visual.label || props.jenis_asset || 'Aset Jaringan'}</span>
@@ -803,7 +812,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!currentData) return;
 
-        // Render Feeder LineString / MultiLineString Segments
+        // Render Feeder LineString / MultiLineString Segments with high clarity
         if (currentData.transline && currentData.transline.geometry) {
             var geom = currentData.transline.geometry;
             if (geom.type === 'MultiLineString' && geom.coordinates) {
@@ -811,8 +820,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (segment.length > 1) {
                         var poly = L.polyline(segment.map(pt => [pt[1], pt[0]]), {
                             color: '#0284c7',
-                            weight: 4,
-                            opacity: 0.85,
+                            weight: 3.5,
+                            opacity: 0.9,
                             lineJoin: 'round'
                         });
                         translinePolylineLayer.addLayer(poly);
@@ -821,8 +830,8 @@ document.addEventListener("DOMContentLoaded", function () {
             } else if (geom.type === 'LineString' && geom.coordinates && geom.coordinates.length > 1) {
                 var poly = L.polyline(geom.coordinates.map(pt => [pt[1], pt[0]]), {
                     color: '#0284c7',
-                    weight: 4,
-                    opacity: 0.85,
+                    weight: 3.5,
+                    opacity: 0.9,
                     lineJoin: 'round'
                 });
                 translinePolylineLayer.addLayer(poly);
@@ -1121,7 +1130,6 @@ document.addEventListener("DOMContentLoaded", function () {
         toolbar.style.display = isEditingTransline ? 'flex' : 'none';
 
         if (isEditingTransline) {
-            // Extract existing polyline points
             editedVertices = [];
             var geom = currentData.transline.geometry;
             if (geom && geom.coordinates) {
@@ -1152,7 +1160,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (editedVertices.length > 1) {
             var proposedPoly = L.polyline(editedVertices, {
                 color: '#10b981', // Green Proposed Network Layer
-                weight: 5,
+                weight: 4.5,
                 dashArray: '8, 8',
                 opacity: 0.95
             });
@@ -1161,10 +1169,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         document.getElementById('transline-points-info').textContent = `${editedVertices.length} Titik Vertex`;
 
-        // Render draggable handles
         editedVertices.forEach(function (pt, idx) {
             var handle = L.circleMarker(pt, {
-                radius: 7,
+                radius: 6,
                 fillColor: '#10b981',
                 color: '#ffffff',
                 weight: 2,
@@ -1174,7 +1181,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Click on map to add vertex point when in Transline Edit Mode
     map.on('click', function (e) {
         if (isEditingTransline) {
             editedVertices.push([e.latlng.lat, e.latlng.lng]);

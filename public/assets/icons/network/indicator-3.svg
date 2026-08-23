@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
-  <!-- I3 (Indikator 3): High contrast blue frame, white inner margin, bold solid red circle -->
-  <rect x="4" y="4" width="40" height="40" fill="#2563eb" stroke="#1d4ed8" stroke-width="2" rx="4" />
-  <rect x="12" y="12" width="24" height="24" fill="#ffffff" stroke="#1e40af" stroke-width="1.5" />
-  <circle cx="24" cy="24" r="9" fill="#dc2626" stroke="#991b1b" stroke-width="1" />
+  <!-- I3 (Indikator 3 / FPI): Outer square with inner solid dark square -->
+  <rect x="4" y="4" width="40" height="40" fill="#ffffff" stroke="#111827" stroke-width="4" rx="2" />
+  <rect x="14" y="14" width="20" height="20" fill="#111827" />
 </svg>

@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
-  <!-- GI (Gardu Induk): Red triangle with yellow lightning bolt -->
-  <polygon points="24,4 45,43 3,43" fill="#dc2626" stroke="#991b1b" stroke-width="2" stroke-linejoin="round" />
-  <!-- Lightning Bolt Symbol in Center -->
-  <polygon points="25,12 17,27 24,27 21,39 31,23 24,23" fill="#facc15" stroke="#ca8a04" stroke-width="1.2" stroke-linejoin="round" />
+  <!-- GI: Gardu Induk - Red Triangle with White Lightning Bolt -->
+  <polygon points="24,3 46,43 2,43" fill="#dc2626" stroke="#991b1b" stroke-width="2" stroke-linejoin="round" />
+  <polygon points="26,11 16,26 23,26 21,39 33,23 26,23" fill="#ffffff" />
 </svg>

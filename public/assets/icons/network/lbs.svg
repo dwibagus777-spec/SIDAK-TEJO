@@ -1,10 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
-  <!-- LBS (Load Break Switch): Circle with 4 contrasting diagonal quadrants -->
-  <circle cx="24" cy="24" r="21" fill="#ffffff" stroke="#111827" stroke-width="2.5" />
-  <!-- Top and Bottom Quadrants (Black Fill) -->
-  <path d="M 24 24 L 9.15 9.15 A 21 21 0 0 1 38.85 9.15 Z" fill="#111827" />
-  <path d="M 24 24 L 9.15 38.85 A 21 21 0 0 0 38.85 38.85 Z" fill="#111827" />
-  <!-- Cross Divider Lines -->
-  <line x1="9.15" y1="9.15" x2="38.85" y2="38.85" stroke="#111827" stroke-width="1.5" />
-  <line x1="38.85" y1="9.15" x2="9.15" y2="38.85" stroke="#111827" stroke-width="1.5" />
+  <!-- LBS: High contrast alternating quadrants circle -->
+  <circle cx="24" cy="24" r="20" fill="#ffffff" stroke="#111827" stroke-width="3" />
+  <path d="M24,4 A20,20 0 0,1 44,24 L24,24 Z" fill="#111827" />
+  <path d="M24,24 L4,24 A20,20 0 0,0 24,44 Z" fill="#111827" />
+  <circle cx="24" cy="24" r="20" fill="none" stroke="#111827" stroke-width="3" />
 </svg>

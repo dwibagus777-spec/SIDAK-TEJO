@@ -1,13 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
-  <!-- GH (Gardu Hubung): High contrast orange 3D box with white interlink chain rings -->
-  <polygon points="3,3 45,3 40,8 8,8" fill="#fdba74" />
-  <polygon points="45,3 45,45 40,40 40,8" fill="#c2410c" />
-  <polygon points="45,45 3,45 8,40 40,40" fill="#9a3412" />
-  <polygon points="3,45 3,3 8,8 8,40" fill="#fb923c" />
-  <rect x="8" y="8" width="32" height="32" fill="#ea580c" stroke="#9a3412" stroke-width="1.5" />
-  <!-- High Contrast Interlocking Chain Rings -->
+  <!-- GH: Gardu Hubung - Flat Orange Box with Clean Interlocking Chain Rings -->
+  <rect x="4" y="4" width="40" height="40" fill="#ea580c" stroke="#9a3412" stroke-width="3.5" rx="3" />
   <ellipse cx="19" cy="24" rx="7" ry="4.5" fill="none" stroke="#ffffff" stroke-width="3" />
   <ellipse cx="29" cy="24" rx="7" ry="4.5" fill="none" stroke="#ffffff" stroke-width="3" />
-  <ellipse cx="19" cy="24" rx="7" ry="4.5" fill="none" stroke="#1e3a8a" stroke-width="1" />
-  <ellipse cx="29" cy="24" rx="7" ry="4.5" fill="none" stroke="#1e3a8a" stroke-width="1" />
 </svg>

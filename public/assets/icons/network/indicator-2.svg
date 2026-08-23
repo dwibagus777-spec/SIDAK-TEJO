@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
-  <!-- I2 (Indikator 2): Solid blue equilateral triangle -->
-  <polygon points="24,4 45,43 3,43" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2" stroke-linejoin="round" />
+  <!-- I2: Indikator 2 - Blue Triangle with Inner White Mark -->
+  <polygon points="24,4 45,41 3,41" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2.5" stroke-linejoin="round" />
+  <polygon points="24,18 34,36 14,36" fill="#ffffff" />
 </svg>

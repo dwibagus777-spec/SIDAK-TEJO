@@ -1,11 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
-  <!-- PMCB / RECLOSER: High contrast crossed square with bold circular red arrows -->
-  <rect x="4" y="4" width="40" height="40" fill="#ffffff" stroke="#111827" stroke-width="3" />
+  <!-- PMCB / RECLOSER: Crossed square with circular red recloser arrows -->
+  <rect x="4" y="4" width="40" height="40" fill="#ffffff" stroke="#111827" stroke-width="3" rx="2" />
   <polygon points="4,4 24,24 4,44" fill="#111827" />
   <polygon points="44,4 24,24 44,44" fill="#111827" />
-  <line x1="4" y1="4" x2="44" y2="44" stroke="#111827" stroke-width="2" />
-  <line x1="44" y1="4" x2="4" y2="44" stroke="#111827" stroke-width="2" />
-  <!-- Bold Red Circular Recloser Arrows in Center -->
   <path d="M 15 18 A 11 11 0 0 1 33 18" fill="none" stroke="#dc2626" stroke-width="3.5" stroke-linecap="round" />
   <polygon points="31,11 38,18 31,22" fill="#dc2626" />
   <path d="M 33 30 A 11 11 0 0 1 15 30" fill="none" stroke="#dc2626" stroke-width="3.5" stroke-linecap="round" />

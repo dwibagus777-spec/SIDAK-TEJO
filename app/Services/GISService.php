@@ -162,31 +162,18 @@ class GISService
             $lat = (float)($asset['latitude'] ?? 0);
             $lng = (float)($asset['longitude'] ?? 0);
             if ($lat == 0 || $lng == 0) continue;
-
             $jenis = strtoupper(trim((string)($asset['jenis_asset'] ?? 'JTM')));
-            $constrName = $asset['construction_name'] ?? $jenis; // NEVER fallback to nama_asset!
+            $constrName = $asset['construction_code'] ?? $asset['type'] ?? $asset['construction_name'] ?? $jenis;
 
-            if ($jenis === 'GARDU') $stats['gardu_count']++;
-            elseif ($jenis === 'TRAFO') $stats['trafo_count']++;
-            elseif (in_array($jenis, ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']) || str_contains($constrName, 'PMS') || str_contains($constrName, 'PMT')) $stats['switch_count']++;
-            else $stats['jtm_count']++;
-
-            // Backend Level of Detail (LOD) Filtering Rules
-            // Zoom < 13: 0 Point Markers returned (Polyline & Summary ONLY!)
-            if ($zoom < 13) {
-                continue;
+            if ($jenis === 'GARDU' || str_contains($constrName, 'TM-8') || str_contains($constrName, 'TM-9') || str_contains($constrName, 'GTT') || str_contains($constrName, 'GARDU')) {
+                $stats['gardu_count']++;
+            } elseif ($jenis === 'TRAFO' || str_contains($constrName, 'DISTRIBUSI') || str_contains($constrName, 'TRAFO')) {
+                $stats['trafo_count']++;
+            } elseif (in_array($jenis, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']) || str_contains($constrName, 'PMS') || str_contains($constrName, 'PMT') || str_contains($constrName, 'LBS') || str_contains($constrName, 'REC')) {
+                $stats['switch_count']++;
+            } else {
+                $stats['jtm_count']++;
             }
-
-            // Zoom 13 - 16: Return GARDU, TRAFO, KUBIKEL, SWITCH Equipment Markers ONLY
-            if ($zoom >= 13 && $zoom <= 16) {
-                $isEquipment = in_array($jenis, ['GARDU', 'TRAFO', 'KUBIKEL', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']) 
-                            || str_contains($constrName, 'PMS') || str_contains($constrName, 'PMT') || str_contains($constrName, 'GTT');
-                if (!$isEquipment) {
-                    continue; // Skip individual JTM poles at mid zoom
-                }
-            }
-
-            // Zoom >= 17: Return ALL markers including individual JTM poles
 
             $spec = $this->getConstructionMarkerSpec($jenis, $constrName, $asset['kode_asset'] ?? null);
             $visual = $this->visualRegistry->resolveVisual($jenis, $constrName, $asset['kode_asset'] ?? null);

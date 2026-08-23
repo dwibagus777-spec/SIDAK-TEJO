@@ -708,44 +708,46 @@ class AssetRepository
             $penyulangId = (int)($filters['penyulang_id'] ?? 0);
             $zoom        = (int)($filters['zoom'] ?? 14);
             $layers      = $filters['layers'] ?? ['JTM', 'GARDU', 'TRAFO', 'SWITCH'];
+            if (is_string($layers)) {
+                $layers = array_map('trim', explode(',', $layers));
+            }
 
             if ($penyulangId <= 0) {
                 return [];
             }
 
-            // Build Strict Layer Filter Mapping BEFORE Zoom LOD Evaluation
+            // Build Layer Filter Mapping
             $allowedJenisList = [];
-            $includeGtt = false;
             $includeSwitchEquipment = false;
 
             if (in_array('JTM', $layers)) {
                 $allowedJenisList[] = 'JTM';
-                $includeGtt = true;
+                $allowedJenisList[] = 'TIANG';
             }
             if (in_array('GARDU', $layers)) {
                 $allowedJenisList[] = 'GARDU';
-                $includeGtt = true;
+                $allowedJenisList[] = 'SUBSTATION';
             }
             if (in_array('TRAFO', $layers)) {
                 $allowedJenisList[] = 'TRAFO';
+                $allowedJenisList[] = 'TRANSFORMER';
             }
             if (in_array('KUBIKEL', $layers)) {
                 $allowedJenisList[] = 'KUBIKEL';
             }
             if (in_array('SWITCH', $layers)) {
                 $includeSwitchEquipment = true;
-                $allowedJenisList = array_merge($allowedJenisList, ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']);
+                $allowedJenisList = array_merge($allowedJenisList, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION']);
             }
 
-            // Patch 2: Empty Layer Guard (Evaluated BEFORE Zoom LOD Return!)
-            if (empty($allowedJenisList) && !$includeGtt && !$includeSwitchEquipment) {
+            if (empty($allowedJenisList)) {
                 return [];
             }
 
             $hasSeqCol = $db->fieldExists('sequence_no', 'assets');
 
             $builder = $db->table('assets a');
-            $selectFields = 'a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.status, a.latitude, a.longitude, a.lokasi, ct.name as construction_name, ct.code as construction_code';
+            $selectFields = 'a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.type, a.status, a.latitude, a.longitude, a.lokasi, ct.name as construction_name, ct.code as construction_code';
             if ($hasSeqCol) {
                 $selectFields .= ', a.sequence_no';
             }
@@ -755,52 +757,19 @@ class AssetRepository
             $builder->where('a.deleted_at IS NULL');
             $builder->where('a.latitude !=', 0);
             $builder->where('a.longitude !=', 0);
+            $builder->where('a.latitude IS NOT NULL');
+            $builder->where('a.longitude IS NOT NULL');
 
             if (!empty($userUlpId)) {
                 $builder->where('a.ulp_id', $userUlpId);
             }
 
-            // 1. Zoom < 13: SQL returns ONLY lat/lng for Polyline (0 point markers processed)
-            if ($zoom < 13) {
-                if ($hasSeqCol) {
-                    $builder->select('a.latitude, a.longitude, a.jenis_asset, a.sequence_no');
-                    $builder->orderBy('a.sequence_no', 'ASC');
-                } else {
-                    $builder->select('a.latitude, a.longitude, a.jenis_asset');
-                    $builder->orderBy('a.id', 'ASC');
-                }
-                return $builder->get()->getResultArray();
+            $builder->groupStart();
+            $builder->whereIn('a.jenis_asset', $allowedJenisList);
+            if ($includeSwitchEquipment) {
+                $builder->orLike('ct.code', 'PMS')->orLike('ct.code', 'PMT')->orLike('ct.code', 'LBS')->orLike('ct.code', 'REC');
             }
-
-            // 2. Zoom 13 - 16: SQL-level Equipment Filter (Strictly respecting active layers!)
-            if ($zoom >= 13 && $zoom <= 16) {
-                $equipTypes = ['GARDU', 'TRAFO', 'KUBIKEL', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER'];
-                if (!empty($allowedJenisList)) {
-                    $equipTypes = array_intersect($equipTypes, $allowedJenisList);
-                }
-
-                $builder->groupStart();
-                if (!empty($equipTypes)) {
-                    $builder->whereIn('a.jenis_asset', $equipTypes);
-                }
-                if ($includeGtt) {
-                    $builder->orLike('ct.code', 'GTT');
-                }
-                if ($includeSwitchEquipment) {
-                    $builder->orLike('ct.code', 'PMS')->orLike('ct.code', 'PMT');
-                }
-                $builder->groupEnd();
-            } else {
-                // Zoom >= 17: Apply strict layer filters at SQL level
-                if (!empty($allowedJenisList)) {
-                    $builder->groupStart();
-                    $builder->whereIn('a.jenis_asset', $allowedJenisList);
-                    if ($includeSwitchEquipment) {
-                        $builder->orLike('ct.code', 'PMS')->orLike('ct.code', 'PMT');
-                    }
-                    $builder->groupEnd();
-                }
-            }
+            $builder->groupEnd();
 
             if ($hasSeqCol) {
                 $builder->orderBy('a.sequence_no', 'ASC');

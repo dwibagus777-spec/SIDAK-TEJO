@@ -94,8 +94,8 @@ class TestGisEndpointsCommand extends BaseCommand
             CLI::error(" [FAIL] Status: " . $res4->getStatusCode() . " | Body: " . $body4);
         }
 
-        // TEST 5: apiConnectTopology with Admin Direct Commit
-        CLI::write("\n[5/5] Testing POST /gis/api-connect-topology (Admin Direct Commit) ...", 'cyan');
+        // TEST 5: apiUpdateConductorSpecification with Admin Direct Commit
+        CLI::write("\n[5/5] Testing POST /gis/api-update-conductor (Admin Direct Commit) ...", 'cyan');
         $assets = \Config\Database::connect()->table('assets')->select('id')->where('penyulang_id', $firstPenyulangId)->limit(2)->get()->getResultArray();
         if (count($assets) >= 2) {
             $sId = (int)$assets[0]['id'];
@@ -104,13 +104,12 @@ class TestGisEndpointsCommand extends BaseCommand
             $_POST = [
                 'source_asset_id'    => $sId,
                 'target_asset_id'    => $tId,
-                'connection_mode'    => 'ADD',
-                'conductor_type'     => 'AAAC',
+                'conductor_type'     => 'A3CS',
                 'conductor_size'     => '150 mm²',
                 'conductor_material' => 'ALUMINUM_ALLOY',
             ];
 
-            $res5 = $controller->apiConnectTopology();
+            $res5 = $controller->apiUpdateConductorSpecification();
             $body5 = $res5->getBody();
             $json5 = json_decode($body5, true);
 
@@ -120,7 +119,7 @@ class TestGisEndpointsCommand extends BaseCommand
                 CLI::error(" [FAIL] Status: " . $res5->getStatusCode() . " | Body: " . $body5);
             }
         } else {
-            CLI::write(" [SKIP] Not enough assets in feeder {$firstPenyulangId} to test connection.", 'yellow');
+            CLI::write(" [SKIP] Not enough assets in feeder {$firstPenyulangId} to test.", 'yellow');
         }
 
         CLI::write("\n====================================================", 'green');

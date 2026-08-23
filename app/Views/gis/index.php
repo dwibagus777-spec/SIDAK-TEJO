@@ -1341,6 +1341,27 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
+    function normalizeAssetFeature(feature) {
+        var props  = feature?.properties || {};
+        var coords = feature?.geometry?.coordinates || [];
+
+        var lng = Number(props.longitude ?? props.lng ?? coords[0]);
+        var lat = Number(props.latitude ?? props.lat ?? coords[1]);
+
+        return Object.assign({}, feature, {
+            geometry: {
+                type: 'Point',
+                coordinates: [lng, lat]
+            },
+            properties: Object.assign({}, props, {
+                latitude: lat,
+                longitude: lng,
+                jenis_asset: props.jenis_asset ?? props.asset_type ?? props.type ?? 'JTM',
+                construction_type: props.construction_type ?? props.type ?? 'TM-1'
+            })
+        });
+    }
+
     function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
         var R = 6371000;
         var dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1522,12 +1543,6 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('gis-loading-overlay').style.display = show ? 'flex' : 'none';
     }
 
-    function getLODCategory(zoom) {
-        if (zoom < 13) return 'overview';
-        if (zoom < 17) return 'equipment';
-        return 'detail';
-    }
-
     function initializeMapWorkspace() {
         if (map !== null) {
             map.invalidateSize();
@@ -1565,15 +1580,6 @@ document.addEventListener("DOMContentLoaded", function () {
         previewConnectionLayer = L.featureGroup().addTo(map);
         segmentEditLayer = L.featureGroup().addTo(map);
 
-        map.on('zoomend', function () {
-            if (currentFeederId > 0 && translineEditor.state === TRANSLINE_STATE.IDLE) {
-                var newLOD = getLODCategory(map.getZoom());
-                if (newLOD !== currentLOD) {
-                    loadGisNetworkOnDemand(false);
-                }
-            }
-        });
-
         map.on('click', function () {
             if (translineEditor.state === TRANSLINE_STATE.IDLE) {
                 closeAssetQuickCard();
@@ -1585,8 +1591,9 @@ document.addEventListener("DOMContentLoaded", function () {
      * Flat 2D SVG Marker Creation with Condition Ring
      */
     function createAssetVisualMarker(feature) {
-        var props   = feature.properties || {};
-        var geom    = feature.geometry || {};
+        var normalized = normalizeAssetFeature(feature);
+        var props   = normalized.properties || {};
+        var geom    = normalized.geometry || {};
         var visual  = props.visual || {};
         var overlay = props.condition_overlay || {};
 
@@ -1912,11 +1919,12 @@ document.addEventListener("DOMContentLoaded", function () {
         var neighbors = [];
         if (currentData && currentData.features) {
             currentData.features.forEach(f => {
-                var p = f.properties || {};
-                var g = f.geometry || {};
+                var norm = normalizeAssetFeature(f);
+                var p = norm.properties || {};
+                var g = norm.geometry || {};
                 if (p.id !== sourceAsset.id && g.coordinates && isValidLatLng(g.coordinates[1], g.coordinates[0])) {
                     var d = calculateHaversineDistance(sourceAsset.latitude, sourceAsset.longitude, g.coordinates[1], g.coordinates[0]);
-                    if (d <= 350) {
+                    if (d <= 500) {
                         neighbors.push({
                             id: p.id,
                             nama: p.nama_asset,
@@ -2024,7 +2032,6 @@ document.addEventListener("DOMContentLoaded", function () {
         segmentEditLayer.clearLayers();
         var vertices = translineEditor.editedVertices;
 
-        // Draw interactive emerald polyline with touch hit area
         var poly = L.polyline(vertices, {
             color: '#10b981',
             weight: 5,
@@ -2039,7 +2046,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // Render draggable touch-friendly handles (touch target >= 44px)
         vertices.forEach((pt, idx) => {
             var handle = L.circleMarker(pt, {
                 radius: 9,
@@ -2219,33 +2225,72 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Render Markers
-        var features = currentData.features || [];
+        var rawFeatures = currentData.features || [];
         var activeLayers = getSelectedSetupLayers();
+        var renderedCount = 0;
+        var renderedJtm = 0;
+        var renderedGardu = 0;
+        var renderedTrafo = 0;
+        var renderedSwitch = 0;
 
-        features.forEach(function (f) {
-            var props = f.properties || {};
-            var geom  = f.geometry || {};
+        console.group('[GIS ASSET RENDER DEBUG]');
+        console.log('Total API features:', rawFeatures.length);
+        console.log('Active layer filters:', activeLayers);
+
+        rawFeatures.forEach(function (f) {
+            var norm = normalizeAssetFeature(f);
+            var props = norm.properties || {};
+            var geom  = norm.geometry || {};
             var jenis = (props.jenis_asset || '').toUpperCase();
             var constr = (props.construction_type || '').toUpperCase();
 
-            var isSwitchType = ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER'].includes(jenis);
-            var isMatched = activeLayers.includes(jenis) || (activeLayers.includes('SWITCH') && (isSwitchType || constr.includes('PMS') || constr.includes('PMT')));
-            if (!isMatched && activeLayers.length > 0) return;
+            var isSwitchType = ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION'].includes(jenis) || strContainsAny(constr, ['PMS', 'PMT', 'LBS', 'REC']);
+            var isGarduType  = ['GARDU', 'SUBSTATION'].includes(jenis) || strContainsAny(constr, ['TM-8', 'TM-9', 'GTT', 'GARDU']);
+            var isTrafoType  = ['TRAFO', 'TRANSFORMER'].includes(jenis) || strContainsAny(constr, ['DISTRIBUSI', 'TRAFO']);
+            var isJtmType    = !isSwitchType && !isGarduType && !isTrafoType;
 
-            if (geom.type === 'Point' && geom.coordinates) {
-                var marker = createAssetVisualMarker(f);
+            var shouldRender = false;
+            if (isSwitchType && activeLayers.includes('SWITCH')) shouldRender = true;
+            else if (isGarduType && activeLayers.includes('GARDU')) shouldRender = true;
+            else if (isTrafoType && activeLayers.includes('TRAFO')) shouldRender = true;
+            else if (isJtmType && activeLayers.includes('JTM')) shouldRender = true;
+
+            if (shouldRender && geom.coordinates && isValidLatLng(geom.coordinates[1], geom.coordinates[0])) {
+                var marker = createAssetVisualMarker(norm);
                 if (marker) {
                     markerCluster.addLayer(marker);
+                    renderedCount++;
+                    if (isGarduType) renderedGardu++;
+                    else if (isTrafoType) renderedTrafo++;
+                    else if (isSwitchType) renderedSwitch++;
+                    else renderedJtm++;
                 }
             }
         });
 
-        if (autoFitBounds && currentData.bbox && map) {
-            var b = currentData.bbox;
-            if (isValidLatLng(b.min_lat, b.min_lng) && isValidLatLng(b.max_lat, b.max_lng)) {
-                map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [40, 40] });
+        console.log('Rendered markers count:', renderedCount);
+        console.groupEnd();
+
+        // Update live summary bar accurately
+        var summaryBar = document.getElementById('gis-summary-bar');
+        if (summaryBar) {
+            summaryBar.style.display = 'block';
+            document.getElementById('summary-text').innerHTML = 
+                `<i class="fas fa-network-wired text-warning me-1"></i> Aset: <strong>${renderedCount}</strong> (TM: ${renderedJtm}, GTT: ${renderedGardu}, Trafo: ${renderedTrafo}, Sw: ${renderedSwitch})`;
+        }
+
+        if (autoFitBounds && map) {
+            if (markerCluster && markerCluster.getLayers().length > 0) {
+                map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
+            } else if (translinePolylineLayer && translinePolylineLayer.getLayers().length > 0) {
+                map.fitBounds(translinePolylineLayer.getBounds(), { padding: [40, 40] });
             }
         }
+    }
+
+    function strContainsAny(str, needles) {
+        if (!str) return false;
+        return needles.some(n => str.includes(n));
     }
 
     // Fetch Network Data On-Demand
@@ -2266,14 +2311,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (res.status === 'success' && res.data) {
                     currentData = res.data;
                     renderFilteredLayers(autoFitBounds);
-
-                    var summaryBar = document.getElementById('gis-summary-bar');
-                    summaryBar.style.display = 'block';
-
-                    var sum = currentData.summary || {};
-                    document.getElementById('summary-text').innerHTML = 
-                        `<i class="fas fa-network-wired text-warning me-1"></i> Aset: <strong>${sum.total_assets || 0}</strong> (JTM: ${sum.jtm_count || 0}, GTT: ${sum.gardu_count || 0}, Sw: ${sum.switch_count || 0})`;
-                    
                     fetchPendingBadgeCount();
                     if (typeof callback === 'function') callback();
                 }
@@ -2282,6 +2319,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (thisRequestId === currentRequestId) toggleLoading(false);
                 console.error(err);
             });
+    }
+
+    function getLODCategory(zoom) {
+        if (zoom < 13) return 'overview';
+        if (zoom < 17) return 'equipment';
+        return 'detail';
     }
 
     // ========================================================

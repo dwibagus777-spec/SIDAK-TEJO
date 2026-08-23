@@ -93,7 +93,7 @@ class GisController extends BaseController
 
             $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($ulpId);
 
-            return $this->response->setJSON([
+            return $this->response->setStatusCode(200)->setJSON([
                 'status'     => 'success',
                 'penyulangs' => $penyulangs
             ]);
@@ -122,7 +122,7 @@ class GisController extends BaseController
                 ->getResultArray();
         }
 
-        return $this->response->setJSON([
+        return $this->response->setStatusCode(200)->setJSON([
             'status' => 'success',
             'data'   => $conductors
         ]);
@@ -165,7 +165,7 @@ class GisController extends BaseController
         $userUlpId = session()->get('ulp_id');
         $result = $this->gisService->getNetworkData($filters, $userUlpId);
 
-        return $this->response->setJSON([
+        return $this->response->setStatusCode(200)->setJSON([
             'status' => 'success',
             'data'   => $result
         ]);
@@ -187,9 +187,38 @@ class GisController extends BaseController
         return $this->response->setJSON($res);
     }
 
+    private function getRequestPayload(): array
+    {
+        $json = null;
+        if (method_exists($this->request, 'getJSON')) {
+            try {
+                $json = $this->request->getJSON(true);
+            } catch (\Throwable $e) {
+                $json = null;
+            }
+        }
+        if (is_array($json) && !empty($json)) {
+            return $json;
+        }
+
+        $post = null;
+        if (method_exists($this->request, 'getPost')) {
+            $post = $this->request->getPost();
+        }
+        if (is_array($post) && !empty($post)) {
+            return $post;
+        }
+
+        if (!empty($_POST) && is_array($_POST)) {
+            return $_POST;
+        }
+
+        return [];
+    }
+
     public function apiConnectTopology(): ResponseInterface
     {
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
         
         $sourceId = (int)($payload['source_asset_id'] ?? $payload['parent_id'] ?? 0);
         $targetId = (int)($payload['target_asset_id'] ?? $payload['child_id'] ?? 0);
@@ -319,7 +348,7 @@ class GisController extends BaseController
 
     public function apiDisconnectTopology(): ResponseInterface
     {
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
         
         $sourceId = (int)($payload['source_asset_id'] ?? 0);
         $targetId = (int)($payload['target_asset_id'] ?? 0);
@@ -387,7 +416,7 @@ class GisController extends BaseController
 
     public function apiUpdateConductorSpecification(): ResponseInterface
     {
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
         
         $sourceId = (int)($payload['source_asset_id'] ?? 0);
         $targetId = (int)($payload['target_asset_id'] ?? 0);
@@ -455,14 +484,14 @@ class GisController extends BaseController
 
             $db->transComplete();
 
-            return $this->response->setJSON([
+            return $this->response->setStatusCode(200)->setJSON([
                 'status'           => 'success',
                 'is_direct_commit' => true,
                 'message'          => "Spesifikasi konduktor ($conductorType $conductorSize) berhasil diperbarui dan langsung aktif (Direct Commit)."
             ]);
         }
 
-        return $this->response->setJSON([
+        return $this->response->setStatusCode(200)->setJSON([
             'status'           => 'success',
             'is_direct_commit' => false,
             'message'          => "Usulan perubahan spesifikasi konduktor ($conductorType $conductorSize) berhasil diajukan dan menunggu telaah supervisor."
@@ -484,7 +513,7 @@ class GisController extends BaseController
 
     public function apiUpdateSegmentGeometry(): ResponseInterface
     {
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
         
         $penyulangId = (int)($payload['penyulang_id'] ?? 0);
         $sourceId    = (int)($payload['source_asset_id'] ?? 0);
@@ -566,7 +595,7 @@ class GisController extends BaseController
     public function apiProposeCorrection(): ResponseInterface
     {
         $fieldService = new \App\Services\FieldAssetCorrectionService();
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
 
         $result = $fieldService->proposeAssetCorrection($payload, $this->getActor());
         $statusCode = ($result['status'] === 'success') ? 200 : 422;
@@ -581,7 +610,7 @@ class GisController extends BaseController
     public function apiProposeNewAsset(): ResponseInterface
     {
         $fieldService = new \App\Services\FieldAssetCorrectionService();
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
 
         $result = $fieldService->proposeNewAsset($payload, $this->getActor());
         $statusCode = ($result['status'] === 'success') ? 200 : 422;
@@ -596,7 +625,7 @@ class GisController extends BaseController
     public function apiReportMissingAsset(): ResponseInterface
     {
         $fieldService = new \App\Services\FieldAssetCorrectionService();
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
 
         $assetId = (int)($payload['asset_id'] ?? 0);
         $reason  = (string)($payload['reason'] ?? 'Aset dilaporkan tidak ditemukan di lapangan');
@@ -615,7 +644,7 @@ class GisController extends BaseController
     public function apiProposeTransline(): ResponseInterface
     {
         $fieldService = new \App\Services\FieldAssetCorrectionService();
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
 
         $penyulangId = (int)($payload['penyulang_id'] ?? 0);
         $geometry    = $payload['geometry'] ?? [];
@@ -659,7 +688,7 @@ class GisController extends BaseController
         }
 
         $fieldService = new \App\Services\FieldAssetCorrectionService();
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
 
         $correctionId = (int)($payload['correction_id'] ?? 0);
         $notes        = $payload['notes'] ?? 'Disetujui via GIS Field Approval';
@@ -677,7 +706,7 @@ class GisController extends BaseController
     public function apiRejectCorrection(): ResponseInterface
     {
         $fieldService = new \App\Services\FieldAssetCorrectionService();
-        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        $payload = $this->getRequestPayload();
 
         $correctionId = (int)($payload['correction_id'] ?? 0);
         $reason       = $payload['rejection_reason'] ?? 'Koreksi ditolak oleh penelaah';

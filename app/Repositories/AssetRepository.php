@@ -747,7 +747,7 @@ class AssetRepository
             $hasSeqCol = $db->fieldExists('sequence_no', 'assets');
 
             $builder = $db->table('assets a');
-            $selectFields = 'a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.type, a.status, a.latitude, a.longitude, a.lokasi, ct.name as construction_name, ct.code as construction_code';
+            $selectFields = 'a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.type, a.status, a.latitude, a.longitude, a.lokasi, a.penyulang_id, a.ulp_id, ct.name as construction_name, ct.code as construction_code';
             if ($hasSeqCol) {
                 $selectFields .= ', a.sequence_no';
             }

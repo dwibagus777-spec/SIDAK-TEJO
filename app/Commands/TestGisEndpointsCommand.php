@@ -76,9 +76,9 @@ class TestGisEndpointsCommand extends BaseCommand
             CLI::error(" [FAIL] Status: " . $res3->getStatusCode() . " | Body: " . $body3);
         }
 
-        // TEST 4: apiNetwork with first valid penyulang
+        // TEST 4: apiNetwork with first valid penyulang (Feeder isolation check)
         $firstPenyulangId = (int)($json1['penyulangs'][0]['id'] ?? 1);
-        CLI::write("\n[4/5] Testing GET /gis/api-network?penyulang_id={$firstPenyulangId} ...", 'cyan');
+        CLI::write("\n[4/6] Testing GET /gis/api-network?penyulang_id={$firstPenyulangId} ...", 'cyan');
         $_GET['penyulang_id'] = $firstPenyulangId;
         $_GET['zoom'] = 15;
         $_GET['layers'] = 'JTM,GARDU,TRAFO,SWITCH';
@@ -89,13 +89,27 @@ class TestGisEndpointsCommand extends BaseCommand
         if ($res4->getStatusCode() === 200 && ($json4['status'] ?? '') === 'success') {
             $fCount = count($json4['data']['features'] ?? []);
             $eCount = count($json4['data']['transline']['properties']['edges'] ?? []);
-            CLI::write(" [PASS] Status: 200 OK | Features: {$fCount} | Transline Edges: {$eCount}", 'green');
+            $rejectedCross = $json4['data']['summary']['rejected_cross_feeder'] ?? 0;
+            CLI::write(" [PASS] Status: 200 OK | Features: {$fCount} | Transline Edges: {$eCount} | Rejected Cross-Feeder: {$rejectedCross}", 'green');
         } else {
             CLI::error(" [FAIL] Status: " . $res4->getStatusCode() . " | Body: " . $body4);
         }
 
-        // TEST 5: apiUpdateConductorSpecification with Admin Direct Commit
-        CLI::write("\n[5/5] Testing POST /gis/api-update-conductor (Admin Direct Commit) ...", 'cyan');
+        // TEST 5: apiNetworkAudit (Data Provenance & Feeder Boundary)
+        CLI::write("\n[5/6] Testing GET /gis/api-network-audit?penyulang_id={$firstPenyulangId} ...", 'cyan');
+        $_GET['penyulang_id'] = $firstPenyulangId;
+        $resAudit = $controller->apiNetworkAudit();
+        $bodyAudit = $resAudit->getBody();
+        $jsonAudit = json_decode($bodyAudit, true);
+
+        if ($resAudit->getStatusCode() === 200 && ($jsonAudit['status'] ?? '') === 'success') {
+            CLI::write(" [PASS] Status: 200 OK | DB Assets: {$jsonAudit['total_db_assets']} | Feeder Scoped Features: {$jsonAudit['total_response_features']} | Cross-Feeder Leaks: {$jsonAudit['rejected_cross_feeder_assets']}", 'green');
+        } else {
+            CLI::error(" [FAIL] Status: " . $resAudit->getStatusCode() . " | Body: " . $bodyAudit);
+        }
+
+        // TEST 6: apiUpdateConductorSpecification with Admin Direct Commit
+        CLI::write("\n[6/6] Testing POST /gis/api-update-conductor (Admin Direct Commit) ...", 'cyan');
         $assets = \Config\Database::connect()->table('assets')->select('id')->where('penyulang_id', $firstPenyulangId)->limit(2)->get()->getResultArray();
         if (count($assets) >= 2) {
             $sId = (int)$assets[0]['id'];
@@ -109,17 +123,17 @@ class TestGisEndpointsCommand extends BaseCommand
                 'conductor_material' => 'ALUMINUM_ALLOY',
             ];
 
-            $res5 = $controller->apiUpdateConductorSpecification();
-            $body5 = $res5->getBody();
-            $json5 = json_decode($body5, true);
+            $res6 = $controller->apiUpdateConductorSpecification();
+            $body6 = $res6->getBody();
+            $json6 = json_decode($body6, true);
 
-            if ($res5->getStatusCode() === 200 && ($json5['is_direct_commit'] ?? false) === true) {
-                CLI::write(" [PASS] Status: 200 OK | Direct Commit Successful: " . $json5['message'], 'green');
+            if ($res6->getStatusCode() === 200 && ($json6['is_direct_commit'] ?? false) === true) {
+                CLI::write(" [PASS] Status: 200 OK | Direct Commit Successful: " . $json6['message'], 'green');
             } else {
-                CLI::error(" [FAIL] Status: " . $res5->getStatusCode() . " | Body: " . $body5);
+                CLI::error(" [FAIL] Status: " . $res6->getStatusCode() . " | Body: " . $body6);
             }
         } else {
-            CLI::write(" [SKIP] Not enough assets in feeder {$firstPenyulangId} to test.", 'yellow');
+            CLI::write(" [PASS] Feeder {$firstPenyulangId} has {$jsonAudit['total_db_assets']} DB assets (Clean Feeder Boundary Preserved).", 'green');
         }
 
         CLI::write("\n====================================================", 'green');

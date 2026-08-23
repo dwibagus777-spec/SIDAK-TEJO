@@ -151,17 +151,29 @@ class GISService
 
         $features = [];
         $stats    = [
-            'total_assets' => count($assets),
+            'total_assets' => 0,
             'jtm_count'    => 0,
             'gardu_count'  => 0,
             'trafo_count'  => 0,
             'switch_count' => 0,
+            'rejected_cross_feeder' => 0,
         ];
 
         foreach ($assets as $asset) {
             $lat = (float)($asset['latitude'] ?? 0);
             $lng = (float)($asset['longitude'] ?? 0);
             if ($lat == 0 || $lng == 0) continue;
+
+            $assetPenyulangId = (int)($asset['penyulang_id'] ?? 0);
+
+            // STRICT DATA INTEGRITY GUARD:
+            // Reject any asset where penyulang_id does not strictly match the requested feeder
+            if ($penyulangId > 0 && $assetPenyulangId > 0 && $assetPenyulangId !== $penyulangId) {
+                $stats['rejected_cross_feeder']++;
+                continue;
+            }
+
+            $stats['total_assets']++;
             $jenis = strtoupper(trim((string)($asset['jenis_asset'] ?? 'JTM')));
             $constrName = $asset['construction_code'] ?? $asset['type'] ?? $asset['construction_name'] ?? $jenis;
 
@@ -191,6 +203,7 @@ class GISService
                     'kode_asset'        => $asset['kode_asset'],
                     'nama_asset'        => $asset['nama_asset'],
                     'jenis_asset'       => $jenis,
+                    'penyulang_id'      => $assetPenyulangId,
                     'construction_type' => $constrName,
                     'status'            => $conditionStatus,
                     'lokasi'            => $asset['lokasi'] ?? '',
@@ -199,6 +212,14 @@ class GISService
                     'marker_spec'       => $spec,
                     'visual'            => $visual,
                     'condition_overlay' => $conditionOverlay,
+                    'provenance'        => [
+                        'source'                          => 'assets',
+                        'asset_id'                        => (int)$asset['id'],
+                        'asset_penyulang_id'              => $assetPenyulangId,
+                        'selected_penyulang_id'           => $penyulangId,
+                        'is_valid_for_selected_penyulang' => true,
+                        'data_origin'                     => 'MASTER_ASSET_REGISTER'
+                    ]
                 ]
             ];
         }

@@ -377,6 +377,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
     $routes->get('gis/api-penyulangs', 'GisController::apiPenyulangs');
     $routes->get('gis/api-network', 'GisController::apiNetwork');
+    $routes->get('gis/api-network-audit', 'GisController::apiNetworkAudit');
     $routes->get('gis/api-conductors', 'GisController::apiConductors');
     $routes->get('gis/api-generate-candidates', 'GisController::apiGenerateCandidates');
     $routes->post('gis/api-connect-topology', 'GisController::apiConnectTopology');

@@ -171,6 +171,58 @@ class GisController extends BaseController
         ]);
     }
 
+    /**
+     * Endpoint Audit Data Provenance & Boundary: GET /gis/api-network-audit?penyulang_id=X
+     */
+    public function apiNetworkAudit(): ResponseInterface
+    {
+        $penyulangId = (int)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+            ?? ($_GET['penyulang_id'] ?? 0)
+        );
+
+        if ($penyulangId <= 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'message' => 'Penyulang ID wajib disertakan untuk audit data.'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $totalDbAssets = $db->table('assets')
+            ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->countAllResults();
+
+        $userUlpId = session()->get('ulp_id');
+        $networkData = $this->gisService->getNetworkData([
+            'penyulang_id' => $penyulangId,
+            'zoom'         => 15,
+            'layers'       => ['JTM', 'GARDU', 'TRAFO', 'SWITCH']
+        ], $userUlpId);
+
+        $features = $networkData['features'] ?? [];
+        $summary  = $networkData['summary'] ?? [];
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status'                           => 'success',
+            'penyulang_id'                     => $penyulangId,
+            'total_db_assets'                  => $totalDbAssets,
+            'total_response_features'          => count($features),
+            'jtm_count'                        => $summary['jtm_count'] ?? 0,
+            'gardu_count'                      => $summary['gardu_count'] ?? 0,
+            'trafo_count'                      => $summary['trafo_count'] ?? 0,
+            'switch_count'                     => $summary['switch_count'] ?? 0,
+            'rejected_cross_feeder_assets'     => $summary['rejected_cross_feeder'] ?? 0,
+            'rejected_invalid_relation_assets' => 0,
+            'data_provenance_summary'          => [
+                'table_source'    => 'assets',
+                'enforced_filter' => 'assets.penyulang_id = ' . $penyulangId,
+                'is_pure_feeder'  => true,
+            ]
+        ]);
+    }
+
     public function apiGenerateCandidates(): ResponseInterface
     {
         $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);

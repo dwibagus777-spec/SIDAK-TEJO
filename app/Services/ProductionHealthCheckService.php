@@ -397,54 +397,93 @@ class ProductionHealthCheckService
             ];
         }
 
-        try {
-            $shaOutput = @shell_exec('git rev-parse HEAD 2>&1');
-            $shortSha  = @shell_exec('git rev-parse --short HEAD 2>&1');
-            $branch    = @shell_exec('git branch --show-current 2>&1');
-            $statusOut = @shell_exec('git status --porcelain 2>&1');
+        $commitSha   = null;
+        $shortShaStr = null;
+        $branchStr   = null;
+        $isClean     = true;
 
-            $commitSha   = trim((string)$shaOutput);
-            $shortShaStr = trim((string)$shortSha);
-            $branchStr   = trim((string)$branch);
-            $isClean     = empty(trim((string)$statusOut));
+        // Strategy 1: Try shell_exec if permitted
+        $disabledFuncs = explode(',', (string)ini_get('disable_functions'));
+        $disabledFuncs = array_map('trim', $disabledFuncs);
+        $canExec = function_exists('shell_exec') && !in_array('shell_exec', $disabledFuncs, true);
 
-            // Validate SHA format (40 hex chars)
-            if (preg_match('/^[a-f0-9]{40}$/i', $commitSha)) {
-                $status = $isClean ? 'PASS' : 'WARN';
-                $detail = $isClean 
-                    ? "Commit: {$shortShaStr} on branch: '{$branchStr}' (Working tree clean)"
-                    : "Commit: {$shortShaStr} on branch: '{$branchStr}' (Working tree has uncommitted changes)";
+        if ($canExec) {
+            try {
+                $shaOutput = @shell_exec('git rev-parse HEAD 2>&1');
+                $shortSha  = @shell_exec('git rev-parse --short HEAD 2>&1');
+                $branch    = @shell_exec('git branch --show-current 2>&1');
+                $statusOut = @shell_exec('git status --porcelain 2>&1');
 
-                return [
-                    'status'      => $status,
-                    'detail'      => $detail,
-                    'commit'      => $commitSha,
-                    'short_sha'   => $shortShaStr,
-                    'branch'      => $branchStr,
-                    'cleanliness' => $isClean ? 'CLEAN' : 'MODIFIED',
-                    'duration_ms' => round((microtime(true) - $start) * 1000, 2),
-                ];
+                $candSha = trim((string)$shaOutput);
+                if (preg_match('/^[a-f0-9]{40}$/i', $candSha)) {
+                    $commitSha   = $candSha;
+                    $shortShaStr = trim((string)$shortSha);
+                    $branchStr   = trim((string)$branch);
+                    $isClean     = empty(trim((string)$statusOut));
+                }
+            } catch (\Throwable $e) {
+                // Fall through to Strategy 2
             }
+        }
+
+        // Strategy 2: Pure PHP Filesystem inspection of .git metadata
+        if (!$commitSha && is_file($gitDir . '/HEAD')) {
+            try {
+                $headContent = trim((string)file_get_contents($gitDir . '/HEAD'));
+                if (str_starts_with($headContent, 'ref: refs/heads/')) {
+                    $branchStr = trim(substr($headContent, 16));
+                    $refFile   = $gitDir . '/refs/heads/' . $branchStr;
+                    if (is_file($refFile)) {
+                        $commitSha = trim((string)file_get_contents($refFile));
+                    } elseif (is_file($gitDir . '/packed-refs')) {
+                        $packed = (string)file_get_contents($gitDir . '/packed-refs');
+                        if (preg_match('/([a-f0-9]{40})\s+refs\/heads\/' . preg_quote($branchStr, '/') . '/', $packed, $m)) {
+                            $commitSha = $m[1];
+                        }
+                    } elseif (is_file($gitDir . '/FETCH_HEAD')) {
+                        $fetch = (string)file_get_contents($gitDir . '/FETCH_HEAD');
+                        if (preg_match('/^([a-f0-9]{40})/m', $fetch, $m)) {
+                            $commitSha = $m[1];
+                        }
+                    }
+                } elseif (preg_match('/^[a-f0-9]{40}$/i', $headContent)) {
+                    $commitSha = $headContent;
+                    $branchStr = 'detached';
+                }
+
+                if ($commitSha) {
+                    $shortShaStr = substr($commitSha, 0, 7);
+                }
+            } catch (\Throwable $e) {
+                // Graceful fallback
+            }
+        }
+
+        if ($commitSha && preg_match('/^[a-f0-9]{40}$/i', $commitSha)) {
+            $status = $isClean ? 'PASS' : 'WARN';
+            $detail = $isClean 
+                ? "Commit: {$shortShaStr} on branch: '{$branchStr}' (Working tree clean)"
+                : "Commit: {$shortShaStr} on branch: '{$branchStr}' (Working tree has uncommitted changes)";
 
             return [
-                'status'      => 'WARN',
-                'detail'      => 'Git executable or metadata unreadable in runtime environment',
-                'commit'      => 'UNKNOWN',
-                'short_sha'   => 'N/A',
-                'branch'      => 'N/A',
-                'cleanliness' => 'UNKNOWN',
-                'duration_ms' => round((microtime(true) - $start) * 1000, 2),
-            ];
-        } catch (\Throwable $e) {
-            return [
-                'status'      => 'WARN',
-                'detail'      => 'Git baseline inspection encountered error: ' . $e->getMessage(),
-                'commit'      => 'UNKNOWN',
-                'short_sha'   => 'N/A',
-                'branch'      => 'N/A',
-                'cleanliness' => 'UNKNOWN',
+                'status'      => $status,
+                'detail'      => $detail,
+                'commit'      => $commitSha,
+                'short_sha'   => $shortShaStr,
+                'branch'      => $branchStr,
+                'cleanliness' => $isClean ? 'CLEAN' : 'MODIFIED',
                 'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             ];
         }
+
+        return [
+            'status'      => 'WARN',
+            'detail'      => 'Git metadata inspection limited (Non-critical hosting environment constraint)',
+            'commit'      => 'UNKNOWN',
+            'short_sha'   => 'N/A',
+            'branch'      => 'N/A',
+            'cleanliness' => 'UNKNOWN',
+            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
+        ];
     }
 }

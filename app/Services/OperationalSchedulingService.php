@@ -116,7 +116,7 @@ class OperationalSchedulingService
 
         $now = date('Y-m-d H:i:s');
         $actorName = $actor['name'] ?? (function_exists('session') ? session()->get('nama_lengkap') : null) ?? 'HUMAN_SCHEDULING_PLANNER';
-        $scenarioCode = 'SCHED-SCN-STJ-' . $portfolio['period_year'] . '-W' . str_pad((string)$portfolio['period_week'], 2, '0', STR_PAD_LEFT) . '-' . str_pad((string)mt_rand(1, 999), 3, '0', STR_PAD_LEFT);
+        $scenarioCode = 'SCHED-SCN-STJ-' . $portfolio['period_year'] . '-W' . str_pad((string)$portfolio['period_week'], 2, '0', STR_PAD_LEFT) . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT) . '-' . substr(md5(uniqid('', true)), 0, 3);
 
         // 3. Persist Scenario Master Record
         $scenarioData = [

@@ -152,7 +152,7 @@ class OperationalPlanningPortfolioService
 
         $now = date('Y-m-d H:i:s');
         $actorName = $actor['name'] ?? (function_exists('session') ? session()->get('nama_lengkap') : null) ?? 'HUMAN_PORTFOLIO_MANAGER';
-        $portfolioCode = 'PORTFOLIO-STJ-' . $year . '-W' . str_pad((string)$week, 2, '0', STR_PAD_LEFT) . '-' . str_pad((string)mt_rand(1, 999), 3, '0', STR_PAD_LEFT);
+        $portfolioCode = 'PORTFOLIO-STJ-' . $year . '-W' . str_pad((string)$week, 2, '0', STR_PAD_LEFT) . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT) . '-' . substr(md5(uniqid('', true)), 0, 3);
 
         // 3. Persist Portfolio Master Record
         $portfolioData = [

@@ -379,6 +379,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('gis/api-network', 'GisController::apiNetwork');
     $routes->get('gis/api-generate-candidates', 'GisController::apiGenerateCandidates');
     $routes->post('gis/api-connect-topology', 'GisController::apiConnectTopology');
+    $routes->post('gis/api-disconnect-topology', 'GisController::apiDisconnectTopology');
+    $routes->post('gis/api-update-segment', 'GisController::apiUpdateSegmentGeometry');
     $routes->get('gis/api-data', 'GisController::apiData');
     $routes->get('master-assets/geojson', 'GisController::geoJson');
     $routes->get('master-assets/feeder-network', 'GisController::feederNetwork');

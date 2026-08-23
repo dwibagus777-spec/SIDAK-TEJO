@@ -146,48 +146,189 @@ class GisController extends BaseController
 
     public function apiConnectTopology(): ResponseInterface
     {
-        $parentId = (int)($this->request->getPost('parent_id') ?? $this->request->getVar('parent_id') ?? 0);
-        $childId  = (int)($this->request->getPost('child_id') ?? $this->request->getVar('child_id') ?? 0);
+        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        
+        $sourceId = (int)($payload['source_asset_id'] ?? $payload['parent_id'] ?? 0);
+        $targetId = (int)($payload['target_asset_id'] ?? $payload['child_id'] ?? 0);
+        $mode     = (string)($payload['connection_mode'] ?? 'REPLACE'); // 'REPLACE' or 'ADD'
 
-        if ($parentId <= 0 || $childId <= 0) {
+        if ($sourceId <= 0 || $targetId <= 0 || $sourceId === $targetId) {
             return $this->response->setStatusCode(422)->setJSON([
                 'status'  => 'error',
-                'message' => 'Parent ID dan Child ID wajib diisi.'
+                'message' => 'ID Aset Sumber dan ID Aset Tujuan valid wajib diisi.'
             ]);
         }
 
-        if ($this->topologyService->wouldCreateCycle($parentId, $childId)) {
+        if ($this->topologyService->wouldCreateCycle($sourceId, $targetId)) {
             return $this->response->setStatusCode(400)->setJSON([
                 'status'  => 'error',
                 'message' => 'Penambahan relasi ditolak: Terdeteksi circular topology (loop tertutup)!'
             ]);
         }
 
+        $actor = $this->getActor();
+        $actorRole = strtoupper((string)($actor['role'] ?? 'PETUGAS_LAPANGAN'));
+        $isAdmin = (str_contains($actorRole, 'ADMIN') || in_array($actorRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
+
         $db = \Config\Database::connect();
-        $db->table('assets')->where('id', $childId)->update(['parent_asset_id' => $parentId]);
-
         $relModel = new \App\Models\AssetRelationshipModel();
-        $existing = $relModel->where('parent_asset_id', $parentId)->where('child_asset_id', $childId)->first();
 
-        $data = [
-            'parent_asset_id' => $parentId,
-            'child_asset_id'  => $childId,
-            'source'          => 'MANUAL',
-            'status'          => 'VERIFIED',
-            'verified_at'     => date('Y-m-d H:i:s'),
-            'is_active'       => 1,
-        ];
+        if ($isAdmin) {
+            // ADMIN DIRECT COMMIT
+            $db->transStart();
 
-        if ($existing) {
-            $relModel->update($existing['id'], $data);
-        } else {
-            $relModel->insert($data);
+            // Set parent_asset_id on target asset
+            $db->table('assets')->where('id', $targetId)->update(['parent_asset_id' => $sourceId]);
+
+            // If REPLACE mode, clear any old relationship from targetId
+            if ($mode === 'REPLACE') {
+                $relModel->where('child_asset_id', $targetId)->delete();
+            }
+
+            $existing = $relModel->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)->first();
+            $data = [
+                'parent_asset_id' => $sourceId,
+                'child_asset_id'  => $targetId,
+                'source'          => 'GIS_ADMIN_DIRECT_EDIT',
+                'status'          => 'VERIFIED',
+                'verified_at'     => date('Y-m-d H:i:s'),
+                'is_active'       => 1,
+            ];
+
+            if ($existing) {
+                $relModel->update($existing['id'], $data);
+            } else {
+                $relModel->insert($data);
+            }
+
+            // Log to field_corrections audit trail
+            $db->table('field_corrections')->insert([
+                'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
+                'correction_type' => 'TOPOLOGY_CONNECTION',
+                'asset_id'        => $targetId,
+                'penyulang_id'    => (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0),
+                'after_payload'   => json_encode(['parent_id' => $sourceId, 'child_id' => $targetId, 'mode' => $mode]),
+                'rationale'       => 'Pembaruan koneksi jalur antar tiang oleh Administrator',
+                'reporter_name'   => $actor['name'],
+                'reporter_role'   => $actorRole,
+                'status'          => 'APPROVED',
+                'reviewer_name'   => $actor['name'],
+                'reviewer_role'   => $actorRole,
+                'review_notes'    => 'Direct Commit by Administrator (GIS_ADMIN_DIRECT_EDIT)',
+                'reviewed_at'     => date('Y-m-d H:i:s'),
+                'applied_at'      => date('Y-m-d H:i:s'),
+                'created_at'      => date('Y-m-d H:i:s'),
+                'updated_at'      => date('Y-m-d H:i:s'),
+            ]);
+
+            $db->transComplete();
+
+            return $this->response->setJSON([
+                'status'           => 'success',
+                'is_direct_commit' => true,
+                'message'          => 'Koneksi jalur antar aset berhasil diperbarui dan langsung aktif (Direct Commit).'
+            ]);
+        }
+
+        // NON-ADMIN PROPOSAL
+        $fieldService = new \App\Services\FieldAssetCorrectionService();
+        $result = $fieldService->proposeAssetCorrection([
+            'asset_id'        => $targetId,
+            'correction_type' => 'TOPOLOGY_CONNECTION',
+            'parent_asset_id' => $sourceId,
+            'rationale'       => 'Usulan perubahan koneksi jalur ke aset ID #' . $sourceId,
+        ], $actor);
+
+        return $this->response->setJSON($result);
+    }
+
+    public function apiDisconnectTopology(): ResponseInterface
+    {
+        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        
+        $sourceId = (int)($payload['source_asset_id'] ?? 0);
+        $targetId = (int)($payload['target_asset_id'] ?? 0);
+
+        if ($sourceId <= 0 || $targetId <= 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'message' => 'Kedua ID aset yang terhubung wajib disertakan.'
+            ]);
+        }
+
+        $actor = $this->getActor();
+        $actorRole = strtoupper((string)($actor['role'] ?? 'PETUGAS_LAPANGAN'));
+        $isAdmin = (str_contains($actorRole, 'ADMIN') || in_array($actorRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
+
+        $db = \Config\Database::connect();
+        $relModel = new \App\Models\AssetRelationshipModel();
+
+        if ($isAdmin) {
+            $db->transStart();
+
+            // Clear parent_asset_id if target points to source or vice-versa
+            $db->table('assets')->where('id', $targetId)->where('parent_asset_id', $sourceId)->update(['parent_asset_id' => null]);
+            $db->table('assets')->where('id', $sourceId)->where('parent_asset_id', $targetId)->update(['parent_asset_id' => null]);
+
+            // Deactivate relationship edge
+            $relModel->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)->delete();
+            $relModel->where('parent_asset_id', $targetId)->where('child_asset_id', $sourceId)->delete();
+
+            // Log to field_corrections audit trail
+            $db->table('field_corrections')->insert([
+                'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
+                'correction_type' => 'TOPOLOGY_DISCONNECT',
+                'asset_id'        => $targetId,
+                'penyulang_id'    => (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0),
+                'after_payload'   => json_encode(['disconnected_from' => $sourceId, 'target_id' => $targetId]),
+                'rationale'       => 'Penghapusan sambungan jalur salah oleh Administrator',
+                'reporter_name'   => $actor['name'],
+                'reporter_role'   => $actorRole,
+                'status'          => 'APPROVED',
+                'reviewer_name'   => $actor['name'],
+                'reviewer_role'   => $actorRole,
+                'review_notes'    => 'Direct Commit by Administrator (GIS_ADMIN_DIRECT_EDIT)',
+                'reviewed_at'     => date('Y-m-d H:i:s'),
+                'applied_at'      => date('Y-m-d H:i:s'),
+                'created_at'      => date('Y-m-d H:i:s'),
+                'updated_at'      => date('Y-m-d H:i:s'),
+            ]);
+
+            $db->transComplete();
+
+            return $this->response->setJSON([
+                'status'           => 'success',
+                'is_direct_commit' => true,
+                'message'          => 'Sambungan jalur berhasil dihapus dari topologi aktif (Direct Commit).'
+            ]);
         }
 
         return $this->response->setJSON([
             'status'  => 'success',
-            'message' => "Relasi topologi berhasil divalidasi & diverifikasi ($parentId -> $childId)."
+            'message' => 'Usulan pemutusan jalur telah diajukan untuk ditelaah Supervisor.'
         ]);
+    }
+
+    public function apiUpdateSegmentGeometry(): ResponseInterface
+    {
+        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        
+        $penyulangId = (int)($payload['penyulang_id'] ?? 0);
+        $sourceId    = (int)($payload['source_asset_id'] ?? 0);
+        $targetId    = (int)($payload['target_asset_id'] ?? 0);
+        $geometry    = $payload['geometry'] ?? [];
+
+        if ($penyulangId <= 0 || empty($geometry['coordinates'])) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'message' => 'Data penyulang dan koordinat segmen tidak valid.'
+            ]);
+        }
+
+        $fieldService = new \App\Services\FieldAssetCorrectionService();
+        $result = $fieldService->proposeTranslineCorrection($penyulangId, $geometry, "Pembaruan geometri segmen aset #$sourceId ke #$targetId", $this->getActor());
+
+        return $this->response->setJSON($result);
     }
 
     public function geoJson(): ResponseInterface

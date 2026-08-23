@@ -111,15 +111,44 @@
         border-radius: 18px;
     }
 
-    /* Floating Transline Geometry Editor Toolbar */
-    .gis-transline-toolbar {
+    /* Asset-Anchored Transline Editor Mode Banner */
+    .gis-mode-banner {
         position: absolute;
-        top: 12px;
+        top: 68px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 1005;
         background: rgba(15, 23, 42, 0.96);
-        backdrop-filter: blur(14px);
+        backdrop-filter: blur(12px);
+        color: #ffffff;
+        border-radius: 30px;
+        padding: 8px 18px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        border: 2px solid #10b981;
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        max-width: 92vw;
+        font-size: 12px;
+        font-weight: 600;
+        animation: slideDownBanner 0.25s ease;
+    }
+
+    @keyframes slideDownBanner {
+        from { transform: translateX(-50%) translateY(-15px); opacity: 0; }
+        to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+
+    /* Segment Geometry Toolbar */
+    .gis-segment-toolbar {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1005;
+        background: rgba(15, 23, 42, 0.96);
+        backdrop-filter: blur(12px);
         color: #ffffff;
         border-radius: 40px;
         padding: 8px 18px;
@@ -129,26 +158,6 @@
         box-shadow: 0 10px 35px rgba(0,0,0,0.5);
         border: 2px solid #10b981;
         max-width: 95vw;
-        flex-wrap: wrap;
-    }
-
-    .gis-editor-guide-banner {
-        position: absolute;
-        top: 70px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1004;
-        background: rgba(16, 185, 129, 0.95);
-        color: #ffffff;
-        border-radius: 25px;
-        padding: 6px 16px;
-        font-size: 11px;
-        font-weight: 600;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-        display: none;
-        align-items: center;
-        gap: 8px;
-        max-width: 90vw;
     }
 
     /* Floating Summary Pill */
@@ -224,7 +233,7 @@
     }
 
     /* ==========================================================================
-       PH-MOB-GIS-UX-02: Strict Compact Asset Quick Card (< 210px Height)
+       Compact Enterprise Asset Quick Card (< 210px Height)
        ========================================================================== */
     .gis-asset-quick-card {
         position: absolute;
@@ -257,6 +266,14 @@
             bottom: calc(var(--gis-mob-bottom-nav) + env(safe-area-inset-bottom, 0px) + 8px) !important;
             width: auto !important;
             max-width: none !important;
+        }
+        .gis-mode-banner {
+            top: 60px !important;
+            padding: 6px 12px !important;
+            font-size: 11px !important;
+        }
+        .gis-segment-toolbar {
+            bottom: calc(var(--gis-mob-bottom-nav) + env(safe-area-inset-bottom, 0px) + 8px) !important;
         }
         .gis-summary-bar {
             bottom: calc(var(--gis-mob-bottom-nav) + env(safe-area-inset-bottom, 0px) + 8px) !important;
@@ -408,7 +425,8 @@
     .asset-ring-critical { border: 2.5px solid #ef4444; background: rgba(239, 68, 68, 0.2); animation: pulse-critical-flat 2s infinite; }
     .asset-ring-emergency { border: 3px solid #dc2626; background: rgba(220, 38, 38, 0.25); animation: pulse-emergency-flat 1.4s infinite; }
     .asset-ring-inactive { border: 2px solid #64748b; opacity: 0.6; }
-    .asset-ring-proposed { border: 2.5px dashed #8b5cf6; background: rgba(139, 92, 246, 0.15); animation: pulse-proposed-flat 2s infinite; }
+    .asset-ring-proposed { border: 3px dashed #10b981; background: rgba(16, 185, 129, 0.25); animation: pulse-proposed-flat 1.5s infinite; }
+    .asset-ring-source { border: 3px solid #0284c7; background: rgba(2, 132, 199, 0.35); animation: pulse-proposed-flat 1.2s infinite; }
 
     @keyframes pulse-critical-flat {
         0%, 100% { transform: scale(1); opacity: 0.8; }
@@ -419,8 +437,8 @@
         50% { transform: scale(1.4); opacity: 0.2; }
     }
     @keyframes pulse-proposed-flat {
-        0%, 100% { transform: scale(1); opacity: 0.8; }
-        50% { transform: scale(1.2); opacity: 0.4; }
+        0%, 100% { transform: scale(1); opacity: 0.9; }
+        50% { transform: scale(1.35); opacity: 0.4; }
     }
 
     .asset-flat-svg {
@@ -616,31 +634,35 @@
             </div>
         </div>
 
-        <!-- Loading Overlay -->
-        <div id="gis-loading-overlay" class="gis-loading-overlay" style="display: none;">
-            <div class="spinner-border text-warning mb-2" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
-            <span class="fw-bold font-monospace" style="font-size: 13px;">Memuat Data Jaringan GIS...</span>
+        <!-- Mode Guidance Banner -->
+        <div id="gis-mode-banner" class="gis-mode-banner">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-info-circle text-warning fs-6"></i>
+                <span id="gis-mode-banner-text">PILIH TIANG TUJUAN PADA PETA</span>
+            </div>
+            <button type="button" id="btn-cancel-active-mode" class="btn btn-sm btn-outline-light rounded-pill px-3 py-0" style="font-size: 11px;">
+                Batal
+            </button>
         </div>
 
-        <!-- Floating Transline Geometry Editor Toolbar -->
-        <div id="gis-transline-toolbar" class="gis-transline-toolbar">
-            <span class="badge bg-success font-monospace px-2 py-1"><i class="fas fa-draw-polygon me-1"></i> EDIT JALUR</span>
-            <span id="transline-points-info" class="small text-light font-monospace" style="font-size: 11px;">0 Titik</span>
-            <button type="button" id="btn-undo-transline" class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" title="Undo">
+        <!-- Segment Geometry Toolbar (Only for single connected segment) -->
+        <div id="gis-segment-toolbar" class="gis-segment-toolbar">
+            <span class="badge bg-success font-monospace px-2 py-1"><i class="fas fa-draw-polygon me-1"></i> EDIT BENTUK SEGMEN</span>
+            <button type="button" id="btn-undo-segment" class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" title="Undo">
                 <i class="fas fa-undo" style="font-size: 11px;"></i>
             </button>
-            <button type="button" id="btn-open-save-transline-modal" class="btn btn-sm btn-success rounded-pill fw-bold px-3 py-1 shadow" style="font-size: 11px;">
-                <i class="fas fa-save me-1"></i> Simpan
+            <button type="button" id="btn-save-segment-geometry" class="btn btn-sm btn-success rounded-pill fw-bold px-3 py-1 shadow" style="font-size: 11px;">
+                <i class="fas fa-save me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Bentuk' : 'Simpan Bentuk' ?>
             </button>
-            <button type="button" id="btn-cancel-transline" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" style="font-size: 11px;">
+            <button type="button" id="btn-cancel-segment" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" style="font-size: 11px;">
                 <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <!-- Guidance Banner for Transline Editing -->
-        <div id="gis-editor-guide-banner" class="gis-editor-guide-banner">
-            <i class="fas fa-info-circle text-warning"></i>
-            <span>Tarik titik bulat hijau untuk menggeser jalur, klik di garis untuk tambah titik.</span>
+        <!-- Loading Overlay -->
+        <div id="gis-loading-overlay" class="gis-loading-overlay" style="display: none;">
+            <div class="spinner-border text-warning mb-2" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+            <span class="fw-bold font-monospace" style="font-size: 13px;">Memuat Data Jaringan GIS...</span>
         </div>
 
         <!-- Floating Bottom Summary Bar -->
@@ -657,7 +679,7 @@
                 </div>
                 <div class="gis-fab-item" id="fab-edit-transline">
                     <i class="fas fa-route text-info fs-6"></i>
-                    <span>Edit Transline</span>
+                    <span>Koreksi Jalur Aset</span>
                 </div>
                 <div class="gis-fab-item" id="fab-open-filter">
                     <i class="fas fa-filter text-primary fs-6"></i>
@@ -734,8 +756,8 @@
                 <button type="button" id="btn-quick-edit-sheet" class="btn btn-sm btn-outline-primary flex-fill fw-bold rounded-pill py-1" style="font-size: 11px;">
                     <i class="fas fa-edit me-1"></i> Edit
                 </button>
-                <button type="button" id="btn-quick-more-sheet" class="btn btn-sm btn-outline-secondary flex-fill fw-bold rounded-pill py-1" style="font-size: 11px;">
-                    <i class="fas fa-ellipsis-h me-1"></i> Lainnya
+                <button type="button" id="btn-quick-transline-menu" class="btn btn-sm btn-outline-info flex-fill fw-bold rounded-pill py-1" style="font-size: 11px; color: #0284c7; border-color: #0284c7;">
+                    <i class="fas fa-route me-1"></i> Jalur
                 </button>
             </div>
         </div>
@@ -748,7 +770,122 @@
 </div>
 
 <!-- ========================================================
-     ACTION SHEET: EDIT ASET (Progressive Intent)
+     ASSET-ANCHORED TRANSLINE ACTION SHEET (Jalur Menu)
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-transline-menu">
+    <div class="offcanvas-body p-3">
+        <div class="sheet-drag-handle"></div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-route text-info me-2"></i> Koreksi Jalur Aset</h6>
+                <span id="transline-sheet-subtitle" class="small text-muted font-monospace">-</span>
+            </div>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="d-flex flex-column gap-2">
+            <div class="sheet-action-item" id="act-change-connection">
+                <i class="fas fa-arrows-split-up-and-left text-primary fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold">Ubah Koneksi Aset</span>
+                    <span class="small text-muted">Pindahkan sambungan tiang ini ke tiang lain</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted small"></i>
+            </div>
+            <div class="sheet-action-item" id="act-edit-segment-shape">
+                <i class="fas fa-bezier-curve text-success fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold">Edit Bentuk Jalur Segmen</span>
+                    <span class="small text-muted">Sesuaikan lekukan garis konduktor sekitar tiang</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted small"></i>
+            </div>
+            <div class="sheet-action-item" id="act-add-connection">
+                <i class="fas fa-plus-circle text-info fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold">Tambah Sambungan Baru</span>
+                    <span class="small text-muted">Hubungkan tiang ini ke tiang percabangan baru</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted small"></i>
+            </div>
+            <div class="sheet-action-item destructive" id="act-delete-connection">
+                <i class="fas fa-trash-alt text-danger fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold text-danger">Hapus Jalur Salah</span>
+                    <span class="small text-danger opacity-75">Putus sambungan garis yang salah dari tiang ini</span>
+                </div>
+                <i class="fas fa-chevron-right text-danger small"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     CONFIRM CONNECTION SHEET (Ubah / Tambah Sambungan)
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-confirm-connection-sheet">
+    <div class="offcanvas-body p-3">
+        <div class="sheet-drag-handle"></div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-check-circle text-success me-2"></i> Konfirmasi Sambungan Jalur</h6>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="card bg-light border-0 rounded-3 p-3 mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Aset Sumber:</span>
+                <span id="conn-source-name" class="small fw-bold text-dark text-truncate" style="max-width: 200px;">-</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Aset Tujuan:</span>
+                <span id="conn-target-name" class="small fw-bold text-primary text-truncate" style="max-width: 200px;">-</span>
+            </div>
+            <div class="d-flex justify-content-between border-top pt-1 mt-1">
+                <span class="small text-muted">Estimasi Jarak Rentang:</span>
+                <span id="conn-distance-meters" class="small fw-bold font-monospace text-success">0 meter</span>
+            </div>
+        </div>
+
+        <?php if (!empty($isAdmin)): ?>
+            <div class="alert alert-success small mb-3 border-0 bg-success bg-opacity-10 text-success py-2">
+                <i class="fas fa-shield-check me-1"></i> <strong>DIRECT COMMIT:</strong> Sebagai Administrator, topologi akan langsung diperbarui di database master.
+            </div>
+        <?php endif; ?>
+
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary w-50 rounded-pill" data-bs-dismiss="offcanvas">
+                Batal
+            </button>
+            <button type="button" id="btn-submit-connection" class="btn btn-success w-50 fw-bold rounded-pill shadow-sm">
+                <i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     DELETE CONNECTION SHEET (Hapus Sambungan Salah)
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-delete-connection-sheet">
+    <div class="offcanvas-body p-3">
+        <div class="sheet-drag-handle"></div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0 text-danger"><i class="fas fa-trash-alt text-danger me-2"></i> Hapus Sambungan Jalur</h6>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <p class="small text-muted mb-3">Pilih sambungan jalur yang ingin diputus dari aset <strong id="delete-conn-source-name">-</strong>:</p>
+        
+        <div id="delete-connection-list" class="d-flex flex-column gap-2 mb-3">
+            <!-- Dynamically populated connected edges -->
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary w-100 rounded-pill" data-bs-dismiss="offcanvas">
+            Batal
+        </button>
+    </div>
+</div>
+
+<!-- ========================================================
+     ACTION SHEET: EDIT ASET PARAMETER
      ======================================================== -->
 <div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-edit-menu">
     <div class="offcanvas-body p-3">
@@ -774,59 +911,12 @@
                 </div>
                 <i class="fas fa-chevron-right text-muted small"></i>
             </div>
-            <div class="sheet-action-item" id="act-edit-transline-from-edit">
-                <i class="fas fa-route text-info fs-5"></i>
-                <div class="flex-grow-1">
-                    <span class="d-block fw-bold">Koreksi Rute Transline Terkait</span>
-                    <span class="small text-muted">Tarik dan sesuaikan jalur konduktor sekitar tiang</span>
-                </div>
-                <i class="fas fa-chevron-right text-muted small"></i>
-            </div>
         </div>
     </div>
 </div>
 
 <!-- ========================================================
-     ACTION SHEET: LAINNYA / MORE (Secondary & Destructive Actions)
-     ======================================================== -->
-<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-more-menu">
-    <div class="offcanvas-body p-3">
-        <div class="sheet-drag-handle"></div>
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-ellipsis-h text-secondary me-2"></i> Menu Aksi Lainnya</h6>
-            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="d-flex flex-column gap-2">
-            <div class="sheet-action-item" id="act-more-transline">
-                <i class="fas fa-route text-info fs-5"></i>
-                <div class="flex-grow-1">
-                    <span class="d-block fw-bold">Koreksi Jalur di Sekitar Aset</span>
-                    <span class="small text-muted">Buka editor jalur konduktor</span>
-                </div>
-                <i class="fas fa-chevron-right text-muted small"></i>
-            </div>
-            <a id="act-more-dt-link" href="#" class="sheet-action-item">
-                <i class="fas fa-cube text-primary fs-5"></i>
-                <div class="flex-grow-1">
-                    <span class="d-block fw-bold">Buka Lembar Full Digital Twin</span>
-                    <span class="small text-muted">Histori inspeksi, health index & analitik</span>
-                </div>
-                <i class="fas fa-arrow-up-right-from-square text-muted small"></i>
-            </a>
-            <div class="sheet-action-item destructive mt-1" id="act-more-missing">
-                <i class="fas fa-trash-alt text-danger fs-5"></i>
-                <div class="flex-grow-1">
-                    <span class="d-block fw-bold text-danger">Laporkan Aset Sudah Tidak Ada</span>
-                    <span class="small text-danger opacity-75">Tandai soft-missing jika tiang dibongkar</span>
-                </div>
-                <i class="fas fa-chevron-right text-danger small"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ========================================================
-     2️⃣ FULL ASSET DETAIL BOTTOM SHEET (Scrollable with Sticky Footer)
+     FULL ASSET DETAIL BOTTOM SHEET (Scrollable with Sticky Footer)
      ======================================================== -->
 <div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-detail">
     <div class="offcanvas-body p-3 pb-0" style="overflow-y: auto;">
@@ -926,7 +1016,7 @@
 </div>
 
 <!-- ========================================================
-     MODAL 1: KOREKSI PARAMETER ASET FISIK
+     MODAL: KOREKSI PARAMETER ASET FISIK
      ======================================================== -->
 <div class="modal fade" id="modal-koreksi-asset" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -993,7 +1083,7 @@
 </div>
 
 <!-- ========================================================
-     MODAL 2: TAMBAH ASET BARU DI LAPANGAN
+     MODAL: TAMBAH ASET BARU DI LAPANGAN
      ======================================================== -->
 <div class="modal fade" id="modal-tambah-asset" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -1060,40 +1150,7 @@
 </div>
 
 <!-- ========================================================
-     MODAL 3: LAPORAN ASET HILANG
-     ======================================================== -->
-<div class="modal fade" id="modal-laporkan-missing" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header bg-danger text-white py-3">
-                <h6 class="modal-title fw-bold mb-0"><i class="fas fa-trash-alt me-2"></i> Laporkan Aset Sudah Tidak Ada</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form id="form-laporkan-missing">
-                    <input type="hidden" id="missing-asset-id">
-                    <div class="alert alert-warning small mb-3">
-                        <i class="fas fa-shield-alt me-1"></i> <strong>Enterprise Soft-State:</strong> Aset tidak dihapus permanen dari database agar histori pemeliharaan dan audit trail tetap utuh.
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Kode Aset</label>
-                        <input type="text" id="missing-asset-code" class="form-control form-control-sm bg-light" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Alasan / Bukti Pembongkaran <span class="text-danger">*</span></label>
-                        <textarea id="missing-reason" class="form-control form-control-sm" rows="3" placeholder="Contoh: Tiang sudah dicabut karena relokasi pelebaran jalan tol." required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-danger w-100 fw-bold rounded-pill shadow-sm">
-                        <i class="fas fa-exclamation-triangle me-1"></i> Laporkan Aset Tidak Ada
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ========================================================
-     MODAL 4: TELAAH USULAN KOREKSI (APPROVAL LAYER)
+     MODAL: ANTREAN USULAN KOREKSI (APPROVAL LAYER)
      ======================================================== -->
 <div class="modal fade" id="modal-pending-corrections" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -1114,73 +1171,6 @@
     </div>
 </div>
 
-<!-- ========================================================
-     MODAL 5: KHUSUS USULAN KOREKSI JALUR TRANSLINE
-     ======================================================== -->
-<div class="modal fade" id="modal-koreksi-transline" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header <?= !empty($isAdmin) ? 'bg-success' : 'bg-primary' ?> text-white py-3">
-                <div class="d-flex align-items-center gap-2">
-                    <h6 class="modal-title fw-bold mb-0 text-white"><i class="fas fa-route me-2"></i> <?= !empty($isAdmin) ? 'Simpan Jalur Transline Master' : 'Usulan Koreksi Jalur Transline' ?></h6>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form id="form-koreksi-transline">
-                    <?php if (!empty($isAdmin)): ?>
-                        <div class="alert alert-success small mb-3 border-0 bg-success bg-opacity-10 text-success">
-                            <i class="fas fa-shield-check me-1"></i> <strong>DIRECT COMMIT (ADMIN):</strong> Sebagai Administrator, perubahan geometri jalur ini akan langsung di-commit ke database master dan aktif secara seketika pada peta.
-                        </div>
-                    <?php else: ?>
-                        <div class="alert alert-info small mb-3 border-0" style="background: rgba(2, 132, 199, 0.1); color: #0369a1;">
-                            <i class="fas fa-info-circle me-1"></i> <strong>DUAL-LAYER TOPOLOGY:</strong> Usulan jalur Anda akan dibuat sebagai versi usulan baru (garis hijau) tanpa menimpa data master secara langsung sampai disetujui Supervisor.
-                        </div>
-                    <?php endif; ?>
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Penyulang Terpilih</label>
-                        <input type="text" id="modal-transline-feeder-name" class="form-control form-control-sm bg-light fw-bold font-monospace" readonly>
-                    </div>
-
-                    <div class="card bg-light border-0 rounded-3 p-3 mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small text-muted">Titik Jalur Eksisting (Biru)</span>
-                            <span id="modal-transline-orig-points" class="fw-bold font-monospace small">0 Titik</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small text-muted">Titik Jalur Baru (Hijau)</span>
-                            <span id="modal-transline-prop-points" class="fw-bold text-success font-monospace small">0 Titik</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center border-top pt-1 mt-1">
-                            <span class="small fw-bold text-dark">Perubahan Geometri (Delta)</span>
-                            <span id="modal-transline-delta" class="fw-bold text-primary font-monospace small">±0 Titik</span>
-                        </div>
-                    </div>
-
-                    <div id="transline-delta-warning" class="alert alert-warning small mb-3" style="display: none;">
-                        <i class="fas fa-exclamation-triangle me-1"></i> <strong>Perhatian:</strong> Perubahan ini mengurangi banyak titik dari jalur master. Pastikan perubahan memang disengaja.
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-dark">Penjelasan / Catatan Perubahan <span class="text-danger">*</span></label>
-                        <textarea id="modal-transline-rationale" class="form-control form-control-sm" rows="3" placeholder="Contoh: Penyesuaian rute tiang SUTM mengikuti jalan baru di sisi timur." required></textarea>
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary w-50 rounded-pill" data-bs-dismiss="modal">
-                            Kembali Edit
-                        </button>
-                        <button type="submit" id="btn-submit-transline" class="btn <?= !empty($isAdmin) ? 'btn-success' : 'btn-primary' ?> w-50 fw-bold rounded-pill shadow-sm">
-                            <i class="fas <?= !empty($isAdmin) ? 'fa-check-circle' : 'fa-paper-plane' ?> me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan Jalur' ?>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -1194,8 +1184,8 @@ document.addEventListener("DOMContentLoaded", function () {
     var map = null;
     var markerCluster = null;
     var translinePolylineLayer = null;
-    var proposedTranslineLayer = null;
-    var translineEditMarkersGroup = null;
+    var previewConnectionLayer = null;
+    var segmentEditLayer = null;
     var userLocationMarker = null;
 
     var currentFeederId = 0;
@@ -1207,11 +1197,47 @@ document.addEventListener("DOMContentLoaded", function () {
     var currentUlpRequestId = 0;
     var activeAssetProps = null;
 
-    // Transline Editing Mode States & History Stack
-    var isEditingTransline = false;
-    var originalVertices = [];
-    var editedVertices = [];
-    var undoStack = [];
+    // ========================================================
+    // 🎯 ASSET-ANCHORED TRANSLINE EDITOR STATE MACHINE
+    // ========================================================
+    var TRANSLINE_STATE = {
+        IDLE: 'IDLE',
+        SELECT_SOURCE: 'SELECT_SOURCE',
+        CHANGE_CONNECTION: 'CHANGE_CONNECTION',
+        ADD_CONNECTION: 'ADD_CONNECTION',
+        EDIT_SEGMENT_SHAPE: 'EDIT_SEGMENT_SHAPE',
+        DELETE_CONNECTION: 'DELETE_CONNECTION'
+    };
+
+    var translineEditor = {
+        state: TRANSLINE_STATE.IDLE,
+        sourceAsset: null,
+        targetAsset: null,
+        activeSegment: null,
+        editedVertices: [],
+        undoStack: []
+    };
+
+    function setEditorState(newState, bannerText) {
+        translineEditor.state = newState;
+        var banner = document.getElementById('gis-mode-banner');
+        var bannerLabel = document.getElementById('gis-mode-banner-text');
+
+        if (newState === TRANSLINE_STATE.IDLE) {
+            banner.style.display = 'none';
+            document.getElementById('gis-segment-toolbar').style.display = 'none';
+            if (previewConnectionLayer) previewConnectionLayer.clearLayers();
+            if (segmentEditLayer) segmentEditLayer.clearLayers();
+            renderFilteredLayers(false);
+        } else {
+            banner.style.display = 'flex';
+            if (bannerLabel && bannerText) bannerLabel.textContent = bannerText;
+        }
+    }
+
+    document.getElementById('btn-cancel-active-mode').addEventListener('click', function () {
+        setEditorState(TRANSLINE_STATE.IDLE);
+    });
 
     // ========================================================
     // 🛡️ ZERO-ERROR RUNTIME UTILITIES & API CONTRACT HELPER
@@ -1229,6 +1255,17 @@ document.addEventListener("DOMContentLoaded", function () {
             latitude !== 0 &&
             longitude !== 0
         );
+    }
+
+    function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+        var R = 6371000;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return Math.round(R * c);
     }
 
     async function fetchJson(url, options) {
@@ -1374,6 +1411,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById('btn-back-to-setup').addEventListener('click', function () {
         closeAssetQuickCard();
+        setEditorState(TRANSLINE_STATE.IDLE);
         document.getElementById('gis-workspace-screen').style.display = 'none';
         document.getElementById('gis-setup-screen').style.display = 'block';
     });
@@ -1431,11 +1469,11 @@ document.addEventListener("DOMContentLoaded", function () {
         map.addLayer(markerCluster);
 
         translinePolylineLayer = L.featureGroup().addTo(map);
-        proposedTranslineLayer = L.featureGroup().addTo(map);
-        translineEditMarkersGroup = L.featureGroup().addTo(map);
+        previewConnectionLayer = L.featureGroup().addTo(map);
+        segmentEditLayer = L.featureGroup().addTo(map);
 
         map.on('zoomend', function () {
-            if (currentFeederId > 0 && !isEditingTransline) {
+            if (currentFeederId > 0 && translineEditor.state === TRANSLINE_STATE.IDLE) {
                 var newLOD = getLODCategory(map.getZoom());
                 if (newLOD !== currentLOD) {
                     loadGisNetworkOnDemand(false);
@@ -1443,21 +1481,15 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        map.on('click', function (e) {
-            if (isEditingTransline) {
-                if (isValidLatLng(e.latlng.lat, e.latlng.lng)) {
-                    saveUndoState();
-                    editedVertices.push([e.latlng.lat, e.latlng.lng]);
-                    renderTranslineEditor();
-                }
-            } else {
+        map.on('click', function () {
+            if (translineEditor.state === TRANSLINE_STATE.IDLE) {
                 closeAssetQuickCard();
             }
         });
     }
 
     /**
-     * Flat 2D SVG Marker Creation with Condition Ring & Robust Coordinate Guard
+     * Flat 2D SVG Marker Creation with Condition Ring
      */
     function createAssetVisualMarker(feature) {
         var props   = feature.properties || {};
@@ -1466,7 +1498,6 @@ document.addEventListener("DOMContentLoaded", function () {
         var overlay = props.condition_overlay || {};
 
         if (!geom.coordinates || !isValidLatLng(geom.coordinates[1], geom.coordinates[0])) {
-            console.error('[GIS SKIPPED INVALID ASSET MARKER]', { id: props.id, code: props.kode_asset, coords: geom.coordinates });
             return null;
         }
 
@@ -1478,7 +1509,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var symbolKey = visual.symbol_key || props.jenis_asset || 'ASET';
 
         var iconHtml = `
-            <div class="asset-network-marker-wrap" title="${props.nama_asset || ''} (${symbolKey})">
+            <div class="asset-network-marker-wrap" id="marker-asset-${props.id}" title="${props.nama_asset || ''} (${symbolKey})">
                 <span class="asset-condition-halo ${ringClass}"></span>
                 <img src="${svgPath}" alt="${symbolKey}" class="asset-flat-svg" />
             </div>
@@ -1496,10 +1527,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
         marker.on('click', function (e) {
             L.DomEvent.stopPropagation(e);
-            openAssetQuickCard(props, svgPath, [lng, lat]);
+            handleMarkerTap(props, svgPath, [lng, lat]);
         });
 
         return marker;
+    }
+
+    // ========================================================
+    // 🎯 ASSET-ANCHORED INTERACTION DISPATCHER
+    // ========================================================
+    function handleMarkerTap(props, svgPath, coords) {
+        var clickedAsset = Object.assign({}, props, {
+            latitude: (props.latitude !== undefined && props.latitude !== null && isValidLatLng(props.latitude, 0)) ? Number(props.latitude) : Number(coords[1]),
+            longitude: (props.longitude !== undefined && props.longitude !== null && isValidLatLng(0, props.longitude)) ? Number(props.longitude) : Number(coords[0]),
+            _svgPath: svgPath,
+            _coords: coords
+        });
+
+        // Case A: State is CHANGE_CONNECTION or ADD_CONNECTION -> Target Selected!
+        if (translineEditor.state === TRANSLINE_STATE.CHANGE_CONNECTION || translineEditor.state === TRANSLINE_STATE.ADD_CONNECTION) {
+            if (translineEditor.sourceAsset && translineEditor.sourceAsset.id === clickedAsset.id) {
+                alert('Silakan pilih tiang TUJUAN yang berbeda dengan tiang sumber!');
+                return;
+            }
+
+            translineEditor.targetAsset = clickedAsset;
+            previewNewConnectionLine(translineEditor.sourceAsset, translineEditor.targetAsset);
+            return;
+        }
+
+        // Case B: State is SELECT_SOURCE -> User picked an asset to edit from global FAB
+        if (translineEditor.state === TRANSLINE_STATE.SELECT_SOURCE) {
+            setEditorState(TRANSLINE_STATE.IDLE);
+            openAssetQuickCard(clickedAsset, svgPath, coords);
+            openTranslineActionSheet(clickedAsset);
+            return;
+        }
+
+        // Default Case: Open Quick Card
+        openAssetQuickCard(clickedAsset, svgPath, coords);
     }
 
     // ========================================================
@@ -1555,7 +1621,7 @@ document.addEventListener("DOMContentLoaded", function () {
         detailSheet.show();
     });
 
-    // Quick Action 2: Open Edit Action Sheet
+    // Quick Action 2: Open Edit Parameter Sheet
     document.getElementById('btn-quick-edit-sheet').addEventListener('click', function () {
         if (!activeAssetProps) return;
         closeAssetQuickCard();
@@ -1563,25 +1629,355 @@ document.addEventListener("DOMContentLoaded", function () {
         editMenu.show();
     });
 
-    // Quick Action 3: Open More Action Sheet
-    document.getElementById('btn-quick-more-sheet').addEventListener('click', function () {
+    // Quick Action 3: Open Asset-Anchored Transline Action Sheet (Jalur)
+    document.getElementById('btn-quick-transline-menu').addEventListener('click', function () {
         if (!activeAssetProps) return;
         closeAssetQuickCard();
-        document.getElementById('act-more-dt-link').href = `<?= site_url('master-assets/detail') ?>/${activeAssetProps.id}`;
-        var moreMenu = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-more-menu'));
-        moreMenu.show();
+        openTranslineActionSheet(activeAssetProps);
     });
 
-    // Manage Body Classes for Floating Mic Collisions
-    ['offcanvas-asset-detail', 'offcanvas-asset-edit-menu', 'offcanvas-asset-more-menu', 'offcanvas-filter-sheet'].forEach(id => {
-        var el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('show.bs.offcanvas', () => document.body.classList.add('gis-drawer-active'));
-            el.addEventListener('hidden.bs.offcanvas', () => document.body.classList.remove('gis-drawer-active'));
+    function openTranslineActionSheet(assetProps) {
+        translineEditor.sourceAsset = assetProps;
+        document.getElementById('transline-sheet-subtitle').textContent = `${assetProps.kode_asset || ''} - ${assetProps.nama_asset || ''}`;
+        var sheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-transline-menu'));
+        sheet.show();
+    }
+
+    // ========================================================
+    // 🔀 WORKFLOW 1: UBAH KONEKSI ASET
+    // ========================================================
+    document.getElementById('act-change-connection').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
+        setEditorState(TRANSLINE_STATE.CHANGE_CONNECTION, `SENTUH TIANG TUJUAN KONEKSI (Sumber: ${translineEditor.sourceAsset.nama_asset})`);
+    });
+
+    // ========================================================
+    // 🔀 WORKFLOW 2: TAMBAH SAMBUNGAN
+    // ========================================================
+    document.getElementById('act-add-connection').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
+        setEditorState(TRANSLINE_STATE.ADD_CONNECTION, `SENTUH TIANG TUJUAN SAMBUNGAN BARU (Sumber: ${translineEditor.sourceAsset.nama_asset})`);
+    });
+
+    function previewNewConnectionLine(sourceAsset, targetAsset) {
+        if (!previewConnectionLayer) return;
+        previewConnectionLayer.clearLayers();
+
+        var lat1 = sourceAsset.latitude;
+        var lon1 = sourceAsset.longitude;
+        var lat2 = targetAsset.latitude;
+        var lon2 = targetAsset.longitude;
+
+        if (!isValidLatLng(lat1, lon1) || !isValidLatLng(lat2, lon2)) {
+            alert('Koordinat tiang tidak valid.');
+            return;
+        }
+
+        var distance = calculateHaversineDistance(lat1, lon1, lat2, lon2);
+
+        // Draw preview line
+        var poly = L.polyline([[lat1, lon1], [lat2, lon2]], {
+            color: '#10b981',
+            weight: 4.5,
+            dashArray: '8, 8',
+            opacity: 0.95
+        }).addTo(previewConnectionLayer);
+
+        map.fitBounds(poly.getBounds(), { padding: [60, 60] });
+
+        // Open Confirmation Sheet
+        document.getElementById('conn-source-name').textContent = `${sourceAsset.nama_asset} (${sourceAsset.kode_asset || ''})`;
+        document.getElementById('conn-target-name').textContent = `${targetAsset.nama_asset} (${targetAsset.kode_asset || ''})`;
+        document.getElementById('conn-distance-meters').textContent = `${distance} meter`;
+
+        var confirmSheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-confirm-connection-sheet'));
+        confirmSheet.show();
+    }
+
+    document.getElementById('btn-submit-connection').addEventListener('click', function () {
+        if (!translineEditor.sourceAsset || !translineEditor.targetAsset) return;
+
+        var mode = (translineEditor.state === TRANSLINE_STATE.CHANGE_CONNECTION) ? 'REPLACE' : 'ADD';
+        var payload = {
+            source_asset_id: translineEditor.sourceAsset.id,
+            target_asset_id: translineEditor.targetAsset.id,
+            connection_mode: mode
+        };
+
+        var submitBtn = document.getElementById('btn-submit-connection');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+
+        fetchJson('<?= site_url('gis/api-connect-topology') ?>', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+        .then(res => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
+
+            bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-confirm-connection-sheet')).hide();
+            alert(res.message);
+
+            setEditorState(TRANSLINE_STATE.IDLE);
+            loadGisNetworkOnDemand(false);
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
+            alert('Gagal memperbarui koneksi: ' + err.message);
+        });
+    });
+
+    // ========================================================
+    // 🔀 WORKFLOW 3: HAPUS JALUR SALAH
+    // ========================================================
+    document.getElementById('act-delete-connection').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
+        openDeleteConnectionSheet(translineEditor.sourceAsset);
+    });
+
+    function openDeleteConnectionSheet(sourceAsset) {
+        document.getElementById('delete-conn-source-name').textContent = sourceAsset.nama_asset;
+        var listContainer = document.getElementById('delete-connection-list');
+        listContainer.innerHTML = '';
+
+        // Find connected neighbor assets within spatial radius of 400m
+        var neighbors = [];
+        if (currentData && currentData.features) {
+            currentData.features.forEach(f => {
+                var p = f.properties || {};
+                var g = f.geometry || {};
+                if (p.id !== sourceAsset.id && g.coordinates && isValidLatLng(g.coordinates[1], g.coordinates[0])) {
+                    var d = calculateHaversineDistance(sourceAsset.latitude, sourceAsset.longitude, g.coordinates[1], g.coordinates[0]);
+                    if (d <= 350) {
+                        neighbors.push({
+                            id: p.id,
+                            nama: p.nama_asset,
+                            kode: p.kode_asset,
+                            distance: d
+                        });
+                    }
+                }
+            });
+        }
+
+        if (neighbors.length > 0) {
+            neighbors.sort((a, b) => a.distance - b.distance);
+            neighbors.forEach(n => {
+                var row = document.createElement('div');
+                row.className = 'd-flex justify-content-between align-items-center p-2 rounded-3 border bg-light';
+                row.innerHTML = `
+                    <div style="min-width: 0; line-height: 1.2;">
+                        <span class="d-block fw-bold text-dark text-truncate" style="font-size: 12px;">${n.nama}</span>
+                        <span class="small text-muted font-monospace">${n.kode || ''} (~${n.distance}m)</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-bold" onclick="executeDisconnectTopology(${sourceAsset.id}, ${n.id}, '${n.nama.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash-alt me-1"></i> Putus
+                    </button>
+                `;
+                listContainer.appendChild(row);
+            });
+        } else {
+            listContainer.innerHTML = `<div class="text-center text-muted small py-3">Tidak ditemukan sambungan langsung di sekitar tiang ini.</div>`;
+        }
+
+        var sheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-delete-connection-sheet'));
+        sheet.show();
+    }
+
+    window.executeDisconnectTopology = function (sourceId, targetId, targetName) {
+        if (!confirm(`Putus sambungan jalur ke tiang ${targetName}?`)) return;
+
+        fetchJson('<?= site_url('gis/api-disconnect-topology') ?>', {
+            method: 'POST',
+            body: JSON.stringify({ source_asset_id: sourceId, target_asset_id: targetId })
+        })
+        .then(res => {
+            bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-delete-connection-sheet')).hide();
+            alert(res.message);
+            loadGisNetworkOnDemand(false);
+        })
+        .catch(err => {
+            alert('Gagal memutus sambungan: ' + err.message);
+        });
+    };
+
+    // ========================================================
+    // 🔀 WORKFLOW 4: EDIT BENTUK JALUR SEGMEN (Single Segment ONLY)
+    // ========================================================
+    document.getElementById('act-edit-segment-shape').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
+        startEditSingleSegment(translineEditor.sourceAsset);
+    });
+
+    function startEditSingleSegment(sourceAsset) {
+        if (!segmentEditLayer) return;
+        segmentEditLayer.clearLayers();
+
+        // Find nearest connected neighbor to form a 2-point segment
+        var nearest = null;
+        var minDist = Infinity;
+
+        if (currentData && currentData.features) {
+            currentData.features.forEach(f => {
+                var p = f.properties || {};
+                var g = f.geometry || {};
+                if (p.id !== sourceAsset.id && g.coordinates && isValidLatLng(g.coordinates[1], g.coordinates[0])) {
+                    var d = calculateHaversineDistance(sourceAsset.latitude, sourceAsset.longitude, g.coordinates[1], g.coordinates[0]);
+                    if (d < minDist && d <= 350) {
+                        minDist = d;
+                        nearest = {
+                            id: p.id,
+                            nama: p.nama_asset,
+                            lat: g.coordinates[1],
+                            lng: g.coordinates[0]
+                        };
+                    }
+                }
+            });
+        }
+
+        if (!nearest) {
+            alert('Tidak ditemukan tiang tetangga terdekat yang terhubung untuk diedit bentuk segmennya.');
+            return;
+        }
+
+        translineEditor.targetAsset = nearest;
+        translineEditor.editedVertices = [
+            [sourceAsset.latitude, sourceAsset.longitude],
+            [nearest.lat, nearest.lng]
+        ];
+        translineEditor.undoStack = [JSON.parse(JSON.stringify(translineEditor.editedVertices))];
+
+        setEditorState(TRANSLINE_STATE.EDIT_SEGMENT_SHAPE, `EDIT BENTUK SEGMEN (${sourceAsset.nama_asset} → ${nearest.nama})`);
+        document.getElementById('gis-segment-toolbar').style.display = 'flex';
+
+        renderSingleSegmentEditor();
+    }
+
+    function renderSingleSegmentEditor() {
+        segmentEditLayer.clearLayers();
+        var vertices = translineEditor.editedVertices;
+
+        // Draw interactive emerald polyline with touch hit area
+        var poly = L.polyline(vertices, {
+            color: '#10b981',
+            weight: 5,
+            opacity: 0.95
+        }).addTo(segmentEditLayer);
+
+        poly.on('click', function (e) {
+            if (isValidLatLng(e.latlng.lat, e.latlng.lng)) {
+                translineEditor.undoStack.push(JSON.parse(JSON.stringify(vertices)));
+                vertices.splice(1, 0, [e.latlng.lat, e.latlng.lng]);
+                renderSingleSegmentEditor();
+            }
+        });
+
+        // Render draggable touch-friendly handles (touch target >= 44px)
+        vertices.forEach((pt, idx) => {
+            var handle = L.circleMarker(pt, {
+                radius: 9,
+                fillColor: '#10b981',
+                color: '#ffffff',
+                weight: 3,
+                fillOpacity: 1
+            });
+
+            var isDragging = false;
+            handle.on('mousedown touchstart', function () {
+                isDragging = true;
+                map.dragging.disable();
+            });
+
+            map.on('mousemove touchmove', function (e) {
+                if (isDragging && isValidLatLng(e.latlng.lat, e.latlng.lng)) {
+                    handle.setLatLng(e.latlng);
+                    vertices[idx] = [e.latlng.lat, e.latlng.lng];
+                    poly.setLatLngs(vertices);
+                }
+            });
+
+            map.on('mouseup touchend', function () {
+                if (isDragging) {
+                    isDragging = false;
+                    map.dragging.enable();
+                    translineEditor.undoStack.push(JSON.parse(JSON.stringify(vertices)));
+                }
+            });
+
+            if (idx > 0 && idx < vertices.length - 1) {
+                handle.on('contextmenu', function (e) {
+                    L.DomEvent.stopPropagation(e);
+                    if (confirm('Hapus titik lekukan ini?')) {
+                        translineEditor.undoStack.push(JSON.parse(JSON.stringify(vertices)));
+                        vertices.splice(idx, 1);
+                        renderSingleSegmentEditor();
+                    }
+                });
+            }
+
+            segmentEditLayer.addLayer(handle);
+        });
+
+        map.fitBounds(poly.getBounds(), { padding: [80, 80] });
+    }
+
+    document.getElementById('btn-undo-segment').addEventListener('click', function () {
+        if (translineEditor.undoStack.length > 1) {
+            translineEditor.undoStack.pop();
+            translineEditor.editedVertices = JSON.parse(JSON.stringify(translineEditor.undoStack[translineEditor.undoStack.length - 1]));
+            renderSingleSegmentEditor();
+        } else {
+            alert('Tidak ada riwayat undo.');
         }
     });
 
-    // Sub-actions in Edit Menu
+    document.getElementById('btn-cancel-segment').addEventListener('click', function () {
+        setEditorState(TRANSLINE_STATE.IDLE);
+    });
+
+    document.getElementById('btn-save-segment-geometry').addEventListener('click', function () {
+        var validVertices = translineEditor.editedVertices.filter(pt => isValidLatLng(pt[0], pt[1]));
+        if (validVertices.length < 2) {
+            alert('Minimal 2 titik diperlukan.');
+            return;
+        }
+
+        var geoJsonGeometry = {
+            type: 'LineString',
+            coordinates: validVertices.map(pt => [pt[1], pt[0]])
+        };
+
+        fetchJson('<?= site_url('gis/api-update-segment') ?>', {
+            method: 'POST',
+            body: JSON.stringify({
+                penyulang_id: currentFeederId,
+                source_asset_id: translineEditor.sourceAsset.id,
+                target_asset_id: translineEditor.targetAsset ? translineEditor.targetAsset.id : 0,
+                geometry: geoJsonGeometry
+            })
+        })
+        .then(res => {
+            alert(res.message);
+            setEditorState(TRANSLINE_STATE.IDLE);
+            loadGisNetworkOnDemand(false);
+        })
+        .catch(err => {
+            alert('Gagal menyimpan bentuk segmen: ' + err.message);
+        });
+    });
+
+    // ========================================================
+    // GLOBAL FAB: EDIT TRANSLINE (Activates Source Selection)
+    // ========================================================
+    document.getElementById('fab-edit-transline').addEventListener('click', function () {
+        collapseFab();
+        setEditorState(TRANSLINE_STATE.SELECT_SOURCE, 'SENTUH TIANG PADA PETA UNTUK MEMULAI KOREKSI JALUR');
+    });
+
+    // Sub-actions in Parameter Edit Menu
     document.getElementById('act-edit-params').addEventListener('click', function () {
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-edit-menu')).hide();
         openCorrectionModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
@@ -1592,26 +1988,10 @@ document.addEventListener("DOMContentLoaded", function () {
         openCorrectionModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
     });
 
-    document.getElementById('act-edit-transline-from-edit').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-edit-menu')).hide();
-        startTranslineEditAroundAsset(activeAssetProps.latitude, activeAssetProps.longitude);
-    });
-
     document.getElementById('btn-sheet-open-edit').addEventListener('click', function () {
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-detail')).hide();
         var editMenu = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-edit-menu'));
         editMenu.show();
-    });
-
-    // Sub-actions in More Menu
-    document.getElementById('act-more-transline').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-more-menu')).hide();
-        startTranslineEditAroundAsset(activeAssetProps.latitude, activeAssetProps.longitude);
-    });
-
-    document.getElementById('act-more-missing').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-more-menu')).hide();
-        openMissingModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
     });
 
     // Render Markers & Network Lines
@@ -1622,14 +2002,12 @@ document.addEventListener("DOMContentLoaded", function () {
             markerCluster.clearLayers();
         }
         if (translinePolylineLayer) translinePolylineLayer.clearLayers();
-        if (proposedTranslineLayer) proposedTranslineLayer.clearLayers();
 
         if (!currentData) return;
 
         // Render Feeder LineString / MultiLineString Segments with high clarity
         if (currentData.transline && currentData.transline.geometry) {
             var geom = currentData.transline.geometry;
-            originalVertices = [];
 
             if (geom.type === 'MultiLineString' && geom.coordinates) {
                 geom.coordinates.forEach(function (segment) {
@@ -1642,7 +2020,6 @@ document.addEventListener("DOMContentLoaded", function () {
                             lineJoin: 'round'
                         });
                         translinePolylineLayer.addLayer(poly);
-                        validSeg.forEach(pt => originalVertices.push([pt[1], pt[0]]));
                     }
                 });
             } else if (geom.type === 'LineString' && geom.coordinates) {
@@ -1655,7 +2032,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         lineJoin: 'round'
                     });
                     translinePolylineLayer.addLayer(poly);
-                    validSeg.forEach(pt => originalVertices.push([pt[1], pt[0]]));
                 }
             }
         }
@@ -1748,11 +2124,6 @@ document.addEventListener("DOMContentLoaded", function () {
         openAddAssetModal();
     });
 
-    document.getElementById('fab-edit-transline').addEventListener('click', function () {
-        collapseFab();
-        activateTranslineEditor();
-    });
-
     document.getElementById('fab-open-filter').addEventListener('click', function () {
         collapseFab();
         openFilterDrawer();
@@ -1808,7 +2179,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ========================================================
-    // PH-AI-GIS-01A: FIELD ASSET CORRECTION MODAL HANDLERS
+    // FIELD ASSET CORRECTION MODAL HANDLERS
     // ========================================================
     window.openCorrectionModal = function (encodedProps) {
         var props = JSON.parse(decodeURIComponent(encodedProps));
@@ -1855,7 +2226,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ========================================================
-    // PH-AI-GIS-01C: ADD NEW ASSET WORKFLOW
+    // ADD NEW ASSET WORKFLOW
     // ========================================================
     function openAddAssetModal() {
         if (!currentFeederId) {
@@ -1922,301 +2293,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ========================================================
-    // PH-AI-GIS-01C: REPORT MISSING ASSET
-    // ========================================================
-    window.openMissingModal = function (encodedProps) {
-        var props = JSON.parse(decodeURIComponent(encodedProps));
-        document.getElementById('missing-asset-id').value = props.id || '';
-        document.getElementById('missing-asset-code').value = `${props.kode_asset || ''} - ${props.nama_asset || ''}`;
-        document.getElementById('missing-reason').value = '';
-
-        var modal = new bootstrap.Modal(document.getElementById('modal-laporkan-missing'));
-        modal.show();
-    };
-
-    document.getElementById('form-laporkan-missing').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var payload = {
-            asset_id: document.getElementById('missing-asset-id').value,
-            reason: document.getElementById('missing-reason').value,
-        };
-
-        fetchJson('<?= site_url('gis/api-report-missing') ?>', {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        })
-        .then(res => {
-            if (res.status === 'success') {
-                bootstrap.Modal.getInstance(document.getElementById('modal-laporkan-missing')).hide();
-                alert(res.message);
-                loadGisNetworkOnDemand(false);
-            } else {
-                alert('Gagal: ' + (res.message || 'Terjadi kesalahan'));
-            }
-        })
-        .catch(err => {
-            alert('Gagal melaporkan aset hilang: ' + err.message);
-        });
-    });
-
-    // ========================================================
-    // PH-AI-GIS-01B: DEDICATED TRANSLINE GEOMETRY EDITOR
-    // ========================================================
-    window.startTranslineEditAroundAsset = function (lat, lng) {
-        closeAssetQuickCard();
-        if (!isEditingTransline) {
-            activateTranslineEditor();
-        }
-        if (isValidLatLng(lat, lng) && map) {
-            map.setView([lat, lng], 17);
-        } else if (currentData && currentData.bbox && map) {
-            var b = currentData.bbox;
-            if (isValidLatLng(b.min_lat, b.min_lng) && isValidLatLng(b.max_lat, b.max_lng)) {
-                map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [40, 40] });
-            }
-        }
-    };
-
-    function activateTranslineEditor() {
-        if (!currentData || !currentData.transline) {
-            alert('Data transline penyulang belum dimuat!');
-            return;
-        }
-
-        isEditingTransline = true;
-        undoStack = [];
-
-        var toolbar = document.getElementById('gis-transline-toolbar');
-        var banner = document.getElementById('gis-editor-guide-banner');
-        toolbar.style.display = 'flex';
-        banner.style.display = 'flex';
-
-        editedVertices = [];
-        var geom = currentData.transline.geometry;
-        if (geom && geom.coordinates) {
-            if (geom.type === 'LineString') {
-                editedVertices = geom.coordinates.filter(pt => isValidLatLng(pt[1], pt[0])).map(pt => [pt[1], pt[0]]);
-            } else if (geom.type === 'MultiLineString' && geom.coordinates.length > 0) {
-                editedVertices = geom.coordinates[0].filter(pt => isValidLatLng(pt[1], pt[0])).map(pt => [pt[1], pt[0]]);
-            }
-        }
-
-        if (originalVertices.length > 0 && editedVertices.length === 0) {
-            editedVertices = originalVertices.slice();
-        }
-
-        saveUndoState();
-        renderTranslineEditor();
-    }
-
-    function saveUndoState() {
-        undoStack.push(JSON.parse(JSON.stringify(editedVertices)));
-        if (undoStack.length > 20) undoStack.shift();
-    }
-
-    document.getElementById('btn-undo-transline').addEventListener('click', function () {
-        if (undoStack.length > 1) {
-            undoStack.pop();
-            editedVertices = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
-            renderTranslineEditor();
-        } else {
-            alert('Tidak ada aksi undo.');
-        }
-    });
-
-    document.getElementById('btn-cancel-transline').addEventListener('click', function () {
-        if (confirm('Batalkan perubahan pada jalur transline?')) {
-            isEditingTransline = false;
-            document.getElementById('gis-transline-toolbar').style.display = 'none';
-            document.getElementById('gis-editor-guide-banner').style.display = 'none';
-            proposedTranslineLayer.clearLayers();
-            translineEditMarkersGroup.clearLayers();
-            renderFilteredLayers(false);
-        }
-    });
-
-    function renderTranslineEditor() {
-        proposedTranslineLayer.clearLayers();
-        translineEditMarkersGroup.clearLayers();
-
-        var validEdited = editedVertices.filter(pt => isValidLatLng(pt[0], pt[1]));
-
-        if (validEdited.length > 1) {
-            var proposedPoly = L.polyline(validEdited, {
-                color: '#10b981',
-                weight: 5,
-                dashArray: '8, 8',
-                opacity: 0.95,
-                lineJoin: 'round'
-            }).addTo(proposedTranslineLayer);
-
-            proposedPoly.on('click', function (e) {
-                if (isValidLatLng(e.latlng.lat, e.latlng.lng)) {
-                    var clickedPt = [e.latlng.lat, e.latlng.lng];
-                    var insertIndex = findClosestSegmentIndex(clickedPt, validEdited);
-                    saveUndoState();
-                    editedVertices.splice(insertIndex + 1, 0, clickedPt);
-                    renderTranslineEditor();
-                }
-            });
-        }
-
-        var delta = validEdited.length - originalVertices.length;
-        var deltaSign = delta >= 0 ? `+${delta}` : `${delta}`;
-        document.getElementById('transline-points-info').textContent = `${validEdited.length} Titik (${deltaSign})`;
-
-        validEdited.forEach(function (pt, idx) {
-            var handle = L.circleMarker(pt, {
-                radius: 7,
-                fillColor: '#10b981',
-                color: '#ffffff',
-                weight: 2.5,
-                fillOpacity: 1
-            });
-
-            var isDragging = false;
-            handle.on('mousedown touchstart', function () {
-                isDragging = true;
-                map.dragging.disable();
-            });
-
-            map.on('mousemove touchmove', function (e) {
-                if (isDragging && isValidLatLng(e.latlng.lat, e.latlng.lng)) {
-                    handle.setLatLng(e.latlng);
-                    editedVertices[idx] = [e.latlng.lat, e.latlng.lng];
-                    if (proposedPoly) proposedPoly.setLatLngs(editedVertices);
-                }
-            });
-
-            map.on('mouseup touchend', function () {
-                if (isDragging) {
-                    isDragging = false;
-                    map.dragging.enable();
-                    saveUndoState();
-                    renderTranslineEditor();
-                }
-            });
-
-            handle.on('contextmenu', function (e) {
-                L.DomEvent.stopPropagation(e);
-                if (validEdited.length <= 2) {
-                    alert('Minimal 2 titik diperlukan untuk jalur.');
-                    return;
-                }
-                if (confirm(`Hapus titik vertex #${idx + 1}?`)) {
-                    saveUndoState();
-                    editedVertices.splice(idx, 1);
-                    renderTranslineEditor();
-                }
-            });
-
-            translineEditMarkersGroup.addLayer(handle);
-        });
-    }
-
-    function findClosestSegmentIndex(point, vertices) {
-        var minDistance = Infinity;
-        var bestIndex = 0;
-        for (var i = 0; i < vertices.length - 1; i++) {
-            var dist = distanceToSegment(point, vertices[i], vertices[i + 1]);
-            if (dist < minDistance) {
-                minDistance = dist;
-                bestIndex = i;
-            }
-        }
-        return bestIndex;
-    }
-
-    function distanceToSegment(p, v, w) {
-        var l2 = (v[0] - w[0]) * (v[0] - w[0]) + (v[1] - w[1]) * (v[1] - w[1]);
-        if (l2 === 0) return Math.hypot(p[0] - v[0], p[1] - v[1]);
-        var t = Math.max(0, Math.min(1, ((p[0] - v[0]) * (w[0] - v[0]) + (p[1] - v[1]) * (w[1] - v[1])) / l2));
-        var proj = [v[0] + t * (w[0] - v[0]), v[1] + t * (w[1] - v[1])];
-        return Math.hypot(p[0] - proj[0], p[1] - proj[1]);
-    }
-
-    document.getElementById('btn-open-save-transline-modal').addEventListener('click', function () {
-        var validEdited = editedVertices.filter(pt => isValidLatLng(pt[0], pt[1]));
-        if (validEdited.length < 2) {
-            alert('Minimal 2 titik koordinat valid diperlukan untuk membentuk jalur transline.');
-            return;
-        }
-
-        document.getElementById('modal-transline-feeder-name').value = `${currentFeederName} (${currentUlpName})`;
-        document.getElementById('modal-transline-orig-points').textContent = `${originalVertices.length} Titik`;
-        document.getElementById('modal-transline-prop-points').textContent = `${validEdited.length} Titik`;
-
-        var delta = validEdited.length - originalVertices.length;
-        document.getElementById('modal-transline-delta').textContent = delta >= 0 ? `+${delta} Titik` : `${delta} Titik`;
-        document.getElementById('modal-transline-rationale').value = '';
-
-        var deltaWarning = document.getElementById('transline-delta-warning');
-        if (delta < -10) {
-            deltaWarning.style.display = 'block';
-        } else {
-            deltaWarning.style.display = 'none';
-        }
-
-        var modal = new bootstrap.Modal(document.getElementById('modal-koreksi-transline'));
-        modal.show();
-    });
-
-    document.getElementById('form-koreksi-transline').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var rationale = document.getElementById('modal-transline-rationale').value;
-        var validEdited = editedVertices.filter(pt => isValidLatLng(pt[0], pt[1]));
-
-        if (validEdited.length < 2) {
-            alert('Minimal 2 titik valid diperlukan.');
-            return;
-        }
-
-        var geoJsonGeometry = {
-            type: 'LineString',
-            coordinates: validEdited.map(pt => [pt[1], pt[0]])
-        };
-
-        var submitBtn = document.getElementById('btn-submit-transline');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
-
-        fetchJson('<?= site_url('gis/api-propose-transline') ?>', {
-            method: 'POST',
-            body: JSON.stringify({
-                penyulang_id: currentFeederId,
-                geometry: geoJsonGeometry,
-                rationale: rationale
-            })
-        })
-        .then(res => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<?= !empty($isAdmin) ? '<i class="fas fa-check-circle me-1"></i> Terapkan Langsung' : '<i class="fas fa-paper-plane me-1"></i> Kirim Usulan Jalur' ?>';
-
-            if (res.status === 'success') {
-                bootstrap.Modal.getInstance(document.getElementById('modal-koreksi-transline')).hide();
-                alert(res.message);
-                isEditingTransline = false;
-                document.getElementById('gis-transline-toolbar').style.display = 'none';
-                document.getElementById('gis-editor-guide-banner').style.display = 'none';
-                proposedTranslineLayer.clearLayers();
-                translineEditMarkersGroup.clearLayers();
-                
-                // Live re-load on-demand data to render the new active/proposed topology immediately!
-                loadGisNetworkOnDemand(false);
-                fetchPendingBadgeCount();
-            } else {
-                alert('Gagal: ' + (res.message || 'Terjadi kesalahan'));
-            }
-        })
-        .catch(err => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<?= !empty($isAdmin) ? '<i class="fas fa-check-circle me-1"></i> Terapkan Langsung' : '<i class="fas fa-paper-plane me-1"></i> Kirim Usulan Jalur' ?>';
-            alert('Gagal memproses transline: ' + err.message);
-        });
-    });
-
-    // ========================================================
-    // PH-AI-GIS-01C: PENDING CORRECTIONS & APPROVAL LAYER
+    // PENDING CORRECTIONS & APPROVAL LAYER
     // ========================================================
     function fetchPendingBadgeCount() {
         if (!currentFeederId) return;
@@ -2257,7 +2334,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span class="badge bg-primary">${typeLabel}</span>
                                 <span class="font-monospace text-muted small">${c.correction_code}</span>
                             </div>
-                            <h6 class="fw-bold mb-1 text-dark">${c.nama_asset || afterData.nama_asset || 'Usulan Jalur Transline'}</h6>
+                            <h6 class="fw-bold mb-1 text-dark">${c.nama_asset || afterData.nama_asset || 'Koreksi Topologi Jaringan'}</h6>
                             <p class="small text-secondary mb-2"><strong>Alasan:</strong> ${c.rationale || '-'}</p>
                             <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
                                 <span class="small text-muted"><i class="fas fa-user me-1"></i> ${c.reporter_name} (${c.reporter_role})</span>

@@ -257,7 +257,6 @@
         to { transform: translateY(0); opacity: 1; }
     }
 
-    /* Mobile Viewport: Bottom-Centered above Mobile Bottom Navigation */
     @media (max-width: 768px) {
         .gis-asset-quick-card {
             position: fixed !important;
@@ -283,7 +282,6 @@
         }
     }
 
-    /* Desktop Viewport: Floating Bottom-Right Inspection Card (NOT Full Width!) */
     @media (min-width: 769px) {
         .gis-asset-quick-card {
             position: absolute !important;
@@ -295,7 +293,6 @@
         }
     }
 
-    /* Quick Card Info Layout */
     .quick-card-header {
         display: flex;
         align-items: center;
@@ -314,21 +311,18 @@
         gap: 6px;
     }
 
-    /* Collision-Aware Global Voice Mic Elimination */
+    /* Voice Mic Collision Elimination */
     body.gis-quickcard-active #btn-global-mic,
     body.gis-drawer-active #btn-global-mic {
         opacity: 0 !important;
         pointer-events: none !important;
         visibility: hidden !important;
-        transition: opacity 0.2s ease;
     }
 
-    /* ==========================================================================
-       Progressive Disclosure Offcanvas Sheets
-       ========================================================================== */
+    /* Offcanvas Sheets */
     .offcanvas-compact-sheet {
         height: auto !important;
-        max-height: 70vh !important;
+        max-height: 75vh !important;
         border-radius: 20px 20px 0 0 !important;
         border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
         box-shadow: 0 -10px 35px rgba(15, 23, 42, 0.25) !important;
@@ -337,7 +331,7 @@
 
     @media (min-width: 769px) {
         .offcanvas-compact-sheet {
-            max-width: 440px !important;
+            max-width: 460px !important;
             margin: 0 auto !important;
             left: 50% !important;
             transform: translateX(-50%) translateY(100%) !important;
@@ -381,7 +375,6 @@
         background: #fee2e2;
     }
 
-    /* Sticky Footer for Detail Sheet above Android Nav */
     .sheet-sticky-footer {
         position: sticky;
         bottom: 0;
@@ -426,7 +419,6 @@
     .asset-ring-emergency { border: 3px solid #dc2626; background: rgba(220, 38, 38, 0.25); animation: pulse-emergency-flat 1.4s infinite; }
     .asset-ring-inactive { border: 2px solid #64748b; opacity: 0.6; }
     .asset-ring-proposed { border: 3px dashed #10b981; background: rgba(16, 185, 129, 0.25); animation: pulse-proposed-flat 1.5s infinite; }
-    .asset-ring-source { border: 3px solid #0284c7; background: rgba(2, 132, 199, 0.35); animation: pulse-proposed-flat 1.2s infinite; }
 
     @keyframes pulse-critical-flat {
         0%, 100% { transform: scale(1); opacity: 0.8; }
@@ -508,7 +500,7 @@
                     </div>
                 </div>
                 <span class="badge bg-success rounded-pill px-3 py-1 font-monospace" style="font-size: 10px;">
-                    <i class="fas fa-bolt me-1"></i> READY
+                    <i class="fas fa-bolt me-1"></i> <?= esc($userRole) ?>
                 </span>
             </div>
 
@@ -679,7 +671,7 @@
                 </div>
                 <div class="gis-fab-item" id="fab-edit-transline">
                     <i class="fas fa-route text-info fs-6"></i>
-                    <span>Koreksi Jalur Aset</span>
+                    <span>Kelola Jalur Aset</span>
                 </div>
                 <div class="gis-fab-item" id="fab-open-filter">
                     <i class="fas fa-filter text-primary fs-6"></i>
@@ -725,11 +717,9 @@
         </div>
 
         <!-- ========================================================
-             1️⃣ COMPACT ENTERPRISE ASSET QUICK CARD (Progressive Disclosure)
-             Max Visual Height: 200px - Peta Tetap Dominan (>=70% Viewport)
+             1️⃣ COMPACT ENTERPRISE ASSET QUICK CARD (< 210px Height)
              ======================================================== -->
         <div id="asset-quick-card" class="gis-asset-quick-card">
-            <!-- Row 1: Icon + Name + Code + Close -->
             <div class="quick-card-header">
                 <div class="d-flex align-items-center gap-2" style="min-width: 0;">
                     <img id="quick-card-img" src="" alt="Icon" class="flex-shrink-0" style="width: 28px; height: 28px; object-fit: contain;">
@@ -741,14 +731,12 @@
                 <button type="button" class="btn-close btn-close-sm flex-shrink-0 ms-2" style="font-size: 10px;" onclick="closeAssetQuickCard()"></button>
             </div>
 
-            <!-- Row 2: Status Badges -->
             <div class="quick-card-badges">
                 <span id="quick-card-badge" class="badge bg-success" style="font-size: 10px; font-weight: 700;">● GOOD</span>
                 <span id="quick-card-type" class="badge bg-light text-dark border font-monospace" style="font-size: 10px;">TM-1</span>
                 <span id="quick-card-jenis" class="badge bg-light text-secondary border" style="font-size: 10px;">JTM</span>
             </div>
 
-            <!-- Row 3: 3 Action Buttons -->
             <div class="quick-card-actions">
                 <button type="button" id="btn-quick-detail" class="btn btn-sm btn-primary flex-fill fw-bold rounded-pill shadow-sm py-1" style="font-size: 11px;">
                     <i class="fas fa-eye me-1"></i> Detail
@@ -770,14 +758,14 @@
 </div>
 
 <!-- ========================================================
-     ASSET-ANCHORED TRANSLINE ACTION SHEET (Jalur Menu)
+     ASSET-ANCHORED TRANSLINE ACTION SHEET (Kelola Jalur Aset)
      ======================================================== -->
 <div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-transline-menu">
     <div class="offcanvas-body p-3">
         <div class="sheet-drag-handle"></div>
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-route text-info me-2"></i> Koreksi Jalur Aset</h6>
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-route text-info me-2"></i> Kelola Jalur Aset</h6>
                 <span id="transline-sheet-subtitle" class="small text-muted font-monospace">-</span>
             </div>
             <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
@@ -786,32 +774,40 @@
             <div class="sheet-action-item" id="act-change-connection">
                 <i class="fas fa-arrows-split-up-and-left text-primary fs-5"></i>
                 <div class="flex-grow-1">
-                    <span class="d-block fw-bold">Ubah Koneksi Aset</span>
-                    <span class="small text-muted">Pindahkan sambungan tiang ini ke tiang lain</span>
+                    <span class="d-block fw-bold">🔗 Ubah Sambungan Aset</span>
+                    <span class="small text-muted">Pindahkan jalur sambungan tiang ini ke tiang lain</span>
                 </div>
                 <i class="fas fa-chevron-right text-muted small"></i>
             </div>
             <div class="sheet-action-item" id="act-edit-segment-shape">
                 <i class="fas fa-bezier-curve text-success fs-5"></i>
                 <div class="flex-grow-1">
-                    <span class="d-block fw-bold">Edit Bentuk Jalur Segmen</span>
-                    <span class="small text-muted">Sesuaikan lekukan garis konduktor sekitar tiang</span>
+                    <span class="d-block fw-bold">✏️ Edit Bentuk Jalur</span>
+                    <span class="small text-muted">Koreksi lekukan polyline segmen sekitar tiang</span>
                 </div>
                 <i class="fas fa-chevron-right text-muted small"></i>
             </div>
             <div class="sheet-action-item" id="act-add-connection">
                 <i class="fas fa-plus-circle text-info fs-5"></i>
                 <div class="flex-grow-1">
-                    <span class="d-block fw-bold">Tambah Sambungan Baru</span>
-                    <span class="small text-muted">Hubungkan tiang ini ke tiang percabangan baru</span>
+                    <span class="d-block fw-bold">➕ Tambah Sambungan</span>
+                    <span class="small text-muted">Hubungkan tiang ini ke cabang/tiang baru</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted small"></i>
+            </div>
+            <div class="sheet-action-item" id="act-edit-conductor-spec">
+                <i class="fas fa-bolt text-warning fs-5"></i>
+                <div class="flex-grow-1">
+                    <span class="d-block fw-bold">⚡ Spesifikasi Konduktor</span>
+                    <span class="small text-muted">Ubah jenis kabel (AAAC, A3CS, XLPE) & ukuran mm²</span>
                 </div>
                 <i class="fas fa-chevron-right text-muted small"></i>
             </div>
             <div class="sheet-action-item destructive" id="act-delete-connection">
                 <i class="fas fa-trash-alt text-danger fs-5"></i>
                 <div class="flex-grow-1">
-                    <span class="d-block fw-bold text-danger">Hapus Jalur Salah</span>
-                    <span class="small text-danger opacity-75">Putus sambungan garis yang salah dari tiang ini</span>
+                    <span class="d-block fw-bold text-danger">🗑 Hapus Sambungan / Jalur</span>
+                    <span class="small text-danger opacity-75">Putus sambungan jalur salah dari tiang ini</span>
                 </div>
                 <i class="fas fa-chevron-right text-danger small"></i>
             </div>
@@ -820,13 +816,13 @@
 </div>
 
 <!-- ========================================================
-     CONFIRM CONNECTION SHEET (Ubah / Tambah Sambungan)
+     CONFIRM CONNECTION SHEET (Ubah / Tambah Sambungan & Konduktor)
      ======================================================== -->
 <div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-confirm-connection-sheet">
     <div class="offcanvas-body p-3">
         <div class="sheet-drag-handle"></div>
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-check-circle text-success me-2"></i> Konfirmasi Sambungan Jalur</h6>
+            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-check-circle text-success me-2"></i> Konfirmasi Sambungan & Konduktor</h6>
             <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
         </div>
 
@@ -839,15 +835,44 @@
                 <span class="small text-muted">Aset Tujuan:</span>
                 <span id="conn-target-name" class="small fw-bold text-primary text-truncate" style="max-width: 200px;">-</span>
             </div>
-            <div class="d-flex justify-content-between border-top pt-1 mt-1">
-                <span class="small text-muted">Estimasi Jarak Rentang:</span>
+            <div class="d-flex justify-content-between border-top pt-1 mt-1 mb-2">
+                <span class="small text-muted">Estimasi Jarak:</span>
                 <span id="conn-distance-meters" class="small fw-bold font-monospace text-success">0 meter</span>
+            </div>
+
+            <!-- Conductor Specs Pickers -->
+            <div class="row g-2 pt-2 border-top">
+                <div class="col-6">
+                    <label class="small fw-bold text-secondary mb-1">Jenis Konduktor</label>
+                    <select id="conn-conductor-type" class="form-select form-select-sm fw-bold border-primary text-primary">
+                        <option value="AAAC" selected>AAAC (All Alloy)</option>
+                        <option value="A3CS">A3CS (Shielded)</option>
+                        <option value="A3C">A3C</option>
+                        <option value="ACSR">ACSR (Steel Core)</option>
+                        <option value="MV-TIC">MV-TIC (Twisted)</option>
+                        <option value="XLPE">XLPE (Kabel Tanah)</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="small fw-bold text-secondary mb-1">Ukuran Penampang</label>
+                    <select id="conn-conductor-size" class="form-select form-select-sm fw-bold border-primary text-primary">
+                        <option value="35 mm²">35 mm²</option>
+                        <option value="50 mm²">50 mm²</option>
+                        <option value="70 mm²">70 mm²</option>
+                        <option value="95 mm²">95 mm²</option>
+                        <option value="120 mm²">120 mm²</option>
+                        <option value="150 mm²" selected>150 mm²</option>
+                        <option value="185 mm²">185 mm²</option>
+                        <option value="240 mm²">240 mm²</option>
+                        <option value="300 mm²">300 mm²</option>
+                    </select>
+                </div>
             </div>
         </div>
 
         <?php if (!empty($isAdmin)): ?>
             <div class="alert alert-success small mb-3 border-0 bg-success bg-opacity-10 text-success py-2">
-                <i class="fas fa-shield-check me-1"></i> <strong>DIRECT COMMIT:</strong> Sebagai Administrator, topologi akan langsung diperbarui di database master.
+                <i class="fas fa-shield-check me-1"></i> <strong>ADMIN DIRECT COMMIT:</strong> Topologi & spesifikasi kabel langsung aktif di database master tanpa persetujuan SPV.
             </div>
         <?php endif; ?>
 
@@ -857,6 +882,64 @@
             </button>
             <button type="button" id="btn-submit-connection" class="btn btn-success w-50 fw-bold rounded-pill shadow-sm">
                 <i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     EDIT CONDUCTOR SPECIFICATION SHEET (Spesifikasi Jalur Existing)
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-conductor-spec-sheet">
+    <div class="offcanvas-body p-3">
+        <div class="sheet-drag-handle"></div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-bolt text-warning me-2"></i> Spesifikasi Konduktor Segmen</h6>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="card bg-light border-0 rounded-3 p-3 mb-3">
+            <div class="mb-2">
+                <label class="small fw-bold text-muted d-block mb-1">Pilih Segmen Sambungan:</label>
+                <select id="spec-segment-select" class="form-select form-select-sm fw-bold border-secondary">
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <label class="small fw-bold text-secondary mb-1">Jenis Konduktor</label>
+                    <select id="spec-conductor-type" class="form-select form-select-sm fw-bold border-warning text-dark">
+                        <option value="AAAC" selected>AAAC</option>
+                        <option value="A3CS">A3CS (Shielded)</option>
+                        <option value="A3C">A3C</option>
+                        <option value="ACSR">ACSR</option>
+                        <option value="MV-TIC">MV-TIC</option>
+                        <option value="XLPE">XLPE</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="small fw-bold text-secondary mb-1">Ukuran Penampang</label>
+                    <select id="spec-conductor-size" class="form-select form-select-sm fw-bold border-warning text-dark">
+                        <option value="35 mm²">35 mm²</option>
+                        <option value="50 mm²">50 mm²</option>
+                        <option value="70 mm²">70 mm²</option>
+                        <option value="95 mm²">95 mm²</option>
+                        <option value="120 mm²">120 mm²</option>
+                        <option value="150 mm²" selected>150 mm²</option>
+                        <option value="185 mm²">185 mm²</option>
+                        <option value="240 mm²">240 mm²</option>
+                        <option value="300 mm²">300 mm²</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary w-50 rounded-pill" data-bs-dismiss="offcanvas">
+                Batal
+            </button>
+            <button type="button" id="btn-submit-conductor-spec" class="btn btn-warning w-50 fw-bold rounded-pill shadow-sm text-dark">
+                <i class="fas fa-save me-1"></i> <?= !empty($isAdmin) ? 'Simpan Langsung' : 'Kirim Usulan' ?>
             </button>
         </div>
     </div>
@@ -952,7 +1035,7 @@
             </div>
         </div>
 
-        <!-- Sticky Action Footer above Android safe area -->
+        <!-- Sticky Action Footer -->
         <div class="sheet-sticky-footer">
             <a id="detail-sheet-dt-link" href="#" class="btn btn-primary flex-fill fw-bold rounded-pill text-white py-2 shadow-sm" style="font-size: 12px;">
                 <i class="fas fa-cube me-1"></i> Digital Twin &rarr;
@@ -1196,6 +1279,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var currentRequestId = 0;
     var currentUlpRequestId = 0;
     var activeAssetProps = null;
+    var masterConductorsList = [];
 
     // ========================================================
     // 🎯 ASSET-ANCHORED TRANSLINE EDITOR STATE MACHINE
@@ -1310,6 +1394,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
         return payload;
     }
+
+    // Load Master Conductors Library
+    fetchJson('<?= site_url('gis/api-conductors') ?>')
+        .then(res => {
+            if (res.status === 'success' && res.data) {
+                masterConductorsList = res.data;
+            }
+        })
+        .catch(err => console.error('Failed to load master conductors', err));
 
     // ========================================================
     // STAGE 1: SETUP LOGIC (Cascading Options & Quick Chips)
@@ -1556,7 +1649,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Case B: State is SELECT_SOURCE -> User picked an asset to edit from global FAB
+        // Case B: State is SELECT_SOURCE -> User picked an asset from global FAB
         if (translineEditor.state === TRANSLINE_STATE.SELECT_SOURCE) {
             setEditorState(TRANSLINE_STATE.IDLE);
             openAssetQuickCard(clickedAsset, svgPath, coords);
@@ -1685,7 +1778,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         map.fitBounds(poly.getBounds(), { padding: [60, 60] });
 
-        // Open Confirmation Sheet
+        // Open Confirmation Sheet with Conductor Attributes
         document.getElementById('conn-source-name').textContent = `${sourceAsset.nama_asset} (${sourceAsset.kode_asset || ''})`;
         document.getElementById('conn-target-name').textContent = `${targetAsset.nama_asset} (${targetAsset.kode_asset || ''})`;
         document.getElementById('conn-distance-meters').textContent = `${distance} meter`;
@@ -1698,10 +1791,17 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!translineEditor.sourceAsset || !translineEditor.targetAsset) return;
 
         var mode = (translineEditor.state === TRANSLINE_STATE.CHANGE_CONNECTION) ? 'REPLACE' : 'ADD';
+        var cType = document.getElementById('conn-conductor-type').value;
+        var cSize = document.getElementById('conn-conductor-size').value;
+
         var payload = {
             source_asset_id: translineEditor.sourceAsset.id,
             target_asset_id: translineEditor.targetAsset.id,
-            connection_mode: mode
+            connection_mode: mode,
+            conductor_type: cType,
+            conductor_size: cSize,
+            conductor_material: (cType === 'XLPE') ? 'COPPER_XLPE' : ((cType === 'ACSR') ? 'ALUMINUM_STEEL' : 'ALUMINUM_ALLOY'),
+            installation_type: (cType === 'XLPE') ? 'UNDERGROUND' : ((cType === 'A3CS') ? 'OVERHEAD_INSULATED' : 'OVERHEAD')
         };
 
         var submitBtn = document.getElementById('btn-submit-connection');
@@ -1730,19 +1830,85 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ========================================================
-    // 🔀 WORKFLOW 3: HAPUS JALUR SALAH
+    // ⚡ WORKFLOW 3: SPESIFIKASI KONDUKTOR SEGMEN EXISTING
+    // ========================================================
+    document.getElementById('act-edit-conductor-spec').addEventListener('click', function () {
+        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
+        openConductorSpecSheet(translineEditor.sourceAsset);
+    });
+
+    function openConductorSpecSheet(sourceAsset) {
+        var select = document.getElementById('spec-segment-select');
+        select.innerHTML = '';
+
+        var neighbors = findConnectedNeighbors(sourceAsset);
+        if (neighbors.length > 0) {
+            neighbors.forEach(n => {
+                var opt = document.createElement('option');
+                opt.value = n.id;
+                opt.textContent = `Ke: ${n.nama} (~${n.distance}m, ${n.conductor_type || 'AAAC'} ${n.conductor_size || '150 mm²'})`;
+                opt.dataset.targetId = n.id;
+                opt.dataset.cType = n.conductor_type || 'AAAC';
+                opt.dataset.cSize = n.conductor_size || '150 mm²';
+                select.appendChild(opt);
+            });
+
+            document.getElementById('spec-conductor-type').value = neighbors[0].conductor_type || 'AAAC';
+            document.getElementById('spec-conductor-size').value = neighbors[0].conductor_size || '150 mm²';
+        } else {
+            select.innerHTML = '<option value="">Tidak ada tiang terhubung</option>';
+        }
+
+        select.onchange = function () {
+            var selectedOpt = select.options[select.selectedIndex];
+            if (selectedOpt && selectedOpt.dataset.cType) {
+                document.getElementById('spec-conductor-type').value = selectedOpt.dataset.cType;
+                document.getElementById('spec-conductor-size').value = selectedOpt.dataset.cSize;
+            }
+        };
+
+        var sheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-conductor-spec-sheet'));
+        sheet.show();
+    }
+
+    document.getElementById('btn-submit-conductor-spec').addEventListener('click', function () {
+        var select = document.getElementById('spec-segment-select');
+        var targetId = select.value;
+        if (!targetId || !translineEditor.sourceAsset) {
+            alert('Pilih segmen sambungan terlebih dahulu.');
+            return;
+        }
+
+        var cType = document.getElementById('spec-conductor-type').value;
+        var cSize = document.getElementById('spec-conductor-size').value;
+
+        fetchJson('<?= site_url('gis/api-update-conductor') ?>', {
+            method: 'POST',
+            body: JSON.stringify({
+                source_asset_id: translineEditor.sourceAsset.id,
+                target_asset_id: targetId,
+                conductor_type: cType,
+                conductor_size: cSize,
+                conductor_material: (cType === 'XLPE') ? 'COPPER_XLPE' : ((cType === 'ACSR') ? 'ALUMINUM_STEEL' : 'ALUMINUM_ALLOY')
+            })
+        })
+        .then(res => {
+            bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-conductor-spec-sheet')).hide();
+            alert(res.message);
+            loadGisNetworkOnDemand(false);
+        })
+        .catch(err => alert('Gagal: ' + err.message));
+    });
+
+    // ========================================================
+    // 🗑 WORKFLOW 4: HAPUS JALUR SALAH
     // ========================================================
     document.getElementById('act-delete-connection').addEventListener('click', function () {
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
         openDeleteConnectionSheet(translineEditor.sourceAsset);
     });
 
-    function openDeleteConnectionSheet(sourceAsset) {
-        document.getElementById('delete-conn-source-name').textContent = sourceAsset.nama_asset;
-        var listContainer = document.getElementById('delete-connection-list');
-        listContainer.innerHTML = '';
-
-        // Find connected neighbor assets within spatial radius of 400m
+    function findConnectedNeighbors(sourceAsset) {
         var neighbors = [];
         if (currentData && currentData.features) {
             currentData.features.forEach(f => {
@@ -1755,15 +1921,25 @@ document.addEventListener("DOMContentLoaded", function () {
                             id: p.id,
                             nama: p.nama_asset,
                             kode: p.kode_asset,
-                            distance: d
+                            distance: d,
+                            conductor_type: 'AAAC',
+                            conductor_size: '150 mm²'
                         });
                     }
                 }
             });
         }
+        return neighbors.sort((a, b) => a.distance - b.distance);
+    }
+
+    function openDeleteConnectionSheet(sourceAsset) {
+        document.getElementById('delete-conn-source-name').textContent = sourceAsset.nama_asset;
+        var listContainer = document.getElementById('delete-connection-list');
+        listContainer.innerHTML = '';
+
+        var neighbors = findConnectedNeighbors(sourceAsset);
 
         if (neighbors.length > 0) {
-            neighbors.sort((a, b) => a.distance - b.distance);
             neighbors.forEach(n => {
                 var row = document.createElement('div');
                 row.className = 'd-flex justify-content-between align-items-center p-2 rounded-3 border bg-light';
@@ -1804,7 +1980,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     // ========================================================
-    // 🔀 WORKFLOW 4: EDIT BENTUK JALUR SEGMEN (Single Segment ONLY)
+    // ✏ WORKFLOW 5: EDIT BENTUK JALUR SEGMEN (Single Segment ONLY)
     // ========================================================
     document.getElementById('act-edit-segment-shape').addEventListener('click', function () {
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
@@ -1815,38 +1991,26 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!segmentEditLayer) return;
         segmentEditLayer.clearLayers();
 
-        // Find nearest connected neighbor to form a 2-point segment
-        var nearest = null;
-        var minDist = Infinity;
-
-        if (currentData && currentData.features) {
-            currentData.features.forEach(f => {
-                var p = f.properties || {};
-                var g = f.geometry || {};
-                if (p.id !== sourceAsset.id && g.coordinates && isValidLatLng(g.coordinates[1], g.coordinates[0])) {
-                    var d = calculateHaversineDistance(sourceAsset.latitude, sourceAsset.longitude, g.coordinates[1], g.coordinates[0]);
-                    if (d < minDist && d <= 350) {
-                        minDist = d;
-                        nearest = {
-                            id: p.id,
-                            nama: p.nama_asset,
-                            lat: g.coordinates[1],
-                            lng: g.coordinates[0]
-                        };
-                    }
-                }
-            });
-        }
-
-        if (!nearest) {
+        var neighbors = findConnectedNeighbors(sourceAsset);
+        if (neighbors.length === 0) {
             alert('Tidak ditemukan tiang tetangga terdekat yang terhubung untuk diedit bentuk segmennya.');
             return;
         }
 
-        translineEditor.targetAsset = nearest;
+        var nearest = neighbors[0];
+        var neighborFeature = currentData.features.find(f => (f.properties && f.properties.id === nearest.id));
+        var nCoords = neighborFeature.geometry.coordinates;
+
+        translineEditor.targetAsset = {
+            id: nearest.id,
+            nama: nearest.nama,
+            lat: nCoords[1],
+            lng: nCoords[0]
+        };
+
         translineEditor.editedVertices = [
             [sourceAsset.latitude, sourceAsset.longitude],
-            [nearest.lat, nearest.lng]
+            [nCoords[1], nCoords[0]]
         ];
         translineEditor.undoStack = [JSON.parse(JSON.stringify(translineEditor.editedVertices))];
 
@@ -1974,10 +2138,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // ========================================================
     document.getElementById('fab-edit-transline').addEventListener('click', function () {
         collapseFab();
-        setEditorState(TRANSLINE_STATE.SELECT_SOURCE, 'SENTUH TIANG PADA PETA UNTUK MEMULAI KOREKSI JALUR');
+        setEditorState(TRANSLINE_STATE.SELECT_SOURCE, 'SENTUH TIANG PADA PETA UNTUK MEMILIH JALUR');
     });
 
-    // Sub-actions in Parameter Edit Menu
+    // Parameter Edit Sub-actions
     document.getElementById('act-edit-params').addEventListener('click', function () {
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-edit-menu')).hide();
         openCorrectionModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
@@ -1994,7 +2158,7 @@ document.addEventListener("DOMContentLoaded", function () {
         editMenu.show();
     });
 
-    // Render Markers & Network Lines
+    // Render Markers & Network Lines with Conductor Popup Tooltips
     function renderFilteredLayers(autoFitBounds) {
         if (typeof autoFitBounds === 'undefined') autoFitBounds = false;
 
@@ -2008,8 +2172,26 @@ document.addEventListener("DOMContentLoaded", function () {
         // Render Feeder LineString / MultiLineString Segments with high clarity
         if (currentData.transline && currentData.transline.geometry) {
             var geom = currentData.transline.geometry;
+            var edges = (currentData.transline.properties && currentData.transline.properties.edges) || [];
 
-            if (geom.type === 'MultiLineString' && geom.coordinates) {
+            if (edges.length > 0) {
+                edges.forEach(function (e) {
+                    var c = e.coordinates;
+                    if (c && c.length === 2 && isValidLatLng(c[0][1], c[0][0]) && isValidLatLng(c[1][1], c[1][0])) {
+                        var poly = L.polyline([[c[0][1], c[0][0]], [c[1][1], c[1][0]]], {
+                            color: '#0284c7',
+                            weight: 3.5,
+                            opacity: 0.9,
+                            lineJoin: 'round'
+                        });
+                        poly.bindTooltip(`⚡ <strong>${e.conductor_label || 'AAAC 150 mm²'}</strong> (${e.length_meter}m)`, {
+                            sticky: true,
+                            className: 'font-monospace small'
+                        });
+                        translinePolylineLayer.addLayer(poly);
+                    }
+                });
+            } else if (geom.type === 'MultiLineString' && geom.coordinates) {
                 geom.coordinates.forEach(function (segment) {
                     var validSeg = segment.filter(pt => isValidLatLng(pt[1], pt[0]));
                     if (validSeg.length > 1) {

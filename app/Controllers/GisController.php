@@ -43,7 +43,8 @@ class GisController extends BaseController
         $selectedPlanningId  = (int)($this->request->getGet('planning_id') ?? 0);
 
         $session = session();
-        $userRole = strtoupper((string)($session->get('role') ?? $session->get('level') ?? 'PETUGAS_LAPANGAN'));
+        $rawRole = (string)($session->get('user_role') ?? $session->get('role') ?? $session->get('level') ?? 'PETUGAS_LAPANGAN');
+        $userRole = strtoupper(trim($rawRole));
         $isAdmin  = (str_contains($userRole, 'ADMIN') || in_array($userRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
 
         // Defensive initialization & resolution of legend items
@@ -74,22 +75,15 @@ class GisController extends BaseController
     public function apiPenyulangs(): ResponseInterface
     {
         $ulpId = (int)($this->request->getGet('ulp_id') ?? 0);
-
         if ($ulpId <= 0) {
-            return $this->response->setJSON([
-                'status'     => 'success',
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'     => 'error',
+                'message'    => 'ULP wajib dipilih.',
                 'penyulangs' => []
             ]);
         }
 
-        $db = \Config\Database::connect();
-        $penyulangs = $db->table('penyulang p')
-            ->select('p.id, p.kode_penyulang, p.nama_penyulang, p.ulp_id, u.nama_ulp')
-            ->join('ulps u', 'p.ulp_id = u.id', 'left')
-            ->where('p.ulp_id', $ulpId)
-            ->orderBy('p.nama_penyulang', 'ASC')
-            ->get()
-            ->getResultArray();
+        $penyulangs = $this->assetRepository->getActivePenyulangsByUlp($ulpId);
 
         return $this->response->setJSON([
             'status'     => 'success',
@@ -98,25 +92,47 @@ class GisController extends BaseController
     }
 
     /**
-     * Endpoint Utama GIS Network On-Demand & Zoom LOD: GET /gis/api-network?penyulang_id=X&layers=JTM,GARDU,TRAFO,SWITCH&zoom=Z
+     * Endpoint API Master Conductors: GET /gis/api-conductors
+     */
+    public function apiConductors(): ResponseInterface
+    {
+        $db = \Config\Database::connect();
+        $conductors = [];
+        if ($db->tableExists('master_conductors')) {
+            $conductors = $db->table('master_conductors')
+                ->where('status', 'AKTIF')
+                ->orderBy('sort_order', 'ASC')
+                ->get()
+                ->getResultArray();
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $conductors
+        ]);
+    }
+
+    /**
+     * Endpoint API Network Data On-Demand (Berdasarkan Penyulang Terpilih)
+     * GET /gis/api-network?penyulang_id=X&zoom=Y&layers=JTM,GARDU
      */
     public function apiNetwork(): ResponseInterface
     {
         $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
-        $zoom        = (int)($this->request->getGet('zoom') ?? 14);
-        $layers      = (string)($this->request->getGet('layers') ?? 'JTM,GARDU,TRAFO,SWITCH');
-
         if ($penyulangId <= 0) {
             return $this->response->setStatusCode(422)->setJSON([
                 'status'  => 'error',
-                'message' => 'Penyulang wajib dipilih.'
+                'message' => 'Penyulang wajib dipilih untuk memuat data peta jaringan.'
             ]);
         }
 
+        $zoom   = (int)($this->request->getGet('zoom') ?? 14);
+        $layers = (string)($this->request->getGet('layers') ?? 'JTM,GARDU,TRAFO,SWITCH');
+
         $filters = [
             'penyulang_id' => $penyulangId,
-            'layers'       => explode(',', $layers),
             'zoom'         => $zoom,
+            'layers'       => $layers
         ];
 
         $userUlpId = session()->get('ulp_id');
@@ -151,6 +167,11 @@ class GisController extends BaseController
         $sourceId = (int)($payload['source_asset_id'] ?? $payload['parent_id'] ?? 0);
         $targetId = (int)($payload['target_asset_id'] ?? $payload['child_id'] ?? 0);
         $mode     = (string)($payload['connection_mode'] ?? 'REPLACE'); // 'REPLACE' or 'ADD'
+        $conductorType     = (string)($payload['conductor_type'] ?? 'AAAC');
+        $conductorSize     = (string)($payload['conductor_size'] ?? '150 mm²');
+        $conductorMaterial = (string)($payload['conductor_material'] ?? 'ALUMINUM_ALLOY');
+        $installationType  = (string)($payload['installation_type'] ?? 'OVERHEAD');
+        $circuitConfig     = (string)($payload['circuit_config'] ?? '3_PHASE');
 
         if ($sourceId <= 0 || $targetId <= 0 || $sourceId === $targetId) {
             return $this->response->setStatusCode(422)->setJSON([
@@ -185,14 +206,31 @@ class GisController extends BaseController
                 $relModel->where('child_asset_id', $targetId)->delete();
             }
 
+            $sourceAsset = $db->table('assets')->select('latitude, longitude, penyulang_id')->where('id', $sourceId)->get()->getRowArray();
+            $targetAsset = $db->table('assets')->select('latitude, longitude, penyulang_id')->where('id', $targetId)->get()->getRowArray();
+            $distance = 0.0;
+            if ($sourceAsset && $targetAsset && !empty($sourceAsset['latitude']) && !empty($sourceAsset['latitude'])) {
+                $distance = round($this->calculateHaversine((float)$sourceAsset['latitude'], (float)$sourceAsset['longitude'], (float)$targetAsset['latitude'], (float)$targetAsset['longitude']), 1);
+            }
+
             $existing = $relModel->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)->first();
             $data = [
-                'parent_asset_id' => $sourceId,
-                'child_asset_id'  => $targetId,
-                'source'          => 'GIS_ADMIN_DIRECT_EDIT',
-                'status'          => 'VERIFIED',
-                'verified_at'     => date('Y-m-d H:i:s'),
-                'is_active'       => 1,
+                'parent_asset_id'    => $sourceId,
+                'child_asset_id'     => $targetId,
+                'source_asset_id'    => $sourceId,
+                'target_asset_id'    => $targetId,
+                'relationship_type'  => 'NETWORK',
+                'conductor_type'     => $conductorType,
+                'conductor_size'     => $conductorSize,
+                'conductor_material' => $conductorMaterial,
+                'installation_type'  => $installationType,
+                'circuit_config'     => $circuitConfig,
+                'distance_meters'    => $distance,
+                'source'             => 'GIS_ADMIN_DIRECT_EDIT',
+                'status'             => 'VERIFIED',
+                'verified_by'        => $actor['id'],
+                'verified_at'        => date('Y-m-d H:i:s'),
+                'is_active'          => 1,
             ];
 
             if ($existing) {
@@ -206,9 +244,16 @@ class GisController extends BaseController
                 'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
                 'correction_type' => 'TOPOLOGY_CONNECTION',
                 'asset_id'        => $targetId,
-                'penyulang_id'    => (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0),
-                'after_payload'   => json_encode(['parent_id' => $sourceId, 'child_id' => $targetId, 'mode' => $mode]),
-                'rationale'       => 'Pembaruan koneksi jalur antar tiang oleh Administrator',
+                'penyulang_id'    => (int)($targetAsset['penyulang_id'] ?? $sourceAsset['penyulang_id'] ?? 0),
+                'after_payload'   => json_encode([
+                    'parent_id'          => $sourceId,
+                    'child_id'           => $targetId,
+                    'mode'               => $mode,
+                    'conductor_type'     => $conductorType,
+                    'conductor_size'     => $conductorSize,
+                    'conductor_material' => $conductorMaterial,
+                ]),
+                'rationale'       => "Pembaruan koneksi jalur antar tiang ($conductorType $conductorSize) oleh Administrator",
                 'reporter_name'   => $actor['name'],
                 'reporter_role'   => $actorRole,
                 'status'          => 'APPROVED',
@@ -226,17 +271,20 @@ class GisController extends BaseController
             return $this->response->setJSON([
                 'status'           => 'success',
                 'is_direct_commit' => true,
-                'message'          => 'Koneksi jalur antar aset berhasil diperbarui dan langsung aktif (Direct Commit).'
+                'message'          => "Sambungan jalur ($conductorType $conductorSize) berhasil diterapkan & langsung aktif (Direct Commit)."
             ]);
         }
 
         // NON-ADMIN PROPOSAL
         $fieldService = new \App\Services\FieldAssetCorrectionService();
         $result = $fieldService->proposeAssetCorrection([
-            'asset_id'        => $targetId,
-            'correction_type' => 'TOPOLOGY_CONNECTION',
-            'parent_asset_id' => $sourceId,
-            'rationale'       => 'Usulan perubahan koneksi jalur ke aset ID #' . $sourceId,
+            'asset_id'           => $targetId,
+            'correction_type'    => 'TOPOLOGY_CONNECTION',
+            'parent_asset_id'    => $sourceId,
+            'conductor_type'     => $conductorType,
+            'conductor_size'     => $conductorSize,
+            'conductor_material' => $conductorMaterial,
+            'rationale'          => "Usulan sambungan jalur ke aset ID #$sourceId ($conductorType $conductorSize)",
         ], $actor);
 
         return $this->response->setJSON($result);
@@ -304,9 +352,107 @@ class GisController extends BaseController
         }
 
         return $this->response->setJSON([
-            'status'  => 'success',
-            'message' => 'Usulan pemutusan jalur telah diajukan untuk ditelaah Supervisor.'
+            'status'           => 'success',
+            'is_direct_commit' => false,
+            'message'          => 'Usulan pemutusan jalur telah diajukan untuk ditelaah Supervisor.'
         ]);
+    }
+
+    public function apiUpdateConductorSpecification(): ResponseInterface
+    {
+        $payload = $this->request->getJSON(true) ?? $this->request->getPost();
+        
+        $sourceId = (int)($payload['source_asset_id'] ?? 0);
+        $targetId = (int)($payload['target_asset_id'] ?? 0);
+        $conductorType     = (string)($payload['conductor_type'] ?? 'AAAC');
+        $conductorSize     = (string)($payload['conductor_size'] ?? '150 mm²');
+        $conductorMaterial = (string)($payload['conductor_material'] ?? 'ALUMINUM_ALLOY');
+        $installationType  = (string)($payload['installation_type'] ?? 'OVERHEAD');
+        $circuitConfig     = (string)($payload['circuit_config'] ?? '3_PHASE');
+
+        if ($sourceId <= 0 || $targetId <= 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'message' => 'Kedua ID aset yang terhubung wajib disertakan.'
+            ]);
+        }
+
+        $actor = $this->getActor();
+        $actorRole = strtoupper((string)($actor['role'] ?? 'PETUGAS_LAPANGAN'));
+        $isAdmin = (str_contains($actorRole, 'ADMIN') || in_array($actorRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
+
+        $db = \Config\Database::connect();
+        $relModel = new \App\Models\AssetRelationshipModel();
+
+        if ($isAdmin) {
+            $db->transStart();
+
+            $updateData = [
+                'conductor_type'     => $conductorType,
+                'conductor_size'     => $conductorSize,
+                'conductor_material' => $conductorMaterial,
+                'installation_type'  => $installationType,
+                'circuit_config'     => $circuitConfig,
+                'updated_at'         => date('Y-m-d H:i:s'),
+            ];
+
+            // Update in both directions if present
+            $db->table('asset_relationships')
+                ->groupStart()
+                    ->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('parent_asset_id', $targetId)->where('child_asset_id', $sourceId)
+                ->groupEnd()
+                ->update($updateData);
+
+            // Audit trail
+            $db->table('field_corrections')->insert([
+                'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
+                'correction_type' => 'CONDUCTOR_SPEC_UPDATE',
+                'asset_id'        => $targetId,
+                'penyulang_id'    => (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0),
+                'after_payload'   => json_encode($updateData),
+                'rationale'       => "Pembaruan spesifikasi konduktor menjadi $conductorType $conductorSize oleh Administrator",
+                'reporter_name'   => $actor['name'],
+                'reporter_role'   => $actorRole,
+                'status'          => 'APPROVED',
+                'reviewer_name'   => $actor['name'],
+                'reviewer_role'   => $actorRole,
+                'review_notes'    => 'Direct Commit by Administrator (GIS_ADMIN_DIRECT_EDIT)',
+                'reviewed_at'     => date('Y-m-d H:i:s'),
+                'applied_at'      => date('Y-m-d H:i:s'),
+                'created_at'      => date('Y-m-d H:i:s'),
+                'updated_at'      => date('Y-m-d H:i:s'),
+            ]);
+
+            $db->transComplete();
+
+            return $this->response->setJSON([
+                'status'           => 'success',
+                'is_direct_commit' => true,
+                'message'          => "Spesifikasi konduktor ($conductorType $conductorSize) berhasil diperbarui dan langsung aktif (Direct Commit)."
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'           => 'success',
+            'is_direct_commit' => false,
+            'message'          => "Usulan perubahan spesifikasi konduktor ($conductorType $conductorSize) berhasil diajukan dan menunggu telaah supervisor."
+        ]);
+    }
+
+    private function calculateHaversine(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371000.0;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) ** 2 +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) ** 2;
+
+        return 2 * $earthRadius * atan2(sqrt($a), sqrt(1 - $a));
     }
 
     public function apiUpdateSegmentGeometry(): ResponseInterface
@@ -375,10 +521,14 @@ class GisController extends BaseController
     private function getActor(): array
     {
         $session = session();
+        $rawRole = (string)($session->get('user_role') ?? $session->get('role') ?? $session->get('level') ?? 'PETUGAS_LAPANGAN');
+        $role = strtoupper(trim($rawRole));
+        $name = (string)($session->get('user_name') ?? $session->get('nama_pegawai') ?? $session->get('nama') ?? $session->get('username') ?? 'PETUGAS_LAPANGAN');
+        $id   = (int)($session->get('user_id') ?? 1);
         return [
-            'id'   => $session->get('user_id') ?? $session->get('id'),
-            'name' => $session->get('nama') ?? $session->get('username') ?? 'PETUGAS_LAPANGAN',
-            'role' => $session->get('role') ?? $session->get('level') ?? 'PETUGAS_LAPANGAN',
+            'id'   => $id,
+            'name' => $name,
+            'role' => $role,
         ];
     }
 

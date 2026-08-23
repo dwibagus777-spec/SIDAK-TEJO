@@ -225,6 +225,11 @@ class GISService
                 'geometry' => [
                     'type'        => $segmentData['type'] ?? 'MultiLineString',
                     'coordinates' => $segmentData['coordinates'] ?? []
+                ],
+                'properties' => [
+                    'edges'          => $segmentData['edges'] ?? [],
+                    'version_no'     => $segmentData['version_no'] ?? 1,
+                    'version_status' => $segmentData['version_status'] ?? 'ACTIVE'
                 ]
             ],
             'bbox' => $validGisCount > 0 ? [

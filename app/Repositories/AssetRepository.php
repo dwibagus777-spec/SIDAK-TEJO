@@ -509,13 +509,31 @@ class AssetRepository
                 $allPoints[] = [$lng, $lat];
                 $unvisited[$id] = $nodeMap[$id];
             }
-
             $multiLineCoords = [];
             $hasValidParents = false;
 
             // =========================================================================
-            // PRIORITY 1: Explicit Topology Tree Edges (parent_asset_id)
+            // PRIORITY 1: Explicit Topology Tree Edges (parent_asset_id & asset_relationships)
             // =========================================================================
+            $edges = [];
+            $relMap = [];
+
+            if ($db->tableExists('asset_relationships')) {
+                $feederAssetIds = array_keys($nodeMap);
+                if (!empty($feederAssetIds)) {
+                    $relRows = $db->table('asset_relationships')
+                        ->whereIn('parent_asset_id', $feederAssetIds)
+                        ->where('is_active', 1)
+                        ->get()
+                        ->getResultArray();
+
+                    foreach ($relRows as $r) {
+                        $key = (int)$r['parent_asset_id'] . '_' . (int)$r['child_asset_id'];
+                        $relMap[$key] = $r;
+                    }
+                }
+            }
+
             if ($hasParentCol) {
                 foreach ($nodeMap as $id => $n) {
                     $parentId = $n['parent'];
@@ -524,6 +542,28 @@ class AssetRepository
                         $childCoord  = $n['coord'];
                         $multiLineCoords[] = [$parentCoord, $childCoord];
                         $hasValidParents = true;
+
+                        $relKey = $parentId . '_' . $id;
+                        $rel = $relMap[$relKey] ?? [];
+
+                        $cType = $rel['conductor_type'] ?? 'AAAC';
+                        $cSize = $rel['conductor_size'] ?? '150 mm²';
+                        $dist  = (float)($rel['distance_meters'] ?? $this->haversineDistanceMeters($nodeMap[$parentId]['lat'], $nodeMap[$parentId]['lng'], $n['lat'], $n['lng']));
+
+                        $edges[] = [
+                            'edge_id'            => (int)($rel['id'] ?? 0),
+                            'from_asset_id'      => $parentId,
+                            'to_asset_id'        => $id,
+                            'conductor_type'     => $cType,
+                            'conductor_size'     => $cSize,
+                            'conductor_label'    => "$cType $cSize",
+                            'conductor_material' => $rel['conductor_material'] ?? 'ALUMINUM_ALLOY',
+                            'installation_type'  => $rel['installation_type'] ?? 'OVERHEAD',
+                            'circuit_config'     => $rel['circuit_config'] ?? '3_PHASE',
+                            'length_meter'       => round($dist, 1),
+                            'coordinates'        => [$parentCoord, $childCoord],
+                            'status'             => 'ACTIVE',
+                        ];
                     }
                 }
             }
@@ -554,6 +594,20 @@ class AssetRepository
 
                         if ($dist <= 500.0) {
                             $seqLine[] = $curr['coord'];
+                            $edges[] = [
+                                'edge_id'            => 0,
+                                'from_asset_id'      => $prev['id'],
+                                'to_asset_id'        => $curr['id'],
+                                'conductor_type'     => 'AAAC',
+                                'conductor_size'     => '150 mm²',
+                                'conductor_label'    => 'AAAC 150 mm²',
+                                'conductor_material' => 'ALUMINUM_ALLOY',
+                                'installation_type'  => 'OVERHEAD',
+                                'circuit_config'     => '3_PHASE',
+                                'length_meter'       => round($dist, 1),
+                                'coordinates'        => [$prev['coord'], $curr['coord']],
+                                'status'             => 'ACTIVE',
+                            ];
                         } else {
                             if (count($seqLine) > 1) {
                                 $multiLineCoords[] = $seqLine;
@@ -564,10 +618,10 @@ class AssetRepository
                     if (count($seqLine) > 1) {
                         $multiLineCoords[] = $seqLine;
                     }
-                    $hasValidSequence = true;
+                    $hasValidSequence = (count($multiLineCoords) > 0);
                 }
 
-                // PRIORITY 3: Spatial Nearest-Neighbor Traversal with 350m Distance Guard
+                // PRIORITY 3: Spatial Nearest-Neighbor Traversal
                 if (!$hasValidSequence && count($nodes) > 1) {
                     $startId = null;
                     foreach ($unvisited as $id => $n) {
@@ -621,9 +675,12 @@ class AssetRepository
             }
 
             return [
-                'type'        => 'MultiLineString',
-                'coordinates' => $multiLineCoords,
-                'nodes'       => $allPoints
+                'type'           => 'MultiLineString',
+                'coordinates'    => $multiLineCoords,
+                'nodes'          => $allPoints,
+                'edges'          => $edges,
+                'version_no'     => 1,
+                'version_status' => 'ACTIVE'
             ];
         } catch (\Throwable $e) {
             log_message('error', '[AssetRepository::getFeederNetworkSegments] Exception: ' . $e->getMessage());

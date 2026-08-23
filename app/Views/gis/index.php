@@ -1,10 +1,9 @@
-<?= $this->extend('layouts/app') ?>
+<?= $this->extend('layouts/admin') ?>
 
-<?= $this->section('title') ?>
-Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
-<?= $this->endSection() ?>
+<?= $this->section('title') ?>Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>Peta Jaringan Distribusi (GIS)<?= $this->endSection() ?>
 
-<?= $this->section('styles') ?>
+<?= $this->section('content') ?>
 <!-- Strict Order Dependency Injection: Leaflet Core CSS followed by Leaflet MarkerCluster CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -15,8 +14,8 @@ Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise
     #gis-master-wrapper {
         position: relative;
         width: 100%;
-        height: calc(100vh - 120px);
-        min-height: 520px;
+        height: calc(100vh - 170px);
+        min-height: 540px;
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);

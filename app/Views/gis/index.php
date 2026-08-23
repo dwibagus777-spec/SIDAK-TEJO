@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('title') ?>Peta Jaringan Distribusi (GIS) - SIDAK TEJO Enterprise<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>Peta Jaringan Distribusi (GIS)<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>Peta Jaringan Distribusi (GIS) & Field Network Editor<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <!-- Strict Order Dependency Injection: Leaflet Core CSS followed by Leaflet MarkerCluster CSS -->
@@ -15,7 +15,7 @@
         position: relative;
         width: 100%;
         height: calc(100vh - 170px);
-        min-height: 540px;
+        min-height: 560px;
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
@@ -37,7 +37,7 @@
         z-index: 1000;
         width: 330px;
         max-width: calc(100vw - 40px);
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(12px);
         border-radius: 16px;
         padding: 16px;
@@ -51,14 +51,14 @@
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
         z-index: 2000;
-        background: rgba(15, 23, 42, 0.6);
+        background: rgba(15, 23, 42, 0.65);
         backdrop-filter: blur(4px);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         color: #ffffff;
-        border-radius: 18px;
+        border-radius: 16px;
     }
 
     /* Floating Bottom Summary Pill */
@@ -78,23 +78,45 @@
         display: none;
     }
 
-    /* Floating Transline Editor Toolbar */
+    /* ==========================================================================
+       PH-AI-GIS-01B: Floating Transline Geometry Editor Toolbar & Guidance Banner
+       ========================================================================== */
     .gis-transline-toolbar {
         position: absolute;
-        top: 20px;
+        top: 15px;
         left: 50%;
         transform: translateX(-50%);
-        z-index: 1001;
-        background: rgba(15, 23, 42, 0.95);
-        backdrop-filter: blur(12px);
+        z-index: 1005;
+        background: rgba(15, 23, 42, 0.96);
+        backdrop-filter: blur(14px);
         color: #ffffff;
-        border-radius: 30px;
+        border-radius: 40px;
         padding: 8px 20px;
         display: none;
         align-items: center;
-        gap: 12px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-        border: 1px solid rgba(16, 185, 129, 0.6);
+        gap: 10px;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.5);
+        border: 2px solid #10b981;
+        max-width: 95vw;
+        flex-wrap: wrap;
+    }
+
+    .gis-editor-guide-banner {
+        position: absolute;
+        top: 75px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1004;
+        background: rgba(16, 185, 129, 0.95);
+        color: #ffffff;
+        border-radius: 25px;
+        padding: 6px 18px;
+        font-size: 12px;
+        font-weight: 600;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        display: none;
+        align-items: center;
+        gap: 8px;
     }
 
     /* ==========================================================================
@@ -239,7 +261,7 @@
     .gis-popup-container {
         padding: 8px;
         font-family: 'Outfit', sans-serif;
-        min-width: 220px;
+        min-width: 240px;
     }
     .gis-popup-badge {
         display: inline-block !important;
@@ -259,16 +281,21 @@
             <h4 class="fw-bold mb-0 text-primary d-flex align-items-center">
                 <i class="fas fa-network-wired text-warning me-2 fs-4"></i> GIS NETWORK
             </h4>
-            <span class="badge bg-primary rounded-pill font-weight-normal px-2 py-1" style="font-size: 11px;">FLAT VECTOR TWIN</span>
+            <span class="badge bg-primary rounded-pill font-weight-normal px-2 py-1" style="font-size: 11px;">DIGITAL TWIN EDITOR</span>
         </div>
         
         <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Distinct Action 1: Add New Physical Asset -->
             <button type="button" id="btn-add-asset-map" class="btn btn-success btn-sm rounded-pill font-weight-bold shadow-sm">
                 <i class="fas fa-plus-circle me-1"></i> Tambah Aset
             </button>
-            <button type="button" id="btn-toggle-edit-transline" class="btn btn-outline-info btn-sm rounded-pill font-weight-bold">
-                <i class="fas fa-route me-1"></i> Edit Transline
+            
+            <!-- Distinct Action 2: Transline Geometry Editor Mode -->
+            <button type="button" id="btn-toggle-edit-transline" class="btn btn-info text-dark btn-sm rounded-pill font-weight-bold shadow-sm" style="background-color: #06b6d4; border-color: #06b6d4; color: #ffffff !important;">
+                <i class="fas fa-route me-1"></i> 🔀 Edit Jalur Transline
             </button>
+            
+            <!-- Supervisor Approval Queue -->
             <button type="button" id="btn-view-corrections" class="btn btn-outline-warning btn-sm rounded-pill font-weight-bold position-relative">
                 <i class="fas fa-clipboard-check me-1"></i> Usulan Koreksi
                 <span id="pending-badge-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none; font-size:9px;">0</span>
@@ -296,14 +323,29 @@
 
         <!-- Floating Transline Geometry Editor Toolbar -->
         <div id="gis-transline-toolbar" class="gis-transline-toolbar">
-            <span class="badge bg-success font-monospace px-2 py-1"><i class="fas fa-draw-polygon me-1"></i> MODE EDIT JALUR</span>
-            <span id="transline-points-info" class="small text-light">0 Titik Vertex</span>
-            <button type="button" id="btn-save-transline" class="btn btn-sm btn-success rounded-pill fw-bold px-3 py-1">
+            <span class="badge bg-success font-monospace px-3 py-1 fw-bold"><i class="fas fa-draw-polygon me-1"></i> MODE EDIT TRANSLINE AKTIF</span>
+            <span id="transline-points-info" class="small text-light font-monospace">0 Titik Vertex</span>
+            
+            <button type="button" id="btn-undo-transline" class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" title="Undo Perubahan">
+                <i class="fas fa-undo"></i>
+            </button>
+            <button type="button" id="btn-toggle-compare-transline" class="btn btn-sm btn-outline-info rounded-pill px-2 py-1" title="Bandingkan Eksisting vs Usulan">
+                <i class="fas fa-eye me-1"></i> Bandingkan
+            </button>
+            
+            <button type="button" id="btn-open-save-transline-modal" class="btn btn-sm btn-success rounded-pill fw-bold px-3 py-1 shadow">
                 <i class="fas fa-save me-1"></i> Simpan Usulan Jalur
             </button>
-            <button type="button" id="btn-cancel-transline" class="btn btn-sm btn-outline-light rounded-pill px-2 py-1">
-                Batal
+            <button type="button" id="btn-cancel-transline" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1">
+                <i class="fas fa-times me-1"></i> Batal
             </button>
+        </div>
+
+        <!-- Guidance Banner for Transline Editing -->
+        <div id="gis-editor-guide-banner" class="gis-editor-guide-banner">
+            <i class="fas fa-info-circle"></i>
+            <span>Tarik titik bulat hijau untuk menggeser jalur, klik di tengah segmen untuk menambah titik belokan, atau klik titik untuk opsi hapus.</span>
+            <button type="button" class="btn-close btn-close-white ms-2" style="font-size: 9px;" onclick="document.getElementById('gis-editor-guide-banner').style.display='none';"></button>
         </div>
 
         <!-- Filter & Layer Panel (Desktop Floating Left / Mobile Bottom Sheet) -->
@@ -431,7 +473,7 @@
 </div>
 
 <!-- ========================================================
-     MODAL 1: KOREKSI PARAMETER ASET (CONSTRUCTION / LOCATION)
+     MODAL 1: KOREKSI PARAMETER ASET FISIK (CONSTRUCTION / LOCATION)
      ======================================================== -->
 <div class="modal fade" id="modal-koreksi-asset" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -489,7 +531,7 @@
                         <textarea id="corr-rationale" class="form-control form-control-sm" rows="2" placeholder="Contoh: Konstruksi aktual di lapangan adalah TM-5 karena tiang sudut 30 derajat." required></textarea>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm">
-                        <i class="fas fa-paper-plane me-1"></i> Kirim Usulan Koreksi
+                        <i class="fas fa-paper-plane me-1"></i> Kirim Usulan Koreksi Aset
                     </button>
                 </form>
             </div>
@@ -619,6 +661,61 @@
     </div>
 </div>
 
+<!-- ========================================================
+     MODAL 5: KHUSUS USULAN KOREKSI JALUR TRANSLINE (SEPARATE UX)
+     ======================================================== -->
+<div class="modal fade" id="modal-koreksi-transline" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-info text-white py-3" style="background-color: #0284c7 !important;">
+                <h6 class="modal-title fw-bold mb-0 text-white"><i class="fas fa-route me-2"></i> Usulan Koreksi Jalur Transline</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="form-koreksi-transline">
+                    <div class="alert alert-info small mb-3 border-0" style="background: rgba(2, 132, 199, 0.1); color: #0369a1;">
+                        <i class="fas fa-info-circle me-1"></i> <strong>Dual-Layer Topology:</strong> Usulan jalur Anda akan dibuat sebagai versi usulan baru (garis hijau) tanpa menimpa data master secara langsung sampai disetujui Supervisor.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Penyulang Terpilih</label>
+                        <input type="text" id="modal-transline-feeder-name" class="form-control form-control-sm bg-light fw-bold font-monospace" readonly>
+                    </div>
+
+                    <div class="card bg-light border-0 rounded-3 p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small text-muted">Titik Jalur Eksisting (Biru)</span>
+                            <span id="modal-transline-orig-points" class="fw-bold font-monospace small">0 Titik</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small text-muted">Titik Jalur Usulan (Hijau)</span>
+                            <span id="modal-transline-prop-points" class="fw-bold text-success font-monospace small">0 Titik</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center border-top pt-1 mt-1">
+                            <span class="small fw-bold text-dark">Perubahan Geometri (Delta)</span>
+                            <span id="modal-transline-delta" class="fw-bold text-primary font-monospace small">±0 Titik</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Penjelasan & Alasan Koreksi Jalur <span class="text-danger">*</span></label>
+                        <textarea id="modal-transline-rationale" class="form-control form-control-sm" rows="3" placeholder="Contoh: Rute aktual konduktor SUTM mengikuti jalan baru di sisi timur untuk menghindari proyek saluran irigasi." required></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary w-50 rounded-pill" data-bs-dismiss="modal">
+                            Kembali Edit
+                        </button>
+                        <button type="submit" class="btn btn-success w-50 fw-bold rounded-pill shadow-sm">
+                            <i class="fas fa-paper-plane me-1"></i> Kirim Usulan Jalur
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -670,9 +767,12 @@ document.addEventListener("DOMContentLoaded", function () {
     var currentRequestId = 0;
     var currentUlpRequestId = 0;
 
-    // Transline Editing Mode States
+    // Transline Editing Mode States & History Stack
     var isEditingTransline = false;
+    var originalVertices = [];
     var editedVertices = [];
+    var undoStack = [];
+    var showCompareExisting = true;
 
     function toggleLoading(show) {
         document.getElementById('gis-loading-overlay').style.display = show ? 'flex' : 'none';
@@ -781,17 +881,25 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>
                 
                 <div class="d-flex flex-column gap-1 mt-2">
+                    <!-- Primary Link to Digital Twin Detail -->
                     <a href="<?= site_url('master-assets/detail') ?>/${props.id}" class="btn btn-sm btn-primary w-100 fw-bold rounded-pill text-white py-1 shadow-sm" style="font-size: 11px;">
                         <i class="fas fa-cube me-1"></i> Detail Digital Twin &rarr;
                     </a>
+                    
+                    <!-- Distinct Action Row 1: Koreksi Parameter Aset & Lapor Hilang -->
                     <div class="d-flex gap-1">
-                        <button type="button" class="btn btn-sm btn-outline-primary w-50 fw-bold rounded-pill py-1" style="font-size: 10px;" onclick="openCorrectionModal('${safePropJson}')">
-                            <i class="fas fa-edit me-1"></i> Koreksi
+                        <button type="button" class="btn btn-sm btn-outline-primary w-50 fw-bold rounded-pill py-1" style="font-size: 10px;" onclick="openCorrectionModal('${safePropJson}')" title="Koreksi tipe tiang, konstruksi atau kondisi fisik">
+                            <i class="fas fa-edit me-1"></i> Koreksi Aset
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger w-50 fw-bold rounded-pill py-1" style="font-size: 10px;" onclick="openMissingModal('${safePropJson}')">
-                            <i class="fas fa-trash-alt me-1"></i> Hilang
+                        <button type="button" class="btn btn-sm btn-outline-danger w-50 fw-bold rounded-pill py-1" style="font-size: 10px;" onclick="openMissingModal('${safePropJson}')" title="Laporkan jika tiang sudah dibongkar">
+                            <i class="fas fa-trash-alt me-1"></i> Aset Hilang
                         </button>
                     </div>
+
+                    <!-- Distinct Action Row 2: Transline Editor Entry from Asset Node -->
+                    <button type="button" class="btn btn-sm btn-outline-info w-100 fw-bold rounded-pill py-1 text-dark" style="font-size: 10px; background: rgba(6, 182, 212, 0.1); border-color: #06b6d4;" onclick="startTranslineEditAroundAsset(${geom.coordinates[1]}, ${geom.coordinates[0]})">
+                        <i class="fas fa-route me-1 text-info"></i> 🔀 Koreksi Jalur di Sekitar Aset
+                    </button>
                 </div>
             </div>
         `;
@@ -814,6 +922,8 @@ document.addEventListener("DOMContentLoaded", function () {
         // Render Feeder LineString / MultiLineString Segments with high clarity
         if (currentData.transline && currentData.transline.geometry) {
             var geom = currentData.transline.geometry;
+            originalVertices = [];
+
             if (geom.type === 'MultiLineString' && geom.coordinates) {
                 geom.coordinates.forEach(function (segment) {
                     if (segment.length > 1) {
@@ -824,6 +934,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             lineJoin: 'round'
                         });
                         translinePolylineLayer.addLayer(poly);
+                        segment.forEach(pt => originalVertices.push([pt[1], pt[0]]));
                     }
                 });
             } else if (geom.type === 'LineString' && geom.coordinates && geom.coordinates.length > 1) {
@@ -834,6 +945,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     lineJoin: 'round'
                 });
                 translinePolylineLayer.addLayer(poly);
+                geom.coordinates.forEach(pt => originalVertices.push([pt[1], pt[0]]));
             }
         }
 
@@ -864,7 +976,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // 2. Fetch Network Data On-Demand
-    function loadGisNetworkOnDemand(autoFitBounds) {
+    function loadGisNetworkOnDemand(autoFitBounds, callback) {
         if (typeof autoFitBounds === 'undefined') autoFitBounds = true;
 
         var feederId = document.getElementById('feeder-select').value;
@@ -897,6 +1009,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         `<i class="fas fa-network-wired text-warning me-2"></i> FEEDER READY • Total Aset: <strong>${sum.total_assets || 0}</strong> (JTM: ${sum.jtm_count || 0}, Gardu: ${sum.gardu_count || 0}, Trafo: ${sum.trafo_count || 0}, Switch: ${sum.switch_count || 0})`;
                     
                     fetchPendingBadgeCount();
+                    if (typeof callback === 'function') callback();
                 }
             })
             .catch(err => {
@@ -917,7 +1030,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     map.on('zoomend', function () {
-        if (currentFeederId > 0) {
+        if (currentFeederId > 0 && !isEditingTransline) {
             var newLOD = getLODCategory(map.getZoom());
             if (newLOD !== currentLOD) {
                 loadGisNetworkOnDemand(false);
@@ -1116,84 +1229,237 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ========================================================
-    // PH-AI-GIS-01B: TRANSLINE GEOMETRY EDITOR (DUAL LAYER)
+    // PH-AI-GIS-01B: DEDICATED TRANSLINE GEOMETRY EDITOR ENGINE
     // ========================================================
+    window.startTranslineEditAroundAsset = function (lat, lng) {
+        map.closePopup();
+        if (!isEditingTransline) {
+            activateTranslineEditor();
+        }
+        map.setView([lat, lng], 17);
+    };
+
     document.getElementById('btn-toggle-edit-transline').addEventListener('click', function () {
-        if (!currentData || !currentData.transline) {
-            alert('Silakan tampilkan jaringan penyulang terlebih dahulu!');
+        var feederId = document.getElementById('feeder-select').value;
+        if (!feederId) {
+            alert('Silakan pilih ULP dan Penyulang terlebih dahulu untuk mengedit jalur transline!');
             return;
         }
 
-        isEditingTransline = !isEditingTransline;
-        var toolbar = document.getElementById('gis-transline-toolbar');
-        toolbar.style.display = isEditingTransline ? 'flex' : 'none';
+        if (!currentData || !currentData.transline) {
+            loadGisNetworkOnDemand(true, function () {
+                activateTranslineEditor();
+            });
+            return;
+        }
 
-        if (isEditingTransline) {
-            editedVertices = [];
-            var geom = currentData.transline.geometry;
-            if (geom && geom.coordinates) {
-                if (geom.type === 'LineString') {
-                    editedVertices = geom.coordinates.map(pt => [pt[1], pt[0]]);
-                } else if (geom.type === 'MultiLineString' && geom.coordinates.length > 0) {
-                    editedVertices = geom.coordinates[0].map(pt => [pt[1], pt[0]]);
-                }
+        activateTranslineEditor();
+    });
+
+    function activateTranslineEditor() {
+        isEditingTransline = true;
+        undoStack = [];
+        showCompareExisting = true;
+
+        var toolbar = document.getElementById('gis-transline-toolbar');
+        var banner = document.getElementById('gis-editor-guide-banner');
+        toolbar.style.display = 'flex';
+        banner.style.display = 'flex';
+
+        editedVertices = [];
+        var geom = currentData && currentData.transline ? currentData.transline.geometry : null;
+        if (geom && geom.coordinates) {
+            if (geom.type === 'LineString') {
+                editedVertices = geom.coordinates.map(pt => [pt[1], pt[0]]);
+            } else if (geom.type === 'MultiLineString' && geom.coordinates.length > 0) {
+                editedVertices = geom.coordinates[0].map(pt => [pt[1], pt[0]]);
             }
+        }
+
+        saveUndoState();
+        renderTranslineEditor();
+    }
+
+    function saveUndoState() {
+        undoStack.push(JSON.parse(JSON.stringify(editedVertices)));
+        if (undoStack.length > 20) undoStack.shift();
+    }
+
+    document.getElementById('btn-undo-transline').addEventListener('click', function () {
+        if (undoStack.length > 1) {
+            undoStack.pop(); // Remove current state
+            editedVertices = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
             renderTranslineEditor();
         } else {
-            proposedTranslineLayer.clearLayers();
-            translineEditMarkersGroup.clearLayers();
+            alert('Tidak ada aksi undo sebelumnya.');
+        }
+    });
+
+    document.getElementById('btn-toggle-compare-transline').addEventListener('click', function () {
+        showCompareExisting = !showCompareExisting;
+        if (showCompareExisting) {
+            translinePolylineLayer.setStyle({ opacity: 0.9, weight: 3.5 });
+            this.className = 'btn btn-sm btn-outline-info rounded-pill px-2 py-1 active';
+        } else {
+            translinePolylineLayer.setStyle({ opacity: 0, weight: 0 });
+            this.className = 'btn btn-sm btn-outline-info rounded-pill px-2 py-1';
         }
     });
 
     document.getElementById('btn-cancel-transline').addEventListener('click', function () {
-        isEditingTransline = false;
-        document.getElementById('gis-transline-toolbar').style.display = 'none';
-        proposedTranslineLayer.clearLayers();
-        translineEditMarkersGroup.clearLayers();
+        if (confirm('Batalkan perubahan pada jalur transline?')) {
+            isEditingTransline = false;
+            document.getElementById('gis-transline-toolbar').style.display = 'none';
+            document.getElementById('gis-editor-guide-banner').style.display = 'none';
+            proposedTranslineLayer.clearLayers();
+            translineEditMarkersGroup.clearLayers();
+            renderFilteredLayers(false);
+        }
     });
 
     function renderTranslineEditor() {
         proposedTranslineLayer.clearLayers();
         translineEditMarkersGroup.clearLayers();
 
+        // 1. Render Proposed Line (Bold Green Dashed)
         if (editedVertices.length > 1) {
             var proposedPoly = L.polyline(editedVertices, {
-                color: '#10b981', // Green Proposed Network Layer
-                weight: 4.5,
+                color: '#10b981', // Green Proposed Polyline
+                weight: 5,
                 dashArray: '8, 8',
-                opacity: 0.95
+                opacity: 0.95,
+                lineJoin: 'round'
+            }).addTo(proposedTranslineLayer);
+
+            // Add click-to-insert vertex along segment
+            proposedPoly.on('click', function (e) {
+                var clickedPt = [e.latlng.lat, e.latlng.lng];
+                var insertIndex = findClosestSegmentIndex(clickedPt, editedVertices);
+                saveUndoState();
+                editedVertices.splice(insertIndex + 1, 0, clickedPt);
+                renderTranslineEditor();
             });
-            proposedTranslineLayer.addLayer(proposedPoly);
         }
 
-        document.getElementById('transline-points-info').textContent = `${editedVertices.length} Titik Vertex`;
+        var delta = editedVertices.length - originalVertices.length;
+        var deltaSign = delta >= 0 ? `+${delta}` : `${delta}`;
+        document.getElementById('transline-points-info').textContent = `${editedVertices.length} Titik (${deltaSign} dari master)`;
 
+        // 2. Render Draggable Vertex Markers
         editedVertices.forEach(function (pt, idx) {
             var handle = L.circleMarker(pt, {
-                radius: 6,
+                radius: 7,
                 fillColor: '#10b981',
                 color: '#ffffff',
-                weight: 2,
+                weight: 2.5,
                 fillOpacity: 1
             });
+
+            // Make interactive & draggable via mouse events
+            var isDragging = false;
+
+            handle.on('mousedown', function () {
+                isDragging = true;
+                map.dragging.disable();
+            });
+
+            map.on('mousemove', function (e) {
+                if (isDragging) {
+                    handle.setLatLng(e.latlng);
+                    editedVertices[idx] = [e.latlng.lat, e.latlng.lng];
+                    if (proposedPoly) proposedPoly.setLatLngs(editedVertices);
+                }
+            });
+
+            map.on('mouseup', function () {
+                if (isDragging) {
+                    isDragging = false;
+                    map.dragging.enable();
+                    saveUndoState();
+                    renderTranslineEditor();
+                }
+            });
+
+            // Click handle to delete vertex
+            handle.on('contextmenu', function (e) {
+                L.DomEvent.stopPropagation(e);
+                if (editedVertices.length <= 2) {
+                    alert('Minimal 2 titik diperlukan untuk membentuk jalur transline.');
+                    return;
+                }
+                if (confirm(`Hapus titik vertex #${idx + 1}?`)) {
+                    saveUndoState();
+                    editedVertices.splice(idx, 1);
+                    renderTranslineEditor();
+                }
+            });
+
+            handle.bindTooltip(`Titik #${idx + 1}<br><span style="font-size:10px;">Tarik untuk geser • Klik kanan untuk hapus</span>`, {
+                direction: 'top',
+                offset: [0, -8]
+            });
+
             translineEditMarkersGroup.addLayer(handle);
         });
     }
 
+    function findClosestSegmentIndex(point, vertices) {
+        var minDistance = Infinity;
+        var bestIndex = 0;
+        for (var i = 0; i < vertices.length - 1; i++) {
+            var dist = distanceToSegment(point, vertices[i], vertices[i + 1]);
+            if (dist < minDistance) {
+                minDistance = dist;
+                bestIndex = i;
+            }
+        }
+        return bestIndex;
+    }
+
+    function distanceToSegment(p, v, w) {
+        var l2 = (v[0] - w[0]) * (v[0] - w[0]) + (v[1] - w[1]) * (v[1] - w[1]);
+        if (l2 === 0) return Math.hypot(p[0] - v[0], p[1] - v[1]);
+        var t = Math.max(0, Math.min(1, ((p[0] - v[0]) * (w[0] - v[0]) + (p[1] - v[1]) * (w[1] - v[1])) / l2));
+        var proj = [v[0] + t * (w[0] - v[0]), v[1] + t * (w[1] - v[1])];
+        return Math.hypot(p[0] - proj[0], p[1] - proj[1]);
+    }
+
     map.on('click', function (e) {
         if (isEditingTransline) {
+            // Click empty map space to add connecting vertex at end of line
+            saveUndoState();
             editedVertices.push([e.latlng.lat, e.latlng.lng]);
             renderTranslineEditor();
         }
     });
 
-    document.getElementById('btn-save-transline').addEventListener('click', function () {
+    // 3. Open Dedicated Transline Modal
+    document.getElementById('btn-open-save-transline-modal').addEventListener('click', function () {
         if (editedVertices.length < 2) {
             alert('Minimal 2 titik diperlukan untuk membentuk jalur transline.');
             return;
         }
 
+        var feederSelect = document.getElementById('feeder-select');
+        var feederName = feederSelect.options[feederSelect.selectedIndex] ? feederSelect.options[feederSelect.selectedIndex].text : 'Penyulang';
+
+        document.getElementById('modal-transline-feeder-name').value = feederName;
+        document.getElementById('modal-transline-orig-points').textContent = `${originalVertices.length} Titik`;
+        document.getElementById('modal-transline-prop-points').textContent = `${editedVertices.length} Titik`;
+
+        var delta = editedVertices.length - originalVertices.length;
+        document.getElementById('modal-transline-delta').textContent = delta >= 0 ? `+${delta} Titik` : `${delta} Titik`;
+        document.getElementById('modal-transline-rationale').value = '';
+
+        var modal = new bootstrap.Modal(document.getElementById('modal-koreksi-transline'));
+        modal.show();
+    });
+
+    document.getElementById('form-koreksi-transline').addEventListener('submit', function (e) {
+        e.preventDefault();
         var feederId = document.getElementById('feeder-select').value;
+        var rationale = document.getElementById('modal-transline-rationale').value;
+
         var geoJsonGeometry = {
             type: 'LineString',
             coordinates: editedVertices.map(pt => [pt[1], pt[0]])
@@ -1205,15 +1471,17 @@ document.addEventListener("DOMContentLoaded", function () {
             body: JSON.stringify({
                 penyulang_id: feederId,
                 geometry: geoJsonGeometry,
-                rationale: 'Koreksi sambungan rute transline lapangan'
+                rationale: rationale
             })
         })
         .then(res => res.json())
         .then(res => {
             if (res.status === 'success') {
+                bootstrap.Modal.getInstance(document.getElementById('modal-koreksi-transline')).hide();
                 alert(res.message);
                 isEditingTransline = false;
                 document.getElementById('gis-transline-toolbar').style.display = 'none';
+                document.getElementById('gis-editor-guide-banner').style.display = 'none';
                 proposedTranslineLayer.clearLayers();
                 translineEditMarkersGroup.clearLayers();
                 fetchPendingBadgeCount();
@@ -1267,7 +1535,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span class="badge bg-primary">${typeLabel}</span>
                                 <span class="font-monospace text-muted small">${c.correction_code}</span>
                             </div>
-                            <h6 class="fw-bold mb-1 text-dark">${c.nama_asset || afterData.nama_asset || 'Usulan Baru'}</h6>
+                            <h6 class="fw-bold mb-1 text-dark">${c.nama_asset || afterData.nama_asset || 'Usulan Jalur Transline'}</h6>
                             <p class="small text-secondary mb-2"><strong>Alasan:</strong> ${c.rationale || '-'}</p>
                             <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
                                 <span class="small text-muted"><i class="fas fa-user me-1"></i> ${c.reporter_name} (${c.reporter_role})</span>

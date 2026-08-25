@@ -331,7 +331,7 @@
                 $penyulang.html('<option value="">Sedang memuat...</option>');
                 refreshSelect2($penyulang);
 
-                const requestUrl = "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId;
+                const requestUrl = "<?= site_url('ajax/network/penyulang') ?>/" + ulpId;
 
                 $.ajax({
                     url: requestUrl,
@@ -380,7 +380,7 @@
             $section.html('<option value="">Sedang memuat...</option>');
             refreshSelect2($section);
 
-            const requestUrl = "<?= base_url('temuan/ajax-section') ?>/" + penyulangId;
+            const requestUrl = "<?= site_url('ajax/network/section') ?>/" + penyulangId;
             console.log("[SIDAK TEJO] Request AJAX Section URL:", requestUrl);
 
             $.ajax({

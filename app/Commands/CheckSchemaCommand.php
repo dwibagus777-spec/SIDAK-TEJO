@@ -208,17 +208,17 @@ class CheckSchemaCommand extends BaseCommand
 
         // Fetch First Valid Asset
         $firstAsset = $db->table('assets')->where('deleted_at IS NULL')->get()->getRowArray();
-        $validAssetId = $firstAsset ? (int)$firstAsset['id'] : 1;
-        CLI::write(" - Selected Test Asset ID: {$validAssetId} (" . ($firstAsset['nama_asset'] ?? 'Unknown') . ")", "cyan");
+        $validAssetId = $firstAsset ? (int)$firstAsset['id'] : null;
+        CLI::write(" - Selected Test Asset ID: " . ($validAssetId ?? 'NULL (Zero Asset State)') . " (" . ($firstAsset['nama_asset'] ?? 'None') . ")", "cyan");
 
         // 1. Structural & Foundation Invariants (Pre-Test Audit History Count)
         CLI::write("\n[1/67] Verifying Structural & Foundation Invariants (Pre-Test)...", "cyan");
         $componentsCount  = $db->table('hi_components')->countAllResults();
         $rulesCount       = $db->table('hi_rules')->countAllResults();
-        $preHistoryCount  = $db->table('asset_health_history')->where('asset_id', $validAssetId)->countAllResults();
+        $preHistoryCount  = $validAssetId ? $db->table('asset_health_history')->where('asset_id', $validAssetId)->countAllResults() : 0;
         CLI::write(" - hi_components catalog count   : {$componentsCount} rows (Structural Invariant: 7)", $componentsCount >= 7 ? "green" : "red");
         CLI::write(" - hi_rules engine count        : {$rulesCount} rows (Structural Invariant: 7)", $rulesCount >= 7 ? "green" : "red");
-        CLI::write(" - asset_health_history pre-test : {$preHistoryCount} rows for Asset #{$validAssetId} [INFO]", "cyan");
+        CLI::write(" - asset_health_history pre-test : {$preHistoryCount} rows [INFO]", "cyan");
 
         // 2. Environment Context & Recurrence Backfill
         CLI::write("\n[2/67] Verifying Environment Context & Recurrence Backfill...", "cyan");

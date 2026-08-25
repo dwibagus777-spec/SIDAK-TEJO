@@ -721,23 +721,20 @@ class AssetRepository
             $includeSwitchEquipment = false;
 
             if (in_array('JTM', $layers)) {
-                $allowedJenisList[] = 'JTM';
-                $allowedJenisList[] = 'TIANG';
+                $allowedJenisList = array_merge($allowedJenisList, ['JTM', 'TIANG', 'TIANG_BETON', 'TIANG_BESI', 'CONDUCTOR_JTM']);
             }
             if (in_array('GARDU', $layers)) {
-                $allowedJenisList[] = 'GARDU';
-                $allowedJenisList[] = 'SUBSTATION';
+                $allowedJenisList = array_merge($allowedJenisList, ['GARDU', 'SUBSTATION', 'GARDU_DISTRIBUSI_PORTAL', 'GARDU_CANTOL', 'GARDU_PORTAL']);
             }
             if (in_array('TRAFO', $layers)) {
-                $allowedJenisList[] = 'TRAFO';
-                $allowedJenisList[] = 'TRANSFORMER';
+                $allowedJenisList = array_merge($allowedJenisList, ['TRAFO', 'TRANSFORMER', 'GTT', 'GTT_GARDU_TRAFO_TIANG']);
             }
             if (in_array('KUBIKEL', $layers)) {
                 $allowedJenisList[] = 'KUBIKEL';
             }
             if (in_array('SWITCH', $layers)) {
                 $includeSwitchEquipment = true;
-                $allowedJenisList = array_merge($allowedJenisList, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION']);
+                $allowedJenisList = array_merge($allowedJenisList, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION', 'RECLOSER_LBS', 'SAKLAR_FUSE_CUTOUT']);
             }
 
             if (empty($allowedJenisList)) {

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sidak-tejo-v8-enterprise';
-const MAPS_CACHE_NAME = 'sidak-tejo-maps-v6';
+const CACHE_NAME = 'sidak-tejo-v9-enterprise';
+const MAPS_CACHE_NAME = 'sidak-tejo-maps-v7';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -41,9 +41,19 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
 
-    // Do NOT intercept navigation or HTML requests (like /temuan/detail/123)
-    // Always fetch fresh HTML directly from server
-    if (event.request.mode === 'navigate' || (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
+    // Do NOT intercept navigation, HTML, JSON, or dynamic API/AJAX requests
+    // Always fetch fresh data directly from server
+    if (
+        event.request.mode === 'navigate' ||
+        url.includes('/ajax/') ||
+        url.includes('/api/') ||
+        url.endsWith('.json') ||
+        url.includes('/i18n/') ||
+        (event.request.headers.get('accept') && (
+            event.request.headers.get('accept').includes('text/html') ||
+            event.request.headers.get('accept').includes('application/json')
+        ))
+    ) {
         return;
     }
 

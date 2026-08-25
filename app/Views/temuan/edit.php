@@ -391,7 +391,7 @@
                 refreshSelect2($penyulang);
 
                 $.ajax({
-                    url: "<?= base_url('temuan/ajax-penyulang') ?>/" + ulpId,
+                    url: "<?= site_url('ajax/network/penyulang') ?>/" + ulpId,
                     type: "GET",
                     dataType: "json",
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -436,7 +436,7 @@
             refreshSelect2($section);
 
             $.ajax({
-                url: "<?= base_url('temuan/ajax-section') ?>/" + penyulangId,
+                url: "<?= site_url('ajax/network/section') ?>/" + penyulangId,
                 type: "GET",
                 dataType: "json",
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },

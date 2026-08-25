@@ -156,7 +156,7 @@
             }
 
             $.ajax({
-                url: "<?= site_url('temuan/ajax-penyulang/') ?>" + ulpId,
+                url: "<?= site_url('ajax/network/penyulang/') ?>" + ulpId,
                 type: "GET",
                 dataType: "json",
                 success: function(data) {
@@ -178,7 +178,7 @@
             }
 
             $.ajax({
-                url: "<?= site_url('temuan/ajax-section/') ?>" + penyulangId,
+                url: "<?= site_url('ajax/network/section/') ?>" + penyulangId,
                 type: "GET",
                 dataType: "json",
                 success: function(data) {

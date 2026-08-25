@@ -1,8 +1,9 @@
 <?php
-$session = session();
+$session = @session();
 $viewMode = $session->get('view_mode') ?: ($_COOKIE['view_mode'] ?? null);
-$agent = \Config\Services::request()->getUserAgent();
-$isMobileMode = ($viewMode === 'mobile' || ($agent->isMobile() && $viewMode !== 'desktop'));
+$req = \Config\Services::request();
+$agent = method_exists($req, 'getUserAgent') ? $req->getUserAgent() : null;
+$isMobileMode = ($viewMode === 'mobile' || ($agent && $agent->isMobile() && $viewMode !== 'desktop'));
 
 // Gabung & Minifikasi CSS/JS via AssetMinifier
 $cssFiles = [
@@ -1091,7 +1092,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         <div class="nav-item me-1 d-none d-sm-block">
                             <span class="fw-bold text-dark" style="font-size: 0.8rem;">
                                 <i class="fas fa-user-circle me-1" style="color: #005eb8;"></i> <?= esc(session()->get('user_name')) ?> 
-                                <span class="badge bg-blue-lt ms-1" style="font-size: 10px; font-weight: 700;"><?= esc(get_role_label(session()->get('user_role'))) ?></span>
+                                <span class="badge bg-blue-lt ms-1" style="font-size: 10px; font-weight: 700;"><?= esc(get_role_label((string)(session()->get('user_role') ?? 'GUEST'))) ?></span>
                             </span>
                         </div>
                         <div class="nav-item">
@@ -1203,6 +1204,35 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <script src="<?= base_url('plugins/html5-qrcode.min.js') ?>"></script>
 
     <script>
+        // Global DataTables Indonesian Language Configuration (Eliminating all external id.json requests)
+        window.SIDAK_DATATABLES_ID = Object.freeze({
+            processing: "Sedang memproses...",
+            search: "Cari:",
+            lengthMenu: "Tampilkan _MENU_ entri",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+            infoEmpty: "Menampilkan 0 sampai 0 dari 0 entri",
+            infoFiltered: "(disaring dari _MAX_ entri keseluruhan)",
+            loadingRecords: "Sedang memuat...",
+            zeroRecords: "Tidak ditemukan data yang sesuai",
+            emptyTable: "Tidak ada data tersedia",
+            paginate: {
+                first: "Pertama",
+                previous: "Sebelumnya",
+                next: "Selanjutnya",
+                last: "Terakhir"
+            },
+            aria: {
+                sortAscending: ": aktifkan untuk mengurutkan kolom menaik",
+                sortDescending: ": aktifkan untuk mengurutkan kolom menurun"
+            }
+        });
+
+        if (typeof $.fn !== 'undefined' && typeof $.fn.dataTable !== 'undefined') {
+            $.extend(true, $.fn.dataTable.defaults, {
+                language: window.SIDAK_DATATABLES_ID
+            });
+        }
+
         // Sembunyikan spinner pemuatan (Clean & Consolidated)
         $(function() {
             $('#loading-spinner').fadeOut(150);
@@ -1211,7 +1241,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         // Register Service Worker for caching maps & assets with auto-update
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=8-enterprise')
+                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=9-enterprise')
                     .then(function(registration) {
                         registration.update();
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);

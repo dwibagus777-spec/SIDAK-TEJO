@@ -184,56 +184,212 @@
 
 <?= $this->section('scripts') ?>
 <script>
-    $(function() {
-        // Cascade ULP -> Penyulang
-        $('#ulp_id').change(function() {
-            const ulpId = $(this).val();
-            const penyulangSelect = $('#id_penyulang');
-            const sectionSelect = $('#id_section');
-            
-            penyulangSelect.empty().append('<option value="">-- Pilih Penyulang --</option>').prop('disabled', true);
-            sectionSelect.empty().append('<option value="">-- Pilih Section --</option>').prop('disabled', true);
-            
-            if (ulpId) {
-                $.ajax({
-                    url: '<?= site_url('temuan/ajax-get-penyulang/') ?>' + ulpId,
-                    type: 'GET',
-                    dataType: 'JSON',
-                    success: function(data) {
-                        if (data.length > 0) {
-                            $.each(data, function(index, item) {
-                                penyulangSelect.append('<option value="' + item.id + '">' + item.nama_penyulang + '</option>');
-                            });
-                            penyulangSelect.prop('disabled', false);
-                        }
-                    }
-                });
-            }
-        });
+document.addEventListener('DOMContentLoaded', () => {
+    const $ = jQuery;
+    const ulpSelect = $('#ulp_id');
+    const feederSelect = $('#id_penyulang');
+    const sectionSelect = $('#id_section');
 
-        // Cascade Penyulang -> Section
-        $('#id_penyulang').change(function() {
-            const penyulangId = $(this).val();
-            const sectionSelect = $('#id_section');
-            
-            sectionSelect.empty().append('<option value="">-- Pilih Section --</option>').prop('disabled', true);
-            
-            if (penyulangId) {
-                $.ajax({
-                    url: '<?= site_url('temuan/ajax-get-section/') ?>' + penyulangId,
-                    type: 'GET',
-                    dataType: 'JSON',
-                    success: function(data) {
-                        if (data.length > 0) {
-                            $.each(data, function(index, item) {
-                                sectionSelect.append('<option value="' + item.id + '">' + item.nama_section + '</option>');
-                            });
-                            sectionSelect.prop('disabled', false);
-                        }
-                    }
-                });
+    if (!ulpSelect.length || !feederSelect.length || !sectionSelect.length) {
+        return;
+    }
+
+    const NETWORK_LOOKUP_URL = <?= json_encode(site_url('ajax/network')) ?>;
+    const oldPenyulangId = "<?= old('id_penyulang') ?>";
+    const oldSectionId   = "<?= old('id_section') ?>";
+
+    let feederAbortController = null;
+    let sectionAbortController = null;
+    let feederRequestToken = 0;
+    let sectionRequestToken = 0;
+
+    function refreshSelect2($el) {
+        if ($.fn.select2 && $el.hasClass('select2-hidden-accessible')) {
+            $el.trigger('change.select2');
+        } else {
+            $el.trigger('change');
+        }
+    }
+
+    function resetSelect($select, placeholder, disabled = true) {
+        $select.empty().append($('<option>', {
+            value: '',
+            text: placeholder
+        })).prop('disabled', disabled);
+        refreshSelect2($select);
+    }
+
+    async function loadFeeders(ulpId, selectedFeederId = null, callback = null) {
+        if (feederAbortController) {
+            feederAbortController.abort();
+        }
+        feederAbortController = new AbortController();
+        const currentToken = ++feederRequestToken;
+
+        console.log('[NETWORK] ULP CHANGE', ulpId);
+        console.trace('[NETWORK] ULP CHANGE TRACE');
+
+        if (!ulpId) {
+            resetSelect(feederSelect, '-- Pilih ULP Dahulu --', true);
+            resetSelect(sectionSelect, '-- Pilih Penyulang Dahulu --', true);
+            return;
+        }
+
+        resetSelect(feederSelect, 'Sedang memuat penyulang...', true);
+        resetSelect(sectionSelect, '-- Pilih Penyulang Dahulu --', true);
+
+        const requestUrl = `${NETWORK_LOOKUP_URL}/penyulang/${encodeURIComponent(ulpId)}`;
+        console.log('[NETWORK] REQUEST', requestUrl);
+
+        try {
+            const response = await fetch(requestUrl, {
+                signal: feederAbortController.signal,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status} ${response.statusText}`);
             }
-        });
+
+            const data = await response.json();
+            if (currentToken !== feederRequestToken) return;
+
+            console.log('[NETWORK] RESPONSE', data);
+
+            feederSelect.empty();
+            if (Array.isArray(data) && data.length > 0) {
+                feederSelect.append($('<option>', { value: '', text: '-- Pilih Penyulang --' }));
+                data.forEach(item => {
+                    const opt = $('<option>', {
+                        value: item.id,
+                        text: item.nama_penyulang || item.nama || item.kode_penyulang
+                    });
+                    if (selectedFeederId && String(item.id) === String(selectedFeederId)) {
+                        opt.prop('selected', true);
+                    }
+                    feederSelect.append(opt);
+                });
+                feederSelect.prop('disabled', false);
+            } else {
+                feederSelect.append($('<option>', { value: '', text: '-- Tidak ada penyulang aktif --' }));
+                feederSelect.prop('disabled', true);
+            }
+            refreshSelect2(feederSelect);
+
+            if (selectedFeederId && feederSelect.val()) {
+                loadSections(feederSelect.val(), oldSectionId, callback);
+            } else if (callback) {
+                callback();
+            }
+
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('[NETWORK] Feeder request aborted due to newer selection');
+                return;
+            }
+            console.error('[NETWORK] Failed loading feeders:', error);
+            if (currentToken === feederRequestToken) {
+                resetSelect(feederSelect, 'Gagal memuat data Penyulang. Silakan coba kembali.', true);
+            }
+        }
+    }
+
+    async function loadSections(penyulangId, selectedSectionId = null, callback = null) {
+        if (sectionAbortController) {
+            sectionAbortController.abort();
+        }
+        sectionAbortController = new AbortController();
+        const currentToken = ++sectionRequestToken;
+
+        console.log('[NETWORK] PENYULANG CHANGE', penyulangId);
+        console.trace('[NETWORK] PENYULANG CHANGE TRACE');
+
+        if (!penyulangId) {
+            resetSelect(sectionSelect, '-- Pilih Penyulang Dahulu --', true);
+            return;
+        }
+
+        resetSelect(sectionSelect, 'Sedang memuat section...', true);
+
+        const requestUrl = `${NETWORK_LOOKUP_URL}/section/${encodeURIComponent(penyulangId)}`;
+        console.log('[NETWORK] REQUEST', requestUrl);
+
+        try {
+            const response = await fetch(requestUrl, {
+                signal: sectionAbortController.signal,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            if (currentToken !== sectionRequestToken) return;
+
+            console.log('[NETWORK] RESPONSE', data);
+
+            sectionSelect.empty();
+            if (Array.isArray(data) && data.length > 0) {
+                sectionSelect.append($('<option>', { value: '', text: '-- Pilih Section --' }));
+                data.forEach(item => {
+                    const opt = $('<option>', {
+                        value: item.id,
+                        text: item.nama_section || item.nama
+                    });
+                    if (selectedSectionId && String(item.id) === String(selectedSectionId)) {
+                        opt.prop('selected', true);
+                    }
+                    sectionSelect.append(opt);
+                });
+                sectionSelect.prop('disabled', false);
+            } else {
+                sectionSelect.append($('<option>', { value: '', text: '-- Tidak ada section aktif --' }));
+                sectionSelect.prop('disabled', true);
+            }
+            refreshSelect2(sectionSelect);
+
+            if (callback) callback();
+
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('[NETWORK] Section request aborted due to newer selection');
+                return;
+            }
+            console.error('[NETWORK] Failed loading sections:', error);
+            if (currentToken === sectionRequestToken) {
+                resetSelect(sectionSelect, 'Gagal memuat data Section. Silakan coba kembali.', true);
+            }
+        }
+    }
+
+    // Self-Healing: Purge ANY existing unnamespaced legacy change handlers
+    ulpSelect.off('change');
+    feederSelect.off('change');
+
+    // Canonical MNF-01 Event Listeners
+    ulpSelect.on('change.networkLookup', function () {
+        loadFeeders($(this).val());
     });
+
+    feederSelect.on('change.networkLookup', function () {
+        loadSections($(this).val());
+    });
+
+    console.log('[MNF-01] CANONICAL TRAFO CREATE BINDING ACTIVE');
+
+    // Handle Pre-selected ULP on Initial Page Load (e.g. from old input, user default, or browser draft)
+    const initialUlpId = ulpSelect.val();
+    if (initialUlpId) {
+        console.log('[NETWORK] Initial ULP detected on page load:', initialUlpId);
+        loadFeeders(initialUlpId, oldPenyulangId);
+    }
+});
 </script>
 <?= $this->endSection() ?>

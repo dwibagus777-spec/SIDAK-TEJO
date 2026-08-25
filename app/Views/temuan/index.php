@@ -447,9 +447,7 @@
             "order": [[6, "desc"]], // Default order by Tanggal (column index 6)
             "responsive": true,
             "autoWidth": false,
-            "language": {
-                "url": "<?= base_url('plugins/datatables/id.json') ?>"
-            }
+            "language": window.SIDAK_DATATABLES_ID
         });
 
         // 3. Trigger reload table on filter change
@@ -469,7 +467,7 @@
             
             if (ulpId) {
                 $.ajax({
-                    url: '<?= site_url('temuan/ajax-penyulang/') ?>' + ulpId,
+                    url: '<?= site_url('ajax/network/penyulang/') ?>' + ulpId,
                     type: 'GET',
                     dataType: 'JSON',
                     success: function(data) {
@@ -495,7 +493,7 @@
             
             if (penyulangId) {
                 $.ajax({
-                    url: '<?= site_url('temuan/ajax-section/') ?>' + penyulangId,
+                    url: '<?= site_url('ajax/network/section/') ?>' + penyulangId,
                     type: 'GET',
                     dataType: 'JSON',
                     success: function(data) {

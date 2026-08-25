@@ -431,9 +431,7 @@
                 { data: 7 },
                 { data: 8, orderable: false }
             ],
-            language: {
-                url: "<?= base_url('plugins/datatables/id.json') ?>"
-            }
+            language: window.SIDAK_DATATABLES_ID
         });
 
         // Trigger filters redraw
@@ -451,7 +449,7 @@
             
             if (ulpId) {
                 $.ajax({
-                    url: '<?= site_url('temuan/ajax-penyulang/') ?>' + ulpId,
+                    url: '<?= site_url('ajax/network/penyulang/') ?>' + ulpId,
                     type: 'GET',
                     dataType: 'JSON',
                     success: function(data) {
@@ -478,7 +476,7 @@
             
             if (penyulangId) {
                 $.ajax({
-                    url: '<?= site_url('temuan/ajax-section/') ?>' + penyulangId,
+                    url: '<?= site_url('ajax/network/section/') ?>' + penyulangId,
                     type: 'GET',
                     dataType: 'JSON',
                     success: function(data) {

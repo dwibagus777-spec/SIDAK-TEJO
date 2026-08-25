@@ -90,9 +90,7 @@
         $('#table-users').DataTable({
             "responsive": true,
             "autoWidth": false,
-            "language": {
-                "url": "<?= base_url('plugins/datatables/id.json') ?>"
-            }
+            "language": window.SIDAK_DATATABLES_ID
         });
     });
 

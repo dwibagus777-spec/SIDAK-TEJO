@@ -367,7 +367,7 @@
     const penyulangSelect = document.getElementById('section-penyulang');
     const loadingEl      = document.getElementById('penyulang-loading');
     const btnTemplate    = document.getElementById('btn-template-section');
-    const ajaxUrl        = '<?= site_url('import/ajax-penyulang') ?>';
+    const ajaxUrl        = '<?= site_url('ajax/network/penyulang') ?>';
     const templateBase   = '<?= site_url('import/template-section') ?>';
 
     ulpSelect.addEventListener('change', function () {

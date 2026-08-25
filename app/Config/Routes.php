@@ -99,6 +99,78 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('executive-intelligence/export/print-report', 'EvidenceExportController::printReport');
     $routes->get('executive-intelligence/export/verify-hash', 'EvidenceExportController::verifyHash');
 
+    // Held Records Resolution Workspace (Phase CR-02)
+    $routes->get('held-records', 'HeldRecordsWorkspaceController::index');
+    $routes->get('api/held-records', 'HeldRecordsWorkspaceController::apiList');
+    $routes->post('api/held-records/dry-run', 'HeldRecordsWorkspaceController::apiDryRun');
+
+    // Historical Pattern Intelligence & Recurrence Analytics (Phase CR-03)
+    $routes->get('pattern-intelligence', 'HistoricalPatternController::index');
+    $routes->get('api/pattern-intelligence/summary', 'HistoricalPatternController::apiSummary');
+    $routes->get('api/pattern-intelligence/feeder/(:num)', 'HistoricalPatternController::apiFeeder/$1');
+
+    // Operational Dispatch Workflow & Human Action Governance (Phase CR-04)
+    $routes->get('operational-dispatch', 'OperationalDispatchController::index');
+    $routes->get('api/operational-dispatch/queue', 'OperationalDispatchController::apiQueue');
+    $routes->post('api/operational-dispatch/create-draft', 'OperationalDispatchController::apiCreateDraft');
+    $routes->post('api/operational-dispatch/transition', 'OperationalDispatchController::apiTransition');
+
+    // Physical Asset Truth Layer & GIS Asset Intelligence (Phase CR-05)
+    $routes->get('assets', 'AssetIntelligenceController::index');
+    $routes->get('api/assets/summary', 'AssetIntelligenceController::apiSummary');
+    $routes->get('api/assets/tree/(:num)', 'AssetIntelligenceController::apiTree/$1');
+    $routes->post('api/assets/dry-run', 'AssetIntelligenceController::apiDryRun');
+    $routes->post('api/assets/controlled-commit', 'AssetIntelligenceController::apiCommit');
+
+    // Field Inspection & Living Asset Condition (Phase CR-06)
+    $routes->get('inspections', 'FieldInspectionController::index');
+    $routes->get('api/inspections/summary', 'FieldInspectionController::apiSummary');
+    $routes->post('api/inspections/create-session', 'FieldInspectionController::apiCreateSession');
+    $routes->post('api/inspections/transition-session', 'FieldInspectionController::apiTransitionSession');
+    $routes->post('api/inspections/record-observation', 'FieldInspectionController::apiRecordObservation');
+    $routes->post('api/inspections/record-material', 'FieldInspectionController::apiRecordMaterial');
+
+    // JTM Construction Taxonomy & BOM Intelligence (Phase CR-07)
+    $routes->get('bom', 'JtmConstructionBomController::index');
+    $routes->get('api/bom/summary', 'JtmConstructionBomController::apiSummary');
+    $routes->get('api/bom/materials', 'JtmConstructionBomController::apiMaterials');
+    $routes->get('api/bom/constructions', 'JtmConstructionBomController::apiConstructions');
+    $routes->get('api/bom/detail/(:segment)', 'JtmConstructionBomController::apiBomDetail/$1');
+    $routes->post('api/bom/resolve-alias', 'JtmConstructionBomController::apiResolveAlias');
+    $routes->post('api/bom/estimate', 'JtmConstructionBomController::apiEstimate');
+
+    // Spatial BOM & Finding-to-Material Bridge (Phase CR-08)
+    $routes->get('spatial-bom', 'SpatialPreventiveMaterialController::index');
+    $routes->get('api/spatial-bom/summary', 'SpatialPreventiveMaterialController::apiSummary');
+    $routes->get('api/spatial-bom/asset/(:num)', 'SpatialPreventiveMaterialController::apiAssetDetail/$1');
+    $routes->post('api/spatial-bom/feeder-recommendation', 'SpatialPreventiveMaterialController::apiFeederRecommendation');
+
+    // Executive Command Center & Material Readiness Suite (Phase CC-06)
+    $routes->get('executive/command-center', 'ExecutiveReliabilityController::index');
+    $routes->get('api/executive/summary', 'ExecutiveReliabilityController::apiSummary');
+    $routes->get('api/executive/giri-feeders', 'ExecutiveReliabilityController::apiGiriFeeders');
+    $routes->get('api/executive/asset-radar', 'ExecutiveReliabilityController::apiAssetRadar');
+    $routes->get('api/executive/material-gap', 'ExecutiveReliabilityController::apiMaterialGap');
+    $routes->post('api/executive/budget-estimation', 'ExecutiveReliabilityController::apiBudgetEstimation');
+
+    // Shutdown Scope, SLD Work Planning & Material Allocation Evidence (Phase CC-06 Group G)
+    $routes->get('planning/shutdown-workspace', 'ShutdownWorkPlanningController::index');
+    $routes->get('api/planning/inspection-catalog', 'ShutdownWorkPlanningController::apiInspectionCatalog');
+    $routes->get('api/planning/feeder-sections/(:num)', 'ShutdownWorkPlanningController::apiFeederSections/$1');
+    $routes->post('api/planning/compose-scope', 'ShutdownWorkPlanningController::apiComposeScope');
+    $routes->get('api/planning/plan/(:segment)', 'ShutdownWorkPlanningController::apiPlanDetail/$1');
+    $routes->get('api/planning/summary', 'ShutdownWorkPlanningController::apiPlanningSummary');
+
+    // Material Request Governance & Official SPM Voucher Suite (Phase MR-01 Group H - Tahap B)
+    $routes->get('planning/material-requests', 'MaterialRequestGovernanceController::index');
+    $routes->get('planning/spm-voucher/(:segment)', 'MaterialRequestGovernanceController::spmVoucher/$1');
+    $routes->get('api/material-requests/packages', 'MaterialRequestGovernanceController::apiListPackages');
+    $routes->get('api/material-requests/package/(:segment)', 'MaterialRequestGovernanceController::apiPackageDetail/$1');
+    $routes->post('api/material-requests/create-package', 'MaterialRequestGovernanceController::apiCreatePackage');
+    $routes->post('api/material-requests/technical-review', 'MaterialRequestGovernanceController::apiTechnicalReview');
+    $routes->post('api/material-requests/management-approve', 'MaterialRequestGovernanceController::apiManagementApprove');
+    $routes->get('api/material-requests/summary', 'MaterialRequestGovernanceController::apiGovernanceSummary');
+
     // Wave 2 Operational Planning Candidate Bridge (Phase OP-01 & OP-02)
     $routes->get('operational-planning/candidates', 'OperationalPlanningController::candidates');
     $routes->post('operational-planning/candidates/promote', 'OperationalPlanningController::promote');
@@ -158,6 +230,15 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     $routes->get('command-center', 'CommandCenterController::index');
     $routes->get('command-center/api-data', 'CommandCenterController::apiData');
+    $routes->get('command-center/api/summary', 'CommandCenterController::apiSummary');
+    $routes->get('command-center/api/risk-radar', 'CommandCenterController::apiRiskRadar');
+    $routes->get('command-center/api/priority-actions', 'CommandCenterController::apiPriorityActions');
+    $routes->get('command-center/api/recurring-intelligence', 'CommandCenterController::apiRecurringIntelligence');
+    $routes->get('command-center/api/explainability/(:num)', 'CommandCenterController::apiExplainability/$1');
+    $routes->post('command-center/api/gangguan-import/dry-run', 'CommandCenterController::apiGangguanDryRun');
+    $routes->post('command-center/api/gangguan-import/plan', 'CommandCenterController::apiGangguanPlan');
+    $routes->post('command-center/api/gangguan-import/commit', 'CommandCenterController::apiGangguanCommit');
+    $routes->get('command-center/api/gangguan-import/status/(:segment)', 'CommandCenterController::apiGangguanStatus/$1');
     $routes->get('command-center/geo-data', 'CommandCenterController::geoData');
     $routes->get('command-center/asset-impact/(:num)', 'CommandCenterController::assetImpact/$1');
     $routes->get('command-center/feeder-nri/(:segment)', 'CommandCenterController::feederNri/$1');
@@ -509,7 +590,37 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     
     // AJAX data loading
     $routes->get('temuan/ajax-penyulang/(:num)', 'Temuan::ajaxGetPenyulang/$1');
+    $routes->get('temuan/ajax-penyulang', 'Temuan::ajaxGetPenyulang');
+    $routes->get('temuan/ajax-get-penyulang/(:num)', 'Temuan::ajaxGetPenyulang/$1');
+    $routes->get('temuan/ajax-get-penyulang', 'Temuan::ajaxGetPenyulang');
+
     $routes->get('temuan/ajax-section/(:num)', 'Temuan::ajaxGetSection/$1');
+    $routes->get('temuan/ajax-section', 'Temuan::ajaxGetSection');
+    $routes->get('temuan/ajax-get-section/(:num)', 'Temuan::ajaxGetSection/$1');
+    $routes->get('temuan/ajax-get-section', 'Temuan::ajaxGetSection');
+
+    // MNF-01: Shared Master Network Fabric Lookup API (Canonical 4-Level Master Fabric)
+    $routes->group('ajax/network', static function ($routes) {
+        $routes->get('ulp', 'Ajax\NetworkLookup::ulp');
+        $routes->get('penyulang/(:num)', 'Ajax\NetworkLookup::penyulang/$1');
+        $routes->get('penyulang', 'Ajax\NetworkLookup::penyulang');
+        $routes->get('section/(:num)', 'Ajax\NetworkLookup::section/$1');
+        $routes->get('section', 'Ajax\NetworkLookup::section');
+        $routes->get('asset/(:num)', 'Ajax\NetworkLookup::asset/$1');
+        $routes->get('asset', 'Ajax\NetworkLookup::asset');
+        $routes->get('assets', 'Ajax\NetworkLookup::assets');
+    });
+
+    $routes->group('api/master-network', static function ($routes) {
+        $routes->get('ulps', 'Ajax\NetworkLookup::ulp');
+        $routes->get('penyulangs', 'Ajax\NetworkLookup::penyulang');
+        $routes->get('penyulangs/(:num)', 'Ajax\NetworkLookup::penyulang/$1');
+        $routes->get('sections', 'Ajax\NetworkLookup::section');
+        $routes->get('sections/(:num)', 'Ajax\NetworkLookup::section/$1');
+        $routes->get('assets', 'Ajax\NetworkLookup::assets');
+        $routes->get('assets/(:num)', 'Ajax\NetworkLookup::asset/$1');
+    });
+
     $routes->post('temuan/ajax-datatables', 'Temuan::ajaxDataTables');
 
     // Master Data ULP (Admin & Admin ULP saja)

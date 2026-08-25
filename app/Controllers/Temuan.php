@@ -621,16 +621,70 @@ class Temuan extends BaseController
 
     // --- AJAX Cascades ---
 
-    public function ajaxGetPenyulang(int $ulpId)
+    public function ajaxGetPenyulang($ulpId = null)
     {
-        $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($ulpId);
-        return $this->jsonResponse($penyulangs);
+        try {
+            $id = (int)($ulpId ?? $this->request->getGet('ulp_id') ?? $this->request->getGet('id'));
+            if ($id <= 0) {
+                return $this->response
+                    ->setStatusCode(200)
+                    ->setContentType('application/json')
+                    ->setJSON([]);
+            }
+
+            if (!isset($this->penyulangRepository)) {
+                $this->penyulangRepository = new \App\Repositories\PenyulangRepository();
+            }
+
+            $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($id);
+            return $this->response
+                ->setStatusCode(200)
+                ->setContentType('application/json')
+                ->setJSON($penyulangs);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[AJAX PENYULANG] {message}', ['message' => $e->getMessage()]);
+            return $this->response
+                ->setStatusCode(500)
+                ->setContentType('application/json')
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to load feeder data: ' . $e->getMessage()
+                ]);
+        }
     }
 
-    public function ajaxGetSection(int $penyulangId)
+    public function ajaxGetSection($penyulangId = null)
     {
-        $sections = $this->sectionRepository->getActiveSectionsByPenyulang($penyulangId);
-        return $this->jsonResponse($sections);
+        try {
+            $id = (int)($penyulangId ?? $this->request->getGet('penyulang_id') ?? $this->request->getGet('id_penyulang') ?? $this->request->getGet('id'));
+            if ($id <= 0) {
+                return $this->response
+                    ->setStatusCode(200)
+                    ->setContentType('application/json')
+                    ->setJSON([]);
+            }
+
+            if (!isset($this->sectionRepository)) {
+                $this->sectionRepository = new \App\Repositories\SectionRepository();
+            }
+
+            $sections = $this->sectionRepository->getActiveSectionsByPenyulang($id);
+            return $this->response
+                ->setStatusCode(200)
+                ->setContentType('application/json')
+                ->setJSON($sections);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[AJAX SECTION] {message}', ['message' => $e->getMessage()]);
+            return $this->response
+                ->setStatusCode(500)
+                ->setContentType('application/json')
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to load section data: ' . $e->getMessage()
+                ]);
+        }
     }
 
     public function terdekat()

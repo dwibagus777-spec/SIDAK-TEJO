@@ -280,7 +280,7 @@
             }
             
             $.ajax({
-                url: '<?= site_url('temuan/ajax-penyulang/') ?>' + ulpId,
+                url: '<?= site_url('ajax/network/penyulang/') ?>' + ulpId,
                 type: 'GET',
                 dataType: 'JSON',
                 success: function(data) {
@@ -302,9 +302,7 @@
             $('#table-rincian-gangguan').DataTable({
                 "responsive": true,
                 "autoWidth": false,
-                "language": {
-                    "url": "<?= base_url('plugins/datatables/id.json') ?>"
-                }
+                "language": window.SIDAK_DATATABLES_ID
             });
         }
 

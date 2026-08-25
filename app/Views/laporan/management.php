@@ -122,7 +122,7 @@
             
             if (ulpId) {
                 $.ajax({
-                    url: '<?= site_url('temuan/ajax-get-penyulang/') ?>' + ulpId,
+                    url: '<?= site_url('ajax/network/penyulang/') ?>' + ulpId,
                     type: 'GET',
                     dataType: 'JSON',
                     success: function(data) {

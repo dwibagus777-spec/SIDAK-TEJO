@@ -94,6 +94,14 @@ class ManagementEvidencePackService
                                     ->getResultArray();
 
         // 4. Lineage Map
+        $hfiCount = $this->db->tableExists('historical_feeder_interruptions')
+            ? $this->db->table('historical_feeder_interruptions')->countAllResults()
+            : 0;
+
+        $findingsCount = $this->db->tableExists('temuan')
+            ? $this->db->table('temuan')->where('deleted_at IS NULL')->countAllResults()
+            : 0;
+
         $lineage = [
             'lineage_description' => 'Provable correlation trail from Asset Master to M-04 Historical Trips to Pinned Weights',
             'governance_invariants' => [
@@ -106,8 +114,11 @@ class ManagementEvidencePackService
                 'preventive_scoring'   => 'PREVENTIVE_SCORING_v1.0',
                 'executive_analytics'  => 'EXECUTIVE_ANALYTICS_MODEL_v1.0',
             ],
-            'snapshots_count'      => count($snapshots),
-            'lifecycle_events_count'=> count($lifecycleEvents),
+            'snapshots_count'              => count($snapshots),
+            'lifecycle_events_count'       => count($lifecycleEvents),
+            'historical_interruptions_count'=> $hfiCount,
+            'active_findings_count'        => $findingsCount,
+            'aggregate_to_source_drillback'=> 'EXECUTIVE_KPI -> FVI_RANKING -> PENYULANG_ID -> TEMUAN_ID / DISTURBANCE_RECORD_HASH',
         ];
 
         // Canonical Serialization

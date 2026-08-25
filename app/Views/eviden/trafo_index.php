@@ -254,10 +254,9 @@
                 { "orderable": false, "targets": 0 }
             ],
             "order": [[1, 'asc']],
-            "language": {
-                "url": "<?= base_url('plugins/datatables/i18n/id.json') ?>",
+            "language": Object.assign({}, window.SIDAK_DATATABLES_ID, {
                 "emptyTable": "Tidak ada data eviden trafo"
-            }
+            })
         });
 
         // Handle check-all checkbox
@@ -331,7 +330,7 @@
             
             if (ulpId) {
                 $.ajax({
-                    url: '<?= site_url('import/ajax-penyulang') ?>',
+                    url: '<?= site_url('ajax/network/penyulang') ?>',
                     type: 'GET',
                     data: { ulp_id: ulpId },
                     dataType: 'JSON',

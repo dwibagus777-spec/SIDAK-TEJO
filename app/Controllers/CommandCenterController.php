@@ -12,6 +12,15 @@ use App\Services\ExecutionFeedbackService;
 use App\Services\ProductionHardeningService;
 use App\Services\OperationalResilienceService;
 use App\Services\SystemObservabilityService;
+use App\Services\PreventiveRiskRadarService;
+use App\Services\PriorityActionQueueService;
+use App\Services\RecurringFindingIntelligenceService;
+use App\Services\RiskExplainabilityService;
+use App\Services\SpreadsheetGangguanDryRunService;
+use App\Services\SpreadsheetGangguanImportPlanService;
+use App\Services\SpreadsheetGangguanImportService;
+use App\Services\GangguanImportReconciliationService;
+use App\Services\Providers\DatabaseGangguanProvider;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class CommandCenterController extends BaseController
@@ -25,18 +34,39 @@ class CommandCenterController extends BaseController
     protected ProductionHardeningService $hardeningService;
     protected OperationalResilienceService $resilienceService;
     protected SystemObservabilityService $observabilityService;
+    protected PreventiveRiskRadarService $radarService;
+    protected PriorityActionQueueService $actionQueueService;
+    protected RecurringFindingIntelligenceService $recurringService;
+    protected RiskExplainabilityService $explainabilityService;
+    protected SpreadsheetGangguanDryRunService $dryRunService;
+    protected SpreadsheetGangguanImportPlanService $importPlanService;
+    protected SpreadsheetGangguanImportService $importService;
+    protected GangguanImportReconciliationService $reconciliationService;
+    protected DatabaseGangguanProvider $dbGangguanProvider;
 
     public function __construct()
     {
-        $this->opService            = new OperationalIntelligenceService();
-        $this->topoService          = new NetworkTopologyService();
-        $this->predictService       = new PredictiveRiskService();
-        $this->prescriptiveService   = new PrescriptiveDecisionService();
-        $this->orchestratorService  = new ExecutionOrchestrationService();
-        $this->feedbackService      = new ExecutionFeedbackService();
-        $this->hardeningService     = new ProductionHardeningService();
-        $this->resilienceService    = new OperationalResilienceService();
-        $this->observabilityService = new SystemObservabilityService();
+        $this->opService             = new OperationalIntelligenceService();
+        $this->topoService           = new NetworkTopologyService();
+        $this->predictService        = new PredictiveRiskService();
+        $this->prescriptiveService    = new PrescriptiveDecisionService();
+        $this->orchestratorService   = new ExecutionOrchestrationService();
+        $this->feedbackService       = new ExecutionFeedbackService();
+        $this->hardeningService      = new ProductionHardeningService();
+        $this->resilienceService     = new OperationalResilienceService();
+        $this->observabilityService  = new SystemObservabilityService();
+        $this->radarService          = new PreventiveRiskRadarService();
+        $this->actionQueueService    = new PriorityActionQueueService();
+        $this->recurringService      = new RecurringFindingIntelligenceService();
+        $this->explainabilityService  = new RiskExplainabilityService();
+        $this->dryRunService         = new SpreadsheetGangguanDryRunService();
+        $this->importPlanService     = new SpreadsheetGangguanImportPlanService();
+        $this->importService         = new SpreadsheetGangguanImportService();
+        $this->reconciliationService = new GangguanImportReconciliationService();
+        $this->dbGangguanProvider    = new DatabaseGangguanProvider();
+
+        $this->radarService->setGangguanProvider($this->dbGangguanProvider);
+        $this->explainabilityService->setGangguanProvider($this->dbGangguanProvider);
     }
 
     /**
@@ -300,4 +330,294 @@ class CommandCenterController extends BaseController
             'data'   => $telemetry,
         ]);
     }
+
+    /**
+     * GET /command-center/api/summary
+     * Additive Command Center Macro Risk Summary API (Step 5)
+     */
+    public function apiSummary(): ResponseInterface
+    {
+        $filters = $this->extractFilters();
+        $radar = $this->radarService->getAggregatedRadar($filters);
+        $recurring = $this->recurringService->getRecurringIntelligence($filters);
+        $queue = $this->actionQueueService->getActionQueue($filters);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => [
+                'radar_summary'       => $radar['summary'] ?? [],
+                'recurring_summary'   => $recurring['summary'] ?? [],
+                'queue_summary'       => $queue['summary'] ?? [],
+                'interruption_source' => $radar['interruption_provider'] ?? [],
+            ],
+            'meta'   => [
+                'generated_at'    => date('Y-m-d H:i:s'),
+                'scoring_version' => PreventiveRiskRadarService::SCORING_VERSION,
+            ]
+        ]);
+    }
+
+    /**
+     * GET /command-center/api/risk-radar
+     * Additive Spatial & Tabular Preventive Risk Radar API (Step 5)
+     */
+    public function apiRiskRadar(): ResponseInterface
+    {
+        $filters = $this->extractFilters();
+        $radar = $this->radarService->getAggregatedRadar($filters);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $radar,
+            'meta'   => [
+                'generated_at'    => date('Y-m-d H:i:s'),
+                'scoring_version' => PreventiveRiskRadarService::SCORING_VERSION,
+            ]
+        ]);
+    }
+
+    /**
+     * GET /command-center/api/priority-actions
+     * Additive Ranked Priority Action Queue API (Step 5)
+     */
+    public function apiPriorityActions(): ResponseInterface
+    {
+        $filters = $this->extractFilters();
+        $filters['limit'] = (int)($this->request->getGet('limit') ?? 25);
+        $filters['offset'] = (int)($this->request->getGet('offset') ?? 0);
+
+        $queue = $this->actionQueueService->getActionQueue($filters);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $queue,
+            'meta'   => [
+                'generated_at'    => date('Y-m-d H:i:s'),
+                'scoring_version' => PreventiveRiskRadarService::SCORING_VERSION,
+            ]
+        ]);
+    }
+
+    /**
+     * GET /command-center/api/recurring-intelligence
+     * Additive Recurring Finding Intelligence API (Step 5)
+     */
+    public function apiRecurringIntelligence(): ResponseInterface
+    {
+        $filters = $this->extractFilters();
+        $filters['min_recurrence'] = (int)($this->request->getGet('min_recurrence') ?? 1);
+
+        $recurring = $this->recurringService->getRecurringIntelligence($filters);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $recurring,
+            'meta'   => [
+                'generated_at'    => date('Y-m-d H:i:s'),
+                'scoring_version' => PreventiveRiskRadarService::SCORING_VERSION,
+            ]
+        ]);
+    }
+
+    /**
+     * GET /command-center/api/explainability/(:num)
+     * Additive "Why Prioritized?" Evidence Lineage API (Step 5)
+     */
+    public function apiExplainability($findingId = null): ResponseInterface
+    {
+        $fId = (int)($findingId ?? $this->request->getGet('finding_id') ?? 1);
+        $explain = $this->explainabilityService->explainFindingRisk($fId);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $explain,
+            'meta'   => [
+                'generated_at'    => date('Y-m-d H:i:s'),
+                'scoring_version' => PreventiveRiskRadarService::SCORING_VERSION,
+            ]
+        ]);
+    }
+
+    /**
+     * Extract multi-select query parameter filters supporting arrays.
+     */
+    protected function extractFilters(): array
+    {
+        $filters = [];
+
+        $ulp = $this->request->getGet('ulp') ?? $this->request->getGet('ulp_id');
+        if (!empty($ulp)) {
+            $filters['ulp_id'] = is_array($ulp) ? $ulp : [$ulp];
+        }
+
+        $penyulang = $this->request->getGet('penyulang') ?? $this->request->getGet('penyulang_id');
+        if (!empty($penyulang)) {
+            $filters['penyulang_id'] = is_array($penyulang) ? $penyulang : [$penyulang];
+        }
+
+        $section = $this->request->getGet('section') ?? $this->request->getGet('section_id');
+        if (!empty($section)) {
+            $filters['section_id'] = is_array($section) ? $section : [$section];
+        }
+
+        $riskTier = $this->request->getGet('risk_tier');
+        if (!empty($riskTier)) {
+            $filters['risk_tier'] = is_array($riskTier) ? $riskTier : [$riskTier];
+        }
+
+        $category = $this->request->getGet('category');
+        if (!empty($category)) {
+            $filters['category'] = is_array($category) ? $category : [$category];
+        }
+
+        return $filters;
+    }
+
+    /**
+     * POST /command-center/api/gangguan-import/dry-run
+     * Execute pure in-memory simulation of spreadsheet ingestion.
+     */
+    public function apiGangguanDryRun(): ResponseInterface
+    {
+        $filePath = $this->resolveUploadedFilePath();
+        if (!$filePath) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'Berkas spreadsheet (file) atau file_path tidak ditemukan dalam request.',
+            ]);
+        }
+
+        $sheetName = $this->request->getPost('sheet_name') ?? $this->request->getGet('sheet_name');
+        $dryRun = $this->dryRunService->executeDryRun($filePath, $sheetName);
+
+        // Cleanup temporary upload if it was an HTTP upload
+        $this->cleanupTemporaryUpload($filePath);
+
+        return $this->response->setJSON([
+            'status' => $dryRun['success'] ? 'success' : 'error',
+            'data'   => $dryRun,
+        ]);
+    }
+
+    /**
+     * POST /command-center/api/gangguan-import/plan
+     * Generate an Import Plan with feeder resolution and duplicate dispositions.
+     */
+    public function apiGangguanPlan(): ResponseInterface
+    {
+        $filePath = $this->resolveUploadedFilePath();
+        if (!$filePath) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'Berkas spreadsheet (file) atau file_path tidak ditemukan dalam request.',
+            ]);
+        }
+
+        $sheetName   = $this->request->getPost('sheet_name') ?? $this->request->getGet('sheet_name');
+        $autoAccept  = (bool)($this->request->getPost('auto_accept_high_confidence') ?? false);
+        $plan        = $this->importPlanService->generateImportPlan($filePath, $sheetName, $autoAccept);
+
+        $this->cleanupTemporaryUpload($filePath);
+
+        return $this->response->setJSON([
+            'status' => $plan['success'] ? 'success' : 'error',
+            'data'   => $plan,
+        ]);
+    }
+
+    /**
+     * POST /command-center/api/gangguan-import/commit
+     * Commit an approved Import Plan with explicit confirmation.
+     */
+    public function apiGangguanCommit(): ResponseInterface
+    {
+        $json = $this->request->getJSON(true) ?? $this->request->getPost();
+        $importPlan = $json['import_plan'] ?? null;
+        $token      = $json['confirmation_token'] ?? '';
+        $confirm    = (bool)($json['confirm'] ?? false);
+
+        if (!$importPlan || empty($token)) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'Payload import_plan dan confirmation_token wajib disertakan.',
+            ]);
+        }
+
+        // 1. Commit with confirmation barrier
+        $commitResult = $this->importService->commitImportPlan($importPlan, $token, $confirm);
+
+        if (!$commitResult['success']) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status' => 'error',
+                'data'   => $commitResult,
+            ]);
+        }
+
+        // 2. Run Reconciliation
+        $reconciliation = $this->reconciliationService->reconcileImport($importPlan, $commitResult);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => [
+                'commit'         => $commitResult,
+                'reconciliation' => $reconciliation,
+            ],
+        ]);
+    }
+
+    /**
+     * GET /command-center/api/gangguan-import/status/{planId}
+     * Check status and current disturbance knowledge provider availability.
+     */
+    public function apiGangguanStatus(?string $planId = null): ResponseInterface
+    {
+        $meta = $this->dbGangguanProvider->getMetadata();
+        $stats = $this->dbGangguanProvider->getInterruptionStats();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => [
+                'plan_id'             => $planId,
+                'provider_metadata'   => $meta,
+                'interruption_stats'  => $stats,
+                'scoring_version'     => 'PREVENTIVE_SCORING_v1.0',
+            ],
+        ]);
+    }
+
+    /**
+     * Helper to resolve uploaded file path from HTTP multipart or JSON parameter.
+     */
+    protected function resolveUploadedFilePath(): ?string
+    {
+        $file = $this->request->getFile('file');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $tempName = 'upload_gdr_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $file->getClientExtension();
+            $targetDir = WRITEPATH . 'temp';
+            if (!is_dir($targetDir)) {
+                mkdir($targetDir, 0777, true);
+            }
+            $file->move($targetDir, $tempName);
+            return $targetDir . DIRECTORY_SEPARATOR . $tempName;
+        }
+
+        $json = $this->request->getJSON(true);
+        $explicitPath = $this->request->getPost('file_path') ?? ($json['file_path'] ?? null);
+        if ($explicitPath && file_exists($explicitPath)) {
+            return $explicitPath;
+        }
+
+        return null;
+    }
+
+    /**
+     * Clean up temporary file created by HTTP upload.
+     */
+    protected function cleanupTemporaryUpload(?string $filePath): void
+    {
+        if ($filePath && str_contains($filePath, WRITEPATH . 'temp') && file_exists($filePath)) {
+            @unlink($filePath);
+        }
+    }
 }
+

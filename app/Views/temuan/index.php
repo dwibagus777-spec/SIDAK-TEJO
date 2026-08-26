@@ -97,6 +97,37 @@
     transform: scale(1.1);
     color: #fff;
 }
+
+/* Horizontal Scroll & Table Compact Layout */
+.temuan-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+    padding-bottom: 8px;
+}
+
+.temuan-table {
+    min-width: 1100px;
+    width: 100% !important;
+}
+
+.temuan-date {
+    width: 88px;
+    min-width: 88px;
+    font-size: 12px;
+    line-height: 1.35;
+    white-space: nowrap;
+    text-align: center;
+    margin: 0 auto;
+}
+
+.temuan-date small {
+    font-size: 11px;
+    color: #64748b;
+    display: block;
+}
 </style>
 <!-- PANEL FILTER DATA TEMUAN -->
 <div class="row mb-3">
@@ -217,19 +248,19 @@
                 <?php endif; ?>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-modern" id="table-temuan" style="width:100%;">
+                <div class="temuan-table-wrapper">
+                    <table class="table table-modern temuan-table" id="table-temuan" style="width:100%;">
                         <thead>
                             <tr>
-                                <th>Nomor Temuan</th>
-                                <th>Penyulang</th>
-                                <th>Section</th>
-                                <th>Jenis Temuan</th>
-                                <th>Foto</th>
-                                <th>Prioritas</th>
-                                <th>Tanggal & Jam</th>
-                                <th>Status/SLA</th>
-                                <th style="width: 100px;">Aksi</th>
+                                <th style="width: 110px; min-width: 110px;">Nomor Temuan</th>
+                                <th style="width: 140px; min-width: 140px;">Penyulang</th>
+                                <th style="width: 180px; min-width: 180px;">Section</th>
+                                <th style="width: 150px; min-width: 150px;">Jenis Temuan</th>
+                                <th style="width: 70px; min-width: 70px;" class="text-center">Foto</th>
+                                <th style="width: 100px; min-width: 100px;" class="text-center">Prioritas</th>
+                                <th style="width: 88px; min-width: 88px;" class="text-center">Tanggal</th>
+                                <th style="width: 120px; min-width: 120px;" class="text-center">Status/SLA</th>
+                                <th style="width: 100px; min-width: 100px;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -239,6 +270,7 @@
                 </div>
             </div>
         </div>
+    </div>
 </div>
 
 <!-- ============================================================ -->
@@ -434,18 +466,18 @@
                 }
             },
             "columns": [
-                { "data": 0 }, // Nomor
+                { "data": 0, "className": "font-weight-bold" }, // Nomor
                 { "data": 1 }, // Penyulang
                 { "data": 2 }, // Section
                 { "data": 3, "render": function(data){ return data; } }, // Jenis
-                { "data": 4, "orderable": false, "render": function(data){ return data; } }, // Foto
-                { "data": 5, "render": function(data){ return data; } }, // Prioritas
-                { "data": 6 }, // Tanggal
-                { "data": 7, "render": function(data){ return data; } }, // Status
-                { "data": 8, "orderable": false, "render": function(data){ return data; } } // Aksi
+                { "data": 4, "orderable": false, "className": "text-center", "render": function(data){ return data; } }, // Foto
+                { "data": 5, "className": "text-center", "render": function(data){ return data; } }, // Prioritas
+                { "data": 6, "className": "text-center align-middle", "render": function(data){ return data; } }, // Tanggal
+                { "data": 7, "className": "text-center align-middle", "render": function(data){ return data; } }, // Status
+                { "data": 8, "orderable": false, "className": "text-center align-middle", "render": function(data){ return data; } } // Aksi
             ],
             "order": [[6, "desc"]], // Default order by Tanggal (column index 6)
-            "responsive": true,
+            "responsive": false,
             "autoWidth": false,
             "language": window.SIDAK_DATATABLES_ID
         });

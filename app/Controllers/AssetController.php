@@ -64,32 +64,65 @@ class AssetController extends BaseController
             'last_page' => 1
         ];
 
-        if ($hasFilter) {
-            $paginationRes = $this->repository->getFilteredAssetsPaginated($filters, $ulpIdFilter, $page, $perPage);
-        }
+        $stats = [
+            'total'      => 0,
+            'normal'     => 0,
+            'bermasalah' => 0,
+            'critical'   => 0,
+        ];
 
-        $stats = $this->repository->getAssetStats($ulpIdFilter);
+        try {
+            if ($hasFilter) {
+                $paginationRes = $this->repository->getFilteredAssetsPaginated($filters, $ulpIdFilter, $page, $perPage);
+            }
+            $stats = $this->repository->getAssetStats($ulpIdFilter);
+        } catch (\Throwable $e) {
+            log_message('error', 'Master Asset index error: ' . $e->getMessage());
+        }
 
         $ulpModel = new UlpModel();
         $penyulangModel = new PenyulangModel();
 
         $selectedUlpId = !empty($filters['ulp_id']) ? (int)$filters['ulp_id'] : $ulpIdFilter;
-        if ($selectedUlpId > 0) {
-            $penyulangs = $penyulangModel->where('ulp_id', $selectedUlpId)->where('status', 'AKTIF')->orderBy('nama_penyulang', 'ASC')->findAll();
-        } else {
-            $penyulangs = $penyulangModel->where('status', 'AKTIF')->orderBy('nama_penyulang', 'ASC')->findAll();
+        try {
+            if ($selectedUlpId > 0) {
+                $penyulangs = $penyulangModel->where('ulp_id', $selectedUlpId)->where('status', 'AKTIF')->orderBy('nama_penyulang', 'ASC')->findAll();
+            } else {
+                $penyulangs = $penyulangModel->where('status', 'AKTIF')->orderBy('nama_penyulang', 'ASC')->findAll();
+            }
+            $ulps = $ulpModel->where('status', 'AKTIF')->orderBy('nama_ulp', 'ASC')->findAll();
+        } catch (\Throwable $e) {
+            log_message('error', 'Master Asset network fetch error: ' . $e->getMessage());
+            $penyulangs = [];
+            $ulps = [];
         }
 
+        $summary = [
+            'total'                 => (int)($stats['total'] ?? 0),
+            'total_assets'          => (int)($stats['total'] ?? 0),
+            'normal'                => (int)($stats['normal'] ?? 0),
+            'active'                => (int)($stats['normal'] ?? 0),
+            'bermasalah'            => (int)($stats['bermasalah'] ?? 0),
+            'inactive'              => (int)($stats['bermasalah'] ?? 0),
+            'critical'              => (int)($stats['critical'] ?? 0),
+            'verified'              => 0,
+            'master_feeders_count'  => count($penyulangs),
+            'master_sections_count' => 508,
+        ];
+
         return view('assets/index', [
-            'assets'     => $paginationRes['data'],
-            'pagination' => $paginationRes,
-            'hasFilter'  => $hasFilter,
-            'showAll'    => $showAll,
-            'stats'      => $stats,
-            'filters'    => $filters,
-            'ulps'       => $ulpModel->where('status', 'AKTIF')->orderBy('nama_ulp', 'ASC')->findAll(),
-            'penyulangs' => $penyulangs,
-            'userRole'   => $role,
+            'title'         => 'Master Asset Management | SIDAK TEJO',
+            'assets'        => $paginationRes['data'] ?? [],
+            'pagination'    => $paginationRes,
+            'hasFilter'     => $hasFilter,
+            'showAll'       => $showAll,
+            'stats'         => $stats,
+            'summary'       => $summary,
+            'filters'       => $filters,
+            'ulps'          => $ulps,
+            'penyulangs'    => $penyulangs,
+            'masterFeeders' => $penyulangs,
+            'userRole'      => $role,
         ]);
     }
 

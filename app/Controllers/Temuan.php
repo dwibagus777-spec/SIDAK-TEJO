@@ -129,11 +129,11 @@ class Temuan extends BaseController
         }
 
         $rawDate = !empty($row['created_at']) ? $row['created_at'] : (!empty($row['tanggal_temuan']) ? $row['tanggal_temuan'] : null);
-        $tglStr = '-';
+        $tglStr = '<span class="text-muted">-</span>';
         if ($rawDate) {
             $ts = strtotime($rawDate);
             if ($ts !== false && $ts > 0) {
-                $tglStr = date('d-m-Y H:i', $ts) . ' WIB';
+                $tglStr = '<div class="temuan-date"><div class="fw-bold text-dark">' . date('d/m/y', $ts) . '</div><small class="text-muted">' . date('H:i', $ts) . ' WIB</small></div>';
             }
         }
 

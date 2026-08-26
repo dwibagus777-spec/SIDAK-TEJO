@@ -116,6 +116,37 @@
     }
 }
 
+/* Horizontal Scroll & Table Compact Layout */
+.temuan-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+    padding-bottom: 8px;
+}
+
+.temuan-table {
+    min-width: 1100px;
+    width: 100% !important;
+}
+
+.temuan-date {
+    width: 88px;
+    min-width: 88px;
+    font-size: 12px;
+    line-height: 1.35;
+    white-space: nowrap;
+    text-align: center;
+    margin: 0 auto;
+}
+
+.temuan-date small {
+    font-size: 11px;
+    color: #64748b;
+    display: block;
+}
+
 .btn-custom-close-header {
     background: rgba(255, 255, 255, 0.1);
     border: none;
@@ -237,19 +268,19 @@
     <div class="col-12">
         <div class="card card-dark card-outline shadow-sm">
             <div class="card-body">
-                <div class="table-responsive">
-                    <table id="table-update-pekerjaan" class="table table-modern" style="width: 100%;">
+                <div class="temuan-table-wrapper">
+                    <table id="table-update-pekerjaan" class="table table-modern temuan-table" style="width: 100%;">
                         <thead>
                             <tr>
-                                <th>No Temuan</th>
-                                <th>Penyulang</th>
-                                <th>Section</th>
-                                <th>Jenis</th>
-                                <th>Foto</th>
-                                <th>Prioritas</th>
-                                <th>Tgl Temuan</th>
-                                <th>Status SLA</th>
-                                <th>Aksi</th>
+                                <th style="width: 110px; min-width: 110px;">No Temuan</th>
+                                <th style="width: 140px; min-width: 140px;">Penyulang</th>
+                                <th style="width: 180px; min-width: 180px;">Section</th>
+                                <th style="width: 150px; min-width: 150px;">Jenis</th>
+                                <th style="width: 70px; min-width: 70px;" class="text-center">Foto</th>
+                                <th style="width: 100px; min-width: 100px;" class="text-center">Prioritas</th>
+                                <th style="width: 88px; min-width: 88px;" class="text-center">Tgl Temuan</th>
+                                <th style="width: 120px; min-width: 120px;" class="text-center">Status SLA</th>
+                                <th style="width: 100px; min-width: 100px;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -418,18 +449,18 @@
                 }
             },
             order: [[0, 'desc']], // Order by ID/Nomor Temuan desc
-            responsive: true,
+            responsive: false,
             autoWidth: false,
             columns: [
                 { data: 0, className: 'font-monospace font-weight-bold' },
                 { data: 1 },
                 { data: 2 },
                 { data: 3 },
-                { data: 4, orderable: false },
-                { data: 5 },
-                { data: 6 },
-                { data: 7 },
-                { data: 8, orderable: false }
+                { data: 4, orderable: false, className: 'text-center' },
+                { data: 5, className: 'text-center' },
+                { data: 6, className: 'text-center align-middle' },
+                { data: 7, className: 'text-center align-middle' },
+                { data: 8, orderable: false, className: 'text-center align-middle' }
             ],
             language: window.SIDAK_DATATABLES_ID
         });

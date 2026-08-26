@@ -37,7 +37,7 @@ class AssetIntelligenceController extends BaseController
             ->get()
             ->getResultArray();
 
-        return view('assets/index', [
+        return view('asset_intelligence/index', [
             'title'         => 'Physical Asset Truth Layer & GIS Intelligence | SIDAK TEJO',
             'summary'       => $summary,
             'masterFeeders' => $masterFeeders,

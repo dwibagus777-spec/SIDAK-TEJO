@@ -116,7 +116,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('api/operational-dispatch/transition', 'OperationalDispatchController::apiTransition');
 
     // Physical Asset Truth Layer & GIS Asset Intelligence (Phase CR-05)
-    $routes->get('assets', 'AssetIntelligenceController::index');
+    $routes->get('asset-intelligence', 'AssetIntelligenceController::index');
+    $routes->get('assets/truth-layer', 'AssetIntelligenceController::index');
     $routes->get('api/assets/summary', 'AssetIntelligenceController::apiSummary');
     $routes->get('api/assets/tree/(:num)', 'AssetIntelligenceController::apiTree/$1');
     $routes->post('api/assets/dry-run', 'AssetIntelligenceController::apiDryRun');

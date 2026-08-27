@@ -265,4 +265,47 @@ class TemuanDataTablesSearchTest extends CIUnitTestCase
         $this->assertArrayHasKey('recordsFiltered', $body);
         $this->assertArrayHasKey('data', $body);
     }
+
+    public function testAuditFindingCanonicalCommandExecution(): void
+    {
+        $db = \Config\Database::connect();
+        
+        // Ensure active row is canonical
+        $db->table('temuan')->truncate();
+        $db->table('temuan')->insert([
+            'id' => 1,
+            'nomor_temuan' => 'STJ-CANONICAL-001',
+            'ulp_id' => 1,
+            'penyulang_id' => 1,
+            'section_id' => 1,
+            'jenis_temuan' => 'KONSTRUKSI',
+            'deleted_at' => null,
+        ]);
+        
+        // Insert a soft-deleted legacy row
+        $db->table('temuan')->insert([
+            'id' => 2,
+            'nomor_temuan' => 'STJ-LEGACY-002',
+            'ulp_id' => 1,
+            'penyulang_id' => 1,
+            'section_id' => 1,
+            'jenis_temuan' => 'Isolator Retak Fasa R',
+            'deleted_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $cmd = new \App\Commands\AuditFindingCanonicalCommand(\Config\Services::logger(), \Config\Services::commands());
+        
+        \CodeIgniter\Test\Filters\CITestStreamFilter::registration();
+        \CodeIgniter\Test\Filters\CITestStreamFilter::addOutputFilter();
+        
+        $exitCode = $cmd->run([]);
+        $output = \CodeIgniter\Test\Filters\CITestStreamFilter::$buffer;
+        
+        \CodeIgniter\Test\Filters\CITestStreamFilter::removeOutputFilter();
+
+        $this->assertEquals(0, $exitCode);
+        $this->assertStringContainsString('ACTIVE DATASET AUDIT', $output);
+        $this->assertStringContainsString('HISTORICAL / ARCHIVAL INVENTORY', $output);
+        $this->assertStringContainsString('100.00% (ACTIVE OPERATIONAL DATASET)', $output);
+    }
 }

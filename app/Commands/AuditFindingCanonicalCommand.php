@@ -6,19 +6,19 @@ use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 
 /**
- * Finding Type Canonicalization Audit Command (HF-CR06F-01)
- * Audit Only - Non-destructive inspection of finding categories vs legacy free-text values.
+ * Finding Type Canonicalization Audit Command (HF-CR06F-01C)
+ * Differentiates Active Operational Truth from Historical/Soft-Deleted Audit Trails.
  */
 class AuditFindingCanonicalCommand extends BaseCommand
 {
     protected $group       = 'Audit';
     protected $name        = 'audit:finding-canonical';
-    protected $description = 'Audits temuan.jenis_temuan against canonical domain types vs legacy free-text values.';
+    protected $description = 'Audits temuan.jenis_temuan against canonical domain types across Active and Historical scopes.';
 
     public function run(array $params)
     {
         CLI::write("==================================================================", "yellow");
-        CLI::write("       FINDING TYPE CANONICALIZATION & LEGACY AUDIT               ", "yellow");
+        CLI::write("       FINDING TYPE CANONICALIZATION & LEGACY AUDIT (v1.2)        ", "yellow");
         CLI::write("==================================================================", "yellow");
         CLI::newLine();
 
@@ -38,40 +38,44 @@ class AuditFindingCanonicalCommand extends BaseCommand
         // Canonical Baseline Categories
         $canonicalCategories = ['KONSTRUKSI', 'HOTSPOT', 'ROW'];
 
-        // 1. TOTAL INVENTORY STATS
-        $totalTemuan = (int)$db->table('temuan')->countAllResults();
-        $activeTemuan = (int)$db->table('temuan')->where('deleted_at IS NULL')->countAllResults();
-        $deletedTemuan = $totalTemuan - $activeTemuan;
+        // 1. OVERALL INVENTORY STATS
+        $totalTemuan   = (int)$db->table('temuan')->countAllResults();
+        $activeTemuan  = (int)$db->table('temuan')->where('deleted_at IS NULL')->countAllResults();
+        $deletedTemuan = (int)$db->table('temuan')->where('deleted_at IS NOT NULL')->countAllResults();
 
-        CLI::write("1️⃣  OVERALL TEMUAN INVENTORY", "cyan");
+        CLI::write("1️⃣  OVERALL INVENTORY SUMMARY", "cyan");
         CLI::write("------------------------------------------------------------------", "white");
-        CLI::write(sprintf("  Total Temuan Records (All)    : %d", $totalTemuan), "white");
-        CLI::write(sprintf("  Active Temuan Records         : %d", $activeTemuan), "green");
-        CLI::write(sprintf("  Soft-Deleted Records          : %d", $deletedTemuan), "yellow");
+        CLI::write(sprintf("  Total Records in Database     : %d", $totalTemuan), "white");
+        CLI::write(sprintf("  Active Operational Records    : %d", $activeTemuan), "green");
+        CLI::write(sprintf("  Soft-Deleted / Archived       : %d", $deletedTemuan), "yellow");
         CLI::newLine();
 
-        // 2. DISTINCT JENIS_TEMUAN BREAKDOWN
-        $distinctRows = $db->table('temuan')
+        // 2. ACTIVE OPERATIONAL DATASET AUDIT (deleted_at IS NULL)
+        CLI::write("2️⃣  ACTIVE DATASET AUDIT (Operational Truth - deleted_at IS NULL)", "cyan");
+        CLI::write("------------------------------------------------------------------", "white");
+
+        $activeDistinctRows = $db->table('temuan')
             ->select('jenis_temuan, COUNT(*) as cnt')
+            ->where('deleted_at IS NULL')
             ->groupBy('jenis_temuan')
             ->orderBy('cnt', 'DESC')
             ->get()
             ->getResultArray();
 
-        $canonicalCount = 0;
-        $legacyCount    = 0;
-        $legacyValues   = [];
+        $activeCanonicalCount = 0;
+        $activeLegacyCount    = 0;
+        $activeLegacyValues   = [];
 
-        foreach ($distinctRows as $row) {
+        foreach ($activeDistinctRows as $row) {
             $val = (string)($row['jenis_temuan'] ?? '');
             $cnt = (int)$row['cnt'];
             $upperVal = strtoupper(trim($val));
 
             if (in_array($upperVal, $canonicalCategories, true)) {
-                $canonicalCount += $cnt;
+                $activeCanonicalCount += $cnt;
             } else {
-                $legacyCount += $cnt;
-                $legacyValues[] = [
+                $activeLegacyCount += $cnt;
+                $activeLegacyValues[] = [
                     'value' => $val !== '' ? $val : '(NULL / EMPTY)',
                     'count' => $cnt,
                     'suggested_mapping' => $this->suggestCanonicalMapping($val),
@@ -79,77 +83,122 @@ class AuditFindingCanonicalCommand extends BaseCommand
             }
         }
 
-        $canonicalPct = $totalTemuan > 0 ? ($canonicalCount / $totalTemuan) * 100 : 0;
-        $legacyPct    = $totalTemuan > 0 ? ($legacyCount / $totalTemuan) * 100 : 0;
+        $activeCanonicalPct = $activeTemuan > 0 ? ($activeCanonicalCount / $activeTemuan) * 100 : 100;
+        $activeLegacyPct    = $activeTemuan > 0 ? ($activeLegacyCount / $activeTemuan) * 100 : 0;
 
-        CLI::write("2️⃣  CANONICAL VS LEGACY FREE-TEXT METRICS", "cyan");
-        CLI::write("------------------------------------------------------------------", "white");
-        CLI::write(sprintf("  Canonical Domain Types       : %d (%.2f%%)", $canonicalCount, $canonicalPct), $canonicalPct > 80 ? "green" : "yellow");
-        CLI::write(sprintf("  Legacy Free-Text Types       : %d (%.2f%%)", $legacyCount, $legacyPct), $legacyCount > 0 ? "yellow" : "green");
-        CLI::write(sprintf("  Distinct Finding Categories  : %d", count($distinctRows)), "white");
-        CLI::write(sprintf("  Canonical Master Categories  : [%s]", implode(', ', $canonicalCategories)), "cyan");
+        CLI::write(sprintf("  Active Canonical Types        : %d (%.2f%%)", $activeCanonicalCount, $activeCanonicalPct), $activeCanonicalPct >= 100 ? "green" : "yellow");
+        CLI::write(sprintf("  Active Legacy Free-Text Types : %d (%.2f%%)", $activeLegacyCount, $activeLegacyPct), $activeLegacyCount === 0 ? "green" : "red");
+        CLI::write(sprintf("  Active Distinct Categories    : %d", count($activeDistinctRows)), "white");
+        CLI::write(sprintf("  Canonical Master Categories   : [%s]", implode(', ', $canonicalCategories)), "cyan");
+
+        // Breakdown table for active records
         CLI::newLine();
-
-        // 3. TARGET VALUE AUDIT: 'Isolator Retak Fasa R'
-        CLI::write("3️⃣  TARGET VALUE AUDIT: 'Isolator Retak Fasa R'", "cyan");
-        CLI::write("------------------------------------------------------------------", "white");
-        $isolatorMatches = $db->table('temuan')
-            ->select('COUNT(*) as cnt')
-            ->like('jenis_temuan', 'Isolator Retak', 'both')
-            ->get()
-            ->getRowArray();
-        $isolatorCount = (int)($isolatorMatches['cnt'] ?? 0);
-
-        if ($isolatorCount > 0) {
-            CLI::write(sprintf("  ⚠️  Status: LEGACY FREE-TEXT DETECTED (Count: %d records)", $isolatorCount), "yellow");
-            CLI::write("  Classification       : Free-Text Defect Description stored in jenis_temuan", "white");
-            CLI::write("  Canonical Mapping    : Domain 'KONSTRUKSI' (Defect: Isolator Retak)", "green");
-        } else {
-            CLI::write("  ℹ️  'Isolator Retak' string not found directly in jenis_temuan column.", "white");
-        }
-        CLI::newLine();
-
-        // 4. DISTINCT VALUE TABLE
-        CLI::write("4️⃣  DISTINCT FINDING VALUES AUDIT TABLE", "cyan");
-        CLI::write("------------------------------------------------------------------", "white");
-        CLI::write(sprintf("  %-4s | %-32s | %-8s | %-12s | %-16s", "NO", "JENIS TEMUAN VALUE", "COUNT", "STATUS", "SUGGESTED MAPPING"), "yellow");
-        CLI::write("------------------------------------------------------------------", "white");
+        CLI::write("  Active Finding Breakdown Table:", "white");
+        CLI::write(sprintf("  %-4s | %-28s | %-8s | %-12s", "NO", "ACTIVE CATEGORY", "COUNT", "STATUS"), "yellow");
+        CLI::write("  ----------------------------------------------------------------", "white");
 
         $i = 1;
-        foreach ($distinctRows as $row) {
+        foreach ($activeDistinctRows as $row) {
             $val = (string)($row['jenis_temuan'] ?? '');
             $cnt = (int)$row['cnt'];
             $upperVal = strtoupper(trim($val));
             $isCanonical = in_array($upperVal, $canonicalCategories, true);
             $statusStr = $isCanonical ? 'CANONICAL' : 'LEGACY';
-            $statusColor = $isCanonical ? 'green' : 'yellow';
+            $statusColor = $isCanonical ? 'green' : 'red';
             $displayVal = $val !== '' ? $val : '(NULL / EMPTY)';
-            $mapping = $isCanonical ? $upperVal : $this->suggestCanonicalMapping($val);
 
-            CLI::write(sprintf("  %-4d | %-32s | %-8d | %-12s | %-16s", 
+            CLI::write(sprintf("  %-4d | %-28s | %-8d | %-12s", 
                 $i++, 
-                mb_strimwidth($displayVal, 0, 32, '...'), 
+                mb_strimwidth($displayVal, 0, 28, '...'), 
                 $cnt, 
-                $statusStr, 
-                $mapping
+                $statusStr
             ), $statusColor);
         }
         CLI::newLine();
 
-        // 5. SUMMARY RECOMMENDATION
-        CLI::write("5️⃣  ARCHITECTURAL AUDIT RECOMMENDATION", "cyan");
+        // 3. HISTORICAL / SOFT-DELETED AUDIT (deleted_at IS NOT NULL)
+        CLI::write("3️⃣  HISTORICAL / ARCHIVAL INVENTORY (Audit Trail - deleted_at IS NOT NULL)", "cyan");
         CLI::write("------------------------------------------------------------------", "white");
-        if ($legacyCount > 0) {
-            CLI::write("  ⚠️  Action Plan Recommendation:", "yellow");
-            CLI::write("  1. Search UI & Repository DataTables Hotfix: DEPLOYED (HF-CR06F-01)", "green");
-            CLI::write("  2. Database Schema / Value Canonicalization Migration:", "white");
-            CLI::write("     Design Migration `HF-CR06F-01B` to map legacy free-text values into:", "white");
-            CLI::write("     - jenis_temuan = 'KONSTRUKSI' / 'HOTSPOT' / 'ROW' (Canonical Domain)", "cyan");
-            CLI::write("     - Preserve original detailed description in detail_temuan", "cyan");
-            CLI::write("  3. DO NOT blind migrate before User Architecture Sign-off.", "yellow");
-        } else {
-            CLI::write("  ✅ All existing finding records are already canonical.", "green");
+
+        $deletedDistinctRows = $db->table('temuan')
+            ->select('jenis_temuan, COUNT(*) as cnt')
+            ->where('deleted_at IS NOT NULL')
+            ->groupBy('jenis_temuan')
+            ->orderBy('cnt', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $deletedCanonicalCount = 0;
+        $deletedLegacyCount    = 0;
+
+        foreach ($deletedDistinctRows as $row) {
+            $val = (string)($row['jenis_temuan'] ?? '');
+            $cnt = (int)$row['cnt'];
+            $upperVal = strtoupper(trim($val));
+
+            if (in_array($upperVal, $canonicalCategories, true)) {
+                $deletedCanonicalCount += $cnt;
+            } else {
+                $deletedLegacyCount += $cnt;
+            }
         }
+
+        CLI::write(sprintf("  Soft-Deleted Records Total    : %d", $deletedTemuan), "white");
+        CLI::write(sprintf("  Historical Canonical Records  : %d", $deletedCanonicalCount), "white");
+        CLI::write(sprintf("  Historical Legacy Records     : %d", $deletedLegacyCount), $deletedLegacyCount > 0 ? "yellow" : "green");
+
+        if ($deletedLegacyCount > 0) {
+            CLI::write("  ℹ️  Note: Historical legacy records are safely preserved in soft-delete state.", "yellow");
+            CLI::write("      They maintain audit trail history and do NOT impact active operations.", "yellow");
+        }
+        CLI::newLine();
+
+        // 4. TARGET VALUE STATUS: 'Isolator Retak Fasa R'
+        CLI::write("4️⃣  TARGET RECORD VERIFICATION: 'Isolator Retak Fasa R'", "cyan");
+        CLI::write("------------------------------------------------------------------", "white");
+
+        $activeIsolator = (int)$db->table('temuan')
+            ->where('deleted_at IS NULL')
+            ->like('jenis_temuan', 'Isolator Retak', 'both')
+            ->countAllResults();
+
+        $deletedIsolator = (int)$db->table('temuan')
+            ->where('deleted_at IS NOT NULL')
+            ->like('jenis_temuan', 'Isolator Retak', 'both')
+            ->countAllResults();
+
+        CLI::write(sprintf("  Active State Count            : %d records", $activeIsolator), $activeIsolator === 0 ? "green" : "red");
+        CLI::write(sprintf("  Historical (Soft-Deleted)     : %d records", $deletedIsolator), "cyan");
+
+        if ($activeIsolator === 0 && $deletedIsolator > 0) {
+            CLI::write("  ✅ Status: PROPERLY ARCHIVED (Soft-deleted, zero active pollution)", "green");
+        } elseif ($activeIsolator === 0 && $deletedIsolator === 0) {
+            CLI::write("  ✅ Status: CLEAN (Record does not exist)", "green");
+        } else {
+            CLI::write("  ⚠️  Status: ACTIVE VIOLATION (Record is still active)", "red");
+        }
+        CLI::newLine();
+
+        // 5. FINAL VERDICT & COMPLIANCE
+        CLI::write("5️⃣  FINAL ENTERPRISE COMPLIANCE VERDICT", "cyan");
+        CLI::write("------------------------------------------------------------------", "white");
+
+        if ($activeLegacyCount === 0) {
+            CLI::write("  🟢 Active Finding Dataset       : CANONICAL & CLEAN", "green");
+            CLI::write("  🟢 Active Legacy Free-Text      : 0 (0.00%)", "green");
+            CLI::write(sprintf("  ℹ️  Historical Soft-Deleted Data : %d legacy records retained for audit trail", $deletedLegacyCount), "cyan");
+            CLI::write("  🟢 Canonicalization Compliance  : 100.00% (ACTIVE OPERATIONAL DATASET)", "green");
+            CLI::newLine();
+            CLI::write("  ✅ ENTERPRISE AUDIT PASSED: Active operational truth is 100% canonical.", "green");
+            CLI::write("     No destructive hard-delete or emergency migration is required.", "green");
+        } else {
+            CLI::write("  ⚠️  Active Finding Dataset       : CONTAINS LEGACY VALUES", "yellow");
+            CLI::write(sprintf("  ⚠️  Active Legacy Free-Text      : %d records", $activeLegacyCount), "yellow");
+            CLI::write(sprintf("  ⚠️  Canonicalization Compliance  : %.2f%%", $activeCanonicalPct), "yellow");
+            CLI::newLine();
+            CLI::write("  Recommendation: Schedule migration HF-CR06F-01B to map active legacy records.", "yellow");
+        }
+
         CLI::newLine();
         CLI::write("==================================================================", "yellow");
         CLI::write("                   AUDIT COMPLETED SUCCESSFULLY                   ", "green");

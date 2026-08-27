@@ -81,7 +81,7 @@ class Temuan extends BaseController
     private function formatDataTablesRow(array $row, string $role, bool $includeUpdateBtn = false): array
     {
         // Prioritas Badge
-        $prio = strtoupper($row['prioritas']);
+        $prio = strtoupper((string)($row['prioritas'] ?? 'MEDIUM'));
         $prioBadge = '<span class="badge bg-secondary">' . $prio . '</span>';
         if ($prio === 'EMERGENCY') {
             $prioBadge = '<span class="badge bg-danger animate__animated animate__flash animate__infinite">' . $prio . '</span>';
@@ -92,11 +92,17 @@ class Temuan extends BaseController
         }
 
         // SLA & Status Badge
-        $sla = get_sla_status($row['prioritas'], $row['tanggal_temuan'], $row['status']);
-        $statusBadge = $sla['badge_html'];
+        $sla = get_sla_status(
+            (string)($row['prioritas'] ?? 'MEDIUM'), 
+            (string)($row['tanggal_temuan'] ?? ''), 
+            (string)($row['status'] ?? 'BELUM')
+        );
+        $statusBadge = $sla['badge_html'] ?? '<span class="badge bg-secondary">-</span>';
 
         // Tombol Aksi - Direct link to Enterprise Detail View
-        $detailUrl = site_url('temuan/detail/' . $row['id']);
+        $rowId = (int)($row['id'] ?? 0);
+        $nomorTemuan = (string)($row['nomor_temuan'] ?? 'STJ-UNKNOWN');
+        $detailUrl = site_url('temuan/detail/' . $rowId);
         $btnDetail = '<a href="' . $detailUrl . '" class="btn btn-sm btn-info text-white" title="Lihat Detail Enterprise"><i class="fas fa-eye"></i></a>';
         
         $actions = $btnDetail;
@@ -104,24 +110,24 @@ class Temuan extends BaseController
         if ($includeUpdateBtn) {
             $canTindakLanjut = in_array($role, ['administrator', 'admin_ulp', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek']);
             if ($canTindakLanjut) {
-                $actions .= ' <button type="button" class="btn btn-sm btn-warning text-dark btn-update-status" data-id="' . $row['id'] . '" data-nomor="' . $row['nomor_temuan'] . '" title="Update Progress/Pekerjaan"><i class="fas fa-edit"></i></button>';
+                $actions .= ' <button type="button" class="btn btn-sm btn-warning text-dark btn-update-status" data-id="' . $rowId . '" data-nomor="' . esc($nomorTemuan, 'attr') . '" title="Update Progress/Pekerjaan"><i class="fas fa-edit"></i></button>';
             }
         } else {
-            if (check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek', 'supervisor_ulp', 'supervisor_up3'])) {
-                $deleteUrl = site_url('temuan/delete/' . $row['id']);
-                $actions .= ' <a href="' . $deleteUrl . '" onclick="return confirm(\'Apakah Anda yakin ingin menghapus temuan ' . esc(addslashes($row['nomor_temuan']), 'attr') . '?\');" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>';
+            if (function_exists('check_role') && check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek', 'supervisor_ulp', 'supervisor_up3'])) {
+                $deleteUrl = site_url('temuan/delete/' . $rowId);
+                $actions .= ' <a href="' . $deleteUrl . '" onclick="return confirm(\'Apakah Anda yakin ingin menghapus temuan ' . esc(addslashes($nomorTemuan), 'attr') . '?\');" class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash"></i></a>';
             }
         }
 
         // Foto Column Thumbnail
         $fotoHtml = '<span class="text-muted small">Tidak ada</span>';
-        $photos = json_decode($row['foto'] ?? '', true) ?: [];
+        $photos = json_decode((string)($row['foto'] ?? ''), true) ?: [];
         if (is_string($row['foto'] ?? null) && empty($photos) && !empty($row['foto'])) {
             $photos = [$row['foto']];
         }
 
         if (!empty($photos) && !empty($photos[0])) {
-            $photoUrl = get_photo_url($photos[0], $row['foto_path'] ?? 'foto/');
+            $photoUrl = get_photo_url((string)$photos[0], $row['foto_path'] ?? 'foto/');
             $fotoHtml = '<img loading="lazy" src="' . $photoUrl . '" class="img-thumbnail" style="max-height: 45px; max-width: 45px; cursor: pointer; object-fit: cover; border-radius: 4px;" onclick="openLightbox(\'' . $photoUrl . '\')" onerror="this.onerror=null; this.parentElement.innerHTML=\'<span class=&quot;text-muted small&quot;>Tidak ada foto</span>\';" title="Klik untuk memperbesar">';
             if (count($photos) > 1) {
                 $fotoHtml .= '<br><span class="badge bg-secondary font-weight-normal mt-1" style="font-size: 8px; padding: 2px 4px;">+' . (count($photos) - 1) . ' foto</span>';
@@ -131,17 +137,17 @@ class Temuan extends BaseController
         $rawDate = !empty($row['created_at']) ? $row['created_at'] : (!empty($row['tanggal_temuan']) ? $row['tanggal_temuan'] : null);
         $tglStr = '<span class="text-muted">-</span>';
         if ($rawDate) {
-            $ts = strtotime($rawDate);
+            $ts = strtotime((string)$rawDate);
             if ($ts !== false && $ts > 0) {
                 $tglStr = '<div class="temuan-date"><div class="fw-bold text-dark">' . date('d/m/y', $ts) . '</div><small class="text-muted">' . date('H:i', $ts) . ' WIB</small></div>';
             }
         }
 
         return [
-            '<a href="' . $detailUrl . '" class="font-weight-bold text-primary text-decoration-none"><i class="fas fa-file-invoice me-1"></i>' . esc($row['nomor_temuan']) . '</a>',
-            $row['nama_penyulang'],
-            $row['nama_section'],
-            $row['jenis_temuan'],
+            '<a href="' . $detailUrl . '" class="font-weight-bold text-primary text-decoration-none"><i class="fas fa-file-invoice me-1"></i>' . esc($nomorTemuan) . '</a>',
+            esc((string)($row['nama_penyulang'] ?? '-')),
+            esc((string)($row['nama_section'] ?? '-')),
+            esc((string)($row['jenis_temuan'] ?? '-')),
             $fotoHtml,
             $prioBadge,
             $tglStr,
@@ -182,23 +188,37 @@ class Temuan extends BaseController
     }
 
     /**
-     * Endpoint DataTables Server Side
+     * Endpoint DataTables Server Side (Harden: never output HTML on error, always return valid DataTables JSON)
      */
     public function ajaxDataTables()
     {
-        $scoping = get_user_role_scoping();
-        $role = (string)session()->get('user_role');
+        $req = $this->request ?? \Config\Services::request();
+        try {
+            $scoping = get_user_role_scoping();
+            $role = (string)session()->get('user_role');
 
-        $postData = $this->request->getPost();
-        $result = $this->temuanRepository->getDataTables($postData, $scoping['ulp_id'], $scoping['jenis_temuan']);
+            $postData = $req->getPost() ?: $req->getGet() ?: [];
+            $result = $this->temuanRepository->getDataTables($postData, $scoping['ulp_id'], $scoping['jenis_temuan']);
 
-        $formattedData = [];
-        foreach ($result['data'] as $row) {
-            $formattedData[] = $this->formatDataTablesRow($row, $role, false);
+            $formattedData = [];
+            if (!empty($result['data']) && is_iterable($result['data'])) {
+                foreach ($result['data'] as $row) {
+                    $formattedData[] = $this->formatDataTablesRow($row, $role, false);
+                }
+            }
+
+            $result['data'] = $formattedData;
+            return $this->jsonResponse($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[TEMUAN_DATATABLES_AJAX_ERROR] ' . $e->getMessage() . ' | File: ' . $e->getFile() . ':' . $e->getLine());
+            return $this->jsonResponse([
+                'draw'            => (int)($req->getPost('draw') ?? $req->getGet('draw') ?? 0),
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => [],
+                'error'           => 'Terjadi kendala saat memuat data temuan: ' . $e->getMessage(),
+            ]);
         }
-
-        $result['data'] = $formattedData;
-        return $this->jsonResponse($result);
     }
 
     public function create()

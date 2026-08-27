@@ -160,12 +160,17 @@ if (!function_exists('get_sla_status')) {
      * @param string|null $tanggalSelesai format Y-m-d
      * @return array [is_overdue, badge_html, text, deadline]
      */
-    function get_sla_status(string $priority, string $tanggalTemuan, string $status, ?string $tanggalSelesai = null): array
+    function get_sla_status(?string $priority, ?string $tanggalTemuan, ?string $status, ?string $tanggalSelesai = null): array
     {
-        $priority = strtoupper($priority);
-        $status = strtoupper($status);
+        $priority = strtoupper((string)($priority ?: 'MEDIUM'));
+        $status = strtoupper((string)($status ?: 'BELUM'));
         
-        $start = new \DateTime($tanggalTemuan . ' 00:00:00');
+        $validDate = !empty($tanggalTemuan) && $tanggalTemuan !== '0000-00-00' ? $tanggalTemuan : date('Y-m-d');
+        try {
+            $start = new \DateTime($validDate . ' 00:00:00');
+        } catch (\Throwable $e) {
+            $start = new \DateTime();
+        }
         $deadline = clone $start;
 
         switch ($priority) {
@@ -197,7 +202,12 @@ if (!function_exists('get_sla_status')) {
         }
         
         if ($status === 'SELESAI') {
-            $end = new \DateTime(($tanggalSelesai ?: $tanggalTemuan) . ' 23:59:59');
+            $validEnd = !empty($tanggalSelesai) && $tanggalSelesai !== '0000-00-00' ? $tanggalSelesai : $validDate;
+            try {
+                $end = new \DateTime($validEnd . ' 23:59:59');
+            } catch (\Throwable $e) {
+                $end = new \DateTime();
+            }
             $isOverdue = $end > $deadline;
             
             if ($isOverdue) {

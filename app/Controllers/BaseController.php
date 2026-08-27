@@ -116,7 +116,8 @@ abstract class BaseController extends Controller
      */
     protected function jsonResponse($data, int $statusCode = 200): ResponseInterface
     {
-        return $this->response
+        $response = $this->response ?? \Config\Services::response();
+        return $response
             ->setStatusCode($statusCode)
             ->setHeader('X-CSRF-TOKEN', csrf_hash())
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')

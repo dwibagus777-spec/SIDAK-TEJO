@@ -18,9 +18,9 @@ class TemuanRepository extends BaseRepository
     protected function getJoinedBuilder(bool $includeUsers = false): BaseBuilder
     {
         $builder = $this->getBuilder('temuan')
-            ->join('ulps', 'ulps.id = temuan.ulp_id')
-            ->join('penyulang', 'penyulang.id = temuan.penyulang_id')
-            ->join('sections', 'sections.id = temuan.section_id');
+            ->join('ulps', 'ulps.id = temuan.ulp_id', 'left')
+            ->join('penyulang', 'penyulang.id = temuan.penyulang_id', 'left')
+            ->join('sections', 'sections.id = temuan.section_id', 'left');
 
         if ($includeUsers) {
             $builder->join('users c', 'c.id = temuan.created_by', 'left')
@@ -152,74 +152,96 @@ class TemuanRepository extends BaseRepository
      */
     public function getDataTables(array $postData, ?int $ulpIdFilter = null, ?string $jenisTemuanFilter = null): array
     {
-        $builder = $this->getJoinedBuilder(false)
-            ->select('temuan.id, temuan.nomor_temuan, temuan.jenis_temuan, temuan.pelaksana, 
-                      temuan.prioritas, temuan.potensi_gangguan, temuan.tanggal_temuan, temuan.status, 
-                      temuan.detail_temuan, temuan.foto, temuan.foto_path, temuan.created_at,
-                      ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section');
+        try {
+            $builder = $this->getJoinedBuilder(false)
+                ->select('temuan.id, temuan.nomor_temuan, temuan.jenis_temuan, temuan.pelaksana, 
+                          temuan.prioritas, temuan.potensi_gangguan, temuan.tanggal_temuan, temuan.status, 
+                          temuan.detail_temuan, temuan.foto, temuan.foto_path, temuan.created_at,
+                          ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section');
 
-        $this->applyTemuanFilters($builder, $postData, $ulpIdFilter, $jenisTemuanFilter);
+            $this->applyTemuanFilters($builder, $postData, $ulpIdFilter, $jenisTemuanFilter);
 
-        // Count Total Records (Unfiltered Base Count)
-        $baseTotalQuery = $this->getBuilder('temuan')->where('deleted_at IS NULL');
-        if ($ulpIdFilter !== null) {
-            $baseTotalQuery->where('ulp_id', $ulpIdFilter);
+            // Count Total Records (Unfiltered Base Count for scoping)
+            $baseTotalQuery = $this->getBuilder('temuan')->where('deleted_at IS NULL');
+            if ($ulpIdFilter !== null) {
+                $baseTotalQuery->where('ulp_id', $ulpIdFilter);
+            }
+            if ($jenisTemuanFilter !== null) {
+                $baseTotalQuery->where('jenis_temuan', $jenisTemuanFilter);
+            }
+            $totalRecords = $baseTotalQuery->countAllResults();
+
+            // Search Filter
+            $searchValue = '';
+            if (isset($postData['search']) && is_array($postData['search'])) {
+                $searchValue = trim((string)($postData['search']['value'] ?? ''));
+            } elseif (isset($postData['search']) && is_string($postData['search'])) {
+                $searchValue = trim($postData['search']);
+            }
+
+            if ($searchValue !== '') {
+                $builder->groupStart()
+                    ->like('temuan.nomor_temuan', $searchValue)
+                    ->orLike('temuan.detail_temuan', $searchValue)
+                    ->orLike('temuan.alamat', $searchValue)
+                    ->orLike('temuan.jenis_temuan', $searchValue)
+                    ->orLike('temuan.pelaksana', $searchValue)
+                    ->orLike('temuan.prioritas', $searchValue)
+                    ->orLike('temuan.potensi_gangguan', $searchValue)
+                    ->orLike('ulps.nama_ulp', $searchValue)
+                    ->orLike('penyulang.nama_penyulang', $searchValue)
+                    ->orLike('sections.nama_section', $searchValue)
+                    ->groupEnd();
+            }
+
+            // Count Filtered Records
+            $totalFiltered = (int)$builder->countAllResults(false);
+
+            // Order & Pagination
+            $orderColumnIdx = isset($postData['order'][0]['column']) ? (int)$postData['order'][0]['column'] : 6;
+            $orderDir = isset($postData['order'][0]['dir']) && strtolower($postData['order'][0]['dir']) === 'asc' ? 'ASC' : 'DESC';
+            
+            $columnsMap = [
+                0 => 'temuan.nomor_temuan',
+                1 => 'penyulang.nama_penyulang',
+                2 => 'sections.nama_section',
+                3 => 'temuan.jenis_temuan',
+                4 => 'temuan.id',
+                5 => 'temuan.prioritas',
+                6 => 'temuan.created_at',
+                7 => 'temuan.status',
+                8 => 'temuan.id',
+            ];
+            
+            $orderColumn = $columnsMap[$orderColumnIdx] ?? 'temuan.created_at';
+            $builder->orderBy($orderColumn, $orderDir);
+            if ($orderColumn !== 'temuan.id') {
+                $builder->orderBy('temuan.id', 'DESC');
+            }
+
+            $start = max(0, (int)($postData['start'] ?? 0));
+            $length = (int)($postData['length'] ?? 10);
+            if ($length > 0) {
+                $builder->limit($length, $start);
+            }
+
+            $data = self::safeGet($builder, null, 'TemuanRepository::getDataTables');
+
+            return [
+                'draw'            => (int)($postData['draw'] ?? 0),
+                'recordsTotal'    => (int)$totalRecords,
+                'recordsFiltered' => (int)$totalFiltered,
+                'data'            => $data
+            ];
+        } catch (\Throwable $e) {
+            log_message('error', '[TemuanRepository::getDataTables] Exception: ' . $e->getMessage() . ' | SQL: ' . (string)$this->model->db->getLastQuery());
+            return [
+                'draw'            => (int)($postData['draw'] ?? 0),
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => []
+            ];
         }
-        $totalRecords = $baseTotalQuery->countAllResults();
-
-        // Search Filter
-        $searchValue = $postData['search']['value'] ?? '';
-        if ($searchValue !== '') {
-            $builder->groupStart()
-                ->like('temuan.nomor_temuan', $searchValue)
-                ->orLike('temuan.detail_temuan', $searchValue)
-                ->orLike('temuan.alamat', $searchValue)
-                ->orLike('temuan.jenis_temuan', $searchValue)
-                ->orLike('temuan.pelaksana', $searchValue)
-                ->orLike('temuan.prioritas', $searchValue)
-                ->orLike('temuan.potensi_gangguan', $searchValue)
-                ->orLike('ulps.nama_ulp', $searchValue)
-                ->orLike('penyulang.nama_penyulang', $searchValue)
-                ->orLike('sections.nama_section', $searchValue)
-                ->groupEnd();
-        }
-
-        // Count Filtered Records
-        $totalFiltered = $builder->countAllResults(false);
-
-        // Order & Pagination
-        $orderColumnIdx = $postData['order'][0]['column'] ?? 6;
-        $orderDir = $postData['order'][0]['dir'] ?? 'desc';
-        
-        $columnsMap = [
-            0 => 'temuan.nomor_temuan',
-            1 => 'penyulang.nama_penyulang',
-            2 => 'sections.nama_section',
-            3 => 'temuan.jenis_temuan',
-            4 => 'temuan.id',
-            5 => 'temuan.prioritas',
-            6 => 'temuan.created_at',
-            7 => 'temuan.status',
-        ];
-        
-        $orderColumn = $columnsMap[$orderColumnIdx] ?? 'temuan.created_at';
-        $builder->orderBy($orderColumn, $orderDir);
-        if ($orderColumn !== 'temuan.id') {
-            $builder->orderBy('temuan.id', 'DESC');
-        }
-
-        $start = (int)($postData['start'] ?? 0);
-        $length = (int)($postData['length'] ?? 10);
-        if ($length != -1) {
-            $builder->limit($length, $start);
-        }
-
-        return [
-            'draw'            => (int)($postData['draw'] ?? 0),
-            'recordsTotal'    => $totalRecords,
-            'recordsFiltered' => $totalFiltered,
-            'data'            => self::safeGet($builder, null, 'TemuanRepository::getDataTables')
-        ];
     }
 
     /**

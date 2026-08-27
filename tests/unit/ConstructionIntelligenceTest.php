@@ -140,10 +140,13 @@ final class ConstructionIntelligenceTest extends CIUnitTestCase
             $forge->addField([
                 'id' => ['type' => 'INTEGER', 'auto_increment' => true, 'primary_key' => true],
                 'section_id' => ['type' => 'INTEGER'],
+                'import_batch_id' => ['type' => 'INTEGER', 'null' => true],
+                'section_ref' => ['type' => 'VARCHAR', 'constraint' => 100, 'null' => true],
                 'version_number' => ['type' => 'INTEGER', 'default' => 1],
                 'effective_from' => ['type' => 'DATETIME', 'null' => true],
                 'effective_to' => ['type' => 'DATETIME', 'null' => true],
                 'verification_status' => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'ACTIVE'],
+                'topology_connectivity_status' => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'UNVERIFIED'],
                 'configuration_source' => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'INITIAL_AUDIT'],
                 'inspection_id' => ['type' => 'INTEGER', 'null' => true],
                 'changed_by' => ['type' => 'INTEGER', 'null' => true],
@@ -181,6 +184,7 @@ final class ConstructionIntelligenceTest extends CIUnitTestCase
                 'quantity' => ['type' => 'INTEGER', 'default' => 1],
                 'location_reference' => ['type' => 'VARCHAR', 'constraint' => 100, 'null' => true],
                 'condition_status' => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'GOOD'],
+                'initial_observed_condition' => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'GOOD'],
                 'verified' => ['type' => 'INTEGER', 'default' => 1],
                 'created_at' => ['type' => 'DATETIME', 'null' => true],
             ]);

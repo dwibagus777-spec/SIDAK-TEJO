@@ -14,10 +14,13 @@ class NetworkSectionConfigurationModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'section_id',
+        'import_batch_id',
+        'section_ref',
         'version_number',
         'effective_from',
         'effective_to',
         'verification_status', // DRAFT, SUBMITTED, VERIFIED, ACTIVE, SUPERSEDED
+        'topology_connectivity_status', // VERIFIED, UNVERIFIED, DISCONTINUOUS
         'configuration_source',
         'inspection_id',
         'changed_by',

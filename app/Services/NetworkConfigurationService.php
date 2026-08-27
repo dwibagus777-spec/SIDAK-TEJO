@@ -268,4 +268,64 @@ class NetworkConfigurationService
 
         return $config;
     }
+
+    /**
+     * Get Section Coverage Metrics across the grid (Gate F2: Honest Empty State support).
+     */
+    public function getSectionCoverageMetrics(?int $penyulangId = null): array
+    {
+        $secBuilder = $this->db->table('sections');
+        if ($penyulangId !== null) {
+            $secBuilder->where('penyulang_id', $penyulangId);
+        }
+        $totalSections = $secBuilder->countAllResults();
+
+        // Configured sections: distinct section_id with ACTIVE configuration
+        $cfgBuilder = $this->db->table('network_section_configurations')
+            ->select('section_id')
+            ->distinct()
+            ->where('verification_status', 'ACTIVE')
+            ->where('effective_to IS NULL');
+
+        if ($penyulangId !== null) {
+            $cfgBuilder->join('sections', 'sections.id = network_section_configurations.section_id')
+                ->where('sections.penyulang_id', $penyulangId);
+        }
+        $configuredSections = $cfgBuilder->countAllResults();
+
+        $unconfiguredSections = max(0, $totalSections - $configuredSections);
+        $coveragePct = $totalSections > 0 ? round(($configuredSections / $totalSections) * 100, 2) : 0.00;
+
+        return [
+            'total_sections'        => $totalSections,
+            'configured_sections'   => $configuredSections,
+            'unconfigured_sections' => $unconfiguredSections,
+            'coverage_pct'          => $coveragePct,
+            'status'                => $coveragePct === 0.00 ? 'HONEST_EMPTY_STATE' : ($coveragePct >= 100.00 ? 'FULLY_CONFIGURED' : 'PARTIALLY_CONFIGURED'),
+        ];
+    }
+
+    /**
+     * Get all active configurations for a feeder.
+     */
+    public function getFeederActiveConfigurations(int $penyulangId): array
+    {
+        $sections = $this->db->table('sections')
+            ->where('penyulang_id', $penyulangId)
+            ->get()
+            ->getResultArray();
+
+        $result = [];
+        foreach ($sections as $s) {
+            $active = $this->getActiveConfiguration((int)$s['id']);
+            $result[] = [
+                'section_id'   => (int)$s['id'],
+                'nama_section' => $s['nama_section'],
+                'has_config'   => $active !== null,
+                'config'       => $active,
+            ];
+        }
+
+        return $result;
+    }
 }

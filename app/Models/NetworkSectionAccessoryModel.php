@@ -19,6 +19,7 @@ class NetworkSectionAccessoryModel extends Model
         'quantity',
         'location_reference',
         'condition_status',
+        'initial_observed_condition',
         'verified',
     ];
 

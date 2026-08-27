@@ -129,6 +129,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('api/sld/section/(:num)', 'ConstructionIntelligenceController::apiSld/$1');
     $routes->get('api/feeder-health/(:num)', 'ConstructionIntelligenceController::apiFeederHealth/$1');
 
+    // Network Configuration Operational Activation (Phase CR-06F)
+    $routes->get('network-configuration', 'NetworkConfigurationController::index');
+    $routes->post('network-configuration/upload', 'NetworkConfigurationController::upload');
+    $routes->get('network-configuration/template', 'NetworkConfigurationController::downloadTemplate');
+
     // Field Inspection & Living Asset Condition (Phase CR-06)
     $routes->get('inspections', 'FieldInspectionController::index');
     $routes->get('api/inspections/summary', 'FieldInspectionController::apiSummary');

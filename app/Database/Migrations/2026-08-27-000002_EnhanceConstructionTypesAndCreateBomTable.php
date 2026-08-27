@@ -21,24 +21,19 @@ class EnhanceConstructionTypesAndCreateBomTable extends Migration
             $fieldsToAdd = [];
 
             if (!$db->fieldExists('construction_code', 'construction_types')) {
-                // Check if 'code' exists and can be aliased or populated
-                if (!$db->fieldExists('code', 'construction_types')) {
-                    $fieldsToAdd['construction_code'] = [
-                        'type'       => 'VARCHAR',
-                        'constraint' => 50,
-                        'null'       => true,
-                    ];
-                }
+                $fieldsToAdd['construction_code'] = [
+                    'type'       => 'VARCHAR',
+                    'constraint' => 50,
+                    'null'       => true,
+                ];
             }
 
             if (!$db->fieldExists('construction_name', 'construction_types')) {
-                if (!$db->fieldExists('name', 'construction_types')) {
-                    $fieldsToAdd['construction_name'] = [
-                        'type'       => 'VARCHAR',
-                        'constraint' => 150,
-                        'null'       => true,
-                    ];
-                }
+                $fieldsToAdd['construction_name'] = [
+                    'type'       => 'VARCHAR',
+                    'constraint' => 150,
+                    'null'       => true,
+                ];
             }
 
             if (!$db->fieldExists('construction_family', 'construction_types')) {
@@ -46,6 +41,14 @@ class EnhanceConstructionTypesAndCreateBomTable extends Migration
                     'type'       => 'VARCHAR',
                     'constraint' => 50,
                     'default'    => 'JTM',
+                ];
+            }
+
+            if (!$db->fieldExists('asset_domain', 'construction_types')) {
+                $fieldsToAdd['asset_domain'] = [
+                    'type'       => 'VARCHAR',
+                    'constraint' => 50,
+                    'default'    => 'TIANG',
                 ];
             }
 

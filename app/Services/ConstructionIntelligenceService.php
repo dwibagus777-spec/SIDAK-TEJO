@@ -35,6 +35,7 @@ class ConstructionIntelligenceService
 
     /**
      * Resolve raw string / field term into canonical Material ID and Object.
+     * Fully in-memory matching: Cross-database safe & zero SQL escaping errors.
      */
     public function resolveMaterialAlias(?string $rawAlias): ?array
     {
@@ -49,34 +50,34 @@ class ConstructionIntelligenceService
             return null;
         }
 
-        // 1. Direct match on material_code
-        $directCode = $this->materialModel
-            ->where('material_code', $clean)
-            ->orWhere('REPLACE(REPLACE(UPPER(material_code), "-", ""), "_", "")', $norm)
-            ->first();
+        $materials = $this->materialModel->findAll() ?: [];
 
-        if ($directCode) {
-            return $directCode;
+        // 1. Direct match on material_code
+        foreach ($materials as $mat) {
+            $mCode = strtoupper(trim((string)$mat['material_code']));
+            $mNorm = preg_replace('/[^A-Z0-9]/', '', $mCode);
+            if ($mCode === strtoupper($clean) || (!empty($norm) && $mNorm === $norm)) {
+                return $mat;
+            }
         }
 
         // 2. Lookup alias table
-        $aliasMatch = $this->aliasModel
-            ->where('normalized_alias', $norm)
-            ->orWhere('alias_name', $clean)
-            ->first();
-
-        if ($aliasMatch) {
-            return $this->materialModel->find($aliasMatch['material_id']);
+        $aliases = $this->aliasModel->findAll() ?: [];
+        foreach ($aliases as $al) {
+            $aName = strtoupper(trim((string)$al['alias_name']));
+            $aNorm = strtoupper(trim((string)$al['normalized_alias']));
+            if ($aName === strtoupper($clean) || (!empty($norm) && $aNorm === $norm)) {
+                return $this->materialModel->find($al['material_id']);
+            }
         }
 
         // 3. Match on nama_lapangan or nama_material
-        $nameMatch = $this->materialModel
-            ->where('UPPER(nama_lapangan)', strtoupper($clean))
-            ->orWhere('UPPER(nama_material)', strtoupper($clean))
-            ->first();
-
-        if ($nameMatch) {
-            return $nameMatch;
+        foreach ($materials as $mat) {
+            $nLap = !empty($mat['nama_lapangan']) ? strtoupper(trim((string)$mat['nama_lapangan'])) : '';
+            $nMat = strtoupper(trim((string)$mat['nama_material']));
+            if ($nLap === strtoupper($clean) || $nMat === strtoupper($clean)) {
+                return $mat;
+            }
         }
 
         return null;
@@ -158,6 +159,7 @@ class ConstructionIntelligenceService
     /**
      * Register or Update a Construction Type
      * Kubikel Draft Governance: Enforce 'DRAFT' for GARDU_KUBIKEL.
+     * Defensive against schema variations between dev and production.
      */
     public function registerConstructionType(array $data): array
     {
@@ -174,24 +176,48 @@ class ConstructionIntelligenceService
             $approvalStatus = 'DRAFT';
         }
 
-        $existing = $this->constructionModel
-            ->where('construction_code', $code)
-            ->orWhere('code', $code)
-            ->first();
+        // Safe in-memory lookup to avoid column name mismatch exceptions
+        $existing = null;
+        $allConstructions = $this->constructionModel->findAll() ?: [];
+        foreach ($allConstructions as $c) {
+            $cCode1 = strtoupper(trim((string)($c['construction_code'] ?? '')));
+            $cCode2 = strtoupper(trim((string)($c['code'] ?? '')));
+            if ($cCode1 === $code || $cCode2 === $code) {
+                $existing = $c;
+                break;
+            }
+        }
 
         $payload = [
-            'code'                => $code,
-            'construction_code'   => $code,
-            'name'                => trim((string)($data['construction_name'] ?? ($data['name'] ?? $code))),
-            'construction_name'   => trim((string)($data['construction_name'] ?? ($data['name'] ?? $code))),
             'construction_family' => $family,
-            'network_type'        => $data['network_type'] ?? ($family === 'MVTIC' ? 'MVTIC' : 'JTM'),
-            'asset_domain'        => $data['asset_domain'] ?? ($family === 'GTT' ? 'GARDU' : ($family === 'GARDU_KUBIKEL' ? 'KUBIKEL' : 'TIANG')),
             'approval_status'     => $approvalStatus,
-            'source_sheet'        => $data['source_sheet'] ?? null,
-            'source_row'          => isset($data['source_row']) ? (int)$data['source_row'] : null,
             'is_active'           => $approvalStatus === 'ACTIVE' ? 1 : 0,
         ];
+
+        if ($this->db->fieldExists('code', 'construction_types')) {
+            $payload['code'] = $code;
+        }
+        if ($this->db->fieldExists('construction_code', 'construction_types')) {
+            $payload['construction_code'] = $code;
+        }
+        if ($this->db->fieldExists('name', 'construction_types')) {
+            $payload['name'] = trim((string)($data['construction_name'] ?? ($data['name'] ?? $code)));
+        }
+        if ($this->db->fieldExists('construction_name', 'construction_types')) {
+            $payload['construction_name'] = trim((string)($data['construction_name'] ?? ($data['name'] ?? $code)));
+        }
+        if ($this->db->fieldExists('network_type', 'construction_types')) {
+            $payload['network_type'] = $data['network_type'] ?? ($family === 'MVTIC' ? 'MVTIC' : 'JTM');
+        }
+        if ($this->db->fieldExists('asset_domain', 'construction_types')) {
+            $payload['asset_domain'] = $data['asset_domain'] ?? ($family === 'GTT' ? 'GARDU' : ($family === 'GARDU_KUBIKEL' ? 'KUBIKEL' : 'TIANG'));
+        }
+        if ($this->db->fieldExists('source_sheet', 'construction_types')) {
+            $payload['source_sheet'] = $data['source_sheet'] ?? null;
+        }
+        if ($this->db->fieldExists('source_row', 'construction_types')) {
+            $payload['source_row'] = isset($data['source_row']) ? (int)$data['source_row'] : null;
+        }
 
         if ($existing) {
             $this->constructionModel->update($existing['id'], $payload);
@@ -239,7 +265,7 @@ class ConstructionIntelligenceService
             'mapping_status'       => $mappingStatus,
         ];
 
-        // Check if existing identical raw_name in this construction
+        // Safe query matching existing BOM item
         $existing = $this->bomModel
             ->where('construction_type_id', $constructionTypeId)
             ->where('raw_material_name', $rawName)

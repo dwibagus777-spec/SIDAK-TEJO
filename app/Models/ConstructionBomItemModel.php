@@ -4,33 +4,27 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class ConstructionTypeModel extends Model
+class ConstructionBomItemModel extends Model
 {
-    protected $table            = 'construction_types';
+    protected $table            = 'construction_bom_items';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'code',
-        'name',
-        'construction_code',
-        'construction_name',
-        'construction_family',
-        'network_type',
-        'asset_category',
-        'asset_domain',
-        'approval_status',
+        'construction_type_id',
+        'material_id',
+        'raw_material_name',
+        'material_alias',
+        'quantity',
+        'quantity_status', // KNOWN, UNKNOWN, NOT_APPLICABLE (Gate 3)
+        'unit',
+        'mandatory',
+        'component_category',
         'source_sheet',
         'source_row',
-        'construction_group',
-        'voltage_level',
-        'description',
-        'standard_reference',
-        'icon',
-        'is_active',
-        'sort_order',
+        'mapping_status', // RESOLVED, UNRESOLVED, MANUAL_REVIEW_REQUIRED
     ];
 
     protected bool $allowEmptyInserts = false;

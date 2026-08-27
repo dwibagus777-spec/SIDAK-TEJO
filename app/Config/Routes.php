@@ -123,6 +123,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('api/assets/dry-run', 'AssetIntelligenceController::apiDryRun');
     $routes->post('api/assets/controlled-commit', 'AssetIntelligenceController::apiCommit');
 
+    // Construction, Material & Network Configuration Intelligence (CR-06)
+    $routes->get('construction-intelligence', 'ConstructionIntelligenceController::index');
+    $routes->get('api/construction-intelligence/summary', 'ConstructionIntelligenceController::apiDataQuality');
+    $routes->get('api/sld/section/(:num)', 'ConstructionIntelligenceController::apiSld/$1');
+    $routes->get('api/feeder-health/(:num)', 'ConstructionIntelligenceController::apiFeederHealth/$1');
+
     // Field Inspection & Living Asset Condition (Phase CR-06)
     $routes->get('inspections', 'FieldInspectionController::index');
     $routes->get('api/inspections/summary', 'FieldInspectionController::apiSummary');

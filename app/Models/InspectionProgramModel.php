@@ -4,33 +4,22 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class ConstructionTypeModel extends Model
+class InspectionProgramModel extends Model
 {
-    protected $table            = 'construction_types';
+    protected $table            = 'inspection_programs';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'code',
-        'name',
-        'construction_code',
-        'construction_name',
-        'construction_family',
-        'network_type',
-        'asset_category',
+        'program_code',
+        'nama_pekerjaan',
         'asset_domain',
-        'approval_status',
-        'source_sheet',
-        'source_row',
-        'construction_group',
-        'voltage_level',
-        'description',
-        'standard_reference',
-        'icon',
-        'is_active',
-        'sort_order',
+        'inspection_type',
+        'executor_type',
+        'inspection_category',
+        'active',
     ];
 
     protected bool $allowEmptyInserts = false;

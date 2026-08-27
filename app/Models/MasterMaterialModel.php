@@ -4,33 +4,26 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class ConstructionTypeModel extends Model
+class MasterMaterialModel extends Model
 {
-    protected $table            = 'construction_types';
+    protected $table            = 'master_materials';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
-    protected $useSoftDeletes   = false;
+    protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'code',
-        'name',
-        'construction_code',
-        'construction_name',
-        'construction_family',
-        'network_type',
-        'asset_category',
-        'asset_domain',
-        'approval_status',
+        'material_code',
+        'nama_material',
+        'nama_lapangan',
+        'satuan',
+        'material_domain',
+        'material_category',
+        'specification',
+        'source_workbook',
         'source_sheet',
         'source_row',
-        'construction_group',
-        'voltage_level',
-        'description',
-        'standard_reference',
-        'icon',
-        'is_active',
-        'sort_order',
+        'status',
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -40,4 +33,5 @@ class ConstructionTypeModel extends Model
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';
 }

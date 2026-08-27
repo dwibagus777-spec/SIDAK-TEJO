@@ -454,18 +454,34 @@ class AssetImportController extends BaseController
 
         $tempPath = $file->getTempName();
 
-        // Read spreadsheet header row for auto-detection
+        // Read spreadsheet
         try {
             $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tempPath);
-            $sheet       = $spreadsheet->getActiveSheet();
-            $rows        = $sheet->toArray(null, true, true, true);
         } catch (\Throwable $e) {
             log_message('error', '[AssetImportController::processImport] Gagal membaca Excel: ' . $e->getMessage());
-            return redirect()->to(site_url('master-assets/import'))->with('error', 'Format berkas Excel tidak dapat dibaca: ' . $e->getMessage());
+            return redirect()->to(site_url('master-assets/import'))->with('error', 'Format berkas Excel/CSV tidak dapat dibaca: ' . $e->getMessage());
         }
+
+        // 1. Identify Data Sheet: Look for sheet 'DATA_ASSET' or fallback to active sheet
+        $dataSheet = $spreadsheet->getSheetByName('DATA_ASSET') ?? $spreadsheet->getActiveSheet();
+        $rows      = $dataSheet->toArray(null, true, true, true);
 
         if (count($rows) <= 1) {
             return redirect()->to(site_url('master-assets/import'))->with('error', 'Berkas Excel kosong atau hanya berisi baris header.');
+        }
+
+        // 2. Read SYSTEM_METADATA Sheet if present in the workbook
+        $metadataSheet = $spreadsheet->getSheetByName('SYSTEM_METADATA');
+        $metadata      = [];
+        if ($metadataSheet !== null) {
+            $metaRows = $metadataSheet->toArray(null, true, true, true);
+            foreach ($metaRows as $mRow) {
+                $k = strtoupper(trim((string)($mRow['A'] ?? '')));
+                $v = trim((string)($mRow['B'] ?? ''));
+                if ($k !== '' && $k !== 'KEY') {
+                    $metadata[$k] = $v;
+                }
+            }
         }
 
         // Inspection: Check if header row 1 contains "Kode Asset"
@@ -485,15 +501,15 @@ class AssetImportController extends BaseController
         } else {
             // New Dynamic Template Flow -> Delegate to DynamicAssetImportService
             $originalName = $file->getClientName() ?: 'import_asset.xlsx';
-            $result = $this->dynamicImportService->processImport($rows, $originalName);
-        }
-
-        if (!$result['success']) {
-            return redirect()->to(site_url('master-assets/import'))->with('error', $result['message']);
+            $result = $this->dynamicImportService->processImport($rows, $metadata, $originalName);
         }
 
         // Store result summary in session flash
         session()->setFlashdata('import_summary', $result);
+
+        if (!$result['success']) {
+            return redirect()->to(site_url('master-assets/import'))->with('error', $result['message']);
+        }
 
         return redirect()->to(site_url('master-assets/import'))->with('success', $result['message']);
     }

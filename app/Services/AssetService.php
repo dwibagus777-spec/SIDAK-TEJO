@@ -126,6 +126,39 @@ class AssetService
         return $asset;
     }
 
+    public function requiresFeederRelation(string $jenis): bool
+    {
+        return in_array(strtoupper(trim($jenis)), [
+            'JTM',
+            'GARDU',
+            'TRAFO',
+            'KUBIKEL',
+            'LBS',
+            'LBSM',
+            'RECLOSER',
+        ], true);
+    }
+
+    public function sanitizePenyulangCode(?string $namaPenyulang): ?string
+    {
+        if (empty($namaPenyulang)) {
+            return null;
+        }
+
+        $cleanPenyulang = strtoupper(trim(preg_replace('/^(penyulang|feeder|f\.|fdr)\s+/i', '', $namaPenyulang)));
+        $pNoSpace = preg_replace('/[^A-Z0-9]/', '', $cleanPenyulang);
+        if (empty($pNoSpace)) {
+            return null;
+        }
+
+        if (strlen($pNoSpace) > 8) {
+            $vowelsRemoved = preg_replace('/[AEIOU]/', '', $pNoSpace);
+            return substr($vowelsRemoved ?: $pNoSpace, 0, 10);
+        }
+
+        return substr($pNoSpace, 0, 8);
+    }
+
     public function generateKodeAsset(string $jenis, ?string $namaUlp = null, ?string $namaPenyulang = null, array &$runtimeCache = []): string
     {
         // 1. Sanitize Jenis Code
@@ -134,6 +167,7 @@ class AssetService
             'TRAFO'     => 'TFR',
             'KUBIKEL'   => 'KBL',
             'LBS'       => 'LBS',
+            'LBSM'      => 'LBSM',
             'RECLOSER'  => 'RCL',
             'SECTION'   => 'SEC',
             'PENYULANG' => 'PYL',
@@ -167,17 +201,17 @@ class AssetService
             }
         }
 
-        // 3. Sanitize Penyulang Code (e.g. BANJAR KEMANTREN -> BNJRKMTREN)
-        $penyulangCode = 'GEN';
-        if (!empty($namaPenyulang)) {
-            $cleanPenyulang = strtoupper(trim($namaPenyulang));
-            $pNoSpace = preg_replace('/[^A-Z0-9]/', '', $cleanPenyulang);
-            if (strlen($pNoSpace) > 8) {
-                $vowelsRemoved = preg_replace('/[AEIOU]/', '', $pNoSpace);
-                $penyulangCode = substr($vowelsRemoved ?: $pNoSpace, 0, 10);
-            } else {
-                $penyulangCode = substr($pNoSpace, 0, 8);
+        // 3. Sanitize Penyulang Code (Explicit domain validation — NO SILENT 'GEN' MASKING FOR FEEDER-REQUIRED ASSETS)
+        $isFeederRequired = $this->requiresFeederRelation($jenis);
+        $penyulangCode = $this->sanitizePenyulangCode($namaPenyulang);
+
+        if (empty($penyulangCode)) {
+            if ($isFeederRequired) {
+                throw new \RuntimeException(
+                    "Cannot generate asset code: feeder/penyulang unresolved for {$jenis} asset (zero orphan invariant violation)."
+                );
             }
+            $penyulangCode = 'GEN';
         }
 
         $basePattern = "AST-{$ulpCode}-{$penyulangCode}-{$jenisCode}-";

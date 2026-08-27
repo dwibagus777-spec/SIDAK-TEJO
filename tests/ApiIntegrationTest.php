@@ -58,7 +58,7 @@ class ApiIntegrationTest extends CIUnitTestCase
         $this->assertJson($json);
 
         $xml = $this->service->exportData($sample, 'xml');
-        $this->assertStringContainsString('<root>', $xml);
+        $this->assertStringContainsString('<data>', $xml);
 
         $csv = $this->service->exportData($sample, 'csv');
         $this->assertNotEmpty($csv);

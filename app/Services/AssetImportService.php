@@ -6,6 +6,7 @@ use App\Models\AssetModel;
 use App\Models\UlpModel;
 use App\Models\PenyulangModel;
 use App\Models\SectionModel;
+use App\Models\AssetImportBatchModel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -16,6 +17,7 @@ class AssetImportService
     private UlpModel $ulpModel;
     private PenyulangModel $penyulangModel;
     private SectionModel $sectionModel;
+    private AssetService $assetService;
 
     private static function ensureComposerAutoload(): void
     {
@@ -48,10 +50,12 @@ class AssetImportService
         $this->ulpModel       = new UlpModel();
         $this->penyulangModel = new PenyulangModel();
         $this->sectionModel   = new SectionModel();
+        $this->assetService   = new AssetService();
     }
 
     /**
      * Process Uploaded Excel File (Old Standard Template)
+     * Governed by CR-05 Zero Orphan & Atomic Import Invariants.
      */
     public function processImport(string $filePath): array
     {
@@ -94,19 +98,19 @@ class AssetImportService
             }
         }
 
+        // =========================================================================
+        // PHASE 1 — PURE IN-MEMORY VALIDATION (ZERO WRITES / ZERO TRANSACTION)
+        // =========================================================================
         $batchSequenceCache = [];
         $validBatch         = [];
         $errorReport        = [];
-        $inserted           = 0;
-        $failed             = 0;
-        $now         = date('Y-m-d H:i:s');
-        $rowIndex    = 0;
+        $now                = date('Y-m-d H:i:s');
+        $rowIndex           = 0;
 
         foreach ($rows as $rowNum => $row) {
             $rowIndex++;
             if ($rowIndex === 1) {
-                // Header row
-                continue;
+                continue; // Header row
             }
 
             // Extract columns by letter A-O
@@ -131,17 +135,7 @@ class AssetImportService
                 continue;
             }
 
-            // Validation rules
             $errors = [];
-
-            if (empty($kodeAsset)) {
-                $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset ?: 'Gardu', $ulpName, $penyulangName, $batchSequenceCache);
-            } else {
-                $codeUpper = strtoupper($kodeAsset);
-                if (isset($existingCodes[$codeUpper])) {
-                    $errors[] = "Kode Asset '{$kodeAsset}' sudah digunakan (harus unik).";
-                }
-            }
 
             if (empty($namaAsset)) {
                 $errors[] = 'Nama Asset wajib diisi.';
@@ -154,7 +148,7 @@ class AssetImportService
             // ULP lookup
             $ulpId = null;
             if (!empty($ulpName)) {
-                $ulpKey = strtolower($ulpName);
+                $ulpKey = strtolower(trim($ulpName));
                 if (isset($ulpMap[$ulpKey])) {
                     $ulpId = $ulpMap[$ulpKey];
                 } else {
@@ -165,11 +159,26 @@ class AssetImportService
             // Penyulang lookup
             $penyulangId = null;
             if (!empty($penyulangName)) {
-                $pKey = strtolower($penyulangName);
+                $pKey = strtolower(trim(preg_replace('/^(penyulang|feeder|f\.|fdr)\s+/i', '', $penyulangName)));
                 if (isset($penyulangMap[$pKey])) {
                     $penyulangId = $penyulangMap[$pKey];
                 } else {
                     $errors[] = "Penyulang '{$penyulangName}' tidak ditemukan di database.";
+                }
+            }
+
+            // Domain Invariant: Zero Orphan Distribution Assets
+            $isFeederRequired = $this->assetService->requiresFeederRelation($jenisAsset ?: 'Gardu');
+            if ($isFeederRequired) {
+                if (empty($ulpId)) {
+                    $errors[] = "ULP wajib diisi dan harus valid untuk jenis aset distribusi '{$jenisAsset}'.";
+                }
+                if (empty($penyulangId)) {
+                    $errors[] = "Penyulang wajib diisi dan harus terdaftar di database untuk jenis aset '{$jenisAsset}'.";
+                }
+            } else {
+                if (empty($ulpId)) {
+                    $errors[] = 'ULP wajib diisi.';
                 }
             }
 
@@ -185,8 +194,21 @@ class AssetImportService
                 $status = 'NORMAL';
             }
 
+            // Generate or Validate Kode Asset
+            if (empty($kodeAsset)) {
+                try {
+                    $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset ?: 'Gardu', $ulpName, $penyulangName, $batchSequenceCache);
+                } catch (\Throwable $e) {
+                    $errors[] = 'Gagal generate Kode Asset: ' . $e->getMessage();
+                }
+            } else {
+                $codeUpper = strtoupper($kodeAsset);
+                if (isset($existingCodes[$codeUpper])) {
+                    $errors[] = "Kode Asset '{$kodeAsset}' sudah digunakan (harus unik).";
+                }
+            }
+
             if (!empty($errors)) {
-                $failed++;
                 $errorReport[] = [
                     'baris'      => $rowNum,
                     'kode_asset' => $kodeAsset ?: '-',
@@ -207,8 +229,8 @@ class AssetImportService
                 'penyulang_id'    => $penyulangId,
                 'section_id'      => $sectionId,
                 'lokasi'          => $alamat ?: null,
-                'latitude'        => $latitude ?: null,
-                'longitude'       => $longitude ?: null,
+                'latitude'        => $latitude !== '' ? (float)$latitude : null,
+                'longitude'       => $longitude !== '' ? (float)$longitude : null,
                 'tahun_instalasi' => is_numeric($tahunInstalasi) ? (int)$tahunInstalasi : null,
                 'merk'            => $merk ?: null,
                 'type'            => $type ?: null,
@@ -220,39 +242,121 @@ class AssetImportService
             ];
         }
 
-        // Perform batch insert
-        if (!empty($validBatch)) {
-            try {
-                // Chunk insert by 500 rows for high performance & low memory
-                $chunks = array_chunk($validBatch, 500);
-                foreach ($chunks as $chunk) {
-                    $db->table('assets')->insertBatch($chunk);
-                }
-                $inserted = count($validBatch);
-            } catch (\Throwable $e) {
-                log_message('error', '[AssetImportService] Batch insert gagal: ' . $e->getMessage());
-                return [
-                    'success' => false,
-                    'message' => 'Gagal melakukan batch insert ke database: ' . $e->getMessage(),
-                ];
-            }
-        }
-
-        // Generate error report spreadsheet if any rows failed
-        $errorExcelPath = null;
+        // =========================================================================
+        // HARD GATE: ONE INVALID ROW = ZERO DATABASE WRITES (ATOMIC ALL-OR-NOTHING)
+        // =========================================================================
         if (!empty($errorReport)) {
             $errorExcelPath = $this->createErrorReportSpreadsheet($errorReport);
+            return [
+                'success'          => false,
+                'inserted'         => 0,
+                'failed'           => count($errorReport),
+                'total'            => count($errorReport) + count($validBatch),
+                'errors'           => $errorReport,
+                'error_excel_path' => $errorExcelPath,
+                'message'          => sprintf(
+                    'Import DIBATALKAN: Terdapat %d baris tidak valid. 0 aset baru dimasukkan ke database (Semua data harus valid sebelum diimport).',
+                    count($errorReport)
+                ),
+            ];
         }
 
-        return [
-            'success'          => true,
-            'inserted'         => $inserted,
-            'failed'           => $failed,
-            'total'            => $inserted + $failed,
-            'errors'           => $errorReport,
-            'error_excel_path' => $errorExcelPath,
-            'message'          => "Import selesai: {$inserted} data berhasil diimport, {$failed} data gagal.",
-        ];
+        if (empty($validBatch)) {
+            return [
+                'success'          => false,
+                'inserted'         => 0,
+                'failed'           => 0,
+                'total'            => 0,
+                'errors'           => [],
+                'error_excel_path' => null,
+                'message'          => 'Berkas Excel tidak memiliki baris data aset untuk diimport.',
+            ];
+        }
+
+        // =========================================================================
+        // PHASE 2 — ATOMIC DATABASE TRANSACTION (100% VALID DATA ONLY)
+        // =========================================================================
+        $db->transBegin();
+
+        try {
+            $batchCode = 'BATCH-' . date('Ymd-His') . '-' . rand(100, 999);
+            $sampleRow = $validBatch[0];
+            $batchUlp  = $sampleRow['ulp_id'] ?? null;
+            $batchPen  = $sampleRow['penyulang_id'] ?? null;
+
+            $batchModel = new AssetImportBatchModel();
+            $batchId = $batchModel->insert([
+                'batch_code'   => $batchCode,
+                'ulp_id'       => $batchUlp,
+                'penyulang_id' => $batchPen,
+                'file_name'    => basename($filePath),
+                'total_rows'   => count($validBatch),
+                'success_rows' => count($validBatch),
+                'failed_rows'  => 0,
+                'imported_by'  => session()->get('user_id') ?? null,
+                'imported_at'  => date('Y-m-d H:i:s'),
+                'status'       => 'ACTIVE',
+            ], true);
+
+            if (!$batchId) {
+                $err = $db->error();
+                throw new \RuntimeException('Gagal membuat log import batch: ' . ($err['message'] ?? 'Unknown error'));
+            }
+
+            foreach ($validBatch as &$vItem) {
+                $vItem['import_batch_id'] = $batchId;
+            }
+            unset($vItem);
+
+            $chunks = array_chunk($validBatch, 500);
+            foreach ($chunks as $chunk) {
+                $insertedCount = $db->table('assets')->insertBatch($chunk);
+                if ($insertedCount === false) {
+                    $err = $db->error();
+                    throw new \RuntimeException('Gagal insert batch assets: ' . ($err['message'] ?? 'Query insertBatch gagal'));
+                }
+            }
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Database transaction integrity check failed.');
+            }
+
+            $db->transCommit();
+
+            return [
+                'success'          => true,
+                'inserted'         => count($validBatch),
+                'failed'           => 0,
+                'total'            => count($validBatch),
+                'batch_id'         => $batchId,
+                'errors'           => [],
+                'error_excel_path' => null,
+                'message'          => sprintf(
+                    'Import BERHASIL: Seluruh %d aset baru berhasil diimport ke database.',
+                    count($validBatch)
+                ),
+            ];
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', '[AssetImportService] Atomic import transaction failed: ' . $e->getMessage());
+
+            return [
+                'success'          => false,
+                'inserted'         => 0,
+                'failed'           => count($validBatch),
+                'total'            => count($validBatch),
+                'errors'           => [
+                    [
+                        'baris'      => 'ALL',
+                        'kode_asset' => '-',
+                        'nama_asset' => 'Transaction Rollback',
+                        'alasan'     => $e->getMessage(),
+                    ]
+                ],
+                'error_excel_path' => null,
+                'message'          => 'Gagal menyimpan transaksi ke database: ' . $e->getMessage(),
+            ];
+        }
     }
 
     /**
@@ -268,7 +372,7 @@ class AssetImportService
         $sheet->setCellValue('A1', 'Nomor Baris Excel');
         $sheet->setCellValue('B1', 'Kode Asset');
         $sheet->setCellValue('C1', 'Nama Asset');
-        $sheet->setCellValue('D1', 'Alasan Error');
+        $sheet->setCellValue('D1', 'Alasan Error / Penolakan');
 
         // Styling Header
         $sheet->getStyle('A1:D1')->getFont()->setBold(true);
@@ -331,7 +435,11 @@ class AssetImportService
             $penyulangs = $this->penyulangModel->findAll();
             foreach ($penyulangs as $p) {
                 if (!empty($p['nama_penyulang'])) {
-                    $map[strtolower(trim($p['nama_penyulang']))] = (int)$p['id'];
+                    $raw = strtolower(trim($p['nama_penyulang']));
+                    $map[$raw] = (int)$p['id'];
+
+                    $noPrefix = preg_replace('/^(penyulang|feeder|f\.|fdr)\s+/i', '', $raw);
+                    $map[$noPrefix] = (int)$p['id'];
                 }
             }
         } catch (\Throwable $e) {

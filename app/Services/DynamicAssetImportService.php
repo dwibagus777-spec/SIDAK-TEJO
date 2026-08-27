@@ -6,13 +6,14 @@ use App\Models\AssetModel;
 use App\Models\UlpModel;
 use App\Models\PenyulangModel;
 use App\Models\SectionModel;
+use App\Models\AssetImportBatchModel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
- * Dedicated Service for Processing New Dynamic Template Excel Imports
- * Isolated from old template import logic for Zero Regression guarantee.
+ * Dedicated Service for Processing Dynamic Template Excel Imports
+ * Governed by CR-05 Zero Orphan & Atomic Import Invariants.
  */
 class DynamicAssetImportService
 {
@@ -57,18 +58,39 @@ class DynamicAssetImportService
     }
 
     /**
-     * Process Uploaded New Template Excel File
+     * Check if asset type strictly requires feeder (penyulang) relation.
      */
-    public function processImport(array $rows, string $originalFileName = ''): array
+    public function requiresFeederRelation(string $jenis): bool
+    {
+        return $this->assetService->requiresFeederRelation($jenis);
+    }
+
+    /**
+     * Process Uploaded Excel File with In-Memory Pre-Validation and Atomic DB Commit.
+     */
+    public function processImport(array $rows, array $metadata = [], string $originalFileName = ''): array
     {
         $db = \Config\Database::connect();
 
-        $ulpMap          = $this->getUlpLookupMap();
-        $penyulangMap    = $this->getPenyulangLookupMap();
+        // 1. Fetch lookup master datasets safely
+        $ulpList         = [];
+        $penyulangList   = [];
+        try {
+            $ulpList = $this->ulpModel->findAll() ?: [];
+        } catch (\Throwable $e) {
+            log_message('error', '[DynamicAssetImportService] ULP fetch fallback: ' . $e->getMessage());
+        }
+
+        try {
+            $penyulangList = $this->penyulangModel->findAll() ?: [];
+        } catch (\Throwable $e) {
+            log_message('error', '[DynamicAssetImportService] Penyulang fetch fallback: ' . $e->getMessage());
+        }
+
         $sectionMap      = $this->getSectionLookupMap();
         $constructionMap = $this->getConstructionTypeLookupMap();
 
-        // Parse header row 1 to map column letter -> field key
+        // 2. Parse header row 1 to map column letter -> field key
         $headerRow = $rows[1] ?? [];
         $columnMap = [];
 
@@ -82,7 +104,7 @@ class DynamicAssetImportService
                 $columnMap['jenis_asset'] = $colLetter;
             } elseif (str_contains($h, 'nama')) {
                 $columnMap['nama_asset'] = $colLetter;
-            } elseif (str_contains($h, 'penyulang')) {
+            } elseif (str_contains($h, 'penyulang') || str_contains($h, 'feeder')) {
                 $columnMap['penyulang'] = $colLetter;
             } elseif (str_contains($h, 'konstruksi')) {
                 $columnMap['konstruksi'] = $colLetter;
@@ -107,28 +129,28 @@ class DynamicAssetImportService
             }
         }
 
-        // Intra-batch duplicate tracker & sequence cache
+        // =========================================================================
+        // PHASE 1 — PURE IN-MEMORY VALIDATION (NO TRANSACTION OPENED / NO WRITES)
+        // =========================================================================
         $batchComposites    = [];
         $batchSequenceCache = [];
         $validBatch         = [];
         $errorReport        = [];
-        $inserted        = 0;
-        $failed          = 0;
-        $now             = date('Y-m-d H:i:s');
-        $rowIndex        = 0;
+        $now                = date('Y-m-d H:i:s');
+        $rowIndex           = 0;
 
         foreach ($rows as $rowNum => $row) {
             $rowIndex++;
             if ($rowIndex === 1) {
-                continue; // Header row
+                continue; // Skip header row
             }
 
-            // Extract values using mapped columns
+            // Extract row values
             $up3Name        = trim((string)($row[$columnMap['up3'] ?? 'A'] ?? ''));
-            $ulpName        = trim((string)($row[$columnMap['ulp'] ?? 'B'] ?? ''));
+            $ulpRawInput    = trim((string)($row[$columnMap['ulp'] ?? 'B'] ?? ''));
             $jenisAsset     = trim((string)($row[$columnMap['jenis_asset'] ?? 'C'] ?? ''));
             $namaAsset      = trim((string)($row[$columnMap['nama_asset'] ?? 'D'] ?? ''));
-            $penyulangName  = trim((string)($row[$columnMap['penyulang'] ?? 'E'] ?? ''));
+            $penyulangRaw   = trim((string)($row[$columnMap['penyulang'] ?? 'E'] ?? ''));
             $konstruksiName = trim((string)($row[$columnMap['konstruksi'] ?? ''] ?? ''));
             $merk           = trim((string)($row[$columnMap['merk'] ?? 'F'] ?? ''));
             $type           = trim((string)($row[$columnMap['type'] ?? 'G'] ?? ''));
@@ -140,8 +162,11 @@ class DynamicAssetImportService
             $longitude      = trim((string)($row[$columnMap['longitude'] ?? 'M'] ?? ''));
             $sectionName    = trim((string)($row[$columnMap['section'] ?? 'N'] ?? ''));
 
-            // Level 1: Priority 1 — Jenis Asset Normalization (Source of Truth from Excel Jenis Column)
+            // Normalize Jenis Asset
             $jLower = strtolower(trim($jenisAsset));
+            if (empty($jenisAsset) && !empty($metadata['JENIS_ASSET'])) {
+                $jLower = strtolower(trim($metadata['JENIS_ASSET']));
+            }
 
             if (preg_match('/^jtm/i', $jLower) || $jLower === 'jtm_tiang' || $jLower === 'tiang') {
                 $jenisAsset = 'JTM';
@@ -164,49 +189,66 @@ class DynamicAssetImportService
             }
 
             // Skip entirely empty row
-            if (empty($namaAsset) && empty($jenisAsset) && empty($ulpName)) {
+            if (empty($namaAsset) && empty($jenisAsset) && empty($ulpRawInput) && empty($penyulangRaw)) {
                 continue;
             }
 
-            $errors = [];
+            $rowErrors = [];
 
-            // Mandatory Validations
+            // 1. Mandatory field checks
             if (empty($namaAsset)) {
-                $errors[] = 'Nama Asset wajib diisi.';
+                $rowErrors[] = 'Nama Asset wajib diisi.';
             }
 
             if (empty($jenisAsset)) {
-                $errors[] = 'Jenis Asset wajib diisi.';
+                $rowErrors[] = 'Jenis Asset wajib diisi.';
             }
 
-            // ULP lookup
-            $ulpId = null;
-            if (!empty($ulpName)) {
-                $ulpKey = strtolower($ulpName);
-                if (isset($ulpMap[$ulpKey])) {
-                    $ulpId = $ulpMap[$ulpKey];
-                } else {
-                    $errors[] = "ULP '{$ulpName}' tidak ditemukan di database.";
+            // 2. Multi-strategy Feeder (Penyulang) Resolution
+            $resolvedPenyulang = $this->resolvePenyulang($penyulangRaw, $namaAsset, $metadata, $penyulangList);
+            $penyulangId       = $resolvedPenyulang['id'] ?? null;
+            $penyulangName     = $resolvedPenyulang['name'] ?? null;
+            $penyulangUlpId    = $resolvedPenyulang['ulp_id'] ?? null;
+
+            // 3. Multi-strategy ULP Resolution
+            $resolvedUlp = $this->resolveUlp($ulpRawInput, $metadata, $ulpList, $penyulangUlpId);
+            $ulpId       = $resolvedUlp['id'] ?? null;
+            $ulpName     = $resolvedUlp['name'] ?? null;
+
+            // 4. Domain Invariant: Zero Orphan Distribution Assets
+            $isFeederRequired = $this->requiresFeederRelation($jenisAsset);
+            if ($isFeederRequired) {
+                if (empty($ulpId)) {
+                    $rowErrors[] = "ULP tidak dapat di-resolve untuk jenis aset {$jenisAsset}. Pastikan nama ULP valid.";
+                }
+                if (empty($penyulangId)) {
+                    $rowErrors[] = sprintf(
+                        'Penyulang tidak ditemukan/gagal di-resolve untuk aset "%s" (%s). Wajib terikat ke Master Feeder.',
+                        $namaAsset ?: '-',
+                        $jenisAsset
+                    );
                 }
             } else {
-                $errors[] = 'ULP wajib diisi.';
+                if (empty($ulpId)) {
+                    $rowErrors[] = 'ULP wajib diisi.';
+                }
             }
 
-            // Penyulang lookup (Optional)
-            $penyulangId = null;
-            if (!empty($penyulangName)) {
-                $pKey = strtolower($penyulangName);
-                $penyulangId = $penyulangMap[$pKey] ?? null;
+            // Cross-check: If both ULP and Penyulang resolved, verify Penyulang belongs to ULP
+            if (!empty($ulpId) && !empty($penyulangId) && !empty($penyulangUlpId)) {
+                if ((int)$penyulangUlpId !== (int)$ulpId) {
+                    $rowErrors[] = "Penyulang '{$penyulangName}' tidak termasuk dalam ULP '{$ulpName}'.";
+                }
             }
 
-            // Section lookup (OPTIONAL: If empty or not found -> NULL, DO NOT FAIL!)
+            // 5. Section lookup (Optional: gracefully fallback to NULL if empty/unresolved)
             $sectionId = null;
             if (!empty($sectionName)) {
-                $sKey = strtolower($sectionName);
+                $sKey = strtolower(trim($sectionName));
                 $sectionId = $sectionMap[$sKey] ?? null;
             }
 
-            // Construction Type lookup (Validates against Master Konstruksi & Compatibility Matrix)
+            // 6. Construction Type lookup & Compatibility Matrix
             $constructionTypeId = null;
             if (!empty($konstruksiName)) {
                 $cKey  = strtolower(trim($konstruksiName));
@@ -218,55 +260,68 @@ class DynamicAssetImportService
                     $cId   = $matchedObj['id'];
                     $cCode = $matchedObj['code'];
 
-                    // Central Compatibility Matrix Check
                     if (!\App\Services\AssetMatrixService::isCompatible($jenisAsset, $cCode)) {
-                        $errors[] = "Konstruksi '{$konstruksiName}' ({$cCode}) tidak cocok untuk Jenis Asset '{$jenisAsset}'.";
+                        $rowErrors[] = "Konstruksi '{$konstruksiName}' ({$cCode}) tidak cocok untuk Jenis Asset '{$jenisAsset}'.";
                     } else {
                         $constructionTypeId = $cId;
                     }
                 } else {
-                    $errors[] = "Konstruksi '{$konstruksiName}' tidak ditemukan di Master Konstruksi.";
+                    $rowErrors[] = "Konstruksi '{$konstruksiName}' tidak ditemukan di Master Konstruksi.";
                 }
             }
 
-            // Composite Duplicate Check: ULP + Jenis Asset + Nama Asset (Case-insensitive, Soft-delete aware)
+            // 7. Composite Duplicate Check: ULP + Jenis Asset + Nama Asset
             if (!empty($ulpId) && !empty($jenisAsset) && !empty($namaAsset)) {
                 $compositeKey = strtolower($ulpId . '_' . $jenisAsset . '_' . $namaAsset);
 
                 if (isset($batchComposites[$compositeKey])) {
-                    $errors[] = "Data duplikat di dalam berkas Excel ini (ULP + Jenis + Nama sama).";
+                    $rowErrors[] = "Data duplikat di dalam berkas Excel ini (ULP + Jenis + Nama sama).";
                 } else {
-                    // Check against DB assets table
-                    $existCount = $db->table('assets')
-                        ->where('ulp_id', $ulpId)
-                        ->where('jenis_asset', $jenisAsset)
-                        ->where('nama_asset', $namaAsset)
-                        ->where('deleted_at IS NULL')
-                        ->countAllResults();
+                    $existCount = 0;
+                    try {
+                        if ($db->tableExists('assets')) {
+                            $existCount = $db->table('assets')
+                                ->where('ulp_id', $ulpId)
+                                ->where('jenis_asset', $jenisAsset)
+                                ->where('nama_asset', $namaAsset)
+                                ->where('deleted_at IS NULL')
+                                ->countAllResults();
+                        }
+                    } catch (\Throwable $e) {}
 
                     if ($existCount > 0) {
-                        $errors[] = "Asset '{$namaAsset}' ({$jenisAsset}) sudah ada di database untuk ULP tersebut (Duplikat).";
+                        $rowErrors[] = "Asset '{$namaAsset}' ({$jenisAsset}) sudah ada di database untuk ULP tersebut (Duplikat).";
                     }
                 }
             }
 
-            if (!empty($errors)) {
-                $failed++;
+            // Collect errors if any
+            if (!empty($rowErrors)) {
                 $errorReport[] = [
                     'baris'      => $rowNum,
-                    'kode_asset' => '(Auto Generate)',
+                    'kode_asset' => '-',
                     'nama_asset' => $namaAsset ?: '-',
-                    'alasan'     => implode(' | ', $errors),
+                    'alasan'     => implode(' | ', $rowErrors),
                 ];
                 continue;
             }
 
-            // Mark composite key as used in current batch
+            // Mark composite key in current batch
             $compositeKey = strtolower($ulpId . '_' . $jenisAsset . '_' . $namaAsset);
             $batchComposites[$compositeKey] = true;
 
-            // Auto Generate Kode Asset (e.g. AST-KOTA-BNJRKMTREN-GRD-001)
-            $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset, $ulpName, $penyulangName, $batchSequenceCache);
+            // Generate canonical Asset Code
+            try {
+                $kodeAsset = $this->assetService->generateKodeAsset($jenisAsset, $ulpName, $penyulangName, $batchSequenceCache);
+            } catch (\Throwable $e) {
+                $errorReport[] = [
+                    'baris'      => $rowNum,
+                    'kode_asset' => '-',
+                    'nama_asset' => $namaAsset ?: '-',
+                    'alasan'     => 'Gagal generate Kode Asset: ' . $e->getMessage(),
+                ];
+                continue;
+            }
 
             $validBatch[] = [
                 'kode_asset'           => $kodeAsset,
@@ -277,8 +332,8 @@ class DynamicAssetImportService
                 'section_id'           => $sectionId,
                 'construction_type_id' => $constructionTypeId,
                 'lokasi'               => $alamat ?: null,
-                'latitude'             => $latitude ?: null,
-                'longitude'            => $longitude ?: null,
+                'latitude'             => $latitude !== '' ? (float)$latitude : null,
+                'longitude'            => $longitude !== '' ? (float)$longitude : null,
                 'tahun_instalasi'      => is_numeric($tahunInstalasi) ? (int)$tahunInstalasi : null,
                 'merk'                 => $merk ?: null,
                 'type'                 => $type ?: null,
@@ -290,87 +345,364 @@ class DynamicAssetImportService
             ];
         }
 
-        // DB Transaction for safe atomic batch insert with Import Batch Tracking
-        if (!empty($validBatch)) {
-            $db->transBegin();
-            try {
-                $batchCode = 'BATCH-' . date('Ymd-His') . '-' . rand(100, 999);
-                $sampleRow = $validBatch[0];
-                $batchUlp  = $sampleRow['ulp_id'] ?? null;
-                $batchPen  = $sampleRow['penyulang_id'] ?? null;
+        // =========================================================================
+        // HARD GATE: ONE INVALID ROW = ZERO DATABASE WRITES (ATOMIC ALL-OR-NOTHING)
+        // =========================================================================
+        if (!empty($errorReport)) {
+            $errorExcelPath = $this->createErrorReportSpreadsheet($errorReport);
+            return [
+                'success'          => false,
+                'inserted'         => 0,
+                'failed'           => count($errorReport),
+                'total'            => count($errorReport) + count($validBatch),
+                'errors'           => $errorReport,
+                'error_excel_path' => $errorExcelPath,
+                'message'          => sprintf(
+                    'Import DIBATALKAN: Terdapat %d baris tidak valid. 0 aset baru dimasukkan ke database (Semua data harus valid sebelum diimport).',
+                    count($errorReport)
+                ),
+            ];
+        }
 
-                $batchModel = new \App\Models\AssetImportBatchModel();
-                $assetModel = new \App\Models\AssetModel(); // Ensure assets table columns exist
+        if (empty($validBatch)) {
+            return [
+                'success'          => false,
+                'inserted'         => 0,
+                'failed'           => 0,
+                'total'            => 0,
+                'errors'           => [],
+                'error_excel_path' => null,
+                'message'          => 'Berkas Excel tidak memiliki baris data aset untuk diimport.',
+            ];
+        }
 
-                $batchId = $batchModel->insert([
-                    'batch_code'   => $batchCode,
-                    'ulp_id'       => $batchUlp,
-                    'penyulang_id' => $batchPen,
-                    'file_name'    => !empty($originalFileName) ? basename($originalFileName) : ('Import_Asset_' . date('Ymd_His') . '.xlsx'),
-                    'total_rows'   => count($rows) - 1,
-                    'success_rows' => count($validBatch),
-                    'failed_rows'  => $failed,
-                    'imported_by'  => session()->get('user_id') ?? null,
-                    'imported_at'  => date('Y-m-d H:i:s'),
-                    'status'       => 'ACTIVE',
-                ]);
+        // =========================================================================
+        // PHASE 2 — ATOMIC DATABASE TRANSACTION (100% VALID DATA ONLY)
+        // =========================================================================
+        $db->transBegin();
 
-                if (!$batchId) {
+        try {
+            $batchCode = 'BATCH-' . date('Ymd-His') . '-' . rand(100, 999);
+            $sampleRow = $validBatch[0];
+            $batchUlp  = $sampleRow['ulp_id'] ?? null;
+            $batchPen  = $sampleRow['penyulang_id'] ?? null;
+
+            $batchModel = new AssetImportBatchModel();
+            $batchId = $batchModel->insert([
+                'batch_code'   => $batchCode,
+                'ulp_id'       => $batchUlp,
+                'penyulang_id' => $batchPen,
+                'file_name'    => !empty($originalFileName) ? basename($originalFileName) : ('Import_Asset_' . date('Ymd_His') . '.xlsx'),
+                'total_rows'   => count($validBatch),
+                'success_rows' => count($validBatch),
+                'failed_rows'  => 0,
+                'imported_by'  => session()->get('user_id') ?? null,
+                'imported_at'  => date('Y-m-d H:i:s'),
+                'status'       => 'ACTIVE',
+            ], true);
+
+            if (!$batchId) {
+                $err = $db->error();
+                throw new \RuntimeException('Gagal membuat log import batch: ' . ($err['message'] ?? 'Unknown error'));
+            }
+
+            foreach ($validBatch as &$vItem) {
+                $vItem['import_batch_id'] = $batchId;
+            }
+            unset($vItem);
+
+            $chunks = array_chunk($validBatch, 500);
+            foreach ($chunks as $chunk) {
+                $insertedCount = $db->table('assets')->insertBatch($chunk);
+                if ($insertedCount === false) {
                     $err = $db->error();
-                    throw new \Exception('Gagal membuat log import batch: [' . ($err['code'] ?? '0') . '] ' . ($err['message'] ?? 'Insert batch log gagal'));
+                    throw new \RuntimeException('Gagal insert batch assets: ' . ($err['message'] ?? 'Query insertBatch gagal'));
                 }
+            }
 
-                foreach ($validBatch as &$vItem) {
-                    $vItem['import_batch_id'] = $batchId;
-                }
-                unset($vItem);
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Database transaction integrity check failed.');
+            }
 
-                $chunks = array_chunk($validBatch, 500);
-                foreach ($chunks as $chunk) {
-                    $insertedCount = $db->table('assets')->insertBatch($chunk);
-                    if ($insertedCount === false) {
-                        $err = $db->error();
-                        throw new \Exception('Gagal insert batch assets: [' . ($err['code'] ?? '0') . '] ' . ($err['message'] ?? 'Query insertBatch gagal'));
-                    }
-                }
-                
-                if ($db->transStatus() === false) {
-                    $dbError = $db->error();
-                    $dbErrorMsg = !empty($dbError['message']) ? ('[' . ($dbError['code'] ?? '') . '] ' . $dbError['message']) : 'Transaction Rollback';
-                    log_message('error', '[DynamicAssetImportService] Transaction Failed: ' . json_encode($dbError));
-                    $db->transRollback();
+            $db->transCommit();
+
+            return [
+                'success'          => true,
+                'inserted'         => count($validBatch),
+                'failed'           => 0,
+                'total'            => count($validBatch),
+                'batch_id'         => $batchId,
+                'errors'           => [],
+                'error_excel_path' => null,
+                'message'          => sprintf(
+                    'Import BERHASIL: Seluruh %d aset baru berhasil di-generate & diimport secara utuh ke database.',
+                    count($validBatch)
+                ),
+            ];
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', '[DynamicAssetImportService] Atomic import transaction failed: ' . $e->getMessage());
+
+            return [
+                'success'          => false,
+                'inserted'         => 0,
+                'failed'           => count($validBatch),
+                'total'            => count($validBatch),
+                'errors'           => [
+                    [
+                        'baris'      => 'ALL',
+                        'kode_asset' => '-',
+                        'nama_asset' => 'Transaction Rollback',
+                        'alasan'     => $e->getMessage(),
+                    ]
+                ],
+                'error_excel_path' => null,
+                'message'          => 'Gagal menyimpan transaksi ke database (seluruh perubahan dibatalkan): ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Multi-Strategy Feeder (Penyulang) Resolver.
+     * Order of Precedence:
+     * 1. SYSTEM_METADATA - PENYULANG_ID
+     * 2. SYSTEM_METADATA - PENYULANG_NAME
+     * 3. Explicit Excel Column
+     * 4. Smart Prefix Extraction from Asset Name (e.g. CANDRAMAS_011 -> CANDRAMAS)
+     */
+    private function resolvePenyulang(
+        ?string $explicitColumn,
+        ?string $assetName,
+        array $metadata,
+        array $penyulangList
+    ): array {
+        // Strategy 1: SYSTEM_METADATA by ID
+        $metaId = $metadata['PENYULANG_ID'] ?? null;
+        if (!empty($metaId)) {
+            foreach ($penyulangList as $p) {
+                if ((int)$p['id'] === (int)$metaId) {
                     return [
-                        'success' => false,
-                        'message' => 'Gagal menyimpan batch data ke database: ' . $dbErrorMsg,
+                        'id'     => (int)$p['id'],
+                        'name'   => $p['nama_penyulang'],
+                        'ulp_id' => !empty($p['ulp_id']) ? (int)$p['ulp_id'] : null,
+                        'source' => 'SYSTEM_METADATA_ID',
                     ];
                 }
-                
-                $db->transCommit();
-                $inserted = count($validBatch);
-            } catch (\Throwable $e) {
-                $db->transRollback();
-                log_message('error', '[DynamicAssetImportService] Transaction Exception: ' . $e->getMessage());
+            }
+        }
+
+        // Strategy 2: SYSTEM_METADATA by Name
+        $metaName = $metadata['PENYULANG_NAME'] ?? null;
+        if (!empty($metaName)) {
+            $matched = $this->resolvePenyulangByName($metaName, $penyulangList);
+            if ($matched !== null) {
+                return $matched + ['source' => 'SYSTEM_METADATA_NAME'];
+            }
+        }
+
+        // Strategy 3: Explicit Excel Column
+        if (!empty($explicitColumn)) {
+            $matched = $this->resolvePenyulangByName($explicitColumn, $penyulangList);
+            if ($matched !== null) {
+                return $matched + ['source' => 'EXPLICIT_COLUMN'];
+            }
+        }
+
+        // Strategy 4: Extract Prefix from Asset Name (e.g. CANDRAMAS_011 -> CANDRAMAS)
+        $candidatePrefix = $this->extractFeederPrefix($assetName);
+        if (!empty($candidatePrefix)) {
+            $matched = $this->resolvePenyulangByName($candidatePrefix, $penyulangList);
+            if ($matched !== null) {
+                return $matched + ['source' => 'ASSET_NAME_PREFIX'];
+            }
+        }
+
+        return [
+            'id'     => null,
+            'name'   => null,
+            'ulp_id' => null,
+            'source' => null,
+        ];
+    }
+
+    /**
+     * Resolve Penyulang entity from list by string name.
+     */
+    private function resolvePenyulangByName(?string $rawName, array $penyulangList): ?array
+    {
+        if (empty($rawName)) {
+            return null;
+        }
+
+        $clean = strtoupper(trim($rawName));
+        $noPrefix = strtoupper(trim(preg_replace('/^(penyulang|feeder|f\.|fdr)\s+/i', '', $clean)));
+        $normAlnum = preg_replace('/[^A-Z0-9]/', '', $noPrefix);
+
+        // Pass 1: Exact match on nama_penyulang
+        foreach ($penyulangList as $p) {
+            if (strcasecmp(trim($p['nama_penyulang']), $clean) === 0 || strcasecmp(trim($p['nama_penyulang']), $noPrefix) === 0) {
                 return [
-                    'success' => false,
-                    'message' => 'Gagal melakukan insert ke database: ' . $e->getMessage(),
+                    'id'     => (int)$p['id'],
+                    'name'   => $p['nama_penyulang'],
+                    'ulp_id' => !empty($p['ulp_id']) ? (int)$p['ulp_id'] : null,
                 ];
             }
         }
 
-        $errorExcelPath = null;
-        if (!empty($errorReport)) {
-            $errorExcelPath = $this->createErrorReportSpreadsheet($errorReport);
+        // Pass 2: Alphanumeric match (ignoring spaces, underscores, dashes)
+        if (!empty($normAlnum)) {
+            foreach ($penyulangList as $p) {
+                $pNorm = preg_replace('/[^A-Z0-9]/', '', strtoupper(trim($p['nama_penyulang'])));
+                if ($pNorm === $normAlnum) {
+                    return [
+                        'id'     => (int)$p['id'],
+                        'name'   => $p['nama_penyulang'],
+                        'ulp_id' => !empty($p['ulp_id']) ? (int)$p['ulp_id'] : null,
+                    ];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract Feeder Prefix Candidate from Asset Name (e.g. CANDRAMAS_011 -> CANDRAMAS).
+     */
+    private function extractFeederPrefix(?string $assetName): ?string
+    {
+        if (empty($assetName)) {
+            return null;
+        }
+
+        $clean = trim($assetName);
+
+        // Pattern 1: Delimited by _, -, /, or space followed by digits or codes (e.g. CANDRAMAS_011, CANDRAMAS-016)
+        if (preg_match('/^([A-Za-z0-9\s]+?)[_\-\/\s]+(\d+|[A-Za-z0-9]+)$/u', $clean, $matches)) {
+            $candidate = trim($matches[1]);
+            if (strlen($candidate) >= 3) {
+                return $candidate;
+            }
+        }
+
+        // Pattern 2: Alpha string directly followed by numbers (e.g. CANDRAMAS011)
+        if (preg_match('/^([A-Za-z\s]+)\d+$/u', $clean, $matches)) {
+            $candidate = trim($matches[1]);
+            if (strlen($candidate) >= 3) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Multi-Strategy ULP Resolver.
+     * Order of Precedence:
+     * 1. SYSTEM_METADATA - ULP_ID
+     * 2. SYSTEM_METADATA - ULP_NAME
+     * 3. Explicit Excel Column
+     * 4. Fallback to Resolved Feeder ULP ID
+     */
+    private function resolveUlp(
+        ?string $explicitColumn,
+        array $metadata,
+        array $ulpList,
+        ?int $resolvedFeederUlpId = null
+    ): array {
+        // Strategy 1: SYSTEM_METADATA by ID
+        $metaId = $metadata['ULP_ID'] ?? null;
+        if (!empty($metaId)) {
+            foreach ($ulpList as $u) {
+                if ((int)$u['id'] === (int)$metaId) {
+                    return [
+                        'id'     => (int)$u['id'],
+                        'name'   => $u['nama_ulp'],
+                        'source' => 'SYSTEM_METADATA_ID',
+                    ];
+                }
+            }
+        }
+
+        // Strategy 2: SYSTEM_METADATA by Name
+        $metaName = $metadata['ULP_NAME'] ?? null;
+        if (!empty($metaName)) {
+            $matched = $this->resolveUlpByName($metaName, $ulpList);
+            if ($matched !== null) {
+                return $matched + ['source' => 'SYSTEM_METADATA_NAME'];
+            }
+        }
+
+        // Strategy 3: Explicit Excel Column
+        if (!empty($explicitColumn)) {
+            $matched = $this->resolveUlpByName($explicitColumn, $ulpList);
+            if ($matched !== null) {
+                return $matched + ['source' => 'EXPLICIT_COLUMN'];
+            }
+        }
+
+        // Strategy 4: Feeder ULP Linkage Fallback
+        if (!empty($resolvedFeederUlpId)) {
+            foreach ($ulpList as $u) {
+                if ((int)$u['id'] === (int)$resolvedFeederUlpId) {
+                    return [
+                        'id'     => (int)$u['id'],
+                        'name'   => $u['nama_ulp'],
+                        'source' => 'FEEDER_ULP_LINKAGE',
+                    ];
+                }
+            }
         }
 
         return [
-            'success'          => true,
-            'inserted'         => $inserted,
-            'failed'           => $failed,
-            'total'            => $inserted + $failed,
-            'errors'           => $errorReport,
-            'error_excel_path' => $errorExcelPath,
-            'message'          => "Import selesai: {$inserted} data baru berhasil di-generate & diimport, {$failed} data gagal/duplikat.",
+            'id'     => null,
+            'name'   => null,
+            'source' => null,
         ];
+    }
+
+    /**
+     * Resolve ULP entity from list by string name.
+     */
+    private function resolveUlpByName(?string $rawName, array $ulpList): ?array
+    {
+        if (empty($rawName)) {
+            return null;
+        }
+
+        $clean = strtoupper(trim($rawName));
+        $noPrefix = strtoupper(trim(preg_replace('/^ulp\s+/i', '', $clean)));
+
+        foreach ($ulpList as $u) {
+            $uName = strtoupper(trim($u['nama_ulp']));
+            $uNoPrefix = strtoupper(trim(preg_replace('/^ulp\s+/i', '', $uName)));
+
+            if ($clean === $uName || $noPrefix === $uNoPrefix || $clean === $uNoPrefix || $noPrefix === $uName) {
+                return [
+                    'id'   => (int)$u['id'],
+                    'name' => $u['nama_ulp'],
+                ];
+            }
+
+            // Keyword matching for canonical ULPs
+            if ((str_contains($clean, 'KOTA') || str_contains($clean, 'SIDOARJO')) && str_contains($uName, 'KOTA')) {
+                return ['id' => (int)$u['id'], 'name' => $u['nama_ulp']];
+            }
+            if (str_contains($clean, 'KRIAN') && str_contains($uName, 'KRIAN')) {
+                return ['id' => (int)$u['id'], 'name' => $u['nama_ulp']];
+            }
+            if (str_contains($clean, 'PORONG') && str_contains($uName, 'PORONG')) {
+                return ['id' => (int)$u['id'], 'name' => $u['nama_ulp']];
+            }
+            if (str_contains($clean, 'SEDATI') && str_contains($uName, 'SEDATI')) {
+                return ['id' => (int)$u['id'], 'name' => $u['nama_ulp']];
+            }
+            if (str_contains($clean, 'MOJOSARI') && str_contains($uName, 'MOJOSARI')) {
+                return ['id' => (int)$u['id'], 'name' => $u['nama_ulp']];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -385,7 +717,7 @@ class DynamicAssetImportService
         $sheet->setCellValue('A1', 'Nomor Baris Excel');
         $sheet->setCellValue('B1', 'Kode Asset');
         $sheet->setCellValue('C1', 'Nama Asset');
-        $sheet->setCellValue('D1', 'Alasan Error');
+        $sheet->setCellValue('D1', 'Alasan Error / Penolakan');
 
         $sheet->getStyle('A1:D1')->getFont()->setBold(true);
         $sheet->getStyle('A1:D1')->getFill()
@@ -414,46 +746,6 @@ class DynamicAssetImportService
         $writer->save($tempPath);
 
         return $tempPath;
-    }
-
-    private function getUlpLookupMap(): array
-    {
-        $map = [];
-        try {
-            $ulps = $this->ulpModel->findAll();
-            foreach ($ulps as $u) {
-                if (!empty($u['nama_ulp'])) {
-                    $rawName = strtolower(trim($u['nama_ulp']));
-                    $map[$rawName] = (int)$u['id'];
-
-                    $noPrefix = preg_replace('/^ulp\s+/i', '', $rawName);
-                    $map[$noPrefix] = (int)$u['id'];
-
-                    if (!str_starts_with($rawName, 'ulp ')) {
-                        $map['ulp ' . $rawName] = (int)$u['id'];
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-            log_message('error', '[DynamicAssetImportService] Gagal fetch ULP map: ' . $e->getMessage());
-        }
-        return $map;
-    }
-
-    private function getPenyulangLookupMap(): array
-    {
-        $map = [];
-        try {
-            $penyulangs = $this->penyulangModel->findAll();
-            foreach ($penyulangs as $p) {
-                if (!empty($p['nama_penyulang'])) {
-                    $map[strtolower(trim($p['nama_penyulang']))] = (int)$p['id'];
-                }
-            }
-        } catch (\Throwable $e) {
-            log_message('error', '[DynamicAssetImportService] Gagal fetch Penyulang map: ' . $e->getMessage());
-        }
-        return $map;
     }
 
     private function getSectionLookupMap(): array
@@ -497,7 +789,6 @@ class DynamicAssetImportService
                     }
                 }
 
-                // Legacy spreadsheet alias & equipment name mapping
                 $aliasMap = [
                     'gtt 1 tiang' => 'gtt1',
                     'gtt 1'       => 'gtt1',

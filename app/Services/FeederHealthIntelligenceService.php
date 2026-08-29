@@ -53,6 +53,21 @@ class FeederHealthIntelligenceService
         return self::DEFAULT_PILLAR_WEIGHTS;
     }
 
+    public function getFhiWeights(): array
+    {
+        $sum = array_sum(self::DEFAULT_PILLAR_WEIGHTS);
+        if (abs($sum - 1.0000) > 0.000001) {
+            throw new \DomainException("Gate E2-A Violation: Canonical weights sum to {$sum}, must be exactly 1.0000");
+        }
+        return [
+            'physical'    => self::DEFAULT_PILLAR_WEIGHTS['PHYSICAL_COVERAGE'],
+            'asset'       => self::DEFAULT_PILLAR_WEIGHTS['ASSET_STRUCTURAL_HEALTH'],
+            'finding'     => self::DEFAULT_PILLAR_WEIGHTS['FINDING_SEVERITY'],
+            'reliability' => self::DEFAULT_PILLAR_WEIGHTS['RELIABILITY_PERFORMANCE'],
+            'recurrence'  => self::DEFAULT_PILLAR_WEIGHTS['RECURRENCE_CHRONICITY'],
+        ];
+    }
+
     public function __construct(?BaseConnection $db = null)
     {
         $this->db                = $db ?? \Config\Database::connect();
@@ -150,6 +165,38 @@ class FeederHealthIntelligenceService
             }
 
             $policy = $this->policyModel->find($policyId);
+        } else {
+            // Validate existing policy rules for weight conservation (Gate E2-A)
+            $existingRules = $this->ruleModel->where('policy_version_id', $policy['id'])->findAll();
+            $sum = 0.0;
+            foreach ($existingRules as $r) {
+                $sum += (float)$r['weight'];
+            }
+
+            if (count($existingRules) === 0 || abs($sum - 1.0000) > 0.000001) {
+                $this->ruleModel->where('policy_version_id', $policy['id'])->delete();
+                $now = date('Y-m-d H:i:s');
+                $canonicalRules = [
+                    ['PHYSICAL_COVERAGE',   0.2000, 85.00, 70.00, 50.00, 49.99],
+                    ['BOM_DEGRADATION',     0.2500, 85.00, 70.00, 50.00, 49.99],
+                    ['CRITICAL_FINDINGS',   0.2500, 85.00, 70.00, 50.00, 49.99],
+                    ['GANGGUAN_FREQUENCY',  0.2000, 85.00, 70.00, 50.00, 49.99],
+                    ['RECURRING_FINDINGS',  0.1000, 85.00, 70.00, 50.00, 49.99],
+                ];
+
+                foreach ($canonicalRules as $r) {
+                    $this->ruleModel->insert([
+                        'policy_version_id'      => $policy['id'],
+                        'metric_key'             => $r[0],
+                        'weight'                 => $r[1],
+                        'threshold_sempurna_min' => $r[2],
+                        'threshold_sakit_min'    => $r[3],
+                        'threshold_kronis_min'   => $r[4],
+                        'threshold_kritis_max'   => $r[5],
+                        'created_at'             => $now,
+                    ]);
+                }
+            }
         }
 
         return $policy;

@@ -154,6 +154,66 @@ class ExecutiveIntelligenceTest extends CIUnitTestCase
         $this->assertEquals($res1['primary_driver'], $res2['primary_driver']);
     }
 
+    public function testCanonicalWeightsProviderReturnsExactContractValues(): void
+    {
+        $weights = $this->fhiService->getFhiWeights();
+        $this->assertEquals(0.20, $weights['physical']);
+        $this->assertEquals(0.25, $weights['asset']);
+        $this->assertEquals(0.25, $weights['finding']);
+        $this->assertEquals(0.20, $weights['reliability']);
+        $this->assertEquals(0.10, $weights['recurrence']);
+        $this->assertEquals(1.0000, round(array_sum($weights), 4));
+    }
+
+    public function testAnyOnePointZeroFiveConfigurationFailsGateE2A(): void
+    {
+        $db = \Config\Database::connect();
+        
+        // Insert custom policy with non-conserved weights (Sum = 1.0500)
+        $db->table('feeder_health_policy_versions')->insert([
+            'policy_code' => 'FHI-BAD-WEIGHT-105',
+            'policy_name' => 'Bad Weight Policy 1.05',
+            'status'      => 'ACTIVE',
+        ]);
+        $customPolicyId = (int)$db->insertID();
+
+        $rules = [
+            ['PHYSICAL_COVERAGE', 0.2000],
+            ['BOM_DEGRADATION', 0.2500],
+            ['CRITICAL_FINDINGS', 0.2500],
+            ['GANGGUAN_FREQUENCY', 0.2500], // 0.25 instead of 0.20 -> Sum = 1.0500
+            ['RECURRING_FINDINGS', 0.1000],
+        ];
+
+        foreach ($rules as $r) {
+            $db->table('feeder_health_policy_rules')->insert([
+                'policy_version_id' => $customPolicyId,
+                'metric_key'        => $r[0],
+                'weight'            => $r[1],
+            ]);
+        }
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('Gate E2-A Violation');
+
+        $this->fhiService->calculateFeederHealth(1, null, 'FHI-BAD-WEIGHT-105');
+    }
+
+    public function testMissingPillarDataDoesNotRedistributeWeight(): void
+    {
+        // For feeder with no assets (subScoreAsset is null)
+        $res = $this->fhiService->calculateFeederHealth(1);
+        $exp = json_decode($res['explanation_json'], true);
+        $breakdown = $exp['score_breakdown'];
+
+        // Asset weight must strictly remain 0.25 and NOT be redistributed to other pillars
+        $this->assertEquals(0.25, $breakdown['asset_health']['weight']);
+        $this->assertEquals(0.20, $breakdown['physical_coverage']['weight']);
+        $this->assertEquals(0.25, $breakdown['finding_severity']['weight']);
+        $this->assertEquals(0.20, $breakdown['reliability']['weight']);
+        $this->assertEquals(0.10, $breakdown['chronicity']['weight']);
+    }
+
     public function testResolvedAssetSynchronizationBetweenCr06gAndCc04(): void
     {
         $db = \Config\Database::connect();

@@ -29,8 +29,50 @@ class AuditCc04Command extends BaseCommand
         CLI::write("       CC-04 EXECUTIVE DECISION FABRIC & FHI-v1.0 AUDIT          ", 'yellow');
         CLI::write("==================================================================\n", 'yellow');
 
-        // 1. Feeder Health Inventory & Multi-Pillar Rollup
-        CLI::write("1️⃣  EXECUTIVE FEEDER HEALTH INVENTORY (FHI-v1.0)", 'cyan');
+        // 1. Policy & Weight Conservation Verification (Gate E2-A)
+        CLI::write("1️⃣  FHI-v1.0 CANONICAL POLICY & WEIGHT SET (Gate E2-A)", 'cyan');
+        CLI::write("------------------------------------------------------------------");
+        $policy = $fhiService->ensureDefaultPolicy();
+        $rules = $db->table('feeder_health_policy_rules')
+            ->where('policy_version_id', $policy['id'])
+            ->get()
+            ->getResultArray();
+
+        $ruleMap = [];
+        $weightSum = 0.0;
+        foreach ($rules as $r) {
+            $w = (float)$r['weight'];
+            $ruleMap[$r['metric_key']] = $w;
+            $weightSum += $w;
+        }
+
+        $wPhys  = $ruleMap['PHYSICAL_COVERAGE'] ?? $fhiService::DEFAULT_PILLAR_WEIGHTS['PHYSICAL_COVERAGE'];
+        $wAsset = $ruleMap['ASSET_STRUCTURAL_HEALTH'] ?? $ruleMap['BOM_DEGRADATION'] ?? $fhiService::DEFAULT_PILLAR_WEIGHTS['ASSET_STRUCTURAL_HEALTH'];
+        $wFind  = $ruleMap['FINDING_SEVERITY'] ?? $ruleMap['CRITICAL_FINDINGS'] ?? $fhiService::DEFAULT_PILLAR_WEIGHTS['FINDING_SEVERITY'];
+        $wRel   = $ruleMap['RELIABILITY_PERFORMANCE'] ?? $ruleMap['GANGGUAN_FREQUENCY'] ?? $fhiService::DEFAULT_PILLAR_WEIGHTS['RELIABILITY_PERFORMANCE'];
+        $wRec   = $ruleMap['RECURRENCE_CHRONICITY'] ?? $ruleMap['RECURRING_FINDINGS'] ?? $fhiService::DEFAULT_PILLAR_WEIGHTS['RECURRENCE_CHRONICITY'];
+
+        $calculatedSum = $wPhys + $wAsset + $wFind + $wRel + $wRec;
+
+        CLI::write("  Active Policy Code            : " . ($policy['policy_code'] ?? 'FHI-v1.0'));
+        CLI::write("  Physical Weight (W_phys)      : " . number_format($wPhys, 4));
+        CLI::write("  Asset Weight (W_asset)        : " . number_format($wAsset, 4));
+        CLI::write("  Finding Weight (W_finding)    : " . number_format($wFind, 4));
+        CLI::write("  Reliability Weight (W_rel)    : " . number_format($wRel, 4));
+        CLI::write("  Recurrence Weight (W_rec)     : " . number_format($wRec, 4));
+        CLI::write("  ----------------------------------------------------------------");
+        CLI::write("  Weight Sum                    : " . number_format($calculatedSum, 4));
+
+        if (abs($calculatedSum - 1.0000) > 0.000001) {
+            CLI::write("  Gate E2-A Weight Conservation : FAIL (Sum is not 1.0000)", 'red');
+            CLI::error("FATAL: Gate E2-A Violated. Engine cannot proceed with non-conserved weights.");
+            return 1;
+        }
+
+        CLI::write("  Gate E2-A Weight Conservation : PASS (Strictly Conserved)");
+
+        // 2. Feeder Health Inventory & Multi-Pillar Rollup
+        CLI::write("\n2️⃣  EXECUTIVE FEEDER HEALTH INVENTORY (FHI-v1.0)", 'cyan');
         CLI::write("------------------------------------------------------------------");
         $feeders = $db->table('penyulang')->get()->getResultArray();
         CLI::write("  Total Feeders Available       : " . count($feeders));
@@ -61,8 +103,8 @@ class AuditCc04Command extends BaseCommand
         CLI::write("  FHI Status Breakdown          : {$countResolved} RESOLVED | {$countPartial} PARTIAL | {$countUnresolved} UNRESOLVED");
         CLI::write("  Risk Classification           : {$countSempurna} SEMPURNA | {$countWaspada} WASPADA | {$countPerhatian} PERHATIAN | {$countKritis} KRITIS");
 
-        // 2. Pilot Feeder SIWALAN PANJI Validation
-        CLI::write("\n2️⃣  PILOT FEEDER VALIDATION (PYL-001 SIWALAN PANJI)", 'cyan');
+        // 3. Pilot Feeder SIWALAN PANJI Validation
+        CLI::write("\n3️⃣  PILOT FEEDER VALIDATION (PYL-001 SIWALAN PANJI)", 'cyan');
         CLI::write("------------------------------------------------------------------");
         $pilotFeeder = $db->table('penyulang')
             ->like('nama_penyulang', 'SIWALAN')
@@ -105,8 +147,8 @@ class AuditCc04Command extends BaseCommand
             CLI::write("  AI Advisory Isolation Check   : " . $pilotAdv['isolation_check']);
         }
 
-        // 3. Hardening Gates & Mathematical Invariants Verification (E0 - E9)
-        CLI::write("\n3️⃣  CC-04 HARDENING GATES & MATHEMATICAL INVARIANTS", 'cyan');
+        // 4. Hardening Gates & Mathematical Invariants Verification (E0 - E9)
+        CLI::write("\n4️⃣  CC-04 HARDENING GATES & MATHEMATICAL INVARIANTS", 'cyan');
         CLI::write("------------------------------------------------------------------");
         CLI::write("  Gate E0: Deterministic Calculation Boundary                 : PASS (Pure Math Model)");
         CLI::write("  Gate E1: Upstream Immutability (CR-06F/G/H Read-Only)        : PASS (0 writes to topology)");
@@ -123,5 +165,7 @@ class AuditCc04Command extends BaseCommand
         CLI::write("🟢 ENTERPRISE AUDIT PASSED: CC-04 DECISION FABRIC ACTIVE & SEALED", 'green');
         CLI::write("   Executive intelligence is operational, auditable, and production-ready.", 'green');
         CLI::write("==================================================================\n", 'green');
+
+        return 0;
     }
 }

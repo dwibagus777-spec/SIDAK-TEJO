@@ -24,8 +24,10 @@ class NetworkConfigIngestCommand extends BaseCommand
         'filepath' => 'Path to the Excel file containing network configurations.',
     ];
     protected $options     = [
-        '--dry-run' => 'Run pre-flight validation only without database mutation.',
-        '--pilot'   => 'Generate and ingest pilot sample for Penyulang CANDRAMAS.',
+        '--dry-run'  => 'Run pre-flight validation only without database mutation.',
+        '--pilot'    => 'Generate and ingest pilot sample using REAL master sections from database.',
+        '--feeder'   => 'Specify feeder name or ID for pilot generation (default: first active feeder or CANDRAMAS).',
+        '--inspect'  => 'Inspect production ULP -> Penyulang -> Sections master hierarchy.',
     ];
 
     public function run(array $params)
@@ -38,21 +40,37 @@ class NetworkConfigIngestCommand extends BaseCommand
         $db = \Config\Database::connect();
         $ingestService = new NetworkConfigurationIngestionService($db);
 
-        $isPilot  = array_key_exists('pilot', $params) || CLI::getOption('pilot');
-        $isDryRun = array_key_exists('dry-run', $params) || CLI::getOption('dry-run');
-        $filePath = $params[0] ?? CLI::getOption('filepath');
+        $isInspect = array_key_exists('inspect', $params) || CLI::getOption('inspect');
+        $isPilot   = array_key_exists('pilot', $params) || CLI::getOption('pilot');
+        $isDryRun  = array_key_exists('dry-run', $params) || CLI::getOption('dry-run');
+        $feederOpt = $params['feeder'] ?? CLI::getOption('feeder');
+        $filePath  = $params[0] ?? CLI::getOption('filepath');
 
+        // Mode 1: Hierarchy Inspection
+        if ($isInspect) {
+            $this->inspectMasterHierarchy($db, $feederOpt);
+            return 0;
+        }
+
+        // Mode 2: Dynamic Master-Aware Pilot Generation
         if ($isPilot && empty($filePath)) {
             $filePath = WRITEPATH . 'pilot_candramas_v1.1.xlsx';
-            $this->generatePilotExcelFile($filePath);
+            $genResult = $this->generatePilotExcelFromMaster($db, $filePath, $feederOpt);
+            if (!$genResult['success']) {
+                CLI::write("❌ Failed to generate pilot from master: " . $genResult['error'], "red");
+                return 1;
+            }
             CLI::write("📄 Generated Pilot Excel File: {$filePath}", "cyan");
+            CLI::write("   Feeder Selected: [{$genResult['kode_penyulang']}] {$genResult['nama_penyulang']}", "white");
+            CLI::write("   Sections Mapped: " . implode(', ', $genResult['sections']), "white");
             CLI::newLine();
         }
 
         if (empty($filePath)) {
             CLI::write("❌ Error: File path parameter is required.", "red");
             CLI::write("Usage: php spark network-config:ingest <path-to-excel> [--dry-run]", "white");
-            CLI::write("   or: php spark network-config:ingest --pilot [--dry-run]", "white");
+            CLI::write("   or: php spark network-config:ingest --pilot [--feeder=<name>] [--dry-run]", "white");
+            CLI::write("   or: php spark network-config:ingest --inspect [keyword]", "white");
             return 1;
         }
 
@@ -144,11 +162,122 @@ class NetworkConfigIngestCommand extends BaseCommand
         }
     }
 
-    private function generatePilotExcelFile(string $targetPath): void
+    private function inspectMasterHierarchy(\CodeIgniter\Database\BaseConnection $db, ?string $keyword = null): void
     {
+        CLI::write("==================================================================", "white");
+        CLI::write("           MASTER PRODUCTION TOPOLOGY HIERARCHY INSPECTOR         ", "yellow");
+        CLI::write("==================================================================", "white");
+        CLI::newLine();
+
+        $totalUlps     = $db->table('ulps')->countAllResults();
+        $totalFeeders  = $db->table('penyulang')->countAllResults();
+        $totalSections = $db->table('sections')->countAllResults();
+
+        CLI::write(sprintf("Inventory: %d ULPs, %d Feeders (Penyulang), %d Sections", $totalUlps, $totalFeeders, $totalSections), "cyan");
+        CLI::newLine();
+
+        $builder = $db->table('penyulang')
+            ->select('penyulang.*, ulps.kode_ulp, ulps.nama_ulp')
+            ->join('ulps', 'ulps.id = penyulang.ulp_id', 'left');
+
+        if (!empty($keyword)) {
+            $builder->groupStart()
+                ->like('penyulang.nama_penyulang', $keyword)
+                ->orLike('penyulang.kode_penyulang', $keyword)
+                ->orLike('ulps.nama_ulp', $keyword)
+            ->groupEnd();
+        }
+
+        $feeders = $builder->limit(20)->get()->getResultArray();
+
+        if (empty($feeders)) {
+            CLI::write("⚠️  No feeders matched keyword '{$keyword}'.", "yellow");
+            return;
+        }
+
+        foreach ($feeders as $f) {
+            CLI::write(sprintf("⚡ Feeder ID #%d: [%s] %s (ULP: %s - %s)", 
+                $f['id'], 
+                $f['kode_penyulang'] ?? 'N/A', 
+                $f['nama_penyulang'], 
+                $f['kode_ulp'] ?? 'N/A', 
+                $f['nama_ulp'] ?? 'N/A'
+            ), "green");
+
+            $sections = $db->table('sections')
+                ->where('penyulang_id', $f['id'])
+                ->limit(10)
+                ->get()
+                ->getResultArray();
+
+            if (empty($sections)) {
+                CLI::write("   └── (0 Sections linked to this feeder)", "white");
+            } else {
+                foreach ($sections as $s) {
+                    CLI::write(sprintf("   └── Section ID #%d: %s", $s['id'], $s['nama_section']), "white");
+                }
+                $secCount = $db->table('sections')->where('penyulang_id', $f['id'])->countAllResults();
+                if ($secCount > 10) {
+                    CLI::write(sprintf("   └── ... and %d more sections", $secCount - 10), "yellow");
+                }
+            }
+            CLI::newLine();
+        }
+    }
+
+    private function generatePilotExcelFromMaster(\CodeIgniter\Database\BaseConnection $db, string $targetPath, ?string $feederKeyword = null): array
+    {
+        // 1. Resolve Feeder from Database
+        $feederBuilder = $db->table('penyulang');
+        if (!empty($feederKeyword)) {
+            $feederBuilder->groupStart()
+                ->like('nama_penyulang', $feederKeyword)
+                ->orLike('kode_penyulang', $feederKeyword)
+                ->orWhere('id', is_numeric($feederKeyword) ? (int)$feederKeyword : 0)
+            ->groupEnd();
+        } else {
+            $feederBuilder->groupStart()
+                ->like('nama_penyulang', 'CANDRAMAS')
+                ->orLike('kode_penyulang', 'CDR')
+            ->groupEnd();
+        }
+
+        $feeder = $feederBuilder->get()->getFirstRow('array');
+        if (!$feeder) {
+            $feeder = $db->table('penyulang')->get()->getFirstRow('array');
+        }
+
+        if (!$feeder) {
+            return ['success' => false, 'error' => 'No feeders found in master database.'];
+        }
+
+        // 2. Resolve ULP
+        $ulp = null;
+        if (!empty($feeder['ulp_id'])) {
+            $ulp = $db->table('ulps')->where('id', $feeder['ulp_id'])->get()->getFirstRow('array');
+        }
+        if (!$ulp) {
+            $ulp = $db->table('ulps')->get()->getFirstRow('array');
+        }
+
+        $kodeUlp       = $ulp['kode_ulp'] ?? '51301';
+        $kodePenyulang = !empty($feeder['kode_penyulang']) ? $feeder['kode_penyulang'] : $feeder['nama_penyulang'];
+
+        // 3. Resolve Real Sections
+        $sections = $db->table('sections')->where('penyulang_id', $feeder['id'])->limit(3)->get()->getResultArray();
+        if (empty($sections)) {
+            $sections = $db->table('sections')->limit(3)->get()->getResultArray();
+        }
+
+        if (empty($sections)) {
+            return ['success' => false, 'error' => 'No sections found in master database.'];
+        }
+
         $spreadsheet = new Spreadsheet();
 
+        // -------------------------------------------------------------
         // Sheet 1: SECTION_CONFIGURATIONS
+        // -------------------------------------------------------------
         $sheet1 = $spreadsheet->getActiveSheet();
         $sheet1->setTitle('SECTION_CONFIGURATIONS');
         $headers1 = [
@@ -156,11 +285,51 @@ class NetworkConfigIngestCommand extends BaseCommand
             'IMPORT_ACTION', 'CONFIGURATION_SOURCE', 'CHANGE_REASON', 'EFFECTIVE_FROM'
         ];
         $sheet1->fromArray([$headers1], null, 'A1');
-        $data1 = [
-            ['SEC-CDR-001', '51301', 'CDR', 'Section A CANDRAMAS', 'ACTIVATE_NEW_VERSION', 'INITIAL_AUDIT', 'Pilot Operational Activation 2026', date('Y-m-d H:i:s')],
-            ['SEC-CDR-002', '51301', 'CDR', 'Section B CANDRAMAS', 'ACTIVATE_NEW_VERSION', 'INITIAL_AUDIT', 'Pilot Operational Activation 2026', date('Y-m-d H:i:s')],
-            ['SEC-CDR-003', '51301', 'CDR', 'Section C CANDRAMAS', 'ACTIVATE_NEW_VERSION', 'INITIAL_AUDIT', 'Pilot Operational Activation 2026', date('Y-m-d H:i:s')],
-        ];
+
+        $data1 = [];
+        $data2 = [];
+        $data3 = [];
+        $sectionNames = [];
+
+        foreach ($sections as $idx => $sec) {
+            $refNum = sprintf('%03d', $idx + 1);
+            $sRef   = "SEC-PILOT-{$refNum}";
+            $sName  = $sec['nama_section'];
+            $sectionNames[] = $sName;
+
+            // Sheet 1 row
+            $data1[] = [
+                $sRef, 
+                $kodeUlp, 
+                $kodePenyulang, 
+                $sName, 
+                'ACTIVATE_NEW_VERSION', 
+                'INITIAL_AUDIT', 
+                'Pilot Operational Activation 2026', 
+                date('Y-m-d H:i:s')
+            ];
+
+            // Sheet 2 conductors (2 segments for first section, 1 for others)
+            if ($idx === 0) {
+                $data2[] = [$sRef, 1, 'AAACS 240', 350.0, 'GI_START', 'PB01', "{$sName} Trunk 1"];
+                $data2[] = [$sRef, 2, 'AAAC 150', 650.0, 'PB01', 'TM1_NODE', "{$sName} Overhead Main"];
+            } elseif ($idx === 1) {
+                $data2[] = [$sRef, 1, 'AAAC 150', 850.0, 'TM1_NODE', 'TM8_NODE', "{$sName} Trunk"];
+            } else {
+                $data2[] = [$sRef, 1, 'AAAC 70', 450.0, 'TM8_NODE', 'TM15_NODE', "{$sName} Lateral"];
+            }
+
+            // Sheet 3 accessories
+            if ($idx === 0) {
+                $data3[] = [$sRef, 'GSW', 'MAT-ACC-GSW', 1, 'Span Tiang 1 s/d Tiang 12', 'GOOD'];
+                $data3[] = [$sRef, 'LA', 'LA', 3, 'Portal Tiang PB01', 'GOOD'];
+            } elseif ($idx === 1) {
+                $data3[] = [$sRef, 'CLD', 'CLD', 2, 'Tiang TM8 Percabangan', 'GOOD'];
+            } else {
+                $data3[] = [$sRef, 'ANIMAL_GUARD', 'PENGHALANG BINATANG', 4, 'Tiang TM10 s/d TM13', 'GOOD'];
+            }
+        }
+
         $sheet1->fromArray($data1, null, 'A2');
 
         // Sheet 2: CONDUCTOR_SEGMENTS
@@ -171,12 +340,6 @@ class NetworkConfigIngestCommand extends BaseCommand
             'START_NODE', 'END_NODE', 'SEGMENT_LABEL'
         ];
         $sheet2->fromArray([$headers2], null, 'A1');
-        $data2 = [
-            ['SEC-CDR-001', 1, 'AAACS 240', 350.0, 'GI_CANDRAMAS', 'PB01', 'Saluran Keluar GI Trunk 1'],
-            ['SEC-CDR-001', 2, 'AAAC 150', 650.0, 'PB01', 'TM1_CANDRAMAS', 'Overhead Main Feeder Segment 2'],
-            ['SEC-CDR-002', 1, 'AAAC 150', 850.0, 'TM1_CANDRAMAS', 'TM8_CANDRAMAS', 'Overhead Section B Trunk'],
-            ['SEC-CDR-003', 1, 'AAAC 70', 450.0, 'TM8_CANDRAMAS', 'TM15_CANDRAMAS', 'Overhead Section C Lateral'],
-        ];
         $sheet2->fromArray($data2, null, 'A2');
 
         // Sheet 3: NETWORK_ACCESSORIES
@@ -187,12 +350,6 @@ class NetworkConfigIngestCommand extends BaseCommand
             'LOKASI_REFERENSI', 'INITIAL_OBSERVED_CONDITION'
         ];
         $sheet3->fromArray([$headers3], null, 'A1');
-        $data3 = [
-            ['SEC-CDR-001', 'GSW', 'MAT-ACC-GSW', 1, 'Span Tiang 1 s/d Tiang 12', 'GOOD'],
-            ['SEC-CDR-001', 'LA', 'LA', 3, 'Portal Tiang PB01', 'GOOD'],
-            ['SEC-CDR-002', 'CLD', 'CLD', 2, 'Tiang TM8 Percabangan', 'GOOD'],
-            ['SEC-CDR-003', 'ANIMAL_GUARD', 'PENGHALANG BINATANG', 4, 'Tiang TM10 s/d TM13', 'GOOD'],
-        ];
         $sheet3->fromArray($data3, null, 'A2');
 
         $spreadsheet->setActiveSheetIndex(0);
@@ -203,5 +360,12 @@ class NetworkConfigIngestCommand extends BaseCommand
 
         $writer = new Xlsx($spreadsheet);
         $writer->save($targetPath);
+
+        return [
+            'success'        => true,
+            'kode_penyulang' => $kodePenyulang,
+            'nama_penyulang' => $feeder['nama_penyulang'],
+            'sections'       => $sectionNames,
+        ];
     }
 }

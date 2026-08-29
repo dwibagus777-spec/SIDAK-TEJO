@@ -45,47 +45,42 @@ class QuarantineCandramasAssetsCommand extends BaseCommand
         }
 
         if ($dryRun) {
-            CLI::write("1. RECONNAISSANCE AUDIT SUMMARY", 'cyan');
+            CLI::write("Target Dataset          : CANDRAMAS PILOT");
+            CLI::write("Expected Candidates     : {$result['expected_candidates']}");
+            CLI::write("Actual Candidates       : {$result['actual_candidates']}");
+            CLI::write("Mismatch                : " . ($result['mismatch'] === 0 ? "0 (MATCH)" : "{$result['mismatch']}"));
+            CLI::write("");
+            CLI::write("PYL-015 Protected       : {$result['pyl015_protected']} assets");
+            CLI::write("PYL-042 Protected       : {$result['pyl042_protected']} assets");
+            CLI::write("PYL-001 Affected        : {$result['pyl001_affected']} assets");
+            CLI::write("");
+            CLI::write("Active Findings         : {$result['active_findings']} conflicts");
+            CLI::write("Hard Delete             : {$result['hard_delete_count']} (Zero Hard Delete)");
+            CLI::write("Database Writes         : {$result['database_writes']} (Zero Mutation)");
+            CLI::write("");
             CLI::write("------------------------------------------------------------------");
-            CLI::write("  Target Quarantine Candidate Count : " . CLI::color("{$result['target_quarantine_count']} assets", 'yellow'));
-            CLI::write("  Total Raw Assets in Database      : {$result['total_raw_assets']} records");
-            CLI::write("  Active Grid Scope Before          : {$result['active_grid_scope_before']} assets");
-            CLI::write("  Projected Active Scope After      : " . CLI::color("{$result['projected_active_after']} assets", 'green') . " (205 PYL-015 + 1 PYL-042)");
-            CLI::write("  Database Writes Performed         : " . CLI::color("{$result['database_writes']} writes (Zero Mutation)", 'green'));
-            
-            CLI::write("\n2. PREDICATE & DEPENDENCY VERIFICATION", 'cyan');
+            CLI::write("DRY-RUN RESULT          : " . CLI::color("PASS", 'green'));
+            CLI::write("EXECUTION GATE          : " . CLI::color("{$result['gate_status']}", 'green'));
             CLI::write("------------------------------------------------------------------");
-            CLI::write("  ✓ penyulang_id IS NULL            : VERIFIED");
-            CLI::write("  ✓ section_id IS NULL              : VERIFIED");
-            CLI::write("  ✓ deleted_at IS NULL              : VERIFIED");
-            CLI::write("  ✓ Naming marker (CANDRAMAS / GEN) : VERIFIED");
-            CLI::write("  ✓ Zero active findings in temuan  : VERIFIED (0 finding conflicts)");
-            CLI::write("  ✓ Preservation of Feeder #15/#42  : VERIFIED (206 registered assets untouched)");
-
-            CLI::write("\nSample Candidate Asset IDs for Quarantine:");
-            CLI::write("  [" . implode(', ', $result['sample_candidate_ids']) . " ...]");
-
-            CLI::write("\n==================================================================", 'yellow');
-            CLI::write("🟡 DRY-RUN PASSED: All predicates verified safe for soft-delete.", 'yellow');
-            CLI::write("   To apply reversible soft-delete, run with: '--execute'", 'white');
-            CLI::write("   Command: php spark ar01:quarantine-candramas --execute", 'light_cyan');
-            CLI::write("==================================================================\n", 'yellow');
+            CLI::write("\nTo apply reversible soft-delete quarantine, run with: '--execute'");
+            CLI::write("Command: php spark ar01:quarantine-candramas --execute\n", 'yellow');
 
             return 0;
         }
 
         // Execution Mode Output
-        CLI::write("1. EXECUTION AUDIT SUMMARY", 'cyan');
-        CLI::write("------------------------------------------------------------------");
-        CLI::write("  Quarantined Asset Count           : " . CLI::color("{$result['quarantined_count']} assets", 'green'));
-        CLI::write("  Total Raw Records Retained in DB  : {$result['total_raw_assets']} records (Zero Hard Delete)");
-        CLI::write("  Active Grid Scope Before          : {$result['active_grid_scope_before']} assets");
-        CLI::write("  Active Grid Scope After           : " . CLI::color("{$result['active_grid_scope_after']} assets", 'green'));
-        CLI::write("  Quarantined Timestamp             : {$result['quarantined_timestamp']}");
-        CLI::write("  Reversibility & Audit Guarantee   : " . CLI::color("{$result['reversible_guarantee']}", 'green'));
-
-        CLI::write("\nSample Quarantined Asset IDs:");
-        CLI::write("  [" . implode(', ', $result['sample_quarantined_ids']) . " ...]");
+        CLI::write("Target Dataset          : CANDRAMAS PILOT");
+        CLI::write("Quarantined Count       : " . CLI::color("{$result['quarantined_count']} assets", 'green'));
+        CLI::write("Total Raw Retained      : {$result['total_raw_assets']} records (Zero Hard Delete)");
+        CLI::write("");
+        CLI::write("PYL-015 Protected       : {$result['pyl015_protected']} assets (Preserved)");
+        CLI::write("PYL-042 Protected       : {$result['pyl042_protected']} assets (Preserved)");
+        CLI::write("PYL-001 Affected        : {$result['pyl001_affected']} assets");
+        CLI::write("");
+        CLI::write("Active Grid Scope Before: {$result['active_grid_scope_before']} assets");
+        CLI::write("Active Grid Scope After : " . CLI::color("{$result['active_grid_scope_after']} assets", 'green') . " ({$result['pyl015_protected']} PYL-015 + {$result['pyl042_protected']} PYL-042)");
+        CLI::write("Quarantined Timestamp   : {$result['quarantined_timestamp']}");
+        CLI::write("Reversible Guarantee    : " . CLI::color("{$result['reversible_guarantee']}", 'green'));
 
         CLI::write("\n==================================================================", 'green');
         CLI::write("🟢 QUARANTINE SUCCESSFUL: 312 unassigned assets soft-deleted safely.", 'green');

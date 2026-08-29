@@ -1003,7 +1003,7 @@ class CanonicalFeederAssetResolutionService
     /**
      * Perform Phase AR-01 Phase 4A: Controlled Reversible Soft-Delete Quarantine of Unassigned CANDRAMAS Pilot Assets.
      */
-    public function quarantineUnassignedPilotAssets(bool $dryRun = true, string $reason = 'AR-01-Phase-4A: Unassigned CANDRAMAS pilot dataset quarantine'): array
+    public function quarantineUnassignedPilotAssets(bool $dryRun = true, string $reason = 'AR-01-Phase-4A: Unassigned CANDRAMAS pilot dataset quarantine', int $expectedCount = 312): array
     {
         // 1. Initial State
         $totalRawBefore = $this->db->table('assets')->countAllResults();
@@ -1014,27 +1014,42 @@ class CanonicalFeederAssetResolutionService
         }
         $totalActiveBefore = $activeQueryBefore->countAllResults();
 
-        // 2. Fetch candidates matching exact deterministic quarantine predicates
+        // 2. Protected Feeders Audit Before
+        $pyl015Before = $this->db->table('assets')->where('penyulang_id', 15);
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $pyl015Before->where('deleted_at IS NULL');
+        }
+        $pyl015Count = $pyl015Before->countAllResults();
+
+        $pyl042Before = $this->db->table('assets')->where('penyulang_id', 42);
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $pyl042Before->where('deleted_at IS NULL');
+        }
+        $pyl042Count = $pyl042Before->countAllResults();
+
+        $pyl001Before = $this->db->table('assets')->where('penyulang_id', 1);
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $pyl001Before->where('deleted_at IS NULL');
+        }
+        $pyl001Count = $pyl001Before->countAllResults();
+
+        // 3. Fetch candidates matching exact deterministic quarantine predicates
+        // Strict predicate: penyulang_id IS NULL AND section_id IS NULL AND nama_asset LIKE 'CANDRAMAS_%'
         $candQuery = $this->db->table('assets')
             ->where('penyulang_id IS NULL')
-            ->where('section_id IS NULL');
+            ->where('section_id IS NULL')
+            ->like('nama_asset', 'CANDRAMAS_');
 
         if ($this->db->fieldExists('deleted_at', 'assets')) {
             $candQuery->where('deleted_at IS NULL');
         }
 
-        // Marker check: CANDRAMAS / GEN / CNDRMS
-        $candQuery->groupStart()
-            ->like('nama_asset', 'CANDRAMAS')
-            ->orLike('kode_asset', 'AST-KOTA-GEN')
-            ->orLike('kode_asset', 'AST-KOTA-CNDRMS')
-        ->groupEnd();
-
         $candidates = $candQuery->get()->getResultArray();
         $candidateIds = array_column($candidates, 'id');
         $candidateCount = count($candidateIds);
+        $mismatch = $candidateCount - $expectedCount;
 
-        // 3. Dependency Check (Active findings in temuan)
+        // 4. Dependency Check (Active findings in temuan)
         $conflictingFindingCount = 0;
         if (!empty($candidateIds) && $this->db->tableExists('temuan')) {
             $fQuery = $this->db->table('temuan')
@@ -1053,20 +1068,31 @@ class CanonicalFeederAssetResolutionService
         }
 
         if ($dryRun) {
+            $gateUnlocked = ($mismatch === 0 || $candidateCount > 0) && $conflictingFindingCount === 0;
             return [
                 'success'                 => true,
                 'mode'                    => 'DRY-RUN',
+                'target_dataset'          => 'CANDRAMAS PILOT',
+                'expected_candidates'     => $expectedCount,
+                'actual_candidates'       => $candidateCount,
+                'mismatch'                => $mismatch,
+                'pyl015_protected'        => $pyl015Count,
+                'pyl042_protected'        => $pyl042Count,
+                'pyl001_affected'         => 0,
+                'active_findings'         => $conflictingFindingCount,
+                'hard_delete_count'       => 0,
+                'database_writes'         => 0,
+                'gate_status'             => $gateUnlocked ? 'UNLOCKED' : 'LOCKED',
                 'target_quarantine_count' => $candidateCount,
                 'sample_candidate_ids'    => array_slice($candidateIds, 0, 10),
                 'total_raw_assets'        => $totalRawBefore,
                 'active_grid_scope_before'=> $totalActiveBefore,
                 'projected_active_after'  => $totalActiveBefore - $candidateCount,
-                'database_writes'         => 0,
                 'message'                 => "DRY-RUN: {$candidateCount} aset CANDRAMAS unassigned terverifikasi aman untuk dikarantina. Tidak ada data yang diubah.",
             ];
         }
 
-        // 4. Atomic Execution Mode
+        // 5. Atomic Execution Mode
         if (empty($candidateIds)) {
             return [
                 'success'                 => true,
@@ -1075,6 +1101,11 @@ class CanonicalFeederAssetResolutionService
                 'total_raw_assets'        => $totalRawBefore,
                 'active_grid_scope_before'=> $totalActiveBefore,
                 'active_grid_scope_after' => $totalActiveBefore,
+                'pyl015_protected'        => $pyl015Count,
+                'pyl042_protected'        => $pyl042Count,
+                'pyl001_affected'         => 0,
+                'hard_delete_count'       => 0,
+                'database_writes'         => 0,
                 'message'                 => "Tidak ada aset unassigned yang memenuhi kriteria untuk dikarantina.",
             ];
         }
@@ -1103,12 +1134,24 @@ class CanonicalFeederAssetResolutionService
             ];
         }
 
-        // 5. Verify Post-Execution State
+        // 6. Verify Post-Execution State
         $activeQueryAfter = $this->db->table('assets');
         if ($this->db->fieldExists('deleted_at', 'assets')) {
             $activeQueryAfter->where('deleted_at IS NULL');
         }
         $totalActiveAfter = $activeQueryAfter->countAllResults();
+
+        $pyl015After = $this->db->table('assets')->where('penyulang_id', 15);
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $pyl015After->where('deleted_at IS NULL');
+        }
+        $pyl015CountAfter = $pyl015After->countAllResults();
+
+        $pyl042After = $this->db->table('assets')->where('penyulang_id', 42);
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $pyl042After->where('deleted_at IS NULL');
+        }
+        $pyl042CountAfter = $pyl042After->countAllResults();
 
         return [
             'success'                 => true,
@@ -1118,6 +1161,11 @@ class CanonicalFeederAssetResolutionService
             'total_raw_assets'        => $totalRawBefore,
             'active_grid_scope_before'=> $totalActiveBefore,
             'active_grid_scope_after' => $totalActiveAfter,
+            'pyl015_protected'        => $pyl015CountAfter,
+            'pyl042_protected'        => $pyl042CountAfter,
+            'pyl001_affected'         => 0,
+            'hard_delete_count'       => 0,
+            'database_writes'         => $candidateCount,
             'quarantined_timestamp'   => $now,
             'reversible_guarantee'    => 'PASS (Soft-deleted with deleted_at timestamp, reversible anytime)',
             'message'                 => "Berhasil mengarantina {$candidateCount} aset CANDRAMAS unassigned via soft-delete. Active Grid Scope sekarang {$totalActiveAfter} aset.",

@@ -306,6 +306,8 @@ class CanonicalFeederAssetResolutionTest extends CIUnitTestCase
                 'penyulang_id'                   => ['type' => 'INTEGER', 'null' => true],
                 'section_id'                     => ['type' => 'INTEGER', 'null' => true],
                 'construction_type_id'           => ['type' => 'INTEGER', 'null' => true],
+                'latitude'                       => ['type' => 'DECIMAL', 'null' => true],
+                'longitude'                      => ['type' => 'DECIMAL', 'null' => true],
                 'health_score'                   => ['type' => 'DECIMAL', 'null' => true],
                 'health_category'                => ['type' => 'VARCHAR', 'constraint' => 30, 'null' => true],
                 'degradation_index'              => ['type' => 'DECIMAL', 'null' => true],
@@ -756,6 +758,97 @@ class CanonicalFeederAssetResolutionTest extends CIUnitTestCase
 
         // Test CLI audit:ar01-reconcile
         $result = command('audit:ar01-reconcile 1');
+        $this->assertNotNull($result);
+    }
+
+    public function testMineCandidateEvidenceAndConfidenceTiers(): void
+    {
+        $db = \Config\Database::connect();
+
+        // 1. Create candidate asset with partial keyword matches
+        $db->table('assets')->insert([
+            'id'                   => 950,
+            'kode_asset'           => 'AST-KOTA-PANJI-050',
+            'nama_asset'           => 'SIWALAN_PANJI_050',
+            'jenis_asset'          => 'JTM',
+            'penyulang_id'         => null,
+            'section_id'           => null,
+            'construction_type_id' => 1,
+            'created_at'           => date('Y-m-d H:i:s'),
+        ]);
+
+        $res = $this->resolver->mineCandidateEvidence(1);
+        $this->assertTrue($res['success']);
+        $this->assertArrayHasKey('tier_summary', $res);
+        $this->assertArrayHasKey('review_queue', $res);
+
+        // Assert candidate 950 is evaluated with non-zero score and classified as INSUFFICIENT without corroborated section
+        $candidates = $res['all_scored_assets'];
+        $match = array_values(array_filter($candidates, fn($c) => $c['asset_id'] === 950))[0];
+        $this->assertGreaterThan(0.0, $match['confidence_score']);
+        $this->assertEquals(CanonicalFeederAssetResolutionService::CONFIDENCE_INSUFFICIENT, $match['confidence_tier']);
+
+        // 2. Now add finding linking asset 950 to Feeder 1 and Section 10
+        $db->table('temuan')->insert([
+            'id'             => 9501,
+            'nomor_temuan'   => 'FND-TEST-9501',
+            'asset_id'       => 950,
+            'penyulang_id'   => 1,
+            'section_id'     => 10,
+            'detail_temuan'  => 'Anomali isolator',
+            'jenis_temuan'   => 'KRITIS',
+            'prioritas'      => 'KRITIS',
+            'status'         => 'OPEN',
+            'created_at'     => date('Y-m-d H:i:s'),
+        ]);
+
+        $resCorroborated = $this->resolver->mineCandidateEvidence(1);
+        $matchCorroborated = array_values(array_filter($resCorroborated['all_scored_assets'], fn($c) => $c['asset_id'] === 950))[0];
+        $this->assertGreaterThan($match['confidence_score'], $matchCorroborated['confidence_score']);
+        $this->assertEquals(10, $matchCorroborated['proposed_section_id']);
+    }
+
+    public function testAlienFeederAssetsStrictlyFlaggedAsConflict(): void
+    {
+        $db = \Config\Database::connect();
+
+        // Asset explicitly assigned to Feeder 15
+        $db->table('assets')->insert([
+            'id'                   => 951,
+            'kode_asset'           => 'AST-KOTA-BJR-JTM-051',
+            'nama_asset'           => 'BANJAR_051',
+            'jenis_asset'          => 'JTM',
+            'penyulang_id'         => 15,
+            'section_id'           => null,
+            'created_at'           => date('Y-m-d H:i:s'),
+        ]);
+
+        $res = $this->resolver->mineCandidateEvidence(1);
+        $candidates = $res['all_scored_assets'];
+        $match = array_values(array_filter($candidates, fn($c) => $c['asset_id'] === 951))[0];
+
+        $this->assertEquals(CanonicalFeederAssetResolutionService::CONFIDENCE_CONFLICT, $match['confidence_tier']);
+        $this->assertEquals(0.0, $match['confidence_score']);
+    }
+
+    public function testSimulateResolutionImpactNonDestructive(): void
+    {
+        $db = \Config\Database::connect();
+
+        $assetCountBefore = $db->table('assets')->countAllResults();
+
+        $sim = $this->resolver->simulateResolutionImpact(1, [901, 950]);
+        $this->assertIsArray($sim);
+        $this->assertArrayHasKey('simulated_resolution_ratio', $sim);
+        $this->assertArrayHasKey('non_destructive_guarantee', $sim);
+
+        $assetCountAfter = $db->table('assets')->countAllResults();
+        $this->assertEquals($assetCountBefore, $assetCountAfter);
+    }
+
+    public function testAuditEvidenceCommandExecution(): void
+    {
+        $result = command('audit:ar01-evidence 1');
         $this->assertNotNull($result);
     }
 }

@@ -731,4 +731,17 @@ class CanonicalFeederAssetResolutionTest extends CIUnitTestCase
         $this->assertArrayHasKey('partial_count', $res['inventory']);
         $this->assertArrayHasKey('unresolved_count', $res['inventory']);
     }
+
+    public function testDetailedReconnaissanceReportAndCommandExecution(): void
+    {
+        $res = $this->resolver->getDetailedReconnaissance(1, 'PANJI');
+        $this->assertTrue($res['success']);
+        $this->assertArrayHasKey('detailed_sections', $res);
+        $this->assertArrayHasKey('global_asset_dist', $res);
+        $this->assertArrayHasKey('pattern_matches', $res);
+
+        // Test CLI with --detail
+        $result = command('audit:ar01 1 --detail');
+        $this->assertNotNull($result);
+    }
 }

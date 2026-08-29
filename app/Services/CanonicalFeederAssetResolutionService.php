@@ -78,7 +78,14 @@ class CanonicalFeederAssetResolutionService
                     'section'       => $s,
                     'configuration' => $activeCfg,
                 ];
-                if (!empty($activeCfg['sequence_order']) && $activeCfg['sequence_order'] > 0) {
+                $hasValidSequence = false;
+                foreach ($activeCfg['conductors'] as $c) {
+                    if (!empty($c['sequence_order']) && (int)$c['sequence_order'] > 0) {
+                        $hasValidSequence = true;
+                        break;
+                    }
+                }
+                if ($hasValidSequence) {
                     $validSequenceCount++;
                 }
             } else {
@@ -336,5 +343,156 @@ class CanonicalFeederAssetResolutionService
             'flags'            => $flags,
             'provenance'       => 'AR-01 Canonical Chain Complete (ULP -> Feeder -> Active Section -> Asset -> BOM -> CR-06G)',
         ];
+    }
+
+    /**
+     * Perform deep-dive read-only diagnostics across Sections, Master Assets, and Potential Topological Linkages.
+     */
+    public function getDetailedReconnaissance(int $penyulangId, ?string $customPattern = null): array
+    {
+        // 1. Basic analysis
+        $baseAnalysis = $this->analyzeFeederAssetResolution($penyulangId);
+        if (!$baseAnalysis['success']) {
+            return $baseAnalysis;
+        }
+
+        $feeder = $baseAnalysis['feeder'];
+
+        // 2. Exhaustive Section Breakdown
+        $secQuery = $this->db->table('sections')->where('penyulang_id', $penyulangId);
+        if ($this->db->fieldExists('deleted_at', 'sections')) {
+            $secQuery->where('deleted_at IS NULL');
+        }
+        $sections = $secQuery->get()->getResultArray();
+
+        $sectionDetails = [];
+        foreach ($sections as $s) {
+            $secId = (int)$s['id'];
+            $activeCfg = $this->configService->getActiveConfiguration($secId);
+
+            $directAssetCount = $this->db->table('assets')->where('section_id', $secId);
+            if ($this->db->fieldExists('deleted_at', 'assets')) {
+                $directAssetCount->where('deleted_at IS NULL');
+            }
+            $directAssetCount = $directAssetCount->countAllResults();
+
+            $directTemuanCount = 0;
+            if ($this->db->tableExists('temuan')) {
+                $tQuery = $this->db->table('temuan')->where('section_id', $secId);
+                if ($this->db->fieldExists('deleted_at', 'temuan')) {
+                    $tQuery->where('deleted_at IS NULL');
+                }
+                $directTemuanCount = $tQuery->countAllResults();
+            }
+
+            $totalLengthM = 0.0;
+            $conductorsList = [];
+            $accessoriesList = [];
+
+            if ($activeCfg) {
+                if (!empty($activeCfg['conductors'])) {
+                    foreach ($activeCfg['conductors'] as $cond) {
+                        $len = (float)($cond['length_m'] ?? 0.0);
+                        $totalLengthM += $len;
+                        $conductorsList[] = [
+                            'conductor_id'   => (int)$cond['id'],
+                            'material_code'  => $cond['material_code'] ?? 'UNKNOWN',
+                            'nama_material'  => $cond['nama_material'] ?? 'Unknown Conductor',
+                            'sequence_order' => (int)($cond['sequence_order'] ?? 0),
+                            'segment_label'  => $cond['segment_label'] ?? '-',
+                            'length_m'       => $len,
+                        ];
+                    }
+                }
+                if (!empty($activeCfg['accessories'])) {
+                    foreach ($activeCfg['accessories'] as $acc) {
+                        $accessoriesList[] = [
+                            'accessory_type' => $acc['accessory_type'] ?? 'UNKNOWN',
+                            'quantity'       => (int)($acc['quantity'] ?? 1),
+                            'condition'      => $acc['condition_status'] ?? 'GOOD',
+                        ];
+                    }
+                }
+            }
+
+            $sectionDetails[] = [
+                'id'                   => $secId,
+                'nama_section'         => $s['nama_section'] ?? ($s['section_name'] ?? 'Unnamed Section'),
+                'kode_section'         => $s['kode_section'] ?? ($s['section_code'] ?? '-'),
+                'is_active_cr06f'      => $activeCfg !== null && !empty($activeCfg['conductors']),
+                'config_id'            => $activeCfg['id'] ?? null,
+                'version_number'       => $activeCfg['version_number'] ?? null,
+                'verification_status'  => $activeCfg['verification_status'] ?? 'UNCONFIGURED',
+                'conductors_count'     => count($conductorsList),
+                'total_length_km'      => round($totalLengthM / 1000.0, 3),
+                'conductors'           => $conductorsList,
+                'accessories_count'    => count($accessoriesList),
+                'accessories'          => $accessoriesList,
+                'linked_assets_count'  => $directAssetCount,
+                'linked_temuan_count'  => $directTemuanCount,
+            ];
+        }
+
+        // 3. Global Asset Distribution Breakdown (517 Baseline)
+        $assetTable = 'assets';
+        $globalFeederDist = $this->db->table($assetTable)
+            ->select('penyulang_id, COUNT(*) as count')
+            ->groupBy('penyulang_id')
+            ->get()
+            ->getResultArray();
+
+        $globalJenisDist = $this->db->table($assetTable)
+            ->select('jenis_asset, COUNT(*) as count')
+            ->groupBy('jenis_asset')
+            ->get()
+            ->getResultArray();
+
+        $globalCtypeDist = $this->db->table($assetTable)
+            ->select('construction_type_id, COUNT(*) as count')
+            ->groupBy('construction_type_id')
+            ->get()
+            ->getResultArray();
+
+        // Sample 5 Global Assets
+        $sampleAssets = $this->db->table($assetTable)
+            ->limit(10)
+            ->get()
+            ->getResultArray();
+
+        // 4. Pattern Search for Potential Linkage Evidence
+        $searchTerms = ['PANJI', 'SIWALAN', 'PYL-001', 'SWP', 'PBD', 'GI', 'LBSM', 'SPBU'];
+        if (!empty($customPattern)) {
+            $searchTerms[] = strtoupper(trim($customPattern));
+        }
+        $searchTerms = array_unique($searchTerms);
+
+        $patternMatches = [];
+        foreach ($searchTerms as $term) {
+            $pQuery = $this->db->table($assetTable)
+                ->groupStart()
+                    ->like('kode_asset', $term)
+                    ->orLike('nama_asset', $term)
+                    ->orLike('jenis_asset', $term)
+                ->groupEnd();
+
+            $matches = $pQuery->get()->getResultArray();
+            if (!empty($matches)) {
+                $patternMatches[$term] = [
+                    'count'   => count($matches),
+                    'samples' => array_slice($matches, 0, 5),
+                ];
+            }
+        }
+
+        return array_merge($baseAnalysis, [
+            'detailed_sections'      => $sectionDetails,
+            'global_asset_dist'      => [
+                'by_feeder'            => $globalFeederDist,
+                'by_jenis'             => $globalJenisDist,
+                'by_construction_type' => $globalCtypeDist,
+                'sample_assets'        => $sampleAssets,
+            ],
+            'pattern_matches'        => $patternMatches,
+        ]);
     }
 }

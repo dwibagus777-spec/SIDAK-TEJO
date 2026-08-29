@@ -243,29 +243,48 @@
     </div>
 </div>
 
-<!-- Upload Modal -->
+<!-- Upload Modal with Pre-Flight Preview & Atomic Commit -->
 <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="uploadModalLabel"><i class="fa-solid fa-file-arrow-up me-2 text-primary"></i>Upload NETWORK_CONFIGURATION.xlsx</h5>
+                <h5 class="modal-title fw-bold" id="uploadModalLabel"><i class="fa-solid fa-file-arrow-up me-2 text-primary"></i>Upload NETWORK_CONFIGURATION (CR-06F Contract v1.1.1)</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="modal-body">
-                    <p class="small text-muted">
-                        Pastikan file Excel mengikuti spesifikasi <strong>CR-06F Contract v1.1.1</strong> dengan 3 sheet wajib (<code>SECTION_CONFIGURATIONS</code>, <code>CONDUCTOR_SEGMENTS</code>, <code>NETWORK_ACCESSORIES</code>).
+                    <p class="small text-muted mb-3">
+                        Format resmi <strong>CR-06F Contract v1.1.1</strong> wajib memuat 3 sheet canonical:
+                        <code>SECTION_CONFIGURATIONS</code>, <code>CONDUCTOR_SEGMENTS</code>, dan <code>NETWORK_ACCESSORIES</code>.
                     </p>
+
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Pilih File Excel (.xlsx)</label>
                         <input type="file" name="file_excel" id="file_excel" class="form-control form-control-sm" accept=".xlsx,.xls" required>
                     </div>
-                    <div id="uploadResult" class="d-none"></div>
+
+                    <!-- Pre-Flight Preview Container -->
+                    <div id="previewContainer" class="d-none mt-3">
+                        <div class="card bg-light border-0 p-3">
+                            <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clipboard-check me-2 text-success"></i>Pre-Flight Batch Preview (Dry-Run)</h6>
+                            <div class="row g-2 small" id="previewStats">
+                                <!-- Dynamically populated -->
+                            </div>
+                            <div id="previewErrors" class="mt-2 d-none">
+                                <!-- Error list if any -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="uploadResult" class="d-none mt-3"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
-                    <button type="submit" id="btnUploadSubmit" class="btn btn-primary btn-sm fw-bold">
-                        <i class="fa-solid fa-play me-1"></i> Mulai Validasi & Ingestion
+                    <button type="button" id="btnPreflightPreview" class="btn btn-outline-primary btn-sm fw-bold">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i> Pre-Flight Preview (Dry-Run)
+                    </button>
+                    <button type="submit" id="btnUploadSubmit" class="btn btn-success btn-sm fw-bold" disabled>
+                        <i class="fa-solid fa-bolt me-1"></i> Atomic Activation (Commit)
                     </button>
                 </div>
             </form>
@@ -275,14 +294,99 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+const fileInput = document.getElementById('file_excel');
+const btnPreview = document.getElementById('btnPreflightPreview');
+const btnSubmit = document.getElementById('btnUploadSubmit');
+const previewContainer = document.getElementById('previewContainer');
+const previewStats = document.getElementById('previewStats');
+const previewErrors = document.getElementById('previewErrors');
+const resDiv = document.getElementById('uploadResult');
+
+fileInput.addEventListener('change', function() {
+    btnSubmit.disabled = true;
+    previewContainer.classList.add('d-none');
+    resDiv.classList.add('d-none');
+});
+
+// 1. Pre-Flight Preview (Dry-Run)
+btnPreview.addEventListener('click', async function() {
+    if (!fileInput.files || !fileInput.files[0]) {
+        alert('Silakan pilih file Excel terlebih dahulu.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file_excel', fileInput.files[0]);
+
+    btnPreview.disabled = true;
+    btnPreview.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Memvalidasi...';
+    resDiv.classList.add('d-none');
+    previewContainer.classList.add('d-none');
+    previewErrors.classList.add('d-none');
+
+    try {
+        const response = await fetch('<?= site_url('network-configuration/preview') ?>', {
+            method: 'POST',
+            body: formData
+        });
+        const res = await response.json();
+
+        previewContainer.classList.remove('d-none');
+        if (res.success && res.summary) {
+            const s = res.summary;
+            let accText = '';
+            for (const [k, v] of Object.entries(s.accessories_breakdown || {})) {
+                accText += `<span class="badge bg-secondary me-1">${k}: ${v}</span>`;
+            }
+            if (!accText) accText = '<span class="text-muted">0 item</span>';
+
+            previewStats.innerHTML = `
+                <div class="col-md-6">
+                    <div class="p-2 border rounded bg-white">
+                        <div><strong>Total Section:</strong> ${s.total_sections_found} (${s.valid_sections_count} Valid, ${s.rejected_sections_count} Gagal)</div>
+                        <div><strong>Konduktor:</strong> ${s.total_conductor_segments} Segmen (${(s.total_conductor_length_m / 1000).toFixed(2)} kms / ${s.total_conductor_length_m.toLocaleString()} m)</div>
+                        <div><strong>Aksesoris:</strong> ${accText}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-2 border rounded bg-white">
+                        <div><strong>Sequence 1..N:</strong> <span class="badge ${s.sequence_violations === 0 ? 'bg-success' : 'bg-danger'}">${s.sequence_violations === 0 ? 'PASS' : s.sequence_violations + ' Violations'}</span></div>
+                        <div><strong>Diskontinuitas Topologi:</strong> <span class="badge ${s.topology_discontinuity === 0 ? 'bg-success' : 'bg-danger'}">${s.topology_discontinuity === 0 ? '0 Discontinuity' : s.topology_discontinuity}</span></div>
+                        <div><strong>Domain Invariant IX:</strong> <span class="badge ${s.domain_invariant_ix === 'PASS' ? 'bg-success' : 'bg-danger'}">${s.domain_invariant_ix}</span></div>
+                    </div>
+                </div>
+            `;
+            btnSubmit.disabled = false;
+        } else {
+            previewStats.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger py-2 mb-0">
+                        <strong><i class="fa-solid fa-triangle-exclamation me-1"></i> Validasi Pre-Flight Gagal (Fail-Closed):</strong>
+                    </div>
+                </div>
+            `;
+            let errHtml = '<ul class="text-danger small mb-0 ps-3 mt-2">';
+            (res.errors || [res.message || 'Validasi gagal']).forEach(e => errHtml += `<li>${e}</li>`);
+            errHtml += '</ul>';
+            previewErrors.innerHTML = errHtml;
+            previewErrors.classList.remove('d-none');
+            btnSubmit.disabled = true;
+        }
+    } catch (err) {
+        alert('Gagal menghubungi server untuk preview: ' + err.message);
+    } finally {
+        btnPreview.disabled = false;
+        btnPreview.innerHTML = '<i class="fa-solid fa-magnifying-glass me-1"></i> Pre-Flight Preview (Dry-Run)';
+    }
+});
+
+// 2. Atomic Activation (Commit)
 document.getElementById('uploadForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const btn = document.getElementById('btnUploadSubmit');
-    const resDiv = document.getElementById('uploadResult');
     const formData = new FormData(this);
 
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...';
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Mengaktifkan...';
     resDiv.className = 'd-none';
 
     try {
@@ -295,7 +399,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         resDiv.classList.remove('d-none');
         if (res.success) {
             resDiv.className = 'alert alert-success mt-3 small';
-            resDiv.innerHTML = `<strong><i class="fa-solid fa-circle-check me-1"></i> Berhasil!</strong> ${res.committed_sections} section configuration berhasil diaktifkan.`;
+            resDiv.innerHTML = `<strong><i class="fa-solid fa-circle-check me-1"></i> Berhasil!</strong> ${res.committed_sections} section configuration berhasil diaktifkan secara atomik.`;
             setTimeout(() => window.location.reload(), 1500);
         } else {
             resDiv.className = 'alert alert-danger mt-3 small';
@@ -308,14 +412,15 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
                 errMsg += res.message || 'Terjadi kesalahan validasi.';
             }
             resDiv.innerHTML = errMsg;
+            btnSubmit.disabled = false;
         }
     } catch (err) {
         resDiv.classList.remove('d-none');
         resDiv.className = 'alert alert-danger mt-3 small';
         resDiv.innerHTML = '<strong>Error koneksi server:</strong> ' + err.message;
+        btnSubmit.disabled = false;
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-play me-1"></i> Mulai Validasi & Ingestion';
+        btnSubmit.innerHTML = '<i class="fa-solid fa-bolt me-1"></i> Atomic Activation (Commit)';
     }
 });
 </script>

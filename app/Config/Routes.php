@@ -132,6 +132,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Network Configuration Operational Activation (Phase CR-06F)
     $routes->get('network-configuration', 'NetworkConfigurationController::index');
     $routes->post('network-configuration/upload', 'NetworkConfigurationController::upload');
+    $routes->post('network-configuration/preview', 'NetworkConfigurationController::preview');
     $routes->get('network-configuration/template', 'NetworkConfigurationController::downloadTemplate');
 
     // Field Inspection & Living Asset Condition (Phase CR-06)

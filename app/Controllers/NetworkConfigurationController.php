@@ -90,12 +90,47 @@ class NetworkConfigurationController extends BaseController
         $userId   = session()->get('user_id') ? (int)session()->get('user_id') : 1;
 
         try {
-            $result = $this->ingestService->ingestFromExcel($tempPath, $userId);
+            $dryRun = (bool)($this->request->getPost('dry_run') ?? false);
+            $result = $this->ingestService->ingestFromExcel($tempPath, $userId, $dryRun);
             return $this->response->setJSON($result);
         } catch (\Throwable $e) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Terjadi kesalahan sistem saat proses ingestion: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Handle Pre-Flight Validation Preview (Dry-Run).
+     */
+    public function preview(): ResponseInterface
+    {
+        $file = $this->request->getFile('file_excel');
+        if (!$file || !$file->isValid()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'File Excel tidak valid atau tidak ditemukan.',
+            ]);
+        }
+
+        $allowedExts = ['xlsx', 'xls'];
+        if (!in_array($file->getClientExtension(), $allowedExts, true)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Format file harus berupa .xlsx atau .xls',
+            ]);
+        }
+
+        $tempPath = $file->getTempName();
+
+        try {
+            $result = $this->ingestService->previewFromExcel($tempPath);
+            return $this->response->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem saat pre-flight preview: ' . $e->getMessage(),
             ]);
         }
     }

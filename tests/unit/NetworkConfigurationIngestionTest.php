@@ -751,4 +751,44 @@ final class NetworkConfigurationIngestionTest extends CIUnitTestCase
         $this->assertEquals(0.00, $metrics['coverage_pct']);
         $this->assertEquals('HONEST_EMPTY_STATE', $metrics['status']);
     }
+
+    public function testPreflightPreviewGeneratesAccurateSummaryWithoutDbMutation(): void
+    {
+        $payload = $this->getValidTestPayload();
+        $preview = $this->ingestService->generatePreflightPreview($payload, 'TEST_PILOT_PREVIEW');
+
+        $this->assertTrue($preview['success']);
+        $this->assertTrue($preview['dry_run']);
+        $this->assertEquals(1, $preview['summary']['total_sections_found']);
+        $this->assertEquals(1, $preview['summary']['valid_sections_count']);
+        $this->assertEquals(0, $preview['summary']['rejected_sections_count']);
+        $this->assertEquals(2, $preview['summary']['total_conductor_segments']);
+        $this->assertEquals(700.0, $preview['summary']['total_conductor_length_m']);
+        $this->assertEquals('PASS', $preview['summary']['domain_invariant_ix']);
+        $this->assertEquals(0, $preview['summary']['sequence_violations']);
+        $this->assertEquals(0, $preview['summary']['topology_discontinuity']);
+
+        // Verify zero database mutation occurred
+        $db = \Config\Database::connect();
+        $configsCount = $db->table('network_section_configurations')->countAllResults();
+        $this->assertEquals(0, $configsCount);
+    }
+
+    public function testPreflightPreviewDetectsViolationsWithoutMutatingDb(): void
+    {
+        $payload = $this->getValidTestPayload();
+        // Introduce sequence violation (Seq 1 and Seq 3, missing Seq 2)
+        $payload['CONDUCTOR_SEGMENTS'][1]['SEQUENCE_ORDER'] = 3;
+
+        $preview = $this->ingestService->generatePreflightPreview($payload, 'TEST_INVALID_PREVIEW');
+
+        $this->assertFalse($preview['success']);
+        $this->assertGreaterThan(0, $preview['summary']['sequence_violations']);
+        $this->assertNotEmpty($preview['errors']);
+
+        // Verify zero database mutation occurred
+        $db = \Config\Database::connect();
+        $configsCount = $db->table('network_section_configurations')->countAllResults();
+        $this->assertEquals(0, $configsCount);
+    }
 }

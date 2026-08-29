@@ -81,7 +81,7 @@ class NetworkConfigurationIngestionService
     /**
      * Ingest from structured Excel Spreadsheet file.
      */
-    public function ingestFromExcel(string $filePath, ?int $uploadedBy = null): array
+    public function ingestFromExcel(string $filePath, ?int $uploadedBy = null, bool $dryRun = false): array
     {
         if (!is_file($filePath)) {
             return [
@@ -105,7 +105,102 @@ class NetworkConfigurationIngestionService
             'NETWORK_ACCESSORIES'    => $this->parseWorksheetToAssociative($spreadsheet, 'NETWORK_ACCESSORIES'),
         ];
 
+        if ($dryRun) {
+            return $this->generatePreflightPreview($sheets, basename($filePath));
+        }
+
         return $this->processStructuredPayload($sheets, basename($filePath), 'EXCEL', $uploadedBy);
+    }
+
+    /**
+     * Generate Pre-Flight Preview without database mutation (Dry-Run Mode).
+     */
+    public function previewFromExcel(string $filePath): array
+    {
+        return $this->ingestFromExcel($filePath, null, true);
+    }
+
+    /**
+     * Calculate comprehensive Batch Preview statistics without mutating database.
+     */
+    public function generatePreflightPreview(array $payload, string $sourceName = 'MANUAL_PAYLOAD'): array
+    {
+        $validationResult = $this->validateAndResolvePayload($payload, 0);
+        $resolvedSections = $validationResult['resolved_sections'];
+
+        $totalSectionsFound = count($payload['SECTION_CONFIGURATIONS'] ?? []);
+        $validSectionsCount = count($resolvedSections);
+        $rejectedCount      = $totalSectionsFound - $validSectionsCount;
+
+        $totalSegments       = 0;
+        $totalLengthM        = 0.0;
+        $accessoriesSummary  = [];
+        $sectionDetails      = [];
+
+        foreach ($resolvedSections as $sRef => $secData) {
+            $condCount = count($secData['conductors']);
+            $secLen    = array_sum(array_column($secData['conductors'], 'length_m'));
+            $accCount  = count($secData['accessories']);
+
+            $totalSegments += $condCount;
+            $totalLengthM  += $secLen;
+
+            foreach ($secData['accessories'] as $acc) {
+                $type = $acc['accessory_type'] ?? 'OTHER';
+                $accessoriesSummary[$type] = ($accessoriesSummary[$type] ?? 0) + (int)($acc['quantity'] ?? 1);
+            }
+
+            $sectionDetails[] = [
+                'section_ref'                  => $sRef,
+                'nama_section'                 => $secData['nama_section'],
+                'import_action'                => $secData['import_action'],
+                'conductor_segments_count'     => $condCount,
+                'total_length_m'               => $secLen,
+                'accessories_count'            => $accCount,
+                'topology_connectivity_status' => $secData['topology_connectivity_status'],
+            ];
+        }
+
+        // Count specific violation categories from errors
+        $seqViolations  = 0;
+        $topDiscont     = 0;
+        $invalidMats    = 0;
+        $domainIxViol   = 0;
+
+        foreach ($validationResult['errors'] as $err) {
+            if (str_contains($err, 'Gate F3A') || str_contains($err, 'urutan segmen') || str_contains($err, 'SEQUENCE_ORDER')) {
+                $seqViolations++;
+            }
+            if (str_contains($err, 'Diskontinuitas topologi')) {
+                $topDiscont++;
+            }
+            if (str_contains($err, 'tidak dikenali di Master Material')) {
+                $invalidMats++;
+            }
+            if (str_contains($err, 'Domain Invariant IX')) {
+                $domainIxViol++;
+            }
+        }
+
+        return [
+            'success'  => $validationResult['valid'],
+            'dry_run'  => true,
+            'source'   => $sourceName,
+            'summary'  => [
+                'total_sections_found'    => $totalSectionsFound,
+                'valid_sections_count'    => $validSectionsCount,
+                'rejected_sections_count' => $rejectedCount,
+                'total_conductor_segments'=> $totalSegments,
+                'total_conductor_length_m'=> $totalLengthM,
+                'accessories_breakdown'   => $accessoriesSummary,
+                'sequence_violations'     => $seqViolations,
+                'topology_discontinuity'  => $topDiscont,
+                'invalid_materials'       => $invalidMats,
+                'domain_invariant_ix'     => $domainIxViol === 0 ? 'PASS' : 'VIOLATION',
+            ],
+            'sections_preview' => $sectionDetails,
+            'errors'           => $validationResult['errors'],
+        ];
     }
 
     /**

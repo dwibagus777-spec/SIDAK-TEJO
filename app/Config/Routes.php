@@ -93,6 +93,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     // Executive Intelligence & Decision Analytics (Phase CC-04 & CC-05)
     $routes->get('executive-intelligence', 'ExecutiveIntelligenceController::index');
+    $routes->get('executive-intelligence/(:num)', 'ExecutiveIntelligenceController::index/$1');
+    $routes->get('api/executive-intelligence/feeder/(:num)', 'ExecutiveIntelligenceController::apiFeeder/$1');
+    $routes->post('api/executive-intelligence/approve-action', 'ExecutiveIntelligenceController::approveAction');
+    $routes->post('api/executive-intelligence/verify-outcome', 'ExecutiveIntelligenceController::verifyOutcome');
     $routes->get('executive-intelligence/api/summary', 'ExecutiveIntelligenceController::apiSummary');
     $routes->get('executive-intelligence/export', 'ExecutiveIntelligenceController::exportSummary');
     $routes->get('executive-intelligence/export/evidence-pack', 'EvidenceExportController::downloadPack');

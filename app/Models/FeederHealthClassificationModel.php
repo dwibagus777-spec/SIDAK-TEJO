@@ -17,19 +17,37 @@ class FeederHealthClassificationModel extends Model
         'calculation_policy_version',
         'period_month',
         'health_score',
-        'health_classification', // SEMPURNA, SAKIT, KRONIS, KRITIS
+        'health_classification', // SEMPURNA, WASPADA, PERHATIAN, KRITIS, UNRESOLVED
+        'fhi_status',            // RESOLVED, PARTIAL, UNRESOLVED
+        'data_completeness_ratio',
+        'physical_coverage_ratio',
+        'asset_health_score',
+        'finding_severity_score',
+        'reliability_score',
+        'recurrence_score',
+        'primary_driver',
+        'primary_driver_score',
+        'assigned_unit',
+        'priority_level',
         'interruption_count',
         'interruption_duration_minutes',
         'critical_findings_count',
         'recurring_findings_count',
         'bom_degradation_score',
         'overload_events_count',
+        'fingerprint_json',
         'explanation_json',
+        'advisory_narrative',
         'calculated_at',
+        'created_at',
+        'updated_at',
     ];
 
     protected bool $allowEmptyInserts = false;
 
     // Dates
-    protected $useTimestamps = false;
+    protected $useTimestamps = true;
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
 }

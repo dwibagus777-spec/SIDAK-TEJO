@@ -54,12 +54,12 @@ class NetworkConfigIngestCommand extends BaseCommand
 
         // Mode 2: Dynamic Master-Aware Pilot Generation
         if ($isPilot && empty($filePath)) {
-            $filePath = WRITEPATH . 'pilot_candramas_v1.1.xlsx';
-            $genResult = $this->generatePilotExcelFromMaster($db, $filePath, $feederOpt);
+            $genResult = $this->generatePilotExcelFromMaster($db, WRITEPATH, $feederOpt);
             if (!$genResult['success']) {
                 CLI::write("❌ Failed to generate pilot from master: " . $genResult['error'], "red");
                 return 1;
             }
+            $filePath = $genResult['file_path'];
             CLI::write("📄 Generated Pilot Excel File: {$filePath}", "cyan");
             CLI::write("   Feeder Selected: [{$genResult['kode_penyulang']}] {$genResult['nama_penyulang']}", "white");
             CLI::write("   Sections Mapped: " . implode(', ', $genResult['sections']), "white");
@@ -354,15 +354,23 @@ class NetworkConfigIngestCommand extends BaseCommand
 
         $spreadsheet->setActiveSheetIndex(0);
 
-        if (!is_dir(dirname($targetPath))) {
-            @mkdir(dirname($targetPath), 0777, true);
+        // Construct canonical provenance filename: pilot_<FEEDER_CODE>_<FEEDER_SLUG>_v1.1.xlsx
+        $feederSlug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $feeder['nama_penyulang']), '-'));
+        $feederCode = !empty($feeder['kode_penyulang']) ? preg_replace('/[^A-Za-z0-9-]+/', '-', $feeder['kode_penyulang']) : 'FEEDER';
+        $finalFilename = "pilot_{$feederCode}_{$feederSlug}_v1.1.xlsx";
+        
+        $finalPath = is_dir($targetPath) ? rtrim($targetPath, '/\\') . DIRECTORY_SEPARATOR . $finalFilename : $targetPath;
+
+        if (!is_dir(dirname($finalPath))) {
+            @mkdir(dirname($finalPath), 0777, true);
         }
 
         $writer = new Xlsx($spreadsheet);
-        $writer->save($targetPath);
+        $writer->save($finalPath);
 
         return [
             'success'        => true,
+            'file_path'      => $finalPath,
             'kode_penyulang' => $kodePenyulang,
             'nama_penyulang' => $feeder['nama_penyulang'],
             'sections'       => $sectionNames,

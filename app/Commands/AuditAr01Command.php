@@ -126,9 +126,9 @@ class AuditAr01Command extends BaseCommand
 
         // 6. DETAILED RECONNAISSANCE MODE
         if ($detail && isset($result['detailed_sections'])) {
-            CLI::write("\n==================================================================", 'magenta');
-            CLI::write("       AR-01 DETAILED RECONNAISSANCE & DIAGNOSTIC DUMP           ", 'magenta');
-            CLI::write("==================================================================", 'magenta');
+            CLI::write("\n==================================================================", 'purple');
+            CLI::write("       AR-01 DETAILED RECONNAISSANCE & DIAGNOSTIC DUMP           ", 'purple');
+            CLI::write("==================================================================", 'purple');
 
             // A. Detailed Sections
             CLI::write("\n[A] FEEDER SECTIONS INVENTORY & CONFIGURATION (CR-06F Truth):", 'yellow');
@@ -202,7 +202,7 @@ class AuditAr01Command extends BaseCommand
                 CLI::write("\n[C] TOPOLOGICAL KEYWORD MATCHES: None found with default terms.", 'yellow');
             }
         } else {
-            CLI::write("\nTip: Run with '--detail' (e.g. 'php spark audit:ar01 1 --detail') for exhaustive section and asset diagnostics.", 'light_gray');
+            CLI::write("\nTip: Run with '--detail' (e.g. 'php spark audit:ar01 1 --detail') for exhaustive section and asset diagnostics.", 'white');
         }
 
         CLI::write("\n==================================================================", 'green');

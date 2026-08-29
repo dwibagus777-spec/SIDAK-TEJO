@@ -744,4 +744,18 @@ class CanonicalFeederAssetResolutionTest extends CIUnitTestCase
         $result = command('audit:ar01 1 --detail');
         $this->assertNotNull($result);
     }
+
+    public function testReconcileGlobalAssetLineageAndCommandExecution(): void
+    {
+        $res = $this->resolver->reconcileGlobalAssetLineage(1);
+        $this->assertTrue($res['success']);
+        $this->assertArrayHasKey('scope_reconciliation', $res);
+        $this->assertArrayHasKey('feeder_lineage', $res);
+        $this->assertArrayHasKey('clusters', $res);
+        $this->assertArrayHasKey('evidence_classification', $res);
+
+        // Test CLI audit:ar01-reconcile
+        $result = command('audit:ar01-reconcile 1');
+        $this->assertNotNull($result);
+    }
 }

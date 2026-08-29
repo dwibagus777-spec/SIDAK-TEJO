@@ -495,4 +495,171 @@ class CanonicalFeederAssetResolutionService
             'pattern_matches'        => $patternMatches,
         ]);
     }
+
+    /**
+     * Perform Phase AR-01 Phase 2: Data Lineage & Candidate Reconciliation (Strictly Read-Only).
+     */
+    public function reconcileGlobalAssetLineage(int $targetFeederId): array
+    {
+        $tablePenyulang = $this->db->tableExists('penyulang') ? 'penyulang' : ($this->db->tableExists('db_penyulang') ? 'db_penyulang' : 'penyulang');
+        
+        // 1. Target Feeder & All Feeders Mapping
+        $allFeeders = $this->db->table($tablePenyulang)->get()->getResultArray();
+        $feederMap = [];
+        foreach ($allFeeders as $f) {
+            $feederMap[(int)$f['id']] = $f;
+        }
+
+        $targetFeeder = $feederMap[$targetFeederId] ?? null;
+        if (!$targetFeeder) {
+            return [
+                'success' => false,
+                'error'   => "Target Feeder ID #{$targetFeederId} tidak ditemukan dalam tabel {$tablePenyulang}.",
+            ];
+        }
+
+        // 2. Total Scope Discrepancy Breakdown (517 Active vs 518 Raw)
+        $rawTotal = $this->db->table('assets')->countAllResults();
+        
+        $activeQuery = $this->db->table('assets');
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $activeQuery->where('deleted_at IS NULL');
+        }
+        $activeTotal = $activeQuery->countAllResults();
+
+        $softDeletedRows = [];
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $softDeletedRows = $this->db->table('assets')->where('deleted_at IS NOT NULL')->get()->getResultArray();
+        }
+
+        // 3. Feeder FK Lineage Breakdown
+        $assetFeederDist = $this->db->table('assets')
+            ->select('penyulang_id, COUNT(*) as count')
+            ->groupBy('penyulang_id')
+            ->get()
+            ->getResultArray();
+
+        $feederLineage = [];
+        foreach ($assetFeederDist as $row) {
+            $fid = $row['penyulang_id'] !== null ? (int)$row['penyulang_id'] : null;
+            $fMeta = $fid !== null ? ($feederMap[$fid] ?? null) : null;
+            
+            $feederLineage[] = [
+                'penyulang_id'   => $fid,
+                'feeder_code'    => $fMeta['kode_penyulang'] ?? ($fid === null ? 'UNASSIGNED' : 'UNKNOWN'),
+                'feeder_name'    => $fMeta['nama_penyulang'] ?? ($fid === null ? 'NULL (Unassigned)' : "Feeder #{$fid} (Unregistered)"),
+                'count'          => (int)$row['count'],
+            ];
+        }
+
+        // 4. Naming Pattern Clusters
+        // Fetch all active assets to analyze naming and code patterns
+        $allAssetsQuery = $this->db->table('assets');
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $allAssetsQuery->where('deleted_at IS NULL');
+        }
+        $allActiveAssets = $allAssetsQuery->get()->getResultArray();
+
+        $nameClusters = [];
+        $codeClusters = [];
+
+        // Evidence Classification Counters
+        $evidenceStats = [
+            'level_a_strong'       => 0,
+            'level_b_supporting'   => 0,
+            'level_c_insufficient' => 0,
+            'cross_feeder_alien'   => 0,
+        ];
+        $evidenceItems = [
+            'level_a' => [],
+            'level_b' => [],
+            'level_c' => [],
+            'alien'   => [],
+        ];
+
+        $targetFeederCode = strtoupper(trim((string)($targetFeeder['kode_penyulang'] ?? 'PYL-001')));
+        $targetFeederName = strtoupper(trim((string)($targetFeeder['nama_penyulang'] ?? 'SIWALAN PANJI')));
+
+        foreach ($allActiveAssets as $ast) {
+            $astCode = strtoupper(trim((string)$ast['kode_asset']));
+            $astName = strtoupper(trim((string)$ast['nama_asset']));
+            $astPenyulang = $ast['penyulang_id'] !== null ? (int)$ast['penyulang_id'] : null;
+
+            // Pattern Clustering (Prefix extraction before underscore or dash)
+            $namePrefix = 'OTHER';
+            if (str_contains($astName, '_')) {
+                $namePrefix = explode('_', $astName)[0];
+            } elseif (str_contains($astName, '-')) {
+                $namePrefix = explode('-', $astName)[0];
+            }
+            $nameClusters[$namePrefix] = ($nameClusters[$namePrefix] ?? 0) + 1;
+
+            $codePrefix = 'OTHER';
+            if (str_starts_with($astCode, 'AST-KOTA-CNDRMS')) {
+                $codePrefix = 'AST-KOTA-CNDRMS (Candramas)';
+            } elseif (str_starts_with($astCode, 'AST-KOTA-GEN')) {
+                $codePrefix = 'AST-KOTA-GEN (Generic)';
+            } elseif (str_starts_with($astCode, 'AST-KOTA-PANJI') || str_starts_with($astCode, 'AST-KOTA-SWP')) {
+                $codePrefix = 'AST-KOTA-PANJI (Siwalan Panji)';
+            } else {
+                $parts = explode('-', $astCode);
+                $codePrefix = count($parts) >= 3 ? ($parts[0] . '-' . $parts[1] . '-' . $parts[2]) : $astCode;
+            }
+            $codeClusters[$codePrefix] = ($codeClusters[$codePrefix] ?? 0) + 1;
+
+            // Evidence Classification for Target Feeder
+            if ($astPenyulang !== null && $astPenyulang === $targetFeederId) {
+                $evidenceStats['level_a_strong']++;
+                if (count($evidenceItems['level_a']) < 5) {
+                    $evidenceItems['level_a'][] = $ast;
+                }
+            } elseif ($astPenyulang !== null && $astPenyulang !== $targetFeederId) {
+                $evidenceStats['cross_feeder_alien']++;
+                if (count($evidenceItems['alien']) < 5) {
+                    $evidenceItems['alien'][] = $ast;
+                }
+            } else {
+                // penyulang_id is NULL -> Check textual markers
+                $hasNameMarker = str_contains($astName, 'PANJI') || str_contains($astName, 'SIWALAN') || str_contains($astName, 'SWP');
+                $hasCodeMarker = str_contains($astCode, 'PANJI') || str_contains($astCode, 'SIWALAN') || str_contains($astCode, 'SWP');
+
+                if ($hasNameMarker || $hasCodeMarker) {
+                    $evidenceStats['level_b_supporting']++;
+                    if (count($evidenceItems['level_b']) < 5) {
+                        $evidenceItems['level_b'][] = $ast;
+                    }
+                } else {
+                    $evidenceStats['level_c_insufficient']++;
+                    if (count($evidenceItems['level_c']) < 5) {
+                        $evidenceItems['level_c'][] = $ast;
+                    }
+                }
+            }
+        }
+
+        return [
+            'success'              => true,
+            'timestamp'            => date('Y-m-d H:i:s'),
+            'target_feeder'        => $targetFeeder,
+            'all_feeders'          => $allFeeders,
+            'scope_reconciliation' => [
+                'raw_master_assets'          => $rawTotal,
+                'active_grid_scope'          => $activeTotal,
+                'soft_deleted_count'         => count($softDeletedRows),
+                'soft_deleted_records'       => $softDeletedRows,
+                'discrepancy_explanation'    => count($softDeletedRows) > 0 
+                    ? "Terdapat " . count($softDeletedRows) . " record berstatus soft-deleted (deleted_at IS NOT NULL) yang tidak masuk ke dalam {$activeTotal} Active Grid Scope."
+                    : "Active scope dan total scope selaras.",
+            ],
+            'feeder_lineage'       => $feederLineage,
+            'clusters'             => [
+                'name_prefixes' => $nameClusters,
+                'code_prefixes' => $codeClusters,
+            ],
+            'evidence_classification' => [
+                'stats'   => $evidenceStats,
+                'samples' => $evidenceItems,
+            ],
+        ];
+    }
 }

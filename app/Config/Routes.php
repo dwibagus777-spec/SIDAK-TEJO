@@ -135,6 +135,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('network-configuration/preview', 'NetworkConfigurationController::preview');
     $routes->get('network-configuration/template', 'NetworkConfigurationController::downloadTemplate');
 
+    // Dynamic Single Line Diagram (Phase CR-06H)
+    $routes->get('sld', 'DynamicSldController::view');
+    $routes->get('sld/view', 'DynamicSldController::view');
+    $routes->get('sld/view/(:num)', 'DynamicSldController::view/$1');
+    $routes->get('sld/feeder/(:num)', 'DynamicSldController::getFeederGraph/$1');
+    $routes->get('sld/section-detail/(:num)', 'DynamicSldController::getSectionDetail/$1');
+
     // Field Inspection & Living Asset Condition (Phase CR-06)
     $routes->get('inspections', 'FieldInspectionController::index');
     $routes->get('api/inspections/summary', 'FieldInspectionController::apiSummary');

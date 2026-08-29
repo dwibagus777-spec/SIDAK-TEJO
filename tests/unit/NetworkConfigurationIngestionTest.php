@@ -87,6 +87,7 @@ final class NetworkConfigurationIngestionTest extends CIUnitTestCase
         $db->table('sections')->truncate();
         $db->table('sections')->insert(['id' => 1, 'penyulang_id' => 1, 'nama_section' => 'Section A CANDRAMAS']);
         $db->table('sections')->insert(['id' => 2, 'penyulang_id' => 1, 'nama_section' => 'Section B CANDRAMAS']);
+        $db->table('sections')->insert(['id' => 3, 'penyulang_id' => 1, 'nama_section' => 'Section C CANDRAMAS']);
 
         // master_materials
         if (!$db->tableExists('master_materials')) {
@@ -790,5 +791,24 @@ final class NetworkConfigurationIngestionTest extends CIUnitTestCase
         $db = \Config\Database::connect();
         $configsCount = $db->table('network_section_configurations')->countAllResults();
         $this->assertEquals(0, $configsCount);
+    }
+
+    public function testNetworkConfigIngestCommandExecution(): void
+    {
+        $cmd = new \App\Commands\NetworkConfigIngestCommand(\Config\Services::logger(), \Config\Services::commands());
+
+        \CodeIgniter\Test\Filters\CITestStreamFilter::registration();
+        \CodeIgniter\Test\Filters\CITestStreamFilter::addOutputFilter();
+
+        // 1. Dry run with pilot flag
+        $exitCode = $cmd->run(['pilot' => true, 'dry-run' => true]);
+        $output = \CodeIgniter\Test\Filters\CITestStreamFilter::$buffer;
+
+        \CodeIgniter\Test\Filters\CITestStreamFilter::removeOutputFilter();
+
+        $this->assertEquals(0, $exitCode);
+        $this->assertStringContainsString('CR-06F PHYSICAL NETWORK CONFIGURATION INGESTION ENGINE', $output);
+        $this->assertStringContainsString('BATCH PREVIEW SUMMARY', $output);
+        $this->assertStringContainsString('PRE-FLIGHT VALIDATION PASSED', $output);
     }
 }

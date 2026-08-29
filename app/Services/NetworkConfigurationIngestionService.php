@@ -697,7 +697,8 @@ class NetworkConfigurationIngestionService
         // Read headers
         $headers = [];
         for ($col = 1; $col <= $highestColIndex; $col++) {
-            $val = trim((string)$sheet->getCellByColumnAndRow($col, 1)->getValue());
+            $coord = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col) . '1';
+            $val   = trim((string)$sheet->getCell($coord)->getValue());
             if (!empty($val)) {
                 $headers[$col] = strtoupper($val);
             }
@@ -713,7 +714,8 @@ class NetworkConfigurationIngestionService
             $hasContent = false;
 
             foreach ($headers as $col => $headerName) {
-                $cellVal = $sheet->getCellByColumnAndRow($col, $row)->getValue();
+                $coord   = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col) . $row;
+                $cellVal = $sheet->getCell($coord)->getValue();
                 $cellStr = $cellVal !== null ? trim((string)$cellVal) : '';
                 if ($cellStr !== '') {
                     $hasContent = true;

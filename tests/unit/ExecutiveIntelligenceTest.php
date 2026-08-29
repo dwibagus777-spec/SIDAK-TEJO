@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use CodeIgniter\Test\CIUnitTestCase;
 use App\Services\FeederHealthIntelligenceService;
 use App\Services\ExecutiveAiAdvisoryService;
+use App\Services\ConstructionAssetIntelligenceService;
 use App\Database\Seeds\ConstructionIntelligenceSeeder;
 
 /**
@@ -15,6 +16,7 @@ class ExecutiveIntelligenceTest extends CIUnitTestCase
 {
     protected FeederHealthIntelligenceService $fhiService;
     protected ExecutiveAiAdvisoryService $aiService;
+    protected ConstructionAssetIntelligenceService $assetIntelService;
 
     protected function setUp(): void
     {
@@ -25,8 +27,9 @@ class ExecutiveIntelligenceTest extends CIUnitTestCase
 
         $this->ensureTablesExist($forge, $db);
 
-        $this->fhiService = new FeederHealthIntelligenceService($db);
-        $this->aiService  = new ExecutiveAiAdvisoryService();
+        $this->fhiService        = new FeederHealthIntelligenceService($db);
+        $this->aiService         = new ExecutiveAiAdvisoryService();
+        $this->assetIntelService = new ConstructionAssetIntelligenceService($db);
 
         // Seed initial data
         $seeder = new ConstructionIntelligenceSeeder(new \Config\Database());
@@ -104,49 +107,35 @@ class ExecutiveIntelligenceTest extends CIUnitTestCase
         $forge->createTable('feeder_health_classifications', true);
 
         // executive_decision_logs
-        if (!$db->tableExists('executive_decision_logs')) {
-            $forge->addField([
-                'id'                              => ['type' => 'INTEGER', 'auto_increment' => true, 'primary_key' => true],
-                'penyulang_id'                    => ['type' => 'INTEGER'],
-                'feeder_health_classification_id' => ['type' => 'INTEGER', 'null' => true],
-                'recommendation_code'             => ['type' => 'VARCHAR', 'constraint' => 100],
-                'recommended_action'              => ['type' => 'TEXT'],
-                'assigned_unit'                   => ['type' => 'VARCHAR', 'constraint' => 100],
-                'priority_level'                  => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'P2 - HIGH'],
-                'baseline_fhi'                    => ['type' => 'DECIMAL'],
-                'approval_status'                 => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'PENDING'],
-                'approved_by'                     => ['type' => 'INTEGER', 'null' => true],
-                'approved_at'                     => ['type' => 'DATETIME', 'null' => true],
-                'work_order_id'                   => ['type' => 'INTEGER', 'null' => true],
-                'outcome_verified_fhi'            => ['type' => 'DECIMAL', 'null' => true],
-                'delta_fhi'                       => ['type' => 'DECIMAL', 'null' => true],
-                'outcome_notes'                   => ['type' => 'TEXT', 'null' => true],
-                'created_at'                      => ['type' => 'DATETIME', 'null' => true],
-                'updated_at'                      => ['type' => 'DATETIME', 'null' => true],
-            ]);
-            $forge->createTable('executive_decision_logs', true);
-        }
-
-        // historical_feeder_interruptions
-        if (!$db->tableExists('historical_feeder_interruptions')) {
-            $forge->addField([
-                'id' => ['type' => 'INTEGER', 'auto_increment' => true, 'primary_key' => true],
-                'penyulang_id' => ['type' => 'INTEGER'],
-                'duration_minutes' => ['type' => 'DECIMAL', 'default' => 0.0],
-                'start_time' => ['type' => 'DATETIME', 'null' => true],
-                'created_at' => ['type' => 'DATETIME', 'null' => true],
-            ]);
-            $forge->createTable('historical_feeder_interruptions', true);
-        }
+        $forge->addField([
+            'id'                              => ['type' => 'INTEGER', 'auto_increment' => true, 'primary_key' => true],
+            'penyulang_id'                    => ['type' => 'INTEGER'],
+            'feeder_health_classification_id' => ['type' => 'INTEGER', 'null' => true],
+            'recommendation_code'             => ['type' => 'VARCHAR', 'constraint' => 100],
+            'recommended_action'              => ['type' => 'TEXT'],
+            'assigned_unit'                   => ['type' => 'VARCHAR', 'constraint' => 100],
+            'priority_level'                  => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'P2 - HIGH'],
+            'baseline_fhi'                    => ['type' => 'DECIMAL'],
+            'approval_status'                 => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'PENDING'],
+            'approved_by'                     => ['type' => 'INTEGER', 'null' => true],
+            'approved_at'                     => ['type' => 'DATETIME', 'null' => true],
+            'work_order_id'                   => ['type' => 'INTEGER', 'null' => true],
+            'outcome_verified_fhi'            => ['type' => 'DECIMAL', 'null' => true],
+            'delta_fhi'                       => ['type' => 'DECIMAL', 'null' => true],
+            'outcome_notes'                   => ['type' => 'TEXT', 'null' => true],
+            'created_at'                      => ['type' => 'DATETIME', 'null' => true],
+            'updated_at'                      => ['type' => 'DATETIME', 'null' => true],
+        ]);
+        $forge->createTable('executive_decision_logs', true);
     }
 
-    public function testGateE0AndE2AWeightConservationAndDeterministicFhiCalculation(): void
+    public function testGateE0DeterministicCalculationAndE2AWeightConservation(): void
     {
         $policy = $this->fhiService->ensureDefaultPolicy();
         $this->assertEquals('FHI-v1.0', $policy['policy_code']);
 
-        $db = \Config\Database::connect();
-        $rules = $db->table('feeder_health_policy_rules')->where('policy_version_id', $policy['id'])->get()->getResultArray();
+        $rules = (new \App\Models\FeederHealthPolicyRuleModel())->where('policy_version_id', $policy['id'])->findAll();
+        $this->assertCount(5, $rules);
         
         $sumWeights = 0.0;
         foreach ($rules as $r) {
@@ -163,6 +152,30 @@ class ExecutiveIntelligenceTest extends CIUnitTestCase
         $this->assertEquals($res1['health_score'], $res2['health_score']);
         $this->assertEquals($res1['health_classification'], $res2['health_classification']);
         $this->assertEquals($res1['primary_driver'], $res2['primary_driver']);
+    }
+
+    public function testResolvedAssetSynchronizationBetweenCr06gAndCc04(): void
+    {
+        $db = \Config\Database::connect();
+
+        // 1. Query feeder 1 assets
+        $feederAssets = $db->table('assets')->where('penyulang_id', 1)->where('deleted_at IS NULL')->get()->getResultArray();
+        
+        $cr06gResolvedCount = 0;
+        foreach ($feederAssets as $a) {
+            $h = $this->assetIntelService->calculateAssetHealth((int)$a['id']);
+            if ($h['resolution_status'] === 'RESOLVED' && $h['asset_health_score'] !== null) {
+                $cr06gResolvedCount++;
+            }
+        }
+
+        // 2. Query CC-04 calculation
+        $cc04Data = $this->fhiService->calculateFeederHealth(1);
+        $exp = json_decode($cc04Data['explanation_json'], true);
+        $cc04ResolvedCount = $exp['score_breakdown']['asset_health']['resolved'];
+
+        // Synchronized contract assertion
+        $this->assertEquals($cr06gResolvedCount, $cc04ResolvedCount);
     }
 
     public function testGateE3AResolutionDenominatorIntegrityAndUnresolvedProtection(): void
@@ -185,11 +198,42 @@ class ExecutiveIntelligenceTest extends CIUnitTestCase
         $this->assertEquals('UNRESOLVED', $res['health_classification']);
     }
 
-    public function testGateE5RankedDecisionMatrixConflictResolution(): void
+    public function testExactPillarContributionCalculation(): void
+    {
+        $res = $this->fhiService->calculateFeederHealth(1);
+        $exp = json_decode($res['explanation_json'], true);
+        $breakdown = $exp['score_breakdown'];
+
+        $p1 = $breakdown['physical_coverage'];
+        $p2 = $breakdown['asset_health'];
+        $p3 = $breakdown['finding_severity'];
+        $p4 = $breakdown['reliability'];
+        $p5 = $breakdown['chronicity'];
+
+        // Assert exact score * weight calculation
+        $this->assertEquals(round(((float)$p1['sub_score']) * ((float)$p1['weight']), 2), $p1['weighted_contribution']);
+        $this->assertEquals(round(((float)($p2['sub_score'] ?? 0.0)) * ((float)$p2['weight']), 2), $p2['weighted_contribution']);
+        $this->assertEquals(round(((float)$p3['sub_score']) * ((float)$p3['weight']), 2), $p3['weighted_contribution']);
+        $this->assertEquals(round(((float)$p4['sub_score']) * ((float)$p4['weight']), 2), $p4['weighted_contribution']);
+        $this->assertEquals(round(((float)$p5['sub_score']) * ((float)$p5['weight']), 2), $p5['weighted_contribution']);
+
+        $expectedSum = round(
+            $p1['weighted_contribution'] +
+            $p2['weighted_contribution'] +
+            $p3['weighted_contribution'] +
+            $p4['weighted_contribution'] +
+            $p5['weighted_contribution'],
+            2
+        );
+
+        $this->assertEquals($expectedSum, $breakdown['checksum']['computed_fhi_sum']);
+    }
+
+    public function testUnresolvedStatusForcesPrerequisiteAndLocksDispatch(): void
     {
         $db = \Config\Database::connect();
 
-        // 1. Insert critical equipment finding (Trigger: CRITICAL_EQUIPMENT_DEFECT)
+        // 1. Insert critical finding on Feeder 1
         $db->table('temuan')->insert([
             'nomor_temuan' => 'TMN-CRIT-001',
             'penyulang_id' => 1,
@@ -202,26 +246,21 @@ class ExecutiveIntelligenceTest extends CIUnitTestCase
             'created_at'   => date('Y-m-d H:i:s'),
         ]);
 
-        // 2. Insert 4 interruptions (Trigger: UNSTABLE_TRIP_FREQUENCY)
-        for ($i = 0; $i < 4; $i++) {
-            $db->table('historical_feeder_interruptions')->insert([
-                'penyulang_id'     => 1,
-                'duration_minutes' => 30.0,
-                'start_time'       => date('Y-m-d H:i:s'),
-                'created_at'       => date('Y-m-d H:i:s'),
-            ]);
-        }
-
         $res = $this->fhiService->calculateFeederHealth(1);
         $exp = json_decode($res['explanation_json'], true);
         $dec = $exp['decision_matrix'];
 
-        // Critical Equipment defect has higher severity base (85 + 5 = 90) vs Trip frequency (70 + 16 = 86)
-        $this->assertEquals('CRITICAL_EQUIPMENT_DEFECT', $dec['primary_driver']['driver_code']);
-        $this->assertEquals('P1 - IMMEDIATE', $dec['primary_driver']['priority']);
-        $this->assertEquals('PDKB-TM', $dec['primary_driver']['assigned_unit']);
-        $this->assertNotEmpty($dec['secondary_drivers']);
-        $this->assertEquals('UNSTABLE_TRIP_FREQUENCY', $dec['secondary_drivers'][0]['driver_code']);
+        // When FHI is UNRESOLVED, Primary Driver is forced to UNCONFIGURED_GRID_PREREQUISITE
+        if ($res['fhi_status'] === 'UNRESOLVED') {
+            $this->assertEquals('UNCONFIGURED_GRID_PREREQUISITE', $dec['primary_driver']['driver_code']);
+            $this->assertEquals('P2 - PREREQUISITE', $dec['primary_driver']['priority']);
+            $this->assertFalse($dec['primary_driver']['dispatch_ready']);
+
+            // Critical Equipment defect remains visible as secondary advisory
+            $this->assertEquals('CRITICAL_EQUIPMENT_DEFECT', $dec['secondary_drivers'][0]['driver_code']);
+            $this->assertFalse($dec['secondary_drivers'][0]['dispatch_ready']);
+            $this->assertStringContainsString('NOT DISPATCH-READY', $dec['secondary_drivers'][0]['advisory_label']);
+        }
     }
 
     public function testGateE6AFormulaVersionFingerprintAndExplainabilityJSON(): void

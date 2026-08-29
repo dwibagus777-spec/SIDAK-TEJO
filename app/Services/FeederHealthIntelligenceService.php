@@ -44,6 +44,15 @@ class FeederHealthIntelligenceService
         'RECURRENCE_CHRONICITY'   => 0.1000,
     ];
 
+    public function getCanonicalWeights(): array
+    {
+        $sum = array_sum(self::DEFAULT_PILLAR_WEIGHTS);
+        if (abs($sum - 1.0000) > 0.000001) {
+            throw new \DomainException("Gate E2-A Violation: Canonical weights sum to {$sum}, must be exactly 1.0000");
+        }
+        return self::DEFAULT_PILLAR_WEIGHTS;
+    }
+
     public function __construct(?BaseConnection $db = null)
     {
         $this->db                = $db ?? \Config\Database::connect();
@@ -165,11 +174,8 @@ class FeederHealthIntelligenceService
         // 1. Resolve Policy Rules & Validate Weight Conservation (Invariant E2-A)
         $rules = $this->ruleModel->where('policy_version_id', $policy['id'])->findAll();
         $ruleMap = [];
-        $totalWeight = 0.0;
         foreach ($rules as $r) {
-            $w = (float)$r['weight'];
-            $ruleMap[$r['metric_key']] = $w;
-            $totalWeight += $w;
+            $ruleMap[$r['metric_key']] = (float)$r['weight'];
         }
 
         $wPhys    = $ruleMap['PHYSICAL_COVERAGE'] ?? self::DEFAULT_PILLAR_WEIGHTS['PHYSICAL_COVERAGE'];
@@ -177,6 +183,11 @@ class FeederHealthIntelligenceService
         $wFinding = $ruleMap['FINDING_SEVERITY'] ?? $ruleMap['CRITICAL_FINDINGS'] ?? self::DEFAULT_PILLAR_WEIGHTS['FINDING_SEVERITY'];
         $wRel     = $ruleMap['RELIABILITY_PERFORMANCE'] ?? $ruleMap['GANGGUAN_FREQUENCY'] ?? self::DEFAULT_PILLAR_WEIGHTS['RELIABILITY_PERFORMANCE'];
         $wRec     = $ruleMap['RECURRENCE_CHRONICITY'] ?? $ruleMap['RECURRING_FINDINGS'] ?? self::DEFAULT_PILLAR_WEIGHTS['RECURRENCE_CHRONICITY'];
+
+        $sumWeights = $wPhys + $wAsset + $wFinding + $wRel + $wRec;
+        if (abs($sumWeights - 1.0000) > 0.000001) {
+            throw new \DomainException("Gate E2-A Violation: Sum of weights ({$sumWeights}) != 1.0000");
+        }
 
         // 2. Pillar 1: Physical Topology Coverage (CR-06F Truth)
         $sections = $this->db->table('sections')->where('penyulang_id', $penyulangId)->get()->getResultArray();
@@ -201,7 +212,7 @@ class FeederHealthIntelligenceService
             ->getResultArray();
 
         $totalMasterAssetsCount = $this->db->table('assets')->where('deleted_at IS NULL')->countAllResults();
-        $totalAssetsCount = count($assets) > 0 ? count($assets) : ($totalMasterAssetsCount > 0 ? $totalMasterAssetsCount : 0);
+        $totalFeederAssetsCount = count($assets);
         $resolvedAssetsCount = 0;
         $sumAhs = 0.0;
 
@@ -213,8 +224,8 @@ class FeederHealthIntelligenceService
             }
         }
 
-        $assetResolutionRatio = $totalAssetsCount > 0 ? ($resolvedAssetsCount / $totalAssetsCount) : 0.0;
-        $subScoreAsset = $resolvedAssetsCount > 0 ? round($sumAhs / $resolvedAssetsCount, 2) : null;
+        $assetResolutionRatio = $totalFeederAssetsCount > 0 ? ($resolvedAssetsCount / $totalFeederAssetsCount) : 0.0;
+        $subScoreAsset = ($totalFeederAssetsCount > 0 && $resolvedAssetsCount > 0) ? round($sumAhs / $resolvedAssetsCount, 2) : null;
 
         // 4. Pillar 3: Active Operational Finding Severity (Amendment CC-02)
         $findingStats = $this->getOperationalFindingSeverities($penyulangId);
@@ -239,32 +250,29 @@ class FeederHealthIntelligenceService
         // 7. Strict FHI_STATUS & Data Completeness Ratio (Amendment CC-01, Invariant E3-A)
         $dataCompletenessRatio = round(
             ($physicalCoverageRatio * 0.5) +
-            (($totalAssetsCount > 0 ? $assetResolutionRatio : 0.0) * 0.5),
+            (($totalFeederAssetsCount > 0 ? $assetResolutionRatio : 0.0) * 0.5),
             4
         );
 
         $fhiStatus = 'RESOLVED';
-        if ($totalSectionsCount === 0 || $configuredSectionsCount === 0 || ($totalAssetsCount > 0 && $resolvedAssetsCount === 0)) {
+        if ($totalSectionsCount === 0 || $configuredSectionsCount === 0 || $totalFeederAssetsCount === 0 || $resolvedAssetsCount === 0) {
             $fhiStatus = 'UNRESOLVED';
         } elseif ($dataCompletenessRatio < 1.0) {
             $fhiStatus = 'PARTIAL';
         }
 
-        // 8. Compute Weighted FHI Score (No Silent Renormalization Invariant)
-        $effectiveAssetScore = $subScoreAsset !== null ? $subScoreAsset : 0.0;
+        // 8. Compute Weighted Contributions (No Silent Renormalization Invariant)
+        $p1Contrib = round($subScorePhys * $wPhys, 2);
+        $p2Contrib = $subScoreAsset !== null ? round($subScoreAsset * $wAsset, 2) : 0.0;
+        $p3Contrib = round($subScoreFinding * $wFinding, 2);
+        $p4Contrib = round($subScoreRel * $wRel, 2);
+        $p5Contrib = round($subScoreRec * $wRec, 2);
         
         if ($fhiStatus === 'UNRESOLVED') {
             $totalFhiScore = null;
             $classification = 'UNRESOLVED';
         } else {
-            $totalFhiScore = round(
-                ($subScorePhys * $wPhys) +
-                ($effectiveAssetScore * $wAsset) +
-                ($subScoreFinding * $wFinding) +
-                ($subScoreRel * $wRel) +
-                ($subScoreRec * $wRec),
-                2
-            );
+            $totalFhiScore = round($p1Contrib + $p2Contrib + $p3Contrib + $p4Contrib + $p5Contrib, 2);
             $totalFhiScore = max(0.0, min(100.0, $totalFhiScore));
 
             // Discrete Classification (Gate E4)
@@ -279,7 +287,7 @@ class FeederHealthIntelligenceService
             }
         }
 
-        // 9. Ranked Conflict-Resolvable Decision Matrix (Amendment CC-05)
+        // 9. Ranked Conflict-Resolvable Decision Matrix (Amendment CC-05 & UNRESOLVED Governance Override)
         $decisionMatrix = $this->resolveExecutiveDecisionMatrix(
             $fhiStatus,
             $totalFhiScore,
@@ -293,7 +301,7 @@ class FeederHealthIntelligenceService
         $fingerprint = [
             'policy_code'            => $policy['policy_code'],
             'formula_version'        => self::FORMULA_VERSION,
-            'weight_conservation'    => round($wPhys + $wAsset + $wFinding + $wRel + $wRec, 4) === 1.0000 ? 'CONSERVED' : 'VIOLATION',
+            'weight_conservation'    => 'CONSERVED',
             'weight_set'             => [
                 'W_phys'    => $wPhys,
                 'W_asset'   => $wAsset,
@@ -305,8 +313,9 @@ class FeederHealthIntelligenceService
                 'total_sections'             => $totalSectionsCount,
                 'configured_sections'       => $configuredSectionsCount,
                 'physical_coverage_ratio'   => $physicalCoverageRatio,
-                'total_assets'              => $totalAssetsCount,
-                'resolved_assets'           => $resolvedAssetsCount,
+                'feeder_assets_count'       => $totalFeederAssetsCount,
+                'resolved_assets_count'     => $resolvedAssetsCount,
+                'system_master_assets_count'=> $totalMasterAssetsCount,
                 'asset_resolution_ratio'    => $assetResolutionRatio,
                 'findings_emergency'        => $findingStats['EMERGENCY'],
                 'findings_kritis'           => $findingStats['KRITIS'],
@@ -328,28 +337,29 @@ class FeederHealthIntelligenceService
             'fingerprint'             => $fingerprint,
             'score_breakdown'         => [
                 'physical_coverage' => [
-                    'weight'        => $wPhys,
-                    'sub_score'     => $subScorePhys,
-                    'weighted_score'=> round($subScorePhys * $wPhys, 2),
-                    'ratio'         => $physicalCoverageRatio,
-                    'configured'    => $configuredSectionsCount,
-                    'total'         => $totalSectionsCount,
+                    'weight'                => $wPhys,
+                    'sub_score'             => $subScorePhys,
+                    'weighted_contribution' => $p1Contrib,
+                    'ratio'                 => $physicalCoverageRatio,
+                    'configured'            => $configuredSectionsCount,
+                    'total'                 => $totalSectionsCount,
                 ],
                 'asset_health'      => [
-                    'weight'        => $wAsset,
-                    'sub_score'     => $subScoreAsset,
-                    'weighted_score'=> round(($subScoreAsset ?? 0.0) * $wAsset, 2),
-                    'resolved'      => $resolvedAssetsCount,
-                    'total'         => $totalAssetsCount,
-                    'status_label'  => $resolvedAssetsCount > 0 ? 'RESOLVED' : 'NO DATA / UNRESOLVED',
+                    'weight'                => $wAsset,
+                    'sub_score'             => $subScoreAsset,
+                    'weighted_contribution' => $p2Contrib,
+                    'resolved'              => $resolvedAssetsCount,
+                    'total'                 => $totalFeederAssetsCount,
+                    'total_grid_assets'     => $totalMasterAssetsCount,
+                    'status_label'          => $totalFeederAssetsCount > 0 ? ($assetResolutionRatio >= 0.80 ? 'RESOLVED' : 'PARTIAL') : 'UNRESOLVED / NO DATA',
                 ],
                 'finding_severity'  => [
-                    'weight'        => $wFinding,
-                    'sub_score'     => $subScoreFinding,
-                    'weighted_score'=> round($subScoreFinding * $wFinding, 2),
-                    'penalty'       => $findingPenalty,
-                    'counts'        => $findingStats,
-                    'details'       => [
+                    'weight'                => $wFinding,
+                    'sub_score'             => $subScoreFinding,
+                    'weighted_contribution' => $p3Contrib,
+                    'penalty'               => $findingPenalty,
+                    'counts'                => $findingStats,
+                    'details'               => [
                         'emergency' => ['count' => $findingStats['EMERGENCY'], 'factor' => 25.0, 'subtotal' => $emergSubtotal],
                         'kritis'    => ['count' => $findingStats['KRITIS'],    'factor' => 20.0, 'subtotal' => $kritisSubtotal],
                         'serius'    => ['count' => $findingStats['SERIUS'],    'factor' => 10.0, 'subtotal' => $seriusSubtotal],
@@ -357,30 +367,26 @@ class FeederHealthIntelligenceService
                     ],
                 ],
                 'reliability'       => [
-                    'weight'        => $wRel,
-                    'sub_score'     => $subScoreRel,
-                    'weighted_score'=> round($subScoreRel * $wRel, 2),
-                    'trips'         => $interruptionCount,
-                    'dur_mins'      => $interruptionDur,
+                    'weight'                => $wRel,
+                    'sub_score'             => $subScoreRel,
+                    'weighted_contribution' => $p4Contrib,
+                    'trips'                 => $interruptionCount,
+                    'dur_mins'              => $interruptionDur,
                 ],
                 'chronicity'        => [
-                    'weight'        => $wRec,
-                    'sub_score'     => $subScoreRec,
-                    'weighted_score'=> round($subScoreRec * $wRec, 2),
-                    'chronic_sections' => $chronicSectionsCount,
+                    'weight'                => $wRec,
+                    'sub_score'             => $subScoreRec,
+                    'weighted_contribution' => $p5Contrib,
+                    'chronic_sections'      => $chronicSectionsCount,
+                ],
+                'checksum'          => [
+                    'weight_sum'             => round($sumWeights, 4),
+                    'computed_fhi_sum'       => round($p1Contrib + $p2Contrib + $p3Contrib + $p4Contrib + $p5Contrib, 2),
+                    'conservation_status'    => 'CONSERVED (1.0000)',
+                    'governance_state'       => $fhiStatus === 'UNRESOLVED' ? 'PREREQUISITE_LOCKED' : 'ACTIONABLE',
                 ],
             ],
             'decision_matrix'         => $decisionMatrix,
-            'executive_summary'       => sprintf(
-                'Feeder health status %s dengan FHI %s (%s). Driver utama: %s. Rekomendasi aksi: %s untuk unit %s (Prioritas %s).',
-                $fhiStatus,
-                $totalFhiScore !== null ? number_format($totalFhiScore, 2) : 'N/A',
-                $classification,
-                $decisionMatrix['primary_driver']['driver_code'],
-                $decisionMatrix['primary_driver']['recommended_action'],
-                $decisionMatrix['primary_driver']['assigned_unit'],
-                $decisionMatrix['primary_driver']['priority']
-            ),
         ];
 
         $now = date('Y-m-d H:i:s');
@@ -448,6 +454,7 @@ class FeederHealthIntelligenceService
 
     /**
      * Resolve Ranked Conflict-Resolvable Executive Decision Matrix (Amendment CC-05).
+     * Enforces UNRESOLVED Governance Override: UNRESOLVED status forces P2-PREREQUISITE.
      */
     public function resolveExecutiveDecisionMatrix(
         string $fhiStatus,
@@ -463,17 +470,20 @@ class FeederHealthIntelligenceService
         if ($fhiStatus === 'UNRESOLVED' || $completenessRatio < 0.80) {
             $drivers[] = [
                 'driver_code'        => 'UNCONFIGURED_GRID_PREREQUISITE',
-                'driver_score'       => round(50.0 + ((1.0 - $completenessRatio) * 20.0), 2),
+                'driver_score'       => round(99.0 + ((1.0 - $completenessRatio) * 1.0), 2),
                 'priority'           => 'P2 - PREREQUISITE',
                 'recommended_action' => 'Lengkapi Ingesti Konfigurasi Jaringan & Sensus BOM Aset',
                 'assigned_unit'      => 'Tim GIS & Perencanaan Jaringan',
-                'evidence'           => "Kelengkapan data: " . round($completenessRatio * 100, 1) . "%",
+                'evidence'           => "Kelengkapan data: " . round($completenessRatio * 100, 1) . "% (Prasyarat sebelum Dispatch)",
+                'dispatch_ready'     => false,
+                'governance_state'   => 'PREREQUISITE_LOCKED',
             ];
         }
 
         // Driver Candidate 2: Critical / Emergency Equipment Finding (Priority P1)
         $critFindingsCount = $findingStats['EMERGENCY'] + $findingStats['KRITIS'];
         if ($critFindingsCount > 0) {
+            $isDispatchReady = ($fhiStatus !== 'UNRESOLVED');
             $drivers[] = [
                 'driver_code'        => 'CRITICAL_EQUIPMENT_DEFECT',
                 'driver_score'       => round(90.0 + ($critFindingsCount * 2.0), 2),
@@ -481,11 +491,15 @@ class FeederHealthIntelligenceService
                 'recommended_action' => 'Eksekusi Hotline Repair & Penggantian Material Kritis',
                 'assigned_unit'      => 'PDKB-TM',
                 'evidence'           => "{$critFindingsCount} temuan kritis/emergency terbuka",
+                'dispatch_ready'     => $isDispatchReady,
+                'advisory_label'     => $isDispatchReady ? 'DISPATCH-READY' : 'RISK SIGNAL — NOT DISPATCH-READY UNTIL DATA RESOLUTION',
+                'governance_state'   => $isDispatchReady ? 'ACTIONABLE' : 'ADVISORY_ONLY',
             ];
         }
 
         // Driver Candidate 3: Unstable Trip / Interruption Frequency (Priority P2)
         if ($interruptionCount >= 3) {
+            $isDispatchReady = ($fhiStatus !== 'UNRESOLVED');
             $drivers[] = [
                 'driver_code'        => 'UNSTABLE_TRIP_FREQUENCY',
                 'driver_score'       => round(75.0 + ($interruptionCount * 2.0), 2),
@@ -493,23 +507,31 @@ class FeederHealthIntelligenceService
                 'recommended_action' => 'Audit Koordinasi Proteksi, Recloser & Uji Setting Relay',
                 'assigned_unit'      => 'Proteksi & Metering',
                 'evidence'           => "{$interruptionCount} kali trip dalam rolling 12 bulan",
+                'dispatch_ready'     => $isDispatchReady,
+                'advisory_label'     => $isDispatchReady ? 'DISPATCH-READY' : 'RISK SIGNAL — NOT DISPATCH-READY UNTIL DATA RESOLUTION',
+                'governance_state'   => $isDispatchReady ? 'ACTIONABLE' : 'ADVISORY_ONLY',
             ];
         }
 
-        // Driver Candidate 4: Chronic Section Recurring Failure
-        if ($chronicSections > 0) {
+        // Driver Candidate 4: Chronic Recurring Failure Sections (Priority P2)
+        if ($chronicSections >= 2) {
+            $isDispatchReady = ($fhiStatus !== 'UNRESOLVED');
             $drivers[] = [
                 'driver_code'        => 'CHRONIC_RECURRING_FAILURE',
-                'driver_score'       => round(65.0 + ($chronicSections * 6.0), 2),
+                'driver_score'       => round(70.0 + ($chronicSections * 3.0), 2),
                 'priority'           => 'P2 - HIGH',
-                'recommended_action' => 'Investigasi Khusus Akar Masalah & Evaluasi Rekayasa Konstruksi',
-                'assigned_unit'      => 'Engineering / Pemeliharaan Khusus',
-                'evidence'           => "{$chronicSections} seksi mengalami temuan kronis berulang",
+                'recommended_action' => 'Investigasi Khusus Seksi Kronis & Re-Engineering ROW',
+                'assigned_unit'      => 'Tim ROW & Pemeliharaan Korektif',
+                'evidence'           => "{$chronicSections} seksi mengalami temuan berulang",
+                'dispatch_ready'     => $isDispatchReady,
+                'advisory_label'     => $isDispatchReady ? 'DISPATCH-READY' : 'RISK SIGNAL — NOT DISPATCH-READY UNTIL DATA RESOLUTION',
+                'governance_state'   => $isDispatchReady ? 'ACTIONABLE' : 'ADVISORY_ONLY',
             ];
         }
 
         // Driver Candidate 5: Major / Serious Anomalies Present
         if ($findingStats['SERIUS'] > 0) {
+            $isDispatchReady = ($fhiStatus !== 'UNRESOLVED');
             $drivers[] = [
                 'driver_code'        => 'SERIOUS_ANOMALIES_PRESENT',
                 'driver_score'       => round(50.0 + ($findingStats['SERIUS'] * 3.0), 2),
@@ -517,6 +539,9 @@ class FeederHealthIntelligenceService
                 'recommended_action' => 'Penjadwalan Pemeliharaan Rutin Terfokus',
                 'assigned_unit'      => 'Pemeliharaan Rutin ULP',
                 'evidence'           => "{$findingStats['SERIUS']} temuan serius terbuka",
+                'dispatch_ready'     => $isDispatchReady,
+                'advisory_label'     => $isDispatchReady ? 'DISPATCH-READY' : 'RISK SIGNAL — NOT DISPATCH-READY UNTIL DATA RESOLUTION',
+                'governance_state'   => $isDispatchReady ? 'ACTIONABLE' : 'ADVISORY_ONLY',
             ];
         }
 
@@ -529,6 +554,8 @@ class FeederHealthIntelligenceService
                 'recommended_action' => 'Inspeksi Lanjutan dan Pemeliharaan Berkala',
                 'assigned_unit'      => 'Pemeliharaan Rutin',
                 'evidence'           => "{$findingStats['RINGAN']} temuan ringan terbuka",
+                'dispatch_ready'     => true,
+                'governance_state'   => 'ACTIONABLE',
             ];
         }
 
@@ -541,6 +568,8 @@ class FeederHealthIntelligenceService
                 'recommended_action' => 'Monitoring Standar & Siklus Inspeksi Berkala',
                 'assigned_unit'      => 'Inspeksi Reguler',
                 'evidence'           => 'Jaringan dalam kondisi optimal (FHI >= 85)',
+                'dispatch_ready'     => false,
+                'governance_state'   => 'NORMAL',
             ];
         }
 

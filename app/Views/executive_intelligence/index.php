@@ -61,6 +61,7 @@
         $class = $fhiData['health_classification'] ?? 'UNRESOLVED';
         $classLower = strtolower($class);
         $score = $fhiData['health_score'] !== null ? number_format((float)$fhiData['health_score'], 2) : 'N/A';
+        $fhiStatus = $fhiData['fhi_status'] ?? 'UNRESOLVED';
         $exp = json_decode($fhiData['explanation_json'] ?? '{}', true);
         $fingerprint = json_decode($fhiData['fingerprint_json'] ?? '{}', true);
         $decMatrix = $exp['decision_matrix'] ?? [];
@@ -68,26 +69,26 @@
         $allRankedDrivers = $decMatrix['all_ranked_drivers'] ?? ($primaryDriver ? array_merge([$primaryDriver], $decMatrix['secondary_drivers'] ?? []) : []);
         $breakdown = $exp['score_breakdown'] ?? [];
 
-        // Weighted Pillar Calculations (Deterministic Snapshot Integrity)
+        // Direct Weighted Pillar Values from Service
         $p1Sub = (float)($breakdown['physical_coverage']['sub_score'] ?? 0);
         $p1Weight = (float)($breakdown['physical_coverage']['weight'] ?? 0.20);
-        $p1Contrib = round($p1Sub * $p1Weight, 2);
+        $p1Contrib = (float)($breakdown['physical_coverage']['weighted_contribution'] ?? 0);
 
         $p2Sub = $breakdown['asset_health']['sub_score'] !== null ? (float)$breakdown['asset_health']['sub_score'] : null;
         $p2Weight = (float)($breakdown['asset_health']['weight'] ?? 0.25);
-        $p2Contrib = round(($p2Sub ?? 0.0) * $p2Weight, 2);
+        $p2Contrib = (float)($breakdown['asset_health']['weighted_contribution'] ?? 0);
 
         $p3Sub = (float)($breakdown['finding_severity']['sub_score'] ?? 0);
         $p3Weight = (float)($breakdown['finding_severity']['weight'] ?? 0.25);
-        $p3Contrib = round($p3Sub * $p3Weight, 2);
+        $p3Contrib = (float)($breakdown['finding_severity']['weighted_contribution'] ?? 0);
 
         $p4Sub = (float)($breakdown['reliability']['sub_score'] ?? 0);
         $p4Weight = (float)($breakdown['reliability']['weight'] ?? 0.20);
-        $p4Contrib = round($p4Sub * $p4Weight, 2);
+        $p4Contrib = (float)($breakdown['reliability']['weighted_contribution'] ?? 0);
 
         $p5Sub = (float)($breakdown['chronicity']['sub_score'] ?? 0);
         $p5Weight = (float)($breakdown['chronicity']['weight'] ?? 0.10);
-        $p5Contrib = round($p5Sub * $p5Weight, 2);
+        $p5Contrib = (float)($breakdown['chronicity']['weighted_contribution'] ?? 0);
 
         $totalComputedFhi = round($p1Contrib + $p2Contrib + $p3Contrib + $p4Contrib + $p5Contrib, 2);
     ?>
@@ -108,10 +109,10 @@
                             <span class="small text-muted">/ 100</span>
                         </div>
                         <div>
-                            <div class="fw-bold h5 mb-1"><?= esc($fhiData['fhi_status'] ?? 'RESOLVED') ?></div>
+                            <div class="fw-bold h5 mb-1"><?= esc($fhiStatus) ?></div>
                             <div class="small text-muted">Formula: <code><?= esc($fingerprint['formula_version'] ?? 'FHI_FORMULA_V1.2') ?></code></div>
                             <div class="small text-muted">Kelengkapan Data: <strong><?= number_format(((float)($fhiData['data_completeness_ratio'] ?? 0)) * 100, 1) ?>%</strong></div>
-                            <div class="small text-muted mt-1">Kontribusi Pilar: <strong><?= $p1Contrib ?> + <?= $p2Contrib ?> + <?= $p3Contrib ?> + <?= $p4Contrib ?> + <?= $p5Contrib ?> = <?= $totalComputedFhi ?></strong></div>
+                            <div class="small text-muted mt-1">Kontribusi Pilar: <strong><?= number_format($p1Contrib, 1) ?> + <?= number_format($p2Contrib, 1) ?> + <?= number_format($p3Contrib, 1) ?> + <?= number_format($p4Contrib, 1) ?> + <?= number_format($p5Contrib, 1) ?> = <?= number_format($totalComputedFhi, 1) ?></strong></div>
                         </div>
                     </div>
                 </div>
@@ -124,19 +125,19 @@
             </div>
         </div>
 
-        <!-- Executive Decision Recommendation Card -->
+        <!-- Executive Decision Recommendation Card (With UNRESOLVED Governance Override) -->
         <div class="col-md-8">
-            <div class="card card-custom h-100 p-4 border-start border-4 border-warning">
+            <div class="card card-custom h-100 p-4 border-start border-4 <?= $fhiStatus === 'UNRESOLVED' ? 'border-secondary' : 'border-warning' ?>">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="text-muted fw-bold small text-uppercase"><i class="fa-solid fa-gavel me-1 text-warning"></i>Rekomendasi Keputusan Eksekutif (Decision Matrix)</span>
-                    <span class="badge bg-danger fw-bold"><?= esc($primaryDriver['priority'] ?? 'P3 - MEDIUM') ?></span>
+                    <span class="badge <?= $fhiStatus === 'UNRESOLVED' ? 'bg-secondary' : 'bg-danger' ?> fw-bold"><?= esc($primaryDriver['priority'] ?? 'P2 - PREREQUISITE') ?></span>
                 </div>
                 
                 <h5 class="fw-bold text-dark mt-2 mb-1">
                     <?= esc($primaryDriver['recommended_action'] ?? 'Monitoring Berkala') ?>
                 </h5>
                 <div class="text-muted small mb-3">
-                    Driver Risiko Utama: <code class="fw-bold text-danger"><?= esc($primaryDriver['driver_code'] ?? 'NORMAL_OPERATION') ?></code> (Skor Pemicu: <?= esc($primaryDriver['driver_score'] ?? 0) ?>) &bull; 
+                    Driver Risiko Utama: <code class="fw-bold text-primary"><?= esc($primaryDriver['driver_code'] ?? 'NORMAL_OPERATION') ?></code> (Skor Pemicu: <?= esc($primaryDriver['driver_score'] ?? 0) ?>) &bull; 
                     Unit Ditugaskan: <strong class="text-primary"><?= esc($primaryDriver['assigned_unit'] ?? 'Pemeliharaan Rutin') ?></strong>
                 </div>
 
@@ -149,11 +150,21 @@
 
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="small text-muted">
-                        <i class="fa-solid fa-user-check me-1 text-primary"></i> Memerlukan <strong>Human Approval (Gate E9-A)</strong> sebelum dispatch ke lapangan.
+                        <?php if ($fhiStatus === 'UNRESOLVED'): ?>
+                            <i class="fa-solid fa-lock me-1 text-secondary"></i> <strong>Gate E5 Governance Guard</strong>: Rekomendasi operasional dikunci sebagai Prasyarat Data sebelum Surat Tugas dapat diterbitkan.
+                        <?php else: ?>
+                            <i class="fa-solid fa-user-check me-1 text-primary"></i> Memerlukan <strong>Human Approval (Gate E9-A)</strong> sebelum dispatch ke lapangan.
+                        <?php endif; ?>
                     </div>
-                    <button type="button" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#approvalModal">
-                        <i class="fa-solid fa-paper-plane me-1"></i> Review & Approve Dispatch
-                    </button>
+                    <?php if ($fhiStatus === 'UNRESOLVED'): ?>
+                        <button type="button" class="btn btn-secondary btn-sm fw-bold px-3" disabled>
+                            <i class="fa-solid fa-lock me-1"></i> Dispatch Terkunci (Prasyarat Data)
+                        </button>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#approvalModal">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Review & Approve Dispatch
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -173,11 +184,11 @@
                         <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P1: Physical Coverage</span>
-                                <span>20% (Bobot)</span>
+                                <span><?= round($p1Weight * 100) ?>% (Bobot)</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-baseline mt-2">
                                 <div class="h4 fw-bold text-dark mb-0"><?= number_format($p1Sub, 1) ?></div>
-                                <span class="badge bg-info-subtle text-info fw-bold">+<?= $p1Contrib ?> Poin</span>
+                                <span class="badge bg-info-subtle text-info fw-bold">+<?= number_format($p1Contrib, 2) ?> Poin</span>
                             </div>
                             <div class="progress my-2" style="height: 6px;">
                                 <div class="progress-bar bg-info" style="width: <?= $p1Sub ?>%;"></div>
@@ -191,16 +202,16 @@
                         <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P2: Asset Health</span>
-                                <span>25% (Bobot)</span>
+                                <span><?= round($p2Weight * 100) ?>% (Bobot)</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-baseline mt-2">
                                 <div class="h4 fw-bold text-dark mb-0"><?= $p2Sub !== null ? number_format($p2Sub, 1) : '<span class="badge bg-secondary-subtle text-secondary">NO DATA</span>' ?></div>
-                                <span class="badge bg-secondary-subtle text-secondary fw-bold">+<?= $p2Contrib ?> Poin</span>
+                                <span class="badge bg-secondary-subtle text-secondary fw-bold">+<?= number_format($p2Contrib, 2) ?> Poin</span>
                             </div>
                             <div class="progress my-2" style="height: 6px;">
                                 <div class="progress-bar bg-success" style="width: <?= ($p2Sub ?? 0.0) ?>%;"></div>
                             </div>
-                            <div class="small text-muted"><?= $breakdown['asset_health']['resolved'] ?? 0 ?> / <?= $breakdown['asset_health']['total'] ?? 517 ?> Master Aset (<?= esc($breakdown['asset_health']['status_label'] ?? 'UNRESOLVED') ?>)</div>
+                            <div class="small text-muted"><?= $breakdown['asset_health']['resolved'] ?? 0 ?> / <?= $breakdown['asset_health']['total'] ?? 0 ?> Aset Feeder (Grid: <?= $breakdown['asset_health']['total_grid_assets'] ?? 517 ?>) &bull; <?= esc($breakdown['asset_health']['status_label'] ?? 'UNRESOLVED') ?></div>
                         </div>
                     </div>
 
@@ -209,11 +220,11 @@
                         <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P3: Finding Severity</span>
-                                <span>25% (Bobot)</span>
+                                <span><?= round($p3Weight * 100) ?>% (Bobot)</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-baseline mt-2">
                                 <div class="h4 fw-bold text-dark mb-0"><?= number_format($p3Sub, 1) ?></div>
-                                <span class="badge bg-warning-subtle text-dark fw-bold">+<?= $p3Contrib ?> Poin</span>
+                                <span class="badge bg-warning-subtle text-dark fw-bold">+<?= number_format($p3Contrib, 2) ?> Poin</span>
                             </div>
                             <div class="progress my-2" style="height: 6px;">
                                 <div class="progress-bar bg-warning" style="width: <?= $p3Sub ?>%;"></div>
@@ -227,11 +238,11 @@
                         <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P4: Reliability (12M)</span>
-                                <span>20% (Bobot)</span>
+                                <span><?= round($p4Weight * 100) ?>% (Bobot)</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-baseline mt-2">
                                 <div class="h4 fw-bold text-dark mb-0"><?= number_format($p4Sub, 1) ?></div>
-                                <span class="badge bg-danger-subtle text-danger fw-bold">+<?= $p4Contrib ?> Poin</span>
+                                <span class="badge bg-danger-subtle text-danger fw-bold">+<?= number_format($p4Contrib, 2) ?> Poin</span>
                             </div>
                             <div class="progress my-2" style="height: 6px;">
                                 <div class="progress-bar bg-danger" style="width: <?= $p4Sub ?>%;"></div>
@@ -245,11 +256,11 @@
                         <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P5: Chronicity Density</span>
-                                <span>10% (Bobot)</span>
+                                <span><?= round($p5Weight * 100) ?>% (Bobot)</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-baseline mt-2">
                                 <div class="h4 fw-bold text-dark mb-0"><?= number_format($p5Sub, 1) ?></div>
-                                <span class="badge bg-primary-subtle text-primary fw-bold">+<?= $p5Contrib ?> Poin</span>
+                                <span class="badge bg-primary-subtle text-primary fw-bold">+<?= number_format($p5Contrib, 2) ?> Poin</span>
                             </div>
                             <div class="progress my-2" style="height: 6px;">
                                 <div class="progress-bar bg-primary" style="width: <?= $p5Sub ?>%;"></div>
@@ -292,7 +303,7 @@
                                 <th>Driver Code</th>
                                 <th>Score</th>
                                 <th>Priority</th>
-                                <th>Action & Unit</th>
+                                <th>Action & Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -313,7 +324,12 @@
                                         <td><code><?= esc($rd['driver_code']) ?></code></td>
                                         <td><strong><?= number_format((float)$rd['driver_score'], 1) ?></strong></td>
                                         <td><span class="badge bg-secondary"><?= esc($rd['priority']) ?></span></td>
-                                        <td><?= esc($rd['recommended_action']) ?> &bull; <strong><?= esc($rd['assigned_unit']) ?></strong></td>
+                                        <td>
+                                            <?= esc($rd['recommended_action']) ?> &bull; <strong><?= esc($rd['assigned_unit']) ?></strong>
+                                            <?php if (!empty($rd['advisory_label']) && empty($rd['dispatch_ready'])): ?>
+                                                <div class="mt-1"><span class="badge bg-warning text-dark"><i class="fa-solid fa-triangle-exclamation me-1"></i><?= esc($rd['advisory_label']) ?></span></div>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
@@ -388,17 +404,17 @@
                     <div class="small text-muted mb-2">Formula Version: <code><?= esc($fingerprint['formula_version'] ?? 'FHI_FORMULA_V1.2') ?></code> &bull; Kelengkapan: <?= round(((float)($fhiData['data_completeness_ratio'] ?? 0)) * 100, 1) ?>%</div>
 
                     <div class="tree-node">
-                        <div class="fw-bold">Pillar 1: Physical Network Coverage (20%) &bull; Skor: <?= number_format($p1Sub, 1) ?> &bull; Kontribusi: +<?= $p1Contrib ?> Poin</div>
+                        <div class="fw-bold">Pillar 1: Physical Network Coverage (20%) &bull; Skor: <?= number_format($p1Sub, 1) ?> &bull; Kontribusi: +<?= number_format($p1Contrib, 2) ?> Poin</div>
                         <div class="small text-muted">Rasio Seksi Fisik: <?= $breakdown['physical_coverage']['configured'] ?? 0 ?> dari <?= $breakdown['physical_coverage']['total'] ?? 0 ?> seksi terverifikasi aktif pada CR-06F.</div>
                     </div>
 
                     <div class="tree-node">
-                        <div class="fw-bold">Pillar 2: Asset Structural Health (25%) &bull; Skor: <?= $p2Sub !== null ? number_format($p2Sub, 1) : 'UNRESOLVED / NO DATA' ?> &bull; Kontribusi: +<?= $p2Contrib ?> Poin</div>
-                        <div class="small text-muted">Master Aset Ter-resolve: <?= $breakdown['asset_health']['resolved'] ?? 0 ?> dari <?= $breakdown['asset_health']['total'] ?? 517 ?> aset (Status: <?= esc($breakdown['asset_health']['status_label'] ?? 'UNRESOLVED') ?>).</div>
+                        <div class="fw-bold">Pillar 2: Asset Structural Health (25%) &bull; Skor: <?= $p2Sub !== null ? number_format($p2Sub, 1) : 'UNRESOLVED / NO DATA' ?> &bull; Kontribusi: +<?= number_format($p2Contrib, 2) ?> Poin</div>
+                        <div class="small text-muted">Master Aset Ter-resolve: <?= $breakdown['asset_health']['resolved'] ?? 0 ?> dari <?= $breakdown['asset_health']['total'] ?? 0 ?> aset feeder (Grid: <?= $breakdown['asset_health']['total_grid_assets'] ?? 517 ?>) &bull; Status: <?= esc($breakdown['asset_health']['status_label'] ?? 'UNRESOLVED') ?>.</div>
                     </div>
 
                     <div class="tree-node">
-                        <div class="fw-bold">Pillar 3: Active Operational Finding Severity (25%) &bull; Skor: <?= number_format($p3Sub, 1) ?> &bull; Kontribusi: +<?= $p3Contrib ?> Poin</div>
+                        <div class="fw-bold">Pillar 3: Active Operational Finding Severity (25%) &bull; Skor: <?= number_format($p3Sub, 1) ?> &bull; Kontribusi: +<?= number_format($p3Contrib, 2) ?> Poin</div>
                         <div class="small text-muted mb-2">Rincian Penalti Akumulasi Temuan Terbuka (Total Penalti: -<?= number_format((float)($breakdown['finding_severity']['penalty'] ?? 0), 1) ?> Poin):</div>
                         <ul class="small text-muted mb-1 ps-3">
                             <li>Emergency: <strong><?= $breakdown['finding_severity']['details']['emergency']['count'] ?? 0 ?></strong> &times; 25.0 = -<?= $breakdown['finding_severity']['details']['emergency']['subtotal'] ?? 0 ?> Poin</li>
@@ -409,12 +425,12 @@
                     </div>
 
                     <div class="tree-node">
-                        <div class="fw-bold">Pillar 4: Reliability Performance Rolling 12M (20%) &bull; Skor: <?= number_format($p4Sub, 1) ?> &bull; Kontribusi: +<?= $p4Contrib ?> Poin</div>
+                        <div class="fw-bold">Pillar 4: Reliability Performance Rolling 12M (20%) &bull; Skor: <?= number_format($p4Sub, 1) ?> &bull; Kontribusi: +<?= number_format($p4Contrib, 2) ?> Poin</div>
                         <div class="small text-muted">Total Gangguan: <?= $breakdown['reliability']['trips'] ?? 0 ?> trip, Durasi Padam: <?= number_format((float)($breakdown['reliability']['dur_mins'] ?? 0), 1) ?> menit.</div>
                     </div>
 
                     <div class="tree-node">
-                        <div class="fw-bold">Pillar 5: Chronicity & Recurrence Density (10%) &bull; Skor: <?= number_format($p5Sub, 1) ?> &bull; Kontribusi: +<?= $p5Contrib ?> Poin</div>
+                        <div class="fw-bold">Pillar 5: Chronicity & Recurrence Density (10%) &bull; Skor: <?= number_format($p5Sub, 1) ?> &bull; Kontribusi: +<?= number_format($p5Contrib, 2) ?> Poin</div>
                         <div class="small text-muted">Seksi Kronis (&ge;2 Kali Berulang): <?= $breakdown['chronicity']['chronic_sections'] ?? 0 ?> seksi jaringan.</div>
                     </div>
                 </div>

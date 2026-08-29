@@ -999,4 +999,128 @@ class CanonicalFeederAssetResolutionService
             'non_destructive_guarantee'     => 'PASS (0 writes performed during simulation)',
         ];
     }
+
+    /**
+     * Perform Phase AR-01 Phase 4A: Controlled Reversible Soft-Delete Quarantine of Unassigned CANDRAMAS Pilot Assets.
+     */
+    public function quarantineUnassignedPilotAssets(bool $dryRun = true, string $reason = 'AR-01-Phase-4A: Unassigned CANDRAMAS pilot dataset quarantine'): array
+    {
+        // 1. Initial State
+        $totalRawBefore = $this->db->table('assets')->countAllResults();
+        
+        $activeQueryBefore = $this->db->table('assets');
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $activeQueryBefore->where('deleted_at IS NULL');
+        }
+        $totalActiveBefore = $activeQueryBefore->countAllResults();
+
+        // 2. Fetch candidates matching exact deterministic quarantine predicates
+        $candQuery = $this->db->table('assets')
+            ->where('penyulang_id IS NULL')
+            ->where('section_id IS NULL');
+
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $candQuery->where('deleted_at IS NULL');
+        }
+
+        // Marker check: CANDRAMAS / GEN / CNDRMS
+        $candQuery->groupStart()
+            ->like('nama_asset', 'CANDRAMAS')
+            ->orLike('kode_asset', 'AST-KOTA-GEN')
+            ->orLike('kode_asset', 'AST-KOTA-CNDRMS')
+        ->groupEnd();
+
+        $candidates = $candQuery->get()->getResultArray();
+        $candidateIds = array_column($candidates, 'id');
+        $candidateCount = count($candidateIds);
+
+        // 3. Dependency Check (Active findings in temuan)
+        $conflictingFindingCount = 0;
+        if (!empty($candidateIds) && $this->db->tableExists('temuan')) {
+            $fQuery = $this->db->table('temuan')
+                ->whereIn('asset_id', $candidateIds);
+            if ($this->db->fieldExists('deleted_at', 'temuan')) {
+                $fQuery->where('deleted_at IS NULL');
+            }
+            $conflictingFindingCount = $fQuery->countAllResults();
+        }
+
+        if ($conflictingFindingCount > 0) {
+            return [
+                'success' => false,
+                'error'   => "Ditemukan {$conflictingFindingCount} temuan aktif yang terhubung dengan aset kandidat karantina. Operasi dibatalkan demi integritas data.",
+            ];
+        }
+
+        if ($dryRun) {
+            return [
+                'success'                 => true,
+                'mode'                    => 'DRY-RUN',
+                'target_quarantine_count' => $candidateCount,
+                'sample_candidate_ids'    => array_slice($candidateIds, 0, 10),
+                'total_raw_assets'        => $totalRawBefore,
+                'active_grid_scope_before'=> $totalActiveBefore,
+                'projected_active_after'  => $totalActiveBefore - $candidateCount,
+                'database_writes'         => 0,
+                'message'                 => "DRY-RUN: {$candidateCount} aset CANDRAMAS unassigned terverifikasi aman untuk dikarantina. Tidak ada data yang diubah.",
+            ];
+        }
+
+        // 4. Atomic Execution Mode
+        if (empty($candidateIds)) {
+            return [
+                'success'                 => true,
+                'mode'                    => 'EXECUTE',
+                'quarantined_count'       => 0,
+                'total_raw_assets'        => $totalRawBefore,
+                'active_grid_scope_before'=> $totalActiveBefore,
+                'active_grid_scope_after' => $totalActiveBefore,
+                'message'                 => "Tidak ada aset unassigned yang memenuhi kriteria untuk dikarantina.",
+            ];
+        }
+
+        $this->db->transBegin();
+        try {
+            $now = date('Y-m-d H:i:s');
+            $updateData = ['deleted_at' => $now];
+            if ($this->db->fieldExists('deleted_reason', 'assets')) {
+                $updateData['deleted_reason'] = $reason;
+            }
+            if ($this->db->fieldExists('updated_at', 'assets')) {
+                $updateData['updated_at'] = $now;
+            }
+
+            $this->db->table('assets')
+                ->whereIn('id', $candidateIds)
+                ->update($updateData);
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            return [
+                'success' => false,
+                'error'   => "Gagal melakukan soft-delete karantina aset: " . $e->getMessage(),
+            ];
+        }
+
+        // 5. Verify Post-Execution State
+        $activeQueryAfter = $this->db->table('assets');
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $activeQueryAfter->where('deleted_at IS NULL');
+        }
+        $totalActiveAfter = $activeQueryAfter->countAllResults();
+
+        return [
+            'success'                 => true,
+            'mode'                    => 'EXECUTE',
+            'quarantined_count'       => $candidateCount,
+            'sample_quarantined_ids'  => array_slice($candidateIds, 0, 10),
+            'total_raw_assets'        => $totalRawBefore,
+            'active_grid_scope_before'=> $totalActiveBefore,
+            'active_grid_scope_after' => $totalActiveAfter,
+            'quarantined_timestamp'   => $now,
+            'reversible_guarantee'    => 'PASS (Soft-deleted with deleted_at timestamp, reversible anytime)',
+            'message'                 => "Berhasil mengarantina {$candidateCount} aset CANDRAMAS unassigned via soft-delete. Active Grid Scope sekarang {$totalActiveAfter} aset.",
+        ];
+    }
 }

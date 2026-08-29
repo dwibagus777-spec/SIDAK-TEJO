@@ -851,4 +851,61 @@ class CanonicalFeederAssetResolutionTest extends CIUnitTestCase
         $result = command('audit:ar01-evidence 1');
         $this->assertNotNull($result);
     }
+
+    public function testQuarantineUnassignedPilotAssetsDryRun(): void
+    {
+        $res = $this->resolver->quarantineUnassignedPilotAssets(true);
+        $this->assertTrue($res['success']);
+        $this->assertEquals('DRY-RUN', $res['mode']);
+        $this->assertEquals(0, $res['database_writes']);
+    }
+
+    public function testQuarantineUnassignedPilotAssetsExecuteAndPreserveAlienFeeders(): void
+    {
+        $db = \Config\Database::connect();
+
+        // 1. Insert unassigned CANDRAMAS asset
+        $db->table('assets')->insert([
+            'id'           => 980,
+            'kode_asset'   => 'AST-KOTA-GEN-980',
+            'nama_asset'   => 'CANDRAMAS_980',
+            'jenis_asset'  => 'JTM',
+            'penyulang_id' => null,
+            'section_id'   => null,
+            'created_at'   => date('Y-m-d H:i:s'),
+        ]);
+
+        // 2. Insert assigned Feeder 15 asset
+        $db->table('assets')->insert([
+            'id'           => 981,
+            'kode_asset'   => 'AST-KOTA-BJR-981',
+            'nama_asset'   => 'BANJAR_981',
+            'jenis_asset'  => 'JTM',
+            'penyulang_id' => 15,
+            'section_id'   => null,
+            'created_at'   => date('Y-m-d H:i:s'),
+        ]);
+
+        $res = $this->resolver->quarantineUnassignedPilotAssets(false);
+        $this->assertTrue($res['success']);
+        $this->assertEquals('EXECUTE', $res['mode']);
+        $this->assertGreaterThan(0, $res['quarantined_count']);
+
+        // Assert 980 is soft-deleted
+        $ast980 = $db->table('assets')->where('id', 980)->get()->getFirstRow('array');
+        $this->assertNotNull($ast980['deleted_at']);
+
+        // Assert 981 (Feeder 15) is STILL active
+        $ast981 = $db->table('assets')->where('id', 981)->get()->getFirstRow('array');
+        $this->assertNull($ast981['deleted_at']);
+    }
+
+    public function testQuarantineCommandExecution(): void
+    {
+        $dryRun = command('ar01:quarantine-candramas --dry-run');
+        $this->assertNotNull($dryRun);
+
+        $exec = command('ar01:quarantine-candramas --execute');
+        $this->assertNotNull($exec);
+    }
 }

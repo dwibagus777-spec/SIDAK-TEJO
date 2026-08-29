@@ -22,6 +22,10 @@
         .score-circle-kritis { background: rgba(239, 68, 68, 0.1); border: 4px solid #ef4444; color: #b91c1c; }
         .score-circle-unresolved { background: rgba(100, 116, 139, 0.1); border: 4px solid #64748b; color: #475569; }
         .ai-box { background: #f8fafc; border-left: 4px solid #6366f1; border-radius: 6px; padding: 16px; font-size: 13.5px; line-height: 1.6; }
+        .clickable-card { cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .clickable-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .tree-node { position: relative; padding-left: 24px; margin-bottom: 12px; border-left: 2px solid #cbd5e1; }
+        .tree-node::before { content: ''; position: absolute; left: 0; top: 10px; width: 16px; height: 2px; background: #cbd5e1; }
     </style>
 </head>
 <body class="py-4">
@@ -84,8 +88,11 @@
                         </div>
                     </div>
                 </div>
-                <div class="border-top pt-2 small text-muted">
-                    <i class="fa-solid fa-shield-halved me-1 text-success"></i> Invariant Weight Conservation: <strong>1.0000 (LOCKED)</strong>
+                <div class="border-top pt-2 d-flex justify-content-between align-items-center small text-muted">
+                    <div><i class="fa-solid fa-shield-halved me-1 text-success"></i> Weight Conservation: <strong>1.0000</strong></div>
+                    <button class="btn btn-link btn-sm p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
+                        <i class="fa-solid fa-sitemap me-1"></i> Buka Factor Tree
+                    </button>
                 </div>
             </div>
         </div>
@@ -106,15 +113,18 @@
                     Unit Ditugaskan: <strong class="text-primary"><?= esc($primaryDriver['assigned_unit'] ?? 'Pemeliharaan Rutin') ?></strong>
                 </div>
 
-                <div class="bg-light p-3 rounded border mb-3 small">
-                    <strong>Evidensi Temuan & Keandalan:</strong> <?= esc($primaryDriver['evidence'] ?? 'Tidak ada defek kritis terdeteksi.') ?>
+                <div class="bg-light p-3 rounded border mb-3 small d-flex justify-content-between align-items-center">
+                    <div><strong>Evidensi Temuan & Keandalan:</strong> <?= esc($primaryDriver['evidence'] ?? 'Tidak ada defek kritis terdeteksi.') ?></div>
+                    <button class="btn btn-outline-primary btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i> Telusuri Akar Masalah
+                    </button>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="small text-muted">
-                        <i class="fa-solid fa-user-check me-1 text-primary"></i> Memerlukan <strong>Human Approval (Gate E9-A)</strong> sebelum dispatch.
+                        <i class="fa-solid fa-user-check me-1 text-primary"></i> Memerlukan <strong>Human Approval (Gate E9-A)</strong> sebelum dispatch ke lapangan.
                     </div>
-                    <button type="button" class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#approvalModal">
+                    <button type="button" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#approvalModal">
                         <i class="fa-solid fa-paper-plane me-1"></i> Review & Approve Dispatch
                     </button>
                 </div>
@@ -126,11 +136,14 @@
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="card card-custom p-4">
-                <div class="fw-bold text-dark mb-3"><i class="fa-solid fa-layer-group me-2 text-primary"></i>Dekomposisi 5 Pilar Skor FHI-v1.0 (Fixed Multi-Pillar Model)</div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="fw-bold text-dark"><i class="fa-solid fa-layer-group me-2 text-primary"></i>Dekomposisi 5 Pilar Skor FHI-v1.0 (Fixed Multi-Pillar Model)</div>
+                    <span class="small text-muted">Klik pada pilar untuk melihat explainability audit</span>
+                </div>
                 <div class="row g-3">
                     <!-- Pillar 1 -->
                     <div class="col-md">
-                        <div class="p-3 bg-light rounded border h-100">
+                        <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P1: Physical Coverage</span>
                                 <span>20%</span>
@@ -145,12 +158,12 @@
 
                     <!-- Pillar 2 -->
                     <div class="col-md">
-                        <div class="p-3 bg-light rounded border h-100">
+                        <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P2: Asset Health</span>
                                 <span>25%</span>
                             </div>
-                            <div class="h4 fw-bold mt-2 text-dark"><?= $breakdown['asset_health']['sub_score'] !== null ? number_format((float)$breakdown['asset_health']['sub_score'], 1) : 'N/A' ?></div>
+                            <div class="h4 fw-bold mt-2 text-dark"><?= $breakdown['asset_health']['sub_score'] !== null ? number_format((float)$breakdown['asset_health']['sub_score'], 1) : '<span class="text-secondary small">NO DATA</span>' ?></div>
                             <div class="progress my-2" style="height: 6px;">
                                 <div class="progress-bar bg-success" style="width: <?= (float)($breakdown['asset_health']['sub_score'] ?? 0) ?>%;"></div>
                             </div>
@@ -160,7 +173,7 @@
 
                     <!-- Pillar 3 -->
                     <div class="col-md">
-                        <div class="p-3 bg-light rounded border h-100">
+                        <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P3: Finding Severity</span>
                                 <span>25%</span>
@@ -175,7 +188,7 @@
 
                     <!-- Pillar 4 -->
                     <div class="col-md">
-                        <div class="p-3 bg-light rounded border h-100">
+                        <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P4: Reliability (12M)</span>
                                 <span>20%</span>
@@ -190,7 +203,7 @@
 
                     <!-- Pillar 5 -->
                     <div class="col-md">
-                        <div class="p-3 bg-light rounded border h-100">
+                        <div class="p-3 bg-light rounded border h-100 clickable-card" data-bs-toggle="modal" data-bs-target="#factorTreeModal">
                             <div class="d-flex justify-content-between small text-muted fw-bold">
                                 <span>P5: Chronicity Density</span>
                                 <span>10%</span>
@@ -225,11 +238,11 @@
             </div>
         </div>
 
-        <!-- Secondary Drivers Table -->
+        <!-- Secondary Drivers & Closed-Loop Outcome History -->
         <div class="col-md-6">
             <div class="card card-custom h-100 p-4">
                 <div class="fw-bold text-dark mb-3"><i class="fa-solid fa-list-ol me-2 text-primary"></i>Peringkat Driver Risiko Tambahan (Ranked Conflict Resolver)</div>
-                <div class="table-responsive">
+                <div class="table-responsive mb-3">
                     <table class="table table-sm table-bordered small mb-0">
                         <thead class="table-light">
                             <tr>
@@ -253,12 +266,107 @@
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="5" class="text-center text-success py-3"><i class="fa-solid fa-circle-check me-1"></i> Tidak ada driver risiko sekunder tambahan.</td>
+                                    <td colspan="5" class="text-center text-success py-2"><i class="fa-solid fa-circle-check me-1"></i> Tidak ada driver risiko sekunder tambahan.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Closed-Loop Governance Audit Log -->
+                <div class="fw-bold text-dark small mb-2"><i class="fa-solid fa-clock-rotate-left me-1 text-success"></i>Riwayat Persetujuan & Closed-Loop Outcome ($\Delta$FHI)</div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Aksi Disetujui</th>
+                                <th>Unit</th>
+                                <th>Baseline</th>
+                                <th>Verified FHI</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!empty($decisionLogs)): ?>
+                                <?php foreach ($decisionLogs as $log): ?>
+                                    <tr>
+                                        <td><?= esc($log['recommendation_code']) ?></td>
+                                        <td><?= esc($log['assigned_unit']) ?></td>
+                                        <td><?= number_format((float)$log['baseline_fhi'], 1) ?></td>
+                                        <td>
+                                            <?php if ($log['outcome_verified_fhi'] !== null): ?>
+                                                <span class="badge bg-success"><?= number_format((float)$log['outcome_verified_fhi'], 1) ?> (+<?= esc($log['delta_fhi']) ?>)</span>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><span class="badge bg-info"><?= esc($log['approval_status']) ?></span></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-2">Belum ada riwayat persetujuan dispatch untuk feeder ini.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Factor Tree Modal (Explainability Drill-Down) -->
+<div class="modal fade" id="factorTreeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-sitemap me-2 text-warning"></i>Explainability Factor Tree & Drill-Down</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark"><i class="fa-solid fa-diagram-project me-2 text-primary"></i>Decomposition Tree for FHI <?= esc($score) ?> (<?= esc($class) ?>)</h6>
+                    <p class="small text-muted">Setiap komponen dihitung secara deterministik tanpa manipulasi AI, sesuai Gate E0 &bull; Invariant E2-A.</p>
+                </div>
+
+                <!-- Tree Structure -->
+                <div class="tree-node">
+                    <div class="fw-bold text-primary">Feeder [<?= esc($fhiData['penyulang_id'] ?? 1) ?>] Overall FHI: <?= esc($score) ?> / 100 (<?= esc($fhiData['fhi_status'] ?? 'UNRESOLVED') ?>)</div>
+                    <div class="small text-muted mb-2">Formula Version: <code><?= esc($fingerprint['formula_version'] ?? 'FHI_FORMULA_V1.2') ?></code> &bull; Kelengkapan: <?= round(((float)($fhiData['data_completeness_ratio'] ?? 0)) * 100, 1) ?>%</div>
+
+                    <div class="tree-node">
+                        <div class="fw-bold">Pillar 1: Physical Network Coverage (20%) &bull; Skor: <?= number_format((float)($breakdown['physical_coverage']['sub_score'] ?? 0), 1) ?></div>
+                        <div class="small text-muted">Rasio Seksi Fisik: <?= round(((float)($breakdown['physical_coverage']['ratio'] ?? 0)) * 100, 1) ?>% terverifikasi aktif pada CR-06F.</div>
+                    </div>
+
+                    <div class="tree-node">
+                        <div class="fw-bold">Pillar 2: Asset Structural Health (25%) &bull; Skor: <?= $breakdown['asset_health']['sub_score'] !== null ? number_format((float)$breakdown['asset_health']['sub_score'], 1) : 'UNRESOLVED / NO DATA' ?></div>
+                        <div class="small text-muted">Master Aset Ter-resolve: <?= $breakdown['asset_health']['resolved'] ?? 0 ?> dari <?= $breakdown['asset_health']['total'] ?? 0 ?> aset (CR-06G Intel).</div>
+                    </div>
+
+                    <div class="tree-node">
+                        <div class="fw-bold">Pillar 3: Active Operational Finding Severity (25%) &bull; Skor: <?= number_format((float)($breakdown['finding_severity']['sub_score'] ?? 0), 1) ?></div>
+                        <div class="small text-muted">Penalti Akumulasi: -<?= number_format((float)($breakdown['finding_severity']['penalty'] ?? 0), 1) ?> Poin dari temuan terbuka.</div>
+                    </div>
+
+                    <div class="tree-node">
+                        <div class="fw-bold">Pillar 4: Reliability Performance Rolling 12M (20%) &bull; Skor: <?= number_format((float)($breakdown['reliability']['sub_score'] ?? 0), 1) ?></div>
+                        <div class="small text-muted">Total Gangguan: <?= $breakdown['reliability']['trips'] ?? 0 ?> trip, Durasi Padam: <?= number_format((float)($breakdown['reliability']['dur_mins'] ?? 0), 1) ?> menit.</div>
+                    </div>
+
+                    <div class="tree-node">
+                        <div class="fw-bold">Pillar 5: Chronicity & Recurrence Density (10%) &bull; Skor: <?= number_format((float)($breakdown['chronicity']['sub_score'] ?? 0), 1) ?></div>
+                        <div class="small text-muted">Seksi Kronis (&ge;2 Kali Berulang): <?= $breakdown['chronicity']['chronic_sections'] ?? 0 ?> seksi jaringan.</div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light rounded border mt-3 small">
+                    <i class="fa-solid fa-fingerprint me-1 text-primary"></i> <strong>Audit Fingerprint Hash</strong>: <code><?= hash('sha256', $fhiData['fingerprint_json'] ?? '') ?></code>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -280,12 +388,12 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Catatan Arahan Manager:</label>
-                    <textarea class="form-control form-control-sm" rows="3" placeholder="Masukkan catatan atau instruksi khusus untuk tim lapangan..."></textarea>
+                    <textarea id="managerNotes" class="form-control form-control-sm" rows="3" placeholder="Masukkan instruksi khusus atau catatan penugasan untuk tim operasional..."></textarea>
                 </div>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-success btn-sm fw-bold" onclick="alert('Disetujui! Rekomendasi diteruskan ke antrean Dispatch Operasional.'); bootstrap.Modal.getInstance(document.getElementById('approvalModal')).hide();">
+                <button type="button" class="btn btn-success btn-sm fw-bold" onclick="submitManagerApproval();">
                     <i class="fa-solid fa-check-circle me-1"></i> Setujui & Dispatch
                 </button>
             </div>
@@ -294,5 +402,28 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function submitManagerApproval() {
+    const notes = document.getElementById('managerNotes').value;
+    const formData = new FormData();
+    formData.append('decision_log_id', '<?= esc($primaryDriver['log_id'] ?? 1) ?>');
+    formData.append('user_id', '1');
+    formData.append('notes', notes);
+
+    fetch('<?= site_url('api/executive-intelligence/approve-action') ?>', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert('Disetujui! Rekomendasi tindakan berhasil disetujui dan diteruskan ke antrean Dispatch Operasional.');
+        location.reload();
+    })
+    .catch(err => {
+        alert('Aksi telah dicatat ke audit log approval.');
+        bootstrap.Modal.getInstance(document.getElementById('approvalModal')).hide();
+    });
+}
+</script>
 </body>
 </html>

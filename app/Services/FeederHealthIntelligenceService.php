@@ -580,6 +580,21 @@ class FeederHealthIntelligenceService
     }
 
     /**
+     * Get Decision Logs for a Feeder (Gate E9-A).
+     */
+    public function getDecisionLogs(int $penyulangId): array
+    {
+        if ($this->db->tableExists('executive_decision_logs')) {
+            return $this->decisionLogModel
+                ->where('penyulang_id', $penyulangId)
+                ->orderBy('id', 'DESC')
+                ->limit(10)
+                ->findAll();
+        }
+        return [];
+    }
+
+    /**
      * Closed-Loop Outcome Verification (Gate E9-A).
      */
     public function verifyDecisionOutcome(int $decisionLogId, float $newFhi): array

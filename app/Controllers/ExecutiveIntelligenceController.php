@@ -36,6 +36,7 @@ class ExecutiveIntelligenceController extends ResourceController
 
         $fhiData = $this->fhiService->calculateFeederHealth($selectedId);
         $advisory = $this->aiService->generateExecutiveAdvisory($fhiData);
+        $decisionLogs = $this->fhiService->getDecisionLogs($selectedId);
 
         return view('executive_intelligence/index', [
             'title'            => 'Executive Decision Fabric (CC-04)',
@@ -43,6 +44,7 @@ class ExecutiveIntelligenceController extends ResourceController
             'selectedFeederId' => $selectedId,
             'fhiData'          => $fhiData,
             'advisory'         => $advisory,
+            'decisionLogs'     => $decisionLogs,
         ]);
     }
 

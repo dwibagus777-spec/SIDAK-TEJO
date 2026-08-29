@@ -17,7 +17,8 @@ class AssetModel extends Model
         'kode_asset', 'nama_asset', 'jenis_asset', 'ulp_id', 'penyulang_id', 'section_id',
         'parent_asset_id', 'asset_type_id', 'construction_type_id', 'sequence_no',
         'lokasi', 'latitude', 'longitude', 'tahun_instalasi', 'installation_date', 'merk', 'type',
-        'nomor_seri', 'kapasitas', 'status', 'health_score', 'health_category', 'asset_version',
+        'nomor_seri', 'kapasitas', 'status', 'health_score', 'health_category', 'degradation_index', 
+        'intelligence_resolution_status', 'asset_version',
         'foto', 'qr_code', 'barcode', 'deleted_by', 'deleted_reason',
         'created_at', 'updated_at'
     ];
@@ -172,13 +173,39 @@ class AssetModel extends Model
                         ]
                     ]);
                 }
-                if (!$db->fieldExists('import_batch_id', 'assets')) {
+                if (!$db->fieldExists('health_score', 'assets')) {
                     $forge->addColumn('assets', [
-                        'import_batch_id' => [
-                            'type'       => 'BIGINT',
-                            'constraint' => 20,
-                            'unsigned'   => true,
+                        'health_score' => [
+                            'type'       => 'DECIMAL',
+                            'constraint' => '5,2',
                             'null'       => true,
+                        ]
+                    ]);
+                }
+                if (!$db->fieldExists('health_category', 'assets')) {
+                    $forge->addColumn('assets', [
+                        'health_category' => [
+                            'type'       => 'VARCHAR',
+                            'constraint' => 30,
+                            'null'       => true,
+                        ]
+                    ]);
+                }
+                if (!$db->fieldExists('degradation_index', 'assets')) {
+                    $forge->addColumn('assets', [
+                        'degradation_index' => [
+                            'type'       => 'DECIMAL',
+                            'constraint' => '5,4',
+                            'null'       => true,
+                        ]
+                    ]);
+                }
+                if (!$db->fieldExists('intelligence_resolution_status', 'assets')) {
+                    $forge->addColumn('assets', [
+                        'intelligence_resolution_status' => [
+                            'type'       => 'VARCHAR',
+                            'constraint' => 30,
+                            'default'    => 'UNRESOLVED',
                         ]
                     ]);
                 }

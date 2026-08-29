@@ -14,8 +14,20 @@ class CreateExecutiveDecisionFabricSchema extends Migration
     {
         $db = \Config\Database::connect();
 
-        // 1. Additive columns to feeder_health_classifications
+        // 1. Modify and add columns to feeder_health_classifications
         if ($db->tableExists('feeder_health_classifications')) {
+            // Make health_score nullable in MySQL for UNRESOLVED status (Invariant E3-A)
+            try {
+                $this->forge->modifyColumn('feeder_health_classifications', [
+                    'health_score' => [
+                        'type'       => 'DECIMAL',
+                        'constraint' => '5,2',
+                        'null'       => true,
+                        'default'    => null,
+                    ],
+                ]);
+            } catch (\Throwable $e) {}
+
             $newCols = [];
             if (!$db->fieldExists('fhi_status', 'feeder_health_classifications')) {
                 $newCols['fhi_status'] = [

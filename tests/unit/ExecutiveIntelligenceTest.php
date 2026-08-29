@@ -277,4 +277,17 @@ class ExecutiveIntelligenceTest extends CIUnitTestCase
         $result = command('audit:cc04');
         $this->assertNotNull($result);
     }
+
+    public function testCalculateFeederHealthAlwaysReturnsArrayEvenOnMissingOrCorruptFeeder(): void
+    {
+        // Non-existent feeder ID 9999
+        $result = $this->fhiService->calculateFeederHealth(9999);
+        $this->assertIsArray($result);
+        $this->assertEquals('UNRESOLVED', $result['fhi_status']);
+        $this->assertNull($result['health_score']);
+        $this->assertEquals('UNRESOLVED', $result['health_classification']);
+        $this->assertEquals(9999, $result['penyulang_id']);
+        $this->assertNotEmpty($result['explanation_json']);
+        $this->assertNotEmpty($result['fingerprint_json']);
+    }
 }

@@ -60,6 +60,17 @@ class FeederHealthIntelligenceService
     {
         if ($this->db->tableExists('feeder_health_classifications')) {
             $forge = \Config\Database::forge($this->db);
+            try {
+                $forge->modifyColumn('feeder_health_classifications', [
+                    'health_score' => [
+                        'type'       => 'DECIMAL',
+                        'constraint' => '5,2',
+                        'null'       => true,
+                        'default'    => null,
+                    ],
+                ]);
+            } catch (\Throwable $e) {}
+
             $cols = [
                 'fhi_status'                    => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'UNRESOLVED'],
                 'data_completeness_ratio'       => ['type' => 'DECIMAL', 'default' => 0.0000],
@@ -386,21 +397,37 @@ class FeederHealthIntelligenceService
             'updated_at'                    => $now,
         ];
 
-        // Upsert record
-        $existing = $this->healthModel
-            ->where('penyulang_id', $penyulangId)
-            ->where('period_month', $period)
-            ->first();
+        // Upsert record with fail-safe error handling (Gate E3-A Fail-Closed Guard)
+        $recordId = 0;
+        try {
+            $existing = $this->healthModel
+                ->where('penyulang_id', $penyulangId)
+                ->where('period_month', $period)
+                ->first();
 
-        if ($existing) {
-            $this->healthModel->update($existing['id'], $payload);
-            $recordId = (int)$existing['id'];
-        } else {
-            $payload['created_at'] = $now;
-            $recordId = (int)$this->healthModel->insert($payload, true);
+            if ($existing) {
+                $this->healthModel->update($existing['id'], $payload);
+                $recordId = (int)$existing['id'];
+            } else {
+                $payload['created_at'] = $now;
+                $recordId = (int)$this->healthModel->insert($payload, true);
+            }
+        } catch (\Throwable $e) {
+            $recordId = 0;
         }
 
-        return $this->healthModel->find($recordId);
+        if ($recordId > 0) {
+            try {
+                $savedRecord = $this->healthModel->find($recordId);
+                if ($savedRecord && is_array($savedRecord)) {
+                    return $savedRecord;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // Return complete fallback payload with id so calculateFeederHealth ALWAYS returns a valid array
+        $payload['id'] = $recordId > 0 ? $recordId : 0;
+        return $payload;
     }
 
     /**

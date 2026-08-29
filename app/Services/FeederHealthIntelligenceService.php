@@ -200,7 +200,8 @@ class FeederHealthIntelligenceService
             ->get()
             ->getResultArray();
 
-        $totalAssetsCount = count($assets);
+        $totalMasterAssetsCount = $this->db->table('assets')->where('deleted_at IS NULL')->countAllResults();
+        $totalAssetsCount = count($assets) > 0 ? count($assets) : ($totalMasterAssetsCount > 0 ? $totalMasterAssetsCount : 0);
         $resolvedAssetsCount = 0;
         $sumAhs = 0.0;
 
@@ -217,10 +218,11 @@ class FeederHealthIntelligenceService
 
         // 4. Pillar 3: Active Operational Finding Severity (Amendment CC-02)
         $findingStats = $this->getOperationalFindingSeverities($penyulangId);
-        $findingPenalty = ($findingStats['EMERGENCY'] * 25.0) +
-                          ($findingStats['KRITIS'] * 20.0) +
-                          ($findingStats['SERIUS'] * 10.0) +
-                          ($findingStats['RINGAN'] * 3.0);
+        $emergSubtotal = $findingStats['EMERGENCY'] * 25.0;
+        $kritisSubtotal = $findingStats['KRITIS'] * 20.0;
+        $seriusSubtotal = $findingStats['SERIUS'] * 10.0;
+        $ringanSubtotal = $findingStats['RINGAN'] * 3.0;
+        $findingPenalty = $emergSubtotal + $kritisSubtotal + $seriusSubtotal + $ringanSubtotal;
         $subScoreFinding = max(0.0, round(100.0 - $findingPenalty, 2));
 
         // 5. Pillar 4: Reliability & Outage Performance (Rolling 12M, Amendment CC-03)
@@ -326,31 +328,45 @@ class FeederHealthIntelligenceService
             'fingerprint'             => $fingerprint,
             'score_breakdown'         => [
                 'physical_coverage' => [
-                    'weight'    => $wPhys,
-                    'sub_score' => $subScorePhys,
-                    'ratio'     => $physicalCoverageRatio,
+                    'weight'        => $wPhys,
+                    'sub_score'     => $subScorePhys,
+                    'weighted_score'=> round($subScorePhys * $wPhys, 2),
+                    'ratio'         => $physicalCoverageRatio,
+                    'configured'    => $configuredSectionsCount,
+                    'total'         => $totalSectionsCount,
                 ],
                 'asset_health'      => [
-                    'weight'    => $wAsset,
-                    'sub_score' => $subScoreAsset,
-                    'resolved'  => $resolvedAssetsCount,
-                    'total'     => $totalAssetsCount,
+                    'weight'        => $wAsset,
+                    'sub_score'     => $subScoreAsset,
+                    'weighted_score'=> round(($subScoreAsset ?? 0.0) * $wAsset, 2),
+                    'resolved'      => $resolvedAssetsCount,
+                    'total'         => $totalAssetsCount,
+                    'status_label'  => $resolvedAssetsCount > 0 ? 'RESOLVED' : 'NO DATA / UNRESOLVED',
                 ],
                 'finding_severity'  => [
-                    'weight'    => $wFinding,
-                    'sub_score' => $subScoreFinding,
-                    'penalty'   => $findingPenalty,
-                    'counts'    => $findingStats,
+                    'weight'        => $wFinding,
+                    'sub_score'     => $subScoreFinding,
+                    'weighted_score'=> round($subScoreFinding * $wFinding, 2),
+                    'penalty'       => $findingPenalty,
+                    'counts'        => $findingStats,
+                    'details'       => [
+                        'emergency' => ['count' => $findingStats['EMERGENCY'], 'factor' => 25.0, 'subtotal' => $emergSubtotal],
+                        'kritis'    => ['count' => $findingStats['KRITIS'],    'factor' => 20.0, 'subtotal' => $kritisSubtotal],
+                        'serius'    => ['count' => $findingStats['SERIUS'],    'factor' => 10.0, 'subtotal' => $seriusSubtotal],
+                        'ringan'    => ['count' => $findingStats['RINGAN'],    'factor' => 3.0,  'subtotal' => $ringanSubtotal],
+                    ],
                 ],
                 'reliability'       => [
-                    'weight'    => $wRel,
-                    'sub_score' => $subScoreRel,
-                    'trips'     => $interruptionCount,
-                    'dur_mins'  => $interruptionDur,
+                    'weight'        => $wRel,
+                    'sub_score'     => $subScoreRel,
+                    'weighted_score'=> round($subScoreRel * $wRel, 2),
+                    'trips'         => $interruptionCount,
+                    'dur_mins'      => $interruptionDur,
                 ],
                 'chronicity'        => [
-                    'weight'    => $wRec,
-                    'sub_score' => $subScoreRec,
+                    'weight'        => $wRec,
+                    'sub_score'     => $subScoreRec,
+                    'weighted_score'=> round($subScoreRec * $wRec, 2),
                     'chronic_sections' => $chronicSectionsCount,
                 ],
             ],
@@ -536,9 +552,10 @@ class FeederHealthIntelligenceService
         }
 
         return [
-            'primary_driver'    => $drivers[0],
-            'secondary_drivers' => array_slice($drivers, 1),
-            'total_drivers'     => count($drivers),
+            'primary_driver'     => $drivers[0],
+            'secondary_drivers'  => array_slice($drivers, 1),
+            'all_ranked_drivers' => $drivers,
+            'total_drivers'      => count($drivers),
         ];
     }
 

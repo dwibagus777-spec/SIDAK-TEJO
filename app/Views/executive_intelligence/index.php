@@ -112,7 +112,11 @@
                             <div class="fw-bold h5 mb-1"><?= esc($fhiStatus) ?></div>
                             <div class="small text-muted">Formula: <code><?= esc($fingerprint['formula_version'] ?? 'FHI_FORMULA_V1.2') ?></code></div>
                             <div class="small text-muted">Kelengkapan Data: <strong><?= number_format(((float)($fhiData['data_completeness_ratio'] ?? 0)) * 100, 1) ?>%</strong></div>
-                            <div class="small text-muted mt-1">Kontribusi Pilar: <strong><?= number_format($p1Contrib, 1) ?> + <?= number_format($p2Contrib, 1) ?> + <?= number_format($p3Contrib, 1) ?> + <?= number_format($p4Contrib, 1) ?> + <?= number_format($p5Contrib, 1) ?> = <?= number_format($totalComputedFhi, 1) ?></strong></div>
+                            <?php if ($fhiStatus === 'UNRESOLVED'): ?>
+                                <div class="small text-muted mt-1">Snapshot Bobot: <strong><?= number_format($p1Contrib, 1) ?> + <?= number_format($p2Contrib, 1) ?> + <?= number_format($p3Contrib, 1) ?> + <?= number_format($p4Contrib, 1) ?> + <?= number_format($p5Contrib, 1) ?></strong> <span class="text-danger small d-block fw-semibold">(FHI Tertunda: Prasyarat Data)</span></div>
+                            <?php else: ?>
+                                <div class="small text-muted mt-1">Kontribusi Pilar: <strong><?= number_format($p1Contrib, 1) ?> + <?= number_format($p2Contrib, 1) ?> + <?= number_format($p3Contrib, 1) ?> + <?= number_format($p4Contrib, 1) ?> + <?= number_format($p5Contrib, 1) ?> = <?= number_format($totalComputedFhi, 1) ?></strong></div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

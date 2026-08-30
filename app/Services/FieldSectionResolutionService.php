@@ -134,7 +134,7 @@ class FieldSectionResolutionService
         $seqCol = $this->db->fieldExists('sequence_order', 'sections') ? 'sequence_order' : ($this->db->fieldExists('urutan', 'sections') ? 'urutan' : 'id');
         $builder = $this->db->table('sections')->where('penyulang_id', $penyulangId);
         if ($this->db->fieldExists('status', 'sections')) {
-            $builder->where('status', 'ACTIVE');
+            $builder->whereIn('status', ['AKTIF', 'ACTIVE', '1']);
         }
         $getSec = $builder->orderBy($seqCol, 'ASC')->get();
         $sections = $getSec ? $getSec->getResultArray() : [];

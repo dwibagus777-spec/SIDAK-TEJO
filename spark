@@ -60,10 +60,19 @@ ini_set('display_errors', '1');
  */
 
 // Path to the front controller
-define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR);
+$publicDir = __DIR__ . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR;
+if (!defined('FCPATH')) {
+    if (is_dir($publicDir)) {
+        define('FCPATH', $publicDir);
+    } else {
+        define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
+    }
+}
 
 // Ensure the current directory is pointing to the front controller's directory
-chdir(FCPATH);
+if (is_dir(FCPATH)) {
+    @chdir(FCPATH);
+}
 
 /*
  *---------------------------------------------------------------
@@ -75,8 +84,11 @@ chdir(FCPATH);
  */
 
 // LOAD OUR PATHS CONFIG FILE
-// This is the line that might need to be changed, depending on your folder structure.
-require FCPATH . '../app/Config/Paths.php';
+$pathsFile = is_file(FCPATH . '../app/Config/Paths.php')
+    ? (FCPATH . '../app/Config/Paths.php')
+    : (is_file(__DIR__ . '/app/Config/Paths.php') ? (__DIR__ . '/app/Config/Paths.php') : (FCPATH . 'app/Config/Paths.php'));
+
+require $pathsFile;
 // ^^^ Change this line if you move your application folder
 
 $paths = new Paths();

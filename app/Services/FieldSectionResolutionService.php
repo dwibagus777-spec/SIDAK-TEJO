@@ -136,14 +136,16 @@ class FieldSectionResolutionService
         if ($this->db->fieldExists('status', 'sections')) {
             $builder->where('status', 'ACTIVE');
         }
-        $sections = $builder->orderBy($seqCol, 'ASC')->get()->getResultArray();
+        $getSec = $builder->orderBy($seqCol, 'ASC')->get();
+        $sections = $getSec ? $getSec->getResultArray() : [];
 
         // 2. Fetch all active assets in feeder
         $builder = $this->db->table('assets')->where('penyulang_id', $penyulangId);
         if ($this->db->fieldExists('deleted_at', 'assets')) {
             $builder->where('deleted_at IS NULL');
         }
-        $assets = $builder->get()->getResultArray();
+        $getAssets = $builder->get();
+        $assets = $getAssets ? $getAssets->getResultArray() : [];
 
         $totalAssets = count($assets);
         $verifiedCount = 0;

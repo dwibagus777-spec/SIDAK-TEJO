@@ -15,7 +15,8 @@ class AssetModel extends Model
 
     protected $allowedFields    = [
         'kode_asset', 'nama_asset', 'jenis_asset', 'ulp_id', 'penyulang_id', 'section_id',
-        'parent_asset_id', 'asset_type_id', 'construction_type_id', 'sequence_no',
+        'parent_asset_id', 'asset_type_id', 'construction_type_id', 'sequence_no', 'field_sequence',
+        'section_resolution_method', 'section_verified_by', 'section_verified_at',
         'lokasi', 'latitude', 'longitude', 'tahun_instalasi', 'installation_date', 'merk', 'type',
         'nomor_seri', 'kapasitas', 'status', 'health_score', 'health_category', 'degradation_index', 
         'intelligence_resolution_status', 'asset_version',

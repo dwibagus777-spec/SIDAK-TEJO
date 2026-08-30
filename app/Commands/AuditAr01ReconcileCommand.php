@@ -61,26 +61,43 @@ class AuditAr01ReconcileCommand extends BaseCommand
             CLI::write("  • Feeder ID #{$f['id']} : [{$f['kode_penyulang']}] {$f['nama_penyulang']}{$isTarget}");
         }
 
-        // 3. MASTER ASSET SCOPE & DISCREPANCY RECONCILIATION (517 vs 518)
+        // 3. MASTER ASSET SCOPE & DISCREPANCY RECONCILIATION
         CLI::write("\n3. MASTER ASSET SCOPE & DISCREPANCY RECONCILIATION", 'cyan');
         CLI::write("------------------------------------------------------------------");
         CLI::write("  Total Raw Records in Table 'assets': {$sr['raw_master_assets']}");
-        CLI::write("  Active Master Assets (Grid Scope)  : {$sr['active_grid_scope']}");
-        CLI::write("  Soft-Deleted Records (deleted_at)  : {$sr['soft_deleted_count']}");
+        CLI::write("  Active Master Assets (Grid Scope)  : " . CLI::color("{$sr['active_grid_scope']} assets", 'green'));
+        CLI::write("  Soft-Deleted Records (deleted_at)  : " . CLI::color("{$sr['soft_deleted_count']} records", 'yellow'));
         CLI::write("  Status Discrepancy Reconciliation  : " . CLI::color($sr['discrepancy_explanation'], 'green'));
         if (!empty($sr['soft_deleted_records'])) {
-            CLI::write("  Rincian Soft-Deleted Row:");
-            foreach ($sr['soft_deleted_records'] as $sd) {
+            CLI::write("  Sampel Soft-Deleted Records (5 dari {$sr['soft_deleted_count']}):");
+            foreach (array_slice($sr['soft_deleted_records'], 0, 5) as $sd) {
                 CLI::write("     └─ [ID: {$sd['id']}] Code: '{$sd['kode_asset']}' | Name: '{$sd['nama_asset']}' | Deleted: {$sd['deleted_at']}");
+            }
+            if (count($sr['soft_deleted_records']) > 5) {
+                CLI::write("     └─ ... dan " . (count($sr['soft_deleted_records']) - 5) . " record soft-deleted lainnya tersimpan aman.");
             }
         }
 
         // 4. GLOBAL FEEDER FK LINEAGE & DISTRIBUTION
-        CLI::write("\n4. GLOBAL FEEDER FK LINEAGE & OWNERSHIP", 'cyan');
+        CLI::write("\n4. GLOBAL ACTIVE FEEDER FK LINEAGE & OWNERSHIP (Active Grid Scope: {$sr['active_grid_scope']})", 'cyan');
         CLI::write("------------------------------------------------------------------");
-        foreach ($fl as $row) {
-            $fidStr = $row['penyulang_id'] !== null ? "Feeder #{$row['penyulang_id']}" : "NULL";
-            CLI::write("  • {$fidStr} [{$row['feeder_code']}] {$row['feeder_name']} : {$row['count']} assets");
+        if (empty($fl)) {
+            CLI::write("  (Tidak ada aset aktif)");
+        } else {
+            foreach ($fl as $row) {
+                $fidStr = $row['penyulang_id'] !== null ? "Feeder #{$row['penyulang_id']}" : "NULL (Unassigned)";
+                CLI::write("  • {$fidStr} [{$row['feeder_code']}] {$row['feeder_name']} : {$row['count']} assets");
+            }
+        }
+
+        $ql = $result['quarantined_lineage'] ?? [];
+        if (!empty($ql)) {
+            CLI::write("\n4.B. QUARANTINED HISTORICAL FK LINEAGE (Soft-Deleted: {$sr['soft_deleted_count']})", 'cyan');
+            CLI::write("------------------------------------------------------------------");
+            foreach ($ql as $qrow) {
+                $qfidStr = $qrow['penyulang_id'] !== null ? "Feeder #{$qrow['penyulang_id']}" : "NULL (Unassigned CANDRAMAS)";
+                CLI::write("  • {$qfidStr} [{$qrow['feeder_code']}] {$qrow['feeder_name']} : {$qrow['count']} records");
+            }
         }
 
         // 5. NAMING & CODE CLUSTER RECONNAISSANCE

@@ -532,8 +532,12 @@ class CanonicalFeederAssetResolutionService
             $softDeletedRows = $this->db->table('assets')->where('deleted_at IS NOT NULL')->get()->getResultArray();
         }
 
-        // 3. Feeder FK Lineage Breakdown
-        $assetFeederDist = $this->db->table('assets')
+        // 3. Feeder FK Lineage Breakdown (Active vs Quarantined)
+        $activeFeederDistQuery = $this->db->table('assets');
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $activeFeederDistQuery->where('deleted_at IS NULL');
+        }
+        $assetFeederDist = $activeFeederDistQuery
             ->select('penyulang_id, COUNT(*) as count')
             ->groupBy('penyulang_id')
             ->get()
@@ -550,6 +554,26 @@ class CanonicalFeederAssetResolutionService
                 'feeder_name'    => $fMeta['nama_penyulang'] ?? ($fid === null ? 'NULL (Unassigned)' : "Feeder #{$fid} (Unregistered)"),
                 'count'          => (int)$row['count'],
             ];
+        }
+
+        $quarantinedLineage = [];
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $qRows = $this->db->table('assets')
+                ->where('deleted_at IS NOT NULL')
+                ->select('penyulang_id, COUNT(*) as count')
+                ->groupBy('penyulang_id')
+                ->get()
+                ->getResultArray();
+            foreach ($qRows as $qr) {
+                $qFid = $qr['penyulang_id'] !== null ? (int)$qr['penyulang_id'] : null;
+                $qMeta = $qFid !== null ? ($feederMap[$qFid] ?? null) : null;
+                $quarantinedLineage[] = [
+                    'penyulang_id' => $qFid,
+                    'feeder_code'  => $qMeta['kode_penyulang'] ?? ($qFid === null ? 'UNASSIGNED' : 'UNKNOWN'),
+                    'feeder_name'  => $qMeta['nama_penyulang'] ?? ($qFid === null ? 'NULL (Unassigned)' : "Feeder #{$qFid}"),
+                    'count'        => (int)$qr['count'],
+                ];
+            }
         }
 
         // 4. Naming Pattern Clusters
@@ -652,6 +676,7 @@ class CanonicalFeederAssetResolutionService
                     : "Active scope dan total scope selaras.",
             ],
             'feeder_lineage'       => $feederLineage,
+            'quarantined_lineage'  => $quarantinedLineage,
             'clusters'             => [
                 'name_prefixes' => $nameClusters,
                 'code_prefixes' => $codeClusters,

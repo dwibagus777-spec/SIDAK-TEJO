@@ -30,13 +30,30 @@ class AuditAr01StageCommand extends BaseCommand
         $defaultPath = WRITEPATH . 'Template_Import_JTM_SIWALAN_PANJI.csv';
         $multiPath   = WRITEPATH . 'Template_Import_MULTI_PENYULANG_PART1.csv';
         
-        $filePath = !empty($params[0]) ? $params[0] : (file_exists($multiPath) ? $multiPath : $defaultPath);
+        $filePath = null;
+        foreach ($params as $p) {
+            if (!str_starts_with($p, '--')) {
+                $filePath = $p;
+                break;
+            }
+        }
+        if (!$filePath) {
+            $filePath = file_exists($multiPath) ? $multiPath : $defaultPath;
+        }
 
         if (!file_exists($filePath) && file_exists(ROOTPATH . $filePath)) {
             $filePath = ROOTPATH . $filePath;
         }
 
-        $targetFeederId = $this->getOption('feeder');
+        $targetFeederId = CLI::getOption('feeder') ?? null;
+        if ($targetFeederId === null) {
+            foreach ($params as $p) {
+                if (str_starts_with($p, '--feeder=')) {
+                    $targetFeederId = substr($p, 9);
+                    break;
+                }
+            }
+        }
         $targetFeederId = ($targetFeederId !== null && is_numeric($targetFeederId)) ? (int)$targetFeederId : null;
 
         $db = \Config\Database::connect();

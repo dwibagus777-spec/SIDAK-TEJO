@@ -127,9 +127,11 @@ class FeederAssetStagingService
 
         $constructionRows = $this->db->table('construction_types')->get()->getResultArray();
         $constructionMap = [];
+        $constructionMapExact = [];
         foreach ($constructionRows as $cr) {
             $codeRaw = strtoupper(trim((string)($cr['kode_konstruksi'] ?? $cr['construction_code'] ?? $cr['code'] ?? '')));
             if ($codeRaw !== '') {
+                $constructionMapExact[$codeRaw] = $cr;
                 $constructionMap[$codeRaw] = $cr;
                 $normalized = str_replace(['-', ' ', '_'], '', $codeRaw);
                 $constructionMap[$normalized] = $cr;
@@ -244,11 +246,29 @@ class FeederAssetStagingService
         // Build Construction Normalization Proposal
         $constructionProposals = [];
         foreach ($constructionCounts as $srcConst => $count) {
-            $norm = str_replace(['-', ' ', '_'], '', strtoupper($srcConst));
-            $matched = $constructionMap[strtoupper($srcConst)] ?? $constructionMap[$norm] ?? null;
+            $srcUpper = strtoupper($srcConst);
+
+            if (isset($knownSemanticAliases[$srcUpper])) {
+                $aliasInfo = $knownSemanticAliases[$srcUpper];
+                // If it's in known aliases and not an exact code in database, mark as REVIEW
+                if (!isset($constructionMapExact[$srcUpper])) {
+                    $constructionProposals[] = [
+                        'source_code'        => $srcConst,
+                        'canonical_code'     => $aliasInfo['canonical'],
+                        'canonical_name'     => $aliasInfo['name'],
+                        'confidence'         => "{$aliasInfo['confidence']}%",
+                        'action'             => 'REVIEW (Awaiting Human Approval)',
+                        'asset_count'        => $count,
+                    ];
+                    continue;
+                }
+            }
+
+            $norm = str_replace(['-', ' ', '_'], '', $srcUpper);
+            $matched = $constructionMap[$srcUpper] ?? $constructionMap[$norm] ?? null;
 
             if ($matched) {
-                $cCode = $matched['kode_konstruksi'] ?? $matched['construction_code'] ?? $srcConst;
+                $cCode = $matched['kode_konstruksi'] ?? $matched['construction_code'] ?? $matched['code'] ?? $srcConst;
                 $cName = $matched['nama_konstruksi'] ?? $matched['construction_name'] ?? $matched['name'] ?? 'Konstruksi Standar';
                 $constructionProposals[] = [
                     'source_code'        => $srcConst,
@@ -256,16 +276,6 @@ class FeederAssetStagingService
                     'canonical_name'     => $cName,
                     'confidence'         => '100%',
                     'action'             => 'PASS (Exact Match)',
-                    'asset_count'        => $count,
-                ];
-            } elseif (isset($knownSemanticAliases[strtoupper($srcConst)])) {
-                $aliasInfo = $knownSemanticAliases[strtoupper($srcConst)];
-                $constructionProposals[] = [
-                    'source_code'        => $srcConst,
-                    'canonical_code'     => $aliasInfo['canonical'],
-                    'canonical_name'     => $aliasInfo['name'],
-                    'confidence'         => "{$aliasInfo['confidence']}% (Semantic Alias)",
-                    'action'             => 'REVIEW (Awaiting Human Approval)',
                     'asset_count'        => $count,
                 ];
             } else {

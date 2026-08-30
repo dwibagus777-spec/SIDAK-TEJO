@@ -86,12 +86,12 @@ class Ar01PromotionGateCommand extends BaseCommand
 
         CLI::write("\n------------------------------------------------------------------");
         if ($gate['promotion_eligibility'] === 'UNLOCKED') {
-            CLI::write("PROMOTION ELIGIBILITY : " . CLI::color("UNLOCKED", 'green'), 'bold');
+            CLI::write("PROMOTION ELIGIBILITY : " . CLI::color("UNLOCKED", 'green'));
             CLI::write("Certificate Token     : " . CLI::color($gate['certificate_token'], 'green'));
-            CLI::write("Stage 5F Readiness    : READY FOR CONTROLLED PROMOTION");
+            CLI::write("Stage 5F Readiness    : READY FOR CONTROLLED PROMOTION", 'green');
         } else {
-            CLI::write("PROMOTION ELIGIBILITY : " . CLI::color("LOCKED", 'red'), 'bold');
-            CLI::write("Reason(s):");
+            CLI::write("PROMOTION ELIGIBILITY : " . CLI::color("LOCKED", 'red'));
+            CLI::write("Reason(s):", 'yellow');
             foreach ($gate['lock_reasons'] as $lr) {
                 CLI::write("  🔒 {$lr}", 'yellow');
             }

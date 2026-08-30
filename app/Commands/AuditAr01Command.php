@@ -157,7 +157,7 @@ class AuditAr01Command extends BaseCommand
             // B. Global Asset Distribution
             if (isset($result['global_asset_dist'])) {
                 $gad = $result['global_asset_dist'];
-                CLI::write("[B] GLOBAL MASTER ASSET DISTRIBUTION (517 Baseline):", 'yellow');
+                CLI::write("[B] GLOBAL MASTER ASSET DISTRIBUTION (Active Grid Scope):", 'yellow');
                 CLI::write("------------------------------------------------------------------");
                 
                 // By Feeder

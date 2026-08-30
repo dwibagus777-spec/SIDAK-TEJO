@@ -59,6 +59,11 @@ class AuditAr01EvidenceCommand extends BaseCommand
         $rq = $result['review_queue'];
         $all = $result['all_scored_assets'];
 
+        $softDeletedCount = 0;
+        if ($db->fieldExists('deleted_at', 'assets')) {
+            $softDeletedCount = $db->table('assets')->where('deleted_at IS NOT NULL')->countAllResults();
+        }
+
         // 1. TARGET FEEDER
         CLI::write("1. TARGET FEEDER & CR-06F ACTIVE TOPOLOGY CONTEXT", 'cyan');
         CLI::write("------------------------------------------------------------------");
@@ -66,7 +71,10 @@ class AuditAr01EvidenceCommand extends BaseCommand
         CLI::write("  Feeder Code                       : {$tf['kode_penyulang']}");
         CLI::write("  Feeder Name                       : {$tf['nama_penyulang']}");
         CLI::write("  Active Configured Sections        : {$result['active_sections']}");
-        CLI::write("  Total Master Assets Scanned       : {$result['total_assets_scanned']}");
+        CLI::write("  Active Grid Scope Scanned         : {$result['total_assets_scanned']} assets");
+        if ($softDeletedCount > 0) {
+            CLI::write("  Quarantined Historical Records    : {$softDeletedCount} records (Excluded from active resolution)");
+        }
 
         // 2. MULTI-SIGNAL EVIDENCE SUMMARY
         CLI::write("\n2. MULTI-SIGNAL EVIDENCE MINING & CONFIDENCE TIERS", 'cyan');
@@ -131,6 +139,9 @@ class AuditAr01EvidenceCommand extends BaseCommand
             }
         }
         CLI::write("  • Generic / Unassigned Active (Score < 60%) : {$ts['INSUFFICIENT']} assets -> Status: UNRESOLVED");
+        if ($softDeletedCount > 0) {
+            CLI::write("  • Quarantined Historical Dataset        : {$softDeletedCount} records -> Status: QUARANTINED (Safe Soft-Delete)");
+        }
 
         // 6. DRY-RUN RESOLUTION IMPACT SIMULATION
         $approvedCandidateIds = array_column($rq, 'asset_id');

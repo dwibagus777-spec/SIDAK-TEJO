@@ -944,12 +944,18 @@ class CanonicalFeederAssetResolutionService
      */
     public function simulateResolutionImpact(int $targetFeederId, array $approvedCandidateIds): array
     {
+        $totalActiveGridAssets = $this->db->table('assets');
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $totalActiveGridAssets->where('deleted_at IS NULL');
+        }
+        $totalActiveGridAssets = $totalActiveGridAssets->countAllResults();
+
         if (empty($approvedCandidateIds)) {
             return [
                 'simulated_approved_candidates' => 0,
                 'simulated_resolved_assets'     => 0,
                 'simulated_unresolved_assets'   => 0,
-                'total_active_grid_assets'      => 517,
+                'total_active_grid_assets'      => $totalActiveGridAssets,
                 'simulated_resolution_ratio'    => 0.0,
                 'simulated_average_ahs'         => 0.0,
                 'simulated_pillar_2_health'     => 'NO_DATA',
@@ -963,12 +969,6 @@ class CanonicalFeederAssetResolutionService
             $astQuery->where('deleted_at IS NULL');
         }
         $candidates = $astQuery->get()->getResultArray();
-
-        $totalActiveGridAssets = $this->db->table('assets');
-        if ($this->db->fieldExists('deleted_at', 'assets')) {
-            $totalActiveGridAssets->where('deleted_at IS NULL');
-        }
-        $totalActiveGridAssets = $totalActiveGridAssets->countAllResults();
 
         $simulatedAhsSum = 0.0;
         $simulatedResolvedCount = 0;

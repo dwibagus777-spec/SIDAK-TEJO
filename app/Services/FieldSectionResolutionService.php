@@ -23,6 +23,104 @@ class FieldSectionResolutionService
     }
 
     /**
+     * Find asset by ID, code, or name.
+     */
+    public function findAsset($identifier, ?int $feederId = null): ?array
+    {
+        $builder = $this->db->table('assets');
+
+        if (is_numeric($identifier) && (int)$identifier > 0) {
+            $builder->groupStart()
+                ->where('id', (int)$identifier);
+            if ($this->db->fieldExists('kode_asset', 'assets')) {
+                $builder->orWhere('kode_asset', (string)$identifier);
+            }
+            $builder->groupEnd();
+        } else {
+            $hasKodeAsset = $this->db->fieldExists('kode_asset', 'assets');
+            $hasKodeAset  = $this->db->fieldExists('kode_aset', 'assets');
+            $hasNamaAsset = $this->db->fieldExists('nama_asset', 'assets');
+            $hasNamaAset  = $this->db->fieldExists('nama_aset', 'assets');
+
+            $builder->groupStart();
+            $added = false;
+            if ($hasKodeAsset) { $builder->orWhere('kode_asset', (string)$identifier); $added = true; }
+            if ($hasKodeAset)  { $builder->orWhere('kode_aset', (string)$identifier); $added = true; }
+            if ($hasNamaAsset) { $builder->orWhere('nama_asset', (string)$identifier); $added = true; }
+            if ($hasNamaAset)  { $builder->orWhere('nama_aset', (string)$identifier); $added = true; }
+            if (!$added) {
+                $builder->where('id', 0);
+            }
+            $builder->groupEnd();
+        }
+
+        if ($feederId !== null && $this->db->fieldExists('penyulang_id', 'assets')) {
+            $builder->where('penyulang_id', $feederId);
+        }
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $builder->where('deleted_at IS NULL');
+        }
+
+        $res = $builder->get();
+        return $res ? $res->getRowArray() : null;
+    }
+
+    /**
+     * Get list of assets for a feeder with section info.
+     */
+    public function getFeederAssetsList(int $penyulangId, int $limit = 50, ?string $statusFilter = null): array
+    {
+        $builder = $this->db->table('assets')->where('penyulang_id', $penyulangId);
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $builder->where('deleted_at IS NULL');
+        }
+
+        if ($statusFilter === 'UNRESOLVED') {
+            $builder->groupStart()
+                ->where('section_id IS NULL')
+                ->orWhere('section_id', 0);
+            if ($this->db->fieldExists('section_resolution_method', 'assets')) {
+                $builder->orWhere('section_resolution_method', 'UNRESOLVED');
+            }
+            $builder->groupEnd();
+        } elseif ($statusFilter === 'VERIFIED') {
+            $builder->where('section_id IS NOT NULL')->where('section_id >', 0);
+            if ($this->db->fieldExists('section_resolution_method', 'assets')) {
+                $builder->whereIn('section_resolution_method', ['FIELD_VERIFIED', 'CANONICAL', 'IMPORT_VERIFIED']);
+            }
+        }
+
+        $orderCol = $this->db->fieldExists('field_sequence', 'assets') ? 'field_sequence' : 'id';
+        $assets = $builder->orderBy($orderCol, 'ASC')->limit($limit)->get()->getResultArray();
+
+        // Fetch section names map
+        $sections = $this->db->table('sections')->where('penyulang_id', $penyulangId)->get()->getResultArray();
+        $secMap = [];
+        foreach ($sections as $s) {
+            $secMap[$s['id']] = $s['nama_seksi'] ?? $s['nama_section'] ?? "Seksi #{$s['id']}";
+        }
+
+        $result = [];
+        foreach ($assets as $a) {
+            $sId = !empty($a['section_id']) ? (int)$a['section_id'] : null;
+            $result[] = [
+                'id'                => (int)$a['id'],
+                'kode_asset'        => $a['kode_asset'] ?? $a['kode_aset'] ?? 'N/A',
+                'nama_asset'        => $a['nama_asset'] ?? $a['nama_aset'] ?? 'N/A',
+                'penyulang_id'      => (int)$a['penyulang_id'],
+                'section_id'        => $sId,
+                'section_name'      => $sId && isset($secMap[$sId]) ? $secMap[$sId] : 'BELUM DITENTUKAN (UNRESOLVED)',
+                'field_sequence'    => !empty($a['field_sequence']) ? (int)$a['field_sequence'] : (!empty($a['sequence_no']) ? (int)$a['sequence_no'] : null),
+                'resolution_method' => $a['section_resolution_method'] ?? ($sId ? 'ASSIGNED' : 'UNRESOLVED'),
+                'verified_by'       => $a['section_verified_by'] ?? null,
+                'verified_at'       => $a['section_verified_at'] ?? null,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * Get comprehensive section resolution summary for a feeder.
      */
     public function getFeederSectionResolutionSummary(int $penyulangId): array
@@ -60,21 +158,31 @@ class FieldSectionResolutionService
                 'nama_seksi'     => $s['nama_seksi'] ?? $s['nama_section'] ?? 'Seksi #' . $s['id'],
                 'sequence_order' => $seqVal,
                 'asset_count'    => 0,
+                'sample_assets'  => [],
             ];
         }
+
+        $unresolvedSample = [];
 
         foreach ($assets as $a) {
             $secId = !empty($a['section_id']) ? (int)$a['section_id'] : null;
             $resMethod = $a['section_resolution_method'] ?? 'UNRESOLVED';
+            $assetSummary = sprintf("#%d [%s] %s", $a['id'], $a['kode_asset'] ?? $a['nama_asset'], $a['nama_asset'] ?? '');
 
             if ($secId !== null && isset($sectionDistribution[$secId])) {
                 $sectionDistribution[$secId]['asset_count']++;
+                if (count($sectionDistribution[$secId]['sample_assets']) < 3) {
+                    $sectionDistribution[$secId]['sample_assets'][] = $assetSummary;
+                }
             }
 
             if ($secId !== null && in_array($resMethod, ['FIELD_VERIFIED', 'CANONICAL', 'IMPORT_VERIFIED'], true)) {
                 $verifiedCount++;
             } else {
                 $unresolvedCount++;
+                if (count($unresolvedSample) < 5) {
+                    $unresolvedSample[] = $assetSummary;
+                }
             }
         }
 
@@ -91,6 +199,7 @@ class FieldSectionResolutionService
             'completeness_ratio'    => $completenessRatio,
             'configured_sections'   => $sections,
             'section_distribution'  => array_values($sectionDistribution),
+            'unresolved_samples'    => $unresolvedSample,
         ];
     }
 
@@ -98,7 +207,7 @@ class FieldSectionResolutionService
      * Verify or update an asset's section from field engineering.
      */
     public function verifyAssetSection(
-        int $assetId,
+        $assetIdentifier,
         int $newSectionId,
         string $verifiedBy,
         string $reason,
@@ -113,11 +222,12 @@ class FieldSectionResolutionService
             return ['success' => false, 'error' => 'Alasan verifikasi (reason) wajib diisi.'];
         }
 
-        $asset = $this->db->table('assets')->where('id', $assetId)->get()->getRowArray();
+        $asset = $this->findAsset($assetIdentifier);
         if (!$asset) {
-            return ['success' => false, 'error' => "Aset ID #{$assetId} tidak ditemukan."];
+            return ['success' => false, 'error' => "Aset '{$assetIdentifier}' tidak ditemukan di tabel assets."];
         }
 
+        $assetId = (int)$asset['id'];
         $feederId = (int)$asset['penyulang_id'];
 
         // Invariant 5G-A: Section MUST belong to the same feeder
@@ -217,7 +327,7 @@ class FieldSectionResolutionService
         return [
             'success'            => true,
             'asset_id'           => $assetId,
-            'asset_name'         => $asset['nama_asset'],
+            'asset_name'         => $asset['nama_asset'] ?? $asset['kode_asset'],
             'penyulang_id'       => $feederId,
             'old_section_id'     => $oldSectionId,
             'new_section_id'     => $newSectionId,
@@ -232,7 +342,7 @@ class FieldSectionResolutionService
     /**
      * Bulk verify multiple assets for a specific section.
      */
-    public function bulkVerifyAssetSection(array $assetIds, int $newSectionId, string $verifiedBy, string $reason): array
+    public function bulkVerifyAssetSection(array $assetIdentifiers, int $newSectionId, string $verifiedBy, string $reason): array
     {
         $hasTrans = false;
         try {
@@ -245,12 +355,12 @@ class FieldSectionResolutionService
         $successCount = 0;
         $failedErrors = [];
 
-        foreach ($assetIds as $aid) {
-            $res = $this->verifyAssetSection((int)$aid, $newSectionId, $verifiedBy, $reason);
+        foreach ($assetIdentifiers as $ident) {
+            $res = $this->verifyAssetSection($ident, $newSectionId, $verifiedBy, $reason);
             if ($res['success']) {
                 $successCount++;
             } else {
-                $failedErrors[] = "Asset #{$aid}: " . $res['error'];
+                $failedErrors[] = "Asset '{$ident}': " . $res['error'];
             }
         }
 

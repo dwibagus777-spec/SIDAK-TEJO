@@ -82,7 +82,11 @@ class AuditAr01EvidenceCommand extends BaseCommand
         CLI::write("------------------------------------------------------------------");
         if (empty($rq)) {
             CLI::write("  No high-confidence candidates found with current evidence threshold (Score >= {$minScore}%).", 'yellow');
-            CLI::write("  All 312 unassigned assets remain strictly UNRESOLVED per Invariant AR-01-A.", 'white');
+            if ($ts['INSUFFICIENT'] > 0) {
+                CLI::write("  All {$ts['INSUFFICIENT']} active unassigned asset(s) remain strictly UNRESOLVED per Invariant AR-01-A.", 'white');
+            } else {
+                CLI::write("  0 unassigned assets found in active scope (Quarantined records excluded per AR-01 Phase 4A).", 'white');
+            }
         } else {
             CLI::write("  Found " . count($rq) . " high-confidence candidate asset(s):\n");
             foreach ($rq as $c) {
@@ -110,11 +114,23 @@ class AuditAr01EvidenceCommand extends BaseCommand
         }
 
         // 5. ALIEN & INSUFFICIENT ISOLATION
+        $conflictAssets = array_filter($all, fn($a) => $a['confidence_tier'] === CanonicalFeederAssetResolutionService::CONFIDENCE_CONFLICT);
+        $alienByFeeder = [];
+        foreach ($conflictAssets as $ca) {
+            $fId = $ca['existing_feeder_id'] ?? 'Unknown';
+            $alienByFeeder[$fId] = ($alienByFeeder[$fId] ?? 0) + 1;
+        }
+
         CLI::write("\n5. NON-CANDIDATE & ALIEN FEEDER ISOLATION", 'cyan');
         CLI::write("------------------------------------------------------------------");
-        CLI::write("  • Feeder #15 (Banjar Kemantren) Assets : 205 assets -> Status: CONFLICT / ISOLATED");
-        CLI::write("  • Feeder #42 (Candra Mas) Assets        : 1 asset   -> Status: CONFLICT / ISOLATED");
-        CLI::write("  • Generic / Unassigned (Score < 60%)    : {$ts['INSUFFICIENT']} assets -> Status: UNRESOLVED");
+        if (empty($alienByFeeder)) {
+            CLI::write("  • Alien Feeder Assets                   : 0 assets (No cross-feeder foreign keys)");
+        } else {
+            foreach ($alienByFeeder as $fId => $cnt) {
+                CLI::write("  • Feeder #{$fId} Registered Assets             : {$cnt} assets -> Status: CONFLICT / ISOLATED");
+            }
+        }
+        CLI::write("  • Generic / Unassigned Active (Score < 60%) : {$ts['INSUFFICIENT']} assets -> Status: UNRESOLVED");
 
         // 6. DRY-RUN RESOLUTION IMPACT SIMULATION
         $approvedCandidateIds = array_column($rq, 'asset_id');

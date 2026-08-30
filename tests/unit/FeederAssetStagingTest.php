@@ -183,4 +183,42 @@ class FeederAssetStagingTest extends CIUnitTestCase
         $this->assertSame($countBefore, $countAfter, 'Zero mutation guarantee on table assets');
         $this->assertSame(0, $result['database_mutation_guard']['assets_table_writes']);
     }
+
+    public function testSourceFileDeduplicationProtection(): void
+    {
+        // Simulate two identical files with different names
+        $fileA = $this->sampleCsvPath;
+        $fileB = WRITEPATH . 'Template_Import_DUPLICATE_COPY.csv';
+        copy($fileA, $fileB);
+
+        $recon = $this->stager->reconcileSourceFiles([$fileA, $fileB]);
+
+        $this->assertSame(2, $recon['total_files_evaluated']);
+        $this->assertSame(1, $recon['unique_sources_count']);
+        $this->assertSame(1, $recon['duplicate_sources_count']);
+        $this->assertTrue($recon['has_identical_files']);
+        $this->assertSame('SKIPPED_DUPLICATE_SOURCE', $recon['duplicate_files'][0]['action']);
+
+        if (file_exists($fileB)) {
+            unlink($fileB);
+        }
+    }
+
+    public function testMultiFeederStagingReconciliation(): void
+    {
+        $multiPath = WRITEPATH . 'Template_Import_MULTI_PENYULANG_PART1.csv';
+        if (!file_exists($multiPath)) {
+            $this->markTestSkipped('Multi-feeder file not present');
+        }
+
+        $result = $this->stager->stageAndValidateSourceFile($multiPath, null);
+
+        $this->assertTrue($result['success']);
+        $this->assertTrue($result['is_multi_feeder']);
+        $this->assertGreaterThanOrEqual(4, $result['total_feeders_found']);
+        $this->assertArrayHasKey('ECCO', $result['feeder_distribution']);
+        $this->assertArrayHasKey('GADING KIRANA', $result['feeder_distribution']);
+        $this->assertArrayHasKey('GEMURUNG', $result['feeder_distribution']);
+        $this->assertSame(0, $result['database_mutation_guard']['assets_table_writes']);
+    }
 }

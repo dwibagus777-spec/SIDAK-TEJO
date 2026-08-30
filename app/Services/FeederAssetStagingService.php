@@ -9,8 +9,9 @@ use CodeIgniter\Database\BaseConnection;
  * 
  * Strict Invariants:
  * - AR-01-P5-I : Source Immutability (Zero modification to source file)
+ * - AR-01-P5-D : Source File Duplication / Identical File Protection (SHA-256 Deduplication)
  * - AR-01-A    : Zero Blind Assignment (Upload != Insert to assets)
- * - AR-01-B    : Feeder Target Verification (Must match Feeder #1 PYL-001)
+ * - AR-01-B    : Feeder Target Verification / Dynamic Feeder Mapping
  * - AR-01-C    : CR-06F Physical Truth Section Resolution
  * - AR-01-E    : CR-06G Construction Type / BOM Verification
  * - AR-01-F    : Geo-Spatial Corridor Validity
@@ -26,10 +27,86 @@ class FeederAssetStagingService
     }
 
     /**
+     * Invariant AR-01-P5-D: Reconcile multiple source files by SHA-256 hash.
+     * Detects identical files and strictly skips duplicate sources before creating any batch.
+     */
+    public function reconcileSourceFiles(array $filePaths): array
+    {
+        $fileReports = [];
+        $seenHashes = [];
+        $distinctFiles = [];
+        $duplicateFiles = [];
+
+        foreach ($filePaths as $fp) {
+            if (!file_exists($fp)) {
+                $fileReports[] = [
+                    'path'   => $fp,
+                    'exists' => false,
+                    'error'  => 'File tidak ditemukan',
+                ];
+                continue;
+            }
+
+            $size = filesize($fp);
+            $sha256 = hash_file('sha256', $fp);
+            $fileName = basename($fp);
+
+            // Count rows
+            $rowCount = 0;
+            $h = fopen($fp, 'r');
+            if ($h) {
+                while (fgetcsv($h) !== false) {
+                    $rowCount++;
+                }
+                fclose($h);
+                // Subtract header row if > 0
+                $dataRows = max(0, $rowCount - 1);
+            } else {
+                $dataRows = 0;
+            }
+
+            $fileInfo = [
+                'path'      => $fp,
+                'file_name' => $fileName,
+                'file_size' => $size,
+                'sha256'    => $sha256,
+                'data_rows' => $dataRows,
+                'exists'    => true,
+            ];
+
+            if (isset($seenHashes[$sha256])) {
+                $originalFile = $seenHashes[$sha256];
+                $duplicateFiles[] = [
+                    'duplicate_file' => $fileInfo,
+                    'original_file'  => $originalFile,
+                    'action'         => 'SKIPPED_DUPLICATE_SOURCE',
+                    'reason'         => "SHA-256 identik dengan {$originalFile['file_name']}",
+                ];
+            } else {
+                $seenHashes[$sha256] = $fileInfo;
+                $distinctFiles[] = $fileInfo;
+            }
+
+            $fileReports[] = $fileInfo;
+        }
+
+        return [
+            'total_files_evaluated' => count($filePaths),
+            'unique_sources_count'  => count($distinctFiles),
+            'duplicate_sources_count'=> count($duplicateFiles),
+            'distinct_files'        => $distinctFiles,
+            'duplicate_files'       => $duplicateFiles,
+            'has_identical_files'   => !empty($duplicateFiles),
+            'all_file_reports'      => $fileReports,
+            'database_mutation'     => '0 WRITES (Zero mutation on deduplication check)',
+        ];
+    }
+
+    /**
      * Inspect, Register (5A), Stage (5B), and Validate (5C-5D) a source file.
      * Strictly Read-Only with respect to table 'assets'.
      */
-    public function stageAndValidateSourceFile(string $filePath, int $targetFeederId = 1): array
+    public function stageAndValidateSourceFile(string $filePath, ?int $targetFeederId = null): array
     {
         if (!file_exists($filePath)) {
             return [
@@ -43,26 +120,41 @@ class FeederAssetStagingService
         $fileSha256 = hash_file('sha256', $filePath);
         $fileName = basename($filePath);
         $uploadedAt = date('Y-m-d H:i:s');
-        $batchId = 'BATCH-PYL001-' . date('Ymd-His') . '-' . substr(strtoupper($fileSha256), 0, 8);
+        $batchId = 'BATCH-' . ($targetFeederId ? ('PYL' . str_pad((string)$targetFeederId, 3, '0', STR_PAD_LEFT) . '-') : 'MULTI-') . date('Ymd-His') . '-' . substr(strtoupper($fileSha256), 0, 8);
 
-        // Fetch Target Feeder context
-        $feeder = $this->db->table('penyulang')->where('id', $targetFeederId)->get()->getRowArray();
-        if (!$feeder) {
+        // Fetch All Registered Feeders in database for global mapping
+        $tablePenyulang = $this->db->tableExists('db_penyulang') ? 'db_penyulang' : 'penyulang';
+        $allFeeders = $this->db->table($tablePenyulang)->get()->getResultArray();
+        $feederMapByName = [];
+        $feederMapById = [];
+        foreach ($allFeeders as $f) {
+            $fNameNorm = strtoupper(trim((string)$f['nama_penyulang']));
+            $fCodeNorm = strtoupper(trim((string)$f['kode_penyulang']));
+            $feederMapByName[$fNameNorm] = $f;
+            $feederMapByName[$fCodeNorm] = $f;
+            $feederMapById[(int)$f['id']] = $f;
+        }
+
+        $targetFeeder = $targetFeederId ? ($feederMapById[$targetFeederId] ?? null) : null;
+        if ($targetFeederId && !$targetFeeder) {
             return [
                 'success' => false,
                 'error'   => "Penyulang target ID #{$targetFeederId} tidak terdaftar di database.",
             ];
         }
 
-        // Fetch CR-06F Active Sections for Feeder
-        $secQuery = $this->db->table('sections')->where('penyulang_id', $targetFeederId);
-        if ($this->db->fieldExists('status', 'sections')) {
-            $secQuery->where('status', 'ACTIVE');
+        // Fetch CR-06F Active Sections for target Feeder (if single feeder)
+        $sections = [];
+        if ($targetFeederId) {
+            $secQuery = $this->db->table('sections')->where('penyulang_id', $targetFeederId);
+            if ($this->db->fieldExists('status', 'sections')) {
+                $secQuery->where('status', 'ACTIVE');
+            }
+            if ($this->db->fieldExists('sequence_order', 'sections')) {
+                $secQuery->orderBy('sequence_order', 'ASC');
+            }
+            $sections = $secQuery->get()->getResultArray();
         }
-        if ($this->db->fieldExists('sequence_order', 'sections')) {
-            $secQuery->orderBy('sequence_order', 'ASC');
-        }
-        $sections = $secQuery->get()->getResultArray();
 
         // Fetch Construction Types from CR-06G
         $constructionRows = $this->db->table('construction_types')->get()->getResultArray();
@@ -108,7 +200,7 @@ class FeederAssetStagingService
             'reject_count'    => 0,
         ];
         $constructionDistribution = [];
-        $feederNameDistribution = [];
+        $feederDistribution = [];
         $detectedAnomalies = [];
         $uniqueAssetNames = [];
         $duplicateAssetNames = [];
@@ -140,7 +232,7 @@ class FeederAssetStagingService
 
             // Track distributions
             $constructionDistribution[$constructionCode] = ($constructionDistribution[$constructionCode] ?? 0) + 1;
-            $feederNameDistribution[$feederName] = ($feederNameDistribution[$feederName] ?? 0) + 1;
+            $feederDistribution[$feederName] = ($feederDistribution[$feederName] ?? 0) + 1;
 
             // Rule 1: Identifier
             if (empty($assetName)) {
@@ -153,9 +245,18 @@ class FeederAssetStagingService
                 $uniqueAssetNames[$assetName] = true;
             }
 
-            // Rule 2: Feeder Target Verification (AR-01-B)
-            if (strtoupper($feederName) !== strtoupper(trim((string)$feeder['nama_penyulang']))) {
-                $errors[] = "Penyulang '{$feederName}' tidak sesuai dengan Target Feeder '{$feeder['nama_penyulang']}'.";
+            // Rule 2: Feeder Verification
+            $feederMatched = $feederMapByName[strtoupper($feederName)] ?? null;
+            if ($targetFeeder) {
+                // Target Feeder specific verification
+                if (strtoupper($feederName) !== strtoupper(trim((string)$targetFeeder['nama_penyulang']))) {
+                    $errors[] = "Penyulang '{$feederName}' tidak sesuai dengan Target Feeder '{$targetFeeder['nama_penyulang']}'.";
+                }
+            } else {
+                // Multi-feeder mode
+                if (!$feederMatched) {
+                    $warnings[] = "Penyulang '{$feederName}' belum terdaftar dalam registry penyulang database.";
+                }
             }
 
             // Rule 3: Construction Type Matching (AR-01-E)
@@ -175,14 +276,14 @@ class FeederAssetStagingService
                 // Anomaly check: positive latitude in Indonesia (Southern hemisphere)
                 if ($lat > 0) {
                     $warnings[] = "Latitude bernilai positif (+{$lat}). Diperlukan normalisasi tanda minus (-{$lat}) untuk belahan bumi selatan (Sidoarjo).";
-                } elseif ($lat < -7.60 || $lat > -7.30 || $lon < 112.60 || $lon > 112.90) {
+                } elseif ($lat < -7.60 || $lat > -7.30 || $lon < 112.60 || $lon > 112.95) {
                     $warnings[] = "Koordinat GPS ({$lat}, {$lon}) berada di luar koridor standar Sidoarjo Kota.";
                 }
             }
 
             // Rule 5: Non-Semantic Column Flagging
             if ($lokasiRaw === '0' || $lokasiRaw === '') {
-                // Informational
+                // Informational placeholder
             }
 
             // Classification Tier (5D)
@@ -201,6 +302,7 @@ class FeederAssetStagingService
                 $detectedAnomalies[] = [
                     'row_number'   => $rowNumber,
                     'asset_name'   => $assetName,
+                    'feeder_name'  => $feederName,
                     'status'       => $status,
                     'errors'       => $errors,
                     'warnings'     => $warnings,
@@ -213,6 +315,7 @@ class FeederAssetStagingService
                 'row_number'        => $rowNumber,
                 'asset_name'        => $assetName,
                 'feeder_name'       => $feederName,
+                'feeder_id'         => $feederMatched['id'] ?? null,
                 'construction_code' => $constructionCode,
                 'construction_id'   => $matchedConstruction['id'] ?? null,
                 'conductor_material'=> $rowData['Material Conductor'] ?? 'A3CS',
@@ -226,6 +329,9 @@ class FeederAssetStagingService
 
         fclose($handle);
 
+        arsort($feederDistribution);
+        arsort($constructionDistribution);
+
         return [
             'success'            => true,
             'timestamp'          => $uploadedAt,
@@ -237,17 +343,20 @@ class FeederAssetStagingService
                 'ingestion_batch_id' => $batchId,
                 'source_immutability'=> 'PASS (Original file untouched per AR-01-P5-I)',
             ],
-            'target_feeder'      => [
-                'id'              => $feeder['id'],
-                'kode_penyulang'  => $feeder['kode_penyulang'],
-                'nama_penyulang'  => $feeder['nama_penyulang'],
+            'target_feeder'      => $targetFeeder ? [
+                'id'              => $targetFeeder['id'],
+                'kode_penyulang'  => $targetFeeder['kode_penyulang'],
+                'nama_penyulang'  => $targetFeeder['nama_penyulang'],
                 'active_sections' => count($sections),
                 'sections_list'   => array_map(function($s) {
                     $order = $s['sequence_order'] ?? $s['order_index'] ?? $s['id'];
                     $nama = $s['nama_seksi'] ?? $s['section_name'] ?? ('Seksi #' . $s['id']);
                     return "#{$s['id']} [Seksi {$order}]: {$nama}";
                 }, $sections),
-            ],
+            ] : null,
+            'is_multi_feeder'    => $targetFeederId === null,
+            'feeder_distribution' => $feederDistribution,
+            'total_feeders_found'=> count($feederDistribution),
             'staging_summary'    => [
                 'total_staged_rows'   => $validationStats['total_rows'],
                 'pass_candidates'     => $validationStats['pass_count'],
@@ -257,7 +366,6 @@ class FeederAssetStagingService
                 'duplicate_names'     => count($duplicateAssetNames),
             ],
             'construction_distribution' => $constructionDistribution,
-            'feeder_name_distribution'  => $feederNameDistribution,
             'detected_anomalies'        => $detectedAnomalies,
             'staged_sample_first_5'     => array_slice($stagedRows, 0, 5),
             'database_mutation_guard'   => [

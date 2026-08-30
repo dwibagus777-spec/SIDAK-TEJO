@@ -73,7 +73,7 @@ class AuditAr01EvidenceCommand extends BaseCommand
         CLI::write("  Active Configured Sections        : {$result['active_sections']}");
         CLI::write("  Active Grid Scope Scanned         : {$result['total_assets_scanned']} assets");
         if ($softDeletedCount > 0) {
-            CLI::write("  Quarantined Historical Records    : {$softDeletedCount} records (Excluded from active resolution)");
+            CLI::write("  Quarantined Historical Records    : {$softDeletedCount} records (312 Phase 4A CANDRAMAS + 1 pre-existing historical ID #2849)");
         }
 
         // 2. MULTI-SIGNAL EVIDENCE SUMMARY
@@ -110,13 +110,12 @@ class AuditAr01EvidenceCommand extends BaseCommand
             }
         }
 
-        // 4. SUPPORTING EVIDENCE SAMPLES
-        $supporting = array_values(array_filter($all, fn($a) => $a['confidence_tier'] === CanonicalFeederAssetResolutionService::CONFIDENCE_SUPPORTING));
-        if (!empty($supporting)) {
-            CLI::write("\n4. SUPPORTING EVIDENCE QUEUE (Hold for Field Survey / Secondary Corroboration)", 'cyan');
+        // 4. LOWER EVIDENCE CANDIDATE RECONNAISSANCE
+        $supportingAssets = array_filter($all, fn($a) => $a['confidence_tier'] === CanonicalFeederAssetResolutionService::CONFIDENCE_SUPPORTING);
+        if (!empty($supportingAssets)) {
+            CLI::write("\n4. SUPPORTING EVIDENCE / MANUAL REVIEW QUEUE (60% <= Score < 85%)", 'yellow');
             CLI::write("------------------------------------------------------------------");
-            CLI::write("  Total Supporting Assets : " . count($supporting) . " assets (Samples below):");
-            foreach (array_slice($supporting, 0, 5) as $s) {
+            foreach (array_slice($supportingAssets, 0, 5) as $s) {
                 CLI::write("  • [ID: {$s['asset_id']}] '{$s['kode_asset']}' ('{$s['nama_asset']}') - Score: {$s['confidence_score']}% | Notes: " . implode('; ', $s['evidence_notes']));
             }
         }
@@ -140,7 +139,7 @@ class AuditAr01EvidenceCommand extends BaseCommand
         }
         CLI::write("  • Generic / Unassigned Active (Score < 60%) : {$ts['INSUFFICIENT']} assets -> Status: UNRESOLVED");
         if ($softDeletedCount > 0) {
-            CLI::write("  • Quarantined Historical Dataset        : {$softDeletedCount} records -> Status: QUARANTINED (Safe Soft-Delete)");
+            CLI::write("  • Quarantined Historical Dataset        : {$softDeletedCount} records -> Status: QUARANTINED (312 Phase 4A CANDRAMAS + 1 pre-existing historical)");
         }
 
         // 6. DRY-RUN RESOLUTION IMPACT SIMULATION

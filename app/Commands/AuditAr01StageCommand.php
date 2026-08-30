@@ -7,22 +7,23 @@ use CodeIgniter\CLI\CLI;
 use App\Services\FeederAssetStagingService;
 
 /**
- * Phase AR-01 Phase 5A-5D: Feeder Asset Staging & Multi-Source Validation Audit Command
+ * Phase AR-01 Phase 5A-5D.1: Feeder Asset Staging & Normalization Proposal Audit Command
  * Strictly Read-Only / Zero Mutation to 'assets' table.
- * Usage: php spark audit:ar01-stage [filePath] [--feeder=1]
+ * Usage: php spark audit:ar01-stage [filePath] [--feeder=1] [--normalize]
  */
 class AuditAr01StageCommand extends BaseCommand
 {
     protected $group       = 'Audit';
     protected $name        = 'audit:ar01-stage';
-    protected $description = 'Phase AR-01 Phase 5A-5D: Stage and Validate Source File (Strictly Read-Only)';
+    protected $description = 'Phase AR-01 Phase 5A-5D.1: Stage, Normalize, and Validate Source File (Strictly Read-Only)';
 
     protected $arguments = [
-        'file' => 'The relative or absolute path to the CSV/Excel file (default: writable/Template_Import_JTM_SIWALAN_PANJI.csv)',
+        'file' => 'The relative or absolute path to the CSV/Excel file (default: writable/Template_Import_MULTI_PENYULANG_PART1.csv)',
     ];
 
     protected $options = [
-        'feeder' => 'Filter and validate strictly for a specific Feeder ID (e.g. --feeder=1 for PYL-001)',
+        'feeder'    => 'Filter and validate strictly for a specific Feeder ID (e.g. --feeder=1 for PYL-001)',
+        'normalize' => 'Display exhaustive Phase 5D.1 Feeder & Construction Normalization Review Matrix',
     ];
 
     public function run(array $params)
@@ -60,7 +61,7 @@ class AuditAr01StageCommand extends BaseCommand
         $stager = new FeederAssetStagingService($db);
 
         CLI::write("\n==================================================================", 'yellow');
-        CLI::write("   AR-01 PHASE 5: SOURCE REGISTRATION & STAGING AUDIT (5A - 5D)  ", 'yellow');
+        CLI::write("   AR-01 PHASE 5: SOURCE REGISTRATION & STAGING AUDIT (5A - 5D.1) ", 'yellow');
         CLI::write("   STRICTLY READ-ONLY / ZERO MUTATION TO 'assets' TABLE           ", 'yellow');
         CLI::write("==================================================================\n", 'yellow');
 
@@ -109,7 +110,7 @@ class AuditAr01StageCommand extends BaseCommand
         CLI::write("  Ingestion Batch ID            : " . CLI::color($sr['ingestion_batch_id'], 'yellow'));
         CLI::write("  Source Immutability Invariant : " . CLI::color($sr['source_immutability'], 'green'));
 
-        // 2. PHASE 5B: FEEDER SCOPE & TOPOLOGICAL BOUNDARY
+        // 2. PHASE 5B: FEEDER SCOPE & REGISTRY BREAKDOWN
         CLI::write("\n2️⃣  PHASE 5B: FEEDER SCOPE & REGISTRY BREAKDOWN", 'cyan');
         CLI::write("------------------------------------------------------------------");
         if ($tf) {
@@ -167,8 +168,26 @@ class AuditAr01StageCommand extends BaseCommand
         CLI::write("  • WARNING (Needs Attention)   : " . CLI::color("{$sm['warning_candidates']} assets", 'yellow'));
         CLI::write("  • REJECT (Schema/FK Violation): " . CLI::color("{$sm['reject_candidates']} assets", $sm['reject_candidates'] > 0 ? 'red' : 'green'));
 
-        // 5. WRITE GATE & IMMUTABILITY VERIFICATION
-        CLI::write("\n5️⃣  WRITE GATE & DATABASE MUTATION GUARD (Stage 5E/5F Invariants)", 'cyan');
+        // 5. PHASE 5D.1: NORMALIZATION PROPOSAL & REVIEW MATRIX (Advisory Only)
+        $proposal = $stager->generateNormalizationProposal($filePath);
+        if ($proposal['success']) {
+            CLI::write("\n5️⃣  PHASE 5D.1: NORMALIZATION PROPOSAL & REVIEW QUEUE (Advisory)", 'cyan');
+            CLI::write("------------------------------------------------------------------");
+            CLI::write("  A. FEEDER NORMALIZATION PROPOSAL:");
+            foreach ($proposal['feeder_normalization'] as $fn) {
+                $color = str_starts_with($fn['action'], 'PASS') ? 'green' : 'yellow';
+                CLI::write(sprintf("     • %-18s -> %-20s [%s] (%d assets)", $fn['source_feeder'], $fn['canonical_feeder'], CLI::color($fn['action'], $color), $fn['asset_count']));
+            }
+
+            CLI::write("\n  B. CONSTRUCTION NORMALIZATION PROPOSAL:");
+            foreach ($proposal['construction_normalization'] as $cn) {
+                $color = str_starts_with($cn['action'], 'PASS') ? 'green' : (str_starts_with($cn['action'], 'REVIEW') ? 'cyan' : 'yellow');
+                CLI::write(sprintf("     • %-12s -> %-10s (%-32s) [%s] (%d assets)", $cn['source_code'], $cn['canonical_code'], $cn['canonical_name'], CLI::color($cn['action'], $color), $cn['asset_count']));
+            }
+        }
+
+        // 6. WRITE GATE & IMMUTABILITY VERIFICATION
+        CLI::write("\n6️⃣  WRITE GATE & DATABASE MUTATION GUARD (Stage 5E/5F Invariants)", 'cyan');
         CLI::write("------------------------------------------------------------------");
         CLI::write("  Master Assets Table Mutation  : " . CLI::color("{$dmg['assets_table_writes']} writes ({$dmg['assets_table_mutations']})", 'green'));
         CLI::write("  Promotion Gate Status         : " . CLI::color($dmg['promotion_gate'], 'yellow'));

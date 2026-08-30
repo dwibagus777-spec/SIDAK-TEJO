@@ -15,6 +15,7 @@ use CodeIgniter\Database\BaseConnection;
  * - AR-01-C    : CR-06F Physical Truth Section Resolution
  * - AR-01-E    : CR-06G Construction Type / BOM Verification
  * - AR-01-F    : Geo-Spatial Corridor Validity
+ * - Phase 5D.1 : Normalization Proposal Engine (Advisory Only / Zero Silent Mutation)
  * - Write Gate : 100% Read-Only / Zero writes to 'assets' table
  */
 class FeederAssetStagingService
@@ -59,7 +60,6 @@ class FeederAssetStagingService
                     $rowCount++;
                 }
                 fclose($h);
-                // Subtract header row if > 0
                 $dataRows = max(0, $rowCount - 1);
             } else {
                 $dataRows = 0;
@@ -99,6 +99,195 @@ class FeederAssetStagingService
             'has_identical_files'   => !empty($duplicateFiles),
             'all_file_reports'      => $fileReports,
             'database_mutation'     => '0 WRITES (Zero mutation on deduplication check)',
+        ];
+    }
+
+    /**
+     * Phase 5D.1: Generate Canonical Normalization Proposals for Feeders and Construction Types.
+     * Advisory Only - Mathematical & Semantic proposals without silent database mutation.
+     */
+    public function generateNormalizationProposal(string $filePath): array
+    {
+        if (!file_exists($filePath)) {
+            return [
+                'success' => false,
+                'error'   => "File tidak ditemukan: {$filePath}",
+            ];
+        }
+
+        $tablePenyulang = $this->db->tableExists('db_penyulang') ? 'db_penyulang' : 'penyulang';
+        $allFeeders = $this->db->table($tablePenyulang)->get()->getResultArray();
+        $feederMap = [];
+        foreach ($allFeeders as $f) {
+            $nameNorm = strtoupper(trim((string)($f['nama_penyulang'] ?? '')));
+            $codeNorm = strtoupper(trim((string)($f['kode_penyulang'] ?? '')));
+            if ($nameNorm !== '') $feederMap[$nameNorm] = $f;
+            if ($codeNorm !== '') $feederMap[$codeNorm] = $f;
+        }
+
+        $constructionRows = $this->db->table('construction_types')->get()->getResultArray();
+        $constructionMap = [];
+        foreach ($constructionRows as $cr) {
+            $codeRaw = strtoupper(trim((string)($cr['kode_konstruksi'] ?? $cr['construction_code'] ?? $cr['code'] ?? '')));
+            if ($codeRaw !== '') {
+                $constructionMap[$codeRaw] = $cr;
+                $normalized = str_replace(['-', ' ', '_'], '', $codeRaw);
+                $constructionMap[$normalized] = $cr;
+            }
+        }
+
+        // Standard PLN Known Construction Semantic Aliases (Advisory Model)
+        $knownSemanticAliases = [
+            'GTT2T'     => ['canonical' => 'GTT-2T', 'name' => 'Gardu Trafo Tiang 2 Portal (Trafo Khusus)', 'confidence' => 95],
+            'TMMVTIC'   => ['canonical' => 'TM-MVTIC', 'name' => 'Tiang Saluran Udara Kabel TM MVTIC', 'confidence' => 95],
+            'TMMVTIC1'  => ['canonical' => 'TM-MVTIC', 'name' => 'Tiang Saluran Udara Kabel TM MVTIC (Seksi 1)', 'confidence' => 90],
+            'TMMVTIC2'  => ['canonical' => 'TM-MVTIC', 'name' => 'Tiang Saluran Udara Kabel TM MVTIC (Seksi 2)', 'confidence' => 90],
+            'TM1MVTIC'  => ['canonical' => 'TM-MVTIC', 'name' => 'Tiang TM-1 MVTIC Gabungan', 'confidence' => 90],
+            'TM1MVTIC 1'=> ['canonical' => 'TM-MVTIC', 'name' => 'Tiang TM-1 MVTIC Gabungan Seksi 1', 'confidence' => 90],
+            'TM1MVTIC 11'=> ['canonical' => 'TM-MVTIC', 'name' => 'Tiang TM-1 MVTIC Gabungan Seksi 11', 'confidence' => 90],
+            'MVTIC'     => ['canonical' => 'TM-MVTIC', 'name' => 'Kabel MVTIC Saluran Udara', 'confidence' => 90],
+            'MVTIC1'    => ['canonical' => 'TM-MVTIC', 'name' => 'Kabel MVTIC Seksi 1', 'confidence' => 90],
+            'MVTIC2'    => ['canonical' => 'TM-MVTIC', 'name' => 'Kabel MVTIC Seksi 2', 'confidence' => 90],
+            'TMTP'      => ['canonical' => 'TM-TP', 'name' => 'Tiang Trafo Portal TMTP', 'confidence' => 90],
+            'TM8C'      => ['canonical' => 'TM-8', 'name' => 'Tiang Akhir TM8 dengan Cut-Out', 'confidence' => 90],
+            'TM10C'     => ['canonical' => 'TM-10', 'name' => 'Tiang Percabangan TM10 dengan Cut-Out', 'confidence' => 90],
+            'GTTB'      => ['canonical' => 'GTT-2', 'name' => 'Gardu Trafo Tiang Beton', 'confidence' => 85],
+        ];
+
+        // Scan source file
+        $handle = fopen($filePath, 'r');
+        if (!$handle) {
+            return ['success' => false, 'error' => 'Gagal membuka file sumber.'];
+        }
+
+        $headerRaw = fgetcsv($handle);
+        if (!$headerRaw) {
+            fclose($handle);
+            return ['success' => false, 'error' => 'Header file kosong.'];
+        }
+
+        $header = array_map('trim', $headerRaw);
+        $feederCounts = [];
+        $constructionCounts = [];
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (empty($row) || (count($row) === 1 && trim((string)$row[0]) === '')) {
+                continue;
+            }
+            $rowData = [];
+            foreach ($header as $idx => $colName) {
+                $rowData[$colName] = $row[$idx] ?? '';
+            }
+
+            $feederName = trim((string)($rowData['Penyulang'] ?? ''));
+            $constCode  = trim((string)($rowData['Konstruksi (e.g. TM1)'] ?? ''));
+
+            if ($feederName !== '') {
+                $feederCounts[$feederName] = ($feederCounts[$feederName] ?? 0) + 1;
+            }
+            if ($constCode !== '') {
+                $constructionCounts[$constCode] = ($constructionCounts[$constCode] ?? 0) + 1;
+            }
+        }
+        fclose($handle);
+
+        // Build Feeder Normalization Proposal
+        $feederProposals = [];
+        foreach ($feederCounts as $srcFeeder => $count) {
+            $srcNorm = strtoupper($srcFeeder);
+            $matched = $feederMap[$srcNorm] ?? null;
+
+            if ($matched) {
+                $feederProposals[] = [
+                    'source_feeder'    => $srcFeeder,
+                    'canonical_feeder' => $matched['nama_penyulang'] ?? $srcFeeder,
+                    'feeder_id'        => (int)$matched['id'],
+                    'confidence'       => '100%',
+                    'action'           => 'PASS (Exact Match)',
+                    'asset_count'      => $count,
+                ];
+            } else {
+                // Find closest match
+                $bestMatch = null;
+                $highestSim = 0;
+                foreach ($allFeeders as $f) {
+                    $candName = strtoupper(trim((string)$f['nama_penyulang']));
+                    similar_text($srcNorm, $candName, $percent);
+                    if ($percent > $highestSim) {
+                        $highestSim = $percent;
+                        $bestMatch = $f;
+                    }
+                }
+
+                if ($highestSim >= 75 && $bestMatch) {
+                    $feederProposals[] = [
+                        'source_feeder'    => $srcFeeder,
+                        'canonical_feeder' => $bestMatch['nama_penyulang'],
+                        'feeder_id'        => (int)$bestMatch['id'],
+                        'confidence'       => round($highestSim) . '% (Similarity)',
+                        'action'           => 'REVIEW (Awaiting Approval)',
+                        'asset_count'      => $count,
+                    ];
+                } else {
+                    $feederProposals[] = [
+                        'source_feeder'    => $srcFeeder,
+                        'canonical_feeder' => 'UNMAPPED',
+                        'feeder_id'        => null,
+                        'confidence'       => '0%',
+                        'action'           => 'WARNING (Requires Feeder Registration)',
+                        'asset_count'      => $count,
+                    ];
+                }
+            }
+        }
+
+        // Build Construction Normalization Proposal
+        $constructionProposals = [];
+        foreach ($constructionCounts as $srcConst => $count) {
+            $norm = str_replace(['-', ' ', '_'], '', strtoupper($srcConst));
+            $matched = $constructionMap[strtoupper($srcConst)] ?? $constructionMap[$norm] ?? null;
+
+            if ($matched) {
+                $cCode = $matched['kode_konstruksi'] ?? $matched['construction_code'] ?? $srcConst;
+                $cName = $matched['nama_konstruksi'] ?? $matched['construction_name'] ?? $matched['name'] ?? 'Konstruksi Standar';
+                $constructionProposals[] = [
+                    'source_code'        => $srcConst,
+                    'canonical_code'     => $cCode,
+                    'canonical_name'     => $cName,
+                    'confidence'         => '100%',
+                    'action'             => 'PASS (Exact Match)',
+                    'asset_count'        => $count,
+                ];
+            } elseif (isset($knownSemanticAliases[strtoupper($srcConst)])) {
+                $aliasInfo = $knownSemanticAliases[strtoupper($srcConst)];
+                $constructionProposals[] = [
+                    'source_code'        => $srcConst,
+                    'canonical_code'     => $aliasInfo['canonical'],
+                    'canonical_name'     => $aliasInfo['name'],
+                    'confidence'         => "{$aliasInfo['confidence']}% (Semantic Alias)",
+                    'action'             => 'REVIEW (Awaiting Human Approval)',
+                    'asset_count'        => $count,
+                ];
+            } else {
+                $constructionProposals[] = [
+                    'source_code'        => $srcConst,
+                    'canonical_code'     => 'UNMAPPED',
+                    'canonical_name'     => 'Unknown Construction Standard',
+                    'confidence'         => '0%',
+                    'action'             => 'WARNING (Requires Manual Mapping)',
+                    'asset_count'        => $count,
+                ];
+            }
+        }
+
+        return [
+            'success'                   => true,
+            'source_file'               => $filePath,
+            'feeder_normalization'      => $feederProposals,
+            'construction_normalization'=> $constructionProposals,
+            'total_unique_feeders'      => count($feederProposals),
+            'total_unique_constructions'=> count($constructionProposals),
+            'mutation_status'           => '0 WRITES (Strictly Advisory Proposal)',
         ];
     }
 

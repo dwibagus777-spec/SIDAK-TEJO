@@ -221,4 +221,26 @@ class FeederAssetStagingTest extends CIUnitTestCase
         $this->assertArrayHasKey('GEMURUNG', $result['feeder_distribution']);
         $this->assertSame(0, $result['database_mutation_guard']['assets_table_writes']);
     }
+
+    public function testPhase5D1NormalizationProposalEngine(): void
+    {
+        $multiPath = WRITEPATH . 'Template_Import_MULTI_PENYULANG_PART1.csv';
+        if (!file_exists($multiPath)) {
+            $this->markTestSkipped('Multi-feeder file not present');
+        }
+
+        $proposal = $this->stager->generateNormalizationProposal($multiPath);
+
+        $this->assertTrue($proposal['success']);
+        $this->assertNotEmpty($proposal['feeder_normalization']);
+        $this->assertNotEmpty($proposal['construction_normalization']);
+        $this->assertSame('0 WRITES (Strictly Advisory Proposal)', $proposal['mutation_status']);
+
+        // Check that GTT2T is identified with semantic proposal
+        $constMap = array_column($proposal['construction_normalization'], null, 'source_code');
+        if (isset($constMap['GTT2T'])) {
+            $this->assertNotEmpty($constMap['GTT2T']['canonical_code']);
+            $this->assertNotEmpty($constMap['GTT2T']['action']);
+        }
+    }
 }

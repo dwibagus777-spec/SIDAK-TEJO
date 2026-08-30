@@ -460,12 +460,48 @@ class FeederAssetReviewService
         ];
         $this->db->table('ar01_review_decisions')->insert($decisionData);
 
+        // If approved and proposed_construction_type_id is null, resolve or register canonical construction type
+        $proposedConstId = $stagingRow['proposed_construction_type_id'];
+        if ($decision === 'APPROVED' && empty($proposedConstId)) {
+            $canonicalCode = $stagingRow['normalized_construction_code'] ?? 'GTT-2T';
+            $codeCol = $this->db->fieldExists('construction_code', 'construction_types') ? 'construction_code' : ($this->db->fieldExists('code', 'construction_types') ? 'code' : 'kode_konstruksi');
+            $nameCol = $this->db->fieldExists('construction_name', 'construction_types') ? 'construction_name' : ($this->db->fieldExists('name', 'construction_types') ? 'name' : 'nama_konstruksi');
+            
+            $existingConst = $this->db->table('construction_types')
+                ->where($codeCol, $canonicalCode)
+                ->orWhere($codeCol, str_replace(['-', ' ', '_'], '', $canonicalCode))
+                ->get()
+                ->getRowArray();
+                
+            if ($existingConst) {
+                $proposedConstId = (int)$existingConst['id'];
+            } else {
+                $insertData = [
+                    $codeCol => $canonicalCode,
+                    $nameCol => 'Gardu Trafo Tiang 2 Portal (' . $canonicalCode . ')',
+                ];
+                if ($this->db->fieldExists('code', 'construction_types')) $insertData['code'] = $canonicalCode;
+                if ($this->db->fieldExists('name', 'construction_types')) $insertData['name'] = 'Gardu Trafo Tiang 2 Portal (' . $canonicalCode . ')';
+                if ($this->db->fieldExists('construction_family', 'construction_types')) $insertData['construction_family'] = 'GARDU_TRAFO';
+                if ($this->db->fieldExists('is_active', 'construction_types')) $insertData['is_active'] = 1;
+                
+                $this->db->table('construction_types')->insert($insertData);
+                $proposedConstId = (int)$this->db->insertID();
+            }
+        }
+
         // Update Staging Record Status
         $updateData = [
             'review_status' => $decision,
             'approved_at'   => $decision === 'APPROVED' ? $now : null,
             'rejected_at'   => $decision === 'REJECTED' ? $now : null,
         ];
+        if ($decision === 'APPROVED') {
+            $updateData['validation_status'] = 'PASS';
+            if ($proposedConstId) {
+                $updateData['proposed_construction_type_id'] = $proposedConstId;
+            }
+        }
         $this->db->table('ar01_staging_assets')->where('id', $stagingRow['id'])->update($updateData);
 
         // Log Audit Event

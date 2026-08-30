@@ -20,24 +20,57 @@ class Ar01ReviewCommand extends BaseCommand
         'batch' => 'The Batch ID to review (optional)',
     ];
 
-    protected $options = [
-        'batch' => 'The Batch ID to review (optional)',
-    ];
-
-    public function run(array $params)
+    protected function extractOption(array $params, string $key, ?string $default = null): ?string
     {
-        $batchId = CLI::getOption('batch');
-        if (!$batchId) {
-            foreach ($params as $p) {
-                if (str_starts_with($p, '--batch=')) {
-                    $batchId = substr($p, 8);
-                    break;
-                } elseif (!str_starts_with($p, '--')) {
-                    $batchId = $p;
-                    break;
+        $altKey = str_replace('-', '_', $key);
+        if (isset($params[$key]) && is_string($params[$key]) && trim($params[$key]) !== '') {
+            return trim($params[$key]);
+        }
+        if (isset($params[$altKey]) && is_string($params[$altKey]) && trim($params[$altKey]) !== '') {
+            return trim($params[$altKey]);
+        }
+        $opt = CLI::getOption($key) ?? CLI::getOption($altKey);
+        if ($opt !== null && is_string($opt) && trim($opt) !== '') {
+            return trim($opt);
+        }
+        $allOpts = CLI::getOptions();
+        if (isset($allOpts[$key]) && is_string($allOpts[$key]) && trim($allOpts[$key]) !== '') {
+            return trim($allOpts[$key]);
+        }
+        if (isset($allOpts[$altKey]) && is_string($allOpts[$altKey]) && trim($allOpts[$altKey]) !== '') {
+            return trim($allOpts[$altKey]);
+        }
+        foreach ($params as $v) {
+            if (is_string($v)) {
+                if (str_starts_with($v, "--{$key}=")) {
+                    return trim(substr($v, strlen("--{$key}=")), " \"'");
+                }
+                if (str_starts_with($v, "--{$altKey}=")) {
+                    return trim(substr($v, strlen("--{$altKey}=")), " \"'");
+                }
+                if (!str_starts_with($v, '--')) {
+                    return trim($v);
                 }
             }
         }
+        if (isset($_SERVER['argv']) && is_array($_SERVER['argv'])) {
+            $argv = $_SERVER['argv'];
+            for ($i = 0; $i < count($argv); $i++) {
+                $arg = $argv[$i];
+                if (str_starts_with($arg, "--{$key}=")) {
+                    return trim(substr($arg, strlen("--{$key}=")), " \"'");
+                }
+                if (str_starts_with($arg, "--{$altKey}=")) {
+                    return trim(substr($arg, strlen("--{$altKey}=")), " \"'");
+                }
+            }
+        }
+        return $default;
+    }
+
+    public function run(array $params)
+    {
+        $batchId = $this->extractOption($params, 'batch');
 
         $defaultPath = WRITEPATH . 'Template_Import_MULTI_PENYULANG_PART1.csv';
         if (!file_exists($defaultPath)) {

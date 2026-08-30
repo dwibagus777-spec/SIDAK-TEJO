@@ -557,6 +557,30 @@ class FeederAssetReviewService
 
         $now = date('Y-m-d H:i:s');
 
+        // Total stats for comprehensive reporting
+        $totalPassRows = $this->db->table('ar01_staging_assets')
+            ->where('batch_id', $batchId)
+            ->where('validation_status', 'PASS')
+            ->where('normalization_score >=', 100)
+            ->countAllResults();
+
+        $alreadyApprovedCount = $this->db->table('ar01_staging_assets')
+            ->where('batch_id', $batchId)
+            ->where('validation_status', 'PASS')
+            ->where('normalization_score >=', 100)
+            ->where('review_status', 'APPROVED')
+            ->countAllResults();
+
+        $skippedWarningCount = $this->db->table('ar01_staging_assets')
+            ->where('batch_id', $batchId)
+            ->where('validation_status', 'WARNING')
+            ->countAllResults();
+
+        $skippedRejectCount = $this->db->table('ar01_staging_assets')
+            ->where('batch_id', $batchId)
+            ->where('validation_status', 'REJECT')
+            ->countAllResults();
+
         // Select only clean PASS rows with 100% normalization score (leaving GTT2T untouched)
         $eligibleRows = $this->db->table('ar01_staging_assets')
             ->where('batch_id', $batchId)
@@ -577,7 +601,7 @@ class FeederAssetReviewService
             $approvedCount++;
         }
 
-        $signedSha = hash('sha256', "{$batchId}|{$batch['source_sha256']}|BULK_PASS|{$approvedCount}|{$approverNip}|{$now}|{$reason}");
+        $signedSha = hash('sha256', "{$batchId}|{$batch['source_sha256']}|BULK_PASS|{$totalPassRows}|{$approverNip}|{$now}|{$reason}");
 
         $decisionData = [
             'batch_id'          => $batchId,
@@ -598,17 +622,22 @@ class FeederAssetReviewService
         $this->logAuditEvent($batchId, 'BULK_APPROVAL', $approverNip, [
             'scope'          => 'PASS',
             'approved_count' => $approvedCount,
+            'total_pass'     => $totalPassRows,
             'reason'         => $reason,
             'signature'      => $signedSha,
         ]);
 
         return [
-            'success'        => true,
-            'batch_id'       => $batchId,
-            'scope'          => 'PASS',
-            'approved_count' => $approvedCount,
-            'signed_sha256'  => $signedSha,
-            'database_writes'=> 0,
+            'success'               => true,
+            'batch_id'              => $batchId,
+            'scope'                 => 'PASS',
+            'eligible_pass_rows'    => $totalPassRows,
+            'approved_count'        => $approvedCount,
+            'already_approved_count'=> $alreadyApprovedCount,
+            'skipped_warning_count' => $skippedWarningCount,
+            'skipped_reject_count'  => $skippedRejectCount,
+            'signed_sha256'         => $signedSha,
+            'database_writes'       => 0,
         ];
     }
 

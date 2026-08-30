@@ -290,4 +290,53 @@ class FeederAssetReviewTest extends CIUnitTestCase
         $this->assertSame($pyl015CountBefore, $pyl015CountAfter);
         $this->assertSame($softDeletedBefore, $softDeletedAfter);
     }
+
+    public function testAr01ApproveBatchCommandExecutionWithCliFlags(): void
+    {
+        $staged = $this->reviewService->getOrCreateStagedBatch($this->testCsvPath);
+        $batchId = $staged['batch_id'];
+
+        $command = new \App\Commands\Ar01ApproveBatchCommand(
+            \Config\Services::logger(),
+            \Config\Services::commands()
+        );
+
+        // Execute with standard CLI string params array
+        $exitCode = $command->run([
+            "--batch={$batchId}",
+            "--scope=PASS",
+            "--approver-nip=198501012010011001",
+            "--reason=Engineering verification of deterministic pass records",
+        ]);
+
+        $this->assertSame(0, $exitCode);
+
+        // Verify 2 PASS rows are approved and GTT2T remains NEEDS_REVIEW
+        $approvedCount = $this->db->table('ar01_staging_assets')->where('batch_id', $batchId)->where('review_status', 'APPROVED')->countAllResults();
+        $this->assertSame(2, $approvedCount);
+    }
+
+    public function testAr01ApproveCommandExecutionWithCliFlags(): void
+    {
+        $staged = $this->reviewService->getOrCreateStagedBatch($this->testCsvPath);
+        $batchId = $staged['batch_id'];
+
+        $command = new \App\Commands\Ar01ApproveCommand(
+            \Config\Services::logger(),
+            \Config\Services::commands()
+        );
+
+        $exitCode = $command->run([
+            "--batch={$batchId}",
+            "--row=4",
+            "--decision=APPROVED",
+            "--approver-nip=198501012010011001",
+            "--reason=Explicit GTT-2T field survey verification",
+        ]);
+
+        $this->assertSame(0, $exitCode);
+
+        $row4 = $this->db->table('ar01_staging_assets')->where('batch_id', $batchId)->where('source_row_number', 4)->get()->getRowArray();
+        $this->assertSame('APPROVED', $row4['review_status']);
+    }
 }

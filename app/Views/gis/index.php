@@ -40,12 +40,27 @@
         background: #ffffff;
         color: #334155;
         cursor: pointer;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        touch-action: manipulation;
     }
     .feeder-chip-btn.active {
         background: #0284c7;
         color: #ffffff;
         border-color: #0284c7;
         box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+    #setup-feeder-select, #drawer-feeder-select {
+        min-height: 44px;
+        font-size: 13px;
+        touch-action: manipulation;
+    }
+    #feeder-quick-chips {
+        max-height: 140px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 2px;
     }
 
     /* ==========================================================================
@@ -686,6 +701,9 @@
         <!-- Segment Geometry Toolbar (Only for single connected segment) -->
         <div id="gis-segment-toolbar" class="gis-segment-toolbar">
             <span class="badge bg-success font-monospace px-2 py-1"><i class="fas fa-draw-polygon me-1"></i> EDIT BENTUK SEGMEN</span>
+            <button type="button" id="btn-add-midpoint-vertex" class="btn btn-sm btn-outline-info rounded-pill px-2 py-1" title="Tambah Titik Belok">
+                <i class="fas fa-plus me-1"></i> Titik
+            </button>
             <button type="button" id="btn-undo-segment" class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" title="Undo">
                 <i class="fas fa-undo" style="font-size: 11px;"></i>
             </button>
@@ -1506,9 +1524,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     res.penyulangs.forEach((p, idx) => {
                         var opt = document.createElement('option');
                         opt.value = p.id;
-                        opt.textContent = `${p.nama_penyulang} (${p.nama_ulp || 'ULP'})`;
+                        opt.textContent = p.nama_penyulang;
                         opt.dataset.feederName = p.nama_penyulang;
-                        opt.dataset.ulpName = p.nama_ulp || 'ULP';
+                        opt.dataset.ulpName = p.nama_ulp || '';
                         setupFeederSelect.appendChild(opt);
 
                         var optDrawer = opt.cloneNode(true);
@@ -1896,10 +1914,29 @@ document.addEventListener("DOMContentLoaded", function () {
             submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
 
             bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-confirm-connection-sheet')).hide();
-            alert(res.message);
 
             setEditorState(TRANSLINE_STATE.IDLE);
-            loadGisNetworkOnDemand(false);
+
+            // Reconcile and redraw GIS layer immediately
+            if (res.topology && currentData) {
+                currentData.transline = {
+                    type: 'Feature',
+                    geometry: {
+                        type: res.topology.type || 'MultiLineString',
+                        coordinates: res.topology.coordinates || []
+                    },
+                    properties: {
+                        edges: res.topology.edges || [],
+                        nodes: res.topology.nodes || []
+                    }
+                };
+                renderFilteredLayers(false);
+                alert(res.message);
+            } else {
+                loadGisNetworkOnDemand(false, function() {
+                    alert(res.message);
+                });
+            }
         })
         .catch(err => {
             submitBtn.disabled = false;
@@ -1973,8 +2010,25 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(res => {
             bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-conductor-spec-sheet')).hide();
-            alert(res.message);
-            loadGisNetworkOnDemand(false);
+            if (res.topology && currentData) {
+                currentData.transline = {
+                    type: 'Feature',
+                    geometry: {
+                        type: res.topology.type || 'MultiLineString',
+                        coordinates: res.topology.coordinates || []
+                    },
+                    properties: {
+                        edges: res.topology.edges || [],
+                        nodes: res.topology.nodes || []
+                    }
+                };
+                renderFilteredLayers(false);
+                alert(res.message);
+            } else {
+                loadGisNetworkOnDemand(false, function() {
+                    alert(res.message);
+                });
+            }
         })
         .catch(err => alert('Gagal: ' + err.message));
     });
@@ -2051,8 +2105,25 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(res => {
             bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-delete-connection-sheet')).hide();
-            alert(res.message);
-            loadGisNetworkOnDemand(false);
+            if (res.topology && currentData) {
+                currentData.transline = {
+                    type: 'Feature',
+                    geometry: {
+                        type: res.topology.type || 'MultiLineString',
+                        coordinates: res.topology.coordinates || []
+                    },
+                    properties: {
+                        edges: res.topology.edges || [],
+                        nodes: res.topology.nodes || []
+                    }
+                };
+                renderFilteredLayers(false);
+                alert(res.message);
+            } else {
+                loadGisNetworkOnDemand(false, function() {
+                    alert(res.message);
+                });
+            }
         })
         .catch(err => {
             alert('Gagal memutus sambungan: ' + err.message);
@@ -2119,25 +2190,38 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         vertices.forEach((pt, idx) => {
+            var isEndpoint = (idx === 0 || idx === vertices.length - 1);
             var handle = L.circleMarker(pt, {
-                radius: 9,
-                fillColor: '#10b981',
+                radius: isEndpoint ? 11 : 9,
+                fillColor: isEndpoint ? '#2563eb' : '#10b981',
                 color: '#ffffff',
                 weight: 3,
                 fillOpacity: 1
             });
 
             var isDragging = false;
-            handle.on('mousedown touchstart', function () {
+            
+            function resolvePointerLatLng(e) {
+                if (e.latlng) return e.latlng;
+                if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches[0]) {
+                    return map.mouseEventToLatLng(e.originalEvent.touches[0]);
+                }
+                return null;
+            }
+
+            handle.on('mousedown touchstart', function (e) {
                 isDragging = true;
                 map.dragging.disable();
             });
 
             map.on('mousemove touchmove', function (e) {
-                if (isDragging && isValidLatLng(e.latlng.lat, e.latlng.lng)) {
-                    handle.setLatLng(e.latlng);
-                    vertices[idx] = [e.latlng.lat, e.latlng.lng];
-                    poly.setLatLngs(vertices);
+                if (isDragging) {
+                    var ll = resolvePointerLatLng(e);
+                    if (ll && isValidLatLng(ll.lat, ll.lng)) {
+                        handle.setLatLng(ll);
+                        vertices[idx] = [ll.lat, ll.lng];
+                        poly.setLatLngs(vertices);
+                    }
                 }
             });
 
@@ -2149,15 +2233,36 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             });
 
-            if (idx > 0 && idx < vertices.length - 1) {
+            if (!isEndpoint) {
+                // Mobile-friendly Up/Down/Nudge vertex control popup
+                var upDisabled = (idx <= 1) ? 'disabled' : '';
+                var downDisabled = (idx >= vertices.length - 2) ? 'disabled' : '';
+
+                handle.bindPopup(`
+                    <div class="p-1 text-center" style="font-size: 11px; min-width: 140px;">
+                        <strong class="d-block mb-1 text-dark">Titik Lekukan #${idx}</strong>
+                        <div class="btn-group btn-group-sm w-100 mb-2">
+                            <button class="btn btn-sm btn-outline-primary py-0" ${upDisabled} onclick="moveVertex(${idx}, -1)" title="Pindah Urutan Naik">↑</button>
+                            <button class="btn btn-sm btn-outline-primary py-0" ${downDisabled} onclick="moveVertex(${idx}, 1)" title="Pindah Urutan Turun">↓</button>
+                            <button class="btn btn-sm btn-outline-danger py-0" onclick="deleteVertex(${idx})" title="Hapus Titik">🗑</button>
+                        </div>
+                        <div class="d-flex justify-content-center gap-1">
+                            <button class="btn btn-light btn-sm border px-2 py-0" onclick="nudgeVertex(${idx}, 0.0001, 0)" title="Geser Utara">⬆</button>
+                            <button class="btn btn-light btn-sm border px-2 py-0" onclick="nudgeVertex(${idx}, -0.0001, 0)" title="Geser Selatan">⬇</button>
+                            <button class="btn btn-light btn-sm border px-2 py-0" onclick="nudgeVertex(${idx}, 0, -0.0001)" title="Geser Barat">⬅</button>
+                            <button class="btn btn-light btn-sm border px-2 py-0" onclick="nudgeVertex(${idx}, 0, 0.0001)" title="Geser Timur">➡</button>
+                        </div>
+                    </div>
+                `);
+
                 handle.on('contextmenu', function (e) {
                     L.DomEvent.stopPropagation(e);
                     if (confirm('Hapus titik lekukan ini?')) {
-                        translineEditor.undoStack.push(JSON.parse(JSON.stringify(vertices)));
-                        vertices.splice(idx, 1);
-                        renderSingleSegmentEditor();
+                        deleteVertex(idx);
                     }
                 });
+            } else {
+                handle.bindTooltip(idx === 0 ? 'Tiang Awal (Tetap)' : 'Tiang Akhir (Tetap)', { direction: 'top' });
             }
 
             segmentEditLayer.addLayer(handle);
@@ -2165,6 +2270,43 @@ document.addEventListener("DOMContentLoaded", function () {
 
         map.fitBounds(poly.getBounds(), { padding: [80, 80] });
     }
+
+    window.moveVertex = function (fromIdx, dir) {
+        var vertices = translineEditor.editedVertices;
+        var toIdx = fromIdx + dir;
+        if (toIdx < 1 || toIdx > vertices.length - 2) return;
+        translineEditor.undoStack.push(JSON.parse(JSON.stringify(vertices)));
+        var temp = vertices[fromIdx];
+        vertices[fromIdx] = vertices[toIdx];
+        vertices[toIdx] = temp;
+        renderSingleSegmentEditor();
+    };
+
+    window.deleteVertex = function (idx) {
+        var vertices = translineEditor.editedVertices;
+        if (idx <= 0 || idx >= vertices.length - 1) return;
+        translineEditor.undoStack.push(JSON.parse(JSON.stringify(vertices)));
+        vertices.splice(idx, 1);
+        renderSingleSegmentEditor();
+    };
+
+    window.nudgeVertex = function (idx, dLat, dLng) {
+        var vertices = translineEditor.editedVertices;
+        if (idx < 0 || idx >= vertices.length) return;
+        translineEditor.undoStack.push(JSON.parse(JSON.stringify(vertices)));
+        vertices[idx] = [vertices[idx][0] + dLat, vertices[idx][1] + dLng];
+        renderSingleSegmentEditor();
+    };
+
+    document.getElementById('btn-add-midpoint-vertex').addEventListener('click', function () {
+        var vertices = translineEditor.editedVertices;
+        if (vertices.length < 2) return;
+        var midLat = (vertices[0][0] + vertices[1][0]) / 2;
+        var midLng = (vertices[0][1] + vertices[1][1]) / 2;
+        translineEditor.undoStack.push(JSON.parse(JSON.stringify(vertices)));
+        vertices.splice(1, 0, [midLat, midLng]);
+        renderSingleSegmentEditor();
+    });
 
     document.getElementById('btn-undo-segment').addEventListener('click', function () {
         if (translineEditor.undoStack.length > 1) {
@@ -2294,7 +2436,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!currentData) return;
 
-        // Render Feeder LineString / MultiLineString Segments with high clarity
+        // Render Feeder LineString / MultiLineString Segments with high clarity & mobile hit target
         var hasTopology = false;
         if (currentData.transline && currentData.transline.geometry) {
             var geom = currentData.transline.geometry;
@@ -2305,17 +2447,45 @@ document.addEventListener("DOMContentLoaded", function () {
                 edges.forEach(function (e) {
                     var c = e.coordinates;
                     if (c && c.length === 2 && isValidLatLng(c[0][1], c[0][0]) && isValidLatLng(c[1][1], c[1][0])) {
-                        var poly = L.polyline([[c[0][1], c[0][0]], [c[1][1], c[1][0]]], {
+                        var latLngs = [[c[0][1], c[0][0]], [c[1][1], c[1][0]]];
+                        var visiblePoly = L.polyline(latLngs, {
                             color: '#0284c7',
                             weight: 3.5,
                             opacity: 0.9,
-                            lineJoin: 'round'
+                            lineJoin: 'round',
+                            interactive: false
                         });
-                        poly.bindTooltip(`⚡ <strong>${e.conductor_label || 'AAAC 150 mm²'}</strong> (${e.length_meter}m)`, {
+                        visiblePoly.bindTooltip(`⚡ <strong>${e.conductor_label || 'AAAC 150 mm²'}</strong> (${e.length_meter}m)`, {
                             sticky: true,
                             className: 'font-monospace small'
                         });
-                        translinePolylineLayer.addLayer(poly);
+                        translinePolylineLayer.addLayer(visiblePoly);
+
+                        // Invisible hit-layer for mobile Android WebView touch accuracy (24px touch target)
+                        var hitPoly = L.polyline(latLngs, {
+                            color: '#0284c7',
+                            weight: 24,
+                            opacity: 0.001,
+                            lineJoin: 'round',
+                            interactive: true
+                        });
+
+                        hitPoly.on('click', function (evt) {
+                            L.DomEvent.stopPropagation(evt);
+                            if (window.activeSegmentHighlight) {
+                                window.activeSegmentHighlight.setStyle({ color: '#0284c7', weight: 3.5, opacity: 0.9 });
+                            }
+                            window.activeSegmentHighlight = visiblePoly;
+                            visiblePoly.setStyle({ color: '#f59e0b', weight: 5.5, opacity: 1 });
+
+                            var fromAsset = (currentData.features || []).find(f => (f.properties && f.properties.id === e.from_asset_id));
+                            if (fromAsset) {
+                                var norm = normalizeAssetFeature(fromAsset);
+                                openAssetQuickCard(norm.properties, getVisualSvgPath(norm.properties), norm.geometry.coordinates);
+                            }
+                        });
+
+                        translinePolylineLayer.addLayer(hitPoly);
                     }
                 });
             } else if (geom.type === 'MultiLineString' && geom.coordinates && geom.coordinates.length > 0) {
@@ -2323,26 +2493,48 @@ document.addEventListener("DOMContentLoaded", function () {
                     var validSeg = segment.filter(pt => isValidLatLng(pt[1], pt[0]));
                     if (validSeg.length > 1) {
                         hasTopology = true;
-                        var poly = L.polyline(validSeg.map(pt => [pt[1], pt[0]]), {
+                        var latLngs = validSeg.map(pt => [pt[1], pt[0]]);
+                        var visiblePoly = L.polyline(latLngs, {
                             color: '#0284c7',
                             weight: 3.5,
                             opacity: 0.9,
-                            lineJoin: 'round'
+                            lineJoin: 'round',
+                            interactive: false
                         });
-                        translinePolylineLayer.addLayer(poly);
+                        translinePolylineLayer.addLayer(visiblePoly);
+
+                        var hitPoly = L.polyline(latLngs, {
+                            color: '#0284c7',
+                            weight: 24,
+                            opacity: 0.001,
+                            lineJoin: 'round',
+                            interactive: true
+                        });
+                        translinePolylineLayer.addLayer(hitPoly);
                     }
                 });
             } else if (geom.type === 'LineString' && geom.coordinates && geom.coordinates.length > 0) {
                 var validSeg = geom.coordinates.filter(pt => isValidLatLng(pt[1], pt[0]));
                 if (validSeg.length > 1) {
                     hasTopology = true;
-                    var poly = L.polyline(validSeg.map(pt => [pt[1], pt[0]]), {
+                    var latLngs = validSeg.map(pt => [pt[1], pt[0]]);
+                    var visiblePoly = L.polyline(latLngs, {
                         color: '#0284c7',
                         weight: 3.5,
                         opacity: 0.9,
-                        lineJoin: 'round'
+                        lineJoin: 'round',
+                        interactive: false
                     });
-                    translinePolylineLayer.addLayer(poly);
+                    translinePolylineLayer.addLayer(visiblePoly);
+
+                    var hitPoly = L.polyline(latLngs, {
+                        color: '#0284c7',
+                        weight: 24,
+                        opacity: 0.001,
+                        lineJoin: 'round',
+                        interactive: true
+                    });
+                    translinePolylineLayer.addLayer(hitPoly);
                 }
             }
         }

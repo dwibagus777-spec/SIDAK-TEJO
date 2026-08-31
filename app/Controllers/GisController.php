@@ -391,12 +391,14 @@ class GisController extends BaseController
                 $relModel->insert($data);
             }
 
+            $penyulangId = (int)($targetAsset['penyulang_id'] ?? $sourceAsset['penyulang_id'] ?? 0);
+
             // Log to field_corrections audit trail
             $db->table('field_corrections')->insert([
                 'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
                 'correction_type' => 'TOPOLOGY_CONNECTION',
                 'asset_id'        => $targetId,
-                'penyulang_id'    => (int)($targetAsset['penyulang_id'] ?? $sourceAsset['penyulang_id'] ?? 0),
+                'penyulang_id'    => $penyulangId,
                 'after_payload'   => json_encode([
                     'parent_id'          => $sourceId,
                     'child_id'           => $targetId,
@@ -418,12 +420,16 @@ class GisController extends BaseController
                 'updated_at'      => date('Y-m-d H:i:s'),
             ]);
 
+            // Reconcile and rebuild authoritative topology geometry
+            $freshTopology = ($penyulangId > 0) ? $this->rebuildAndPersistFeederTopology($penyulangId, $actor['name'] ?? 'Administrator') : [];
+
             $db->transComplete();
 
             return $this->response->setJSON([
                 'status'           => 'success',
                 'is_direct_commit' => true,
-                'message'          => "Sambungan jalur ($conductorType $conductorSize) berhasil diterapkan & langsung aktif (Direct Commit)."
+                'message'          => "Sambungan jalur ($conductorType $conductorSize) berhasil diterapkan & langsung aktif (Direct Commit).",
+                'topology'         => $freshTopology,
             ]);
         }
 
@@ -466,6 +472,11 @@ class GisController extends BaseController
         if ($isAdmin) {
             $db->transStart();
 
+            $penyulangId = (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0);
+            if ($penyulangId <= 0) {
+                $penyulangId = (int)($db->table('assets')->select('penyulang_id')->where('id', $sourceId)->get()->getRow()->penyulang_id ?? 0);
+            }
+
             // Clear parent_asset_id if target points to source or vice-versa
             $db->table('assets')->where('id', $targetId)->where('parent_asset_id', $sourceId)->update(['parent_asset_id' => null]);
             $db->table('assets')->where('id', $sourceId)->where('parent_asset_id', $targetId)->update(['parent_asset_id' => null]);
@@ -479,7 +490,7 @@ class GisController extends BaseController
                 'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
                 'correction_type' => 'TOPOLOGY_DISCONNECT',
                 'asset_id'        => $targetId,
-                'penyulang_id'    => (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0),
+                'penyulang_id'    => $penyulangId,
                 'after_payload'   => json_encode(['disconnected_from' => $sourceId, 'target_id' => $targetId]),
                 'rationale'       => 'Penghapusan sambungan jalur salah oleh Administrator',
                 'reporter_name'   => $actor['name'],
@@ -494,12 +505,16 @@ class GisController extends BaseController
                 'updated_at'      => date('Y-m-d H:i:s'),
             ]);
 
+            // Reconcile and rebuild authoritative topology geometry
+            $freshTopology = ($penyulangId > 0) ? $this->rebuildAndPersistFeederTopology($penyulangId, $actor['name'] ?? 'Administrator') : [];
+
             $db->transComplete();
 
             return $this->response->setJSON([
                 'status'           => 'success',
                 'is_direct_commit' => true,
-                'message'          => 'Sambungan jalur berhasil dihapus dari topologi aktif (Direct Commit).'
+                'message'          => 'Sambungan jalur berhasil dihapus dari topologi aktif (Direct Commit).',
+                'topology'         => $freshTopology,
             ]);
         }
 
@@ -539,6 +554,11 @@ class GisController extends BaseController
         if ($isAdmin) {
             $db->transStart();
 
+            $penyulangId = (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0);
+            if ($penyulangId <= 0) {
+                $penyulangId = (int)($db->table('assets')->select('penyulang_id')->where('id', $sourceId)->get()->getRow()->penyulang_id ?? 0);
+            }
+
             $updateData = [
                 'conductor_type'     => $conductorType,
                 'conductor_size'     => $conductorSize,
@@ -563,7 +583,7 @@ class GisController extends BaseController
                 'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
                 'correction_type' => 'CONDUCTOR_SPEC_UPDATE',
                 'asset_id'        => $targetId,
-                'penyulang_id'    => (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0),
+                'penyulang_id'    => $penyulangId,
                 'after_payload'   => json_encode($updateData),
                 'rationale'       => "Pembaruan spesifikasi konduktor menjadi $conductorType $conductorSize oleh Administrator",
                 'reporter_name'   => $actor['name'],
@@ -578,14 +598,71 @@ class GisController extends BaseController
                 'updated_at'      => date('Y-m-d H:i:s'),
             ]);
 
+            // Reconcile and rebuild authoritative topology geometry
+            $freshTopology = ($penyulangId > 0) ? $this->rebuildAndPersistFeederTopology($penyulangId, $actor['name'] ?? 'Administrator') : [];
+
             $db->transComplete();
 
             return $this->response->setStatusCode(200)->setJSON([
                 'status'           => 'success',
                 'is_direct_commit' => true,
-                'message'          => "Spesifikasi konduktor ($conductorType $conductorSize) berhasil diperbarui dan langsung aktif (Direct Commit)."
+                'message'          => "Spesifikasi konduktor ($conductorType $conductorSize) berhasil diperbarui dan langsung aktif (Direct Commit).",
+                'topology'         => $freshTopology,
             ]);
         }
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status'           => 'success',
+            'is_direct_commit' => false,
+            'message'          => "Usulan perubahan spesifikasi konduktor ($conductorType $conductorSize) berhasil diajukan dan menunggu telaah supervisor."
+        ]);
+    }
+
+    /**
+     * Rebuild and persist active network topology version from database relationships
+     */
+    private function rebuildAndPersistFeederTopology(int $penyulangId, string $actorName): array
+    {
+        $db = \Config\Database::connect();
+        
+        // 1. Deactivate old cached versions in network_topology_versions
+        if ($db->tableExists('network_topology_versions')) {
+            $db->table('network_topology_versions')
+               ->where('penyulang_id', $penyulangId)
+               ->where('is_active', 1)
+               ->update([
+                   'is_active'      => 0,
+                   'version_status' => 'SUPERSEDED',
+                   'superseded_at'  => date('Y-m-d H:i:s')
+               ]);
+        }
+
+        // 2. Dynamically rebuild fresh topology segments from database
+        $freshSegments = $this->assetRepository->getFeederNetworkSegments($penyulangId);
+
+        // 3. Persist new active version snapshot
+        if ($db->tableExists('network_topology_versions') && !empty($freshSegments['coordinates'])) {
+            $latestVer = (int)($db->table('network_topology_versions')
+                                  ->where('penyulang_id', $penyulangId)
+                                  ->selectMax('version_no')
+                                  ->get()
+                                  ->getRow()->version_no ?? 0) + 1;
+
+            $db->table('network_topology_versions')->insert([
+                'penyulang_id'     => $penyulangId,
+                'version_no'       => $latestVer,
+                'geojson_topology' => json_encode($freshSegments),
+                'nodes_count'      => count($freshSegments['nodes'] ?? []),
+                'segments_count'   => count($freshSegments['coordinates'] ?? []),
+                'is_active'        => 1,
+                'version_status'   => 'ACTIVE',
+                'created_by'       => $actorName,
+                'created_at'       => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        return $freshSegments;
+    }
 
         return $this->response->setStatusCode(200)->setJSON([
             'status'           => 'success',

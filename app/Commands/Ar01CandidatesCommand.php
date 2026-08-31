@@ -32,7 +32,17 @@ class Ar01CandidatesCommand extends BaseCommand
         $db = \Config\Database::connect();
         $candidateService = new SpatialSectionCandidateService($db);
 
-        $feederArg = $params[0] ?? CLI::getOption('feeder') ?? null;
+        $feederArg = null;
+        foreach ($params as $p) {
+            if (!str_starts_with($p, '-')) {
+                $feederArg = $p;
+                break;
+            }
+        }
+        if ($feederArg === null) {
+            $feederArg = CLI::getOption('feeder');
+        }
+
         $assetArg  = CLI::getOption('asset') ?? null;
         $limit     = (int)(CLI::getOption('limit') ?? 20);
         $isJson    = (bool)(CLI::getOption('json') ?? false);
@@ -113,7 +123,8 @@ class Ar01CandidatesCommand extends BaseCommand
         } else {
             $feederBuilder->where('kode_penyulang', (string)$feederArg);
         }
-        $feeder = $feederBuilder->get() ? $feederBuilder->get()->getRowArray() : null;
+        $getFeeder = $feederBuilder->get();
+        $feeder = $getFeeder ? $getFeeder->getRowArray() : null;
 
         if (!$feeder) {
             CLI::error("ERROR: Penyulang '{$feederArg}' tidak ditemukan.");

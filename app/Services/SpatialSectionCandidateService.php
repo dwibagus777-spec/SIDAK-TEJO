@@ -95,7 +95,8 @@ class SpatialSectionCandidateService
         if ($this->db->fieldExists('deleted_at', 'assets')) {
             $devBuilder->where('deleted_at IS NULL');
         }
-        $feederAssets = $devBuilder->get() ? $devBuilder->get()->getResultArray() : [];
+        $getDev = $devBuilder->get();
+        $feederAssets = $getDev ? $getDev->getResultArray() : [];
 
         foreach ($sections as $sec) {
             $secId = (int)$sec['id'];
@@ -414,7 +415,8 @@ class SpatialSectionCandidateService
         if ($this->db->fieldExists('deleted_at', 'assets')) {
             $builder->where('deleted_at IS NULL');
         }
-        $asset = $builder->get() ? $builder->get()->getRowArray() : null;
+        $getAsset = $builder->get();
+        $asset = $getAsset ? $getAsset->getRowArray() : null;
 
         if (!$asset) {
             return [
@@ -441,7 +443,8 @@ class SpatialSectionCandidateService
         if ($this->db->fieldExists('deleted_at', 'assets')) {
             $fAssetsBuilder->where('deleted_at IS NULL');
         }
-        $allFeederAssets = $fAssetsBuilder->get() ? $fAssetsBuilder->get()->getResultArray() : [];
+        $getFAssets = $fAssetsBuilder->get();
+        $allFeederAssets = $getFAssets ? $getFAssets->getResultArray() : [];
 
         $rawCandidates = [];
         foreach ($sections as $sec) {
@@ -525,7 +528,8 @@ class SpatialSectionCandidateService
         if ($this->db->fieldExists('deleted_at', 'assets')) {
             $fAssetsBuilder->where('deleted_at IS NULL');
         }
-        $allFeederAssets = $fAssetsBuilder->get() ? $fAssetsBuilder->get()->getResultArray() : [];
+        $getFAssets = $fAssetsBuilder->get();
+        $allFeederAssets = $getFAssets ? $getFAssets->getResultArray() : [];
 
         $results = [];
         $highCount = 0;

@@ -71,6 +71,7 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
                 'id'                         => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'auto_increment' => true],
                 'kode_asset'                 => ['type' => 'VARCHAR', 'constraint' => 100],
                 'nama_asset'                 => ['type' => 'VARCHAR', 'constraint' => 255],
+                'jenis_asset'                => ['type' => 'VARCHAR', 'constraint' => 100, 'null' => true],
                 'penyulang_id'               => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'null' => true],
                 'section_id'                 => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'null' => true],
                 'latitude'                   => ['type' => 'DECIMAL', 'constraint' => '10,7', 'null' => true],
@@ -83,6 +84,11 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
             ]);
             $forge->addKey('id', true);
             $forge->createTable('assets', true);
+        } elseif (!$this->db->fieldExists('jenis_asset', 'assets')) {
+            $forge = \Config\Database::forge();
+            $forge->addColumn('assets', [
+                'jenis_asset' => ['type' => 'VARCHAR', 'constraint' => 100, 'null' => true],
+            ]);
         }
     }
 
@@ -319,4 +325,62 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
         $this->assertTrue($result['requires_human_verification']);
         $this->assertFalse($result['mutation_applied']);
     }
+
+    public function testFeederIdResolutionResolvesExactPenyulang()
+    {
+        $feederId = 4;
+        $this->db->table('penyulang')->insert([
+            'id'             => $feederId,
+            'kode_penyulang' => 'PYL-004',
+            'nama_penyulang' => 'GEMURUNG',
+        ]);
+
+        $resolved = $this->service->resolveFeeder($feederId);
+
+        $this->assertNotNull($resolved);
+        $this->assertEquals(4, (int)$resolved['id']);
+        $this->assertEquals('PYL-004', $resolved['kode_penyulang']);
+        $this->assertEquals('GEMURUNG', $resolved['nama_penyulang']);
+    }
+
+    public function testNonexistentFeederReturnsNullWithoutSilentFallback()
+    {
+        $nonExistentId = 999999;
+        $resolved = $this->service->resolveFeeder($nonExistentId);
+
+        $this->assertNull($resolved, 'Resolving nonexistent feeder must return null and never fall back to feeder #1');
+    }
+
+    public function testAssetFeederIntegrityFilter()
+    {
+        $feederId = 4;
+        $assetId = 3711;
+
+        $this->db->table('assets')->insert([
+            'id'           => $assetId,
+            'kode_asset'   => 'GEMURUNG_16',
+            'nama_asset'   => 'GEMURUNG_16',
+            'jenis_asset'  => 'JTM',
+            'penyulang_id' => $feederId,
+            'latitude'     => -7.42539,
+            'longitude'    => 112.73040,
+            'section_id'   => null,
+        ]);
+
+        $this->db->table('sections')->insert([
+            'id'             => 14,
+            'penyulang_id'   => $feederId,
+            'nama_section'   => 'GI - RECLOSER PULAU BATU',
+            'sequence_order' => 1,
+            'status'         => 'AKTIF',
+        ]);
+
+        $analysis = $this->service->analyzeAsset($assetId);
+
+        $this->assertTrue($analysis['success']);
+        $this->assertEquals(4, $analysis['feeder_id']);
+        $this->assertEquals(3711, $analysis['asset_id']);
+        $this->assertEquals('GEMURUNG_16', $analysis['kode_asset']);
+    }
 }
+

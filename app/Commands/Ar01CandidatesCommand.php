@@ -47,19 +47,45 @@ class Ar01CandidatesCommand extends BaseCommand
         $limit     = (int)(CLI::getOption('limit') ?? 20);
         $isJson    = (bool)(CLI::getOption('json') ?? false);
 
+        // Resolve Feeder if specified
+        $feeder = null;
+        $feederId = null;
+        if ($feederArg !== null) {
+            $feederBuilder = $db->table('penyulang');
+            if (is_numeric($feederArg)) {
+                $feederBuilder->where('id', (int)$feederArg);
+            } else {
+                $feederBuilder->where('kode_penyulang', (string)$feederArg);
+            }
+            $getFeeder = $feederBuilder->get();
+            $feeder = $getFeeder ? $getFeeder->getRowArray() : null;
+
+            if (!$feeder) {
+                CLI::error("ERROR: Penyulang '{$feederArg}' tidak ditemukan di database.");
+                return 1;
+            }
+            $feederId = (int)$feeder['id'];
+        }
+
         // Mode 1: Single Asset Analysis
         if ($assetArg !== null) {
             $assetId = (int)$assetArg;
             $result = $candidateService->analyzeAsset($assetId);
 
-            if ($isJson) {
-                CLI::write(json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-                return 0;
-            }
-
             if (!$result['success']) {
                 CLI::error("ERROR: " . ($result['error'] ?? 'Gagal menganalisis aset.'));
                 return 1;
+            }
+
+            // Cross-feeder verification if feeder was explicitly supplied
+            if ($feederId !== null && (int)$result['feeder_id'] !== $feederId) {
+                CLI::error("ERROR: Aset #{$assetId} bukan merupakan bagian dari penyulang #{$feederId} ([{$feeder['kode_penyulang']}] {$feeder['nama_penyulang']}). Cross-feeder analysis ditolak.");
+                return 1;
+            }
+
+            if ($isJson) {
+                CLI::write(json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                return 0;
             }
 
             CLI::write("\n==============================================================", 'cyan');
@@ -111,27 +137,11 @@ class Ar01CandidatesCommand extends BaseCommand
         }
 
         // Mode 2: Batch Feeder Analysis
-        if (!$feederArg) {
+        if ($feederId === null) {
             CLI::error("Harap tentukan Feeder ID atau Kode Penyulang (misal: php spark ar01:candidates 4).");
             return 1;
         }
 
-        // Resolve Feeder ID
-        $feederBuilder = $db->table('penyulang');
-        if (is_numeric($feederArg)) {
-            $feederBuilder->where('id', (int)$feederArg);
-        } else {
-            $feederBuilder->where('kode_penyulang', (string)$feederArg);
-        }
-        $getFeeder = $feederBuilder->get();
-        $feeder = $getFeeder ? $getFeeder->getRowArray() : null;
-
-        if (!$feeder) {
-            CLI::error("ERROR: Penyulang '{$feederArg}' tidak ditemukan.");
-            return 1;
-        }
-
-        $feederId = (int)$feeder['id'];
         $result = $candidateService->analyzeFeeder($feederId, $limit);
 
         if ($isJson) {

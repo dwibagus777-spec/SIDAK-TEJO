@@ -261,6 +261,10 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
 
         $this->assertTrue($analysis['success']);
         $this->assertEquals('UNRESOLVED', $analysis['decision']['status']);
+        $this->assertFalse($analysis['decision']['recommendation_allowed']);
+        $this->assertFalse($analysis['recommendation_allowed']);
+        $this->assertNull($analysis['recommended_section']);
+        $this->assertNotNull($analysis['top_candidate']);
         $this->assertNull($analysis['asset_gps']['latitude']);
         $this->assertFalse($analysis['governance']['mutation_applied']);
     }
@@ -628,23 +632,39 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
         $resX = $this->service->analyzeAsset(7005);
         $this->assertEquals(701, $resX['candidates'][0]['section_id']);
         $this->assertEquals('CLEAR', $resX['decision']['status']);
+        $this->assertTrue($resX['decision']['recommendation_allowed']);
+        $this->assertTrue($resX['recommendation_allowed']);
+        $this->assertNotNull($resX['recommended_section']);
+        $this->assertEquals(701, $resX['recommended_section']['section_id']);
         $this->assertFalse($resX['governance']['mutation_applied']);
 
         // State 2: Asset Y -> CLEAR Section 702 (Side B)
         $resY = $this->service->analyzeAsset(7006);
         $this->assertEquals(702, $resY['candidates'][0]['section_id']);
         $this->assertEquals('CLEAR', $resY['decision']['status']);
+        $this->assertTrue($resY['decision']['recommendation_allowed']);
+        $this->assertTrue($resY['recommendation_allowed']);
+        $this->assertNotNull($resY['recommended_section']);
+        $this->assertEquals(702, $resY['recommended_section']['section_id']);
         $this->assertFalse($resY['governance']['mutation_applied']);
 
         // State 3: Asset Z -> AMBIGUOUS (Equidistant directly on LBS TENGAH boundary)
         $resZ = $this->service->analyzeAsset(7007);
         $this->assertEquals('AMBIGUOUS', $resZ['decision']['status']);
+        $this->assertFalse($resZ['decision']['recommendation_allowed']);
+        $this->assertFalse($resZ['recommendation_allowed']);
+        $this->assertNull($resZ['recommended_section']);
+        $this->assertNotNull($resZ['top_candidate']);
         $this->assertLessThan(5.0, $resZ['decision']['margin_percent']);
         $this->assertFalse($resZ['governance']['mutation_applied']);
 
         // State 4: Asset Q -> UNRESOLVED (Missing GPS & Topology)
         $resQ = $this->service->analyzeAsset(7008);
         $this->assertEquals('UNRESOLVED', $resQ['decision']['status']);
+        $this->assertFalse($resQ['decision']['recommendation_allowed']);
+        $this->assertFalse($resQ['recommendation_allowed']);
+        $this->assertNull($resQ['recommended_section']);
+        $this->assertNotNull($resQ['top_candidate']);
         $this->assertFalse($resQ['governance']['mutation_applied']);
     }
 }

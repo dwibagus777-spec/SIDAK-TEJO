@@ -100,9 +100,14 @@ class Ar01CandidatesCommand extends BaseCommand
             $gpsStr = ($result['asset_gps']['latitude'] !== null) ? "({$result['asset_gps']['latitude']}, {$result['asset_gps']['longitude']})" : "NULL (MISSING GPS)";
             $decStatus = $result['decision']['status'] ?? 'UNRESOLVED';
             $decColor = ($decStatus === 'CLEAR') ? 'green' : (($decStatus === 'AMBIGUOUS') ? 'yellow' : 'red');
-            CLI::write("GPS Coordinates : {$gpsStr}");
-            CLI::write("Decision Status : " . CLI::color($decStatus, $decColor));
-            CLI::write("Margin Top1-Top2: {$result['decision']['margin_percent']}%\n");
+            $recAllowed = $result['decision']['recommendation_allowed'] ?? false;
+            $recColor = $recAllowed ? 'green' : 'red';
+            $recText = $recAllowed ? "YES (Valid Evidence & Margin)" : "NO (Advisory Ranking Only / Insufficient Evidence)";
+
+            CLI::write("GPS Coordinates        : {$gpsStr}");
+            CLI::write("Decision Status        : " . CLI::color($decStatus, $decColor));
+            CLI::write("Recommendation Allowed : " . CLI::color($recText, $recColor));
+            CLI::write("Margin Top1-Top2       : {$result['decision']['margin_percent']}%\n");
 
             CLI::write("TOP SECTION CANDIDATES (Top-3 Ranking):", 'cyan');
             CLI::write(str_repeat("-", 80));
@@ -137,7 +142,11 @@ class Ar01CandidatesCommand extends BaseCommand
             }
 
             CLI::write("\n==============================================================", 'cyan');
-            CLI::write("🟢 ADVISORY ANALYSIS COMPLETE: Gunakan 'ar01:verify-section' untuk human sign-off", 'green');
+            if ($recAllowed) {
+                CLI::write("🟢 ADVISORY ANALYSIS COMPLETE: Gunakan 'ar01:verify-section' untuk human sign-off", 'green');
+            } else {
+                CLI::write("🟡 ADVISORY ONLY: Evidence tidak cukup untuk otomatisasi — Perlu verifikasi lapangan.", 'yellow');
+            }
             CLI::write("==============================================================\n", 'cyan');
             return 0;
         }
@@ -175,26 +184,28 @@ class Ar01CandidatesCommand extends BaseCommand
         CLI::write(sprintf("  • Low / Unresolved  : %s assets\n", CLI::color((string)$result['statistics']['low_unresolved'], 'red')));
 
         CLI::write(sprintf("DAFTAR REKOMENDASI KANDIDAT (Menampilkan %d aset):", count($result['assets'])), 'cyan');
-        CLI::write(str_repeat("-", 95));
-        CLI::write(sprintf("%-8s | %-20s | %-18s | %-6s | %-12s | %-14s", "PK ID", "Kode Asset", "Top Candidate", "Skor", "Confidence", "Margin Top2"));
-        CLI::write(str_repeat("-", 95));
+        CLI::write(str_repeat("-", 105));
+        CLI::write(sprintf("%-8s | %-20s | %-18s | %-6s | %-12s | %-14s | %-12s", "PK ID", "Kode Asset", "Top Candidate", "Skor", "Confidence", "Margin Top2", "Rec Allowed"));
+        CLI::write(str_repeat("-", 105));
 
         foreach ($result['assets'] as $a) {
-            $top = $a['top_recommendation'];
+            $top = $a['top_candidate'] ?? $a['top_recommendation'];
             if (!$top) continue;
 
             $confColor = $top['confidence'] === 'HIGH' ? 'green' : ($top['confidence'] === 'AMBIGUOUS' ? 'yellow' : 'white');
+            $recBadge = ($a['recommendation_allowed'] ?? false) ? CLI::color("YES", "green") : CLI::color("NO", "red");
             CLI::write(sprintf(
-                "#%-7d | %-20s | Section #%-9d | %-6.1f | %-12s | Δ %.1f%%",
+                "#%-7d | %-20s | Section #%-9d | %-6.1f | %-12s | Δ %-12.1f | %s",
                 $a['asset_id'],
                 mb_strimwidth($a['kode_asset'], 0, 20, '...'),
                 $top['section_id'],
                 $top['score'],
                 CLI::color($top['confidence'], $confColor),
-                $a['margin_percent']
+                $a['margin_percent'],
+                $recBadge
             ));
         }
-        CLI::write(str_repeat("-", 95));
+        CLI::write(str_repeat("-", 105));
 
         CLI::write("\nTip: Untuk bedah evidence detail pada aset tunggal:", 'cyan');
         $sampleId = $result['assets'][0]['asset_id'] ?? 3711;

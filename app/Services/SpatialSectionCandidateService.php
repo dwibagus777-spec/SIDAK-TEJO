@@ -831,6 +831,14 @@ class SpatialSectionCandidateService
 
         $rankingResult = $this->rankCandidates($rawCandidates);
         $topCandidate = $rankingResult['candidates'][0] ?? null;
+        $isRecAllowed = ($rankingResult['decision_status'] === 'CLEAR' && $topCandidate && in_array($topCandidate['confidence'], ['HIGH', 'MEDIUM'], true));
+
+        $topCandSummary = $topCandidate ? [
+            'section_id'   => $topCandidate['section_id'],
+            'section_name' => $topCandidate['section_name'],
+            'score'        => $topCandidate['score'],
+            'confidence'   => $topCandidate['confidence'],
+        ] : null;
 
         return [
             'success'                     => true,
@@ -846,10 +854,14 @@ class SpatialSectionCandidateService
             ],
             'candidates'                  => $rankingResult['candidates'],
             'decision'                    => [
-                'status'                => $rankingResult['decision_status'],
-                'margin_percent'        => $rankingResult['margin_pct'],
-                'zero_blind_assignment' => true,
+                'status'                 => $rankingResult['decision_status'],
+                'margin_percent'         => $rankingResult['margin_pct'],
+                'recommendation_allowed' => $isRecAllowed,
+                'zero_blind_assignment'  => true,
             ],
+            'top_candidate'               => $topCandSummary,
+            'recommended_section'         => $isRecAllowed ? $topCandSummary : null,
+            'recommendation_allowed'      => $isRecAllowed,
             'governance'                  => [
                 'mutation_applied'          => false,
                 'assets_section_id_written' => false,
@@ -932,6 +944,14 @@ class SpatialSectionCandidateService
             $ranking = $this->rankCandidates($rawCandidates);
             $top = $ranking['candidates'][0] ?? null;
 
+            $isRecAllowed = ($ranking['decision_status'] === 'CLEAR' && $top && in_array($top['confidence'], ['HIGH', 'MEDIUM'], true));
+            $topCandSummary = $top ? [
+                'section_id'   => $top['section_id'],
+                'section_name' => $top['section_name'],
+                'score'        => $top['score'],
+                'confidence'   => $top['confidence'],
+            ] : null;
+
             if ($ranking['decision_status'] === 'AMBIGUOUS') {
                 $ambiguousCount++;
             } elseif ($ranking['decision_status'] === 'CLEAR' && $top && $top['confidence'] === 'HIGH') {
@@ -941,20 +961,18 @@ class SpatialSectionCandidateService
             }
 
             $results[] = [
-                'asset_id'           => (int)$a['id'],
-                'kode_asset'         => $a['kode_asset'] ?? $a['nama_asset'],
-                'latitude'           => $a['latitude'] ? (float)$a['latitude'] : null,
-                'longitude'          => $a['longitude'] ? (float)$a['longitude'] : null,
-                'section_candidates' => $ranking['candidates'],
-                'margin_percent'     => $ranking['margin_pct'],
-                'is_ambiguous'       => $ranking['is_ambiguous'],
-                'decision_status'    => $ranking['decision_status'],
-                'top_recommendation' => $top ? [
-                    'section_id'   => $top['section_id'],
-                    'section_name' => $top['section_name'],
-                    'score'        => $top['score'],
-                    'confidence'   => $top['confidence'],
-                ] : null,
+                'asset_id'               => (int)$a['id'],
+                'kode_asset'             => $a['kode_asset'] ?? $a['nama_asset'],
+                'latitude'               => $a['latitude'] ? (float)$a['latitude'] : null,
+                'longitude'              => $a['longitude'] ? (float)$a['longitude'] : null,
+                'section_candidates'     => $ranking['candidates'],
+                'margin_percent'         => $ranking['margin_pct'],
+                'is_ambiguous'           => $ranking['is_ambiguous'],
+                'decision_status'        => $ranking['decision_status'],
+                'recommendation_allowed' => $isRecAllowed,
+                'top_candidate'          => $topCandSummary,
+                'recommended_section'    => $isRecAllowed ? $topCandSummary : null,
+                'top_recommendation'     => $topCandSummary,
             ];
         }
 

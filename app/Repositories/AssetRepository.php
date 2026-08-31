@@ -463,21 +463,23 @@ class AssetRepository
             $hasParentCol = $db->fieldExists('parent_asset_id', 'assets');
             $hasSeqCol    = $db->fieldExists('sequence_no', 'assets');
 
-            $builder = $db->table('assets a');
-            $builder->select('a.id, a.parent_asset_id, a.jenis_asset, a.latitude, a.longitude, a.sequence_no');
-            $builder->where('a.penyulang_id', $penyulangId);
-            $builder->where('a.deleted_at IS NULL');
-            $builder->where('a.latitude !=', 0);
-            $builder->where('a.longitude !=', 0);
+            $builder = $db->table('assets');
+            $builder->select('id, parent_asset_id, jenis_asset, latitude, longitude, sequence_no');
+            $builder->where('penyulang_id', $penyulangId);
+            if ($db->fieldExists('deleted_at', 'assets')) {
+                $builder->where('deleted_at IS NULL');
+            }
+            $builder->where('latitude !=', 0);
+            $builder->where('longitude !=', 0);
 
-            if (!empty($userUlpId)) {
-                $builder->where('a.ulp_id', $userUlpId);
+            if (!empty($userUlpId) && $db->fieldExists('ulp_id', 'assets')) {
+                $builder->where('ulp_id', $userUlpId);
             }
 
             if ($hasSeqCol) {
-                $builder->orderBy('a.sequence_no', 'ASC');
+                $builder->orderBy('sequence_no', 'ASC');
             } else {
-                $builder->orderBy('a.id', 'ASC');
+                $builder->orderBy('id', 'ASC');
             }
 
             $nodes = $builder->get()->getResultArray();
@@ -534,14 +536,13 @@ class AssetRepository
                 }
             }
 
-            if ($hasParentCol) {
-                foreach ($nodeMap as $id => $n) {
-                    $parentId = $n['parent'];
-                    if ($parentId > 0 && isset($nodeMap[$parentId])) {
-                        $parentCoord = $nodeMap[$parentId]['coord'];
-                        $childCoord  = $n['coord'];
-                        $multiLineCoords[] = [$parentCoord, $childCoord];
-                        $hasValidParents = true;
+            foreach ($nodeMap as $id => $n) {
+                $parentId = $n['parent'];
+                if ($parentId > 0 && isset($nodeMap[$parentId])) {
+                    $parentCoord = $nodeMap[$parentId]['coord'];
+                    $childCoord  = $n['coord'];
+                    $multiLineCoords[] = [$parentCoord, $childCoord];
+                    $hasValidParents = true;
 
                         $relKey = $parentId . '_' . $id;
                         $rel = $relMap[$relKey] ?? [];
@@ -566,7 +567,6 @@ class AssetRepository
                         ];
                     }
                 }
-            }
 
             // =========================================================================
             // PRIORITY 2 & 3: Sequence / Spatial Nearest-Neighbor Reconstruction

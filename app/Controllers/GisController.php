@@ -6,6 +6,7 @@ use App\Services\GISService;
 use App\Services\AssetTopologyService;
 use App\Services\BaselineService;
 use App\Repositories\PenyulangRepository;
+use App\Repositories\AssetRepository;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class GisController extends BaseController
@@ -14,6 +15,7 @@ class GisController extends BaseController
     private AssetTopologyService $topologyService;
     private BaselineService $baselineService;
     private PenyulangRepository $penyulangRepository;
+    private AssetRepository $assetRepository;
 
     public function __construct()
     {
@@ -21,6 +23,7 @@ class GisController extends BaseController
         $this->topologyService = new AssetTopologyService();
         $this->baselineService = new BaselineService();
         $this->penyulangRepository = new PenyulangRepository();
+        $this->assetRepository = new AssetRepository();
     }
 
     /**
@@ -297,6 +300,14 @@ class GisController extends BaseController
             return $json;
         }
 
+        $raw = method_exists($this->request, 'getBody') ? $this->request->getBody() : null;
+        if (!empty($raw) && is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded) && !empty($decoded)) {
+                return $decoded;
+            }
+        }
+
         $post = null;
         if (method_exists($this->request, 'getPost')) {
             $post = $this->request->getPost();
@@ -350,13 +361,21 @@ class GisController extends BaseController
             // ADMIN DIRECT COMMIT
             $db->transStart();
 
+            // If REPLACE mode, clear old outgoing connections from source and incoming to target
+            if ($mode === 'REPLACE') {
+                $db->table('assets')->where('parent_asset_id', $sourceId)->update(['parent_asset_id' => null]);
+                $db->table('asset_relationships')
+                    ->groupStart()
+                        ->where('child_asset_id', $targetId)
+                        ->orWhere('parent_asset_id', $sourceId)
+                        ->orWhere('source_asset_id', $sourceId)
+                        ->orWhere('target_asset_id', $targetId)
+                    ->groupEnd()
+                    ->delete();
+            }
+
             // Set parent_asset_id on target asset
             $db->table('assets')->where('id', $targetId)->update(['parent_asset_id' => $sourceId]);
-
-            // If REPLACE mode, clear any old relationship from targetId
-            if ($mode === 'REPLACE') {
-                $relModel->where('child_asset_id', $targetId)->delete();
-            }
 
             $sourceAsset = $db->table('assets')->select('latitude, longitude, penyulang_id')->where('id', $sourceId)->get()->getRowArray();
             $targetAsset = $db->table('assets')->select('latitude, longitude, penyulang_id')->where('id', $targetId)->get()->getRowArray();
@@ -365,7 +384,7 @@ class GisController extends BaseController
                 $distance = round($this->calculateHaversine((float)$sourceAsset['latitude'], (float)$sourceAsset['longitude'], (float)$targetAsset['latitude'], (float)$targetAsset['longitude']), 1);
             }
 
-            $existing = $relModel->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)->first();
+            $existing = $db->table('asset_relationships')->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)->get()->getRowArray();
             $data = [
                 'parent_asset_id'    => $sourceId,
                 'child_asset_id'     => $targetId,
@@ -386,9 +405,9 @@ class GisController extends BaseController
             ];
 
             if ($existing) {
-                $relModel->update($existing['id'], $data);
+                $db->table('asset_relationships')->where('id', $existing['id'])->update($data);
             } else {
-                $relModel->insert($data);
+                $db->table('asset_relationships')->insert($data);
             }
 
             $penyulangId = (int)($targetAsset['penyulang_id'] ?? $sourceAsset['penyulang_id'] ?? 0);
@@ -482,8 +501,14 @@ class GisController extends BaseController
             $db->table('assets')->where('id', $sourceId)->where('parent_asset_id', $targetId)->update(['parent_asset_id' => null]);
 
             // Deactivate relationship edge
-            $relModel->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)->delete();
-            $relModel->where('parent_asset_id', $targetId)->where('child_asset_id', $sourceId)->delete();
+            $db->table('asset_relationships')
+                ->groupStart()
+                    ->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('parent_asset_id', $targetId)->where('child_asset_id', $sourceId)
+                ->groupEnd()
+                ->delete();
 
             // Log to field_corrections audit trail
             $db->table('field_corrections')->insert([
@@ -627,14 +652,17 @@ class GisController extends BaseController
         
         // 1. Deactivate old cached versions in network_topology_versions
         if ($db->tableExists('network_topology_versions')) {
+            $deactivateData = [
+                'is_active'      => 0,
+                'version_status' => 'HISTORICAL',
+            ];
+            if ($db->fieldExists('superseded_at', 'network_topology_versions')) {
+                $deactivateData['superseded_at'] = date('Y-m-d H:i:s');
+            }
             $db->table('network_topology_versions')
                ->where('penyulang_id', $penyulangId)
                ->where('is_active', 1)
-               ->update([
-                   'is_active'      => 0,
-                   'version_status' => 'SUPERSEDED',
-                   'superseded_at'  => date('Y-m-d H:i:s')
-               ]);
+               ->update($deactivateData);
         }
 
         // 2. Dynamically rebuild fresh topology segments from database
@@ -642,11 +670,13 @@ class GisController extends BaseController
 
         // 3. Persist new active version snapshot
         if ($db->tableExists('network_topology_versions') && !empty($freshSegments['coordinates'])) {
-            $latestVer = (int)($db->table('network_topology_versions')
-                                  ->where('penyulang_id', $penyulangId)
-                                  ->selectMax('version_no')
-                                  ->get()
-                                  ->getRow()->version_no ?? 0) + 1;
+            $maxRow = $db->table('network_topology_versions')
+                         ->where('penyulang_id', $penyulangId)
+                         ->selectMax('version_no')
+                         ->get()
+                         ->getRow();
+            $maxVer = ($maxRow && isset($maxRow->version_no)) ? (int)$maxRow->version_no : 0;
+            $latestVer = $maxVer + 1;
 
             $db->table('network_topology_versions')->insert([
                 'penyulang_id'     => $penyulangId,
@@ -662,13 +692,6 @@ class GisController extends BaseController
         }
 
         return $freshSegments;
-    }
-
-        return $this->response->setStatusCode(200)->setJSON([
-            'status'           => 'success',
-            'is_direct_commit' => false,
-            'message'          => "Usulan perubahan spesifikasi konduktor ($conductorType $conductorSize) berhasil diajukan dan menunggu telaah supervisor."
-        ]);
     }
 
     private function calculateHaversine(float $lat1, float $lon1, float $lat2, float $lon2): float

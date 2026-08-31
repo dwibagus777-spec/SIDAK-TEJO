@@ -98,9 +98,11 @@ class Ar01CandidatesCommand extends BaseCommand
             CLI::write("PROMOTION   : DISABLED (Gate LOCKED)\n", 'red');
 
             $gpsStr = ($result['asset_gps']['latitude'] !== null) ? "({$result['asset_gps']['latitude']}, {$result['asset_gps']['longitude']})" : "NULL (MISSING GPS)";
+            $decStatus = $result['decision']['status'] ?? 'UNRESOLVED';
+            $decColor = ($decStatus === 'CLEAR') ? 'green' : (($decStatus === 'AMBIGUOUS') ? 'yellow' : 'red');
             CLI::write("GPS Coordinates : {$gpsStr}");
-            CLI::write("Decision Status : " . CLI::color($result['decision'], $result['is_ambiguous'] ? 'yellow' : 'green'));
-            CLI::write("Margin Top1-Top2: {$result['margin_percent']}%\n");
+            CLI::write("Decision Status : " . CLI::color($decStatus, $decColor));
+            CLI::write("Margin Top1-Top2: {$result['decision']['margin_percent']}%\n");
 
             CLI::write("TOP SECTION CANDIDATES (Top-3 Ranking):", 'cyan');
             CLI::write(str_repeat("-", 80));
@@ -124,10 +126,14 @@ class Ar01CandidatesCommand extends BaseCommand
             $top = $result['section_candidates'][0] ?? null;
             if ($top) {
                 $ev = $top['evidence'];
-                CLI::write(sprintf("  • Spatial Proximity Score   : %.1f pts (Dist: %s m)", $ev['spatial']['spatial_score'], $ev['spatial']['distance_to_boundary'] ?? 'N/A'));
-                CLI::write(sprintf("  • Boundary Evidence Score   : %.1f pts (Status: %s)", $ev['boundary']['boundary_score'], $ev['boundary']['boundary_status']));
-                CLI::write(sprintf("  • Feeder Match Score        : %.1f pts", $ev['feeder']['feeder_score']));
-                CLI::write(sprintf("  • Continuity Score          : %.1f pts (Linked: %d assets)", $ev['continuity']['continuity_score'], $ev['continuity']['linked_assets_count']));
+                $spSemantics = $ev['spatial']['score_semantics'] ?? 'N/A';
+                $bdSemantics = $ev['boundary']['score_semantics'] ?? 'N/A';
+                $tpSemantics = $ev['continuity']['score_semantics'] ?? 'N/A';
+
+                CLI::write(sprintf("  • Spatial Proximity Score   : %.1f pts [%s] (Dist: %s m, Src: %s)", $ev['spatial']['spatial_score'], $spSemantics, $ev['spatial']['distance_to_boundary'] ?? 'N/A', $ev['spatial']['source'] ?? 'N/A'));
+                CLI::write(sprintf("  • Boundary Evidence Score   : %.1f pts [%s] (Status: %s, Landmarks: %d)", $ev['boundary']['boundary_score'], $bdSemantics, $ev['boundary']['boundary_status'], $ev['boundary']['resolved_count'] ?? 0));
+                CLI::write(sprintf("  • Feeder Match Score        : %.1f pts [%s]", $ev['feeder']['feeder_score'], $ev['feeder']['score_semantics'] ?? 'N/A'));
+                CLI::write(sprintf("  • Topology Continuity Score : %.1f pts [%s] (Alignment: %s, Linked: %d assets)", $ev['continuity']['continuity_score'], $tpSemantics, $ev['continuity']['alignment'] ?? 'N/A', $ev['continuity']['linked_assets_count']));
             }
 
             CLI::write("\n==============================================================", 'cyan');

@@ -57,6 +57,37 @@ class Paths
 
     public function __construct()
     {
+        if (!is_dir($this->systemDirectory)) {
+            $candidates = [
+                __DIR__ . '/../../vendor/codeigniter4/framework/system',
+                __DIR__ . '/../../../vendor/codeigniter4/framework/system',
+                __DIR__ . '/../vendor/codeigniter4/framework/system',
+                __DIR__ . '/../../system',
+                dirname(__DIR__, 2) . '/vendor/codeigniter4/framework/system',
+                dirname(__DIR__, 2) . '/system',
+            ];
+            foreach ($candidates as $c) {
+                if (is_dir($c)) {
+                    $this->systemDirectory = $c;
+                    break;
+                }
+            }
+        }
+
+        if (!is_dir($this->writableDirectory)) {
+            $writableCandidates = [
+                __DIR__ . '/../../writable',
+                __DIR__ . '/../writable',
+                dirname(__DIR__, 2) . '/writable',
+            ];
+            foreach ($writableCandidates as $wc) {
+                if (is_dir($wc)) {
+                    $this->writableDirectory = $wc;
+                    break;
+                }
+            }
+        }
+
         if (isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL']) || getenv('VERCEL')) {
             $this->writableDirectory = '/tmp';
         }

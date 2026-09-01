@@ -2324,9 +2324,26 @@ document.addEventListener("DOMContentLoaded", function () {
             })
         })
         .then(res => {
-            alert(res.message);
             setEditorState(TRANSLINE_STATE.IDLE);
-            loadGisNetworkOnDemand(false);
+            if (res.topology && currentData) {
+                currentData.transline = {
+                    type: 'Feature',
+                    geometry: {
+                        type: res.topology.type || 'MultiLineString',
+                        coordinates: res.topology.coordinates || []
+                    },
+                    properties: {
+                        edges: res.topology.edges || [],
+                        nodes: res.topology.nodes || []
+                    }
+                };
+                renderFilteredLayers(false);
+                alert(res.message);
+            } else {
+                loadGisNetworkOnDemand(false, function() {
+                    alert(res.message);
+                });
+            }
         })
         .catch(err => {
             alert('Gagal menyimpan bentuk segmen: ' + err.message);

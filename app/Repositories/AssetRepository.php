@@ -422,6 +422,59 @@ class AssetRepository
             }
 
             // =========================================================================
+            // PRIORITY 00: Authoritative Individual Segment Storage (gis_translines)
+            // =========================================================================
+            if ($db->tableExists('gis_translines')) {
+                $translineRows = $db->table('gis_translines')
+                    ->where('penyulang_id', $penyulangId)
+                    ->where('is_active', 1)
+                    ->orderBy('id', 'ASC')
+                    ->get()
+                    ->getResultArray();
+
+                if (!empty($translineRows)) {
+                    $multiLineCoords = [];
+                    $allNodes = [];
+                    $edges = [];
+
+                    foreach ($translineRows as $r) {
+                        $geomStr = $r['geometry'] ?? '';
+                        $segCoords = !empty($geomStr) ? json_decode($geomStr, true) : null;
+                        if (!empty($segCoords) && is_array($segCoords) && count($segCoords) >= 2) {
+                            $multiLineCoords[] = $segCoords;
+                            foreach ($segCoords as $pt) {
+                                $allNodes[] = $pt;
+                            }
+                            $edges[] = [
+                                'transline_id'       => (int)$r['id'],
+                                'edge_id'            => (int)$r['id'],
+                                'from_asset_id'      => (int)$r['source_asset_id'],
+                                'to_asset_id'        => (int)$r['target_asset_id'],
+                                'conductor_type'     => $r['conductor_type'] ?? 'AAAC',
+                                'conductor_size'     => $r['conductor_size'] ?? '150 mm²',
+                                'conductor_label'    => "{$r['conductor_type']} {$r['conductor_size']}",
+                                'conductor_material' => $r['conductor_material'] ?? 'ALUMINUM_ALLOY',
+                                'installation_type'  => $r['installation_type'] ?? 'OVERHEAD',
+                                'circuit_config'     => $r['circuit_config'] ?? '3_PHASE',
+                                'length_meter'       => (float)($r['distance_meters'] ?? 0),
+                                'coordinates'        => $segCoords,
+                                'status'             => 'ACTIVE',
+                            ];
+                        }
+                    }
+
+                    if (!empty($multiLineCoords)) {
+                        return [
+                            'type'        => 'MultiLineString',
+                            'coordinates' => $multiLineCoords,
+                            'nodes'       => $allNodes,
+                            'edges'       => $edges,
+                        ];
+                    }
+                }
+            }
+
+            // =========================================================================
             // PRIORITY 0: Committed Active Network Topology Version
             // =========================================================================
             if ($db->tableExists('network_topology_versions')) {

@@ -16,6 +16,7 @@ class GisController extends BaseController
     private BaselineService $baselineService;
     private PenyulangRepository $penyulangRepository;
     private AssetRepository $assetRepository;
+    private \App\Services\GisTranslineService $translineService;
 
     public function __construct()
     {
@@ -24,6 +25,7 @@ class GisController extends BaseController
         $this->baselineService = new BaselineService();
         $this->penyulangRepository = new PenyulangRepository();
         $this->assetRepository = new AssetRepository();
+        $this->translineService = new \App\Services\GisTranslineService();
     }
 
     /**
@@ -323,18 +325,39 @@ class GisController extends BaseController
         return [];
     }
 
+    /**
+     * Endpoint GET Active Translines for Feeder: GET /gis/api-translines?penyulang_id=X
+     */
+    public function apiGetTranslines(): ResponseInterface
+    {
+        $penyulangId = (int)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+            ?? ($_GET['penyulang_id'] ?? 0)
+        );
+
+        if ($penyulangId <= 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'     => 'error',
+                'message'    => 'Penyulang wajib dipilih.',
+                'translines' => []
+            ]);
+        }
+
+        $translines = $this->translineService->getFeederTranslines($penyulangId);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status'     => 'success',
+            'feeder_id'  => $penyulangId,
+            'translines' => $translines
+        ]);
+    }
+
     public function apiConnectTopology(): ResponseInterface
     {
         $payload = $this->getRequestPayload();
         
         $sourceId = (int)($payload['source_asset_id'] ?? $payload['parent_id'] ?? 0);
         $targetId = (int)($payload['target_asset_id'] ?? $payload['child_id'] ?? 0);
-        $mode     = (string)($payload['connection_mode'] ?? 'REPLACE'); // 'REPLACE' or 'ADD'
-        $conductorType     = (string)($payload['conductor_type'] ?? 'AAAC');
-        $conductorSize     = (string)($payload['conductor_size'] ?? '150 mm²');
-        $conductorMaterial = (string)($payload['conductor_material'] ?? 'ALUMINUM_ALLOY');
-        $installationType  = (string)($payload['installation_type'] ?? 'OVERHEAD');
-        $circuitConfig     = (string)($payload['circuit_config'] ?? '3_PHASE');
 
         if ($sourceId <= 0 || $targetId <= 0 || $sourceId === $targetId) {
             return $this->response->setStatusCode(422)->setJSON([
@@ -351,118 +374,7 @@ class GisController extends BaseController
         }
 
         $actor = $this->getActor();
-        $actorRole = strtoupper((string)($actor['role'] ?? 'PETUGAS_LAPANGAN'));
-        $isAdmin = (str_contains($actorRole, 'ADMIN') || in_array($actorRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
-
-        $db = \Config\Database::connect();
-        $relModel = new \App\Models\AssetRelationshipModel();
-
-        if ($isAdmin) {
-            // ADMIN DIRECT COMMIT
-            $db->transStart();
-
-            // If REPLACE mode, clear old outgoing connections from source and incoming to target
-            if ($mode === 'REPLACE') {
-                $db->table('assets')->where('parent_asset_id', $sourceId)->update(['parent_asset_id' => null]);
-                $db->table('asset_relationships')
-                    ->groupStart()
-                        ->where('child_asset_id', $targetId)
-                        ->orWhere('parent_asset_id', $sourceId)
-                        ->orWhere('source_asset_id', $sourceId)
-                        ->orWhere('target_asset_id', $targetId)
-                    ->groupEnd()
-                    ->delete();
-            }
-
-            // Set parent_asset_id on target asset
-            $db->table('assets')->where('id', $targetId)->update(['parent_asset_id' => $sourceId]);
-
-            $sourceAsset = $db->table('assets')->select('latitude, longitude, penyulang_id')->where('id', $sourceId)->get()->getRowArray();
-            $targetAsset = $db->table('assets')->select('latitude, longitude, penyulang_id')->where('id', $targetId)->get()->getRowArray();
-            $distance = 0.0;
-            if ($sourceAsset && $targetAsset && !empty($sourceAsset['latitude']) && !empty($sourceAsset['latitude'])) {
-                $distance = round($this->calculateHaversine((float)$sourceAsset['latitude'], (float)$sourceAsset['longitude'], (float)$targetAsset['latitude'], (float)$targetAsset['longitude']), 1);
-            }
-
-            $existing = $db->table('asset_relationships')->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)->get()->getRowArray();
-            $data = [
-                'parent_asset_id'    => $sourceId,
-                'child_asset_id'     => $targetId,
-                'source_asset_id'    => $sourceId,
-                'target_asset_id'    => $targetId,
-                'relationship_type'  => 'NETWORK',
-                'conductor_type'     => $conductorType,
-                'conductor_size'     => $conductorSize,
-                'conductor_material' => $conductorMaterial,
-                'installation_type'  => $installationType,
-                'circuit_config'     => $circuitConfig,
-                'distance_meters'    => $distance,
-                'source'             => 'GIS_ADMIN_DIRECT_EDIT',
-                'status'             => 'VERIFIED',
-                'verified_by'        => $actor['id'],
-                'verified_at'        => date('Y-m-d H:i:s'),
-                'is_active'          => 1,
-            ];
-
-            if ($existing) {
-                $db->table('asset_relationships')->where('id', $existing['id'])->update($data);
-            } else {
-                $db->table('asset_relationships')->insert($data);
-            }
-
-            $penyulangId = (int)($targetAsset['penyulang_id'] ?? $sourceAsset['penyulang_id'] ?? 0);
-
-            // Log to field_corrections audit trail
-            $db->table('field_corrections')->insert([
-                'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
-                'correction_type' => 'TOPOLOGY_CONNECTION',
-                'asset_id'        => $targetId,
-                'penyulang_id'    => $penyulangId,
-                'after_payload'   => json_encode([
-                    'parent_id'          => $sourceId,
-                    'child_id'           => $targetId,
-                    'mode'               => $mode,
-                    'conductor_type'     => $conductorType,
-                    'conductor_size'     => $conductorSize,
-                    'conductor_material' => $conductorMaterial,
-                ]),
-                'rationale'       => "Pembaruan koneksi jalur antar tiang ($conductorType $conductorSize) oleh Administrator",
-                'reporter_name'   => $actor['name'],
-                'reporter_role'   => $actorRole,
-                'status'          => 'APPROVED',
-                'reviewer_name'   => $actor['name'],
-                'reviewer_role'   => $actorRole,
-                'review_notes'    => 'Direct Commit by Administrator (GIS_ADMIN_DIRECT_EDIT)',
-                'reviewed_at'     => date('Y-m-d H:i:s'),
-                'applied_at'      => date('Y-m-d H:i:s'),
-                'created_at'      => date('Y-m-d H:i:s'),
-                'updated_at'      => date('Y-m-d H:i:s'),
-            ]);
-
-            // Reconcile and rebuild authoritative topology geometry
-            $freshTopology = ($penyulangId > 0) ? $this->rebuildAndPersistFeederTopology($penyulangId, $actor['name'] ?? 'Administrator') : [];
-
-            $db->transComplete();
-
-            return $this->response->setJSON([
-                'status'           => 'success',
-                'is_direct_commit' => true,
-                'message'          => "Sambungan jalur ($conductorType $conductorSize) berhasil diterapkan & langsung aktif (Direct Commit).",
-                'topology'         => $freshTopology,
-            ]);
-        }
-
-        // NON-ADMIN PROPOSAL
-        $fieldService = new \App\Services\FieldAssetCorrectionService();
-        $result = $fieldService->proposeAssetCorrection([
-            'asset_id'           => $targetId,
-            'correction_type'    => 'TOPOLOGY_CONNECTION',
-            'parent_asset_id'    => $sourceId,
-            'conductor_type'     => $conductorType,
-            'conductor_size'     => $conductorSize,
-            'conductor_material' => $conductorMaterial,
-            'rationale'          => "Usulan sambungan jalur ke aset ID #$sourceId ($conductorType $conductorSize)",
-        ], $actor);
+        $result = $this->translineService->saveTransline($payload, $actor);
 
         return $this->response->setJSON($result);
     }
@@ -470,7 +382,14 @@ class GisController extends BaseController
     public function apiDisconnectTopology(): ResponseInterface
     {
         $payload = $this->getRequestPayload();
-        
+        $translineId = (int)($payload['transline_id'] ?? 0);
+        $actor = $this->getActor();
+
+        if ($translineId > 0) {
+            $result = $this->translineService->deleteTransline($translineId, $actor);
+            return $this->response->setJSON($result);
+        }
+
         $sourceId = (int)($payload['source_asset_id'] ?? 0);
         $targetId = (int)($payload['target_asset_id'] ?? 0);
 
@@ -481,166 +400,51 @@ class GisController extends BaseController
             ]);
         }
 
-        $actor = $this->getActor();
-        $actorRole = strtoupper((string)($actor['role'] ?? 'PETUGAS_LAPANGAN'));
-        $isAdmin = (str_contains($actorRole, 'ADMIN') || in_array($actorRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
-
         $db = \Config\Database::connect();
-        $relModel = new \App\Models\AssetRelationshipModel();
+        $row = $db->table('gis_translines')
+            ->groupStart()
+                ->where('source_asset_id', $sourceId)->where('target_asset_id', $targetId)
+            ->groupEnd()
+            ->orGroupStart()
+                ->where('source_asset_id', $targetId)->where('target_asset_id', $sourceId)
+            ->groupEnd()
+            ->where('is_active', 1)
+            ->get()
+            ->getRowArray();
 
-        if ($isAdmin) {
-            $db->transStart();
-
-            $penyulangId = (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0);
-            if ($penyulangId <= 0) {
-                $penyulangId = (int)($db->table('assets')->select('penyulang_id')->where('id', $sourceId)->get()->getRow()->penyulang_id ?? 0);
-            }
-
-            // Clear parent_asset_id if target points to source or vice-versa
-            $db->table('assets')->where('id', $targetId)->where('parent_asset_id', $sourceId)->update(['parent_asset_id' => null]);
-            $db->table('assets')->where('id', $sourceId)->where('parent_asset_id', $targetId)->update(['parent_asset_id' => null]);
-
-            // Deactivate relationship edge
-            $db->table('asset_relationships')
-                ->groupStart()
-                    ->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)
-                ->groupEnd()
-                ->orGroupStart()
-                    ->where('parent_asset_id', $targetId)->where('child_asset_id', $sourceId)
-                ->groupEnd()
-                ->delete();
-
-            // Log to field_corrections audit trail
-            $db->table('field_corrections')->insert([
-                'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
-                'correction_type' => 'TOPOLOGY_DISCONNECT',
-                'asset_id'        => $targetId,
-                'penyulang_id'    => $penyulangId,
-                'after_payload'   => json_encode(['disconnected_from' => $sourceId, 'target_id' => $targetId]),
-                'rationale'       => 'Penghapusan sambungan jalur salah oleh Administrator',
-                'reporter_name'   => $actor['name'],
-                'reporter_role'   => $actorRole,
-                'status'          => 'APPROVED',
-                'reviewer_name'   => $actor['name'],
-                'reviewer_role'   => $actorRole,
-                'review_notes'    => 'Direct Commit by Administrator (GIS_ADMIN_DIRECT_EDIT)',
-                'reviewed_at'     => date('Y-m-d H:i:s'),
-                'applied_at'      => date('Y-m-d H:i:s'),
-                'created_at'      => date('Y-m-d H:i:s'),
-                'updated_at'      => date('Y-m-d H:i:s'),
-            ]);
-
-            // Reconcile and rebuild authoritative topology geometry
-            $freshTopology = ($penyulangId > 0) ? $this->rebuildAndPersistFeederTopology($penyulangId, $actor['name'] ?? 'Administrator') : [];
-
-            $db->transComplete();
-
-            return $this->response->setJSON([
-                'status'           => 'success',
-                'is_direct_commit' => true,
-                'message'          => 'Sambungan jalur berhasil dihapus dari topologi aktif (Direct Commit).',
-                'topology'         => $freshTopology,
-            ]);
+        if ($row) {
+            $result = $this->translineService->deleteTransline((int)$row['id'], $actor);
+            return $this->response->setJSON($result);
         }
 
+        // Fallback if not yet in gis_translines
+        $db->table('asset_relationships')
+            ->groupStart()
+                ->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)
+            ->groupEnd()
+            ->orGroupStart()
+                ->where('parent_asset_id', $targetId)->where('child_asset_id', $sourceId)
+            ->groupEnd()
+            ->delete();
+        $db->table('assets')->where('id', $targetId)->where('parent_asset_id', $sourceId)->update(['parent_asset_id' => null]);
+        
+        $penyulangId = (int)($payload['penyulang_id'] ?? 0);
+        $freshTopology = $penyulangId > 0 ? $this->translineService->rebuildFeederTopologySnapshot($penyulangId, $actor['name'] ?? 'SYSTEM') : [];
+
         return $this->response->setJSON([
-            'status'           => 'success',
-            'is_direct_commit' => false,
-            'message'          => 'Usulan pemutusan jalur telah diajukan untuk ditelaah Supervisor.'
+            'status'   => 'success',
+            'message'  => 'Sambungan berhasil diputus.',
+            'topology' => $freshTopology,
         ]);
     }
 
     public function apiUpdateConductorSpecification(): ResponseInterface
     {
         $payload = $this->getRequestPayload();
-        
-        $sourceId = (int)($payload['source_asset_id'] ?? 0);
-        $targetId = (int)($payload['target_asset_id'] ?? 0);
-        $conductorType     = (string)($payload['conductor_type'] ?? 'AAAC');
-        $conductorSize     = (string)($payload['conductor_size'] ?? '150 mm²');
-        $conductorMaterial = (string)($payload['conductor_material'] ?? 'ALUMINUM_ALLOY');
-        $installationType  = (string)($payload['installation_type'] ?? 'OVERHEAD');
-        $circuitConfig     = (string)($payload['circuit_config'] ?? '3_PHASE');
-
-        if ($sourceId <= 0 || $targetId <= 0) {
-            return $this->response->setStatusCode(422)->setJSON([
-                'status'  => 'error',
-                'message' => 'Kedua ID aset yang terhubung wajib disertakan.'
-            ]);
-        }
-
         $actor = $this->getActor();
-        $actorRole = strtoupper((string)($actor['role'] ?? 'PETUGAS_LAPANGAN'));
-        $isAdmin = (str_contains($actorRole, 'ADMIN') || in_array($actorRole, ['SUPER_ADMIN', 'SUPERADMIN', 'DALOPS', 'MANAJER']));
+        $result = $this->translineService->saveTransline($payload, $actor);
 
-        $db = \Config\Database::connect();
-        $relModel = new \App\Models\AssetRelationshipModel();
-
-        if ($isAdmin) {
-            $db->transStart();
-
-            $penyulangId = (int)($db->table('assets')->select('penyulang_id')->where('id', $targetId)->get()->getRow()->penyulang_id ?? 0);
-            if ($penyulangId <= 0) {
-                $penyulangId = (int)($db->table('assets')->select('penyulang_id')->where('id', $sourceId)->get()->getRow()->penyulang_id ?? 0);
-            }
-
-            $updateData = [
-                'conductor_type'     => $conductorType,
-                'conductor_size'     => $conductorSize,
-                'conductor_material' => $conductorMaterial,
-                'installation_type'  => $installationType,
-                'circuit_config'     => $circuitConfig,
-                'updated_at'         => date('Y-m-d H:i:s'),
-            ];
-
-            // Update in both directions if present
-            $db->table('asset_relationships')
-                ->groupStart()
-                    ->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)
-                ->groupEnd()
-                ->orGroupStart()
-                    ->where('parent_asset_id', $targetId)->where('child_asset_id', $sourceId)
-                ->groupEnd()
-                ->update($updateData);
-
-            // Audit trail
-            $db->table('field_corrections')->insert([
-                'correction_code' => 'COR-TOP-' . date('Ymd') . '-' . str_pad((string)mt_rand(1000, 9999), 4, '0', STR_PAD_LEFT),
-                'correction_type' => 'CONDUCTOR_SPEC_UPDATE',
-                'asset_id'        => $targetId,
-                'penyulang_id'    => $penyulangId,
-                'after_payload'   => json_encode($updateData),
-                'rationale'       => "Pembaruan spesifikasi konduktor menjadi $conductorType $conductorSize oleh Administrator",
-                'reporter_name'   => $actor['name'],
-                'reporter_role'   => $actorRole,
-                'status'          => 'APPROVED',
-                'reviewer_name'   => $actor['name'],
-                'reviewer_role'   => $actorRole,
-                'review_notes'    => 'Direct Commit by Administrator (GIS_ADMIN_DIRECT_EDIT)',
-                'reviewed_at'     => date('Y-m-d H:i:s'),
-                'applied_at'      => date('Y-m-d H:i:s'),
-                'created_at'      => date('Y-m-d H:i:s'),
-                'updated_at'      => date('Y-m-d H:i:s'),
-            ]);
-
-            // Reconcile and rebuild authoritative topology geometry
-            $freshTopology = ($penyulangId > 0) ? $this->rebuildAndPersistFeederTopology($penyulangId, $actor['name'] ?? 'Administrator') : [];
-
-            $db->transComplete();
-
-            return $this->response->setStatusCode(200)->setJSON([
-                'status'           => 'success',
-                'is_direct_commit' => true,
-                'message'          => "Spesifikasi konduktor ($conductorType $conductorSize) berhasil diperbarui dan langsung aktif (Direct Commit).",
-                'topology'         => $freshTopology,
-            ]);
-        }
-
-        return $this->response->setStatusCode(200)->setJSON([
-            'status'           => 'success',
-            'is_direct_commit' => false,
-            'message'          => "Usulan perubahan spesifikasi konduktor ($conductorType $conductorSize) berhasil diajukan dan menunggu telaah supervisor."
-        ]);
+        return $this->response->setJSON($result);
     }
 
     /**
@@ -723,8 +527,7 @@ class GisController extends BaseController
             ]);
         }
 
-        $fieldService = new \App\Services\FieldAssetCorrectionService();
-        $result = $fieldService->proposeTranslineCorrection($penyulangId, $geometry, "Pembaruan geometri segmen aset #$sourceId ke #$targetId", $this->getActor());
+        $result = $this->translineService->updateSegmentGeometry($penyulangId, $sourceId, $targetId, $geometry, $this->getActor());
 
         return $this->response->setJSON($result);
     }

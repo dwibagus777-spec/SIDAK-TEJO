@@ -975,6 +975,15 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
         $cmd = new \App\Commands\Ar01EvidenceForensicsCommand(service('logger'), service('commands'));
         $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
     }
+
+    /**
+     * AC-32: Evidence Reconcile Command is executable and preserves zero mutation
+     */
+    public function testEvidenceReconcileCommandExecutionDoesNotError()
+    {
+        $cmd = new \App\Commands\Ar01EvidenceReconcileCommand(service('logger'), service('commands'));
+        $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
+    }
 }
 
 

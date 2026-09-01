@@ -667,6 +667,305 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
         $this->assertNotNull($resQ['top_candidate']);
         $this->assertFalse($resQ['governance']['mutation_applied']);
     }
+
+    /**
+     * AC-19: Production-like schema diagnostic
+     */
+    public function testProductionLikeSchemaDiagnostic()
+    {
+        $feederId = 81;
+        $this->db->table('penyulang')->insert([
+            'id'             => $feederId,
+            'kode_penyulang' => 'PYL-DIAG-81',
+            'nama_penyulang' => 'DIAGNOSTIC FEEDER 81',
+        ]);
+        $this->db->table('sections')->insert([
+            'id'             => 811,
+            'penyulang_id'   => $feederId,
+            'nama_section'   => 'GI - REC PULAU BATU',
+            'sequence_order' => 1,
+            'status'         => 'AKTIF',
+        ]);
+        $this->db->table('assets')->insert([
+            'id'           => 8101,
+            'kode_asset'   => 'REC_PB_01',
+            'nama_asset'   => 'RECLOSER PULAU BATU',
+            'jenis_asset'  => 'RECLOSER',
+            'penyulang_id' => $feederId,
+            'latitude'     => -7.4501,
+            'longitude'    => 112.7101,
+        ]);
+
+        $diag = $this->service->diagnoseFeeder($feederId);
+
+        $this->assertTrue($diag['success']);
+        $this->assertEquals(1, $diag['statistics']['resolved_landmarks']);
+        $this->assertEquals(1, $diag['statistics']['potential_devices']);
+        $this->assertFalse($diag['governance']['mutation_applied']);
+    }
+
+    /**
+     * AC-20: Alias matching (REC PULAU BATU <-> RECLOSER PULAU BATU)
+     */
+    public function testAliasMatchingRecVsRecloser()
+    {
+        $feederAssets = [
+            [
+                'id'          => 8201,
+                'kode_asset'  => 'REC_PB_82',
+                'nama_asset'  => 'REC PULAU BATU',
+                'jenis_asset' => 'JTM', // Untyped / Generic JTM
+                'latitude'    => -7.4501,
+                'longitude'   => 112.7101,
+            ],
+        ];
+
+        $tokenized = $this->service->tokenizeLandmarkLabel('RECLOSER PULAU BATU');
+        $match = $this->service->findMatchingDeviceAsset($tokenized, $feederAssets);
+
+        $this->assertNotNull($match);
+        $this->assertEquals(8201, $match['asset_id']);
+        $this->assertEquals('RECLOSER', $match['device_type_family']);
+    }
+
+    /**
+     * AC-21: Negative matching (LBS PULAU BATU != RECLOSER PULAU BATU)
+     */
+    public function testNegativeMatchingLbsVsRecloserRejection()
+    {
+        $feederAssets = [
+            [
+                'id'          => 8301,
+                'kode_asset'  => 'LBS_PB_83',
+                'nama_asset'  => 'LBS PULAU BATU',
+                'jenis_asset' => 'LBS',
+                'latitude'    => -7.4501,
+                'longitude'   => 112.7101,
+            ],
+        ];
+
+        $tokenized = $this->service->tokenizeLandmarkLabel('RECLOSER PULAU BATU');
+        $match = $this->service->findMatchingDeviceAsset($tokenized, $feederAssets);
+
+        $this->assertNull($match, "Incompatible device families (RECLOSER vs LBS) must NEVER match.");
+    }
+
+    /**
+     * AC-22: Multi-landmark resolution with roles (START, INTERMEDIATE, END)
+     */
+    public function testMultiLandmarkResolutionRoles()
+    {
+        $feederId = 84;
+        $this->db->table('penyulang')->insert([
+            'id'             => $feederId,
+            'kode_penyulang' => 'PYL-MULTI-84',
+            'nama_penyulang' => 'MULTI LANDMARK FEEDER',
+        ]);
+        $sections = [
+            [
+                'id'           => 841,
+                'penyulang_id' => $feederId,
+                'nama_section' => 'REC PULAU BATU - LBSM TRI DASA WINDU - LBS COUPLE PRASUNG - LBSM BANJARSARI',
+            ]
+        ];
+
+        $boundaries = $this->service->resolveBoundaryDevices($sections, $feederId);
+        $this->assertCount(4, $boundaries[841]['landmarks']);
+        $this->assertEquals('START', $boundaries[841]['landmarks'][0]['role']);
+        $this->assertEquals('INTERMEDIATE', $boundaries[841]['landmarks'][1]['role']);
+        $this->assertEquals('INTERMEDIATE', $boundaries[841]['landmarks'][2]['role']);
+        $this->assertEquals('END', $boundaries[841]['landmarks'][3]['role']);
+    }
+
+    /**
+     * AC-23: Missing GPS remains unresolved evidence
+     */
+    public function testMissingGpsRemainsUnresolvedEvidence()
+    {
+        $asset = [
+            'id'           => 8501,
+            'latitude'     => null,
+            'longitude'    => null,
+            'penyulang_id' => 85,
+        ];
+        $section = ['id' => 851, 'penyulang_id' => 85];
+        $ev = $this->service->calculateSpatialEvidence($asset, $section, null, []);
+
+        $this->assertFalse($ev['has_gps']);
+        $this->assertFalse($ev['usable_for_confidence']);
+        $this->assertEquals('NO_GPS', $ev['score_semantics']);
+    }
+
+    /**
+     * AC-24: Topology ancestor landmark detection
+     */
+    public function testTopologyAncestorLandmarkDetection()
+    {
+        $allAssets = [
+            ['id' => 8601, 'parent_asset_id' => 0, 'section_id' => null],    // Landmark (START)
+            ['id' => 8602, 'parent_asset_id' => 8601, 'section_id' => null],
+            ['id' => 8603, 'parent_asset_id' => 8602, 'section_id' => null], // Target asset
+        ];
+        $boundary = [
+            'landmarks' => [
+                [
+                    'role'           => 'START',
+                    'matched_device' => ['asset_id' => 8601],
+                ]
+            ]
+        ];
+
+        $ev = $this->service->calculateTopologyEvidence($allAssets[2], ['id' => 861], $allAssets, $boundary);
+        $this->assertEquals('DOWNSTREAM_FROM_START_LANDMARK', $ev['direction']);
+        $this->assertEquals(95.0, $ev['continuity_score']);
+        $this->assertTrue($ev['usable_for_confidence']);
+    }
+
+    /**
+     * AC-25: Topology downstream landmark detection
+     */
+    public function testTopologyDownstreamLandmarkDetection()
+    {
+        $allAssets = [
+            ['id' => 8701, 'parent_asset_id' => 0, 'section_id' => null],    // Target asset (Upstream)
+            ['id' => 8702, 'parent_asset_id' => 8701, 'section_id' => null],
+            ['id' => 8703, 'parent_asset_id' => 8702, 'section_id' => null], // Landmark (END)
+        ];
+        $boundary = [
+            'landmarks' => [
+                [
+                    'role'           => 'END',
+                    'matched_device' => ['asset_id' => 8703],
+                ]
+            ]
+        ];
+
+        $ev = $this->service->calculateTopologyEvidence($allAssets[0], ['id' => 871], $allAssets, $boundary);
+        $this->assertEquals('UPSTREAM_TO_END_LANDMARK', $ev['direction']);
+        $this->assertEquals(95.0, $ev['continuity_score']);
+        $this->assertTrue($ev['usable_for_confidence']);
+    }
+
+    /**
+     * AC-26: Cross-feeder landmark rejection
+     */
+    public function testCrossFeederLandmarkRejection()
+    {
+        $feederIdA = 88;
+        $feederIdB = 89;
+
+        $assetInB = [
+            'id'           => 8899,
+            'penyulang_id' => $feederIdB,
+            'nama_asset'   => 'RECLOSER PULAU BATU',
+            'latitude'     => -7.4501,
+            'longitude'    => 112.7101,
+        ];
+
+        $sections = [['id' => 881, 'nama_section' => 'GI - RECLOSER PULAU BATU']];
+        // Resolve on Feeder A
+        $boundaries = $this->service->resolveBoundaryDevices($sections, $feederIdA);
+
+        $this->assertEquals('BOUNDARY_DEVICE_UNRESOLVED', $boundaries[881]['status']);
+        $this->assertNull($boundaries[881]['landmarks'][1]['matched_device']);
+    }
+
+    /**
+     * AC-27: No false positive landmark matching
+     */
+    public function testNoFalsePositiveLandmarkMatching()
+    {
+        $feederAssets = [
+            [
+                'id'          => 9001,
+                'kode_asset'  => 'TIANG_01',
+                'nama_asset'  => 'TIANG BETON 12M',
+                'jenis_asset' => 'JTM',
+                'latitude'    => -7.4501,
+                'longitude'   => 112.7101,
+            ],
+        ];
+
+        $tokenized = $this->service->tokenizeLandmarkLabel('RECLOSER PULAU BATU');
+        $match = $this->service->findMatchingDeviceAsset($tokenized, $feederAssets);
+        $this->assertNull($match);
+    }
+
+    /**
+     * AC-28: Zero mutation during diagnostic
+     */
+    public function testZeroMutationInvariantDuringDiagnostic()
+    {
+        $feederId = 91;
+        $this->db->table('penyulang')->insert([
+            'id'             => $feederId,
+            'kode_penyulang' => 'PYL-MUT-91',
+            'nama_penyulang' => 'ZERO MUTATION TEST',
+        ]);
+        $this->db->table('sections')->insert([
+            'id'             => 911,
+            'penyulang_id'   => $feederId,
+            'nama_section'   => 'GI - RECLOSER MUT',
+            'sequence_order' => 1,
+            'status'         => 'AKTIF',
+        ]);
+        $this->db->table('assets')->insert([
+            'id'           => 9101,
+            'kode_asset'   => 'ASSET_9101',
+            'nama_asset'   => 'Tiang 9101',
+            'jenis_asset'  => 'JTM',
+            'penyulang_id' => $feederId,
+            'section_id'   => null,
+        ]);
+
+        $diag = $this->service->diagnoseFeeder($feederId);
+        $this->assertFalse($diag['governance']['mutation_applied']);
+        $this->assertFalse($diag['governance']['assets_section_id_written']);
+
+        // Check assets table
+        $check = $this->db->table('assets')->where('id', 9101)->get()->getRowArray();
+        $this->assertNull($check['section_id']);
+    }
+
+    /**
+     * AC-29: Deterministic ranking output
+     */
+    public function testDeterministicRankingOutput()
+    {
+        $candidates = [
+            ['section_id' => 10, 'sequence_order' => 2, 'score' => 60.0],
+            ['section_id' => 20, 'sequence_order' => 1, 'score' => 60.0],
+        ];
+
+        $res1 = $this->service->rankCandidates($candidates);
+        $res2 = $this->service->rankCandidates($candidates);
+
+        $this->assertEquals($res1['candidates'][0]['section_id'], $res2['candidates'][0]['section_id']);
+        $this->assertEquals(20, $res1['candidates'][0]['section_id'], "Lower sequence_order wins score tie-break.");
+    }
+
+    /**
+     * AC-30: Fallback evidence cannot become confidence evidence
+     */
+    public function testFallbackEvidenceCannotBecomeConfidenceEvidence()
+    {
+        $rawCandidate = [
+            'section_id'     => 999,
+            'section_name'   => 'Section Fallback',
+            'sequence_order' => 1,
+            'score'          => 57.5,
+            'evidence'       => [
+                'spatial'    => ['usable_for_confidence' => false, 'spatial_score' => 50.0],
+                'boundary'   => ['usable_for_confidence' => false, 'boundary_score' => 50.0],
+                'feeder'     => ['usable_for_confidence' => true, 'feeder_score' => 100.0],
+                'continuity' => ['usable_for_confidence' => false, 'continuity_score' => 50.0],
+            ]
+        ];
+
+        $rank = $this->service->rankCandidates([$rawCandidate]);
+        $this->assertEquals('UNRESOLVED', $rank['decision_status']);
+        $this->assertEquals('UNRESOLVED', $rank['candidates'][0]['confidence']);
+    }
 }
 
 

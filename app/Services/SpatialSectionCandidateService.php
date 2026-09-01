@@ -5,8 +5,8 @@ namespace App\Services;
 use CodeIgniter\Database\BaseConnection;
 
 /**
- * Phase AR-01 Phase 5G.4R: Spatial Section Candidate & Topology Evidence Engine
- * Contract v1.1 (Strictly Read-Only / Non-Destructive Advisory)
+ * Phase AR-01 Phase 5G.4R.2: Spatial Section Candidate & Topology Evidence Diagnostic Engine
+ * Contract v1.2 (Strictly Read-Only / Non-Destructive Advisory)
  *
  * Invariants:
  * - Candidate != Assignment (Zero writes to assets.section_id)
@@ -15,6 +15,7 @@ use CodeIgniter\Database\BaseConnection;
  * - Cross-Feeder Isolation (Candidates strictly within asset's parent feeder)
  * - Boundary Integrity (No fabricated coordinates when device master is unresolved)
  * - Provenance Semantics (NEUTRAL_FALLBACK does not produce false CLEAR or HIGH confidence)
+ * - Strict Negative Matching (Device families must be compatible; e.g. LBS != RECLOSER)
  */
 class SpatialSectionCandidateService
 {
@@ -85,7 +86,7 @@ class SpatialSectionCandidateService
     }
 
     /**
-     * Tokenize raw landmark string into device type and landmark tokens (AC-12)
+     * Tokenize raw landmark string into device type and landmark tokens (AC-12, AC-20)
      */
     public function tokenizeLandmarkLabel(string $raw): array
     {
@@ -148,7 +149,7 @@ class SpatialSectionCandidateService
     }
 
     /**
-     * Find matching device asset using alias, token subset, or clean substring matching (AC-12)
+     * Find matching device asset using alias, token subset, or clean substring matching (AC-12, AC-20, AC-21, AC-26, AC-27)
      */
     public function findMatchingDeviceAsset(array $tokenized, array $feederAssets): ?array
     {
@@ -158,31 +159,57 @@ class SpatialSectionCandidateService
 
         $tokens = $tokenized['landmark_tokens'];
         $cleanLandmark = $tokenized['clean_landmark'];
+        $reqFamily = $tokenized['device_type_family'];
+
         if (empty($tokens) && empty($cleanLandmark)) {
             return null;
         }
 
         foreach ($feederAssets as $a) {
-            $name = strtoupper($a['nama_asset'] ?? '');
-            $code = strtoupper($a['kode_asset'] ?? '');
+            $name = strtoupper($a['nama_asset'] ?? $a['name'] ?? '');
+            $code = strtoupper($a['kode_asset'] ?? $a['code'] ?? '');
             $cleanName = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $name));
             $cleanCode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $code));
 
-            $matchedType = $a['asset_type'] ?? $a['tipe_asset'] ?? null;
-            if (!$matchedType) {
-                if (str_contains($name, 'RECLOSER') || str_contains($name, 'REC')) {
-                    $matchedType = 'RECLOSER';
-                } elseif (str_contains($name, 'LBSM')) {
-                    $matchedType = 'LBSM';
-                } elseif (str_contains($name, 'LBS')) {
-                    $matchedType = 'LBS';
-                } elseif (str_contains($name, 'PMCB')) {
-                    $matchedType = 'PMCB';
-                } elseif (str_contains($name, 'PMT')) {
-                    $matchedType = 'PMT';
-                } else {
-                    $matchedType = 'SWITCHING_DEVICE';
-                }
+            $rawType = strtoupper($a['jenis_asset'] ?? $a['tipe_asset'] ?? $a['asset_type'] ?? '');
+            $assetFamily = 'GENERIC';
+            $detectedType = $rawType ?: 'SWITCHING_DEVICE';
+
+            if (in_array($rawType, ['RECLOSER', 'REC'], true)) {
+                $assetFamily = 'RECLOSER';
+                $detectedType = $rawType;
+            } elseif (in_array($rawType, ['LBS', 'LBSM', 'LBS_COUPLE'], true)) {
+                $assetFamily = 'LBS';
+                $detectedType = $rawType;
+            } elseif ($rawType === 'PMCB') {
+                $assetFamily = 'PMCB';
+                $detectedType = 'PMCB';
+            } elseif ($rawType === 'PMT') {
+                $assetFamily = 'PMT';
+                $detectedType = 'PMT';
+            } elseif ($rawType === 'GI') {
+                $assetFamily = 'SUBSTATION';
+                $detectedType = 'GI';
+            } elseif (str_contains($name, 'RECLOSER') || str_contains($name, 'REC')) {
+                $assetFamily = 'RECLOSER';
+                $detectedType = (str_contains($name, 'REC') && !str_contains($name, 'RECLOSER')) ? 'REC' : 'RECLOSER';
+            } elseif (str_contains($name, 'LBSM') || str_contains($name, 'LBS')) {
+                $assetFamily = 'LBS';
+                $detectedType = str_contains($name, 'LBSM') ? 'LBSM' : 'LBS';
+            } elseif (str_contains($name, 'PMCB')) {
+                $assetFamily = 'PMCB';
+                $detectedType = 'PMCB';
+            } elseif (str_contains($name, 'PMT')) {
+                $assetFamily = 'PMT';
+                $detectedType = 'PMT';
+            } elseif (str_contains($name, 'GARDU INDUK') || str_contains($name, 'GI ')) {
+                $assetFamily = 'SUBSTATION';
+                $detectedType = 'GI';
+            }
+
+            // Strict Negative Matching Guard (AC-21): Incompatible device families must NEVER match!
+            if ($reqFamily !== 'GENERIC' && $assetFamily !== 'GENERIC' && $reqFamily !== $assetFamily) {
+                continue; // e.g. landmark RECLOSER vs asset LBS -> Skip
             }
 
             // Check 1: All landmark tokens exist in name or code
@@ -199,7 +226,7 @@ class SpatialSectionCandidateService
             }
 
             if ($allTokensFound) {
-                $matchMode = ($tokenized['raw_device_type'] === $matchedType) ? 'EXACT_TOKEN' : 'ALIAS_TOKEN';
+                $matchMode = ($tokenized['raw_device_type'] === $detectedType) ? 'EXACT_TOKEN' : 'ALIAS_TOKEN';
                 return [
                     'asset_id'            => (int)$a['id'],
                     'kode_asset'          => $a['kode_asset'] ?? '',
@@ -207,7 +234,8 @@ class SpatialSectionCandidateService
                     'latitude'            => !empty($a['latitude']) ? (float)$a['latitude'] : null,
                     'longitude'           => !empty($a['longitude']) ? (float)$a['longitude'] : null,
                     'raw_device_type'     => $tokenized['raw_device_type'],
-                    'matched_device_type' => $matchedType,
+                    'matched_device_type' => $detectedType,
+                    'device_type_family'  => $assetFamily,
                     'match_mode'          => $matchMode,
                 ];
             }
@@ -221,7 +249,8 @@ class SpatialSectionCandidateService
                     'latitude'            => !empty($a['latitude']) ? (float)$a['latitude'] : null,
                     'longitude'           => !empty($a['longitude']) ? (float)$a['longitude'] : null,
                     'raw_device_type'     => $tokenized['raw_device_type'],
-                    'matched_device_type' => $matchedType,
+                    'matched_device_type' => $detectedType,
+                    'device_type_family'  => $assetFamily,
                     'match_mode'          => 'FUZZY_SUBSET',
                 ];
             }
@@ -231,7 +260,70 @@ class SpatialSectionCandidateService
     }
 
     /**
-     * Resolve Multi-Point Boundary Devices and landmarks from section labels (AC-13)
+     * Diagnose device asset match status with comprehensive root cause reasoning (AC-19)
+     */
+    public function diagnoseDeviceAssetMatch(array $tokenized, array $feederAssets): array
+    {
+        if ($tokenized['is_endpoint'] && empty($tokenized['landmark_tokens'])) {
+            return [
+                'is_resolved'       => false,
+                'status'            => 'ENDPOINT_NOT_TRACKED_AS_ASSET',
+                'match_mode'        => 'NO_MATCH',
+                'matched_asset'     => null,
+                'diagnostic_reason' => 'Endpoint landmark (GI/UJUNG) does not map to discrete feeder asset.',
+            ];
+        }
+
+        $matched = $this->findMatchingDeviceAsset($tokenized, $feederAssets);
+        if ($matched !== null) {
+            $hasGps = ($matched['latitude'] !== null && $matched['longitude'] !== null && ($matched['latitude'] != 0 || $matched['longitude'] != 0));
+            return [
+                'is_resolved'       => $hasGps,
+                'status'            => $hasGps ? 'MATCH_FOUND_GPS_VALID' : 'MATCH_FOUND_MISSING_GPS',
+                'match_mode'        => $matched['match_mode'],
+                'matched_asset'     => $matched,
+                'diagnostic_reason' => $hasGps 
+                    ? "Resolved to asset #{$matched['asset_id']} [{$matched['kode_asset']}] via {$matched['match_mode']}."
+                    : "Matched asset #{$matched['asset_id']} [{$matched['kode_asset']}] but coordinates are missing/zero.",
+            ];
+        }
+
+        $tokens = $tokenized['landmark_tokens'];
+        $family = $tokenized['device_type_family'];
+
+        $partialMatches = [];
+        foreach ($feederAssets as $a) {
+            $name = strtoupper($a['nama_asset'] ?? '');
+            $code = strtoupper($a['kode_asset'] ?? '');
+            foreach ($tokens as $tok) {
+                if (str_contains($name, $tok) || str_contains($code, $tok)) {
+                    $partialMatches[] = "#{$a['id']} [{$a['kode_asset']}]";
+                    break;
+                }
+            }
+        }
+
+        if (!empty($partialMatches)) {
+            return [
+                'is_resolved'       => false,
+                'status'            => 'DEVICE_FAMILY_OR_TOKEN_MISMATCH',
+                'match_mode'        => 'NO_MATCH',
+                'matched_asset'     => null,
+                'diagnostic_reason' => "Partial token overlap found in assets: " . implode(', ', array_slice($partialMatches, 0, 3)) . " but device family ({$family}) or required token set did not match.",
+            ];
+        }
+
+        return [
+            'is_resolved'       => false,
+            'status'            => 'DEVICE_NOT_FOUND_IN_FEEDER',
+            'match_mode'        => 'NO_MATCH',
+            'matched_asset'     => null,
+            'diagnostic_reason' => "No asset in feeder contains tokens: [" . implode(', ', $tokens) . "].",
+        ];
+    }
+
+    /**
+     * Resolve Multi-Point Boundary Devices and landmarks from section labels (AC-13, AC-22)
      */
     public function resolveBoundaryDevices(array $sections, int $feederId): array
     {
@@ -253,6 +345,8 @@ class SpatialSectionCandidateService
             $countParts = count($rawParts);
 
             $landmarks = [];
+            $resolvedLandmarks = [];
+            $unresolvedLandmarks = [];
             $resolvedCount = 0;
             $startDevice = null;
             $endDevice = null;
@@ -266,16 +360,20 @@ class SpatialSectionCandidateService
                 }
 
                 $tok = $this->tokenizeLandmarkLabel($part);
-                $matchedAsset = $this->findMatchingDeviceAsset($tok, $feederAssets);
+                $diagMatch = $this->diagnoseDeviceAssetMatch($tok, $feederAssets);
+                $matchedAsset = $diagMatch['matched_asset'];
 
-                $isResolved = ($matchedAsset !== null && $matchedAsset['latitude'] !== null && $matchedAsset['longitude'] !== null);
+                $isResolved = $diagMatch['is_resolved'];
                 if ($isResolved) {
                     $resolvedCount++;
+                    $resolvedLandmarks[] = $tok['raw_label'];
                     if ($role === 'START' && $startDevice === null) {
                         $startDevice = $matchedAsset;
                     } elseif ($role === 'END' && $endDevice === null) {
                         $endDevice = $matchedAsset;
                     }
+                } else {
+                    $unresolvedLandmarks[] = $tok['raw_label'];
                 }
 
                 $landmarks[] = [
@@ -286,6 +384,8 @@ class SpatialSectionCandidateService
                     'landmark_tokens'     => $tok['landmark_tokens'],
                     'resolved'            => $isResolved,
                     'matched_device'      => $matchedAsset,
+                    'match_mode'          => $diagMatch['match_mode'],
+                    'diagnostic_reason'   => $diagMatch['diagnostic_reason'],
                 ];
             }
 
@@ -309,6 +409,8 @@ class SpatialSectionCandidateService
                 'status'                 => $status,
                 'resolved_devices_count' => $resolvedCount,
                 'landmarks'              => $landmarks,
+                'resolved_landmarks'     => $resolvedLandmarks,
+                'unresolved_landmarks'   => $unresolvedLandmarks,
                 'start_device'           => $startDevice,
                 'end_device'             => $endDevice,
             ];
@@ -339,7 +441,7 @@ class SpatialSectionCandidateService
     }
 
     /**
-     * Calculate Spatial Evidence for an asset against a section (AC-15, AC-16)
+     * Calculate Spatial Evidence for an asset against a section (AC-15, AC-16, AC-23)
      */
     public function calculateSpatialEvidence(array $asset, array $section, ?array $boundary, array $sectionAssets): array
     {
@@ -428,7 +530,7 @@ class SpatialSectionCandidateService
     }
 
     /**
-     * Calculate Boundary Evidence (Score 0..100) with Provenance (AC-15, AC-16)
+     * Calculate Boundary Evidence (Score 0..100) with Provenance (AC-15, AC-16, AC-30)
      */
     public function calculateBoundaryEvidence(array $asset, ?array $boundary): array
     {
@@ -444,7 +546,6 @@ class SpatialSectionCandidateService
             ];
         }
 
-        $score = 70.0;
         $status = $boundary['status'];
         if ($status === 'BOUNDARY_DEVICE_RESOLVED') {
             $score = 90.0;
@@ -481,7 +582,7 @@ class SpatialSectionCandidateService
     }
 
     /**
-     * Calculate Topology & Continuity Evidence (AC-14, AC-15)
+     * Calculate Topology & Continuity Evidence (AC-14, AC-24, AC-25)
      */
     public function calculateTopologyEvidence(array $asset, array $section, array $allFeederAssets, ?array $boundary): array
     {
@@ -493,9 +594,33 @@ class SpatialSectionCandidateService
             $nodeMap[(int)$a['id']] = $a;
         }
 
+        // Incorporate asset_relationships table if present
+        if ($this->db->tableExists('asset_relationships')) {
+            $feederAssetIds = array_keys($nodeMap);
+            if (!empty($feederAssetIds)) {
+                $relBuilder = $this->db->table('asset_relationships');
+                $pCol = $this->db->fieldExists('parent_asset_id', 'asset_relationships') ? 'parent_asset_id' : ($this->db->fieldExists('source_asset_id', 'asset_relationships') ? 'source_asset_id' : null);
+                $cCol = $this->db->fieldExists('child_asset_id', 'asset_relationships') ? 'child_asset_id' : ($this->db->fieldExists('target_asset_id', 'asset_relationships') ? 'target_asset_id' : null);
+
+                if ($pCol && $cCol) {
+                    if ($this->db->fieldExists('is_active', 'asset_relationships')) {
+                        $relBuilder->where('is_active', 1);
+                    }
+                    $relRows = $relBuilder->get() ? $relBuilder->get()->getResultArray() : [];
+                    foreach ($relRows as $r) {
+                        $pId = (int)($r[$pCol] ?? 0);
+                        $cId = (int)($r[$cCol] ?? 0);
+                        if ($cId > 0 && $pId > 0 && isset($nodeMap[$cId]) && empty($nodeMap[$cId]['parent_asset_id'])) {
+                            $nodeMap[$cId]['parent_asset_id'] = $pId;
+                        }
+                    }
+                }
+            }
+        }
+
         // 1. Ancestor chain traversal
         $ancestorChain = [];
-        $currentParent = (int)($asset['parent_asset_id'] ?? 0);
+        $currentParent = (int)($asset['parent_asset_id'] ?? $nodeMap[$assetId]['parent_asset_id'] ?? 0);
         $depth = 0;
         while ($currentParent > 0 && isset($nodeMap[$currentParent]) && $depth < 30) {
             $ancestorChain[] = $currentParent;
@@ -505,7 +630,7 @@ class SpatialSectionCandidateService
 
         // 2. Downstream chain traversal (direct children)
         $downstreamChain = [];
-        foreach ($allFeederAssets as $a) {
+        foreach ($nodeMap as $a) {
             if ((int)($a['parent_asset_id'] ?? 0) === $assetId) {
                 $downstreamChain[] = (int)$a['id'];
             }
@@ -516,6 +641,7 @@ class SpatialSectionCandidateService
         $direction = null;
         $alignment = 'NEUTRAL';
         $topologyScore = null;
+        $landmarkHits = [];
 
         if ($boundary && !empty($boundary['landmarks'])) {
             foreach ($boundary['landmarks'] as $lm) {
@@ -539,12 +665,16 @@ class SpatialSectionCandidateService
                 // Case A: Asset is DOWNSTREAM of Landmark (Landmark is in Asset's ancestor chain)
                 if (in_array($lmId, $ancestorChain, true)) {
                     $matchedBoundary = $lmId;
+                    $landmarkHits[] = [
+                        'landmark_id' => $lmId,
+                        'role'        => $role,
+                        'position'    => 'ANCESTOR',
+                    ];
                     if ($role === 'START' || $role === 'INTERMEDIATE') {
                         $direction = 'DOWNSTREAM_FROM_START_LANDMARK';
                         $alignment = 'STRONG_ALIGNMENT';
                         $topologyScore = 95.0;
                     } elseif ($role === 'END') {
-                        // Downstream of END landmark means asset is outside / past this section
                         $direction = 'DOWNSTREAM_PAST_END_LANDMARK';
                         $alignment = 'CONTRA_ALIGNMENT';
                         $topologyScore = 35.0;
@@ -555,7 +685,6 @@ class SpatialSectionCandidateService
                 // Case B: Asset is UPSTREAM of Landmark (Asset or its ancestor is in Landmark's ancestor chain)
                 $isUpstream = in_array($assetId, $lmAncestors, true);
                 if (!$isUpstream && !empty($ancestorChain)) {
-                    // Check if asset's direct parent/ancestor is in landmark's ancestor chain
                     foreach ($ancestorChain as $ancId) {
                         if (in_array($ancId, $lmAncestors, true)) {
                             $isUpstream = true;
@@ -566,12 +695,16 @@ class SpatialSectionCandidateService
 
                 if ($isUpstream) {
                     $matchedBoundary = $lmId;
+                    $landmarkHits[] = [
+                        'landmark_id' => $lmId,
+                        'role'        => $role,
+                        'position'    => 'DOWNSTREAM',
+                    ];
                     if ($role === 'END' || $role === 'INTERMEDIATE') {
                         $direction = 'UPSTREAM_TO_END_LANDMARK';
                         $alignment = 'STRONG_ALIGNMENT';
                         $topologyScore = 95.0;
                     } elseif ($role === 'START') {
-                        // Upstream of START landmark means asset is prior to this section
                         $direction = 'UPSTREAM_BEFORE_START_LANDMARK';
                         $alignment = 'CONTRA_ALIGNMENT';
                         $topologyScore = 35.0;
@@ -619,6 +752,7 @@ class SpatialSectionCandidateService
             'direction'             => $direction,
             'alignment'             => $alignment,
             'linked_assets_count'   => $linkedCount,
+            'landmark_hits'         => $landmarkHits,
         ];
     }
 
@@ -665,23 +799,45 @@ class SpatialSectionCandidateService
 
         $finalScore = round(max(0.0, min(100.0, $finalScore)), 2);
 
+        $evidenceResolution = [
+            'spatial' => [
+                'status'         => $spatialEv['usable_for_confidence'] ? 'RESOLVED' : 'UNRESOLVED',
+                'resolved_count' => $spatialEv['usable_for_confidence'] ? 1 : 0,
+                'source'         => $spatialEv['source'],
+            ],
+            'boundary' => [
+                'status'               => $boundaryEv['boundary_status'],
+                'landmarks_total'      => count($boundary['landmarks'] ?? []),
+                'landmarks_resolved'   => $boundary['resolved_devices_count'] ?? 0,
+                'unresolved_landmarks' => $boundary['unresolved_landmarks'] ?? [],
+            ],
+            'topology' => [
+                'status'           => $topologyEv['usable_for_confidence'] ? 'RESOLVED' : 'UNRESOLVED',
+                'ancestor_depth'   => count($topologyEv['ancestor_chain']),
+                'downstream_depth' => count($topologyEv['downstream_chain']),
+                'direction'        => $topologyEv['direction'],
+                'landmark_hits'    => $topologyEv['landmark_hits'],
+            ],
+        ];
+
         return [
-            'section_id'     => $secId,
-            'section_name'   => $section['nama_section'] ?? $section['nama_seksi'] ?? "Seksi #{$secId}",
-            'sequence_order' => (int)($section['sequence_order'] ?? $section['urutan'] ?? $secId),
-            'score'          => $finalScore,
-            'evidence'       => [
+            'section_id'          => $secId,
+            'section_name'        => $section['nama_section'] ?? $section['nama_seksi'] ?? "Seksi #{$secId}",
+            'sequence_order'      => (int)($section['sequence_order'] ?? $section['urutan'] ?? $secId),
+            'score'               => $finalScore,
+            'evidence'            => [
                 'spatial'    => $spatialEv,
                 'boundary'   => $boundaryEv,
                 'feeder'     => $feederEv,
                 'continuity' => $topologyEv,
                 'topology'   => $topologyEv,
             ],
+            'evidence_resolution' => $evidenceResolution,
         ];
     }
 
     /**
-     * Rank candidates and evaluate confidence / ambiguity
+     * Rank candidates and evaluate confidence / ambiguity (AC-29)
      */
     public function rankCandidates(array $rawCandidates): array
     {
@@ -735,13 +891,14 @@ class SpatialSectionCandidateService
             $conf = $this->calculateConfidence($c['score'], $marginPct, $isAmbiguous, $hasUsableEvidence, $rankNum);
 
             $ranked[] = [
-                'rank'           => $rankNum,
-                'section_id'     => $c['section_id'],
-                'section_name'   => $c['section_name'],
-                'sequence_order' => $c['sequence_order'],
-                'score'          => $c['score'],
-                'confidence'     => $conf,
-                'evidence'       => $c['evidence'],
+                'rank'                => $rankNum,
+                'section_id'          => $c['section_id'],
+                'section_name'        => $c['section_name'] ?? ('Seksi #' . $c['section_id']),
+                'sequence_order'      => $c['sequence_order'] ?? $rankNum,
+                'score'               => $c['score'],
+                'confidence'          => $conf,
+                'evidence'            => $c['evidence'] ?? [],
+                'evidence_resolution' => $c['evidence_resolution'] ?? null,
             ];
         }
 
@@ -862,6 +1019,7 @@ class SpatialSectionCandidateService
             'top_candidate'               => $topCandSummary,
             'recommended_section'         => $isRecAllowed ? $topCandSummary : null,
             'recommendation_allowed'      => $isRecAllowed,
+            'evidence_resolution'         => $topCandidate['evidence_resolution'] ?? null,
             'governance'                  => [
                 'mutation_applied'          => false,
                 'assets_section_id_written' => false,
@@ -1001,6 +1159,148 @@ class SpatialSectionCandidateService
                 'promotion_allowed'         => false,
             ],
             'mutation_applied' => false,
+        ];
+    }
+
+    /**
+     * Root Cause Diagnostic Mode for Feeder Assets and Landmarks (AC-19)
+     */
+    public function diagnoseFeeder(int $feederId): array
+    {
+        $feeder = $this->resolveFeeder($feederId);
+        if (!$feeder) {
+            return [
+                'success' => false,
+                'error'   => "Penyulang ID #{$feederId} tidak ditemukan.",
+            ];
+        }
+
+        $sections = $this->resolveSections($feederId);
+
+        $devBuilder = $this->db->table('assets')->where('penyulang_id', $feederId);
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $devBuilder->where('deleted_at IS NULL');
+        }
+        $getDev = $devBuilder->get();
+        $allFeederAssets = $getDev ? $getDev->getResultArray() : [];
+
+        // Discover potential switching devices in this feeder
+        $potentialDevices = [];
+        foreach ($allFeederAssets as $a) {
+            $name = strtoupper($a['nama_asset'] ?? '');
+            $code = strtoupper($a['kode_asset'] ?? '');
+            $rawType = strtoupper($a['jenis_asset'] ?? $a['tipe_asset'] ?? $a['asset_type'] ?? '');
+
+            $isSwitching = in_array($rawType, ['RECLOSER', 'REC', 'LBS', 'LBSM', 'PMCB', 'PMT', 'GI', 'SECTIONALIZER'], true)
+                || str_contains($name, 'REC') || str_contains($name, 'LBS') || str_contains($name, 'PMCB') || str_contains($name, 'PMT') || str_contains($name, 'GI');
+
+            if ($isSwitching) {
+                $potentialDevices[] = [
+                    'id'          => (int)$a['id'],
+                    'kode_asset'  => $a['kode_asset'] ?? '',
+                    'nama_asset'  => $a['nama_asset'] ?? '',
+                    'jenis_asset' => $rawType ?: 'N/A',
+                    'latitude'    => !empty($a['latitude']) ? (float)$a['latitude'] : null,
+                    'longitude'   => !empty($a['longitude']) ? (float)$a['longitude'] : null,
+                    'parent_id'   => !empty($a['parent_asset_id']) ? (int)$a['parent_asset_id'] : null,
+                    'section_id'  => !empty($a['section_id']) ? (int)$a['section_id'] : null,
+                ];
+            }
+        }
+
+        // Diagnose each section and landmark
+        $sectionDiagnostics = [];
+        $totalLandmarks = 0;
+        $resolvedLandmarks = 0;
+
+        foreach ($sections as $sec) {
+            $secId = (int)$sec['id'];
+            $secName = $sec['nama_section'] ?? $sec['nama_seksi'] ?? ('Seksi #' . $secId);
+            $rawParts = array_values(array_filter(array_map('trim', explode('-', $secName)), fn($p) => $p !== ''));
+            $countParts = count($rawParts);
+
+            $parsedLandmarks = [];
+            foreach ($rawParts as $idx => $part) {
+                $role = 'INTERMEDIATE';
+                if ($idx === 0) {
+                    $role = 'START';
+                } elseif ($idx === $countParts - 1) {
+                    $role = 'END';
+                }
+
+                $totalLandmarks++;
+                $tok = $this->tokenizeLandmarkLabel($part);
+                $diagMatch = $this->diagnoseDeviceAssetMatch($tok, $allFeederAssets);
+
+                if ($diagMatch['is_resolved']) {
+                    $resolvedLandmarks++;
+                }
+
+                $parsedLandmarks[] = [
+                    'role'                => $role,
+                    'raw_label'           => $tok['raw_label'],
+                    'device_type'         => $tok['raw_device_type'],
+                    'device_type_family'  => $tok['device_type_family'],
+                    'tokens'              => $tok['landmark_tokens'],
+                    'is_endpoint'         => $tok['is_endpoint'],
+                    'match_status'        => $diagMatch['status'],
+                    'match_mode'          => $diagMatch['match_mode'],
+                    'matched_asset'       => $diagMatch['matched_asset'],
+                    'diagnostic_reason'   => $diagMatch['diagnostic_reason'],
+                ];
+            }
+
+            $sectionDiagnostics[] = [
+                'section_id'       => $secId,
+                'section_name'     => $secName,
+                'sequence_order'   => (int)($sec['sequence_order'] ?? $sec['urutan'] ?? $secId),
+                'landmarks_count'  => count($parsedLandmarks),
+                'parsed_landmarks' => $parsedLandmarks,
+            ];
+        }
+
+        // Sample topology trace
+        $topologyDiagnostics = [];
+        $sampleAssets = array_slice($allFeederAssets, 0, 5);
+        foreach ($sampleAssets as $sa) {
+            $topoEv = $this->calculateTopologyEvidence($sa, $sections[0] ?? ['id' => 0], $allFeederAssets, null);
+            $topologyDiagnostics[] = [
+                'asset_id'             => (int)$sa['id'],
+                'kode_asset'           => $sa['kode_asset'] ?? $sa['nama_asset'],
+                'parent_asset_id'      => (int)($sa['parent_asset_id'] ?? 0),
+                'ancestor_chain'       => $topoEv['ancestor_chain'],
+                'downstream_chain'     => $topoEv['downstream_chain'],
+                'topological_distance' => $topoEv['topological_distance'],
+                'topology_status'      => $topoEv['source'],
+            ];
+        }
+
+        return [
+            'success'                 => true,
+            'engine'                  => 'AR-01-SPATIAL-CANDIDATE-DIAGNOSTIC',
+            'contract_version'        => '1.2',
+            'feeder'                  => [
+                'id'             => $feederId,
+                'kode_penyulang' => $feeder['kode_penyulang'] ?? 'N/A',
+                'nama_penyulang' => $feeder['nama_penyulang'] ?? 'N/A',
+                'total_assets'   => count($allFeederAssets),
+                'total_sections' => count($sections),
+            ],
+            'statistics'              => [
+                'total_landmarks'      => $totalLandmarks,
+                'resolved_landmarks'   => $resolvedLandmarks,
+                'unresolved_landmarks' => $totalLandmarks - $resolvedLandmarks,
+                'potential_devices'    => count($potentialDevices),
+            ],
+            'potential_devices_found' => $potentialDevices,
+            'sections_diagnostic'     => $sectionDiagnostics,
+            'topology_diagnostic'     => $topologyDiagnostics,
+            'governance'              => [
+                'mutation_applied'          => false,
+                'assets_section_id_written' => false,
+                'verification_required'     => true,
+                'promotion_allowed'         => false,
+            ],
         ];
     }
 }

@@ -21,10 +21,11 @@ class Ar01CandidatesCommand extends BaseCommand
     ];
 
     protected $options = [
-        'feeder' => 'Feeder ID or Code (alternative option)',
-        'asset'  => 'Analyze single Asset PK ID (e.g. --asset=3711)',
-        'limit'  => 'Maximum unresolved assets to analyze (default: 20)',
-        'json'   => 'Output raw machine-readable Evidence JSON',
+        'feeder'   => 'Feeder ID or Code (alternative option)',
+        'asset'    => 'Analyze single Asset PK ID (e.g. --asset=3711)',
+        'limit'    => 'Maximum unresolved assets to analyze (default: 20)',
+        'json'     => 'Output raw machine-readable Evidence JSON',
+        'diagnose' => 'Run root-cause diagnostic mode for feeder and landmarks',
     ];
 
     public function run(array $params)
@@ -43,9 +44,10 @@ class Ar01CandidatesCommand extends BaseCommand
             $feederArg = CLI::getOption('feeder');
         }
 
-        $assetArg  = CLI::getOption('asset') ?? null;
-        $limit     = (int)(CLI::getOption('limit') ?? 20);
-        $isJson    = (bool)(CLI::getOption('json') ?? false);
+        $assetArg    = CLI::getOption('asset') ?? null;
+        $limit       = (int)(CLI::getOption('limit') ?? 20);
+        $isJson      = (bool)(CLI::getOption('json') ?? false);
+        $isDiagnose  = (bool)(CLI::getOption('diagnose') ?? false);
 
         // Resolve Feeder if specified
         $feeder = null;
@@ -65,6 +67,16 @@ class Ar01CandidatesCommand extends BaseCommand
                 return 1;
             }
             $feederId = (int)$feeder['id'];
+        }
+
+        // Mode 0: Root-Cause Feeder & Landmark Diagnostic
+        if ($isDiagnose) {
+            if ($feederId === null) {
+                CLI::error("Harap tentukan Feeder ID atau Kode Penyulang (misal: php spark ar01:candidates 4 --diagnose).");
+                return 1;
+            }
+            $diagCmd = new Ar01CandidatesDiagnoseCommand();
+            return $diagCmd->run([$feederId]);
         }
 
         // Mode 1: Single Asset Analysis

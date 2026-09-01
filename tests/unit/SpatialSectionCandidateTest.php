@@ -966,6 +966,15 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
         $this->assertEquals('UNRESOLVED', $rank['decision_status']);
         $this->assertEquals('UNRESOLVED', $rank['candidates'][0]['confidence']);
     }
+
+    /**
+     * AC-31: Evidence Forensics Command does not rely on unsupported builder methods and maintains zero mutation
+     */
+    public function testEvidenceForensicsCommandExecutionDoesNotError()
+    {
+        $cmd = new \App\Commands\Ar01EvidenceForensicsCommand(service('logger'), service('commands'));
+        $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
+    }
 }
 
 

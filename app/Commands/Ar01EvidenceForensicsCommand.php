@@ -123,7 +123,7 @@ class Ar01EvidenceForensicsCommand extends BaseCommand
                   ->orLike('nama_asset', 'PMCB')
                   ->orLike('nama_asset', 'PMT');
         if ($typeCol) {
-            $swBuilder->orIn($typeCol, ['RECLOSER', 'REC', 'LBS', 'LBSM', 'PMCB', 'PMT', 'SECTIONALIZER']);
+            $swBuilder->orWhereIn($typeCol, ['RECLOSER', 'REC', 'LBS', 'LBSM', 'PMCB', 'PMT', 'SECTIONALIZER']);
         }
         $swBuilder->groupEnd();
         $allSwitchingDevices = $swBuilder->get()->getResultArray();

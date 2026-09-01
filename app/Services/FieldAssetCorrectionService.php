@@ -397,6 +397,61 @@ class FieldAssetCorrectionService
 
         $this->db->transStart();
 
+        // 1. Fetch current existing feeder topology segments to merge with
+        $assetRepo = new \App\Repositories\AssetRepository();
+        $currentTopology = $assetRepo->getFeederNetworkSegments($penyulangId);
+        $currentCoords = $currentTopology['coordinates'] ?? [];
+        $mergedSegments = [];
+
+        $newCoords = $geoJsonGeometry['coordinates'] ?? [];
+        if (($geoJsonGeometry['type'] ?? '') === 'LineString' && !empty($newCoords)) {
+            $firstPt = $newCoords[0];
+            $lastPt  = end($newCoords);
+
+            $replaced = false;
+            foreach ($currentCoords as $cSeg) {
+                if (!is_array($cSeg) || empty($cSeg)) continue;
+                $segStart = $cSeg[0];
+                $segEnd   = end($cSeg);
+
+                // Check if segment endpoints match (either direction)
+                $matchForward = (abs($segStart[0] - $firstPt[0]) < 0.0001 && abs($segStart[1] - $firstPt[1]) < 0.0001 &&
+                                 abs($segEnd[0] - $lastPt[0]) < 0.0001 && abs($segEnd[1] - $lastPt[1]) < 0.0001);
+                $matchReverse = (abs($segStart[0] - $lastPt[0]) < 0.0001 && abs($segStart[1] - $lastPt[1]) < 0.0001 &&
+                                 abs($segEnd[0] - $firstPt[0]) < 0.0001 && abs($segEnd[1] - $firstPt[1]) < 0.0001);
+
+                if ($matchForward || $matchReverse) {
+                    $mergedSegments[] = $newCoords;
+                    $replaced = true;
+                } else {
+                    $mergedSegments[] = $cSeg;
+                }
+            }
+
+            if (!$replaced) {
+                $mergedSegments[] = $newCoords;
+            }
+        } elseif (($geoJsonGeometry['type'] ?? '') === 'MultiLineString' && !empty($newCoords)) {
+            $mergedSegments = $newCoords;
+        } else {
+            $mergedSegments = $currentCoords;
+        }
+
+        $allNodes = [];
+        foreach ($mergedSegments as $seg) {
+            if (is_array($seg)) {
+                foreach ($seg as $pt) {
+                    $allNodes[] = $pt;
+                }
+            }
+        }
+
+        $fullFeederGeoJson = [
+            'type'        => 'MultiLineString',
+            'coordinates' => $mergedSegments,
+            'nodes'       => $allNodes
+        ];
+
         if ($isAdmin) {
             // ADMIN DIRECT COMMIT WORKFLOW: Supersede old active versions & activate new version immediately
             $this->db->table('network_topology_versions')
@@ -415,7 +470,7 @@ class FieldAssetCorrectionService
                 'penyulang_id'       => $penyulangId,
                 'ulp_id'             => null,
                 'before_payload'     => null,
-                'after_payload'      => json_encode($geoJsonGeometry),
+                'after_payload'      => json_encode($fullFeederGeoJson),
                 'rationale'          => $rationale,
                 'reporter_name'      => $actorName,
                 'reporter_role'      => $actorRole,
@@ -435,9 +490,9 @@ class FieldAssetCorrectionService
                 'penyulang_id'     => $penyulangId,
                 'version_no'       => $newVer,
                 'correction_id'    => $correctionId,
-                'geojson_topology' => json_encode($geoJsonGeometry),
-                'nodes_count'      => $nodesCount,
-                'segments_count'   => max($nodesCount - 1, 0),
+                'geojson_topology' => json_encode($fullFeederGeoJson),
+                'nodes_count'      => count($allNodes),
+                'segments_count'   => count($mergedSegments),
                 'is_active'        => 1, // Directly active!
                 'version_status'   => 'ACTIVE',
                 'created_by'       => $actorName,
@@ -454,6 +509,7 @@ class FieldAssetCorrectionService
                 'correction_code'  => $correctionCode,
                 'version_no'       => $newVer,
                 'version_status'   => 'ACTIVE',
+                'topology'         => $fullFeederGeoJson,
             ];
         }
 

@@ -52,6 +52,7 @@ class Ar01EvidenceDeepScanCommand extends BaseCommand
 
         // 2. High-Value Metadata Tables to Deep Scan
         $targetTables = [
+            'temuan'                       => ['detail_temuan', 'lokasi', 'alamat', 'noga', 'material'],
             'tb_foto_eviden'               => ['judul_foto', 'keterangan', 'path_foto', 'lokasi'],
             'tb_management_trafo'          => ['nama_gardu', 'lokasi', 'alamat', 'keterangan'],
             'tb_eviden_trafo'              => ['nama_gardu', 'keterangan'],

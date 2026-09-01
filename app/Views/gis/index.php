@@ -559,11 +559,6 @@
                 <select id="setup-feeder-select" class="form-select form-select-sm fw-bold border-primary text-primary rounded-3 py-2">
                     <option value="">-- Pilih ULP Terlebih Dahulu --</option>
                 </select>
-                
-                <!-- Quick Selection Chips Container -->
-                <div id="feeder-quick-chips" class="d-flex flex-wrap gap-1 mt-2">
-                    <!-- Populated dynamically -->
-                </div>
             </div>
 
             <!-- Step 4: Layer Aset yang Dimuat -->
@@ -1498,16 +1493,14 @@ document.addEventListener("DOMContentLoaded", function () {
         .catch(err => console.error('Failed to load master conductors', err));
 
     // ========================================================
-    // STAGE 1: SETUP LOGIC (Cascading Options & Quick Chips)
+    // STAGE 1: SETUP LOGIC (Unified Single Feeder Selector)
     // ========================================================
     var setupUlpSelect = document.getElementById('setup-ulp-select');
     var setupFeederSelect = document.getElementById('setup-feeder-select');
-    var feederQuickChips = document.getElementById('feeder-quick-chips');
     var setupFeederLoading = document.getElementById('setup-feeder-loading');
 
     function loadPenyulangsForUlp(ulpId, autoSelectFirst) {
         setupFeederSelect.innerHTML = '<option value="">-- Memuat Penyulang... --</option>';
-        feederQuickChips.innerHTML = '';
         setupFeederLoading.style.display = 'inline-block';
         var thisUlpRequestId = ++currentUlpRequestId;
 
@@ -1531,18 +1524,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         var optDrawer = opt.cloneNode(true);
                         drawerSelect.appendChild(optDrawer);
-
-                        // Render quick chip
-                        var chip = document.createElement('button');
-                        chip.type = 'button';
-                        chip.className = `feeder-chip-btn ${idx === 0 && autoSelectFirst ? 'active' : ''}`;
-                        chip.textContent = p.nama_penyulang;
-                        chip.onclick = function () {
-                            document.querySelectorAll('.feeder-chip-btn').forEach(b => b.classList.remove('active'));
-                            chip.classList.add('active');
-                            setupFeederSelect.value = p.id;
-                        };
-                        feederQuickChips.appendChild(chip);
                     });
 
                     if (autoSelectFirst) {
@@ -1560,7 +1541,6 @@ document.addEventListener("DOMContentLoaded", function () {
         var ulpId = this.value;
         if (!ulpId) {
             setupFeederSelect.innerHTML = '<option value="">-- Pilih ULP Terlebih Dahulu --</option>';
-            feederQuickChips.innerHTML = '';
             return;
         }
         loadPenyulangsForUlp(ulpId, true);

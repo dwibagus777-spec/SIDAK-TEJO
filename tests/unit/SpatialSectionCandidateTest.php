@@ -1038,6 +1038,46 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
         $cmd = new \App\Commands\Ar01EvidenceDeepScanCommand(service('logger'), service('commands'));
         $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
     }
+
+    /**
+     * AC-39: Unified Landmark Evidence Registry resolves and classifies evidence deterministically
+     */
+    public function testUnifiedLandmarkEvidenceRegistryResolvesEvidence()
+    {
+        $registry = new \App\Services\LandmarkEvidenceRegistry();
+        $evidence = $registry->getFeederEvidence(4);
+
+        $this->assertIsArray($evidence);
+        $this->assertArrayHasKey('GI', $evidence);
+        $this->assertArrayHasKey('TRI_DASA_WINDU', $evidence);
+        $this->assertArrayHasKey('BANJARSARI', $evidence);
+        $this->assertArrayHasKey('PULAU_BATU', $evidence);
+        $this->assertArrayHasKey('UJUNG', $evidence);
+
+        // PULAU BATU is DATA_NOT_PRESENT
+        $this->assertEquals('DATA_NOT_PRESENT', $evidence['PULAU_BATU']['confidence_class']);
+        $this->assertFalse($evidence['PULAU_BATU']['usable_for_confidence']);
+
+        // GI is STRONG
+        $this->assertEquals('STRONG', $evidence['GI']['confidence_class']);
+        $this->assertTrue($evidence['GI']['usable_for_confidence']);
+    }
+
+    /**
+     * AC-40: Haversine distance helper calculates accurate metric distance
+     */
+    public function testLandmarkEvidenceRegistryHaversineDistance()
+    {
+        $registry = new \App\Services\LandmarkEvidenceRegistry();
+        // Distance between identical coordinates is 0
+        $dist0 = $registry->haversineDistance(-7.42617, 112.73619, -7.42617, 112.73619);
+        $this->assertEqualsWithDelta(0.0, $dist0, 0.01);
+
+        // Distance between nearby poles (~25m)
+        $dist = $registry->haversineDistance(-7.42617, 112.73619, -7.42630, 112.73619);
+        $this->assertGreaterThan(10.0, $dist);
+        $this->assertLessThan(50.0, $dist);
+    }
 }
 
 

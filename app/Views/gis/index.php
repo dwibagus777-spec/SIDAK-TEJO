@@ -1872,6 +1872,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var cSize = document.getElementById('conn-conductor-size').value;
 
         var payload = {
+            penyulang_id: currentFeederId,
             source_asset_id: translineEditor.sourceAsset.id,
             target_asset_id: translineEditor.targetAsset.id,
             connection_mode: mode,
@@ -2081,7 +2082,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         fetchJson('<?= site_url('gis/api-disconnect-topology') ?>', {
             method: 'POST',
-            body: JSON.stringify({ source_asset_id: sourceId, target_asset_id: targetId })
+            body: JSON.stringify({
+                penyulang_id: currentFeederId,
+                source_asset_id: sourceId,
+                target_asset_id: targetId
+            })
         })
         .then(res => {
             bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-delete-connection-sheet')).hide();

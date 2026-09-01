@@ -464,15 +464,24 @@ class GisTranslineService
 
         // Persist to network_topology_versions as derived snapshot
         if ($this->db->tableExists('network_topology_versions') && !empty($multiLineCoords)) {
+            $ntvFields = $this->db->getFieldNames('network_topology_versions');
+
             // Supersede old active versions
+            $supPayload = ['is_active' => 0];
+            if (in_array('version_status', $ntvFields, true)) {
+                $supPayload['version_status'] = 'SUPERSEDED';
+            }
+            if (in_array('superseded_at', $ntvFields, true)) {
+                $supPayload['superseded_at'] = date('Y-m-d H:i:s');
+            }
+            if (in_array('updated_at', $ntvFields, true)) {
+                $supPayload['updated_at'] = date('Y-m-d H:i:s');
+            }
+
             $this->db->table('network_topology_versions')
                      ->where('penyulang_id', $penyulangId)
                      ->where('is_active', 1)
-                     ->update([
-                         'is_active'      => 0,
-                         'version_status' => 'SUPERSEDED',
-                         'superseded_at'  => date('Y-m-d H:i:s')
-                     ]);
+                     ->update($supPayload);
 
             $maxVerRow = $this->db->table('network_topology_versions')
                                     ->where('penyulang_id', $penyulangId)
@@ -482,7 +491,7 @@ class GisTranslineService
             $maxVer = (int)($maxVerRow['version_no'] ?? 0);
             $newVer = $maxVer + 1;
 
-            $this->db->table('network_topology_versions')->insert([
+            $insertPayload = [
                 'penyulang_id'     => $penyulangId,
                 'version_no'       => $newVer,
                 'geojson_topology' => json_encode($freshTopology),
@@ -492,7 +501,10 @@ class GisTranslineService
                 'version_status'   => 'ACTIVE',
                 'created_by'       => $actorName,
                 'created_at'       => date('Y-m-d H:i:s'),
-            ]);
+            ];
+            $filteredInsert = array_intersect_key($insertPayload, array_flip($ntvFields));
+
+            $this->db->table('network_topology_versions')->insert($filteredInsert);
         }
 
         return $freshTopology;

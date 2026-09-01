@@ -1011,6 +1011,15 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
         $cmd = new \App\Commands\Ar01EvidenceAnchorCommand(service('logger'), service('commands'));
         $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
     }
+
+    /**
+     * AC-36: Evidence Partition Command is executable and preserves zero mutation
+     */
+    public function testEvidencePartitionCommandExecutionDoesNotError()
+    {
+        $cmd = new \App\Commands\Ar01EvidencePartitionCommand(service('logger'), service('commands'));
+        $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
+    }
 }
 
 

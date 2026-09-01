@@ -24,9 +24,40 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
         'json'   => 'Output raw machine-readable Reconciliation JSON',
     ];
 
+    protected array $queryDiagnostics = [];
+
+    /**
+     * Safely execute a Query Builder query and return rows array or capture diagnostic error
+     */
+    protected function safeGetArray($builder, string $context = 'Query'): array
+    {
+        try {
+            $query = $builder->get();
+            if ($query === false) {
+                $db = \Config\Database::connect();
+                $err = $db->error();
+                $this->queryDiagnostics[] = [
+                    'context' => $context,
+                    'status'  => 'FAILED',
+                    'error'   => $err['message'] ?? 'Query returned false',
+                ];
+                return [];
+            }
+            return $query->getResultArray();
+        } catch (\Throwable $e) {
+            $this->queryDiagnostics[] = [
+                'context' => $context,
+                'status'  => 'EXCEPTION',
+                'error'   => $e->getMessage(),
+            ];
+            return [];
+        }
+    }
+
     public function run(array $params)
     {
         $db = \Config\Database::connect();
+        $this->queryDiagnostics = [];
 
         $feederArg = null;
         foreach ($params as $p) {
@@ -43,26 +74,29 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
         $isJson   = (bool)(CLI::getOption('json') ?? false);
 
         // Resolve Feeder
-        $feeder = $db->table('penyulang')->where('id', $feederId)->get()->getRowArray();
+        $feeder = null;
+        try {
+            $fQuery = $db->table('penyulang')->where('id', $feederId)->get();
+            $feeder = $fQuery ? $fQuery->getRowArray() : null;
+        } catch (\Throwable $e) {
+            $this->queryDiagnostics[] = ['context' => 'Resolve Feeder', 'error' => $e->getMessage()];
+        }
         $feederName = $feeder ? "[{$feeder['kode_penyulang']}] {$feeder['nama_penyulang']}" : "Feeder #{$feederId}";
         $feederCode = $feeder['kode_penyulang'] ?? "PYL-{$feederId}";
 
         // 1. Full Schema & Master Tables Inspection
-        $assetFields = $db->getFieldNames('assets');
+        $assetFields = $db->tableExists('assets') ? $db->getFieldNames('assets') : [];
         $hasAssetTypesTable = $db->tableExists('asset_types');
         $assetTypeMasterRows = [];
         if ($hasAssetTypesTable) {
-            $assetTypeMasterRows = $db->table('asset_types')->get()->getResultArray();
+            $assetTypeMasterRows = $this->safeGetArray($db->table('asset_types'), 'Fetch asset_types master');
         }
 
         // Asset Type ID Mapping in Assets Table
         $assetTypeUsage = [];
         if (in_array('asset_type_id', $assetFields, true)) {
-            $usageRows = $db->table('assets')
-                ->select('asset_type_id, COUNT(*) as count')
-                ->groupBy('asset_type_id')
-                ->get()
-                ->getResultArray();
+            $uBuilder = $db->table('assets')->select('asset_type_id, COUNT(*) as count')->groupBy('asset_type_id');
+            $usageRows = $this->safeGetArray($uBuilder, 'Group assets by asset_type_id');
             foreach ($usageRows as $ur) {
                 $assetTypeUsage[(int)$ur['asset_type_id']] = (int)$ur['count'];
             }
@@ -73,37 +107,44 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
         $searchableCols = array_intersect(['nama_asset', 'kode_asset', 'lokasi', 'merk', 'type', 'nomor_seri'], $assetFields);
 
         $multiColMatches = [];
-        foreach ($searchTokens as $token) {
-            $builder = $db->table('assets');
-            $builder->groupStart();
-            $first = true;
-            foreach ($searchableCols as $col) {
-                if ($first) {
-                    $builder->like($col, $token);
-                    $first = false;
-                } else {
-                    $builder->orLike($col, $token);
+        if (!empty($searchableCols)) {
+            foreach ($searchTokens as $token) {
+                $builder = $db->table('assets');
+                $builder->groupStart();
+                $first = true;
+                foreach ($searchableCols as $col) {
+                    if ($first) {
+                        $builder->like($col, $token);
+                        $first = false;
+                    } else {
+                        $builder->orLike($col, $token);
+                    }
                 }
-            }
-            $builder->groupEnd();
-            $foundRows = $builder->get()->getResultArray();
-            foreach ($foundRows as $fr) {
-                $frId = (int)$fr['id'];
-                if (!isset($multiColMatches[$frId])) {
-                    $fr['matched_tokens'] = [$token];
-                    $multiColMatches[$frId] = $fr;
-                } else {
-                    $multiColMatches[$frId]['matched_tokens'][] = $token;
+                $builder->groupEnd();
+                $foundRows = $this->safeGetArray($builder, "Search token '{$token}' in assets");
+                foreach ($foundRows as $fr) {
+                    $frId = (int)$fr['id'];
+                    if (!isset($multiColMatches[$frId])) {
+                        $fr['matched_tokens'] = [$token];
+                        $multiColMatches[$frId] = $fr;
+                    } else {
+                        $multiColMatches[$frId]['matched_tokens'][] = $token;
+                    }
                 }
             }
         }
 
         // 3. Landmark Resolution for Target Feeder Sections
-        $sections = $db->table('sections')->where('penyulang_id', $feederId);
-        if ($db->fieldExists('status', 'sections')) {
-            $sections->whereIn('status', ['AKTIF', 'ACTIVE', '1']);
+        $sectionRows = [];
+        if ($db->tableExists('sections')) {
+            $secBuilder = $db->table('sections')->where('penyulang_id', $feederId);
+            if ($db->fieldExists('status', 'sections')) {
+                $secBuilder->whereIn('status', ['AKTIF', 'ACTIVE', '1']);
+            }
+            $seqCol = $db->fieldExists('sequence_order', 'sections') ? 'sequence_order' : ($db->fieldExists('urutan', 'sections') ? 'urutan' : 'id');
+            $secBuilder->orderBy($seqCol, 'ASC');
+            $sectionRows = $this->safeGetArray($secBuilder, 'Fetch feeder sections');
         }
-        $sectionRows = $sections->orderBy('sequence_order', 'ASC')->get()->getResultArray();
 
         $landmarkReconciliation = [];
         $totalLandmarks = 0;
@@ -123,11 +164,10 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
                 $words = preg_split('/[^A-Z0-9]+/', $upperPart, -1, PREG_SPLIT_NO_EMPTY);
                 $meaningfulTokens = array_values(array_filter($words, fn($w) => strlen($w) > 1 && !in_array($w, ['GI', 'UJUNG', 'DAN', 'DI'], true)));
 
-                // Search in feeder #4
                 $feederMatches = [];
                 $globalMatches = [];
 
-                if (!empty($meaningfulTokens)) {
+                if (!empty($meaningfulTokens) && !empty($searchableCols)) {
                     // Feeder search
                     $fB = $db->table('assets')->where('penyulang_id', $feederId);
                     $fB->groupStart();
@@ -143,7 +183,7 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
                         }
                     }
                     $fB->groupEnd();
-                    $feederMatches = $fB->get()->getResultArray();
+                    $feederMatches = $this->safeGetArray($fB, "Feeder search tokens [" . implode(',', $meaningfulTokens) . "]");
 
                     // Global search
                     $gB = $db->table('assets');
@@ -160,7 +200,7 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
                         }
                     }
                     $gB->groupEnd();
-                    $globalMatches = $gB->get()->getResultArray();
+                    $globalMatches = $this->safeGetArray($gB, "Global search tokens [" . implode(',', $meaningfulTokens) . "]");
                 }
 
                 // Determine Classification
@@ -171,10 +211,9 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
                     $classification = 'DATA_NOT_PRESENT';
                     $reconciliationDetails = 'Endpoint marker (GI/UJUNG) represents boundary substation/line terminus, not modeled as discrete assets row.';
                 } elseif (!empty($feederMatches)) {
-                    // Found in feeder
                     $gpsValid = false;
                     foreach ($feederMatches as $fm) {
-                        if (!empty($fm['latitude']) && !empty($fm['longitude'])) {
+                        if (!empty($fm['latitude']) && !empty($fm['longitude']) && $fm['latitude'] != 0 && $fm['longitude'] != 0) {
                             $gpsValid = true;
                             break;
                         }
@@ -187,7 +226,6 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
                         $reconciliationDetails = "Found " . count($feederMatches) . " matching asset(s) in Feeder #{$feederId} but GPS coordinates are NULL or 0.";
                     }
                 } elseif (!empty($globalMatches)) {
-                    // Found in another feeder
                     $otherFeeders = array_unique(array_column($globalMatches, 'penyulang_id'));
                     $classification = 'DATA_PRESENT_WRONG_FEEDER';
                     $reconciliationDetails = "Asset matching landmark tokens exists in database under other Feeder ID(s): [" . implode(', ', $otherFeeders) . "].";
@@ -214,7 +252,7 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
         }
 
         // 4. GPS Completeness Analysis
-        $feederAssets = $db->table('assets')->where('penyulang_id', $feederId)->get()->getResultArray();
+        $feederAssets = $this->safeGetArray($db->table('assets')->where('penyulang_id', $feederId), 'Fetch all feeder assets');
         $gpsValidCount = 0;
         $gpsMissingCount = 0;
         $duplicateGpsCount = 0;
@@ -246,7 +284,12 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
         $cCol = in_array('child_asset_id', $relFields, true) ? 'child_asset_id' : (in_array('target_asset_id', $relFields, true) ? 'target_asset_id' : null);
 
         $pilotAssetId = 3711;
-        $pilotAsset = $db->table('assets')->where('id', $pilotAssetId)->get()->getRowArray();
+        $pilotAsset = null;
+        $pRes = $db->table('assets')->where('id', $pilotAssetId)->get();
+        if ($pRes && $pRes !== false) {
+            $pilotAsset = $pRes->getRowArray();
+        }
+
         $pilotRelActive = [];
         $pilotRelInactive = [];
 
@@ -260,23 +303,25 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
                         ->countAllResults();
                 }
 
-                $pilotRelActive = $db->table('asset_relationships')
-                    ->groupStart()
-                        ->where($pCol, $pilotAssetId)
-                        ->orWhere($cCol, $pilotAssetId)
-                    ->groupEnd()
-                    ->where('is_active', 1)
-                    ->get()
-                    ->getResultArray();
+                $pilotRelActive = $this->safeGetArray(
+                    $db->table('asset_relationships')
+                        ->groupStart()
+                            ->where($pCol, $pilotAssetId)
+                            ->orWhere($cCol, $pilotAssetId)
+                        ->groupEnd()
+                        ->where('is_active', 1),
+                    'Fetch active pilot asset relationships'
+                );
 
-                $pilotRelInactive = $db->table('asset_relationships')
-                    ->groupStart()
-                        ->where($pCol, $pilotAssetId)
-                        ->orWhere($cCol, $pilotAssetId)
-                    ->groupEnd()
-                    ->where('is_active', 0)
-                    ->get()
-                    ->getResultArray();
+                $pilotRelInactive = $this->safeGetArray(
+                    $db->table('asset_relationships')
+                        ->groupStart()
+                            ->where($pCol, $pilotAssetId)
+                            ->orWhere($cCol, $pilotAssetId)
+                        ->groupEnd()
+                        ->where('is_active', 0),
+                    'Fetch inactive pilot asset relationships'
+                );
             }
         }
 
@@ -286,17 +331,18 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
         $hasTopVer = $db->tableExists('network_topology_versions');
         $feederTopVersions = [];
         if ($hasTopVer) {
-            $feederTopVersions = $db->table('network_topology_versions')
-                ->where('penyulang_id', $feederId)
-                ->orderBy('version_no', 'DESC')
-                ->get()
-                ->getResultArray();
+            $feederTopVersions = $this->safeGetArray(
+                $db->table('network_topology_versions')
+                    ->where('penyulang_id', $feederId)
+                    ->orderBy('version_no', 'DESC'),
+                'Fetch feeder topology versions'
+            );
         }
 
         $report = [
             'success'                     => true,
             'engine'                      => 'AR-01-EVIDENCE-RECONCILIATION',
-            'contract_version'            => '1.0',
+            'contract_version'            => '1.1',
             'feeder'                      => [
                 'id'           => $feederId,
                 'name'         => $feederName,
@@ -337,9 +383,9 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
                 ],
             ],
             'topology_versions'           => [
-                'has_table'    => $hasTopVer,
+                'has_table'      => $hasTopVer,
                 'versions_count' => count($feederTopVersions),
-                'records'      => array_map(function($v) {
+                'records'        => array_map(function($v) {
                     return [
                         'id'             => $v['id'] ?? null,
                         'version_no'     => $v['version_no'] ?? null,
@@ -349,6 +395,7 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
                     ];
                 }, $feederTopVersions),
             ],
+            'query_diagnostics'           => $this->queryDiagnostics,
             'governance'                  => [
                 'assets_section_id_written'   => 0,
                 'sections_written'            => 0,
@@ -369,9 +416,14 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
         CLI::write("TARGET FEEDER : {$feederName} (ID: #{$feederId})", 'yellow');
         CLI::write("MUTATION      : ZERO (Strictly Read-Only Forensic Discovery)\n", 'green');
 
-        CLI::write("A. ASSET TYPE MASTER & CLASSIFICATION MAPPING:", 'cyan');
+        CLI::write("A. ASSET SCHEMA & METADATA:", 'cyan');
+        CLI::write("  • Columns in 'assets' table (" . count($assetFields) . " cols): " . implode(', ', $assetFields));
+        CLI::write("  • 'asset_relationships' table : " . ($hasRelTable ? "EXISTS (" . implode(', ', $relFields) . ")" : "NOT FOUND"));
+        CLI::write("  • 'network_topology_versions' : " . ($hasTopVer ? "EXISTS" : "NOT FOUND") . "\n");
+
+        CLI::write("B. ASSET TYPE MASTER & CLASSIFICATION MAPPING:", 'cyan');
         if (!$hasAssetTypesTable) {
-            CLI::write("  • Table 'asset_types' : NOT FOUND in database.", 'red');
+            CLI::write("  [NOT AVAILABLE] Table 'asset_types' is not present in database.", 'yellow');
         } else {
             CLI::write(sprintf("  • Table 'asset_types' : EXISTS (%d master types registered)", count($assetTypeMasterRows)));
             foreach ($assetTypeMasterRows as $atm) {
@@ -380,7 +432,7 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
             }
         }
 
-        CLI::write("\nB. SWITCHING DEVICE DISCOVERY (Across ALL Assets Columns):", 'cyan');
+        CLI::write("\nC. SWITCHING DEVICE DISCOVERY (Across ALL Assets Columns):", 'cyan');
         CLI::write("  Searched tokens: [REC, RECLOSER, LBS, LBSM, PMCB, PMT, GI, PULAU, BATU, BANJARSARI, TRI, DASA, WINDU, PRASUNG, MITRA, MULIA, HUBBEL]");
         CLI::write("  Columns checked: [" . implode(', ', $searchableCols) . "]");
         if (empty($multiColMatches)) {
@@ -392,7 +444,7 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
             }
         }
 
-        CLI::write("\nC. LANDMARK-BY-LANDMARK RECONCILIATION & CLASSIFICATION:", 'cyan');
+        CLI::write("\nD. LANDMARK-BY-LANDMARK RECONCILIATION & CLASSIFICATION:", 'cyan');
         CLI::write(str_repeat("-", 100));
         CLI::write(sprintf("%-6s | %-32s | %-28s | %-20s", "Sec ID", "Landmark Label", "Classification", "Reconciliation Status"));
         CLI::write(str_repeat("-", 100));
@@ -409,18 +461,18 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
         }
         CLI::write(str_repeat("-", 100));
 
-        CLI::write("\nD. CLASSIFICATION DISTRIBUTION SUMMARY:", 'cyan');
+        CLI::write("\nE. CLASSIFICATION DISTRIBUTION SUMMARY:", 'cyan');
         foreach ($classificationsSummary as $cls => $count) {
             CLI::write(sprintf("  • %-30s : %d landmarks", $cls, $count));
         }
 
-        CLI::write("\nE. GPS COORDINATES AVAILABILITY (Feeder #{$feederId}):", 'cyan');
+        CLI::write("\nF. GPS COORDINATES AVAILABILITY (Feeder #{$feederId}):", 'cyan');
         CLI::write(sprintf("  • Total Assets in Feeder      : %d", count($feederAssets)));
         CLI::write(sprintf("  • Valid GPS Coordinates       : %s", CLI::color((string)$gpsValidCount, 'green')));
         CLI::write(sprintf("  • Missing / Zero GPS          : %s", CLI::color((string)$gpsMissingCount, $gpsMissingCount > 0 ? 'red' : 'green')));
         CLI::write(sprintf("  • Duplicate Coordinate Spans  : %d assets", $duplicateGpsCount));
 
-        CLI::write("\nF. PILOT ASSET #3711 TOPOLOGY RECONCILIATION:", 'cyan');
+        CLI::write("\nG. PILOT ASSET #3711 TOPOLOGY RECONCILIATION:", 'cyan');
         if (!$pilotAsset) {
             CLI::write("  🔴 Asset #3711 not found in database.", 'red');
         } else {
@@ -431,15 +483,25 @@ class Ar01EvidenceReconcileCommand extends BaseCommand
             CLI::write(sprintf("  • Topology Classification    : %s", CLI::color($topologyClassification, $topologyClassification === 'TOPOLOGY_PRESENT' ? 'green' : 'red')));
         }
 
-        CLI::write("\nG. NETWORK TOPOLOGY VERSIONS RECONCILIATION:", 'cyan');
+        CLI::write("\nH. NETWORK TOPOLOGY VERSIONS RECONCILIATION:", 'cyan');
         CLI::write(sprintf("  • Total Versions for Feeder #%d : %d records", $feederId, count($feederTopVersions)));
         foreach ($feederTopVersions as $ftv) {
             $actColor = ($ftv['is_active'] == 1) ? 'green' : 'white';
             CLI::write(sprintf("    - Version v%s | Active: %s | Status: %s | Created: %s", $ftv['version_no'] ?? '1', CLI::color($ftv['is_active'] == 1 ? 'YES' : 'NO', $actColor), $ftv['version_status'] ?? 'COMMITTED', $ftv['created_at'] ?? 'N/A'));
         }
 
+        CLI::write("\nI. QUERY & SCHEMA DIAGNOSTICS:", 'cyan');
+        if (empty($this->queryDiagnostics)) {
+            CLI::write("  🟢 ALL READ-ONLY QUERIES EXECUTED SUCCESSFULLY (0 SQL Errors)", 'green');
+        } else {
+            CLI::write(sprintf("  ⚠️ %d query issues encountered during discovery:", count($this->queryDiagnostics)), 'yellow');
+            foreach ($this->queryDiagnostics as $qd) {
+                CLI::write(sprintf("    - [%s] %s: %s", $qd['status'] ?? 'ERROR', $qd['context'], $qd['error']), 'red');
+            }
+        }
+
         CLI::write("\n==============================================================", 'cyan');
-        CLI::write("H. GOVERNANCE AUDIT (ZERO MUTATION PROVEN):", 'cyan');
+        CLI::write("J. GOVERNANCE AUDIT (ZERO MUTATION PROVEN):", 'cyan');
         CLI::write("  assets.section_id writes        : 0", 'green');
         CLI::write("  sections writes                 : 0", 'green');
         CLI::write("  asset_relationships writes      : 0", 'green');

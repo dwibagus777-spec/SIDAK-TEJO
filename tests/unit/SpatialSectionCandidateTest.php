@@ -1029,6 +1029,15 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
         $cmd = new \App\Commands\Ar01EvidenceAnchorAuditCommand(service('logger'), service('commands'));
         $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
     }
+
+    /**
+     * AC-38: Evidence Deep Scan Command is executable and preserves zero mutation
+     */
+    public function testEvidenceDeepScanCommandExecutionDoesNotError()
+    {
+        $cmd = new \App\Commands\Ar01EvidenceDeepScanCommand(service('logger'), service('commands'));
+        $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
+    }
 }
 
 

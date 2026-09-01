@@ -958,12 +958,18 @@
         </div>
 
         <div class="card bg-light border-0 rounded-3 p-3 mb-3">
-            <div class="mb-2">
-                <label class="small fw-bold text-muted d-block mb-1">Pilih Segmen Sambungan:</label>
-                <select id="spec-segment-select" class="form-select form-select-sm fw-bold border-secondary">
-                    <!-- Populated dynamically -->
-                </select>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Titik 1 (Sumber):</span>
+                <span id="spec-source-name" class="small fw-bold text-dark text-truncate" style="max-width: 200px;">-</span>
             </div>
+            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                <span class="small text-muted">Titik 2 (Tujuan):</span>
+                <span id="spec-target-name" class="small fw-bold text-primary text-truncate" style="max-width: 200px;">-</span>
+            </div>
+            <input type="hidden" id="spec-transline-id" value="" />
+            <input type="hidden" id="spec-source-id" value="" />
+            <input type="hidden" id="spec-target-id" value="" />
+
             <div class="row g-2 mb-2">
                 <div class="col-6">
                     <label class="small fw-bold text-secondary mb-1">Jenis Konduktor</label>
@@ -1005,24 +1011,51 @@
 </div>
 
 <!-- ========================================================
-     DELETE CONNECTION SHEET (Hapus Sambungan Salah)
+     CONFIRM DELETE PAIR SHEET (Hapus Sambungan Pair A-B)
      ======================================================== -->
 <div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-delete-connection-sheet">
     <div class="offcanvas-body p-3">
         <div class="sheet-drag-handle"></div>
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="fw-bold mb-0 text-danger"><i class="fas fa-trash-alt text-danger me-2"></i> Hapus Sambungan Jalur</h6>
+            <h6 class="fw-bold mb-0 text-danger"><i class="fas fa-trash-alt text-danger me-2"></i> Konfirmasi Hapus Jalur</h6>
             <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
         </div>
-        <p class="small text-muted mb-3">Pilih sambungan jalur yang ingin diputus dari aset <strong id="delete-conn-source-name">-</strong>:</p>
         
-        <div id="delete-connection-list" class="d-flex flex-column gap-2 mb-3">
-            <!-- Dynamically populated connected edges -->
+        <div class="card bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 p-3 mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Titik 1 (Sumber):</span>
+                <span id="del-source-name" class="small fw-bold text-dark text-truncate" style="max-width: 200px;">-</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Titik 2 (Tujuan):</span>
+                <span id="del-target-name" class="small fw-bold text-danger text-truncate" style="max-width: 200px;">-</span>
+            </div>
+            <div class="d-flex justify-content-between border-top border-danger border-opacity-25 pt-1 mt-1 mb-1">
+                <span class="small text-muted">Kode Segmen:</span>
+                <span id="del-segment-code" class="small fw-bold font-monospace text-dark">-</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Jarak Segmen:</span>
+                <span id="del-distance-meters" class="small fw-bold font-monospace text-dark">0 m</span>
+            </div>
+            <div class="d-flex justify-content-between border-top border-danger border-opacity-25 pt-1 mt-1">
+                <span class="small text-muted">Spesifikasi Kabel:</span>
+                <span id="del-conductor-spec" class="small fw-bold text-primary">AAAC 150 mm²</span>
+            </div>
         </div>
 
-        <button type="button" class="btn btn-outline-secondary w-100 rounded-pill" data-bs-dismiss="offcanvas">
-            Batal
-        </button>
+        <input type="hidden" id="del-transline-id" value="" />
+        <input type="hidden" id="del-source-id" value="" />
+        <input type="hidden" id="del-target-id" value="" />
+
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary w-50 rounded-pill" data-bs-dismiss="offcanvas">
+                Batal
+            </button>
+            <button type="button" id="btn-confirm-delete-pair" class="btn btn-danger w-50 fw-bold rounded-pill shadow-sm">
+                <i class="fas fa-trash-alt me-1"></i> Hapus Jalur
+            </button>
+        </div>
     </div>
 </div>
 
@@ -1356,6 +1389,7 @@ document.addEventListener("DOMContentLoaded", function () {
         SELECT_SOURCE: 'SELECT_SOURCE',
         CHANGE_CONNECTION: 'CHANGE_CONNECTION',
         ADD_CONNECTION: 'ADD_CONNECTION',
+        EDIT_CONDUCTOR_SPEC: 'EDIT_CONDUCTOR_SPEC',
         EDIT_SEGMENT_SHAPE: 'EDIT_SEGMENT_SHAPE',
         DELETE_CONNECTION: 'DELETE_CONNECTION'
     };
@@ -1369,6 +1403,27 @@ document.addEventListener("DOMContentLoaded", function () {
         undoStack: []
     };
 
+    function resolveTranslinePair(assetAId, assetBId) {
+        var aId = Number(assetAId);
+        var bId = Number(assetBId);
+        if (!aId || !bId || aId === bId || !currentData) return null;
+
+        var list = currentData.translines || [];
+        if (list.length === 0 && currentData.transline && currentData.transline.properties && Array.isArray(currentData.transline.properties.edges)) {
+            list = currentData.transline.properties.edges;
+        }
+
+        var matching = list.filter(function (tl) {
+            var s = Number(tl.source_asset_id || tl.from_asset_id);
+            var t = Number(tl.target_asset_id || tl.to_asset_id);
+            var active = (tl.is_active === undefined || Number(tl.is_active) === 1);
+            return active && ((s === aId && t === bId) || (s === bId && t === aId));
+        });
+
+        if (matching.length === 0) return null;
+        return matching[0];
+    }
+
     function setEditorState(newState, bannerText) {
         translineEditor.state = newState;
         var banner = document.getElementById('gis-mode-banner');
@@ -1379,6 +1434,13 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('gis-segment-toolbar').style.display = 'none';
             if (previewConnectionLayer) previewConnectionLayer.clearLayers();
             if (segmentEditLayer) segmentEditLayer.clearLayers();
+            if (window.activeSegmentHighlight) {
+                window.activeSegmentHighlight.setStyle({ color: '#0284c7', weight: 3.5, opacity: 0.9 });
+                window.activeSegmentHighlight = null;
+            }
+            translineEditor.sourceAsset = null;
+            translineEditor.targetAsset = null;
+            translineEditor.activeSegment = null;
             renderFilteredLayers(false);
         } else {
             banner.style.display = 'flex';
@@ -1714,7 +1776,82 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Case B: State is SELECT_SOURCE -> User picked an asset from global FAB
+        // Case B: State is DELETE_CONNECTION -> Target Selected for Pair Deletion!
+        if (translineEditor.state === TRANSLINE_STATE.DELETE_CONNECTION) {
+            if (!translineEditor.sourceAsset) {
+                translineEditor.sourceAsset = clickedAsset;
+                setEditorState(TRANSLINE_STATE.DELETE_CONNECTION, `HAPUS JALUR: Titik 1 [${clickedAsset.nama_asset}] dipilih ➔ Sentuh tiang tujuan`);
+                return;
+            }
+
+            if (translineEditor.sourceAsset.id === clickedAsset.id) {
+                alert('Silakan pilih tiang kedua yang berbeda untuk menentukan jalur yang akan dihapus!');
+                return;
+            }
+
+            var tl = resolveTranslinePair(translineEditor.sourceAsset.id, clickedAsset.id);
+            if (!tl) {
+                alert(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`);
+                return;
+            }
+
+            translineEditor.targetAsset = clickedAsset;
+            translineEditor.activeSegment = tl;
+            openPairDeleteConfirmSheet(translineEditor.sourceAsset, translineEditor.targetAsset, tl);
+            return;
+        }
+
+        // Case C: State is EDIT_CONDUCTOR_SPEC -> Target Selected for Conductor Spec Edit!
+        if (translineEditor.state === TRANSLINE_STATE.EDIT_CONDUCTOR_SPEC) {
+            if (!translineEditor.sourceAsset) {
+                translineEditor.sourceAsset = clickedAsset;
+                setEditorState(TRANSLINE_STATE.EDIT_CONDUCTOR_SPEC, `EDIT KONDUKTOR: Titik 1 [${clickedAsset.nama_asset}] dipilih ➔ Sentuh tiang kedua`);
+                return;
+            }
+
+            if (translineEditor.sourceAsset.id === clickedAsset.id) {
+                alert('Silakan pilih tiang kedua yang berbeda untuk menentukan jalur!');
+                return;
+            }
+
+            var tl = resolveTranslinePair(translineEditor.sourceAsset.id, clickedAsset.id);
+            if (!tl) {
+                alert(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`);
+                return;
+            }
+
+            translineEditor.targetAsset = clickedAsset;
+            translineEditor.activeSegment = tl;
+            openPairConductorSpecSheet(translineEditor.sourceAsset, translineEditor.targetAsset, tl);
+            return;
+        }
+
+        // Case D: State is EDIT_SEGMENT_SHAPE -> Target Selected for Geometry Edit!
+        if (translineEditor.state === TRANSLINE_STATE.EDIT_SEGMENT_SHAPE) {
+            if (!translineEditor.sourceAsset) {
+                translineEditor.sourceAsset = clickedAsset;
+                setEditorState(TRANSLINE_STATE.EDIT_SEGMENT_SHAPE, `EDIT BENTUK: Titik 1 [${clickedAsset.nama_asset}] dipilih ➔ Sentuh tiang kedua`);
+                return;
+            }
+
+            if (translineEditor.sourceAsset.id === clickedAsset.id) {
+                alert('Silakan pilih tiang kedua yang berbeda untuk menentukan jalur!');
+                return;
+            }
+
+            var tl = resolveTranslinePair(translineEditor.sourceAsset.id, clickedAsset.id);
+            if (!tl) {
+                alert(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`);
+                return;
+            }
+
+            translineEditor.targetAsset = clickedAsset;
+            translineEditor.activeSegment = tl;
+            startEditPairSegmentGeometry(translineEditor.sourceAsset, translineEditor.targetAsset, tl);
+            return;
+        }
+
+        // Case E: State is SELECT_SOURCE -> User picked an asset from global FAB
         if (translineEditor.state === TRANSLINE_STATE.SELECT_SOURCE) {
             setEditorState(TRANSLINE_STATE.IDLE);
             openAssetQuickCard(clickedAsset, svgPath, coords);
@@ -1943,62 +2080,56 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ========================================================
-    // ⚡ WORKFLOW 3: SPESIFIKASI KONDUKTOR SEGMEN EXISTING
+    // ⚡ WORKFLOW 3: SPESIFIKASI KONDUKTOR SEGMEN (Pair A -> B)
     // ========================================================
     document.getElementById('act-edit-conductor-spec').addEventListener('click', function () {
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
-        openConductorSpecSheet(translineEditor.sourceAsset);
+        setEditorState(TRANSLINE_STATE.EDIT_CONDUCTOR_SPEC, `EDIT KONDUKTOR: Titik 1 [${translineEditor.sourceAsset.nama_asset}] dipilih ➔ Sentuh tiang kedua`);
     });
 
-    function openConductorSpecSheet(sourceAsset) {
-        var select = document.getElementById('spec-segment-select');
-        select.innerHTML = '';
+    function openPairConductorSpecSheet(sourceAsset, targetAsset, tl) {
+        document.getElementById('spec-source-name').textContent = `${sourceAsset.nama_asset} (${sourceAsset.kode_asset || ''})`;
+        document.getElementById('spec-target-name').textContent = `${targetAsset.nama_asset} (${targetAsset.kode_asset || ''})`;
+        document.getElementById('spec-transline-id').value = tl.id || tl.transline_id || '';
+        document.getElementById('spec-source-id').value = sourceAsset.id;
+        document.getElementById('spec-target-id').value = targetAsset.id;
 
-        var neighbors = findConnectedNeighbors(sourceAsset);
-        if (neighbors.length > 0) {
-            neighbors.forEach(n => {
-                var opt = document.createElement('option');
-                opt.value = n.id;
-                opt.textContent = `Ke: ${n.nama} (~${n.distance}m, ${n.conductor_type || 'AAAC'} ${n.conductor_size || '150 mm²'})`;
-                opt.dataset.targetId = n.id;
-                opt.dataset.cType = n.conductor_type || 'AAAC';
-                opt.dataset.cSize = n.conductor_size || '150 mm²';
-                select.appendChild(opt);
-            });
+        document.getElementById('spec-conductor-type').value = tl.conductor_type || 'AAAC';
+        document.getElementById('spec-conductor-size').value = tl.conductor_size || '150 mm²';
 
-            document.getElementById('spec-conductor-type').value = neighbors[0].conductor_type || 'AAAC';
-            document.getElementById('spec-conductor-size').value = neighbors[0].conductor_size || '150 mm²';
-        } else {
-            select.innerHTML = '<option value="">Tidak ada tiang terhubung</option>';
-        }
-
-        select.onchange = function () {
-            var selectedOpt = select.options[select.selectedIndex];
-            if (selectedOpt && selectedOpt.dataset.cType) {
-                document.getElementById('spec-conductor-type').value = selectedOpt.dataset.cType;
-                document.getElementById('spec-conductor-size').value = selectedOpt.dataset.cSize;
+        // Highlight segment in yellow on map
+        var tId = tl.id || tl.transline_id;
+        if (window.translineLayers && window.translineLayers.has(tId)) {
+            var poly = window.translineLayers.get(tId);
+            if (window.activeSegmentHighlight) {
+                window.activeSegmentHighlight.setStyle({ color: '#0284c7', weight: 3.5, opacity: 0.9 });
             }
-        };
+            window.activeSegmentHighlight = poly;
+            poly.setStyle({ color: '#f59e0b', weight: 6.0, opacity: 1 });
+        }
 
         var sheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-conductor-spec-sheet'));
         sheet.show();
     }
 
     document.getElementById('btn-submit-conductor-spec').addEventListener('click', function () {
-        var select = document.getElementById('spec-segment-select');
-        var targetId = select.value;
-        if (!targetId || !translineEditor.sourceAsset) {
-            alert('Pilih segmen sambungan terlebih dahulu.');
-            return;
-        }
-
+        var tId = Number(document.getElementById('spec-transline-id').value);
+        var sourceId = Number(document.getElementById('spec-source-id').value);
+        var targetId = Number(document.getElementById('spec-target-id').value);
         var cType = document.getElementById('spec-conductor-type').value;
         var cSize = document.getElementById('spec-conductor-size').value;
+
+        if (!sourceId || !targetId) {
+            alert('Titik sambungan tidak valid.');
+            return;
+        }
 
         fetchJson('<?= site_url('gis/api-update-conductor') ?>', {
             method: 'POST',
             body: JSON.stringify({
-                source_asset_id: translineEditor.sourceAsset.id,
+                transline_id: tId,
+                penyulang_id: currentFeederId,
+                source_asset_id: sourceId,
                 target_asset_id: targetId,
                 conductor_type: cType,
                 conductor_size: cSize,
@@ -2007,6 +2138,7 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(res => {
             bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-conductor-spec-sheet')).hide();
+            setEditorState(TRANSLINE_STATE.IDLE);
             if (currentData) {
                 if (res.translines) currentData.translines = res.translines;
                 if (res.topology) {
@@ -2034,74 +2166,48 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ========================================================
-    // 🗑 WORKFLOW 4: HAPUS JALUR SALAH
+    // 🗑 WORKFLOW 4: HAPUS JALUR SEGMEN (Pair A -> B)
     // ========================================================
     document.getElementById('act-delete-connection').addEventListener('click', function () {
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
-        openDeleteConnectionSheet(translineEditor.sourceAsset);
+        setEditorState(TRANSLINE_STATE.DELETE_CONNECTION, `HAPUS JALUR: Titik 1 [${translineEditor.sourceAsset.nama_asset}] dipilih ➔ Sentuh tiang tujuan`);
     });
 
-    function findConnectedNeighbors(sourceAsset) {
-        var neighbors = [];
-        if (currentData && currentData.features) {
-            currentData.features.forEach(f => {
-                var norm = normalizeAssetFeature(f);
-                var p = norm.properties || {};
-                var g = norm.geometry || {};
-                if (p.id !== sourceAsset.id && g.coordinates && isValidLatLng(g.coordinates[1], g.coordinates[0])) {
-                    var d = calculateHaversineDistance(sourceAsset.latitude, sourceAsset.longitude, g.coordinates[1], g.coordinates[0]);
-                    if (d <= 500) {
-                        neighbors.push({
-                            id: p.id,
-                            nama: p.nama_asset,
-                            kode: p.kode_asset,
-                            distance: d,
-                            conductor_type: 'AAAC',
-                            conductor_size: '150 mm²'
-                        });
-                    }
-                }
-            });
-        }
-        return neighbors.sort((a, b) => a.distance - b.distance);
-    }
+    function openPairDeleteConfirmSheet(sourceAsset, targetAsset, tl) {
+        document.getElementById('del-source-name').textContent = `${sourceAsset.nama_asset} (${sourceAsset.kode_asset || ''})`;
+        document.getElementById('del-target-name').textContent = `${targetAsset.nama_asset} (${targetAsset.kode_asset || ''})`;
+        document.getElementById('del-segment-code').textContent = tl.transline_code || `TL-${currentFeederId}-${tl.id}`;
+        document.getElementById('del-distance-meters').textContent = `${tl.distance_meters || tl.length_meter || 0} m`;
+        document.getElementById('del-conductor-spec').textContent = `${tl.conductor_type || 'AAAC'} ${tl.conductor_size || '150 mm²'}`;
 
-    function openDeleteConnectionSheet(sourceAsset) {
-        document.getElementById('delete-conn-source-name').textContent = sourceAsset.nama_asset;
-        var listContainer = document.getElementById('delete-connection-list');
-        listContainer.innerHTML = '';
+        document.getElementById('del-transline-id').value = tl.id || tl.transline_id || '';
+        document.getElementById('del-source-id').value = sourceAsset.id;
+        document.getElementById('del-target-id').value = targetAsset.id;
 
-        var neighbors = findConnectedNeighbors(sourceAsset);
-
-        if (neighbors.length > 0) {
-            neighbors.forEach(n => {
-                var row = document.createElement('div');
-                row.className = 'd-flex justify-content-between align-items-center p-2 rounded-3 border bg-light';
-                row.innerHTML = `
-                    <div style="min-width: 0; line-height: 1.2;">
-                        <span class="d-block fw-bold text-dark text-truncate" style="font-size: 12px;">${n.nama}</span>
-                        <span class="small text-muted font-monospace">${n.kode || ''} (~${n.distance}m)</span>
-                    </div>
-                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-bold" onclick="executeDisconnectTopology(${sourceAsset.id}, ${n.id}, '${n.nama.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-trash-alt me-1"></i> Putus
-                    </button>
-                `;
-                listContainer.appendChild(row);
-            });
-        } else {
-            listContainer.innerHTML = `<div class="text-center text-muted small py-3">Tidak ditemukan sambungan langsung di sekitar tiang ini.</div>`;
+        // Highlight segment in red on map
+        var tId = tl.id || tl.transline_id;
+        if (window.translineLayers && window.translineLayers.has(tId)) {
+            var poly = window.translineLayers.get(tId);
+            if (window.activeSegmentHighlight) {
+                window.activeSegmentHighlight.setStyle({ color: '#0284c7', weight: 3.5, opacity: 0.9 });
+            }
+            window.activeSegmentHighlight = poly;
+            poly.setStyle({ color: '#ef4444', weight: 6.0, opacity: 1 });
         }
 
         var sheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-delete-connection-sheet'));
         sheet.show();
     }
 
-    window.executeDisconnectTopology = function (sourceId, targetId, targetName) {
-        if (!confirm(`Putus sambungan jalur ke tiang ${targetName}?`)) return;
+    document.getElementById('btn-confirm-delete-pair').addEventListener('click', function () {
+        var tId = Number(document.getElementById('del-transline-id').value);
+        var sourceId = Number(document.getElementById('del-source-id').value);
+        var targetId = Number(document.getElementById('del-target-id').value);
 
         fetchJson('<?= site_url('gis/api-disconnect-topology') ?>', {
             method: 'POST',
             body: JSON.stringify({
+                transline_id: tId,
                 penyulang_id: currentFeederId,
                 source_asset_id: sourceId,
                 target_asset_id: targetId
@@ -2109,8 +2215,21 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(res => {
             bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-delete-connection-sheet')).hide();
+            setEditorState(TRANSLINE_STATE.IDLE);
+
+            // Directly remove the specific segment from Leaflet map without full wipe
+            if (tId && window.translineLayers && window.translineLayers.has(tId)) {
+                var layer = window.translineLayers.get(tId);
+                if (translinePolylineLayer) translinePolylineLayer.removeLayer(layer);
+                window.translineLayers.delete(tId);
+            }
+
             if (currentData) {
-                if (res.translines) currentData.translines = res.translines;
+                if (res.translines) {
+                    currentData.translines = res.translines;
+                } else if (tId && Array.isArray(currentData.translines)) {
+                    currentData.translines = currentData.translines.filter(t => (t.id !== tId && t.transline_id !== tId));
+                }
                 if (res.topology) {
                     currentData.transline = {
                         type: 'Feature',
@@ -2125,54 +2244,48 @@ document.addEventListener("DOMContentLoaded", function () {
                     };
                 }
                 renderFilteredLayers(false);
-                alert(res.message);
-            } else {
-                loadGisNetworkOnDemand(false, function() {
-                    alert(res.message);
-                });
             }
+
+            alert(res.message || 'Jalur berhasil diputus.');
         })
         .catch(err => {
-            alert('Gagal memutus sambungan: ' + err.message);
+            alert('Gagal menghapus jalur: ' + err.message);
         });
-    };
+    });
 
     // ========================================================
-    // ✏ WORKFLOW 5: EDIT BENTUK JALUR SEGMEN (Single Segment ONLY)
+    // ✏ WORKFLOW 5: EDIT BENTUK JALUR SEGMEN (Pair A -> B)
     // ========================================================
     document.getElementById('act-edit-segment-shape').addEventListener('click', function () {
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
-        startEditSingleSegment(translineEditor.sourceAsset);
+        setEditorState(TRANSLINE_STATE.EDIT_SEGMENT_SHAPE, `EDIT BENTUK: Titik 1 [${translineEditor.sourceAsset.nama_asset}] dipilih ➔ Sentuh tiang kedua`);
     });
 
-    function startEditSingleSegment(sourceAsset) {
+    function startEditPairSegmentGeometry(sourceAsset, targetAsset, tl) {
         if (!segmentEditLayer) return;
         segmentEditLayer.clearLayers();
 
-        var neighbors = findConnectedNeighbors(sourceAsset);
-        if (neighbors.length === 0) {
-            alert('Tidak ditemukan tiang tetangga terdekat yang terhubung untuk diedit bentuk segmennya.');
-            return;
+        var rawCoords = tl.coordinates || tl.geometry;
+        if (typeof rawCoords === 'string') {
+            try { rawCoords = JSON.parse(rawCoords); } catch (e) { rawCoords = []; }
         }
 
-        var nearest = neighbors[0];
-        var neighborFeature = currentData.features.find(f => (f.properties && f.properties.id === nearest.id));
-        var nCoords = neighborFeature.geometry.coordinates;
+        var vertices = [];
+        if (Array.isArray(rawCoords) && rawCoords.length >= 2) {
+            vertices = rawCoords.map(pt => [pt[1], pt[0]]);
+        } else {
+            vertices = [
+                [sourceAsset.latitude, sourceAsset.longitude],
+                [targetAsset.latitude, targetAsset.longitude]
+            ];
+        }
 
-        translineEditor.targetAsset = {
-            id: nearest.id,
-            nama: nearest.nama,
-            lat: nCoords[1],
-            lng: nCoords[0]
-        };
+        translineEditor.activeSegment = tl;
+        translineEditor.targetAsset = targetAsset;
+        translineEditor.editedVertices = vertices;
+        translineEditor.undoStack = [JSON.parse(JSON.stringify(vertices))];
 
-        translineEditor.editedVertices = [
-            [sourceAsset.latitude, sourceAsset.longitude],
-            [nCoords[1], nCoords[0]]
-        ];
-        translineEditor.undoStack = [JSON.parse(JSON.stringify(translineEditor.editedVertices))];
-
-        setEditorState(TRANSLINE_STATE.EDIT_SEGMENT_SHAPE, `EDIT BENTUK SEGMEN (${sourceAsset.nama_asset} → ${nearest.nama})`);
+        setEditorState(TRANSLINE_STATE.EDIT_SEGMENT_SHAPE, `EDIT BENTUK SEGMEN (${sourceAsset.nama_asset} ➔ ${targetAsset.nama_asset})`);
         document.getElementById('gis-segment-toolbar').style.display = 'flex';
 
         renderSingleSegmentEditor();

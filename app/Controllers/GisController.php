@@ -382,9 +382,8 @@ class GisController extends BaseController
     public function apiDisconnectTopology(): ResponseInterface
     {
         $payload = $this->getRequestPayload();
-        $translineId = (int)($payload['transline_id'] ?? 0);
         $actor = $this->getActor();
-
+        $translineId = (int)($payload['transline_id'] ?? 0);
         if ($translineId > 0) {
             $result = $this->translineService->deleteTransline($translineId, $actor);
             return $this->response->setJSON($result);

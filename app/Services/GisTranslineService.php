@@ -52,6 +52,60 @@ class GisTranslineService
     }
 
     /**
+     * Resolve a bidirectional transline segment between two assets (A -> B or B -> A)
+     *
+     * @param int $penyulangId
+     * @param int $assetAId
+     * @param int $assetBId
+     * @return array<string, mixed>|null
+     */
+    public function resolveTranslinePair(int $penyulangId, int $assetAId, int $assetBId): ?array
+    {
+        if ($assetAId <= 0 || $assetBId <= 0 || $assetAId === $assetBId) {
+            return null;
+        }
+
+        $builder = $this->db->table('gis_translines')
+            ->where('is_active', 1)
+            ->groupStart()
+                ->groupStart()
+                    ->where('source_asset_id', $assetAId)->where('target_asset_id', $assetBId)
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('source_asset_id', $assetBId)->where('target_asset_id', $assetAId)
+                ->groupEnd()
+            ->groupEnd();
+
+        if ($penyulangId > 0) {
+            $builder->where('penyulang_id', $penyulangId);
+        }
+
+        return $builder->get()->getRowArray();
+    }
+
+    /**
+     * Delete an active transline segment identified by pair (A -> B or B -> A)
+     *
+     * @param int $penyulangId
+     * @param int $assetAId
+     * @param int $assetBId
+     * @param array|null $actor
+     * @return array<string, mixed>
+     */
+    public function deleteTranslineByPair(int $penyulangId, int $assetAId, int $assetBId, ?array $actor = null): array
+    {
+        $row = $this->resolveTranslinePair($penyulangId, $assetAId, $assetBId);
+        if (!$row) {
+            return [
+                'status'  => 'error',
+                'message' => 'Tidak ditemukan sambungan jalur aktif antara kedua aset tersebut.'
+            ];
+        }
+
+        return $this->deleteTransline((int)$row['id'], $actor);
+    }
+
+    /**
      * Create or update an individual transline segment (Atomic CRUD)
      *
      * @param array $data

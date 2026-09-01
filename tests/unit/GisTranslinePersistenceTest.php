@@ -282,4 +282,108 @@ class GisTranslinePersistenceTest extends CIUnitTestCase
         $translines = $this->service->getFeederTranslines(4);
         $this->assertCount(0, $translines);
     }
+
+    /**
+     * TEST 8: RESOLVE TRANSLINE PAIR (FORWARD AND REVERSE)
+     */
+    public function testResolveTranslinePairForwardAndReverse()
+    {
+        $saveRes = $this->service->saveTransline(['penyulang_id' => 4, 'source_asset_id' => 101, 'target_asset_id' => 102]);
+        $this->assertEquals('success', $saveRes['status']);
+        $tId = $saveRes['transline_id'];
+
+        // Forward: A -> B
+        $pairForward = $this->service->resolveTranslinePair(4, 101, 102);
+        $this->assertNotNull($pairForward);
+        $this->assertEquals($tId, (int)$pairForward['id']);
+
+        // Reverse: B -> A
+        $pairReverse = $this->service->resolveTranslinePair(4, 102, 101);
+        $this->assertNotNull($pairReverse);
+        $this->assertEquals($tId, (int)$pairReverse['id']);
+
+        // Non-existent pair: A -> C
+        $pairNotFound = $this->service->resolveTranslinePair(4, 101, 103);
+        $this->assertNull($pairNotFound);
+    }
+
+    /**
+     * TEST 9: DELETE TRANSLINE BY PAIR PRESERVES OTHER BRANCHES (STAR TOPOLOGY: A-B, A-C, A-D)
+     */
+    public function testDeleteTranslineByPairPreservesOtherBranches()
+    {
+        // Branch 1: A (101) -> B (102)
+        $this->service->saveTransline(['penyulang_id' => 4, 'source_asset_id' => 101, 'target_asset_id' => 102]);
+        // Branch 2: A (101) -> C (103)
+        $this->service->saveTransline(['penyulang_id' => 4, 'source_asset_id' => 101, 'target_asset_id' => 103]);
+        // Branch 3: A (101) -> D (104)
+        $this->service->saveTransline(['penyulang_id' => 4, 'source_asset_id' => 101, 'target_asset_id' => 104]);
+
+        $initial = $this->service->getFeederTranslines(4);
+        $this->assertCount(3, $initial);
+
+        // Delete Branch 2 (A -> C) using reverse pair lookup (C -> A)
+        $delRes = $this->service->deleteTranslineByPair(4, 103, 101);
+        $this->assertEquals('success', $delRes['status']);
+
+        // Remaining active segments must be exactly 2: A-B and A-D
+        $remaining = $this->service->getFeederTranslines(4);
+        $this->assertCount(2, $remaining);
+
+        $pairs = array_map(fn($r) => "{$r['source_asset_id']}->{$r['target_asset_id']}", $remaining);
+        $this->assertContains('101->102', $pairs);
+        $this->assertContains('101->104', $pairs);
+        $this->assertNotContains('101->103', $pairs);
+    }
+
+    /**
+     * TEST 10: DELETE TRANSLINE BY PAIR IN LINEAR CHAIN (A-B, B-C, C-D)
+     */
+    public function testDeleteTranslineByPairLinearChainPreservesNeighbors()
+    {
+        $this->service->saveTransline(['penyulang_id' => 4, 'source_asset_id' => 101, 'target_asset_id' => 102]);
+        $this->service->saveTransline(['penyulang_id' => 4, 'source_asset_id' => 102, 'target_asset_id' => 103]);
+        $this->service->saveTransline(['penyulang_id' => 4, 'source_asset_id' => 103, 'target_asset_id' => 104]);
+
+        // Delete middle segment B -> C
+        $delRes = $this->service->deleteTranslineByPair(4, 102, 103);
+        $this->assertEquals('success', $delRes['status']);
+
+        $remaining = $this->service->getFeederTranslines(4);
+        $this->assertCount(2, $remaining);
+
+        $pairs = array_map(fn($r) => "{$r['source_asset_id']}->{$r['target_asset_id']}", $remaining);
+        $this->assertContains('101->102', $pairs);
+        $this->assertContains('103->104', $pairs);
+        $this->assertNotContains('102->103', $pairs);
+    }
+
+    /**
+     * TEST 11: UPDATE CONDUCTOR SPEC BY PAIR PRESERVES OTHER SEGMENTS
+     */
+    public function testUpdateConductorSpecByPairPreservesOtherSegments()
+    {
+        $this->service->saveTransline(['penyulang_id' => 4, 'source_asset_id' => 101, 'target_asset_id' => 102, 'conductor_type' => 'AAAC', 'conductor_size' => '150 mm²']);
+        $this->service->saveTransline(['penyulang_id' => 4, 'source_asset_id' => 101, 'target_asset_id' => 103, 'conductor_type' => 'AAAC', 'conductor_size' => '150 mm²']);
+
+        // Update A -> C to MV-TIC 150 mm²
+        $updateRes = $this->service->saveTransline([
+            'penyulang_id'       => 4,
+            'source_asset_id'    => 101,
+            'target_asset_id'    => 103,
+            'conductor_type'     => 'MV-TIC',
+            'conductor_size'     => '150 mm²',
+            'conductor_material' => 'ALUMINUM_ALLOY'
+        ]);
+        $this->assertEquals('success', $updateRes['status']);
+
+        $all = $this->service->getFeederTranslines(4);
+        $this->assertCount(2, $all);
+
+        $t1 = array_values(array_filter($all, fn($r) => $r['target_asset_id'] == 102))[0];
+        $t2 = array_values(array_filter($all, fn($r) => $r['target_asset_id'] == 103))[0];
+
+        $this->assertEquals('AAAC', $t1['conductor_type']);
+        $this->assertEquals('MV-TIC', $t2['conductor_type']);
+    }
 }

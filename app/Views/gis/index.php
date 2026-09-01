@@ -1727,9 +1727,22 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // ========================================================
-    // 1️⃣ COMPACT ASSET QUICK CARD LOGIC
+    // 1️⃣ COMPACT ASSET QUICK CARD LOGIC & SVG RESOLVER
     // ========================================================
+    function resolveAssetSvgPath(props, visual) {
+        if (visual && visual.svg_path) {
+            return `<?= base_url() ?>${visual.svg_path}`;
+        }
+        if (props && props._svgPath) {
+            return props._svgPath;
+        }
+        return '<?= base_url('/assets/icons/network/generic-network-asset.svg') ?>';
+    }
+
     function openAssetQuickCard(props, svgPath, coords) {
+        if (!svgPath) {
+            svgPath = resolveAssetSvgPath(props, null);
+        }
         activeAssetProps = Object.assign({}, props);
         activeAssetProps._svgPath = svgPath;
         activeAssetProps._coords = coords;
@@ -1899,18 +1912,21 @@ document.addEventListener("DOMContentLoaded", function () {
             setEditorState(TRANSLINE_STATE.IDLE);
 
             // Reconcile and redraw GIS layer immediately
-            if (res.topology && currentData) {
-                currentData.transline = {
-                    type: 'Feature',
-                    geometry: {
-                        type: res.topology.type || 'MultiLineString',
-                        coordinates: res.topology.coordinates || []
-                    },
-                    properties: {
-                        edges: res.topology.edges || [],
-                        nodes: res.topology.nodes || []
-                    }
-                };
+            if (currentData) {
+                if (res.translines) currentData.translines = res.translines;
+                if (res.topology) {
+                    currentData.transline = {
+                        type: 'Feature',
+                        geometry: {
+                            type: res.topology.type || 'MultiLineString',
+                            coordinates: res.topology.coordinates || []
+                        },
+                        properties: {
+                            edges: res.topology.edges || [],
+                            nodes: res.topology.nodes || []
+                        }
+                    };
+                }
                 renderFilteredLayers(false);
                 alert(res.message);
             } else {
@@ -1991,18 +2007,21 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(res => {
             bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-conductor-spec-sheet')).hide();
-            if (res.topology && currentData) {
-                currentData.transline = {
-                    type: 'Feature',
-                    geometry: {
-                        type: res.topology.type || 'MultiLineString',
-                        coordinates: res.topology.coordinates || []
-                    },
-                    properties: {
-                        edges: res.topology.edges || [],
-                        nodes: res.topology.nodes || []
-                    }
-                };
+            if (currentData) {
+                if (res.translines) currentData.translines = res.translines;
+                if (res.topology) {
+                    currentData.transline = {
+                        type: 'Feature',
+                        geometry: {
+                            type: res.topology.type || 'MultiLineString',
+                            coordinates: res.topology.coordinates || []
+                        },
+                        properties: {
+                            edges: res.topology.edges || [],
+                            nodes: res.topology.nodes || []
+                        }
+                    };
+                }
                 renderFilteredLayers(false);
                 alert(res.message);
             } else {
@@ -2090,18 +2109,21 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(res => {
             bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-delete-connection-sheet')).hide();
-            if (res.topology && currentData) {
-                currentData.transline = {
-                    type: 'Feature',
-                    geometry: {
-                        type: res.topology.type || 'MultiLineString',
-                        coordinates: res.topology.coordinates || []
-                    },
-                    properties: {
-                        edges: res.topology.edges || [],
-                        nodes: res.topology.nodes || []
-                    }
-                };
+            if (currentData) {
+                if (res.translines) currentData.translines = res.translines;
+                if (res.topology) {
+                    currentData.transline = {
+                        type: 'Feature',
+                        geometry: {
+                            type: res.topology.type || 'MultiLineString',
+                            coordinates: res.topology.coordinates || []
+                        },
+                        properties: {
+                            edges: res.topology.edges || [],
+                            nodes: res.topology.nodes || []
+                        }
+                    };
+                }
                 renderFilteredLayers(false);
                 alert(res.message);
             } else {
@@ -2330,18 +2352,21 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(res => {
             setEditorState(TRANSLINE_STATE.IDLE);
-            if (res.topology && currentData) {
-                currentData.transline = {
-                    type: 'Feature',
-                    geometry: {
-                        type: res.topology.type || 'MultiLineString',
-                        coordinates: res.topology.coordinates || []
-                    },
-                    properties: {
-                        edges: res.topology.edges || [],
-                        nodes: res.topology.nodes || []
-                    }
-                };
+            if (currentData) {
+                if (res.translines) currentData.translines = res.translines;
+                if (res.topology) {
+                    currentData.transline = {
+                        type: 'Feature',
+                        geometry: {
+                            type: res.topology.type || 'MultiLineString',
+                            coordinates: res.topology.coordinates || []
+                        },
+                        properties: {
+                            edges: res.topology.edges || [],
+                            nodes: res.topology.nodes || []
+                        }
+                    };
+                }
                 renderFilteredLayers(false);
                 alert(res.message);
             } else {
@@ -2424,6 +2449,130 @@ document.addEventListener("DOMContentLoaded", function () {
         return marker;
     }
 
+    // ========================================================
+    // ⚡ CENTRALIZED TRANSLINE MULTI-SEGMENT RENDERER
+    // ========================================================
+    function renderAllTranslines() {
+        if (!translinePolylineLayer) return;
+        translinePolylineLayer.clearLayers();
+        window.translineLayers = new Map();
+
+        if (!currentData) return;
+
+        // 1. Gather all active segment representations
+        var translinesList = [];
+        if (Array.isArray(currentData.translines) && currentData.translines.length > 0) {
+            translinesList = currentData.translines;
+        } else if (currentData.transline && currentData.transline.properties && Array.isArray(currentData.transline.properties.edges) && currentData.transline.properties.edges.length > 0) {
+            translinesList = currentData.transline.properties.edges;
+        } else if (currentData.transline && currentData.transline.geometry && currentData.transline.geometry.coordinates) {
+            var geom = currentData.transline.geometry;
+            if (geom.type === 'MultiLineString' && Array.isArray(geom.coordinates)) {
+                translinesList = geom.coordinates.map((seg, idx) => ({
+                    id: idx + 1,
+                    transline_id: idx + 1,
+                    coordinates: seg,
+                    conductor_label: 'AAAC 150 mm²',
+                    length_meter: 0,
+                    is_active: 1
+                }));
+            } else if (geom.type === 'LineString' && Array.isArray(geom.coordinates)) {
+                translinesList = [{
+                    id: 1,
+                    transline_id: 1,
+                    coordinates: geom.coordinates,
+                    conductor_label: 'AAAC 150 mm²',
+                    length_meter: 0,
+                    is_active: 1
+                }];
+            }
+        }
+
+        var activeTranslines = translinesList.filter(t => (t.is_active === undefined || Number(t.is_active) === 1));
+
+        console.log(
+            '[GIS TRANSLINE]',
+            'feeder=', currentFeederId,
+            'active=', activeTranslines.length,
+            'ids=', activeTranslines.map(t => t.id || t.transline_id || t.edge_id)
+        );
+
+        activeTranslines.forEach(function (tl, idx) {
+            var tId = tl.id || tl.transline_id || tl.edge_id || (idx + 1);
+            var rawCoords = tl.coordinates || tl.geometry;
+            if (typeof rawCoords === 'string') {
+                try { rawCoords = JSON.parse(rawCoords); } catch (err) { rawCoords = []; }
+            }
+
+            if (!Array.isArray(rawCoords) || rawCoords.length < 2) return;
+
+            var validPts = rawCoords.filter(pt => Array.isArray(pt) && pt.length >= 2 && isValidLatLng(pt[1], pt[0]));
+            if (validPts.length < 2) return;
+
+            var latLngs = validPts.map(pt => [pt[1], pt[0]]);
+            var conductorLabel = tl.conductor_label || `${tl.conductor_type || 'AAAC'} ${tl.conductor_size || '150 mm²'}`;
+            var lengthMeter = tl.length_meter || tl.distance_meters || 0;
+
+            var visiblePoly = L.polyline(latLngs, {
+                color: '#0284c7',
+                weight: 3.5,
+                opacity: 0.9,
+                lineJoin: 'round',
+                interactive: false
+            });
+
+            visiblePoly.feature = {
+                properties: {
+                    transline_id: tId,
+                    transline_code: tl.transline_code || `TL-${currentFeederId}-${tId}`,
+                    source_asset_id: tl.source_asset_id || tl.from_asset_id,
+                    target_asset_id: tl.target_asset_id || tl.to_asset_id,
+                }
+            };
+
+            visiblePoly.bindTooltip(`⚡ <strong>${conductorLabel}</strong> (${lengthMeter}m)`, {
+                sticky: true,
+                className: 'font-monospace small'
+            });
+            translinePolylineLayer.addLayer(visiblePoly);
+
+            // Invisible hit-layer for mobile & touch accuracy (24px target)
+            var hitPoly = L.polyline(latLngs, {
+                color: '#0284c7',
+                weight: 24,
+                opacity: 0.001,
+                lineJoin: 'round',
+                interactive: true
+            });
+
+            hitPoly.on('click', function (evt) {
+                L.DomEvent.stopPropagation(evt);
+                if (window.activeSegmentHighlight) {
+                    window.activeSegmentHighlight.setStyle({ color: '#0284c7', weight: 3.5, opacity: 0.9 });
+                }
+                window.activeSegmentHighlight = visiblePoly;
+                visiblePoly.setStyle({ color: '#f59e0b', weight: 5.5, opacity: 1 });
+
+                var fromId = tl.source_asset_id || tl.from_asset_id;
+                var fromAsset = (currentData.features || []).find(f => (f.properties && f.properties.id === fromId));
+                if (fromAsset) {
+                    var norm = normalizeAssetFeature(fromAsset);
+                    var svg = resolveAssetSvgPath(norm.properties, norm.visual);
+                    openAssetQuickCard(norm.properties, svg, norm.geometry.coordinates);
+                }
+            });
+
+            translinePolylineLayer.addLayer(hitPoly);
+            window.translineLayers.set(tId, visiblePoly);
+        });
+
+        console.log(
+            '[GIS TRANSLINE RENDER]',
+            'rendered=', window.translineLayers.size,
+            'ids=', Array.from(window.translineLayers.keys())
+        );
+    }
+
     // Render Markers & Network Lines with Conductor Popup Tooltips
     function renderFilteredLayers(autoFitBounds) {
         if (typeof autoFitBounds === 'undefined') autoFitBounds = false;
@@ -2434,112 +2583,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (findingLayer && typeof findingLayer.clearLayers === 'function') {
             findingLayer.clearLayers();
         }
-        if (translinePolylineLayer) translinePolylineLayer.clearLayers();
 
         if (!currentData) return;
 
-        // Render Feeder LineString / MultiLineString Segments with high clarity & mobile hit target
-        var hasTopology = false;
-        if (currentData.transline && currentData.transline.geometry) {
-            var geom = currentData.transline.geometry;
-            var edges = (currentData.transline.properties && currentData.transline.properties.edges) || [];
-
-            if (edges.length > 0) {
-                hasTopology = true;
-                edges.forEach(function (e) {
-                    var c = e.coordinates;
-                    if (c && c.length === 2 && isValidLatLng(c[0][1], c[0][0]) && isValidLatLng(c[1][1], c[1][0])) {
-                        var latLngs = [[c[0][1], c[0][0]], [c[1][1], c[1][0]]];
-                        var visiblePoly = L.polyline(latLngs, {
-                            color: '#0284c7',
-                            weight: 3.5,
-                            opacity: 0.9,
-                            lineJoin: 'round',
-                            interactive: false
-                        });
-                        visiblePoly.bindTooltip(`⚡ <strong>${e.conductor_label || 'AAAC 150 mm²'}</strong> (${e.length_meter}m)`, {
-                            sticky: true,
-                            className: 'font-monospace small'
-                        });
-                        translinePolylineLayer.addLayer(visiblePoly);
-
-                        // Invisible hit-layer for mobile Android WebView touch accuracy (24px touch target)
-                        var hitPoly = L.polyline(latLngs, {
-                            color: '#0284c7',
-                            weight: 24,
-                            opacity: 0.001,
-                            lineJoin: 'round',
-                            interactive: true
-                        });
-
-                        hitPoly.on('click', function (evt) {
-                            L.DomEvent.stopPropagation(evt);
-                            if (window.activeSegmentHighlight) {
-                                window.activeSegmentHighlight.setStyle({ color: '#0284c7', weight: 3.5, opacity: 0.9 });
-                            }
-                            window.activeSegmentHighlight = visiblePoly;
-                            visiblePoly.setStyle({ color: '#f59e0b', weight: 5.5, opacity: 1 });
-
-                            var fromAsset = (currentData.features || []).find(f => (f.properties && f.properties.id === e.from_asset_id));
-                            if (fromAsset) {
-                                var norm = normalizeAssetFeature(fromAsset);
-                                openAssetQuickCard(norm.properties, getVisualSvgPath(norm.properties), norm.geometry.coordinates);
-                            }
-                        });
-
-                        translinePolylineLayer.addLayer(hitPoly);
-                    }
-                });
-            } else if (geom.type === 'MultiLineString' && geom.coordinates && geom.coordinates.length > 0) {
-                geom.coordinates.forEach(function (segment) {
-                    var validSeg = segment.filter(pt => isValidLatLng(pt[1], pt[0]));
-                    if (validSeg.length > 1) {
-                        hasTopology = true;
-                        var latLngs = validSeg.map(pt => [pt[1], pt[0]]);
-                        var visiblePoly = L.polyline(latLngs, {
-                            color: '#0284c7',
-                            weight: 3.5,
-                            opacity: 0.9,
-                            lineJoin: 'round',
-                            interactive: false
-                        });
-                        translinePolylineLayer.addLayer(visiblePoly);
-
-                        var hitPoly = L.polyline(latLngs, {
-                            color: '#0284c7',
-                            weight: 24,
-                            opacity: 0.001,
-                            lineJoin: 'round',
-                            interactive: true
-                        });
-                        translinePolylineLayer.addLayer(hitPoly);
-                    }
-                });
-            } else if (geom.type === 'LineString' && geom.coordinates && geom.coordinates.length > 0) {
-                var validSeg = geom.coordinates.filter(pt => isValidLatLng(pt[1], pt[0]));
-                if (validSeg.length > 1) {
-                    hasTopology = true;
-                    var latLngs = validSeg.map(pt => [pt[1], pt[0]]);
-                    var visiblePoly = L.polyline(latLngs, {
-                        color: '#0284c7',
-                        weight: 3.5,
-                        opacity: 0.9,
-                        lineJoin: 'round',
-                        interactive: false
-                    });
-                    translinePolylineLayer.addLayer(visiblePoly);
-
-                    var hitPoly = L.polyline(latLngs, {
-                        color: '#0284c7',
-                        weight: 24,
-                        opacity: 0.001,
-                        lineJoin: 'round',
-                        interactive: true
-                    });
-                    translinePolylineLayer.addLayer(hitPoly);
-                }
-            }
-        }
+        // Render all independent transline segments
+        renderAllTranslines();
 
         // Render Markers strictly separated by entity_type and asset_scope
         var rawFeatures = currentData.features || [];

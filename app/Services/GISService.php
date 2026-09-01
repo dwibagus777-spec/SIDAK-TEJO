@@ -380,6 +380,7 @@ class GISService
                     'version_status' => $segmentData['version_status'] ?? 'ACTIVE'
                 ]
             ],
+            'translines' => $segmentData['translines'] ?? $segmentData['edges'] ?? [],
             'bbox' => $validGisCount > 0 ? [
                 'min_lat' => $minLat,
                 'max_lat' => $maxLat,

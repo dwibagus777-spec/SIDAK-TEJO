@@ -469,6 +469,7 @@ class AssetRepository
                             'coordinates' => $multiLineCoords,
                             'nodes'       => $allNodes,
                             'edges'       => $edges,
+                            'translines'  => $translineRows,
                         ];
                     }
                 }

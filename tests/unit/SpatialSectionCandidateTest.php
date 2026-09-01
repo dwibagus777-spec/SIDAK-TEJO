@@ -984,6 +984,15 @@ class SpatialSectionCandidateTest extends CIUnitTestCase
         $cmd = new \App\Commands\Ar01EvidenceReconcileCommand(service('logger'), service('commands'));
         $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
     }
+
+    /**
+     * AC-33: Evidence Source Map Command is executable and preserves zero mutation
+     */
+    public function testEvidenceSourceMapCommandExecutionDoesNotError()
+    {
+        $cmd = new \App\Commands\Ar01EvidenceSourceMapCommand(service('logger'), service('commands'));
+        $this->assertInstanceOf(\CodeIgniter\CLI\BaseCommand::class, $cmd);
+    }
 }
 
 

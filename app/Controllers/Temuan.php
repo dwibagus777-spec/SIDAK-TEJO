@@ -281,6 +281,18 @@ class Temuan extends BaseController
             'tanggal_temuan'   => $this->request->getPost('tanggal_temuan'),
         ];
 
+        log_message('critical',
+            '[FORENSIC_CREATE_TEMUAN] ' .
+            json_encode([
+                'nomor'               => $data['nomor_temuan'] ?? null,
+                'tanggal_temuan_POST' => $this->request->getPost('tanggal_temuan'),
+                'tanggal_temuan_DATA' => $data['tanggal_temuan'] ?? null,
+                'created_at_runtime'  => date('Y-m-d H:i:s'),
+                'user_id'             => session()->get('user_id'),
+                'user_name'           => session()->get('nama_pegawai') ?: session()->get('user_name'),
+            ])
+        );
+
         $files = $this->request->getFileMultiple('foto');
         $res = $this->temuanService->createTemuan($data, $files);
 

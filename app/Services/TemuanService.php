@@ -209,6 +209,16 @@ class TemuanService
         $data['foto'] = json_encode($uploadResult['names']);
         $data['foto_path'] = 'foto/';
 
+        log_message('critical',
+            '[FORENSIC_SERVICE_INSERT] ' .
+            json_encode([
+                'nomor_temuan'   => $nomorTemuan,
+                'tanggal_temuan' => $data['tanggal_temuan'] ?? null,
+                'status'         => $data['status'] ?? null,
+                'created_by'     => $data['created_by'] ?? null,
+            ])
+        );
+
         $insertId = $this->temuanRepository->insert($data);
 
         if ($insertId) {

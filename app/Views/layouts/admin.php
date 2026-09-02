@@ -1914,12 +1914,19 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             try {
                 var arr = JSON.parse(saved);
                 arr.forEach(function(field) {
+                    // CR-06: NEVER restore stale tanggal_temuan from localStorage draft!
+                    if (field.name === 'tanggal_temuan') return;
                     var $el = $('[name="' + field.name + '"]');
                     if ($el.length && field.value) $el.val(field.value).trigger('change');
                 });
-                console.log('[SIDAK] Draft form dipulihkan.');
+                console.log('[SIDAK] Draft form dipulihkan (tanggal_temuan dikecualikan).');
             } catch(e) { localStorage.removeItem('sidak_form_draft'); }
         })();
+
+        // CR-06: Clear form draft from localStorage on form submit
+        $(document).on('submit', '#form-create-temuan, form[action*="temuan"]', function() {
+            localStorage.removeItem('sidak_form_draft');
+        });
 
         // STEP 6: Global Smart Search Autocomplete
         (function initGlobalSearch() {

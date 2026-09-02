@@ -16,7 +16,7 @@
                 <h3 class="card-title"><i class="fas fa-plus mr-1"></i> Form Temuan Baru</h3>
             </div>
             <!-- enctype="multipart/form-data" is required for file uploads -->
-            <form id="form-create-temuan" action="<?= site_url('temuan/store') ?>" method="post" enctype="multipart/form-data">
+            <form id="form-create-temuan" action="<?= site_url('temuan/store') ?>" method="post" enctype="multipart/form-data" autocomplete="off">
                 <?= csrf_field() ?>
                 <div class="card-body">
                     
@@ -212,10 +212,25 @@
                         <!-- Tanggal Temuan -->
                         <div class="col-md-6 form-group mb-3">
                             <label for="tanggal_temuan">Tanggal Temuan <span class="text-danger">*</span></label>
-                            <input type="date" name="tanggal_temuan" id="tanggal_temuan" class="form-control <?= ($validation && $validation->hasError('tanggal_temuan')) ? 'is-invalid' : '' ?>" value="<?= old('tanggal_temuan', date('Y-m-d')) ?>" required>
-                            <?php if ($validation && $validation->hasError('tanggal_temuan')): ?>
-                                <div class="invalid-feedback"><?= $validation->getError('tanggal_temuan') ?></div>
-                            <?php endif; ?>
+                            <div class="input-group">
+                                <input type="date"
+                                       name="tanggal_temuan"
+                                       id="tanggal_temuan"
+                                       class="form-control <?= ($validation && $validation->hasError('tanggal_temuan')) ? 'is-invalid' : '' ?>"
+                                       value="<?= esc($defaultTanggal ?? old('tanggal_temuan', date('Y-m-d'))) ?>"
+                                       max="<?= esc($serverToday ?? date('Y-m-d')) ?>"
+                                       autocomplete="off"
+                                       required>
+                                <button type="button" class="btn btn-outline-primary shadow-xs" id="btn-set-today" title="Set tanggal ke hari ini">
+                                    <i class="fas fa-calendar-day me-1"></i> Hari Ini
+                                </button>
+                                <?php if ($validation && $validation->hasError('tanggal_temuan')): ?>
+                                    <div class="invalid-feedback"><?= $validation->getError('tanggal_temuan') ?></div>
+                                <?php endif; ?>
+                            </div>
+                            <small class="form-text text-muted mt-1 d-block">
+                                <i class="fas fa-info-circle me-1 text-info"></i> Tanggal kejadian/temuan di lapangan, bukan tanggal input sistem.
+                            </small>
                         </div>
                     </div>
 
@@ -301,6 +316,37 @@
         }
         var $ = jQuery;
         $(function() {
+            // --- CR-06: TEMUAN DATE STALE-FORM HARDENING ---
+            const isValidationReturn = <?= (!empty($isValidationReturn)) ? 'true' : 'false' ?>;
+            const serverToday = "<?= esc($serverToday ?? date('Y-m-d')) ?>";
+
+            // Track intentional user edits so tab switching / browser events don't wipe historical input
+            $('#tanggal_temuan').on('input change', function() {
+                this.dataset.userEdited = 'true';
+            });
+
+            // If page is restored from bfcache or tab-restore, ensure fresh form has today's date
+            // but NEVER overwrite an intentional user edit or a validation-return state
+            window.addEventListener('pageshow', function(event) {
+                const tglInput = document.getElementById('tanggal_temuan');
+                if (!tglInput) return;
+
+                // Strict invariant: NEVER overwrite intentional user input, even if event.persisted is true
+                if (!isValidationReturn && !tglInput.dataset.userEdited) {
+                    tglInput.value = serverToday;
+                }
+            });
+
+            // Quick Action: [ 📅 Hari Ini ] button
+            $('#btn-set-today').on('click', function() {
+                const tglInput = document.getElementById('tanggal_temuan');
+                if (tglInput) {
+                    tglInput.value = serverToday;
+                    tglInput.dataset.userEdited = 'true';
+                    $(tglInput).removeClass('is-invalid');
+                }
+            });
+
             // --- 1. CASCADING DROPDOWNS WITH REQUEST TOKEN GUARD ---
             const oldPenyulangId = "<?= old('penyulang_id') ?>";
             const oldSectionId = "<?= old('section_id') ?>";
@@ -614,6 +660,8 @@
 
             const btnSubmit = $('#btn-submit');
             btnSubmit.html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan data...');
+            // Clear draft storage so next fresh visit gets today's date
+            try { localStorage.removeItem('sidak_form_draft'); } catch(e) {}
             // Allow native form submission to proceed with multipart payload intact
             return true;
         });

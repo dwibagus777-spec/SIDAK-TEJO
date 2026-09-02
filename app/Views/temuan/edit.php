@@ -233,10 +233,13 @@
                         <div class="col-md-6 form-group mb-3">
                             <label for="tanggal_temuan">Tanggal Temuan <span class="text-danger">*</span></label>
                             <input type="date" name="tanggal_temuan" id="tanggal_temuan" class="form-control <?= ($validation && $validation->hasError('tanggal_temuan')) ? 'is-invalid' : '' ?>"
-                                   value="<?= old('tanggal_temuan', $temuan['tanggal_temuan']) ?>" required>
+                                   value="<?= old('tanggal_temuan', $temuan['tanggal_temuan']) ?>" max="<?= date('Y-m-d') ?>" required>
                             <?php if ($validation && $validation->hasError('tanggal_temuan')): ?>
                                 <div class="invalid-feedback"><?= $validation->getError('tanggal_temuan') ?></div>
                             <?php endif; ?>
+                            <small class="form-text text-muted mt-1 d-block">
+                                <i class="fas fa-info-circle me-1 text-info"></i> Tanggal kejadian/temuan di lapangan, bukan tanggal input sistem.
+                            </small>
                         </div>
                     </div>
 

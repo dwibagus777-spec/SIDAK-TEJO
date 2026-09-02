@@ -71,7 +71,7 @@ class Temuan extends BaseController
             'material'         => 'permit_empty',
             'detail_temuan'    => 'required',
             'alamat'           => 'required',
-            'tanggal_temuan'   => 'required',
+            'tanggal_temuan'   => 'required|valid_date[Y-m-d]',
         ];
     }
 
@@ -227,12 +227,23 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
 
-        $ulps = ($role === 'admin_ulp' && $userUlpId !== null) 
-            ? [$this->ulpRepository->find($userUlpId)] 
+        $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
+            ? [$this->ulpRepository->find($userUlpId)]
             : $this->ulpRepository->getActiveUlps();
 
+        $serverToday = date('Y-m-d');
+
+        // Fresh GET strictly defaults to serverToday.
+        // Old input is ONLY preserved if this GET is a redirect from a failed submission (has error flashdata).
+        $hasErrorFlash = $session->getFlashdata('error') !== null || $session->getFlashdata('errors') !== null;
+        $isValidationReturn = $session->has('_ci_old_input') && $hasErrorFlash;
+        $defaultTanggal     = $isValidationReturn ? (old('tanggal_temuan') ?: $serverToday) : $serverToday;
+
         return view('temuan/create', [
-            'ulps' => $ulps
+            'ulps'               => $ulps,
+            'defaultTanggal'     => $defaultTanggal,
+            'isValidationReturn' => $isValidationReturn,
+            'serverToday'        => $serverToday,
         ]);
     }
 
@@ -242,14 +253,34 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
 
+        $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
+            ? [$this->ulpRepository->find($userUlpId)]
+            : $this->ulpRepository->getActiveUlps();
+
+        $serverToday = date('Y-m-d');
+
         if (!$this->validate($this->getTemuanFormRules())) {
-            $ulps = ($role === 'admin_ulp' && $userUlpId !== null) 
-                ? [$this->ulpRepository->find($userUlpId)] 
-                : $this->ulpRepository->getActiveUlps();
+            $defaultTanggal = $this->request->getPost('tanggal_temuan') ?: (old('tanggal_temuan') ?: $serverToday);
 
             return view('temuan/create', [
-                'ulps'       => $ulps,
-                'validation' => $this->validator
+                'ulps'               => $ulps,
+                'validation'         => $this->validator,
+                'defaultTanggal'     => $defaultTanggal,
+                'isValidationReturn' => true,
+                'serverToday'        => $serverToday,
+            ]);
+        }
+
+        // CR-06: Future date validation guard (strict reject future dates, preserve submitted historical dates)
+        $tanggalTemuan = (string)$this->request->getPost('tanggal_temuan');
+        if ($tanggalTemuan > $serverToday) {
+            $this->validator->setError('tanggal_temuan', 'Tanggal temuan tidak boleh melebihi tanggal hari ini (' . date('d/m/Y') . ').');
+            return view('temuan/create', [
+                'ulps'               => $ulps,
+                'validation'         => $this->validator,
+                'defaultTanggal'     => $tanggalTemuan,
+                'isValidationReturn' => true,
+                'serverToday'        => $serverToday,
             ]);
         }
 
@@ -542,6 +573,27 @@ class Temuan extends BaseController
             $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
             $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
 
+            return view('temuan/edit', [
+                'temuan'     => $temuan,
+                'ulps'       => $ulps,
+                'penyulangs' => $penyulangs,
+                'sections'   => $sections,
+                'validation' => $this->validator
+            ]);
+        }
+
+        // CR-06: Future date validation guard on update
+        $tanggalTemuan = (string)$this->request->getPost('tanggal_temuan');
+        $serverToday   = date('Y-m-d');
+        if ($tanggalTemuan > $serverToday) {
+            $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
+                ? [$this->ulpRepository->find($userUlpId)]
+                : $this->ulpRepository->getActiveUlps();
+
+            $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
+            $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
+
+            $this->validator->setError('tanggal_temuan', 'Tanggal temuan tidak boleh melebihi tanggal hari ini (' . date('d/m/Y') . ').');
             return view('temuan/edit', [
                 'temuan'     => $temuan,
                 'ulps'       => $ulps,

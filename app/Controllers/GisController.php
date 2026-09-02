@@ -573,6 +573,7 @@ class GisController extends BaseController
             $candidates = $completion['candidates'] ?? [];
             $autoEligible = [];
             $reviewRequired = [];
+            $blocked = [];
 
             foreach ($candidates as &$cand) {
                 if (!empty($cand['is_existing'])) {
@@ -583,6 +584,8 @@ class GisController extends BaseController
                 $cand['gate_reason'] = $gate['reason'];
                 if ($gate['valid'] && ($cand['classification'] ?? '') === 'AUTO_COMPLETE') {
                     $autoEligible[] = $cand;
+                } elseif (($cand['classification'] ?? '') === 'BLOCKED' || !$gate['valid']) {
+                    $blocked[] = $cand;
                 } else {
                     $reviewRequired[] = $cand;
                 }
@@ -596,8 +599,10 @@ class GisController extends BaseController
                 'active_translines'       => $graph['summary']['total_authoritative_edges'],
                 'degree_one_anchors'      => $graph['summary']['terminal_nodes_count'],
                 'isolated_assets'         => $graph['summary']['isolated_nodes_count'],
+                'eligible_count'          => count($autoEligible),
                 'auto_eligible_count'     => count($autoEligible),
                 'review_required_count'   => count($reviewRequired),
+                'blocked_count'           => count($blocked),
                 'pilot_recommended_count' => min(\App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE, count($autoEligible)),
             ]);
 
@@ -605,6 +610,7 @@ class GisController extends BaseController
                 'status'              => 'success',
                 'success'             => true,
                 'run_id'              => $runId,
+                'batch_number'        => 1,
                 'scope'               => [
                     'ulp_id'         => $feederUlpId,
                     'penyulang_id'   => $penyulangId,
@@ -641,100 +647,44 @@ class GisController extends BaseController
      * POST /gis/api-transline-ai-complete
      *
      * STRICT GOVERNANCE:
-     * - Only authorized endpoint allowed to invoke TranslineAutoCompletionService::execute().
+     * - Only authorized endpoint allowed to invoke TranslineAutoCompletionService.
+     * - Progressive batch dynamic execution or explicit proposal execution.
      * - Server re-resolves all endpoints and gates; never trusts browser geometry or attributes.
      */
     public function apiTranslineAiComplete(): ResponseInterface
     {
         try {
             $json = $this->request->getJSON(true) ?? [];
-            $proposalIds = $json['proposal_ids'] ?? $this->request->getPost('proposal_ids') ?? [];
-            $autoPilot = !empty($json['auto_pilot']) || !empty($this->request->getPost('auto_pilot'));
             $penyulangId = (int)($json['penyulang_id'] ?? $this->request->getPost('penyulang_id') ?? 0);
+            $proposalIds = $json['proposal_ids'] ?? $this->request->getPost('proposal_ids') ?? [];
+            $batchNumber = (int)($json['batch_number'] ?? $this->request->getPost('batch_number') ?? 1);
+            $autoPilot = !empty($json['auto_pilot']) || !empty($this->request->getPost('auto_pilot'));
 
-            $autoService = new \App\Services\TranslineAutoCompletionService();
-
-            // Idempotency guard for automated pilot: Avoid committing subsequent batches if pilot quota is already fulfilled
-            if ($autoPilot && empty($proposalIds) && empty($json['force'])) {
-                $db = \Config\Database::connect();
-                $existingAiCount = $db->table('gis_translines')
-                    ->where('penyulang_id', $penyulangId)
-                    ->where('is_active', 1)
-                    ->groupStart()
-                        ->like('created_by', 'TL02_')
-                        ->orLike('created_by', 'RUN:')
-                    ->groupEnd()
-                    ->countAllResults();
-
-                if ($existingAiCount >= \App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE) {
-                    return $this->response->setStatusCode(200)->setJSON([
-                        'status'         => 'success',
-                        'action'         => 'IDEMPOTENT_ALREADY_SATISFIED',
-                        'message'        => 'Pilot batch 10 translines AI telah aktif pada penyulang ini. Idempotensi terjaga (0 duplikat).',
-                        'created_count'  => 0,
-                        'total_ai_count' => $existingAiCount,
-                    ]);
-                }
-            }
-
-            if (empty($proposalIds) && $autoPilot && $penyulangId > 0) {
-                $completionService = new \App\Services\TranslineCompletionService();
-                $preview = $completionService->generateNetworkCompletionCandidates($penyulangId);
-                $eligibleCandidates = [];
-                foreach ($preview['candidates'] as $c) {
-                    if (!empty($c['is_existing'])) continue;
-                    $gate = $autoService->validateCandidateGates($c);
-                    if ($gate['valid'] && ($c['classification'] ?? '') === 'AUTO_COMPLETE') {
-                        $eligibleCandidates[] = $c;
-                        if (count($eligibleCandidates) >= \App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE) {
-                            break;
-                        }
-                    }
-                }
-
-                if (empty($eligibleCandidates)) {
-                    return $this->response->setStatusCode(422)->setJSON([
-                        'status'  => 'error',
-                        'reason'  => 'NO_ELIGIBLE_CANDIDATES',
-                        'message' => 'Tidak ditemukan kandidat yang memenuhi syarat AUTO_COMPLETE untuk feeder ini.',
-                    ]);
-                }
-
-                $session = session();
-                $actor = (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'TL02_OPERATOR') : 'TL02_OPERATOR');
-
-                $stageResult = $completionService->commitCandidatesToProposals($eligibleCandidates, [
-                    'actor'   => $actor,
-                    'dry_run' => false,
-                ]);
-
-                if ($stageResult['status'] !== 'success') {
-                    return $this->response->setStatusCode(500)->setJSON([
-                        'status'  => 'error',
-                        'reason'  => 'PROPOSAL_STAGING_FAILED',
-                        'message' => 'Gagal melakukan staging proposal kandidat: ' . ($stageResult['reason'] ?? 'UNKNOWN'),
-                        'details' => $stageResult,
-                    ]);
-                }
-
-                $proposalIds = array_column($stageResult['inserted_records'], 'id');
-            }
-
-            if (!is_array($proposalIds) || empty($proposalIds)) {
+            if ($penyulangId <= 0) {
                 return $this->response->setStatusCode(422)->setJSON([
                     'status'  => 'error',
-                    'reason'  => 'EMPTY_PROPOSAL_SELECTION',
-                    'message' => 'Parameter proposal_ids wajib berupa array integer tidak kosong atau sertakan auto_pilot = true.',
+                    'reason'  => 'INVALID_PENYULANG_ID',
+                    'message' => 'Parameter penyulang_id wajib diisi.',
                 ]);
             }
 
             $session = session();
-            $actor = (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'TL02_OPERATOR') : 'TL02_OPERATOR');
+            $actor = (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'ENGINEER_TRANSLINE_AI') : 'ENGINEER_TRANSLINE_AI');
 
-            $result = $autoService->execute($proposalIds, [
-                'actor_name' => $actor,
-                'max_batch'  => \App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE,
-            ]);
+            $autoService = new \App\Services\TranslineAutoCompletionService();
+
+            if (!empty($proposalIds) && is_array($proposalIds)) {
+                $result = $autoService->execute($proposalIds, [
+                    'actor_name' => $actor,
+                    'max_batch'  => \App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE,
+                ]);
+            } else {
+                $result = $autoService->executeBatch($penyulangId, [
+                    'actor_name'   => $actor,
+                    'batch_number' => $batchNumber,
+                    'max_batch'    => \App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE,
+                ]);
+            }
 
             $httpCode = ($result['status'] === 'success') ? 200 : 422;
             return $this->response->setStatusCode($httpCode)->setJSON($result);

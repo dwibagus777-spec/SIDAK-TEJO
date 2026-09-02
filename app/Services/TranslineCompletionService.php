@@ -1227,10 +1227,53 @@ class TranslineCompletionService
     }
 
     /**
-     * TL-02: Deterministic Network Completion Candidate Generator
+     * Calculate initial bearing (azimuth in degrees [0, 360)) from Point 1 to Point 2
+     */
+    public function calculateBearing(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $phi1 = deg2rad($lat1);
+        $phi2 = deg2rad($lat2);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $y = sin($dLon) * cos($phi2);
+        $x = cos($phi1) * sin($phi2) - sin($phi1) * cos($phi2) * cos($dLon);
+        $brng = atan2($y, $x);
+        return fmod(rad2deg($brng) + 360.0, 360.0);
+    }
+
+    /**
+     * Calculate absolute angular difference between two bearings in degrees [0, 180]
+     */
+    public function calculateBearingDelta(float $b1, float $b2): float
+    {
+        $diff = abs($b1 - $b2);
+        if ($diff > 180.0) {
+            $diff = 360.0 - $diff;
+        }
+        return $diff;
+    }
+
+    /**
+     * Parse numeric sequence suffix from an asset code (e.g. AST-...-JTM-031 => 31)
+     */
+    public function parseAssetSequenceNumber(?string $code): ?int
+    {
+        if ($code === null) return null;
+        if (preg_match('/(\d+)$/', trim($code), $m)) {
+            return (int)$m[1];
+        }
+        return null;
+    }
+
+    /**
+     * TL-02 Phase 2.1: Topology-Aware Network Completion Candidate Generator
      *
-     * Combines in-memory network graph analysis with spatial continuity,
-     * directional consistency, and empirical distance bounds.
+     * Evaluates candidates across 5 weighted evidence vectors (100 pts total):
+     * 1. Existing Transline Anchor (35 pts)
+     * 2. Asset Code Sequence Adjacency (25 pts)
+     * 3. Bearing Continuity & Road Alignment (20 pts)
+     * 4. Graph Degree Progression & Prediction (10 pts)
+     * 5. Geodesic Distance Plausibility (10 pts)
      *
      * @param int $penyulangId Feeder primary key
      * @param array $options Configuration and filtering options
@@ -1253,6 +1296,23 @@ class TranslineCompletionService
         $adj = $graph['adjacency'];
         $anchors = array_keys($graph['terminal_assets']);
         $anchorMap = array_fill_keys($anchors, true);
+
+        // Pre-compute incoming bearings for terminal anchor nodes
+        $incomingBearings = [];
+        foreach ($anchors as $aId) {
+            $neighbors = $adj[$aId] ?? [];
+            if (count($neighbors) === 1) {
+                $pId = $neighbors[0];
+                if (isset($nodes[$pId]) && isset($nodes[$aId])) {
+                    $incomingBearings[$aId] = $this->calculateBearing(
+                        $nodes[$pId]['latitude'],
+                        $nodes[$pId]['longitude'],
+                        $nodes[$aId]['latitude'],
+                        $nodes[$aId]['longitude']
+                    );
+                }
+            }
+        }
 
         $existingKeys = [];
         foreach ($graph['edges'] as $edge) {
@@ -1322,39 +1382,111 @@ class TranslineCompletionService
                 $degT = $degreeSim[$tId] ?? 0;
 
                 $evidence = ['SAME_PENYULANG', 'SPATIAL_CONTINUITY', 'VALID_COORDINATES'];
-                $confidence = 0.95;
-                $classification = 'AUTO_COMPLETE';
-                $status = self::STATUS_AUTO_MATCH;
 
+                // 1. Existing Transline Anchor (35 pts)
+                $anchorPts = 0;
                 if (isset($anchorMap[$sId]) || isset($anchorMap[$tId])) {
+                    $anchorPts = 35;
                     $evidence[] = 'AUTHORITATIVE_ANCHOR_CONTINUATION';
-                    $confidence += 0.03;
+                    $evidence[] = 'ANCHOR_CONTINUATION_EVIDENCE';
                 }
 
-                if ($dist <= 55.0) {
+                // 2. Asset Code Sequence Adjacency (25 pts)
+                $seqPts = 0;
+                $seqA = $this->parseAssetSequenceNumber($source['kode_asset']);
+                $seqB = $this->parseAssetSequenceNumber($target['kode_asset']);
+                if ($seqA !== null && $seqB !== null) {
+                    $dSeq = abs($seqA - $seqB);
+                    if ($dSeq === 1) {
+                        $seqPts = 25;
+                        $evidence[] = 'CONSECUTIVE_CODE_SEQUENCE';
+                    } elseif ($dSeq === 2) {
+                        $seqPts = 18;
+                        $evidence[] = 'ADJACENT_CODE_SEQUENCE_DELTA2';
+                    } elseif ($dSeq <= 5) {
+                        $seqPts = 10;
+                        $evidence[] = 'PROXIMAL_CODE_SEQUENCE';
+                    } elseif ($dSeq <= 10) {
+                        $seqPts = 5;
+                    }
+                } else {
+                    $seqPts = 10;
+                }
+
+                // 3. Bearing Continuity (20 pts)
+                $bearingPts = 10; // Neutral baseline if neither is anchor
+                $candBearing = $this->calculateBearing($source['latitude'], $source['longitude'], $target['latitude'], $target['longitude']);
+
+                if (isset($incomingBearings[$sId])) {
+                    $dTheta = $this->calculateBearingDelta($incomingBearings[$sId], $candBearing);
+                    if ($dTheta <= 15.0) {
+                        $bearingPts = 20;
+                        $evidence[] = 'COLLINEAR_BEARING_CONTINUITY';
+                    } elseif ($dTheta <= 30.0) {
+                        $bearingPts = 10;
+                        $evidence[] = 'GENTLE_CURVE_BEARING';
+                    } else {
+                        $bearingPts = 0;
+                        $evidence[] = 'SHARP_BEARING_CHANGE_WARNING';
+                    }
+                } elseif (isset($incomingBearings[$tId])) {
+                    $revBearing = $this->calculateBearing($target['latitude'], $target['longitude'], $source['latitude'], $source['longitude']);
+                    $dTheta = $this->calculateBearingDelta($incomingBearings[$tId], $revBearing);
+                    if ($dTheta <= 15.0) {
+                        $bearingPts = 20;
+                        $evidence[] = 'COLLINEAR_BEARING_CONTINUITY';
+                    } elseif ($dTheta <= 30.0) {
+                        $bearingPts = 10;
+                        $evidence[] = 'GENTLE_CURVE_BEARING';
+                    } else {
+                        $bearingPts = 0;
+                        $evidence[] = 'SHARP_BEARING_CHANGE_WARNING';
+                    }
+                }
+
+                // 4. Graph Degree Prediction (10 pts)
+                $degPts = 0;
+                $degreeCapacityExceeded = ($degS + 1 > 4 || $degT + 1 > 4);
+                if ($degreeCapacityExceeded) {
+                    $degPts = 0;
+                    $evidence[] = 'DEGREE_CAPACITY_EXCEEDED';
+                } else {
+                    $ptsS = ($degS === 1 ? 5 : ($degS === 0 ? 4 : ($degS === 2 ? 2 : 1)));
+                    $ptsT = ($degT === 1 ? 5 : ($degT === 0 ? 4 : ($degT === 2 ? 2 : 1)));
+                    $degPts = min(10, $ptsS + $ptsT);
+                }
+
+                // 5. Geodesic Distance Plausibility (10 pts)
+                $distPts = 0;
+                if ($dist >= 20.0 && $dist <= 55.0) {
+                    $distPts = 10;
                     $evidence[] = 'NOMINAL_JTM_SPAN';
-                } elseif ($dist <= 85.0) {
+                } elseif ($dist >= 5.0 && $dist < 20.0) {
+                    $distPts = 7;
+                    $evidence[] = 'COMPACT_URBAN_SPAN';
+                } elseif ($dist >= 2.0 && $dist < 5.0) {
+                    $distPts = 5;
+                    $evidence[] = 'MICRO_SPAN';
+                } elseif ($dist > 55.0 && $dist <= 85.0) {
+                    $distPts = 4;
                     $evidence[] = 'EXTENDED_ROAD_SPAN';
                 } else {
+                    $distPts = 0;
                     $evidence[] = 'LONG_SPAN_WARNING';
-                    $confidence -= 0.15;
-                    $classification = 'REVIEW_REQUIRED';
-                    $status = self::STATUS_NEEDS_REVIEW;
                 }
 
-                if ($degS >= 2 && $degT >= 2) {
-                    $evidence[] = 'BRANCHING_OR_CROSSING_AMBIGUITY';
-                    $confidence -= 0.20;
-                    $classification = 'REVIEW_REQUIRED';
-                    $status = self::STATUS_NEEDS_REVIEW;
-                }
+                $totalScore = $anchorPts + $seqPts + $bearingPts + $degPts + $distPts;
+                $confidence = min(0.99, max(0.50, round($totalScore / 100.0, 3)));
 
-                if ($degS < 2 && $degT < 2 && $dist <= 75.0) {
-                    $degreeSim[$sId] = ($degreeSim[$sId] ?? 0) + 1;
-                    $degreeSim[$tId] = ($degreeSim[$tId] ?? 0) + 1;
+                if ($degreeCapacityExceeded || $dist > 100.0 || $dist < 2.0) {
+                    $classification = 'BLOCKED';
+                    $status = self::STATUS_INVALID;
+                } elseif ($confidence >= 0.85 && $dist <= 85.0 && $degS <= 2 && $degT <= 2) {
                     $classification = 'AUTO_COMPLETE';
                     $status = self::STATUS_AUTO_MATCH;
-                } elseif ($classification === 'AUTO_COMPLETE' && ($degS >= 2 || $degT >= 2)) {
+                    $degreeSim[$sId] = ($degreeSim[$sId] ?? 0) + 1;
+                    $degreeSim[$tId] = ($degreeSim[$tId] ?? 0) + 1;
+                } else {
                     $classification = 'REVIEW_REQUIRED';
                     $status = self::STATUS_NEEDS_REVIEW;
                 }

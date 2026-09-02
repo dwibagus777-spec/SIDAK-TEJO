@@ -31,11 +31,16 @@ class TranslineAutoCompletionService
 
     protected BaseConnection $db;
     protected GisTranslineService $translineService;
+    protected ?TranslineCompletionService $completionService = null;
 
-    public function __construct(?BaseConnection $db = null, ?GisTranslineService $translineService = null)
-    {
+    public function __construct(
+        ?BaseConnection $db = null,
+        ?GisTranslineService $translineService = null,
+        ?TranslineCompletionService $completionService = null
+    ) {
         $this->db = $db ?? Database::connect();
         $this->translineService = $translineService ?? new GisTranslineService($this->db);
+        $this->completionService = $completionService ?? new TranslineCompletionService($this->db, $this->translineService);
     }
 
     /**
@@ -46,19 +51,22 @@ class TranslineAutoCompletionService
      */
     public function validateCandidateGates(array $proposal): array
     {
-        $sourceId = (int)($proposal['source_asset_id'] ?? 0);
-        $targetId = (int)($proposal['target_asset_id'] ?? 0);
+        $rawSourceId = (string)($proposal['source_asset_id'] ?? '');
+        $rawTargetId = (string)($proposal['target_asset_id'] ?? '');
+
+        // Gate 16: Temuan firewall (ID collision protection)
+        // If IDs are passed as strings or contain prefix, verify purely integer asset IDs
+        if (str_starts_with($rawSourceId, 'TEMUAN') || str_starts_with($rawTargetId, 'TEMUAN')) {
+            return ['valid' => false, 'reason' => 'TEMUAN_ENDPOINT_FORBIDDEN', 'details' => []];
+        }
+
+        $sourceId = (int)$rawSourceId;
+        $targetId = (int)$rawTargetId;
         $penyulangId = (int)($proposal['penyulang_id'] ?? 0);
 
         // Gate 1 & 2 & 3: Valid distinct asset IDs
         if ($sourceId <= 0 || $targetId <= 0 || $sourceId === $targetId) {
             return ['valid' => false, 'reason' => 'IDENTICAL_OR_INVALID_ENDPOINTS', 'details' => compact('sourceId', 'targetId')];
-        }
-
-        // Gate 16: Temuan firewall (ID collision protection)
-        // If IDs are passed as strings or contain prefix, verify purely integer asset IDs
-        if (str_starts_with((string)$sourceId, 'TEMUAN') || str_starts_with((string)$targetId, 'TEMUAN')) {
-            return ['valid' => false, 'reason' => 'TEMUAN_ENDPOINT_FORBIDDEN', 'details' => []];
         }
 
         if (!$this->db->tableExists('assets')) {
@@ -150,6 +158,274 @@ class TranslineAutoCompletionService
                     'target' => ['lat' => $latB, 'lng' => $lonB],
                 ]
             ],
+        ];
+    }
+
+    /**
+     * Generate Candidates dynamically from the current network graph
+     *
+     * @param int $penyulangId
+     * @param array $options
+     * @return array
+     */
+    public function generateCandidates(int $penyulangId, array $options = []): array
+    {
+        if ($this->completionService === null) {
+            $this->completionService = new TranslineCompletionService($this->db, $this->translineService);
+        }
+        return $this->completionService->generateNetworkCompletionCandidates($penyulangId, $options);
+    }
+
+    /**
+     * TL-02 Phase 2: Dynamic Progressive AI Network Completion Batch Executor
+     *
+     * Invariants & Guarantees:
+     * - Dynamically recalculates network graph degrees and anchors before every batch.
+     * - Enforces 24 safety gates on each candidate.
+     * - Selects up to MAX_BATCH_SIZE (10) highest confidence AUTO_COMPLETE candidates.
+     * - Intra-batch degree progression check (degree <= 4).
+     * - Atomic transactional commit: all succeed or batch rolls back.
+     * - Provenance tagged with ENGINEER_TRANSLINE_AI|RUN:{run_id}|PROP:{idx}.
+     * - Dynamically recalculates remaining AUTO_COMPLETE, REVIEW_REQUIRED, and BLOCKED counts.
+     * - Stops cleanly when AUTO_COMPLETE reaches 0 (graph stabilized / exhausted).
+     * - Zero mutation to assets, temuan, temuan_materials, sections, penyulang.
+     *
+     * @param int $penyulangId Feeder primary key
+     * @param array $options Configuration and actor options
+     * @return array<string, mixed>
+     */
+    public function executeBatch(int $penyulangId, array $options = []): array
+    {
+        if ($penyulangId <= 0) {
+            return [
+                'status'  => 'error',
+                'action'  => 'ABORT',
+                'reason'  => 'INVALID_PENYULANG_ID',
+                'message' => 'Penyulang ID tidak valid.',
+            ];
+        }
+
+        $actorName = $options['actor_name'] ?? 'ENGINEER_TRANSLINE_AI';
+        $batchNumber = (int)($options['batch_number'] ?? 1);
+        $runId = $options['run_id'] ?? ('TL02-PROG-' . date('YmdHis') . '-B' . $batchNumber . '-' . bin2hex(random_bytes(3)));
+        $maxBatch = min((int)($options['max_batch'] ?? self::MAX_BATCH_SIZE), self::MAX_BATCH_SIZE);
+
+        // 1. Dynamic Graph Recalculation & Candidate Generation
+        $candidateData = $this->generateCandidates($penyulangId, $options);
+        $rawCandidates = $candidateData['candidates'] ?? [];
+
+        // Track degrees dynamically within batch to respect degree capacity
+        $graphService = new TranslineNetworkGraphService($this->db);
+        $graph = $graphService->buildGraphForFeeder($penyulangId);
+        $simDegrees = $graph['degrees'] ?? [];
+
+        // 2. Filter for non-existing AUTO_COMPLETE candidates passing all 24 safety gates
+        $eligibleCandidates = [];
+        $batchNatKeys = [];
+        foreach ($rawCandidates as $cand) {
+            if (!empty($cand['is_existing'])) {
+                continue;
+            }
+            if (($cand['classification'] ?? '') !== 'AUTO_COMPLETE') {
+                continue;
+            }
+
+            $sId = (int)$cand['source_asset_id'];
+            $tId = (int)$cand['target_asset_id'];
+            $natKey = $cand['natural_key'];
+
+            if (isset($batchNatKeys[$natKey])) {
+                continue;
+            }
+
+            // Intra-batch degree cap check: maximum node degree is 4
+            $curDegS = $simDegrees[$sId] ?? 0;
+            $curDegT = $simDegrees[$tId] ?? 0;
+            if ($curDegS + 1 > 4 || $curDegT + 1 > 4) {
+                continue;
+            }
+
+            $gateCheck = $this->validateCandidateGates($cand);
+            if ($gateCheck['valid']) {
+                $eligibleCandidates[] = $cand;
+                $batchNatKeys[$natKey] = true;
+                $simDegrees[$sId] = $curDegS + 1;
+                $simDegrees[$tId] = $curDegT + 1;
+
+                if (count($eligibleCandidates) >= $maxBatch) {
+                    break;
+                }
+            }
+        }
+
+        $reviewCount = $candidateData['summary']['review_required_count'] ?? 0;
+        $blockedCount = $candidateData['summary']['blocked_count'] ?? 0;
+
+        // 3. Stop condition: 0 eligible candidates
+        if (empty($eligibleCandidates)) {
+            $currentTranslines = $this->db->table('gis_translines')
+                ->where('penyulang_id', $penyulangId)
+                ->where('is_active', 1)
+                ->countAllResults();
+
+            return [
+                'status'                        => 'success',
+                'action'                        => 'NO_MORE_AUTO_COMPLETE_CANDIDATES',
+                'batch_number'                  => $batchNumber,
+                'run_id'                        => $runId,
+                'created_count'                 => 0,
+                'created_translines'            => [],
+                'remaining_auto_complete_count' => 0,
+                'remaining_review_count'        => $reviewCount,
+                'remaining_blocked_count'       => $blockedCount,
+                'total_authoritative_translines'=> $currentTranslines,
+                'stop'                          => true,
+                'stop_reason'                   => 'GRAPH_STABILIZED_OR_EXHAUSTED',
+                'message'                       => 'Tidak ada kandidat AUTO_COMPLETE yang tersisa. Topologi jaringan stabil.',
+            ];
+        }
+
+        // 4. Atomic Execution
+        if ($this->db->tableExists('gis_transline_proposals')) {
+            if ($this->completionService === null) {
+                $this->completionService = new TranslineCompletionService($this->db, $this->translineService);
+            }
+
+            $stageResult = $this->completionService->commitCandidatesToProposals($eligibleCandidates, [
+                'actor'   => $actorName,
+                'dry_run' => false,
+            ]);
+
+            if ($stageResult['status'] !== 'success') {
+                return [
+                    'status'  => 'error',
+                    'action'  => 'ABORT',
+                    'reason'  => 'PROPOSAL_STAGING_FAILED',
+                    'message' => 'Gagal melakukan staging proposal: ' . ($stageResult['reason'] ?? 'UNKNOWN'),
+                    'details' => $stageResult,
+                ];
+            }
+
+            $proposalIds = [];
+            foreach ($stageResult['inserted_records'] as $rec) {
+                $proposalIds[] = (int)$rec['id'];
+            }
+            foreach ($stageResult['skipped_existing'] as $skipped) {
+                $existingId = (int)$skipped['existing_id'];
+                if (($skipped['status'] ?? '') === 'PENDING_REVIEW') {
+                    $proposalIds[] = $existingId;
+                } else {
+                    $this->db->table('gis_transline_proposals')
+                        ->where('id', $existingId)
+                        ->update(['status' => 'PENDING_REVIEW', 'confirmed_transline_id' => null, 'updated_at' => date('Y-m-d H:i:s')]);
+                    $proposalIds[] = $existingId;
+                }
+            }
+
+            $proposalIds = array_values(array_unique($proposalIds));
+
+            $execResult = $this->execute($proposalIds, [
+                'actor_name' => $actorName,
+                'run_id'     => $runId,
+                'max_batch'  => $maxBatch,
+            ]);
+
+            if ($execResult['status'] !== 'success') {
+                return $execResult;
+            }
+
+            $createdTranslines = $execResult['created_translines'] ?? [];
+            $createdCount = count($createdTranslines);
+        } else {
+            // Direct insertion into gis_translines if proposals table missing
+            $this->db->transBegin();
+            try {
+                $createdTranslines = [];
+                $idx = 1;
+                foreach ($eligibleCandidates as $cand) {
+                    $sId = (int)$cand['source_asset_id'];
+                    $tId = (int)$cand['target_asset_id'];
+                    $dist = (float)$cand['distance_meters'];
+                    $sCoord = $cand['source_coordinates'];
+                    $tCoord = $cand['target_coordinates'];
+
+                    $geometry = json_encode([
+                        [(float)$sCoord['lng'], (float)$sCoord['lat']],
+                        [(float)$tCoord['lng'], (float)$tCoord['lat']],
+                    ]);
+
+                    $payload = [
+                        'transline_code'     => "TL-{$penyulangId}-{$sId}-{$tId}",
+                        'penyulang_id'       => $penyulangId,
+                        'source_asset_id'    => $sId,
+                        'target_asset_id'    => $tId,
+                        'geometry'           => $geometry,
+                        'geometry_type'      => 'LineString',
+                        'conductor_type'     => $cand['conductor_type'] ?? 'AAAC',
+                        'conductor_size'     => $cand['conductor_size'] ?? '150 mm²',
+                        'conductor_material' => 'ALUMINUM_ALLOY',
+                        'installation_type'  => 'OVERHEAD',
+                        'circuit_config'     => '3_PHASE',
+                        'distance_meters'    => $dist,
+                        'status'             => 'ACTIVE',
+                        'is_active'          => 1,
+                        'created_by'         => "{$actorName}|RUN:{$runId}|PROP:{$idx}",
+                        'created_at'         => date('Y-m-d H:i:s'),
+                    ];
+
+                    $this->db->table('gis_translines')->insert($payload);
+                    $newTlId = (int)$this->db->insertID();
+
+                    $createdTranslines[] = [
+                        'id'              => $newTlId,
+                        'transline_id'    => $newTlId,
+                        'transline_code'  => $payload['transline_code'],
+                        'natural_key'     => $cand['natural_key'],
+                        'source_asset_id' => $sId,
+                        'target_asset_id' => $tId,
+                        'distance_meters' => $dist,
+                        'created_by'      => $payload['created_by'],
+                    ];
+                    $idx++;
+                }
+
+                $this->db->transCommit();
+                $createdCount = count($createdTranslines);
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+                return [
+                    'status'  => 'error',
+                    'action'  => 'ROLLBACK',
+                    'reason'  => 'TRANSACTION_EXCEPTION',
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        // 5. Dynamic post-batch graph recalculation
+        $postRunCandidateData = $this->generateCandidates($penyulangId, $options);
+        $remainingAutoComplete = $postRunCandidateData['summary']['new_auto_complete'] ?? 0;
+        $remainingReview = $postRunCandidateData['summary']['review_required_count'] ?? 0;
+        $remainingBlocked = $postRunCandidateData['summary']['blocked_count'] ?? 0;
+
+        $totalAuthoritative = $this->db->table('gis_translines')
+            ->where('penyulang_id', $penyulangId)
+            ->where('is_active', 1)
+            ->countAllResults();
+
+        return [
+            'status'                        => 'success',
+            'action'                        => 'BATCH_COMMITTED',
+            'batch_number'                  => $batchNumber,
+            'run_id'                        => $runId,
+            'created_count'                 => $createdCount,
+            'created_translines'            => $createdTranslines,
+            'remaining_auto_complete_count' => $remainingAutoComplete,
+            'remaining_review_count'        => $remainingReview,
+            'remaining_blocked_count'       => $remainingBlocked,
+            'total_authoritative_translines'=> $totalAuthoritative,
+            'stop'                          => ($remainingAutoComplete === 0),
+            'stop_reason'                   => ($remainingAutoComplete === 0) ? 'GRAPH_STABILIZED_OR_EXHAUSTED' : null,
         ];
     }
 

@@ -119,20 +119,25 @@ class AuditTemuanCommand extends BaseCommand
         CLI::write(str_repeat("-", 66));
 
         if ($db->tableExists('audit_logs')) {
-            $logs = $db->table('audit_logs')
-                ->where('action', 'CREATE_TEMUAN')
-                ->like('description', $row['nomor_temuan'])
-                ->orderBy('id', 'DESC')
-                ->get()
-                ->getResultArray();
+            try {
+                $logsQuery = $db->table('audit_logs')
+                    ->where('aktivitas', 'CREATE_TEMUAN')
+                    ->like('detail', $row['nomor_temuan'])
+                    ->orderBy('id', 'DESC')
+                    ->get();
 
-            if (!empty($logs)) {
-                foreach ($logs as $l) {
-                    CLI::write("  [LOG #{$l['id']}] {$l['created_at']} | User: {$l['username']} | IP: {$l['ip_address']}");
-                    CLI::write("    Desc: {$l['description']}");
+                $logs = ($logsQuery && is_object($logsQuery)) ? $logsQuery->getResultArray() : [];
+
+                if (!empty($logs)) {
+                    foreach ($logs as $l) {
+                        CLI::write("  [LOG #{$l['id']}] {$l['created_at']} | User: {$l['username']} | IP: {$l['ip_address']}");
+                        CLI::write("    Detail: {$l['detail']}");
+                    }
+                } else {
+                    CLI::write("  (Tidak ditemukan catatan CREATE_TEMUAN di audit_logs)");
                 }
-            } else {
-                CLI::write("  (Tidak ditemukan catatan CREATE_TEMUAN di audit_logs)");
+            } catch (\Throwable $e) {
+                CLI::write("  [Audit Log Warning] " . $e->getMessage(), "yellow");
             }
         }
 
@@ -141,30 +146,35 @@ class AuditTemuanCommand extends BaseCommand
         CLI::write("4. NEIGHBORING RECORDS (SURROUNDING TEMUAN):", "cyan");
         CLI::write(str_repeat("-", 66));
 
-        $id = (int)$row['id'];
-        $neighbors = $db->table('temuan')
-            ->select('id, nomor_temuan, tanggal_temuan, created_at, status, prioritas')
-            ->where('id >=', max(1, $id - 2))
-            ->where('id <=', $id + 2)
-            ->orderBy('id', 'ASC')
-            ->get()
-            ->getResultArray();
+        try {
+            $id = (int)$row['id'];
+            $neighborsQuery = $db->table('temuan')
+                ->select('id, nomor_temuan, tanggal_temuan, created_at, status, prioritas')
+                ->where('id >=', max(1, $id - 2))
+                ->where('id <=', $id + 2)
+                ->orderBy('id', 'ASC')
+                ->get();
 
-        foreach ($neighbors as $n) {
-            $isTarget = ($n['id'] == $id);
-            $prefix = $isTarget ? "👉 [TARGET] " : "   ";
-            $color  = $isTarget ? "light_cyan" : "white";
-            CLI::write(
-                sprintf("%sID: #%-4d | %-16s | Tgl Temuan: %-10s | Input: %-19s | %s",
-                    $prefix,
-                    $n['id'],
-                    $n['nomor_temuan'],
-                    $n['tanggal_temuan'] ?? '-',
-                    $n['created_at'] ?? '-',
-                    $n['status']
-                ),
-                $color
-            );
+            $neighbors = ($neighborsQuery && is_object($neighborsQuery)) ? $neighborsQuery->getResultArray() : [];
+
+            foreach ($neighbors as $n) {
+                $isTarget = ($n['id'] == $id);
+                $prefix = $isTarget ? "👉 [TARGET] " : "   ";
+                $color  = $isTarget ? "light_cyan" : "white";
+                CLI::write(
+                    sprintf("%sID: #%-4d | %-16s | Tgl Temuan: %-10s | Input: %-19s | %s",
+                        $prefix,
+                        $n['id'],
+                        $n['nomor_temuan'],
+                        $n['tanggal_temuan'] ?? '-',
+                        $n['created_at'] ?? '-',
+                        $n['status']
+                    ),
+                    $color
+                );
+            }
+        } catch (\Throwable $e) {
+            CLI::write("  [Neighboring Records Warning] " . $e->getMessage(), "yellow");
         }
 
         CLI::write(str_repeat("=", 66), "yellow");

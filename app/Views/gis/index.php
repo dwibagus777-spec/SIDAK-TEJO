@@ -325,16 +325,33 @@
         align-items: center;
         gap: 6px;
     }
+    .quick-card-actions button {
+        min-height: 40px;
+        touch-action: manipulation;
+        pointer-events: auto;
+    }
 
-    /* Voice Mic Collision Elimination */
+    /* Voice Mic Collision Elimination (Higher z-index guard & comprehensive suppression) */
+    #global-voice-container {
+        z-index: 1000 !important;
+    }
     body.gis-quickcard-active #btn-global-mic,
-    body.gis-drawer-active #btn-global-mic {
+    body.gis-drawer-active #btn-global-mic,
+    body.gis-sheet-open #btn-global-mic,
+    body.modal-open #btn-global-mic,
+    body.offcanvas-open #btn-global-mic,
+    body.gis-quickcard-active #global-voice-container,
+    body.gis-drawer-active #global-voice-container,
+    body.gis-sheet-open #global-voice-container,
+    body.modal-open #global-voice-container,
+    body.offcanvas-open #global-voice-container {
         opacity: 0 !important;
         pointer-events: none !important;
         visibility: hidden !important;
+        display: none !important;
     }
 
-    /* Offcanvas Sheets */
+    /* Offcanvas Sheets - Touch-safe, elevated z-index, pan-y */
     .offcanvas-compact-sheet {
         height: auto !important;
         max-height: 75vh !important;
@@ -342,6 +359,7 @@
         border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
         box-shadow: 0 -10px 35px rgba(15, 23, 42, 0.25) !important;
         z-index: 1055 !important;
+        touch-action: pan-y !important;
     }
 
     @media (min-width: 769px) {
@@ -367,7 +385,8 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px 14px;
+        padding: 14px 16px;
+        min-height: 52px;
         border-radius: 12px;
         border: 1px solid #f1f5f9;
         background: #ffffff;
@@ -375,8 +394,22 @@
         font-size: 13px;
         color: #1e293b;
         cursor: pointer;
-        transition: background 0.15s ease;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: rgba(2, 132, 199, 0.1);
+        pointer-events: auto !important;
+        position: relative;
+        z-index: 2;
+        transition: background 0.15s ease, transform 0.05s ease;
         text-decoration: none !important;
+    }
+    .sheet-action-item:active {
+        transform: scale(0.98);
+        background: #f1f5f9;
+    }
+    .sheet-action-item * {
+        pointer-events: none !important;
     }
     .sheet-action-item:hover {
         background: #f8fafc;
@@ -388,6 +421,9 @@
     }
     .sheet-action-item.destructive:hover {
         background: #fee2e2;
+    }
+    .sheet-action-item.destructive:active {
+        background: #fecaca;
     }
 
     .sheet-sticky-footer {
@@ -1448,9 +1484,126 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    document.getElementById('btn-cancel-active-mode').addEventListener('click', function () {
-        setEditorState(TRANSLINE_STATE.IDLE);
+    // ========================================================
+    // 📱 MOBILE TOUCH RELIABILITY & FAST POINTER TAP HANDLERS
+    // ========================================================
+    function logMobileTouch(data) {
+        console.log(
+            '[GIS MOBILE TOUCH]',
+            'event=' + (data.event || '-'),
+            'target=' + (data.target || '-'),
+            'mode=' + ((typeof translineEditor !== 'undefined' && translineEditor.state) ? translineEditor.state : 'IDLE'),
+            'action=' + (data.action || '-'),
+            'assetId=' + (data.assetId || '-')
+        );
+    }
+
+    function safeHideOffcanvas(elementOrId) {
+        var el = (typeof elementOrId === 'string') ? document.getElementById(elementOrId) : elementOrId;
+        if (!el) return;
+        try {
+            var inst = bootstrap.Offcanvas.getOrCreateInstance(el);
+            if (inst) inst.hide();
+        } catch (e) {
+            console.warn('[GIS OFFCANVAS HIDE ERROR]', e);
+        }
+    }
+
+    function safeShowOffcanvas(elementOrId) {
+        var el = (typeof elementOrId === 'string') ? document.getElementById(elementOrId) : elementOrId;
+        if (!el) return;
+        try {
+            var inst = bootstrap.Offcanvas.getOrCreateInstance(el);
+            if (inst) inst.show();
+        } catch (e) {
+            console.warn('[GIS OFFCANVAS SHOW ERROR]', e);
+        }
+    }
+
+    function bindPointerSafeTap(elementOrId, handler, actionName) {
+        var el = (typeof elementOrId === 'string') ? document.getElementById(elementOrId) : elementOrId;
+        if (!el) return;
+
+        var lastTriggerTime = 0;
+
+        function onTrigger(evt) {
+            var now = Date.now();
+            if (now - lastTriggerTime < 350) {
+                if (evt) {
+                    if (evt.preventDefault) evt.preventDefault();
+                    if (evt.stopPropagation) evt.stopPropagation();
+                }
+                return;
+            }
+            lastTriggerTime = now;
+
+            if (evt) {
+                if (evt.stopPropagation) evt.stopPropagation();
+                if (evt.cancelable && evt.type === 'touchend') evt.preventDefault();
+            }
+
+            logMobileTouch({
+                event: evt ? evt.type : 'manual',
+                target: el.id || (el.classList ? el.classList[0] : 'element'),
+                action: actionName || '-'
+            });
+
+            handler(evt);
+        }
+
+        el.addEventListener('touchend', onTrigger, { passive: false });
+        el.addEventListener('click', onTrigger);
+    }
+
+    // Isolate all GIS overlay elements from Leaflet map gesture capture
+    function isolateGisUiFromLeaflet() {
+        var overlayIds = [
+            'asset-quick-card',
+            'offcanvas-asset-transline-menu',
+            'offcanvas-confirm-connection-sheet',
+            'offcanvas-conductor-spec-sheet',
+            'offcanvas-delete-connection-sheet',
+            'offcanvas-asset-detail',
+            'offcanvas-asset-edit-menu',
+            'offcanvas-filter-sheet',
+            'gis-mode-banner',
+            'gis-segment-toolbar'
+        ];
+
+        overlayIds.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && typeof L !== 'undefined' && L.DomEvent) {
+                L.DomEvent.disableClickPropagation(el);
+                L.DomEvent.disableScrollPropagation(el);
+            }
+        });
+    }
+
+    // Track active offcanvas state on body & strictly suppress Voice Assistant
+    document.addEventListener('show.bs.offcanvas', function () {
+        document.body.classList.add('gis-sheet-open');
+        var voiceContainer = document.getElementById('global-voice-container');
+        if (voiceContainer) {
+            voiceContainer.style.setProperty('display', 'none', 'important');
+            voiceContainer.style.setProperty('pointer-events', 'none', 'important');
+        }
     });
+
+    document.addEventListener('hidden.bs.offcanvas', function () {
+        var openSheets = document.querySelectorAll('.offcanvas.show');
+        if (openSheets.length === 0) {
+            document.body.classList.remove('gis-sheet-open');
+            var voiceContainer = document.getElementById('global-voice-container');
+            if (voiceContainer && !document.body.classList.contains('gis-quickcard-active')) {
+                voiceContainer.style.removeProperty('display');
+                voiceContainer.style.removeProperty('pointer-events');
+            }
+        }
+    });
+
+    bindPointerSafeTap('btn-cancel-active-mode', function () {
+        setEditorState(TRANSLINE_STATE.IDLE);
+    }, 'CANCEL_MODE');
 
     // ========================================================
     // 🛡️ ZERO-ERROR RUNTIME UTILITIES & API CONTRACT HELPER
@@ -1615,7 +1768,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ========================================================
     // STAGE 2: TRANSITION FROM SETUP TO FULL MAP WORKSPACE
     // ========================================================
-    document.getElementById('btn-setup-open-map').addEventListener('click', function () {
+    bindPointerSafeTap('btn-setup-open-map', function () {
         var feederId = setupFeederSelect.value;
         if (!feederId) {
             alert('Silakan pilih Penyulang terlebih dahulu!');
@@ -1635,18 +1788,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
         initializeMapWorkspace();
         loadGisNetworkOnDemand(true);
-    });
+    }, 'SETUP_OPEN_MAP');
 
-    document.getElementById('btn-back-to-setup').addEventListener('click', function () {
+    bindPointerSafeTap('btn-back-to-setup', function () {
         closeAssetQuickCard();
         setEditorState(TRANSLINE_STATE.IDLE);
         document.getElementById('gis-workspace-screen').style.display = 'none';
         document.getElementById('gis-setup-screen').style.display = 'block';
-    });
+    }, 'BACK_TO_SETUP');
 
-    document.getElementById('btn-empty-back-setup').addEventListener('click', function () {
-        document.getElementById('btn-back-to-setup').click();
-    });
+    bindPointerSafeTap('btn-empty-back-setup', function () {
+        var backBtn = document.getElementById('btn-back-to-setup');
+        if (backBtn) backBtn.click();
+    }, 'EMPTY_BACK_SETUP');
 
     function getSelectedSetupLayers() {
         var layers = [];
@@ -1705,6 +1859,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 closeAssetQuickCard();
             }
         });
+
+        isolateGisUiFromLeaflet();
     }
 
     /**
@@ -1747,6 +1903,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         marker.on('click', function (e) {
             L.DomEvent.stopPropagation(e);
+            if (e.originalEvent) {
+                L.DomEvent.stopPropagation(e.originalEvent);
+            }
             handleMarkerTap(props, svgPath, [lng, lat]);
         });
 
@@ -1762,6 +1921,13 @@ document.addEventListener("DOMContentLoaded", function () {
             longitude: (props.longitude !== undefined && props.longitude !== null && isValidLatLng(0, props.longitude)) ? Number(props.longitude) : Number(coords[0]),
             _svgPath: svgPath,
             _coords: coords
+        });
+
+        logMobileTouch({
+            event: 'marker_tap',
+            target: 'asset_marker',
+            action: translineEditor.state,
+            assetId: clickedAsset.id
         });
 
         // Case A: State is CHANGE_CONNECTION or ADD_CONNECTION -> Target Selected!
@@ -1913,7 +2079,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     // Quick Action 1: Open Full Detail Sheet
-    document.getElementById('btn-quick-detail').addEventListener('click', function () {
+    bindPointerSafeTap('btn-quick-detail', function () {
         if (!activeAssetProps) return;
         closeAssetQuickCard();
 
@@ -1937,47 +2103,44 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('detail-sheet-jenis').textContent = activeAssetProps.jenis_asset || 'JTM';
         document.getElementById('detail-sheet-dt-link').href = `<?= site_url('master-assets/detail') ?>/${activeAssetProps.id}`;
 
-        var detailSheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-detail'));
-        detailSheet.show();
-    });
+        safeShowOffcanvas('offcanvas-asset-detail');
+    }, 'QUICK_DETAIL');
 
     // Quick Action 2: Open Edit Parameter Sheet
-    document.getElementById('btn-quick-edit-sheet').addEventListener('click', function () {
+    bindPointerSafeTap('btn-quick-edit-sheet', function () {
         if (!activeAssetProps) return;
         closeAssetQuickCard();
-        var editMenu = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-edit-menu'));
-        editMenu.show();
-    });
+        safeShowOffcanvas('offcanvas-asset-edit-menu');
+    }, 'QUICK_EDIT');
 
     // Quick Action 3: Open Asset-Anchored Transline Action Sheet (Jalur)
-    document.getElementById('btn-quick-transline-menu').addEventListener('click', function () {
+    bindPointerSafeTap('btn-quick-transline-menu', function () {
         if (!activeAssetProps) return;
         closeAssetQuickCard();
         openTranslineActionSheet(activeAssetProps);
-    });
+    }, 'QUICK_TRANSLINE_MENU');
 
     function openTranslineActionSheet(assetProps) {
         translineEditor.sourceAsset = assetProps;
         document.getElementById('transline-sheet-subtitle').textContent = `${assetProps.kode_asset || ''} - ${assetProps.nama_asset || ''}`;
-        var sheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-transline-menu'));
-        sheet.show();
+        safeShowOffcanvas('offcanvas-asset-transline-menu');
     }
 
     // ========================================================
     // 🔀 WORKFLOW 1: UBAH KONEKSI ASET
     // ========================================================
-    document.getElementById('act-change-connection').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
-        setEditorState(TRANSLINE_STATE.CHANGE_CONNECTION, `SENTUH TIANG TUJUAN KONEKSI (Sumber: ${translineEditor.sourceAsset.nama_asset})`);
-    });
+    bindPointerSafeTap('act-change-connection', function () {
+        safeHideOffcanvas('offcanvas-asset-transline-menu');
+        setEditorState(TRANSLINE_STATE.CHANGE_CONNECTION, `SENTUH TIANG TUJUAN KONEKSI (Sumber: ${translineEditor.sourceAsset ? translineEditor.sourceAsset.nama_asset : ''})`);
+    }, 'ACTION_CHANGE_CONNECTION');
 
     // ========================================================
     // 🔀 WORKFLOW 2: TAMBAH SAMBUNGAN
     // ========================================================
-    document.getElementById('act-add-connection').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
-        setEditorState(TRANSLINE_STATE.ADD_CONNECTION, `SENTUH TIANG TUJUAN SAMBUNGAN BARU (Sumber: ${translineEditor.sourceAsset.nama_asset})`);
-    });
+    bindPointerSafeTap('act-add-connection', function () {
+        safeHideOffcanvas('offcanvas-asset-transline-menu');
+        setEditorState(TRANSLINE_STATE.ADD_CONNECTION, `SENTUH TIANG TUJUAN SAMBUNGAN BARU (Sumber: ${translineEditor.sourceAsset ? translineEditor.sourceAsset.nama_asset : ''})`);
+    }, 'ACTION_ADD_CONNECTION');
 
     function previewNewConnectionLine(sourceAsset, targetAsset) {
         if (!previewConnectionLayer) return;
@@ -2010,11 +2173,10 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('conn-target-name').textContent = `${targetAsset.nama_asset} (${targetAsset.kode_asset || ''})`;
         document.getElementById('conn-distance-meters').textContent = `${distance} meter`;
 
-        var confirmSheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-confirm-connection-sheet'));
-        confirmSheet.show();
+        safeShowOffcanvas('offcanvas-confirm-connection-sheet');
     }
 
-    document.getElementById('btn-submit-connection').addEventListener('click', function () {
+    bindPointerSafeTap('btn-submit-connection', function () {
         if (!translineEditor.sourceAsset || !translineEditor.targetAsset) return;
 
         var mode = (translineEditor.state === TRANSLINE_STATE.CHANGE_CONNECTION) ? 'REPLACE' : 'ADD';
@@ -2033,19 +2195,22 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
         var submitBtn = document.getElementById('btn-submit-connection');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+        }
 
         fetchJson('<?= site_url('gis/api-connect-topology') ?>', {
             method: 'POST',
             body: JSON.stringify(payload)
         })
         .then(res => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
+            }
 
-            bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-confirm-connection-sheet')).hide();
-
+            safeHideOffcanvas('offcanvas-confirm-connection-sheet');
             setEditorState(TRANSLINE_STATE.IDLE);
 
             // Reconcile and redraw GIS layer immediately
@@ -2073,19 +2238,21 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         })
         .catch(err => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
+            }
             alert('Gagal memperbarui koneksi: ' + err.message);
         });
-    });
+    }, 'SUBMIT_CONNECTION');
 
     // ========================================================
     // ⚡ WORKFLOW 3: SPESIFIKASI KONDUKTOR SEGMEN (Pair A -> B)
     // ========================================================
-    document.getElementById('act-edit-conductor-spec').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
-        setEditorState(TRANSLINE_STATE.EDIT_CONDUCTOR_SPEC, `EDIT KONDUKTOR: Titik 1 [${translineEditor.sourceAsset.nama_asset}] dipilih ➔ Sentuh tiang kedua`);
-    });
+    bindPointerSafeTap('act-edit-conductor-spec', function () {
+        safeHideOffcanvas('offcanvas-asset-transline-menu');
+        setEditorState(TRANSLINE_STATE.EDIT_CONDUCTOR_SPEC, `EDIT KONDUKTOR: Titik 1 [${translineEditor.sourceAsset ? translineEditor.sourceAsset.nama_asset : ''}] dipilih ➔ Sentuh tiang kedua`);
+    }, 'ACTION_EDIT_CONDUCTOR_SPEC');
 
     function openPairConductorSpecSheet(sourceAsset, targetAsset, tl) {
         document.getElementById('spec-source-name').textContent = `${sourceAsset.nama_asset} (${sourceAsset.kode_asset || ''})`;
@@ -2108,11 +2275,10 @@ document.addEventListener("DOMContentLoaded", function () {
             poly.setStyle({ color: '#f59e0b', weight: 6.0, opacity: 1 });
         }
 
-        var sheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-conductor-spec-sheet'));
-        sheet.show();
+        safeShowOffcanvas('offcanvas-conductor-spec-sheet');
     }
 
-    document.getElementById('btn-submit-conductor-spec').addEventListener('click', function () {
+    bindPointerSafeTap('btn-submit-conductor-spec', function () {
         var tId = Number(document.getElementById('spec-transline-id').value);
         var sourceId = Number(document.getElementById('spec-source-id').value);
         var targetId = Number(document.getElementById('spec-target-id').value);
@@ -2122,6 +2288,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!sourceId || !targetId) {
             alert('Titik sambungan tidak valid.');
             return;
+        }
+
+        var submitBtn = document.getElementById('btn-submit-conductor-spec');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
         }
 
         fetchJson('<?= site_url('gis/api-update-conductor') ?>', {
@@ -2137,7 +2309,11 @@ document.addEventListener("DOMContentLoaded", function () {
             })
         })
         .then(res => {
-            bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-conductor-spec-sheet')).hide();
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Simpan Langsung';
+            }
+            safeHideOffcanvas('offcanvas-conductor-spec-sheet');
             setEditorState(TRANSLINE_STATE.IDLE);
             if (currentData) {
                 if (res.translines) currentData.translines = res.translines;
@@ -2162,16 +2338,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             }
         })
-        .catch(err => alert('Gagal: ' + err.message));
-    });
+        .catch(err => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Simpan Langsung';
+            }
+            alert('Gagal: ' + err.message);
+        });
+    }, 'SUBMIT_CONDUCTOR_SPEC');
 
     // ========================================================
     // 🗑 WORKFLOW 4: HAPUS JALUR SEGMEN (Pair A -> B)
     // ========================================================
-    document.getElementById('act-delete-connection').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
-        setEditorState(TRANSLINE_STATE.DELETE_CONNECTION, `HAPUS JALUR: Titik 1 [${translineEditor.sourceAsset.nama_asset}] dipilih ➔ Sentuh tiang tujuan`);
-    });
+    bindPointerSafeTap('act-delete-connection', function () {
+        safeHideOffcanvas('offcanvas-asset-transline-menu');
+        setEditorState(TRANSLINE_STATE.DELETE_CONNECTION, `HAPUS JALUR: Titik 1 [${translineEditor.sourceAsset ? translineEditor.sourceAsset.nama_asset : ''}] dipilih ➔ Sentuh tiang tujuan`);
+    }, 'ACTION_DELETE_CONNECTION');
 
     function openPairDeleteConfirmSheet(sourceAsset, targetAsset, tl) {
         document.getElementById('del-source-name').textContent = `${sourceAsset.nama_asset} (${sourceAsset.kode_asset || ''})`;
@@ -2195,14 +2377,19 @@ document.addEventListener("DOMContentLoaded", function () {
             poly.setStyle({ color: '#ef4444', weight: 6.0, opacity: 1 });
         }
 
-        var sheet = new bootstrap.Offcanvas(document.getElementById('offcanvas-delete-connection-sheet'));
-        sheet.show();
+        safeShowOffcanvas('offcanvas-delete-connection-sheet');
     }
 
-    document.getElementById('btn-confirm-delete-pair').addEventListener('click', function () {
+    bindPointerSafeTap('btn-confirm-delete-pair', function () {
         var tId = Number(document.getElementById('del-transline-id').value);
         var sourceId = Number(document.getElementById('del-source-id').value);
         var targetId = Number(document.getElementById('del-target-id').value);
+
+        var confirmBtn = document.getElementById('btn-confirm-delete-pair');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menghapus...';
+        }
 
         fetchJson('<?= site_url('gis/api-disconnect-topology') ?>', {
             method: 'POST',
@@ -2214,7 +2401,11 @@ document.addEventListener("DOMContentLoaded", function () {
             })
         })
         .then(res => {
-            bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-delete-connection-sheet')).hide();
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i> Hapus Jalur';
+            }
+            safeHideOffcanvas('offcanvas-delete-connection-sheet');
             setEditorState(TRANSLINE_STATE.IDLE);
 
             // Directly remove the specific segment from Leaflet map without full wipe
@@ -2249,17 +2440,21 @@ document.addEventListener("DOMContentLoaded", function () {
             alert(res.message || 'Jalur berhasil diputus.');
         })
         .catch(err => {
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i> Hapus Jalur';
+            }
             alert('Gagal menghapus jalur: ' + err.message);
         });
-    });
+    }, 'CONFIRM_DELETE_PAIR');
 
     // ========================================================
     // ✏ WORKFLOW 5: EDIT BENTUK JALUR SEGMEN (Pair A -> B)
     // ========================================================
-    document.getElementById('act-edit-segment-shape').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-transline-menu')).hide();
-        setEditorState(TRANSLINE_STATE.EDIT_SEGMENT_SHAPE, `EDIT BENTUK: Titik 1 [${translineEditor.sourceAsset.nama_asset}] dipilih ➔ Sentuh tiang kedua`);
-    });
+    bindPointerSafeTap('act-edit-segment-shape', function () {
+        safeHideOffcanvas('offcanvas-asset-transline-menu');
+        setEditorState(TRANSLINE_STATE.EDIT_SEGMENT_SHAPE, `EDIT BENTUK: Titik 1 [${translineEditor.sourceAsset ? translineEditor.sourceAsset.nama_asset : ''}] dipilih ➔ Sentuh tiang kedua`);
+    }, 'ACTION_EDIT_SEGMENT_SHAPE');
 
     function startEditPairSegmentGeometry(sourceAsset, targetAsset, tl) {
         if (!segmentEditLayer) return;
@@ -2418,7 +2613,7 @@ document.addEventListener("DOMContentLoaded", function () {
         renderSingleSegmentEditor();
     };
 
-    document.getElementById('btn-add-midpoint-vertex').addEventListener('click', function () {
+    bindPointerSafeTap('btn-add-midpoint-vertex', function () {
         var vertices = translineEditor.editedVertices;
         if (vertices.length < 2) return;
         var midLat = (vertices[0][0] + vertices[1][0]) / 2;
@@ -2426,9 +2621,9 @@ document.addEventListener("DOMContentLoaded", function () {
         translineEditor.undoStack.push(JSON.parse(JSON.stringify(vertices)));
         vertices.splice(1, 0, [midLat, midLng]);
         renderSingleSegmentEditor();
-    });
+    }, 'ADD_MIDPOINT_VERTEX');
 
-    document.getElementById('btn-undo-segment').addEventListener('click', function () {
+    bindPointerSafeTap('btn-undo-segment', function () {
         if (translineEditor.undoStack.length > 1) {
             translineEditor.undoStack.pop();
             translineEditor.editedVertices = JSON.parse(JSON.stringify(translineEditor.undoStack[translineEditor.undoStack.length - 1]));
@@ -2436,13 +2631,13 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
             alert('Tidak ada riwayat undo.');
         }
-    });
+    }, 'UNDO_SEGMENT');
 
-    document.getElementById('btn-cancel-segment').addEventListener('click', function () {
+    bindPointerSafeTap('btn-cancel-segment', function () {
         setEditorState(TRANSLINE_STATE.IDLE);
-    });
+    }, 'CANCEL_SEGMENT');
 
-    document.getElementById('btn-save-segment-geometry').addEventListener('click', function () {
+    bindPointerSafeTap('btn-save-segment-geometry', function () {
         var validVertices = translineEditor.editedVertices.filter(pt => isValidLatLng(pt[0], pt[1]));
         if (validVertices.length < 2) {
             alert('Minimal 2 titik diperlukan.');
@@ -2491,32 +2686,31 @@ document.addEventListener("DOMContentLoaded", function () {
         .catch(err => {
             alert('Gagal menyimpan bentuk segmen: ' + err.message);
         });
-    });
+    }, 'SAVE_SEGMENT_GEOMETRY');
 
     // ========================================================
     // GLOBAL FAB: EDIT TRANSLINE (Activates Source Selection)
     // ========================================================
-    document.getElementById('fab-edit-transline').addEventListener('click', function () {
+    bindPointerSafeTap('fab-edit-transline', function () {
         collapseFab();
         setEditorState(TRANSLINE_STATE.SELECT_SOURCE, 'SENTUH TIANG PADA PETA UNTUK MEMILIH JALUR');
-    });
+    }, 'FAB_EDIT_TRANSLINE');
 
     // Parameter Edit Sub-actions
-    document.getElementById('act-edit-params').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-edit-menu')).hide();
+    bindPointerSafeTap('act-edit-params', function () {
+        safeHideOffcanvas('offcanvas-asset-edit-menu');
         openCorrectionModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
-    });
+    }, 'ACTION_EDIT_PARAMS');
 
-    document.getElementById('act-edit-coords').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-edit-menu')).hide();
+    bindPointerSafeTap('act-edit-coords', function () {
+        safeHideOffcanvas('offcanvas-asset-edit-menu');
         openCorrectionModal(encodeURIComponent(JSON.stringify(activeAssetProps)));
-    });
+    }, 'ACTION_EDIT_COORDS');
 
-    document.getElementById('btn-sheet-open-edit').addEventListener('click', function () {
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-asset-detail')).hide();
-        var editMenu = new bootstrap.Offcanvas(document.getElementById('offcanvas-asset-edit-menu'));
-        editMenu.show();
-    });
+    bindPointerSafeTap('btn-sheet-open-edit', function () {
+        safeHideOffcanvas('offcanvas-asset-detail');
+        safeShowOffcanvas('offcanvas-asset-edit-menu');
+    }, 'SHEET_OPEN_EDIT');
 
     function createTemuanVisualMarker(norm) {
         var props = norm.properties || {};
@@ -2863,28 +3057,28 @@ document.addEventListener("DOMContentLoaded", function () {
     var fabToggle = document.getElementById('btn-fab-toggle');
     var fabMenu = document.getElementById('gis-fab-menu');
 
-    fabToggle.addEventListener('click', function () {
+    bindPointerSafeTap(fabToggle, function () {
         var isExpanded = fabMenu.style.display === 'flex';
         fabMenu.style.display = isExpanded ? 'none' : 'flex';
         fabToggle.classList.toggle('active', !isExpanded);
-    });
+    }, 'TOGGLE_FAB');
 
     function collapseFab() {
         fabMenu.style.display = 'none';
         fabToggle.classList.remove('active');
     }
 
-    document.getElementById('fab-add-asset').addEventListener('click', function () {
+    bindPointerSafeTap('fab-add-asset', function () {
         collapseFab();
         openAddAssetModal();
-    });
+    }, 'FAB_ADD_ASSET');
 
-    document.getElementById('fab-open-filter').addEventListener('click', function () {
+    bindPointerSafeTap('fab-open-filter', function () {
         collapseFab();
         openFilterDrawer();
-    });
+    }, 'FAB_OPEN_FILTER');
 
-    document.getElementById('btn-open-filter-drawer').addEventListener('click', openFilterDrawer);
+    bindPointerSafeTap('btn-open-filter-drawer', openFilterDrawer, 'OPEN_FILTER_DRAWER');
 
     function openFilterDrawer() {
         document.getElementById('drawer-feeder-select').value = currentFeederId;
@@ -2903,11 +3097,10 @@ document.addEventListener("DOMContentLoaded", function () {
         if (document.getElementById('drawer-layer-temuan') && document.getElementById('setup-layer-temuan')) {
             document.getElementById('drawer-layer-temuan').checked = document.getElementById('setup-layer-temuan').checked;
         }
-        var drawer = new bootstrap.Offcanvas(document.getElementById('offcanvas-filter-sheet'));
-        drawer.show();
+        safeShowOffcanvas('offcanvas-filter-sheet');
     }
 
-    document.getElementById('btn-apply-drawer-filter').addEventListener('click', function () {
+    bindPointerSafeTap('btn-apply-drawer-filter', function () {
         var newFeederId = document.getElementById('drawer-feeder-select').value;
         if (newFeederId) {
             currentFeederId = newFeederId;
@@ -2933,11 +3126,11 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('setup-layer-temuan').checked = document.getElementById('drawer-layer-temuan').checked;
         }
 
-        bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-filter-sheet')).hide();
+        safeHideOffcanvas('offcanvas-filter-sheet');
         loadGisNetworkOnDemand(true);
-    });
+    }, 'APPLY_DRAWER_FILTER');
 
-    document.getElementById('fab-locate-me').addEventListener('click', function () {
+    bindPointerSafeTap('fab-locate-me', function () {
         collapseFab();
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(function (pos) {
@@ -2953,16 +3146,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 map.setView([uLat, uLng], 16);
             });
         }
-    });
+    }, 'FAB_LOCATE_ME');
 
-    document.getElementById('fab-toggle-legend').addEventListener('click', function () {
+    bindPointerSafeTap('fab-toggle-legend', function () {
         collapseFab();
         var lp = document.getElementById('gis-legend-panel');
         lp.style.display = lp.style.display === 'block' ? 'none' : 'block';
-    });
-    document.getElementById('btn-close-legend').addEventListener('click', function () {
+    }, 'FAB_TOGGLE_LEGEND');
+
+    bindPointerSafeTap('btn-close-legend', function () {
         document.getElementById('gis-legend-panel').style.display = 'none';
-    });
+    }, 'CLOSE_LEGEND');
 
     // ========================================================
     // FIELD ASSET CORRECTION MODAL HANDLERS

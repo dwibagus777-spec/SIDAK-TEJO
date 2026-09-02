@@ -1404,10 +1404,14 @@ class TranslineCompletionService
                         $seqPts = 18;
                         $evidence[] = 'ADJACENT_CODE_SEQUENCE_DELTA2';
                     } elseif ($dSeq <= 5) {
-                        $seqPts = 10;
+                        $seqPts = 15;
                         $evidence[] = 'PROXIMAL_CODE_SEQUENCE';
-                    } elseif ($dSeq <= 10) {
-                        $seqPts = 5;
+                    } elseif ($dSeq <= 15) {
+                        $seqPts = 10;
+                        $evidence[] = 'NEAR_CODE_SEQUENCE';
+                    } else {
+                        $seqPts = 10;
+                        $evidence[] = 'SAME_FEEDER_SERIES';
                     }
                 } else {
                     $seqPts = 10;
@@ -1444,16 +1448,22 @@ class TranslineCompletionService
                     }
                 }
 
-                // 4. Graph Degree Prediction (10 pts)
+                // 4. Graph Degree Prediction & Capacity (10 pts)
                 $degPts = 0;
                 $degreeCapacityExceeded = ($degS + 1 > 4 || $degT + 1 > 4);
                 if ($degreeCapacityExceeded) {
                     $degPts = 0;
                     $evidence[] = 'DEGREE_CAPACITY_EXCEEDED';
+                } elseif (($degS === 1 && $degT <= 1) || ($degT === 1 && $degS <= 1)) {
+                    // Mainline extension (d=1 -> 2)
+                    $degPts = 10;
+                    $evidence[] = 'MAINLINE_EXTENSION_PREDICTION';
+                } elseif (($degS === 2 && $degT <= 1) || ($degT === 2 && $degS <= 1)) {
+                    // T-off branching (d=2 -> 3)
+                    $degPts = 5;
+                    $evidence[] = 'TOFF_BRANCHING_PREDICTION';
                 } else {
-                    $ptsS = ($degS === 1 ? 5 : ($degS === 0 ? 4 : ($degS === 2 ? 2 : 1)));
-                    $ptsT = ($degT === 1 ? 5 : ($degT === 0 ? 4 : ($degT === 2 ? 2 : 1)));
-                    $degPts = min(10, $ptsS + $ptsT);
+                    $degPts = 3;
                 }
 
                 // 5. Geodesic Distance Plausibility (10 pts)

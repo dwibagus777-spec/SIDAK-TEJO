@@ -22,6 +22,57 @@
                     
                     <?php $validation = isset($validation) ? $validation : null; ?>
 
+                    <!-- MAP-03: Location Context Assistant Card -->
+                    <div id="map03-location-assistant-card" class="card border-primary bg-light mb-3 shadow-sm" style="display: none;">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-primary text-white me-2 px-2 py-1"><i class="fas fa-location-crosshairs me-1"></i> Asisten Konteks Lokasi (MAP-03)</span>
+                                    <span id="map03-accuracy-badge" class="badge bg-info text-dark border">± 0 m</span>
+                                </div>
+                                <button type="button" class="btn btn-tool btn-sm text-muted" id="map03-btn-dismiss" title="Tutup Asisten"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div id="map03-content-loading" class="py-2 text-center text-muted" style="display: none;">
+                                <i class="fas fa-spinner fa-spin me-1"></i> Mendeteksi konteks jaringan terdekat dari posisi GPS Anda...
+                            </div>
+                            <div id="map03-content-ready" style="display: none;">
+                                <div class="row g-2 small text-dark mb-2">
+                                    <div class="col-sm-4">
+                                        <span class="text-muted d-block">ULP Terdeteksi:</span>
+                                        <strong id="map03-res-ulp">-</strong>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <span class="text-muted d-block">Penyulang Terdeteksi:</span>
+                                        <strong id="map03-res-feeder">-</strong>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <span class="text-muted d-block">Section Terdeteksi:</span>
+                                        <strong id="map03-res-section">-</strong>
+                                    </div>
+                                </div>
+                                <div class="p-2 bg-white rounded border mb-2 small d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <span class="text-muted me-1"><i class="fas fa-info-circle text-info me-1"></i> Saran Aset Terdekat:</span>
+                                        <strong id="map03-res-asset" class="text-primary">-</strong>
+                                        <span id="map03-res-distance" class="badge bg-light text-muted border ms-1">0 m</span>
+                                    </div>
+                                    <span class="badge bg-light text-secondary border">Saran Opsional (State A)</span>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-primary btn-sm px-3" id="map03-btn-apply">
+                                        <i class="fas fa-check-circle me-1"></i> Gunakan Konteks Ini
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm px-3" id="map03-btn-manual">
+                                        <i class="fas fa-hand-pointer me-1"></i> Pilih Manual
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="map03-content-warning" class="alert alert-warning p-2 mb-0 small" style="display: none;">
+                                <i class="fas fa-exclamation-triangle me-1"></i> <span id="map03-warning-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <!-- ULP Selection -->
                         <div class="col-md-6 form-group mb-3">
@@ -1220,6 +1271,9 @@
                             icon: 'success',
                             title: 'Lokasi Anda berhasil didapatkan!'
                         });
+
+                        // MAP-03: Trigger Location Context Assistant
+                        fetchLocationContext(lat, lng, position.coords.accuracy);
                     },
                     function(error) {
                         $('#btn-geolocation').html('<i class="fas fa-location-crosshairs mr-1"></i> Ambil Lokasi Saya');
@@ -1243,6 +1297,108 @@
                     title: 'Browser Anda tidak mendukung HTML5 Geolocation.'
                 });
             }
+        });
+
+        // --- MAP-03: LOCATION CONTEXT ASSISTANT JS ---
+        let activeLocationContext = null;
+
+        function fetchLocationContext(lat, lng, accuracy) {
+            $('#map03-location-assistant-card').fadeIn();
+            $('#map03-content-loading').show();
+            $('#map03-content-ready').hide();
+            $('#map03-content-warning').hide();
+
+            const accText = accuracy ? `± ${Math.round(accuracy)} m` : '± - m';
+            $('#map03-accuracy-badge').text(accText);
+
+            $.ajax({
+                url: "<?= site_url('ajax/network/location-context') ?>",
+                type: "GET",
+                data: { lat: lat, lng: lng, accuracy: accuracy },
+                dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(res) {
+                    $('#map03-content-loading').hide();
+                    if (res.status === 'READY' || res.status === 'LOW_ACCURACY') {
+                        activeLocationContext = res;
+                        $('#map03-content-ready').show();
+
+                        $('#map03-res-ulp').text(res.context && res.context.ulp ? res.context.ulp.nama_ulp : '-');
+                        $('#map03-res-feeder').text(res.context && res.context.penyulang ? res.context.penyulang.nama_penyulang : '-');
+                        $('#map03-res-section').text(res.context && res.context.section ? res.context.section.nama_section : '-');
+
+                        if (res.nearest_asset) {
+                            $('#map03-res-asset').text(res.nearest_asset.kode_asset || `Aset #${res.nearest_asset.id}`);
+                            $('#map03-res-distance').text(`± ${Math.round(res.nearest_asset.distance_m)} m`);
+                        } else {
+                            $('#map03-res-asset').text('Tidak terdeteksi');
+                            $('#map03-res-distance').text('-');
+                        }
+
+                        if (res.status === 'LOW_ACCURACY') {
+                            $('#map03-warning-text').text('Peringatan: Akurasi GPS Anda rendah (> 50 m). Mohon periksa kembali konteks yang disarankan.');
+                            $('#map03-content-warning').show();
+                        }
+                    } else {
+                        $('#map03-warning-text').text(res.message || 'Konteks jaringan tidak dapat dideteksi dari posisi ini.');
+                        $('#map03-content-warning').show();
+                    }
+                },
+                error: function(xhr) {
+                    $('#map03-content-loading').hide();
+                    let errMsg = 'Gagal mendeteksi konteks jaringan.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    $('#map03-warning-text').text(errMsg);
+                    $('#map03-content-warning').show();
+                }
+            });
+        }
+
+        // Apply context button click
+        $('#map03-btn-apply').click(function() {
+            if (!activeLocationContext || !activeLocationContext.context) return;
+            const ctx = activeLocationContext.context;
+
+            if (ctx.ulp && ctx.ulp.id) {
+                $('#ulp_id').val(ctx.ulp.id);
+                refreshSelect2($('#ulp_id'));
+
+                loadPenyulang(ctx.ulp.id, function() {
+                    if (ctx.penyulang && ctx.penyulang.id) {
+                        $('#penyulang_id').val(ctx.penyulang.id);
+                        refreshSelect2($('#penyulang_id'));
+
+                        loadSection(ctx.penyulang.id, function() {
+                            if (ctx.section && ctx.section.id) {
+                                $('#section_id').val(ctx.section.id);
+                                refreshSelect2($('#section_id'));
+
+                                if (typeof loadAssets === 'function') {
+                                    loadAssets(ctx.section.id);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Invariant: Asset remains optional / unselected (State A)
+            $('#mr01_asset_id').val('');
+            refreshSelect2($('#mr01_asset_id'));
+
+            Toast.fire({
+                icon: 'success',
+                title: 'Konteks jaringan berhasil diterapkan! (Aset tetap opsional)'
+            });
+
+            $('#map03-location-assistant-card').fadeOut();
+        });
+
+        // Manual button or dismiss
+        $('#map03-btn-manual, #map03-btn-dismiss').click(function() {
+            $('#map03-location-assistant-card').fadeOut();
         });
 
         // Manual coordinate input: "Sinkronkan ke Peta" button

@@ -96,13 +96,34 @@ class MaterialPickerService
             ];
         }
 
-        // 4. Resolve Construction Type
+        $bomResult = $this->resolveBomByConstructionTypeId($constructionTypeId);
+        $bomResult['asset'] = $assetData;
+
+        return $bomResult;
+    }
+
+    /**
+     * Resolve Construction Type & Governed BOM by Construction Type ID.
+     * Enforces the same 3 Firewalls (Provisional Kubikel, Held Specifications, Active Master Materials).
+     * Guaranteed ZERO database writes (Read-Only).
+     */
+    public function resolveBomByConstructionTypeId(int $constructionTypeId): array
+    {
+        if ($constructionTypeId <= 0) {
+            return [
+                'status' => 'NO_CONSTRUCTION',
+                'message' => 'KONSTRUKSI BELUM TERPETAKAN',
+                'construction' => null,
+                'materials' => [],
+            ];
+        }
+
+        // Resolve Construction Type
         $construction = $this->constructionModel->find($constructionTypeId);
         if (!$construction) {
             return [
                 'status' => 'NO_CONSTRUCTION',
                 'message' => 'KONSTRUKSI BELUM TERPETAKAN',
-                'asset' => $assetData,
                 'construction' => null,
                 'materials' => [],
             ];
@@ -113,12 +134,11 @@ class MaterialPickerService
         $cCode   = strtoupper(trim((string)($construction['construction_code'] ?? ($construction['code'] ?? ''))));
         $cName   = (string)($construction['construction_name'] ?? ($construction['name'] ?? $cCode));
 
-        // 5. Provisional Kubikel Firewall: block draft/provisional constructions from picker
+        // Provisional Kubikel Firewall: block draft/provisional constructions from picker
         if ($cFamily === 'GARDU_KUBIKEL' || $cStatus === 'DRAFT' || str_contains($cCode, 'KUBIKEL')) {
             return [
                 'status' => 'PROVISIONAL_BLOCKED',
                 'message' => 'KONSTRUKSI MASIH BERSTATUS PROVISIONAL / DRAFT (BELUM FIX)',
-                'asset' => $assetData,
                 'construction' => [
                     'id' => (int)$construction['id'],
                     'code' => $cCode,
@@ -136,7 +156,7 @@ class MaterialPickerService
             'family' => $cFamily,
         ];
 
-        // 6. Query Construction BOM Items
+        // Query Construction BOM Items
         $bomItems = $this->bomModel
             ->where('construction_type_id', $constructionTypeId)
             ->orderBy('id', 'ASC')
@@ -146,13 +166,12 @@ class MaterialPickerService
             return [
                 'status' => 'NO_BOM',
                 'message' => 'BOM KONSTRUKSI BELUM TERSEDIA',
-                'asset' => $assetData,
                 'construction' => $constructionData,
                 'materials' => [],
             ];
         }
 
-        // 7. Filter BOM Items & Resolve Active Master Materials
+        // Filter BOM Items & Resolve Active Master Materials
         $materials = [];
         $seenMaterialKeys = [];
 
@@ -211,7 +230,6 @@ class MaterialPickerService
             return [
                 'status' => 'NO_BOM',
                 'message' => 'BOM KONSTRUKSI BELUM TERSEDIA',
-                'asset' => $assetData,
                 'construction' => $constructionData,
                 'materials' => [],
             ];
@@ -220,7 +238,6 @@ class MaterialPickerService
         return [
             'status' => 'READY',
             'message' => 'Material sesuai BOM konstruksi',
-            'asset' => $assetData,
             'construction' => $constructionData,
             'materials' => $materials,
         ];

@@ -28,33 +28,44 @@ class AssetContextService
      * @param int $assetId Asset Primary Key
      * @param int|null $userUlpId Optional user ULP assignment for authorization scoping
      * @param string|null $userRole Optional user role
+     * @param int|null $workingSectionId Optional operator-corrected working section ID (non-persisted)
+     * @param int|null $workingConstructionTypeId Optional operator-corrected working construction type ID (non-persisted)
      * @return array Canonical context structure
      */
-    public function getAssetContext(int $assetId, ?int $userUlpId = null, ?string $userRole = null): array
-    {
+    public function getAssetContext(
+        int $assetId,
+        ?int $userUlpId = null,
+        ?string $userRole = null,
+        ?int $workingSectionId = null,
+        ?int $workingConstructionTypeId = null
+    ): array {
         // 1. Sanity Check
         if ($assetId <= 0) {
             return [
-                'status'       => 'INVALID_ASSET',
-                'message'      => 'Asset ID tidak valid.',
-                'asset'        => null,
-                'network'      => null,
-                'construction' => null,
-                'bom'          => [],
-                'navigation'   => null,
+                'status'         => 'INVALID_ASSET',
+                'message'        => 'Asset ID tidak valid.',
+                'asset'          => null,
+                'network'        => null,
+                'construction'   => null,
+                'bom'            => [],
+                'navigation'     => null,
+                'context_source' => null,
+                'status_badges'  => null,
             ];
         }
 
         // 2. Query Asset record
         if (!$this->db->tableExists('assets')) {
             return [
-                'status'       => 'INVALID_ASSET',
-                'message'      => 'Tabel aset tidak tersedia.',
-                'asset'        => null,
-                'network'      => null,
-                'construction' => null,
-                'bom'          => [],
-                'navigation'   => null,
+                'status'         => 'INVALID_ASSET',
+                'message'        => 'Tabel aset tidak tersedia.',
+                'asset'          => null,
+                'network'        => null,
+                'construction'   => null,
+                'bom'            => [],
+                'navigation'     => null,
+                'context_source' => null,
+                'status_badges'  => null,
             ];
         }
 
@@ -67,74 +78,180 @@ class AssetContextService
 
         if (!$asset) {
             return [
-                'status'       => 'INVALID_ASSET',
-                'message'      => 'Aset jaringan tidak ditemukan.',
-                'asset'        => null,
-                'network'      => null,
-                'construction' => null,
-                'bom'          => [],
-                'navigation'   => null,
+                'status'         => 'INVALID_ASSET',
+                'message'        => 'Aset jaringan tidak ditemukan.',
+                'asset'          => null,
+                'network'        => null,
+                'construction'   => null,
+                'bom'            => [],
+                'navigation'     => null,
+                'context_source' => null,
+                'status_badges'  => null,
             ];
         }
 
-        // 3. Resolve Network Hierarchy: Section -> Penyulang -> ULP
-        $sectionId   = !empty($asset['section_id']) ? (int)$asset['section_id'] : null;
-        $penyulangId = !empty($asset['penyulang_id']) ? (int)$asset['penyulang_id'] : null;
-        $ulpId       = !empty($asset['ulp_id']) ? (int)$asset['ulp_id'] : null;
+        // 3. Resolve Authoritative Network Hierarchy: Section -> Penyulang -> ULP
+        $authoritativeSectionId   = !empty($asset['section_id']) ? (int)$asset['section_id'] : null;
+        $authoritativePenyulangId = !empty($asset['penyulang_id']) ? (int)$asset['penyulang_id'] : null;
+        $authoritativeUlpId       = !empty($asset['ulp_id']) ? (int)$asset['ulp_id'] : null;
 
-        $section = null;
-        if ($sectionId && $this->db->tableExists('sections')) {
-            $section = $this->db->table('sections')->where('id', $sectionId)->get()->getRowArray();
-            if ($section && empty($penyulangId) && !empty($section['penyulang_id'])) {
-                $penyulangId = (int)$section['penyulang_id'];
+        $authoritativeSection = null;
+        if ($authoritativeSectionId && $this->db->tableExists('sections')) {
+            $authoritativeSection = $this->db->table('sections')->where('id', $authoritativeSectionId)->get()->getRowArray();
+            if ($authoritativeSection && empty($authoritativePenyulangId) && !empty($authoritativeSection['penyulang_id'])) {
+                $authoritativePenyulangId = (int)$authoritativeSection['penyulang_id'];
             }
         }
 
         $penyulang = null;
-        if ($penyulangId && $this->db->tableExists('penyulang')) {
-            $penyulang = $this->db->table('penyulang')->where('id', $penyulangId)->get()->getRowArray();
-            if ($penyulang && empty($ulpId) && !empty($penyulang['ulp_id'])) {
-                $ulpId = (int)$penyulang['ulp_id'];
+        if ($authoritativePenyulangId && $this->db->tableExists('penyulang')) {
+            $penyulang = $this->db->table('penyulang')->where('id', $authoritativePenyulangId)->get()->getRowArray();
+            if ($penyulang && empty($authoritativeUlpId) && !empty($penyulang['ulp_id'])) {
+                $authoritativeUlpId = (int)$penyulang['ulp_id'];
             }
         }
 
         $ulp = null;
-        if ($ulpId && $this->db->tableExists('ulps')) {
-            $ulp = $this->db->table('ulps')->where('id', $ulpId)->get()->getRowArray();
+        if ($authoritativeUlpId && $this->db->tableExists('ulps')) {
+            $ulp = $this->db->table('ulps')->where('id', $authoritativeUlpId)->get()->getRowArray();
         }
 
-        // 4. Authorization / Scoping check
+        // 4. Authorization / Scoping check on Authoritative ULP
         $roleNorm = strtoupper(trim((string)$userRole));
         if ($roleNorm === 'ADMIN_ULP' && $userUlpId !== null && $userUlpId > 0) {
-            if ($ulpId !== null && (int)$ulpId !== (int)$userUlpId) {
+            if ($authoritativeUlpId !== null && (int)$authoritativeUlpId !== (int)$userUlpId) {
                 return [
-                    'status'       => 'FORBIDDEN',
-                    'message'      => 'Akses ditolak: Aset berada di luar wilayah wewenang ULP Anda.',
-                    'asset'        => null,
-                    'network'      => null,
-                    'construction' => null,
-                    'bom'          => [],
-                    'navigation'   => null,
+                    'status'         => 'FORBIDDEN',
+                    'message'        => 'Akses ditolak: Aset berada di luar wilayah wewenang ULP Anda.',
+                    'asset'          => null,
+                    'network'        => null,
+                    'construction'   => null,
+                    'bom'            => [],
+                    'navigation'     => null,
+                    'context_source' => null,
+                    'status_badges'  => null,
                 ];
             }
         }
 
-        // 5. Reuse MaterialPickerService for deterministic Construction & BOM resolution
-        // Pass $sectionId if available, otherwise 0
-        $effectiveSectionId = $sectionId ?? 0;
-        $pickerResult = $this->pickerService->resolvePicker($assetId, $effectiveSectionId);
+        // 5. Section Resolution: Authoritative vs Operator Working Context
+        $effectiveSection     = $authoritativeSection;
+        $effectiveSectionId   = $authoritativeSectionId;
+        $sectionSource        = 'SYSTEM';
+        $sectionStatusBadge   = 'TERVERIFIKASI_SISTEM';
 
-        // Normalize status
-        $finalStatus = $pickerResult['status'] ?? 'INVALID_ASSET';
-        $finalMessage = $pickerResult['message'] ?? '';
+        if ($workingSectionId !== null && $workingSectionId > 0) {
+            if (!$this->db->tableExists('sections')) {
+                return [
+                    'status'  => 'INVALID_WORKING_SECTION',
+                    'message' => 'Tabel section tidak tersedia.',
+                ];
+            }
 
-        // If picker returned INVALID_ASSET because section_id was null or 0, check if asset actually exists
-        if ($finalStatus === 'INVALID_ASSET' && empty($sectionId)) {
-            $finalStatus = 'NO_SECTION';
-            $finalMessage = 'Aset belum terhubung ke section jaringan.';
+            $candidateSection = $this->db->table('sections')->where('id', $workingSectionId)->get()->getRowArray();
+            if (!$candidateSection) {
+                return [
+                    'status'         => 'INVALID_WORKING_SECTION',
+                    'message'        => 'Section koreksi operator tidak ditemukan di database.',
+                    'asset'          => null,
+                    'network'        => null,
+                    'construction'   => null,
+                    'bom'            => [],
+                    'navigation'     => null,
+                    'context_source' => null,
+                    'status_badges'  => null,
+                ];
+            }
+
+            // Cross-Feeder Firewall: Selected section must belong to authoritative feeder
+            if ($authoritativePenyulangId !== null && (int)($candidateSection['penyulang_id'] ?? 0) !== $authoritativePenyulangId) {
+                return [
+                    'status'         => 'INVALID_WORKING_SECTION',
+                    'message'        => 'Section koreksi operator tidak berada di bawah penyulang aset ini (Cross-feeder violation).',
+                    'asset'          => null,
+                    'network'        => null,
+                    'construction'   => null,
+                    'bom'            => [],
+                    'navigation'     => null,
+                    'context_source' => null,
+                    'status_badges'  => null,
+                ];
+            }
+
+            // Cross-ULP Firewall for admin_ulp role
+            if ($roleNorm === 'ADMIN_ULP' && $userUlpId !== null && $userUlpId > 0) {
+                $sectionPenyulang = $this->db->table('penyulang')->where('id', (int)$candidateSection['penyulang_id'])->get()->getRowArray();
+                if ($sectionPenyulang && !empty($sectionPenyulang['ulp_id']) && (int)$sectionPenyulang['ulp_id'] !== (int)$userUlpId) {
+                    return [
+                        'status'         => 'FORBIDDEN',
+                        'message'        => 'Akses ditolak: Section koreksi berada di luar wilayah wewenang ULP Anda.',
+                        'asset'          => null,
+                        'network'        => null,
+                        'construction'   => null,
+                        'bom'            => [],
+                        'navigation'     => null,
+                        'context_source' => null,
+                        'status_badges'  => null,
+                    ];
+                }
+            }
+
+            $effectiveSection   = $candidateSection;
+            $effectiveSectionId = (int)$candidateSection['id'];
+            $sectionSource      = 'OPERATOR';
+            $sectionStatusBadge = 'DIKOREKSI_OPERATOR';
+        } elseif (!$effectiveSection) {
+            $sectionSource      = 'UNMAPPED';
+            $sectionStatusBadge = 'BELUM_TERPETAKAN';
         }
 
-        // 6. Assemble Asset Identity Block
+        // 6. Construction & BOM Resolution: Authoritative vs Operator Working Context
+        $authoritativeConstructionId = !empty($asset['construction_type_id']) ? (int)$asset['construction_type_id'] : null;
+        $constructionSource          = 'SYSTEM';
+        $constructionStatusBadge     = 'TERVERIFIKASI_SISTEM';
+
+        if ($workingConstructionTypeId !== null && $workingConstructionTypeId > 0) {
+            $bomResult = $this->pickerService->resolveBomByConstructionTypeId($workingConstructionTypeId);
+            if ($bomResult['status'] === 'NO_CONSTRUCTION') {
+                return [
+                    'status'         => 'INVALID_WORKING_CONSTRUCTION',
+                    'message'        => 'Standar konstruksi yang dipilih tidak valid atau tidak ditemukan.',
+                    'asset'          => null,
+                    'network'        => null,
+                    'construction'   => null,
+                    'bom'            => [],
+                    'navigation'     => null,
+                    'context_source' => null,
+                    'status_badges'  => null,
+                ];
+            }
+
+            $pickerResult            = $bomResult;
+            $constructionSource      = 'OPERATOR';
+            $constructionStatusBadge = 'DIKOREKSI_OPERATOR';
+            $finalStatus             = $pickerResult['status'];
+            $finalMessage            = $pickerResult['message'];
+        } else {
+            $pickerResult = $this->pickerService->resolvePicker($assetId, $effectiveSectionId ?? 0);
+            $finalStatus  = $pickerResult['status'] ?? 'INVALID_ASSET';
+            $finalMessage = $pickerResult['message'] ?? '';
+
+            if ($pickerResult['construction']) {
+                $constructionSource      = 'SYSTEM';
+                $constructionStatusBadge = 'TERVERIFIKASI_SISTEM';
+            } else {
+                $constructionSource      = 'UNMAPPED';
+                $constructionStatusBadge = 'BELUM_TERPETAKAN';
+            }
+
+            // Normalize status if section is unmapped
+            if ($finalStatus === 'INVALID_ASSET' && empty($effectiveSectionId)) {
+                $finalStatus  = 'NO_SECTION';
+                $finalMessage = 'Aset belum terhubung ke section jaringan.';
+            }
+        }
+
+        // 7. Assemble Asset Identity Block
         $assetBlock = [
             'id'          => (int)$asset['id'],
             'kode_asset'  => (string)($asset['kode_asset'] ?? ''),
@@ -146,36 +263,50 @@ class AssetContextService
             'status'      => (string)($asset['status'] ?? 'NORMAL'),
         ];
 
-        // 7. Assemble Network Context Block
+        // 8. Assemble Network Context Block
         $networkBlock = [
             'ulp'       => [
                 'id'       => $ulp ? (int)$ulp['id'] : null,
                 'kode_ulp' => $ulp ? (string)($ulp['kode_ulp'] ?? '') : '',
                 'nama_ulp' => $ulp ? (string)($ulp['nama_ulp'] ?? 'ULP Tidak Terpetakan') : 'ULP Tidak Terpetakan',
+                'source'   => 'SYSTEM',
+                'locked'   => true,
             ],
             'penyulang' => [
                 'id'             => $penyulang ? (int)$penyulang['id'] : null,
                 'kode_penyulang' => $penyulang ? (string)($penyulang['kode_penyulang'] ?? '') : '',
                 'nama_penyulang' => $penyulang ? (string)($penyulang['nama_penyulang'] ?? 'Penyulang Tidak Terpetakan') : 'Penyulang Tidak Terpetakan',
+                'source'         => 'SYSTEM',
+                'locked'         => true,
             ],
             'section'   => [
-                'id'           => $section ? (int)$section['id'] : null,
-                'nama_section' => $section ? (string)($section['nama_section'] ?? 'Section Tidak Terpetakan') : 'Section Tidak Terpetakan',
+                'id'           => $effectiveSection ? (int)$effectiveSection['id'] : null,
+                'nama_section' => $effectiveSection ? (string)($effectiveSection['nama_section'] ?? 'Section Tidak Terpetakan') : 'Section Tidak Terpetakan',
+                'source'       => $sectionSource,
+                'status_badge' => $sectionStatusBadge,
             ],
         ];
 
-        // 8. Assemble Navigation Context Handoff (Pure Navigation, No Mutation)
+        // 9. Assemble Navigation Context Handoff (Pure Navigation, No Mutation)
         $navQueryParams = [
             'asset_id' => (int)$asset['id'],
         ];
-        if ($section && !empty($section['id'])) {
-            $navQueryParams['section_id'] = (int)$section['id'];
+        if ($effectiveSection && !empty($effectiveSection['id'])) {
+            $navQueryParams['section_id'] = (int)$effectiveSection['id'];
         }
         if ($penyulang && !empty($penyulang['id'])) {
             $navQueryParams['penyulang_id'] = (int)$penyulang['id'];
         }
         if ($ulp && !empty($ulp['id'])) {
             $navQueryParams['ulp_id'] = (int)$ulp['id'];
+        }
+        if ($workingSectionId !== null && $workingSectionId > 0) {
+            $navQueryParams['working_section_id'] = $workingSectionId;
+            $navQueryParams['context_mode']        = 'WORKING_CONTEXT';
+        }
+        if ($workingConstructionTypeId !== null && $workingConstructionTypeId > 0) {
+            $navQueryParams['working_construction_id'] = $workingConstructionTypeId;
+            $navQueryParams['context_mode']             = 'WORKING_CONTEXT';
         }
 
         $createTemuanUrl = site_url('temuan/create') . '?' . http_build_query($navQueryParams);
@@ -200,13 +331,25 @@ class AssetContextService
         }
 
         return [
-            'status'       => $finalStatus,
-            'message'      => $finalMessage,
-            'asset'        => $assetBlock,
-            'network'      => $networkBlock,
-            'construction' => $pickerResult['construction'] ?? null,
-            'bom'          => $normalizedBom,
-            'navigation'   => [
+            'status'         => $finalStatus,
+            'message'        => $finalMessage,
+            'asset'          => $assetBlock,
+            'network'        => $networkBlock,
+            'construction'   => $pickerResult['construction'] ?? null,
+            'bom'            => $normalizedBom,
+            'context_source' => [
+                'ulp'          => 'SYSTEM',
+                'penyulang'    => 'SYSTEM',
+                'section'      => $sectionSource,
+                'construction' => $constructionSource,
+            ],
+            'status_badges'  => [
+                'ulp'          => 'TERVERIFIKASI_SISTEM',
+                'penyulang'    => 'TERVERIFIKASI_SISTEM',
+                'section'      => $sectionStatusBadge,
+                'construction' => $constructionStatusBadge,
+            ],
+            'navigation'     => [
                 'create_temuan_url' => $createTemuanUrl,
                 'params'            => $navQueryParams,
             ],

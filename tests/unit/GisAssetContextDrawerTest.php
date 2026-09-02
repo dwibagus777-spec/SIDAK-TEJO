@@ -84,7 +84,7 @@ class GisAssetContextDrawerTest extends CIUnitTestCase
                 'id'                   => ['type' => 'INT', 'constraint' => 11, 'auto_increment' => true],
                 'kode_asset'           => ['type' => 'VARCHAR', 'constraint' => 100],
                 'nama_asset'           => ['type' => 'VARCHAR', 'constraint' => 255],
-                'jenis_asset'          => ['type' => 'VARCHAR', 'constraint' => 50],
+                'jenis_asset'          => ['type' => 'VARCHAR', 'constraint' => 50, 'null' => true],
                 'type'                 => ['type' => 'VARCHAR', 'constraint' => 50, 'null' => true],
                 'section_id'           => ['type' => 'INT', 'constraint' => 11, 'null' => true],
                 'penyulang_id'         => ['type' => 'INT', 'constraint' => 11, 'null' => true],
@@ -199,6 +199,9 @@ class GisAssetContextDrawerTest extends CIUnitTestCase
         }
 
         // Schema compatibility helper
+        $this->safeAddColumn('gis_translines', 'distance_meters', ['type' => 'DECIMAL', 'constraint' => '10,2', 'default' => 0.00]);
+        $this->safeAddColumn('gis_translines', 'status', ['type' => 'VARCHAR', 'constraint' => 32, 'default' => 'ACTIVE']);
+        $this->safeAddColumn('gis_translines', 'is_active', ['type' => 'TINYINT', 'constraint' => 1, 'default' => 1]);
         $this->safeAddColumn('master_materials', 'nama_material', ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true]);
         $this->safeAddColumn('master_materials', 'nama_lapangan', ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true]);
         $this->safeAddColumn('master_materials', 'satuan', ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'SET']);

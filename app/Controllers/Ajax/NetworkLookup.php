@@ -183,4 +183,62 @@ class NetworkLookup extends BaseController
                 ]);
         }
     }
+
+    /**
+     * MAP-02: Authoritative Read-Only Asset Context Drawer API
+     * GET /ajax/network/asset-context/{id}
+     */
+    public function assetContext($id = null): ResponseInterface
+    {
+        try {
+            $assetId = (int)($id ?? $this->request->getGet('asset_id') ?? $this->request->getGet('id') ?? 0);
+            if ($assetId <= 0) {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setContentType('application/json')
+                    ->setJSON([
+                        'status'  => 'INVALID_ASSET',
+                        'message' => 'Asset ID tidak valid.',
+                    ]);
+            }
+
+            $userUlpId = null;
+            $userRole  = '';
+            try {
+                if (session_status() === PHP_SESSION_ACTIVE || !headers_sent()) {
+                    $session = session();
+                    $userUlpId = $session->get('user_ulp_id') ? (int)$session->get('user_ulp_id') : null;
+                    $userRole  = (string)($session->get('user_role') ?? $session->get('role') ?? '');
+                }
+            } catch (\Throwable $se) {
+                // Ignore CLI session initiation errors
+            }
+
+            $contextService = new \App\Services\AssetContextService();
+            $context = $contextService->getAssetContext($assetId, $userUlpId, $userRole);
+
+            $statusCode = 200;
+            if ($context['status'] === 'FORBIDDEN') {
+                $statusCode = 403;
+            } elseif ($context['status'] === 'INVALID_ASSET') {
+                $statusCode = 404;
+            }
+
+            return $this->response
+                ->setStatusCode($statusCode)
+                ->setContentType('application/json')
+                ->setJSON($context);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[MAP02_ASSET_CONTEXT_ERR] {message}', ['message' => $e->getMessage()]);
+
+            return $this->response
+                ->setStatusCode(500)
+                ->setContentType('application/json')
+                ->setJSON([
+                    'status'  => 'ERROR',
+                    'message' => 'Kendala sistem saat memuat konteks aset: ' . $e->getMessage(),
+                ]);
+        }
+    }
 }

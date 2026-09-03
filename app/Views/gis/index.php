@@ -351,15 +351,23 @@
         display: none !important;
     }
 
-    /* Offcanvas Sheets - Touch-safe, elevated z-index, pan-y */
+    /* Offcanvas Sheets - Touch-safe, elevated z-index, pan-y, safe-area aware */
     .offcanvas-compact-sheet {
         height: auto !important;
-        max-height: 75vh !important;
+        max-height: 85vh !important;
         border-radius: 20px 20px 0 0 !important;
         border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
         box-shadow: 0 -10px 35px rgba(15, 23, 42, 0.25) !important;
         z-index: 1055 !important;
         touch-action: pan-y !important;
+        overflow: hidden !important;
+    }
+
+    .offcanvas-compact-sheet .offcanvas-body {
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 0 !important;
     }
 
     @media (min-width: 769px) {
@@ -431,11 +439,18 @@
         bottom: 0;
         background: #ffffff;
         padding-top: 10px;
-        padding-bottom: calc(var(--gis-mob-bottom-nav) + env(safe-area-inset-bottom, 0px) + 10px);
+        padding-bottom: calc(var(--gis-mob-bottom-nav, 62px) + env(safe-area-inset-bottom, 0px) + 12px);
         border-top: 1px solid #f1f5f9;
         margin-top: 12px;
         display: flex;
         gap: 8px;
+        z-index: 20;
+    }
+
+    @media (min-width: 769px) {
+        .sheet-sticky-footer {
+            padding-bottom: 12px !important;
+        }
     }
 
     /* Flat SVG Marker & Halo Ring System */
@@ -971,11 +986,12 @@
             </div>
         <?php endif; ?>
 
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary w-50 rounded-pill" data-bs-dismiss="offcanvas">
+        <!-- Sticky Action Footer (Mobile Safe-Area Aware) -->
+        <div class="sheet-sticky-footer">
+            <button type="button" class="btn btn-outline-secondary w-50 rounded-pill py-2" data-bs-dismiss="offcanvas">
                 Batal
             </button>
-            <button type="button" id="btn-submit-connection" class="btn btn-success w-50 fw-bold rounded-pill shadow-sm">
+            <button type="button" id="btn-submit-connection" class="btn btn-success w-50 fw-bold rounded-pill shadow-sm py-2">
                 <i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>
             </button>
         </div>
@@ -1035,11 +1051,12 @@
             </div>
         </div>
 
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary w-50 rounded-pill" data-bs-dismiss="offcanvas">
+        <!-- Sticky Action Footer (Mobile Safe-Area Aware) -->
+        <div class="sheet-sticky-footer">
+            <button type="button" class="btn btn-outline-secondary w-50 rounded-pill py-2" data-bs-dismiss="offcanvas">
                 Batal
             </button>
-            <button type="button" id="btn-submit-conductor-spec" class="btn btn-warning w-50 fw-bold rounded-pill shadow-sm text-dark">
+            <button type="button" id="btn-submit-conductor-spec" class="btn btn-warning w-50 fw-bold rounded-pill shadow-sm text-dark py-2">
                 <i class="fas fa-save me-1"></i> <?= !empty($isAdmin) ? 'Simpan Langsung' : 'Kirim Usulan' ?>
             </button>
         </div>
@@ -1084,11 +1101,12 @@
         <input type="hidden" id="del-source-id" value="" />
         <input type="hidden" id="del-target-id" value="" />
 
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary w-50 rounded-pill" data-bs-dismiss="offcanvas">
+        <!-- Sticky Action Footer (Mobile Safe-Area Aware) -->
+        <div class="sheet-sticky-footer">
+            <button type="button" class="btn btn-outline-secondary w-50 rounded-pill py-2" data-bs-dismiss="offcanvas">
                 Batal
             </button>
-            <button type="button" id="btn-confirm-delete-pair" class="btn btn-danger w-50 fw-bold rounded-pill shadow-sm">
+            <button type="button" id="btn-confirm-delete-pair" class="btn btn-danger w-50 fw-bold rounded-pill shadow-sm py-2">
                 <i class="fas fa-trash-alt me-1"></i> Hapus Jalur
             </button>
         </div>
@@ -1122,6 +1140,148 @@
                 </div>
                 <i class="fas fa-chevron-right text-muted small"></i>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     MAP-02: READ-ONLY ASSET CONTEXT DRAWER
+     Deterministic Read-Only Engine with Governed BOM Preview
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-context-drawer" style="max-height: 85vh; border-top-left-radius: 18px; border-top-right-radius: 18px;">
+    <div class="offcanvas-body p-3 pb-0 d-flex flex-column" style="overflow-y: auto;">
+        <div class="sheet-drag-handle"></div>
+
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
+            <div class="d-flex align-items-center gap-2">
+                <img id="ctx-drawer-img" src="<?= base_url('/assets/icons/network/generic-network-asset.svg') ?>" alt="Icon" style="width: 34px; height: 34px; object-fit: contain;">
+                <div>
+                    <h6 class="fw-bold text-dark mb-0" id="ctx-drawer-title" style="font-size: 15px;">-</h6>
+                    <span id="ctx-drawer-code" class="small text-primary font-monospace fw-bold" style="font-size: 12px;">-</span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span id="ctx-drawer-badge" class="badge bg-success px-2 py-1">● GOOD</span>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="ctx-drawer-loading" class="text-center py-4 text-primary">
+            <i class="fas fa-circle-notch fa-spin fa-2x mb-2"></i>
+            <p class="small fw-bold mb-0">Memuat konteks aset & standar konstruksi...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="ctx-drawer-error" class="alert alert-danger py-2 px-3 small my-2" style="display: none;">
+            <i class="fas fa-exclamation-triangle me-1"></i> <span id="ctx-drawer-error-msg">-</span>
+        </div>
+
+        <!-- Content Container -->
+        <div id="ctx-drawer-content" style="display: none;">
+            <!-- Section 1: Identitas & Koordinat Aset -->
+            <div class="card bg-light border-0 rounded-3 p-2 mb-2">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small text-muted"><i class="fas fa-tag me-1"></i>Jenis Aset</span>
+                    <span id="ctx-drawer-jenis" class="small fw-bold text-dark">-</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i>Lokasi</span>
+                    <span id="ctx-drawer-loc" class="small fw-bold text-dark text-truncate" style="max-width: 210px;">-</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="small text-muted"><i class="fas fa-location-crosshairs me-1"></i>Koordinat GPS</span>
+                    <span id="ctx-drawer-coords" class="small fw-bold font-monospace text-primary">-</span>
+                </div>
+            </div>
+
+            <!-- Section 2: Konteks Jaringan (ULP -> Feeder -> Section) -->
+            <div class="card border rounded-3 p-2 mb-2 bg-white shadow-sm">
+                <div class="small fw-bold text-secondary mb-2 text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                    <i class="fas fa-network-wired text-primary me-1"></i> Konteks Jaringan
+                </div>
+                <div class="row g-2 text-center">
+                    <div class="col-4">
+                        <div class="p-1 bg-light rounded border">
+                            <span class="d-block text-muted" style="font-size: 10px;">ULP</span>
+                            <span id="ctx-drawer-ulp" class="d-block fw-bold text-dark text-truncate" style="font-size: 11px;">-</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-1 bg-light rounded border">
+                            <span class="d-block text-muted" style="font-size: 10px;">Penyulang</span>
+                            <span id="ctx-drawer-penyulang" class="d-block fw-bold text-dark text-truncate" style="font-size: 11px;">-</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-1 bg-light rounded border">
+                            <span class="d-block text-muted" style="font-size: 10px;">Section</span>
+                            <span id="ctx-drawer-section" class="d-block fw-bold text-dark text-truncate" style="font-size: 11px;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Standar Konstruksi PLN -->
+            <div class="card border rounded-3 p-2 mb-2 bg-white shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="small fw-bold text-secondary text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                        <i class="fas fa-hammer text-warning me-1"></i> Standar Konstruksi
+                    </div>
+                    <span id="ctx-drawer-const-status" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0" style="font-size: 10px;">VERIFIED</span>
+                </div>
+                <div id="ctx-drawer-const-box">
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <span id="ctx-drawer-const-code" class="badge bg-primary px-2 py-1 font-monospace fw-bold" style="font-size: 12px;">-</span>
+                        <div class="flex-grow-1">
+                            <div id="ctx-drawer-const-name" class="small fw-bold text-dark">-</div>
+                            <div class="text-muted" style="font-size: 11px;" id="ctx-drawer-const-sub">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="ctx-drawer-const-empty" class="alert alert-warning py-1 px-2 small mb-0 mt-1" style="display: none; font-size: 11px;">
+                    <i class="fas fa-info-circle me-1"></i> Konstruksi belum terpetakan pada aset ini.
+                </div>
+            </div>
+
+            <!-- Section 4: Governed Material / BOM Catalog Preview (Strict Read-Only) -->
+            <div class="card border rounded-3 p-2 mb-3 bg-white shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="small fw-bold text-secondary text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                        <i class="fas fa-boxes-stacked text-info me-1"></i> Katalog Material Standar (BOM Preview)
+                    </div>
+                    <span class="badge bg-light text-muted border px-2 py-0" style="font-size: 10px;">Read-Only</span>
+                </div>
+                <p class="text-muted mb-2" style="font-size: 11px;">Daftar material resmi sesuai tipe konstruksi aset. Pratinjau katalog (bukan pemilihan transaksi).</p>
+
+                <div id="ctx-drawer-bom-container">
+                    <div class="table-responsive border rounded bg-white">
+                        <table class="table table-sm table-hover mb-0" style="font-size: 11px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 32%;">Kode PLN</th>
+                                    <th>Nama Material</th>
+                                    <th style="width: 15%; text-align: center;">Satuan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ctx-drawer-bom-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="ctx-drawer-bom-empty" class="alert alert-secondary py-1 px-2 small mb-0 mt-1 text-center text-muted" style="display: none; font-size: 11px;">
+                    <i class="fas fa-box-open me-1"></i> BOM konstruksi belum tersedia pada katalog resmi.
+                </div>
+            </div>
+        </div>
+
+        <!-- Sticky Action Footer (Navigation Only) -->
+        <div class="sheet-sticky-footer mt-auto pt-2 pb-2 bg-white border-top">
+            <a id="btn-context-drawer-create-temuan" href="#" class="btn btn-primary w-100 fw-bold rounded-pill text-white py-2 shadow-sm d-flex justify-content-center align-items-center gap-2" style="font-size: 13px;">
+                <i class="fas fa-plus-circle"></i> Buat Temuan dari Aset Ini
+            </a>
         </div>
     </div>
 </div>
@@ -2025,8 +2185,141 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Default Case: Open Quick Card
-        openAssetQuickCard(clickedAsset, svgPath, coords);
+        // MAP-02: Open Read-Only Asset Context Drawer on asset marker tap
+        openAssetContextDrawer(clickedAsset.id, clickedAsset, svgPath, coords);
+    }
+
+    // ========================================================
+    // 🎯 MAP-02: READ-ONLY ASSET CONTEXT DRAWER DISPATCHER
+    // ========================================================
+    function openAssetContextDrawer(assetId, fallbackProps, svgPath, coords) {
+        if (!assetId || isNaN(assetId) || assetId <= 0) {
+            console.warn('[MAP-02] Invalid assetId for context drawer:', assetId);
+            return;
+        }
+
+        const $loading = $('#ctx-drawer-loading');
+        const $error = $('#ctx-drawer-error');
+        const $content = $('#ctx-drawer-content');
+        const $bomTbody = $('#ctx-drawer-bom-tbody');
+        const $bomContainer = $('#ctx-drawer-bom-container');
+        const $bomEmpty = $('#ctx-drawer-bom-empty');
+        const $constBox = $('#ctx-drawer-const-box');
+        const $constEmpty = $('#ctx-drawer-const-empty');
+        const $btnCreate = $('#btn-context-drawer-create-temuan');
+
+        $loading.show();
+        $error.hide();
+        $content.hide();
+        $bomTbody.empty();
+
+        // Initial placeholder from map props if provided
+        if (fallbackProps) {
+            document.getElementById('ctx-drawer-title').textContent = fallbackProps.nama_asset || ('Asset #' + assetId);
+            document.getElementById('ctx-drawer-code').textContent = fallbackProps.kode_asset || ('ID: ' + assetId);
+            if (svgPath) {
+                document.getElementById('ctx-drawer-img').src = svgPath;
+            }
+        }
+
+        safeShowOffcanvas('offcanvas-asset-context-drawer');
+
+        // Deterministic server-authoritative AJAX call
+        $.ajax({
+            url: "<?= site_url('ajax/network/asset-context') ?>/" + assetId,
+            type: "GET",
+            dataType: "json",
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(res) {
+                $loading.hide();
+
+                if (!res || res.status === 'INVALID_ASSET' || res.status === 'FORBIDDEN') {
+                    $error.show();
+                    $('#ctx-drawer-error-msg').text(res.message || 'Aset tidak valid atau akses ditolak.');
+                    return;
+                }
+
+                $content.show();
+
+                // 1. Asset Identity
+                const a = res.asset || {};
+                document.getElementById('ctx-drawer-title').textContent = a.nama_asset || ('Asset #' + assetId);
+                document.getElementById('ctx-drawer-code').textContent = a.kode_asset || ('ID: ' + assetId);
+                document.getElementById('ctx-drawer-jenis').textContent = a.jenis_asset || '-';
+                document.getElementById('ctx-drawer-loc').textContent = a.lokasi || 'Jaringan SUTM PLN';
+
+                const latVal = (a.latitude !== null && a.latitude !== undefined) ? Number(a.latitude).toFixed(7) : '-';
+                const lngVal = (a.longitude !== null && a.longitude !== undefined) ? Number(a.longitude).toFixed(7) : '-';
+                document.getElementById('ctx-drawer-coords').textContent = `${latVal}, ${lngVal}`;
+
+                const badgeStatus = a.status || 'NORMAL';
+                const $badge = $('#ctx-drawer-badge');
+                $badge.text(`● ${badgeStatus}`);
+                if (badgeStatus === 'NORMAL' || badgeStatus === 'GOOD') {
+                    $badge.attr('class', 'badge bg-success px-2 py-1');
+                } else if (badgeStatus === 'WARNING' || badgeStatus === 'ALERT') {
+                    $badge.attr('class', 'badge bg-warning text-dark px-2 py-1');
+                } else {
+                    $badge.attr('class', 'badge bg-danger px-2 py-1');
+                }
+
+                // 2. Network Context
+                const net = res.network || {};
+                document.getElementById('ctx-drawer-ulp').textContent = (net.ulp && net.ulp.nama_ulp) ? net.ulp.nama_ulp : '-';
+                document.getElementById('ctx-drawer-penyulang').textContent = (net.penyulang && net.penyulang.nama_penyulang) ? net.penyulang.nama_penyulang : '-';
+                document.getElementById('ctx-drawer-section').textContent = (net.section && net.section.nama_section) ? net.section.nama_section : '-';
+
+                // 3. Construction
+                if (res.status === 'NO_CONSTRUCTION' || !res.construction) {
+                    $constBox.hide();
+                    $constEmpty.show();
+                    $('#ctx-drawer-const-status').attr('class', 'badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-0').text('UNMAPPED');
+                } else {
+                    const c = res.construction;
+                    $constEmpty.hide();
+                    $constBox.show();
+                    document.getElementById('ctx-drawer-const-code').textContent = c.code || '-';
+                    document.getElementById('ctx-drawer-const-name').textContent = c.name || '-';
+                    document.getElementById('ctx-drawer-const-sub').textContent = `${c.construction_family || 'JTM'} • ${c.voltage_level || '20kV'}`;
+                    $('#ctx-drawer-const-status').attr('class', 'badge bg-success-subtle text-success border border-success-subtle px-2 py-0').text('VERIFIED');
+                }
+
+                // 4. Governed BOM Catalog Preview (Strict Read-Only)
+                if (res.status === 'NO_BOM' || !Array.isArray(res.bom) || res.bom.length === 0) {
+                    $bomContainer.hide();
+                    $bomEmpty.show();
+                } else {
+                    $bomEmpty.hide();
+                    $bomContainer.show();
+                    let bomHtml = '';
+                    res.bom.forEach(function(m) {
+                        const code = m.material_code || m.raw_material_code || '-';
+                        const name = m.nama_material || m.nama_lapangan || m.raw_material_name || '-';
+                        const unit = m.satuan || m.unit || 'SET';
+                        bomHtml += `<tr>
+                            <td class="font-monospace text-primary fw-bold">${code}</td>
+                            <td class="text-dark">${name}</td>
+                            <td class="text-center font-monospace text-muted">${unit}</td>
+                        </tr>`;
+                    });
+                    $bomTbody.html(bomHtml);
+                }
+
+                // 5. Navigation Link (Context Handoff Only)
+                const navUrl = (res.navigation && res.navigation.create_temuan_url) ? res.navigation.create_temuan_url : `<?= site_url('temuan/create') ?>?asset_id=${assetId}`;
+                $btnCreate.attr('href', navUrl);
+            },
+            error: function(xhr) {
+                $loading.hide();
+                $error.show();
+                let errMsg = 'Gagal memuat konteks aset dari server.';
+                try {
+                    const errData = JSON.parse(xhr.responseText);
+                    if (errData && errData.message) errMsg = errData.message;
+                } catch (e) {}
+                $('#ctx-drawer-error-msg').text(errMsg);
+            }
+        });
     }
 
     // ========================================================
@@ -2078,32 +2371,11 @@ document.addEventListener("DOMContentLoaded", function () {
         document.body.classList.remove('gis-quickcard-active');
     };
 
-    // Quick Action 1: Open Full Detail Sheet
+    // Quick Action 1: Open Full Context Drawer
     bindPointerSafeTap('btn-quick-detail', function () {
         if (!activeAssetProps) return;
         closeAssetQuickCard();
-
-        var isUnassigned = (activeAssetProps.asset_scope === 'ULP_UNASSIGNED');
-        document.getElementById('detail-sheet-img').src = activeAssetProps._svgPath;
-        document.getElementById('detail-sheet-title').textContent = activeAssetProps.nama_asset || '-';
-        document.getElementById('detail-sheet-subtitle').textContent = activeAssetProps.kode_asset || '-';
-
-        var badge = document.getElementById('detail-sheet-badge');
-        if (isUnassigned) {
-            badge.textContent = '● BELUM TERHUBUNG KE PENYULANG';
-            badge.className = 'badge bg-warning text-dark font-monospace px-3 py-1';
-        } else {
-            badge.textContent = `● ${activeAssetProps.status || 'NORMAL'}`;
-            badge.className = `badge ${(activeAssetProps.condition_overlay && activeAssetProps.condition_overlay.badge_class) || 'bg-success'} px-3 py-1`;
-        }
-
-        document.getElementById('detail-sheet-construction').textContent = (activeAssetProps.construction_type || activeAssetProps.type || 'TM') + (isUnassigned ? ' (Master Asset Belum Terhubung)' : '');
-        document.getElementById('detail-sheet-loc').textContent = activeAssetProps.lokasi || 'Jaringan SUTM PLN';
-        document.getElementById('detail-sheet-coords').textContent = `${activeAssetProps.latitude || '-'}, ${activeAssetProps.longitude || '-'}`;
-        document.getElementById('detail-sheet-jenis').textContent = activeAssetProps.jenis_asset || 'JTM';
-        document.getElementById('detail-sheet-dt-link').href = `<?= site_url('master-assets/detail') ?>/${activeAssetProps.id}`;
-
-        safeShowOffcanvas('offcanvas-asset-detail');
+        openAssetContextDrawer(activeAssetProps.id, activeAssetProps, activeAssetProps._svgPath, activeAssetProps._coords);
     }, 'QUICK_DETAIL');
 
     // Quick Action 2: Open Edit Parameter Sheet

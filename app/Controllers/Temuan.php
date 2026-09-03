@@ -312,6 +312,58 @@ class Temuan extends BaseController
             'tanggal_temuan'   => $this->request->getPost('tanggal_temuan'),
         ];
 
+        // MR-01 Governed Invariant: asset_id is OPTIONAL for Temuan persistence.
+        // Asset is ONLY REQUIRED when governed material is requested.
+        $structuredJson = $this->request->getPost('structured_materials_json');
+        $hasMaterialRequest = false;
+        $structuredData = null;
+        if (!empty($structuredJson)) {
+            $decoded = json_decode((string)$structuredJson, true);
+            if (is_array($decoded) && !empty($decoded['materials']) && is_array($decoded['materials'])) {
+                $validItems = [];
+                foreach ($decoded['materials'] as $item) {
+                    if (isset($item['quantity']) && is_numeric($item['quantity']) && (float)$item['quantity'] > 0) {
+                        $validItems[] = $item;
+                    }
+                }
+                if (!empty($validItems)) {
+                    $hasMaterialRequest = true;
+                    $decoded['materials'] = $validItems;
+                    $structuredData = $decoded;
+                }
+            }
+        }
+
+        $assetIdInput = $this->request->getPost('asset_id');
+        $assetId = (!empty($assetIdInput) && is_numeric($assetIdInput)) ? (int)$assetIdInput : null;
+
+        // INVARIANT 1: If material is requested, asset_id is strictly MANDATORY
+        if ($hasMaterialRequest) {
+            if ($assetId === null || $assetId <= 0) {
+                return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan wajib dipilih jika menambahkan material yang dibutuhkan.');
+            }
+        }
+
+        // INVARIANT 2: If asset_id is provided, conditionally validate existence and topological compatibility
+        if ($assetId !== null && $assetId > 0) {
+            $db = \Config\Database::connect();
+            if ($db->tableExists('assets')) {
+                $assetRow = $db->table('assets')->where('id', $assetId)->get()->getRowArray();
+                if (!$assetRow) {
+                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak ditemukan.');
+                }
+                if (isset($assetRow['section_id']) && (int)$assetRow['section_id'] !== (int)$data['section_id']) {
+                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam section yang sesuai.');
+                }
+                if (isset($assetRow['penyulang_id']) && (int)$assetRow['penyulang_id'] !== (int)$data['penyulang_id']) {
+                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam penyulang yang sesuai.');
+                }
+            }
+        }
+
+        // Set asset_id in data payload for persistence (nullable)
+        $data['asset_id'] = $assetId;
+
         log_message('critical',
             '[FORENSIC_CREATE_TEMUAN] ' .
             json_encode([
@@ -330,14 +382,14 @@ class Temuan extends BaseController
         if ($res['success']) {
             $insertedId = $res['id'] ?? null;
             if ($insertedId) {
-                // MR-01 Phase 3B: Optional structured material transaction attachment
-                $structuredJson = $this->request->getPost('structured_materials_json');
-                if (!empty($structuredJson)) {
-                    $structuredData = json_decode((string)$structuredJson, true);
-                    if (is_array($structuredData) && !empty($structuredData['materials']) && !empty($structuredData['asset_id'])) {
-                        $structuredData['temuan_id'] = (int)$insertedId;
-                        $txService = new \App\Services\MaterialTransactionService();
-                        $txService->persistTransaction($structuredData, $session->get('user_id') ? (int)$session->get('user_id') : null);
+                // MR-01 Phase 3B: Governed structured material transaction attachment
+                if ($hasMaterialRequest && $structuredData !== null && $assetId !== null) {
+                    $structuredData['temuan_id'] = (int)$insertedId;
+                    $structuredData['asset_id']  = (int)$assetId;
+                    $txService = new \App\Services\MaterialTransactionService();
+                    $txResult = $txService->persistTransaction($structuredData, $session->get('user_id') ? (int)$session->get('user_id') : null);
+                    if (($txResult['status'] ?? '') !== 'SUCCESS') {
+                        log_message('error', '[MR01_TX_FAIL] Temuan #' . $insertedId . ': ' . ($txResult['message'] ?? 'Unknown error'));
                     }
                 }
 

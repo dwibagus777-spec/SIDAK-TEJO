@@ -61,12 +61,15 @@
                             <?php endif; ?>
                         </div>
 
-                        <!-- Asset Selection (Cascaded from Section) -->
-                        <div class="col-md-6 form-group mb-3">
-                            <label for="mr01_asset_id">Aset Jaringan (Tiang / Gardu / Kubikel) <span class="text-danger">*</span></label>
-                            <select name="asset_id" id="mr01_asset_id" class="form-control select2" required>
-                                <option value="">-- Pilih Section / Ruas Terlebih Dahulu --</option>
+                        <!-- Asset Selection (Cascaded from Section) - Default Optional, Required only when material requested -->
+                        <div class="col-md-6 form-group mb-3" id="mr01_asset_form_group">
+                            <label for="mr01_asset_id" id="mr01_asset_label">Aset Jaringan (Opsional) <span id="mr01_asset_req_indicator"><span class="badge bg-light text-muted border ms-1 fw-normal" style="font-size: 11px;">Opsional</span></span></label>
+                            <select name="asset_id" id="mr01_asset_id" class="form-control select2">
+                                <option value="">-- Tidak dipilih / Opsional --</option>
                             </select>
+                            <small class="text-muted d-block mt-1" id="mr01_asset_help_text">
+                                Aset jaringan tidak wajib diisi. Hanya diperlukan jika menambahkan kebutuhan material konstruksi.
+                            </small>
                         </div>
                     </div>
 
@@ -151,50 +154,73 @@
                         </div>
                     </div>
 
-                    <!-- MR-01 UI-01: Asset-Driven Material Picker (Governed BOM Selection) -->
+                    <!-- MR-01: Governed Material Requirement Section (Triggered by operator request) -->
                     <div class="form-group mb-4 p-3 rounded" id="mr01-material-picker-section" style="background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px;">
                         <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
                             <div>
                                 <label class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
-                                    <i class="fas fa-boxes-stacked text-primary me-2"></i> Material Standar Konstruksi Dibutuhkan
+                                    <i class="fas fa-boxes-stacked text-primary me-2"></i> Material yang Dibutuhkan
                                 </label>
                                 <small class="text-muted d-block" style="font-size: 11px;">
-                                    Daftar material resmi PLN yang ditentukan otomatis berdasarkan konstruksi aset terpilih (MR-01).
+                                    Opsional — Ditambahkan jika temuan membutuhkan penggantian / pemasangan material konstruksi resmi PLN.
                                 </small>
                             </div>
                             <div id="mr01_construction_badge_container">
                                 <span class="badge bg-light text-muted border p-2" id="mr01_construction_badge" style="font-size: 12px; font-weight: 600;">
-                                    <i class="fas fa-info-circle me-1"></i> Pilih aset terlebih dahulu
+                                    <i class="fas fa-info-circle me-1"></i> Tidak ada material diminta
                                 </span>
                             </div>
                         </div>
 
-                        <!-- State 1: Asset belum dipilih -->
-                        <div class="text-center py-4 text-muted" id="mr01_empty_asset_state">
-                            <i class="fas fa-arrow-pointer fa-2x mb-2 text-secondary opacity-50"></i>
-                            <h6 class="fw-bold mb-1" style="font-size: 13px;">Pilih asset terlebih dahulu untuk melihat material</h6>
-                            <p class="small mb-0 text-secondary" style="font-size: 12px;">Daftar material yang valid akan muncul otomatis sesuai standar konstruksi aset.</p>
+                        <!-- STATE A: No Material Requested (Default Initial State) -->
+                        <div class="text-center py-4" id="mr01_state_no_material">
+                            <i class="fas fa-box-open fa-2x mb-2 text-secondary opacity-50"></i>
+                            <h6 class="fw-bold mb-1 text-dark" style="font-size: 13px;">Tidak Ada Kebutuhan Material</h6>
+                            <p class="small mb-3 text-secondary" style="font-size: 12px;">Temuan dapat langsung disimpan tanpa memilih aset maupun material.</p>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm fw-bold" id="btn-enable-material-flow">
+                                <i class="fas fa-plus me-1"></i> Tambah Material yang Dibutuhkan
+                            </button>
                         </div>
 
-                        <!-- State 2: Sedang memuat BOM -->
-                        <div class="text-center py-4 text-primary" id="mr01_loading_state" style="display: none;">
-                            <i class="fas fa-circle-notch fa-spin fa-2x mb-2"></i>
-                            <p class="small fw-bold mb-0">Mengidentifikasi standar konstruksi & memuat material BOM...</p>
-                        </div>
-
-                        <!-- State 3: Alert container (NO_CONSTRUCTION / NO_BOM / PROVISIONAL_BLOCKED / EMPTY) -->
-                        <div id="mr01_picker_alert" class="mt-2 mb-2" style="display: none;"></div>
-
-                        <!-- State 4: Selectable BOM Material Rows Container -->
-                        <div id="mr01_bom_preview_container" style="display: none;">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <small class="fw-bold text-secondary">
-                                    <i class="fas fa-list-check me-1"></i> Centang material yang dibutuhkan & masukkan jumlah kebutuhan:
-                                </small>
-                                <small class="text-muted" id="mr01_bom_count_info"></small>
+                        <!-- MATERIAL REQUEST FLOW CONTAINER (Active when user clicks Tambah Material) -->
+                        <div id="mr01_material_flow_container" style="display: none;">
+                            <!-- Flow Notice / Banner -->
+                            <div class="alert alert-info py-2 px-3 mb-3 d-flex justify-content-between align-items-center" id="mr01_material_notice_banner">
+                                <div class="small">
+                                    <i class="fas fa-info-circle me-1"></i> <strong>Mode Kebutuhan Material Aktif</strong>: Aset Jaringan diperlukan untuk menentukan konstruksi dan material resmi.
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 ms-2" id="btn-cancel-material-flow" style="font-size: 11px;">
+                                    <i class="fas fa-times me-1"></i> Batal Tambah Material
+                                </button>
                             </div>
-                            <div id="mr01_bom_chips_container" class="p-2 bg-white rounded border" style="max-height: 380px; overflow-y: auto;">
-                                <!-- Material rows dynamically populated -->
+
+                            <!-- State B: Asset belum dipilih saat flow material aktif -->
+                            <div class="text-center py-3 text-warning border rounded bg-white mb-2" id="mr01_empty_asset_state">
+                                <i class="fas fa-arrow-pointer fa-2x mb-2 text-warning opacity-75"></i>
+                                <h6 class="fw-bold mb-1 text-dark" style="font-size: 13px;">Pilih asset terlebih dahulu untuk melihat material</h6>
+                                <p class="small mb-0 text-secondary" style="font-size: 12px;">Untuk menambahkan material konstruksi, pilih Aset Jaringan terlebih dahulu.</p>
+                            </div>
+
+                            <!-- State C: Sedang memuat BOM -->
+                            <div class="text-center py-3 text-primary" id="mr01_loading_state" style="display: none;">
+                                <i class="fas fa-circle-notch fa-spin fa-2x mb-2"></i>
+                                <p class="small fw-bold mb-0">Mengidentifikasi standar konstruksi & memuat material BOM...</p>
+                            </div>
+
+                            <!-- Alert container (NO_CONSTRUCTION / NO_BOM / PROVISIONAL_BLOCKED / ERROR) -->
+                            <div id="mr01_picker_alert" class="mt-2 mb-2" style="display: none;"></div>
+
+                            <!-- State D/E: Selectable BOM Material Rows Container -->
+                            <div id="mr01_bom_preview_container" style="display: none;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="fw-bold text-secondary">
+                                        <i class="fas fa-list-check me-1"></i> Centang material yang dibutuhkan & masukkan jumlah kebutuhan:
+                                    </small>
+                                    <small class="text-muted" id="mr01_bom_count_info"></small>
+                                </div>
+                                <div id="mr01_bom_chips_container" class="p-2 bg-white rounded border" style="max-height: 380px; overflow-y: auto;">
+                                    <!-- Material rows dynamically populated -->
+                                </div>
                             </div>
                         </div>
 
@@ -397,9 +423,11 @@
             });
 
             // --- 1. CASCADING DROPDOWNS WITH REQUEST TOKEN GUARD ---
-            const oldPenyulangId = "<?= old('penyulang_id') ?>";
-            const oldSectionId = "<?= old('section_id') ?>";
-            const oldAssetId = "<?= old('asset_id') ?>";
+            const urlParams = new URLSearchParams(window.location.search);
+            const oldPenyulangId = "<?= old('penyulang_id') ?>" || urlParams.get('penyulang_id') || "";
+            const oldSectionId = "<?= old('section_id') ?>" || urlParams.get('section_id') || "";
+            const oldAssetId = "<?= old('asset_id') ?>" || urlParams.get('asset_id') || "";
+            const urlUlpId = urlParams.get('ulp_id') || "";
             let penyulangRequestToken = 0;
             let sectionRequestToken = 0;
 
@@ -525,8 +553,14 @@
             loadSection($(this).val());
         });
 
-        // Restore old input cascade (if validation fails or pre-selected)
-        const initialUlpId = $('#ulp_id').val();
+        // Restore old input cascade (if validation fails or pre-selected from map/URL)
+        let initialUlpId = $('#ulp_id').val();
+        if (!initialUlpId && urlUlpId) {
+            $('#ulp_id').val(urlUlpId);
+            refreshSelect2($('#ulp_id'));
+            initialUlpId = urlUlpId;
+        }
+
         if (initialUlpId) {
             loadPenyulang(initialUlpId, function() {
                 if (oldPenyulangId) {
@@ -549,35 +583,110 @@
             });
         }
 
-        // --- MR-01 UI-01: Asset-Driven Material Picker (Governed Integration) ---
+        // ====================================================================
+        // MR-01 STATE MACHINE: GOVERNED MATERIAL REQUIREMENT & ASSET BINDING
+        //
+        // Invariant: All Temuan -> asset is OPTIONAL by default.
+        // Asset becomes REQUIRED ONLY when operator requests governed materials.
+        //
+        // State A: NO_MATERIAL_REQUEST (asset optional, "+ Tambah Material" visible)
+        // State B: MATERIAL_REQUEST_OPEN (asset required for material flow)
+        // State C: ASSET_SELECTED (resolving construction)
+        // State D: MATERIAL_SELECTION (BOM whitelist loaded, user selects materials)
+        // State E: MATERIAL_CONFIRMED (quantities verified, ready to submit)
+        // ====================================================================
+        let isMaterialFlowActive = false;
+
+        function setMaterialFlowState(active, autoFocusAsset = false) {
+            isMaterialFlowActive = !!active;
+            const $reqIndicator = $('#mr01_asset_req_indicator');
+            const $assetHelp = $('#mr01_asset_help_text');
+            const $badge = $('#mr01_construction_badge');
+            const $stateNoMaterial = $('#mr01_state_no_material');
+            const $flowContainer = $('#mr01_material_flow_container');
+            const $emptyAssetState = $('#mr01_empty_asset_state');
+            const $assetSelect = $('#mr01_asset_id');
+            const currentAsset = $assetSelect.val();
+
+            if (!isMaterialFlowActive) {
+                // --- STATE A: NO_MATERIAL_REQUEST ---
+                $stateNoMaterial.show();
+                $flowContainer.hide();
+                $reqIndicator.html('<span class="badge bg-light text-muted border ms-1 fw-normal" style="font-size: 11px;">Opsional</span>');
+                $assetHelp.html('Aset jaringan tidak wajib diisi. Hanya diperlukan jika menambahkan kebutuhan material konstruksi.');
+                $badge.attr('class', 'badge bg-light text-muted border p-2')
+                      .html('<i class="fas fa-info-circle me-1"></i> Tidak ada material diminta');
+
+                // Clear material selections and reset hidden fields
+                $('.mr01-mat-check').prop('checked', false);
+                $('.mr01-mat-input-row').hide();
+                $('.mr01-mat-qty').val('').removeClass('is-invalid');
+                $('.mr01-mat-note').val('');
+                $('#structured_materials_json').val('');
+                $('#material-hidden-field').val('Tidak ada spesifikasi material');
+            } else {
+                // --- STATE B / C / D / E: MATERIAL_REQUEST_ACTIVE ---
+                $stateNoMaterial.hide();
+                $flowContainer.slideDown(200);
+                $reqIndicator.html('<span class="badge bg-warning text-dark border ms-1 fw-bold" style="font-size: 11px;"><i class="fas fa-exclamation-circle me-1"></i>Diperlukan untuk Material</span>');
+                $assetHelp.html('<span class="text-primary fw-bold"><i class="fas fa-info-circle me-1"></i>Aset Jaringan diperlukan untuk menentukan konstruksi dan material resmi.</span>');
+
+                if (!currentAsset) {
+                    // State B: Asset not yet chosen
+                    $emptyAssetState.show();
+                    $('#mr01_bom_preview_container').hide();
+                    $('#mr01_picker_alert').hide();
+                    $badge.attr('class', 'badge bg-warning text-dark p-2')
+                          .html('<i class="fas fa-arrow-pointer me-1"></i> Pilih Aset Jaringan Dahulu');
+
+                    if (autoFocusAsset) {
+                        $('html, body').animate({
+                            scrollTop: $('#mr01_asset_form_group').offset().top - 100
+                        }, 300);
+                        setTimeout(function() {
+                            $assetSelect.select2('open');
+                        }, 350);
+                    }
+                } else {
+                    // State C/D: Asset already selected, trigger BOM picker
+                    loadMaterialPickerForAsset(currentAsset, $('#section_id').val());
+                }
+            }
+        }
+
+        // Enable material flow button
+        $('#btn-enable-material-flow').on('click', function(e) {
+            e.preventDefault();
+            setMaterialFlowState(true, true);
+        });
+
+        // Cancel material flow button
+        $('#btn-cancel-material-flow').on('click', function(e) {
+            e.preventDefault();
+            setMaterialFlowState(false);
+        });
+
+        // --- Load Assets for Section (Default: Optional) ---
         function loadAssetsForSection(sectionId, callback) {
             const $assetSelect = $('#mr01_asset_id');
-            const $badge = $('#mr01_construction_badge');
-            const $bomContainer = $('#mr01_bom_preview_container');
-            const $alert = $('#mr01_picker_alert');
             const $emptyState = $('#mr01_empty_asset_state');
-            const $loadingState = $('#mr01_loading_state');
+            const $bomContainer = $('#mr01_bom_preview_container');
             const $chips = $('#mr01_bom_chips_container');
 
             $bomContainer.hide();
-            $alert.hide();
-            $loadingState.hide();
             $chips.empty();
             $('#structured_materials_json').val('');
             $('#material-hidden-field').val('Tidak ada spesifikasi material');
 
             if (!sectionId) {
-                $assetSelect.html('<option value="">-- Pilih Section / Ruas Terlebih Dahulu --</option>');
+                $assetSelect.html('<option value="">-- Tidak dipilih / Opsional --</option>');
                 refreshSelect2($assetSelect);
-                $badge.attr('class', 'badge bg-light text-muted border p-2')
-                      .html('<i class="fas fa-info-circle me-1"></i> Pilih aset terlebih dahulu');
-                $emptyState.show();
+                if (isMaterialFlowActive) $emptyState.show();
                 return;
             }
 
             $assetSelect.html('<option value="">Sedang memuat aset...</option>');
             refreshSelect2($assetSelect);
-            $emptyState.show();
 
             $.ajax({
                 url: "<?= site_url('ajax/network/asset') ?>/" + sectionId,
@@ -585,7 +694,7 @@
                 dataType: "json",
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(data) {
-                    let html = '<option value="">-- Pilih Aset / Tiang --</option>';
+                    let html = '<option value="">-- Tidak dipilih / Opsional --</option>';
                     if (Array.isArray(data) && data.length > 0) {
                         data.forEach(function(a) {
                             const label = (a.kode_asset ? `[${a.kode_asset}] ` : '') + (a.nama_asset || 'Asset #' + a.id);
@@ -596,10 +705,13 @@
                     }
                     $assetSelect.html(html);
                     refreshSelect2($assetSelect);
+                    if (isMaterialFlowActive && !$assetSelect.val()) {
+                        $emptyState.show();
+                    }
                     if (callback) callback();
                 },
                 error: function() {
-                    $assetSelect.html('<option value="">Gagal memuat aset</option>');
+                    $assetSelect.html('<option value="">-- Tidak dipilih / Opsional --</option>');
                     refreshSelect2($assetSelect);
                 }
             });
@@ -609,9 +721,7 @@
             loadAssetsForSection($(this).val());
         });
 
-        $('#mr01_asset_id').on('change', function() {
-            const assetId = $(this).val();
-            const sectionId = $('#section_id').val();
+        function loadMaterialPickerForAsset(assetId, sectionId) {
             const $badge = $('#mr01_construction_badge');
             const $bomContainer = $('#mr01_bom_preview_container');
             const $chips = $('#mr01_bom_chips_container');
@@ -620,18 +730,17 @@
             const $emptyState = $('#mr01_empty_asset_state');
             const $loadingState = $('#mr01_loading_state');
 
-            // Discard previous picker state and clean structured inputs
             $bomContainer.hide();
             $alert.hide();
             $chips.empty();
             $('#structured_materials_json').val('');
             $('#material-hidden-field').val('Tidak ada spesifikasi material');
 
-            if (!assetId || !sectionId) {
+            if (!assetId) {
                 $loadingState.hide();
                 $emptyState.show();
-                $badge.attr('class', 'badge bg-light text-muted border p-2')
-                      .html('<i class="fas fa-info-circle me-1"></i> Pilih aset terlebih dahulu');
+                $badge.attr('class', 'badge bg-warning text-dark p-2')
+                      .html('<i class="fas fa-arrow-pointer me-1"></i> Pilih Aset Jaringan Dahulu');
                 return;
             }
 
@@ -675,7 +784,7 @@
                                             <div class="col-md-4">
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-light text-secondary fw-bold">Qty</span>
-                                                    <input type="number" step="0.01" min="0.01" class="form-control mr01-mat-qty" placeholder="Jumlah wajib diisi (misal: 1.00)" id="mat_qty_${m.id}">
+                                                    <input type="number" step="0.01" min="0.01" class="form-control mr01-mat-qty" placeholder="Jumlah (misal: 1.00)" id="mat_qty_${m.id}">
                                                     <span class="input-group-text bg-light">${m.unit || 'SET'}</span>
                                                 </div>
                                             </div>
@@ -728,6 +837,14 @@
                           .show();
                 }
             });
+        }
+
+        $('#mr01_asset_id').on('change', function() {
+            const assetId = $(this).val();
+            const sectionId = $('#section_id').val();
+            if (isMaterialFlowActive) {
+                loadMaterialPickerForAsset(assetId, sectionId);
+            }
         });
 
         // Dynamic toggle of material inputs and serialization to JSON
@@ -756,7 +873,7 @@
 
         function updateStructuredMaterialsJson() {
             const assetId = $('#mr01_asset_id').val();
-            if (!assetId) {
+            if (!assetId || !isMaterialFlowActive) {
                 $('#structured_materials_json').val('');
                 $('#material-hidden-field').val('Tidak ada spesifikasi material');
                 return;
@@ -797,13 +914,17 @@
 
         // Dedicated ROW Fallback listener
         $('#jenis_temuan').on('change', function() {
-            if ($(this).val() === 'ROW') {
+            const val = $(this).val();
+            if (val === 'ROW') {
                 $('#row-vegetasi-container').slideDown(150);
             } else {
                 $('#row-vegetasi-container').slideUp(150);
                 $('#catatan_row').val('');
             }
         });
+
+        // Initialize state on page load
+        setMaterialFlowState(false);
         if ($('#jenis_temuan').val() === 'ROW') {
             $('#row-vegetasi-container').show();
         }
@@ -959,29 +1080,49 @@
                 return false;
             }
 
-            // Validate that every checked material has a valid quantity > 0
-            let invalidQty = false;
-            $('.mr01-mat-check:checked').each(function() {
-                const matId = $(this).val();
-                const qtyVal = $('#mat_qty_' + matId).val();
-                const qty = parseFloat(qtyVal);
-                if (isNaN(qty) || qty <= 0) {
-                    invalidQty = true;
-                    $('#mat_qty_' + matId).addClass('is-invalid');
-                } else {
-                    $('#mat_qty_' + matId).removeClass('is-invalid');
+            // If material flow is active and user checked materials:
+            const checkedMaterials = $('.mr01-mat-check:checked');
+            if (isMaterialFlowActive && checkedMaterials.length > 0) {
+                const assetId = $('#mr01_asset_id').val();
+                if (!assetId) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Aset Jaringan Diperlukan',
+                        text: 'Pilih Aset Jaringan terlebih dahulu untuk menambahkan material konstruksi.',
+                        confirmButtonColor: '#005eb8'
+                    });
+                    return false;
                 }
-            });
 
-            if (invalidQty) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Jumlah Material Belum Diisi',
-                    text: 'Harap masukkan jumlah kebutuhan (angka lebih dari 0) untuk setiap material yang dicentang!',
-                    confirmButtonColor: '#005eb8'
+                // Validate that every checked material has a valid quantity > 0
+                let invalidQty = false;
+                checkedMaterials.each(function() {
+                    const matId = $(this).val();
+                    const qtyVal = $('#mat_qty_' + matId).val();
+                    const qty = parseFloat(qtyVal);
+                    if (isNaN(qty) || qty <= 0) {
+                        invalidQty = true;
+                        $('#mat_qty_' + matId).addClass('is-invalid');
+                    } else {
+                        $('#mat_qty_' + matId).removeClass('is-invalid');
+                    }
                 });
-                return false;
+
+                if (invalidQty) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Jumlah Material Belum Diisi',
+                        text: 'Harap masukkan jumlah kebutuhan (angka lebih dari 0) untuk setiap material yang dicentang!',
+                        confirmButtonColor: '#005eb8'
+                    });
+                    return false;
+                }
+            } else {
+                // If material flow is not active or 0 materials checked:
+                $('#structured_materials_json').val('');
+                $('#material-hidden-field').val('Tidak ada spesifikasi material');
             }
 
             // Sync structured materials JSON and summary

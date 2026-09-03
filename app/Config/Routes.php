@@ -638,7 +638,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->get('asset/(:num)', 'Ajax\NetworkLookup::asset/$1');
         $routes->get('asset', 'Ajax\NetworkLookup::asset');
         $routes->get('assets', 'Ajax\NetworkLookup::assets');
+        // MAP-02: Read-Only Asset Context Drawer API
+        $routes->get('asset-context/(:num)', 'Ajax\NetworkLookup::assetContext/$1');
     });
+
+    // MAP-02: Canonical API Alias for Read-Only Asset Context
+    $routes->get('api/asset-context/(:num)', 'Ajax\NetworkLookup::assetContext/$1');
 
     $routes->group('api/master-network', static function ($routes) {
         $routes->get('ulps', 'Ajax\NetworkLookup::ulp');

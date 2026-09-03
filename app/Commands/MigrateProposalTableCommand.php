@@ -21,28 +21,35 @@ class MigrateProposalTableCommand extends BaseCommand
     protected $group       = 'Transline';
     protected $name        = 'transline:migrate-proposals';
     protected $description = 'Executes ONLY 2026-09-03-000001_CreateGisTranslineProposalsTable migration with zero side effects.';
-    protected $usage       = 'transline:migrate-proposals [--execute] [--dry-run] [--rollback]';
+    protected $usage       = 'transline:migrate-proposals [--status] [--dry-run] [--execute] [--rollback]';
     protected $options     = [
-        '--execute'  => 'Execute migration and record in migrations table',
+        '--status'   => 'Inspect current proposal table and migration state without any write',
         '--dry-run'  => 'Test migration and rollback without persisting table',
+        '--execute'  => 'Execute migration and record in migrations table',
         '--rollback' => 'Rollback gis_transline_proposals migration',
     ];
 
     public function run(array $params)
     {
         $db = Database::connect();
+        $isStatus   = CLI::getOption('status') !== null;
         $isExecute  = CLI::getOption('execute') !== null;
         $isDryRun   = CLI::getOption('dry-run') !== null;
         $isRollback = CLI::getOption('rollback') !== null;
 
-        if (!$isExecute && !$isDryRun && !$isRollback) {
-            CLI::write("Usage: php spark transline:migrate-proposals --dry-run | --execute | --rollback", 'yellow');
+        if (!$isStatus && !$isExecute && !$isDryRun && !$isRollback) {
+            CLI::write("Usage: php spark transline:migrate-proposals --status | --dry-run | --execute | --rollback", 'yellow');
             return;
         }
 
         CLI::write("==================================================================", 'cyan');
         CLI::write("TL-01 PHASE 2B: CONTROLLED PROPOSAL TABLE MIGRATION RUNNER", 'cyan');
         CLI::write("==================================================================", 'cyan');
+
+        if ($isStatus) {
+            $this->handleStatus($db);
+            return;
+        }
 
         $monitored = ['gis_translines', 'assets', 'temuan', 'temuan_materials'];
         $fpBefore = $this->captureFingerprints($db, $monitored);
@@ -189,5 +196,28 @@ class MigrateProposalTableCommand extends BaseCommand
         if ($this->verifyFingerprints($fpBefore, $fpAfter, $monitored)) {
             CLI::write("  ✓ Rollback successful and verified 0 side-effects.", 'green');
         }
+    }
+
+    private function handleStatus($db): void
+    {
+        CLI::write("[FORENSIC STATUS REPORT]", 'yellow');
+
+        $tableExists = $db->tableExists('gis_transline_proposals') ? 1 : 0;
+        CLI::write("  gis_transline_proposals={$tableExists}");
+
+        $translinesCount = $db->tableExists('gis_translines') ? (int)$db->table('gis_translines')->countAllResults() : 0;
+        CLI::write("  gis_translines={$translinesCount}");
+
+        $targetRecorded = 0;
+        if ($db->tableExists('migrations')) {
+            $targetRecorded = (int)$db->table('migrations')->where('version', '2026-09-03-000001')->countAllResults();
+        }
+        CLI::write("  target_migration_records={$targetRecorded}");
+
+        $assetsCount = $db->tableExists('assets') ? (int)$db->table('assets')->countAllResults() : 0;
+        CLI::write("  assets={$assetsCount}");
+
+        $temuanCount = $db->tableExists('temuan') ? (int)$db->table('temuan')->countAllResults() : 0;
+        CLI::write("  temuan={$temuanCount}");
     }
 }

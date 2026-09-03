@@ -61,8 +61,18 @@
                             <?php endif; ?>
                         </div>
 
-                        <!-- Jenis Temuan -->
+                        <!-- Asset Selection (Cascaded from Section) -->
                         <div class="col-md-6 form-group mb-3">
+                            <label for="mr01_asset_id">Aset Jaringan (Tiang / Gardu / Kubikel) <span class="text-danger">*</span></label>
+                            <select name="asset_id" id="mr01_asset_id" class="form-control select2" required>
+                                <option value="">-- Pilih Section / Ruas Terlebih Dahulu --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Jenis Temuan -->
+                        <div class="col-md-3 form-group mb-3">
                             <label for="jenis_temuan">Jenis Temuan <span class="text-danger">*</span></label>
                             <select name="jenis_temuan" id="jenis_temuan" class="form-control select2 <?= ($validation && $validation->hasError('jenis_temuan')) ? 'is-invalid' : '' ?>" required>
                                 <option value="">-- Pilih Jenis --</option>
@@ -74,11 +84,9 @@
                                 <div class="invalid-feedback"><?= $validation->getError('jenis_temuan') ?></div>
                             <?php endif; ?>
                         </div>
-                    </div>
 
-                    <div class="row">
                         <!-- Pelaksana -->
-                        <div class="col-md-4 form-group mb-3">
+                        <div class="col-md-3 form-group mb-3">
                             <label for="pelaksana">Pelaksana Pekerjaan <span class="text-danger">*</span></label>
                             <select name="pelaksana" id="pelaksana" class="form-control select2 <?= ($validation && $validation->hasError('pelaksana')) ? 'is-invalid' : '' ?>" required>
                                 <option value="">-- Pilih Pelaksana --</option>
@@ -95,7 +103,7 @@
                         </div>
 
                         <!-- Prioritas -->
-                        <div class="col-md-4 form-group mb-3">
+                        <div class="col-md-3 form-group mb-3">
                             <label for="prioritas">Prioritas SLA <span class="text-danger">*</span></label>
                             <select name="prioritas" id="prioritas" class="form-control select2 <?= ($validation && $validation->hasError('prioritas')) ? 'is-invalid' : '' ?>" required>
                                 <option value="">-- Pilih Prioritas --</option>
@@ -109,7 +117,7 @@
                         </div>
 
                         <!-- Potensi Gangguan -->
-                        <div class="col-md-4 form-group mb-3">
+                        <div class="col-md-3 form-group mb-3">
                             <label for="potensi_gangguan">Potensi Gangguan <span class="text-danger">*</span></label>
                             <select name="potensi_gangguan" id="potensi_gangguan" class="form-control select2 <?= ($validation && $validation->hasError('potensi_gangguan')) ? 'is-invalid' : '' ?>" required>
                                 <option value="">-- Pilih Potensi --</option>
@@ -143,25 +151,66 @@
                         </div>
                     </div>
 
-                    <!-- Material Dibutuhkan (Dynamic Repeater UI) -->
-                    <div class="form-group mb-4 p-3 rounded" style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px;">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
-                                <i class="fas fa-screwdriver-wrench text-primary me-1"></i> Material Dibutuhkan / Pohon <small class="text-muted">(Opsional)</small>
-                            </label>
-                        </div>
-                        
-                        <div id="material-repeater-container" class="mb-2">
-                            <!-- Items added dynamically -->
+                    <!-- MR-01 UI-01: Asset-Driven Material Picker (Governed BOM Selection) -->
+                    <div class="form-group mb-4 p-3 rounded" id="mr01-material-picker-section" style="background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <div>
+                                <label class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
+                                    <i class="fas fa-boxes-stacked text-primary me-2"></i> Material Standar Konstruksi Dibutuhkan
+                                </label>
+                                <small class="text-muted d-block" style="font-size: 11px;">
+                                    Daftar material resmi PLN yang ditentukan otomatis berdasarkan konstruksi aset terpilih (MR-01).
+                                </small>
+                            </div>
+                            <div id="mr01_construction_badge_container">
+                                <span class="badge bg-light text-muted border p-2" id="mr01_construction_badge" style="font-size: 12px; font-weight: 600;">
+                                    <i class="fas fa-info-circle me-1"></i> Pilih aset terlebih dahulu
+                                </span>
+                            </div>
                         </div>
 
-                        <!-- Pill Add Button matching user screenshot -->
-                        <div class="text-center mt-2">
-                            <button type="button" id="btn-add-material" class="btn btn-outline-primary w-100 py-2 rounded-pill font-weight-bold" style="border-width: 2px; font-size: 14px; box-shadow: 0 2px 6px rgba(0, 94, 184, 0.08);">
-                                <i class="fas fa-plus-circle me-1"></i> Tambah Material
-                            </button>
+                        <!-- State 1: Asset belum dipilih -->
+                        <div class="text-center py-4 text-muted" id="mr01_empty_asset_state">
+                            <i class="fas fa-arrow-pointer fa-2x mb-2 text-secondary opacity-50"></i>
+                            <h6 class="fw-bold mb-1" style="font-size: 13px;">Pilih asset terlebih dahulu untuk melihat material</h6>
+                            <p class="small mb-0 text-secondary" style="font-size: 12px;">Daftar material yang valid akan muncul otomatis sesuai standar konstruksi aset.</p>
                         </div>
+
+                        <!-- State 2: Sedang memuat BOM -->
+                        <div class="text-center py-4 text-primary" id="mr01_loading_state" style="display: none;">
+                            <i class="fas fa-circle-notch fa-spin fa-2x mb-2"></i>
+                            <p class="small fw-bold mb-0">Mengidentifikasi standar konstruksi & memuat material BOM...</p>
+                        </div>
+
+                        <!-- State 3: Alert container (NO_CONSTRUCTION / NO_BOM / PROVISIONAL_BLOCKED / EMPTY) -->
+                        <div id="mr01_picker_alert" class="mt-2 mb-2" style="display: none;"></div>
+
+                        <!-- State 4: Selectable BOM Material Rows Container -->
+                        <div id="mr01_bom_preview_container" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="fw-bold text-secondary">
+                                    <i class="fas fa-list-check me-1"></i> Centang material yang dibutuhkan & masukkan jumlah kebutuhan:
+                                </small>
+                                <small class="text-muted" id="mr01_bom_count_info"></small>
+                            </div>
+                            <div id="mr01_bom_chips_container" class="p-2 bg-white rounded border" style="max-height: 380px; overflow-y: auto;">
+                                <!-- Material rows dynamically populated -->
+                            </div>
+                        </div>
+
+                        <!-- Hidden JSON input for structured material transactions -->
+                        <input type="hidden" name="structured_materials_json" id="structured_materials_json" value="">
+                        <!-- Hidden material input for legacy text compatibility -->
                         <input type="hidden" name="material" id="material-hidden-field" value="">
+                    </div>
+
+                    <!-- Dedicated ROW Fallback Container (Only active if jenis_temuan === 'ROW') -->
+                    <div class="form-group mb-3 p-3 rounded" id="row-vegetasi-container" style="display: none; background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 12px;">
+                        <label class="fw-bold text-success mb-1" style="font-size: 13px;">
+                            <i class="fas fa-tree me-1"></i> Catatan Vegetasi / Pohon (Khusus Temuan ROW)
+                        </label>
+                        <small class="text-muted d-block mb-2">Keterangan jenis pohon, diameter, atau jarak bebas dahan terhadap kabel/jaringan.</small>
+                        <input type="text" name="catatan_row" id="catatan_row" class="form-control form-control-sm" placeholder="Contoh: Pohon Sengon diameter 30cm mendekati konduktor 1.5 meter">
                     </div>
 
                     <!-- Detail Temuan -->
@@ -350,6 +399,7 @@
             // --- 1. CASCADING DROPDOWNS WITH REQUEST TOKEN GUARD ---
             const oldPenyulangId = "<?= old('penyulang_id') ?>";
             const oldSectionId = "<?= old('section_id') ?>";
+            const oldAssetId = "<?= old('asset_id') ?>";
             let penyulangRequestToken = 0;
             let sectionRequestToken = 0;
 
@@ -486,10 +536,276 @@
                         if (oldSectionId) {
                             $('#section_id').val(oldSectionId);
                             refreshSelect2($('#section_id'));
+                            loadAssetsForSection(oldSectionId, function() {
+                                if (oldAssetId) {
+                                    $('#mr01_asset_id').val(oldAssetId);
+                                    refreshSelect2($('#mr01_asset_id'));
+                                    $('#mr01_asset_id').trigger('change');
+                                }
+                            });
                         }
                     });
                 }
             });
+        }
+
+        // --- MR-01 UI-01: Asset-Driven Material Picker (Governed Integration) ---
+        function loadAssetsForSection(sectionId, callback) {
+            const $assetSelect = $('#mr01_asset_id');
+            const $badge = $('#mr01_construction_badge');
+            const $bomContainer = $('#mr01_bom_preview_container');
+            const $alert = $('#mr01_picker_alert');
+            const $emptyState = $('#mr01_empty_asset_state');
+            const $loadingState = $('#mr01_loading_state');
+            const $chips = $('#mr01_bom_chips_container');
+
+            $bomContainer.hide();
+            $alert.hide();
+            $loadingState.hide();
+            $chips.empty();
+            $('#structured_materials_json').val('');
+            $('#material-hidden-field').val('Tidak ada spesifikasi material');
+
+            if (!sectionId) {
+                $assetSelect.html('<option value="">-- Pilih Section / Ruas Terlebih Dahulu --</option>');
+                refreshSelect2($assetSelect);
+                $badge.attr('class', 'badge bg-light text-muted border p-2')
+                      .html('<i class="fas fa-info-circle me-1"></i> Pilih aset terlebih dahulu');
+                $emptyState.show();
+                return;
+            }
+
+            $assetSelect.html('<option value="">Sedang memuat aset...</option>');
+            refreshSelect2($assetSelect);
+            $emptyState.show();
+
+            $.ajax({
+                url: "<?= site_url('ajax/network/asset') ?>/" + sectionId,
+                type: "GET",
+                dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(data) {
+                    let html = '<option value="">-- Pilih Aset / Tiang --</option>';
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(function(a) {
+                            const label = (a.kode_asset ? `[${a.kode_asset}] ` : '') + (a.nama_asset || 'Asset #' + a.id);
+                            html += `<option value="${a.id}">${label}</option>`;
+                        });
+                    } else {
+                        html = '<option value="">-- Tidak ada aset pada section ini --</option>';
+                    }
+                    $assetSelect.html(html);
+                    refreshSelect2($assetSelect);
+                    if (callback) callback();
+                },
+                error: function() {
+                    $assetSelect.html('<option value="">Gagal memuat aset</option>');
+                    refreshSelect2($assetSelect);
+                }
+            });
+        }
+
+        $('#section_id').on('change', function() {
+            loadAssetsForSection($(this).val());
+        });
+
+        $('#mr01_asset_id').on('change', function() {
+            const assetId = $(this).val();
+            const sectionId = $('#section_id').val();
+            const $badge = $('#mr01_construction_badge');
+            const $bomContainer = $('#mr01_bom_preview_container');
+            const $chips = $('#mr01_bom_chips_container');
+            const $countInfo = $('#mr01_bom_count_info');
+            const $alert = $('#mr01_picker_alert');
+            const $emptyState = $('#mr01_empty_asset_state');
+            const $loadingState = $('#mr01_loading_state');
+
+            // Discard previous picker state and clean structured inputs
+            $bomContainer.hide();
+            $alert.hide();
+            $chips.empty();
+            $('#structured_materials_json').val('');
+            $('#material-hidden-field').val('Tidak ada spesifikasi material');
+
+            if (!assetId || !sectionId) {
+                $loadingState.hide();
+                $emptyState.show();
+                $badge.attr('class', 'badge bg-light text-muted border p-2')
+                      .html('<i class="fas fa-info-circle me-1"></i> Pilih aset terlebih dahulu');
+                return;
+            }
+
+            $emptyState.hide();
+            $loadingState.show();
+            $badge.attr('class', 'badge bg-light text-primary border p-2')
+                  .html('<i class="fas fa-spinner fa-spin me-1"></i> Mengidentifikasi konstruksi...');
+
+            $.ajax({
+                url: "<?= site_url('temuan/ajax-material-picker') ?>",
+                type: "GET",
+                data: { asset_id: assetId, section_id: sectionId },
+                dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(res) {
+                    $loadingState.hide();
+                    if (!res) return;
+
+                    if (res.status === 'READY') {
+                        $badge.attr('class', 'badge bg-success text-white p-2')
+                              .html('<i class="fas fa-lock me-1"></i> Konstruksi: ' + (res.construction.code ? res.construction.code + ' &mdash; ' : '') + res.construction.name);
+
+                        if (Array.isArray(res.materials) && res.materials.length > 0) {
+                            $countInfo.text(res.materials.length + ' material eligible');
+                            res.materials.forEach(function(m) {
+                                const row = `
+                                <div class="mr01-material-item border-bottom py-2" data-material-id="${m.id}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input mr01-mat-check" type="checkbox" id="mat_chk_${m.id}" value="${m.id}" data-name="${m.name}" data-code="${m.code || ''}" data-unit="${m.unit || 'SET'}">
+                                            <label class="form-check-label fw-bold text-dark" for="mat_chk_${m.id}" style="font-size: 13px; cursor: pointer;">
+                                                ${m.name}
+                                                ${m.code ? '<code class="ms-1 small text-secondary">[' + m.code + ']</code>' : ''}
+                                                ${m.field_alias ? '<small class="text-muted ms-1">(' + m.field_alias + ')</small>' : ''}
+                                            </label>
+                                        </div>
+                                        <span class="badge bg-secondary text-white">${m.unit || 'SET'}</span>
+                                    </div>
+                                    <div class="mr01-mat-input-row mt-2" id="mat_input_row_${m.id}" style="display: none; padding-left: 24px;">
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-light text-secondary fw-bold">Qty</span>
+                                                    <input type="number" step="0.01" min="0.01" class="form-control mr01-mat-qty" placeholder="Jumlah wajib diisi (misal: 1.00)" id="mat_qty_${m.id}">
+                                                    <span class="input-group-text bg-light">${m.unit || 'SET'}</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control form-control-sm mr01-mat-note" placeholder="Catatan alasan penggantian / justifikasi teknis (opsional)" id="mat_note_${m.id}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                                $chips.append(row);
+                            });
+                            $bomContainer.slideDown(200);
+                        } else {
+                            $alert.attr('class', 'alert alert-info py-2 px-3 mb-0 mt-2')
+                                  .html('<i class="fas fa-info-circle me-1"></i> Tidak ada material eligible terdaftar untuk konstruksi ini.')
+                                  .show();
+                        }
+                    } else if (res.status === 'NO_CONSTRUCTION') {
+                        $badge.attr('class', 'badge bg-warning text-dark p-2')
+                              .html('<i class="fas fa-exclamation-triangle me-1"></i> NON-KONSTRUKSI');
+                        $alert.attr('class', 'alert alert-warning py-2 px-3 mb-0 mt-2')
+                              .html('<i class="fas fa-exclamation-triangle me-1"></i> <strong>KONSTRUKSI BELUM TERPETAKAN</strong>: Aset ini belum memiliki standar konstruksi PLN terdaftar. Material picker tidak tersedia.')
+                              .show();
+                    } else if (res.status === 'NO_BOM') {
+                        $badge.attr('class', 'badge bg-info text-white p-2')
+                              .html('<i class="fas fa-info-circle me-1"></i> ' + (res.construction ? res.construction.code : 'KONSTRUKSI'));
+                        $alert.attr('class', 'alert alert-info py-2 px-3 mb-0 mt-2')
+                              .html('<i class="fas fa-info-circle me-1"></i> <strong>BOM KONSTRUKSI BELUM TERSEDIA</strong>: Standar konstruksi terdaftar' + (res.construction ? ' (' + res.construction.name + ')' : '') + ', namun rincian material BOM belum tersedia di sistem.')
+                              .show();
+                    } else if (res.status === 'PROVISIONAL_BLOCKED') {
+                        $badge.attr('class', 'badge bg-secondary text-white p-2')
+                              .html('<i class="fas fa-ban me-1"></i> DRAFT (BELUM FIX)');
+                        $alert.attr('class', 'alert alert-secondary py-2 px-3 mb-0 mt-2')
+                              .html('<i class="fas fa-ban me-1"></i> <strong>DRAFT / PROVISIONAL</strong>: ' + res.message)
+                              .show();
+                    } else {
+                        $badge.attr('class', 'badge bg-danger text-white p-2')
+                              .html('<i class="fas fa-times-circle me-1"></i> ' + (res.status || 'ERROR'));
+                        $alert.attr('class', 'alert alert-danger py-2 px-3 mb-0 mt-2')
+                              .html('<i class="fas fa-times-circle me-1"></i> ' + (res.message || 'Terjadi kesalahan sistem.'))
+                              .show();
+                    }
+                },
+                error: function(xhr) {
+                    $loadingState.hide();
+                    $badge.attr('class', 'badge bg-danger text-white p-2')
+                          .html('<i class="fas fa-times-circle me-1"></i> Gagal Memuat');
+                    $alert.attr('class', 'alert alert-danger py-2 px-3 mb-0 mt-2')
+                          .html('<i class="fas fa-times-circle me-1"></i> Gagal memverifikasi konstruksi aset (Status: ' + xhr.status + ')')
+                          .show();
+                }
+            });
+        });
+
+        // Dynamic toggle of material inputs and serialization to JSON
+        $(document).on('change', '.mr01-mat-check', function() {
+            const matId = $(this).val();
+            if ($(this).is(':checked')) {
+                $('#mat_input_row_' + matId).slideDown(150);
+                $('#mat_qty_' + matId).focus();
+            } else {
+                $('#mat_input_row_' + matId).slideUp(150);
+                $('#mat_qty_' + matId).val('').removeClass('is-invalid');
+                $('#mat_note_' + matId).val('');
+            }
+            updateStructuredMaterialsJson();
+        });
+
+        $(document).on('input', '.mr01-mat-qty, .mr01-mat-note', function() {
+            if ($(this).hasClass('mr01-mat-qty')) {
+                const q = parseFloat($(this).val());
+                if (!isNaN(q) && q > 0) {
+                    $(this).removeClass('is-invalid');
+                }
+            }
+            updateStructuredMaterialsJson();
+        });
+
+        function updateStructuredMaterialsJson() {
+            const assetId = $('#mr01_asset_id').val();
+            if (!assetId) {
+                $('#structured_materials_json').val('');
+                $('#material-hidden-field').val('Tidak ada spesifikasi material');
+                return;
+            }
+
+            const materials = [];
+            const textSummaries = [];
+
+            $('.mr01-mat-check:checked').each(function() {
+                const matId = $(this).val();
+                const matName = $(this).data('name') || '';
+                const matUnit = $(this).data('unit') || '';
+                const qtyVal = $('#mat_qty_' + matId).val();
+                const qty = parseFloat(qtyVal);
+                const note = $('#mat_note_' + matId).val();
+
+                if (!isNaN(qty) && qty > 0) {
+                    materials.push({
+                        material_id: parseInt(matId),
+                        quantity: qty,
+                        justification_note: note && note.trim() ? note.trim() : null
+                    });
+                    textSummaries.push(`${matName}: ${qty} ${matUnit}` + (note && note.trim() ? ` (${note.trim()})` : ''));
+                }
+            });
+
+            if (materials.length > 0) {
+                $('#structured_materials_json').val(JSON.stringify({
+                    asset_id: parseInt(assetId),
+                    materials: materials
+                }));
+                $('#material-hidden-field').val(textSummaries.join(', '));
+            } else {
+                $('#structured_materials_json').val('');
+                $('#material-hidden-field').val('Tidak ada spesifikasi material');
+            }
+        }
+
+        // Dedicated ROW Fallback listener
+        $('#jenis_temuan').on('change', function() {
+            if ($(this).val() === 'ROW') {
+                $('#row-vegetasi-container').slideDown(150);
+            } else {
+                $('#row-vegetasi-container').slideUp(150);
+                $('#catatan_row').val('');
+            }
+        });
+        if ($('#jenis_temuan').val() === 'ROW') {
+            $('#row-vegetasi-container').show();
         }
 
         // --- 2. MULTI-PHOTO UPLOAD PREVIEW & COMPRESSION ---
@@ -643,19 +959,45 @@
                 return false;
             }
 
-            // Sync material list to hidden field
-            let materialItems = [];
-            $('.material-item-row').each(function() {
-                const nama = $(this).find('.input-nama-material').val().trim();
-                const qty = $(this).find('.input-jumlah-material').val().trim();
-                if (nama !== '') {
-                    materialItems.push(qty ? `- ${qty} ${nama}` : `- ${nama}`);
+            // Validate that every checked material has a valid quantity > 0
+            let invalidQty = false;
+            $('.mr01-mat-check:checked').each(function() {
+                const matId = $(this).val();
+                const qtyVal = $('#mat_qty_' + matId).val();
+                const qty = parseFloat(qtyVal);
+                if (isNaN(qty) || qty <= 0) {
+                    invalidQty = true;
+                    $('#mat_qty_' + matId).addClass('is-invalid');
+                } else {
+                    $('#mat_qty_' + matId).removeClass('is-invalid');
                 }
             });
-            if (materialItems.length > 0) {
-                $('#material-hidden-field').val(materialItems.join("\n"));
-            } else {
-                $('#material-hidden-field').val('Tidak ada spesifikasi material');
+
+            if (invalidQty) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Jumlah Material Belum Diisi',
+                    text: 'Harap masukkan jumlah kebutuhan (angka lebih dari 0) untuk setiap material yang dicentang!',
+                    confirmButtonColor: '#005eb8'
+                });
+                return false;
+            }
+
+            // Sync structured materials JSON and summary
+            updateStructuredMaterialsJson();
+
+            // If ROW notes are provided, append to legacy text field
+            if ($('#jenis_temuan').val() === 'ROW') {
+                const rowNote = ($('#catatan_row').val() || '').trim();
+                if (rowNote) {
+                    const currentMat = $('#material-hidden-field').val();
+                    if (currentMat && currentMat !== 'Tidak ada spesifikasi material') {
+                        $('#material-hidden-field').val(currentMat + ' | Vegetasi ROW: ' + rowNote);
+                    } else {
+                        $('#material-hidden-field').val('Vegetasi ROW: ' + rowNote);
+                    }
+                }
             }
 
             const btnSubmit = $('#btn-submit');
@@ -786,38 +1128,7 @@
                 $('#btn-sync-map').trigger('click');
             }
         });
-        // ============================================================
-        // MATERIAL REPEATER JS (Custom Add & Remove Row UI)
-        // ============================================================
-        function addMaterialRow(nama = '', jumlah = '') {
-            const rowHtml = `
-                <div class="material-item-row card mb-2 p-2 shadow-sm border-0 animate__animated animate__fadeIn" style="background: #ffffff; border-radius: 12px; border-left: 4px solid #005eb8 !important;">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-6 col-md-7">
-                            <label class="small text-muted font-weight-bold mb-1">Nama Material / Pohon</label>
-                            <input type="text" class="form-control form-control-sm input-nama-material" value="${nama}" placeholder="Contoh: Isolator Tumpu / Pohon Mangga">
-                        </div>
-                        <div class="col-4 col-md-4">
-                            <label class="small text-muted font-weight-bold mb-1">Jumlah</label>
-                            <input type="text" class="form-control form-control-sm input-jumlah-material" value="${jumlah}" placeholder="Contoh: 2 buah / 5 m">
-                        </div>
-                        <div class="col-2 col-md-1 text-end">
-                            <label class="small d-block mb-1">&nbsp;</label>
-                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-material border-0" title="Hapus"><i class="fas fa-trash-can"></i></button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            $('#material-repeater-container').append(rowHtml);
-        }
 
-        $('#btn-add-material').click(function() {
-            addMaterialRow();
-        });
-
-        $(document).on('click', '.btn-remove-material', function() {
-            $(this).closest('.material-item-row').remove();
-        });
 
         // Phase 38 Smart AI Recommendation Engine AJAX Listener
         function triggerAiRecommendation() {
@@ -866,22 +1177,7 @@
         $('#detail_temuan').on('blur', triggerAiRecommendation);
         triggerAiRecommendation();
 
-        $('form').on('submit', function() {
-            let materialItems = [];
-            $('.material-item-row').each(function() {
-                const nama = $(this).find('.input-nama-material').val().trim();
-                const qty = $(this).find('.input-jumlah-material').val().trim();
-                if (nama !== '') {
-                    materialItems.push(qty ? `- ${qty} ${nama}` : `- ${nama}`);
-                }
-            });
 
-            if (materialItems.length > 0) {
-                $('#material-hidden-field').val(materialItems.join("\n"));
-            } else {
-                $('#material-hidden-field').val('Tidak ada spesifikasi material');
-            }
-        });
     });
 }
 if (document.readyState === 'loading') {

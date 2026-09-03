@@ -330,6 +330,17 @@ class Temuan extends BaseController
         if ($res['success']) {
             $insertedId = $res['id'] ?? null;
             if ($insertedId) {
+                // MR-01 Phase 3B: Optional structured material transaction attachment
+                $structuredJson = $this->request->getPost('structured_materials_json');
+                if (!empty($structuredJson)) {
+                    $structuredData = json_decode((string)$structuredJson, true);
+                    if (is_array($structuredData) && !empty($structuredData['materials']) && !empty($structuredData['asset_id'])) {
+                        $structuredData['temuan_id'] = (int)$insertedId;
+                        $txService = new \App\Services\MaterialTransactionService();
+                        $txService->persistTransaction($structuredData, $session->get('user_id') ? (int)$session->get('user_id') : null);
+                    }
+                }
+
                 return redirect()->to(site_url('temuan/detail/' . $insertedId))->with('success', $res['message'] . ' Berhasil dialihkan ke Detail Temuan.');
             }
             return redirect()->to(site_url('temuan'))->with('success', $res['message']);
@@ -408,6 +419,20 @@ class Temuan extends BaseController
         $sla = get_sla_status($temuan['prioritas'], $temuan['tanggal_temuan'], $temuan['status'], $temuan['tanggal_selesai']);
         $history = $this->tindakLanjutRepository->getHistoryByTemuan($id);
 
+        // MR-01 Phase 3B: Load structured material transactions
+        $structuredMaterials = [];
+        $db = \Config\Database::connect();
+        if ($db->tableExists('temuan_materials')) {
+            $structuredMaterials = $db->table('temuan_materials tm')
+                ->select('tm.*, a.nama_asset, a.kode_asset, ct.construction_code, ct.construction_name')
+                ->join('assets a', 'tm.asset_id = a.id', 'left')
+                ->join('construction_types ct', 'tm.construction_type_id = ct.id', 'left')
+                ->where('tm.temuan_id', $id)
+                ->orderBy('tm.id', 'ASC')
+                ->get()
+                ->getResultArray() ?: [];
+        }
+
         $trace = [
             'ROUTE_TRACE_2026'      => 'temuan/detail/' . $id,
             'CONTROLLER_TRACE_2026' => __METHOD__ . ' (' . realpath(__FILE__) . ')',
@@ -421,10 +446,11 @@ class Temuan extends BaseController
         ];
 
         return view('temuan/detail', [
-            'temuan'  => $temuan,
-            'sla'     => $sla,
-            'history' => $history,
-            'trace'   => $trace
+            'temuan'              => $temuan,
+            'sla'                 => $sla,
+            'history'             => $history,
+            'structuredMaterials' => $structuredMaterials,
+            'trace'               => $trace
         ]);
     }
 
@@ -769,6 +795,136 @@ class Temuan extends BaseController
                     'message' => 'Failed to load section data: ' . $e->getMessage()
                 ]);
         }
+    }
+
+    /**
+     * MR-01 Phase 3A: Read-Only Material Picker Endpoint
+     * GET /temuan/ajax-material-picker?asset_id=X&section_id=Y
+     * Guaranteed ZERO database writes (Read-Only).
+     */
+    public function ajaxMaterialPicker(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $session = session();
+        if (!$session->get('is_logged_in') && !function_exists('auth')) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'ERROR', 'message' => 'Unauthorized']);
+        }
+
+        $assetId   = (int)($this->request->getGet('asset_id') ?? 0);
+        $sectionId = (int)($this->request->getGet('section_id') ?? 0);
+
+        $service = new \App\Services\MaterialPickerService();
+        $result  = $service->resolvePicker($assetId, $sectionId);
+
+        return $this->response
+            ->setStatusCode(200)
+            ->setContentType('application/json')
+            ->setJSON($result);
+    }
+
+    /**
+     * MR-01 Phase 3B: Finding Material Transaction Endpoint
+     * POST /temuan/ajax-material-transaction
+     * Atomic, multi-material persistence with server-side snapshotting.
+     */
+    public function ajaxMaterialTransaction(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $session = session();
+        if (!$session->get('is_logged_in') && !function_exists('auth')) {
+            return $this->response->setStatusCode(401)->setJSON([
+                'status'  => 'FORBIDDEN',
+                'message' => 'Autentikasi diperlukan untuk menyimpan transaksi material.',
+            ]);
+        }
+
+        $rawJson = $this->request->getJSON(true);
+        $payload = is_array($rawJson) ? $rawJson : ($this->request->getPost() ?: []);
+
+        $userId = $session->get('user_id') ? (int)$session->get('user_id') : null;
+
+        $service = new \App\Services\MaterialTransactionService();
+        $result  = $service->persistTransaction($payload, $userId);
+
+        $statusCode = match ($result['status']) {
+            'SUCCESS'                                    => 200,
+            'CONFLICT'                                   => 409,
+            'FORBIDDEN'                                  => 403,
+            'VALIDATION_ERROR', 'INVALID_ASSET',
+            'NO_CONSTRUCTION', 'NO_BOM',
+            'PROVISIONAL_BLOCKED'                        => 422,
+            default                                      => 500,
+        };
+
+        return $this->response
+            ->setStatusCode($statusCode)
+            ->setContentType('application/json')
+            ->setJSON($result);
+    }
+
+    /**
+     * MR-01 Phase 3C: Material Recap & Reporting Page
+     * GET /temuan/material-recap
+     * Strictly Read-Only.
+     */
+    public function materialRecap()
+    {
+        $session = session();
+        if (!$session->get('is_logged_in') && !function_exists('auth')) {
+            return redirect()->to(site_url('login'))->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        [$ulps, $penyulangs, $isRestricted] = $this->getScopedUlpsAndPenyulangs();
+
+        return view('temuan/material_recap', [
+            'ulps'         => $ulps,
+            'penyulangs'   => $penyulangs,
+            'isRestricted' => $isRestricted,
+        ]);
+    }
+
+    /**
+     * MR-01 Phase 3C: Material Recap & Reporting JSON API
+     * GET /temuan/ajax-material-recap
+     * Strictly Read-Only.
+     */
+    public function ajaxMaterialRecap(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $session = session();
+        if (!$session->get('is_logged_in') && !function_exists('auth')) {
+            return $this->response->setStatusCode(401)->setJSON([
+                'status'  => 'FORBIDDEN',
+                'message' => 'Autentikasi diperlukan untuk mengakses rekapitulasi material.',
+            ]);
+        }
+
+        $role = (string)$session->get('user_role');
+        $userUlpId = $session->get('user_ulp_id');
+        $ulpIdFilter = null;
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'har_crane', 'inspeksi']) && $userUlpId !== null) {
+            $ulpIdFilter = (int)$userUlpId;
+        }
+
+        $filters = [
+            'ulp_id'       => $this->request->getGet('ulp_id'),
+            'penyulang_id' => $this->request->getGet('penyulang_id'),
+            'section_id'   => $this->request->getGet('section_id'),
+            'material_id'  => $this->request->getGet('material_id'),
+            'start_date'   => $this->request->getGet('start_date'),
+            'end_date'     => $this->request->getGet('end_date'),
+        ];
+
+        $recapService = new \App\Services\MaterialRecapService();
+        $result = $recapService->getRecap($filters, $ulpIdFilter);
+
+        $statusCode = match ($result['status']) {
+            'SUCCESS'        => 200,
+            'INVALID_FILTER' => 422,
+            default          => 500,
+        };
+
+        return $this->response
+            ->setStatusCode($statusCode)
+            ->setContentType('application/json')
+            ->setJSON($result);
     }
 
     public function terdekat()

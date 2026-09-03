@@ -623,6 +623,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('temuan/ajax-section', 'Temuan::ajaxGetSection');
     $routes->get('temuan/ajax-get-section/(:num)', 'Temuan::ajaxGetSection/$1');
     $routes->get('temuan/ajax-get-section', 'Temuan::ajaxGetSection');
+    $routes->get('temuan/ajax-material-picker', 'Temuan::ajaxMaterialPicker');
+    $routes->post('temuan/ajax-material-transaction', 'Temuan::ajaxMaterialTransaction');
+    $routes->get('temuan/material-recap', 'Temuan::materialRecap');
+    $routes->get('temuan/ajax-material-recap', 'Temuan::ajaxMaterialRecap');
 
     // MNF-01: Shared Master Network Fabric Lookup API (Canonical 4-Level Master Fabric)
     $routes->group('ajax/network', static function ($routes) {

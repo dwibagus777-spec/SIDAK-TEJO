@@ -585,6 +585,48 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                     <div class="p-3 rounded-3" style="background-color: #f1f5f9; border-left: 4px solid #005eb8; font-size: 13px; font-weight: 600; color: #0f172a; white-space: pre-wrap; line-height: 1.6;">
                         <?= esc($temuan['material']) ?: '<span class="text-muted font-italic">Tidak ada spesifikasi material</span>' ?>
                     </div>
+
+                    <?php if (!empty($structuredMaterials)): ?>
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="font-weight-bold text-success mb-0" style="font-size: 13px;">
+                                <i class="fas fa-boxes-stacked me-1"></i> Rincian Material Standar PLN (MR-01):
+                            </h6>
+                            <span class="badge bg-success"><?= count($structuredMaterials) ?> Item Tersimpan</span>
+                        </div>
+                        <div class="table-responsive rounded border bg-white">
+                            <table class="table table-sm table-hover mb-0" style="font-size: 12px;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Kode Standar</th>
+                                        <th>Nama Material (Snapshot)</th>
+                                        <th class="text-center">Kebutuhan</th>
+                                        <th class="text-center">Satuan</th>
+                                        <th>Aset & Konstruksi</th>
+                                        <th>Catatan Teknis</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($structuredMaterials as $sm): ?>
+                                    <tr>
+                                        <td><code><?= esc($sm['canonical_code_snapshot']) ?></code></td>
+                                        <td class="fw-bold text-dark"><?= esc($sm['canonical_name_snapshot']) ?></td>
+                                        <td class="text-center fw-bold text-primary"><?= number_format((float)$sm['quantity'], 2) ?></td>
+                                        <td class="text-center"><span class="badge bg-secondary"><?= esc($sm['unit_snapshot']) ?></span></td>
+                                        <td>
+                                            <?php if (!empty($sm['construction_code'])): ?>
+                                                <span class="badge bg-info text-dark"><?= esc($sm['construction_code']) ?></span>
+                                            <?php endif; ?>
+                                            <small class="text-muted"><?= esc($sm['nama_asset'] ?? 'Aset #' . $sm['asset_id']) ?></small>
+                                        </td>
+                                        <td class="text-muted"><?= esc($sm['justification_note'] ?: '-') ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="mb-4">

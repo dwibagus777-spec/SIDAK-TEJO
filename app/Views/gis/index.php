@@ -1148,8 +1148,8 @@
      MAP-02: READ-ONLY ASSET CONTEXT DRAWER
      Deterministic Read-Only Engine with Governed BOM Preview
      ======================================================== -->
-<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-asset-context-drawer" style="max-height: 85vh; border-top-left-radius: 18px; border-top-right-radius: 18px;">
-    <div class="offcanvas-body p-3 pb-0 d-flex flex-column" style="overflow-y: auto;">
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet d-flex flex-column" tabindex="-1" id="offcanvas-asset-context-drawer" style="max-height: 85vh; border-top-left-radius: 18px; border-top-right-radius: 18px;">
+    <div class="offcanvas-body p-3 pb-0 flex-grow-1" style="overflow-y: auto;">
         <div class="sheet-drag-handle"></div>
 
         <!-- Header -->
@@ -1276,13 +1276,13 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Sticky Action Footer (Navigation Only) -->
-        <div class="sheet-sticky-footer mt-auto pt-2 pb-2 bg-white border-top">
-            <a id="btn-context-drawer-create-temuan" href="#" class="btn btn-primary w-100 fw-bold rounded-pill text-white py-2 shadow-sm d-flex justify-content-center align-items-center gap-2" style="font-size: 13px;">
-                <i class="fas fa-plus-circle"></i> Buat Temuan dari Aset Ini
-            </a>
-        </div>
+    <!-- Pinned Action Footer (Navigation Only, Always Visible) -->
+    <div class="sheet-sticky-footer px-3 pt-2 pb-3 bg-white border-top flex-shrink-0" style="z-index: 1060;">
+        <a id="btn-context-drawer-create-temuan" href="#" class="btn btn-primary w-100 fw-bold rounded-pill text-white py-2 shadow-sm d-flex justify-content-center align-items-center gap-2" style="font-size: 13px;">
+            <i class="fas fa-plus-circle"></i> Buat Temuan dari Aset Ini
+        </a>
     </div>
 </div>
 

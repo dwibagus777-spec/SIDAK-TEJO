@@ -563,4 +563,339 @@ class GisTranslineService
 
         return $freshTopology;
     }
+
+    /**
+     * TL-01 Visual Realization: Authoritative Read-Only Transline Query Service
+     *
+     * Pure SELECT query with single controlled JOIN between gis_translines,
+     * source assets, and target assets (zero N+1 queries).
+     *
+     * HARD SAFETY INVARIANTS:
+     * - Zero writes (INSERT=0, UPDATE=0, DELETE=0, DDL=0).
+     * - Endpoints resolve strictly to assets.id.
+     * - Temuan is strictly forbidden as an endpoint (domain-typed rejection).
+     * - Coordinates originate strictly from assets.latitude and assets.longitude.
+     * - NO synthetic/canonical fallback in production service. Returns empty state if DB table has 0 rows.
+     * - Scoped by ULP, Penyulang, and Section with cross-scope rejection and anomaly diagnostics.
+     *
+     * @param array<string, mixed> $scope ['penyulang_id' => int, 'section_id' => ?int, 'ulp_id' => ?int, 'options' => ?array]
+     * @param int|null $userUlpId
+     * @return array<string, mixed>
+     */
+    public function getAuthoritativeTranslines(array $scope = [], ?int $userUlpId = null): array
+    {
+        $penyulangId = (int)($scope['penyulang_id'] ?? 0);
+        $sectionId   = isset($scope['section_id']) && $scope['section_id'] !== '' ? (int)$scope['section_id'] : 0;
+        $ulpId       = isset($scope['ulp_id']) && $scope['ulp_id'] !== '' ? (int)$scope['ulp_id'] : 0;
+        $options     = (array)($scope['options'] ?? []);
+
+        // 1. Domain-Typed Temuan Firewall Check
+        $sourceType = strtoupper(trim((string)($options['source_type'] ?? 'ASSET')));
+        $targetType = strtoupper(trim((string)($options['target_type'] ?? 'ASSET')));
+        if ($sourceType === 'TEMUAN' || $sourceType === 'FINDING' || $targetType === 'TEMUAN' || $targetType === 'FINDING') {
+            return [
+                'success'     => false,
+                'status'      => 'error',
+                'error_code'  => 'TEMUAN_ENDPOINT_FORBIDDEN',
+                'message'     => 'Titik temuan/finding tidak boleh menjadi endpoint transline JTM. Topologi jaringan hanya menghubungkan antar aset JTM.',
+                'data'        => [],
+                'diagnostics' => [],
+            ];
+        }
+
+        // 2. Scope Validation: Scope must not be empty
+        if ($penyulangId <= 0 && $ulpId <= 0) {
+            return [
+                'success'     => true,
+                'status'      => 'empty',
+                'message'     => 'Penyulang atau ULP wajib dipilih untuk memuat data transline.',
+                'scope'       => [
+                    'ulp_id'       => null,
+                    'penyulang_id' => null,
+                    'section_id'   => null,
+                ],
+                'total'       => 0,
+                'data'        => [],
+                'diagnostics' => [],
+            ];
+        }
+
+        // 3. Feeder & ULP Authorization Scope Firewall
+        $feederUlpId = null;
+        if ($penyulangId > 0) {
+            if ($this->db->tableExists('penyulang')) {
+                $feeder = $this->db->table('penyulang')->where('id', $penyulangId)->get()->getRowArray();
+                if (!$feeder) {
+                    return [
+                        'success'     => true,
+                        'status'      => 'success',
+                        'message'     => "Penyulang ID {$penyulangId} tidak ditemukan atau belum memiliki transline.",
+                        'scope'       => [
+                            'ulp_id'       => null,
+                            'penyulang_id' => $penyulangId,
+                            'section_id'   => $sectionId > 0 ? $sectionId : null,
+                        ],
+                        'total'       => 0,
+                        'data'        => [],
+                        'translines'  => [],
+                        'diagnostics' => [],
+                    ];
+                }
+                $feederUlpId = (int)($feeder['ulp_id'] ?? 0);
+
+                // Check authorization boundary against session userUlpId
+                if ($userUlpId !== null && $userUlpId > 0 && $feederUlpId > 0 && $userUlpId !== $feederUlpId) {
+                    return [
+                        'success'     => false,
+                        'status'      => 'error',
+                        'error_code'  => 'UNAUTHORIZED_FEEDER_ACCESS',
+                        'message'     => 'Akses ditolak: Penyulang berada di luar batas otorisasi ULP Anda.',
+                        'data'        => [],
+                        'diagnostics' => [],
+                    ];
+                }
+
+                // Check cross-scope if request explicitly passed an ulp_id that differs from feeder's ULP
+                if ($ulpId > 0 && $feederUlpId > 0 && $ulpId !== $feederUlpId) {
+                    return [
+                        'success'     => false,
+                        'status'      => 'error',
+                        'error_code'  => 'CROSS_SCOPE_REQUEST',
+                        'message'     => "Penyulang #{$penyulangId} tidak berada dalam ULP #{$ulpId}.",
+                        'data'        => [],
+                        'diagnostics' => [],
+                    ];
+                }
+            }
+
+            // 4. Section Scope Validation
+            if ($sectionId > 0 && $this->db->tableExists('sections')) {
+                $section = $this->db->table('sections')->where('id', $sectionId)->get()->getRowArray();
+                if ($section && isset($section['penyulang_id']) && (int)$section['penyulang_id'] !== $penyulangId) {
+                    return [
+                        'success'     => false,
+                        'status'      => 'error',
+                        'error_code'  => 'CROSS_SCOPE_REQUEST',
+                        'message'     => "Seksi #{$sectionId} tidak berada dalam penyulang #{$penyulangId}.",
+                        'data'        => [],
+                        'diagnostics' => [],
+                    ];
+                }
+            }
+        } elseif ($ulpId > 0) {
+            // ULP level authorization check
+            if ($userUlpId !== null && $userUlpId > 0 && $ulpId !== $userUlpId) {
+                return [
+                    'success'     => false,
+                    'status'      => 'error',
+                    'error_code'  => 'UNAUTHORIZED_FEEDER_ACCESS',
+                    'message'     => 'Akses ditolak: ULP yang diminta berada di luar batas otorisasi Anda.',
+                    'data'        => [],
+                    'diagnostics' => [],
+                ];
+            }
+            $feederUlpId = $ulpId;
+        }
+
+        // 5. Query Authoritative Translines (Single controlled JOIN, zero N+1)
+        if (!$this->db->tableExists('gis_translines') || !$this->db->tableExists('assets')) {
+            return [
+                'success'     => true,
+                'status'      => 'success',
+                'message'     => 'Tabel gis_translines atau assets belum tersedia.',
+                'scope'       => [
+                    'ulp_id'       => $feederUlpId,
+                    'penyulang_id' => $penyulangId > 0 ? $penyulangId : null,
+                    'section_id'   => $sectionId > 0 ? $sectionId : null,
+                ],
+                'total'       => 0,
+                'data'        => [],
+                'diagnostics' => [],
+            ];
+        }
+
+        $hasSectionCol = $this->db->fieldExists('section_id', 'gis_translines');
+        $sectionSelect = $hasSectionCol ? 't.section_id,' : '';
+
+        $builder = $this->db->table('gis_translines t')
+            ->select('
+                t.id, t.transline_code, t.penyulang_id, ' . $sectionSelect . '
+                t.source_asset_id, t.target_asset_id,
+                t.conductor_type, t.conductor_size, t.distance_meters,
+                t.status, t.is_active,
+                sa.id AS sa_id, sa.kode_asset AS sa_code, sa.nama_asset AS sa_name,
+                sa.latitude AS sa_lat, sa.longitude AS sa_lng,
+                sa.penyulang_id AS sa_penyulang_id, sa.section_id AS sa_section_id,
+                ta.id AS ta_id, ta.kode_asset AS ta_code, ta.nama_asset AS ta_name,
+                ta.latitude AS ta_lat, ta.longitude AS ta_lng,
+                ta.penyulang_id AS ta_penyulang_id, ta.section_id AS ta_section_id
+            ')
+            ->join('assets sa', 'sa.id = t.source_asset_id', 'left')
+            ->join('assets ta', 'ta.id = t.target_asset_id', 'left');
+
+        if ($penyulangId > 0) {
+            $builder->where('t.penyulang_id', $penyulangId);
+        } elseif ($ulpId > 0 && $this->db->tableExists('penyulang')) {
+            $builder->join('penyulang p', 'p.id = t.penyulang_id', 'inner')
+                    ->where('p.ulp_id', $ulpId);
+        }
+
+        if ($sectionId > 0) {
+            if ($hasSectionCol) {
+                $builder->where('t.section_id', $sectionId);
+            } else {
+                $builder->groupStart()
+                        ->where('sa.section_id', $sectionId)
+                        ->orWhere('ta.section_id', $sectionId)
+                        ->groupEnd();
+            }
+        }
+
+        // Active filters
+        if ($this->db->fieldExists('is_active', 'gis_translines')) {
+            $builder->where('t.is_active', 1);
+        }
+        if ($this->db->fieldExists('status', 'gis_translines')) {
+            $builder->where('t.status', 'ACTIVE');
+        }
+        if ($this->db->fieldExists('deleted_at', 'gis_translines')) {
+            $builder->where('t.deleted_at IS NULL');
+        }
+
+        $rows = $builder->orderBy('t.id', 'ASC')->get()->getResultArray();
+
+        // 6. Integrity Verification & Diagnostics Loop (Pure Read-Only: No Mutation)
+        $data = [];
+        $diagnostics = [];
+
+        foreach ($rows as $r) {
+            $tId = (int)$r['id'];
+            $sourceId = $r['sa_id'] !== null ? (int)$r['sa_id'] : null;
+            $targetId = $r['ta_id'] !== null ? (int)$r['ta_id'] : null;
+
+            // Check orphan source or target
+            if ($sourceId === null || $targetId === null) {
+                $diagnostics[] = [
+                    'transline_id' => $tId,
+                    'code'         => 'ORPHAN_ENDPOINT',
+                    'type'         => 'ORPHAN_ENDPOINT',
+                    'message'      => "Transline #{$tId} memiliki endpoint yang tidak ditemukan pada tabel assets (source: " . ($r['source_asset_id'] ?? 'null') . ", target: " . ($r['target_asset_id'] ?? 'null') . ").",
+                ];
+                continue;
+            }
+
+            // Check self-loop
+            if ($sourceId === $targetId) {
+                $diagnostics[] = [
+                    'transline_id' => $tId,
+                    'code'         => 'IDENTICAL_ENDPOINTS',
+                    'type'         => 'IDENTICAL_ENDPOINTS',
+                    'message'      => "Transline #{$tId} memiliki source dan target identik (aset #{$sourceId}).",
+                ];
+                continue;
+            }
+
+            // Check coordinates
+            $saLat = $r['sa_lat'] !== null ? (float)$r['sa_lat'] : null;
+            $saLng = $r['sa_lng'] !== null ? (float)$r['sa_lng'] : null;
+            $taLat = $r['ta_lat'] !== null ? (float)$r['ta_lat'] : null;
+            $taLng = $r['ta_lng'] !== null ? (float)$r['ta_lng'] : null;
+
+            $hasValidCoords = ($saLat !== null && $saLng !== null && $taLat !== null && $taLng !== null &&
+                               !($saLat == 0.0 && $saLng == 0.0) && !($taLat == 0.0 && $taLng == 0.0));
+
+            if (!$hasValidCoords) {
+                $diagnostics[] = [
+                    'transline_id' => $tId,
+                    'code'         => 'MISSING_COORDINATE',
+                    'type'         => 'MISSING_COORDINATE',
+                    'message'      => "Transline #{$tId} memiliki koordinat aset yang hilang atau bernilai 0.",
+                ];
+                continue;
+            }
+
+            // Check scope consistency (Domain & scope integrity)
+            $tFeeder = (int)$r['penyulang_id'];
+            $saFeeder = (int)($r['sa_penyulang_id'] ?? 0);
+            $taFeeder = (int)($r['ta_penyulang_id'] ?? 0);
+
+            if (($saFeeder > 0 && $saFeeder !== $tFeeder) || ($taFeeder > 0 && $taFeeder !== $tFeeder)) {
+                $diagnostics[] = [
+                    'transline_id' => $tId,
+                    'code'         => 'CROSS_SCOPE_ENDPOINT',
+                    'type'         => 'CROSS_SCOPE_ENDPOINT',
+                    'message'      => "Transline #{$tId} pada penyulang #{$tFeeder} menghubungkan aset dari penyulang berbeda (source: #{$saFeeder}, target: #{$taFeeder}).",
+                ];
+                continue;
+            }
+
+            $lengthM = (float)($r['distance_meters'] ?? 0.0);
+            if ($lengthM <= 0.0) {
+                $lengthM = round($this->haversineDistance($saLat, $saLng, $taLat, $taLng), 2);
+            }
+
+            $conductorLabel = trim(($r['conductor_type'] ?? 'AAAC') . ' ' . ($r['conductor_size'] ?? '150 mm²'));
+            $translineCode  = $r['transline_code'] ?: ('TL-' . $tFeeder . '-' . $tId);
+
+            $data[] = [
+                'id'                 => $tId,
+                'transline_id'       => $tId,
+                'code'               => $translineCode,
+                'transline_code'     => $translineCode,
+                'penyulang_id'       => $tFeeder,
+                'section_id'         => !empty($r['section_id']) ? (int)$r['section_id'] : null,
+                'source_asset_id'    => $sourceId,
+                'target_asset_id'    => $targetId,
+                'from_asset_id'      => $sourceId,
+                'to_asset_id'        => $targetId,
+                'source_asset'       => [
+                    'id'         => $sourceId,
+                    'code'       => $r['sa_code'] ?: ('AST-' . $sourceId),
+                    'kode_asset' => $r['sa_code'] ?: ('AST-' . $sourceId),
+                    'name'       => $r['sa_name'] ?: ('Tiang #' . $sourceId),
+                    'nama_asset' => $r['sa_name'] ?: ('Tiang #' . $sourceId),
+                    'latitude'   => $saLat,
+                    'longitude'  => $saLng,
+                ],
+                'target_asset'       => [
+                    'id'         => $targetId,
+                    'code'       => $r['ta_code'] ?: ('AST-' . $targetId),
+                    'kode_asset' => $r['ta_code'] ?: ('AST-' . $targetId),
+                    'name'       => $r['ta_name'] ?: ('Tiang #' . $targetId),
+                    'nama_asset' => $r['ta_name'] ?: ('Tiang #' . $targetId),
+                    'latitude'   => $taLat,
+                    'longitude'  => $taLng,
+                ],
+                'coordinates'        => [
+                    [$saLng, $saLat],
+                    [$taLng, $taLat],
+                ],
+                'length_m'           => $lengthM,
+                'length_meter'       => $lengthM,
+                'distance_meters'    => $lengthM,
+                'conductor'          => $conductorLabel,
+                'conductor_label'    => $conductorLabel,
+                'conductor_type'     => $r['conductor_type'] ?? 'AAAC',
+                'conductor_size'     => $r['conductor_size'] ?? '150 mm²',
+                'conductor_material' => $r['conductor_material'] ?? 'ALUMINUM_ALLOY',
+                'status'             => $r['status'] ?? 'ACTIVE',
+                'is_active'          => 1,
+            ];
+        }
+
+        return [
+            'success'     => true,
+            'status'      => 'success',
+            'scope'       => [
+                'ulp_id'       => $feederUlpId,
+                'penyulang_id' => $penyulangId > 0 ? $penyulangId : null,
+                'section_id'   => $sectionId > 0 ? $sectionId : null,
+            ],
+            'total'       => count($data),
+            'data'        => $data,
+            'translines'  => $data,
+            'diagnostics' => $diagnostics,
+        ];
+    }
 }
+

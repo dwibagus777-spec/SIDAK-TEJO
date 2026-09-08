@@ -177,6 +177,342 @@ class GisController extends BaseController
     }
 
     /**
+     * TL-01 Sub-Gate D2A: Read-Only Transline Proposal Review Queue & Map Preview API
+     * GET /gis/api-proposals?penyulang_id=X
+     *
+     * STRICT READ-ONLY: 0 MUTATIONS PERMITTED.
+     */
+    public function apiProposals(): ResponseInterface
+    {
+        $penyulangId = (int)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+            ?? ($_GET['penyulang_id'] ?? 0)
+        );
+
+        if ($penyulangId <= 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'INVALID_PENYULANG_ID',
+                'message' => 'Penyulang ID wajib disertakan untuk memuat antrean proposal.',
+                'summary' => ['total' => 0, 'auto_match' => 0, 'needs_review' => 0, 'invalid' => 0, 'missing' => 0],
+                'proposals' => []
+            ]);
+        }
+
+        $session = session();
+        $userUlpId = $session ? $session->get('ulp_id') : null;
+
+        $reviewService = new \App\Services\TranslineProposalReviewService();
+        $result = $reviewService->getPendingProposalsForFeeder($penyulangId, $userUlpId ? (int)$userUlpId : null);
+
+        $httpCode = ($result['status'] === 'success') ? 200 : 403;
+        return $this->response->setStatusCode($httpCode)->setJSON($result);
+    }
+
+    /**
+     * TL-01 Sub-Gate D2B: Single-Row Controlled Proposal Confirmation
+     * POST /gis/api-confirm-proposal
+     * Payload: { proposal_id: int }
+     */
+    public function apiConfirmProposal(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $proposalId = (int)($json['proposal_id'] ?? $this->request->getPost('proposal_id') ?? 0);
+
+            if ($proposalId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'reason'  => 'INVALID_PROPOSAL_ID',
+                    'message' => 'Parameter proposal_id wajib diisi dengan integer positif.',
+                ]);
+            }
+
+            $session = session();
+            $actor = [
+                'username' => (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'OPERATOR') : 'OPERATOR'),
+                'role'     => (string)($session ? ($session->get('role') ?? 'admin') : 'admin'),
+                'ulp_id'   => $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null,
+            ];
+
+            $reviewService = new \App\Services\TranslineProposalReviewService();
+            $result = $reviewService->confirmProposal($proposalId, $actor);
+
+            $httpCode = ($result['status'] === 'success') ? 200 : 400;
+            return $this->response->setStatusCode($httpCode)->setJSON($result);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[D2B_CONFIRM_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat konfirmasi proposal: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-01 Sub-Gate D2B: Controlled Rollback of Confirmed Proposal by Exact PK
+     * POST /gis/api-rollback-proposal
+     * Payload: { proposal_id: int }
+     */
+    public function apiRollbackProposal(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $proposalId = (int)($json['proposal_id'] ?? $this->request->getPost('proposal_id') ?? 0);
+
+            if ($proposalId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'reason'  => 'INVALID_PROPOSAL_ID',
+                    'message' => 'Parameter proposal_id wajib diisi dengan integer positif.',
+                ]);
+            }
+
+            $session = session();
+            $actor = [
+                'username' => (string)($session ? ($session->get('username') ?? 'OPERATOR_ROLLBACK') : 'OPERATOR_ROLLBACK'),
+                'role'     => (string)($session ? ($session->get('role') ?? 'admin') : 'admin'),
+                'ulp_id'   => $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null,
+            ];
+
+            $reviewService = new \App\Services\TranslineProposalReviewService();
+            $result = $reviewService->rollbackConfirmedProposal($proposalId, $actor);
+
+            $httpCode = ($result['status'] === 'success') ? 200 : 400;
+            return $this->response->setStatusCode($httpCode)->setJSON($result);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[D2B_ROLLBACK_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat rollback proposal: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-01 Sub-Gate D2C: Controlled Batch Proposal Confirmation
+     * POST /gis/api-confirm-batch-proposals
+     * Payload: { proposal_ids: int[] }
+     */
+    public function apiConfirmBatchProposals(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $proposalIds = $json['proposal_ids'] ?? $this->request->getPost('proposal_ids') ?? [];
+
+            if (!is_array($proposalIds) || empty($proposalIds)) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'reason'  => 'EMPTY_SELECTION',
+                    'message' => 'Parameter proposal_ids wajib berupa array integer tidak kosong.',
+                ]);
+            }
+
+            $session = session();
+            $actor = [
+                'username' => (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'OPERATOR') : 'OPERATOR'),
+                'role'     => (string)($session ? ($session->get('role') ?? 'admin') : 'admin'),
+                'ulp_id'   => $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null,
+            ];
+
+            $reviewService = new \App\Services\TranslineProposalReviewService();
+            $result = $reviewService->confirmBatchProposals($proposalIds, $actor);
+
+            $httpCode = ($result['status'] === 'success') ? 200 : 422;
+            return $this->response->setStatusCode($httpCode)->setJSON($result);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[D2C_BATCH_CONFIRM_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat konfirmasi batch proposal: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-01 Sub-Gate D2C: Controlled Batch Rollback of Confirmed Proposals
+     * POST /gis/api-rollback-batch-proposals
+     * Payload: { proposal_ids: int[] }
+     */
+    public function apiRollbackBatchProposals(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $proposalIds = $json['proposal_ids'] ?? $this->request->getPost('proposal_ids') ?? [];
+
+            if (!is_array($proposalIds) || empty($proposalIds)) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'reason'  => 'EMPTY_SELECTION',
+                    'message' => 'Parameter proposal_ids wajib berupa array integer tidak kosong.',
+                ]);
+            }
+
+            $session = session();
+            $actor = [
+                'username' => (string)($session ? ($session->get('username') ?? 'OPERATOR_ROLLBACK') : 'OPERATOR_ROLLBACK'),
+                'role'     => (string)($session ? ($session->get('role') ?? 'admin') : 'admin'),
+                'ulp_id'   => $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null,
+            ];
+
+            $reviewService = new \App\Services\TranslineProposalReviewService();
+            $result = $reviewService->rollbackBatchProposals($proposalIds, $actor);
+
+            $httpCode = ($result['status'] === 'success') ? 200 : 422;
+            return $this->response->setStatusCode($httpCode)->setJSON($result);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[D2C_BATCH_ROLLBACK_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat rollback batch proposal: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-01 Sub-Gate D3: Read-Only Proposal Subsystem Integrity Scanner
+     * GET /gis/api-proposal-integrity-scan?penyulang_id=X
+     */
+    public function apiProposalIntegrityScan(): ResponseInterface
+    {
+        try {
+            $penyulangId = (int)(
+                (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+                ?? ($_GET['penyulang_id'] ?? 0)
+            );
+
+            $reviewService = new \App\Services\TranslineProposalReviewService();
+            $result = $reviewService->scanProposalIntegrity($penyulangId > 0 ? $penyulangId : null);
+
+            return $this->response->setStatusCode(200)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[D3_SCAN_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SCANNER_EXCEPTION',
+                'message' => 'Kendala sistem saat pemindaian integritas: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-01 Sub-Gate D3: Canonical Proposal Operational Dashboard Summary
+     * GET /gis/api-proposal-dashboard-summary?penyulang_id=X
+     */
+    public function apiProposalDashboardSummary(): ResponseInterface
+    {
+        try {
+            $penyulangId = (int)(
+                (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+                ?? ($_GET['penyulang_id'] ?? 0)
+            );
+
+            $session = session();
+            $userUlpId = $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null;
+
+            $reviewService = new \App\Services\TranslineProposalReviewService();
+            $result = $reviewService->getProposalDashboardSummary($penyulangId > 0 ? $penyulangId : null, $userUlpId);
+
+            return $this->response->setStatusCode(200)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[D3_SUMMARY_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'DASHBOARD_EXCEPTION',
+                'message' => 'Kendala sistem saat memuat ringkasan dashboard: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-01 Sub-Gate D4A: Read-Only Proposal Exception Workbench Detail
+     * GET /gis/api-proposal-workbench/(:num)
+     */
+    public function apiProposalWorkbenchDetail(int $proposalId = 0): ResponseInterface
+    {
+        try {
+            if ($proposalId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'reason'  => 'INVALID_PROPOSAL_ID',
+                    'message' => 'Proposal ID wajib disertakan dan harus berupa bilangan bulat positif.',
+                ]);
+            }
+
+            $session = session();
+            $userUlpId = $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null;
+
+            $reviewService = new \App\Services\TranslineProposalReviewService();
+            $result = $reviewService->getProposalWorkbenchDetail($proposalId, $userUlpId);
+
+            if (($result['status'] ?? '') === 'error') {
+                $statusCode = 422;
+                if (($result['reason'] ?? '') === 'PROPOSAL_NOT_FOUND') {
+                    $statusCode = 404;
+                } else if (($result['reason'] ?? '') === 'UNAUTHORIZED_FEEDER_ACCESS') {
+                    $statusCode = 403;
+                }
+                return $this->response->setStatusCode($statusCode)->setJSON($result);
+            }
+
+            return $this->response->setStatusCode(200)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[D4A_WORKBENCH_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'WORKBENCH_EXCEPTION',
+                'message' => 'Kendala sistem saat memuat detail workbench proposal: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-01 Sub-Gate D4A: Read-Only Proposal Exception Review Queue
+     * GET /gis/api-proposal-exception-queue?penyulang_id=X&state=Y
+     */
+    public function apiProposalExceptionQueue(): ResponseInterface
+    {
+        try {
+            $penyulangId = (int)(
+                (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+                ?? ($_GET['penyulang_id'] ?? 0)
+            );
+
+            $state = (string)(
+                (method_exists($this->request, 'getGet') ? $this->request->getGet('state') : null)
+                ?? ($_GET['state'] ?? '')
+            );
+
+            $session = session();
+            $userUlpId = $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null;
+
+            $reviewService = new \App\Services\TranslineProposalReviewService();
+            $result = $reviewService->getExceptionReviewQueue(
+                $penyulangId > 0 ? $penyulangId : null,
+                $state !== '' ? $state : null,
+                $userUlpId
+            );
+
+            return $this->response->setStatusCode(200)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[D4A_QUEUE_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'QUEUE_EXCEPTION',
+                'message' => 'Kendala sistem saat memuat antrean review eksepsi: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Endpoint Audit Data Provenance & Boundary: GET /gis/api-network-audit?penyulang_id=X
      */
     public function apiNetworkAudit(): ResponseInterface
@@ -326,7 +662,10 @@ class GisController extends BaseController
     }
 
     /**
-     * Endpoint GET Active Translines for Feeder: GET /gis/api-translines?penyulang_id=X
+     * Endpoint GET Authoritative Translines: GET /gis/api-translines?penyulang_id=X&section_id=Y&ulp_id=Z
+     *
+     * TL-01 Visual Realization (Pure Read-Only)
+     * Enforces server-side scope firewall, domain isolation (assets only), and zero writes.
      */
     public function apiGetTranslines(): ResponseInterface
     {
@@ -335,20 +674,69 @@ class GisController extends BaseController
             ?? ($_GET['penyulang_id'] ?? 0)
         );
 
-        if ($penyulangId <= 0) {
-            return $this->response->setStatusCode(422)->setJSON([
-                'status'     => 'error',
-                'message'    => 'Penyulang wajib dipilih.',
-                'translines' => []
+        $sectionId = (int)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('section_id') : null)
+            ?? ($_GET['section_id'] ?? 0)
+        );
+
+        $ulpId = (int)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('ulp_id') : null)
+            ?? ($_GET['ulp_id'] ?? 0)
+        );
+
+        $sourceType = (string)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('source_type') : null)
+            ?? ($_GET['source_type'] ?? '')
+        );
+
+        $targetType = (string)(
+            (method_exists($this->request, 'getGet') ? $this->request->getGet('target_type') : null)
+            ?? ($_GET['target_type'] ?? '')
+        );
+
+        $scope = [
+            'penyulang_id' => $penyulangId,
+            'section_id'   => $sectionId > 0 ? $sectionId : null,
+            'ulp_id'       => $ulpId > 0 ? $ulpId : null,
+            'options'      => [
+                'source_type' => $sourceType,
+                'target_type' => $targetType,
+            ],
+        ];
+
+        $session = session();
+        $userUlpId = $session ? $session->get('ulp_id') : null;
+        if ($userUlpId !== null) {
+            $userUlpId = (int)$userUlpId;
+        }
+
+        $result = $this->translineService->getAuthoritativeTranslines($scope, $userUlpId);
+
+        if (!$result['success']) {
+            $httpCode = 422;
+            if (($result['error_code'] ?? '') === 'UNAUTHORIZED_FEEDER_ACCESS') {
+                $httpCode = 403;
+            }
+
+            return $this->response->setStatusCode($httpCode)->setJSON([
+                'success'     => false,
+                'status'      => 'error',
+                'error_code'  => $result['error_code'] ?? 'INVALID_SCOPE',
+                'message'     => $result['message'] ?? 'Permintaan data transline tidak valid.',
+                'data'        => [],
+                'translines'  => [],
+                'diagnostics' => $result['diagnostics'] ?? [],
             ]);
         }
 
-        $translines = $this->translineService->getFeederTranslines($penyulangId);
-
         return $this->response->setStatusCode(200)->setJSON([
-            'status'     => 'success',
-            'feeder_id'  => $penyulangId,
-            'translines' => $translines
+            'success'     => true,
+            'status'      => 'success',
+            'scope'       => $result['scope'],
+            'total'       => $result['total'],
+            'data'        => $result['data'],
+            'translines'  => $result['data'], // Backwards compatibility with existing GIS clients
+            'diagnostics' => $result['diagnostics'],
         ]);
     }
 

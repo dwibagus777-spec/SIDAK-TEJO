@@ -482,6 +482,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
     $routes->get('gis/api-penyulangs', 'GisController::apiPenyulangs');
     $routes->get('gis/api-network', 'GisController::apiNetwork');
+    $routes->get('gis/api-proposals', 'GisController::apiProposals');
     $routes->get('gis/api-translines', 'GisController::apiGetTranslines');
     $routes->get('gis/api-network-audit', 'GisController::apiNetworkAudit');
     $routes->get('gis/api-conductors', 'GisController::apiConductors');
@@ -546,6 +547,20 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('peta-jaringan', 'GisController::index');
     $routes->get('gis/api-data', 'GisController::apiData');
     $routes->post('gis/checkin', 'GisController::checkin');
+    // TL-01 Sub-Gate D2A: Read-Only Transline Proposal Queue & Map Preview API
+    $routes->get('gis/api-proposals', 'GisController::apiProposals');
+    // TL-01 Sub-Gate D2B: Controlled Proposal Confirmation & Rollback APIs
+    $routes->post('gis/api-confirm-proposal', 'GisController::apiConfirmProposal');
+    $routes->post('gis/api-rollback-proposal', 'GisController::apiRollbackProposal');
+    // TL-01 Sub-Gate D2C: Controlled Batch Proposal Confirmation & Rollback APIs
+    $routes->post('gis/api-confirm-batch-proposals', 'GisController::apiConfirmBatchProposals');
+    $routes->post('gis/api-rollback-batch-proposals', 'GisController::apiRollbackBatchProposals');
+    // TL-01 Sub-Gate D3: Read-Only Proposal Subsystem Integrity Scanner & Canonical Dashboard Summary
+    $routes->get('gis/api-proposal-integrity-scan', 'GisController::apiProposalIntegrityScan');
+    $routes->get('gis/api-proposal-dashboard-summary', 'GisController::apiProposalDashboardSummary');
+    // TL-01 Sub-Gate D4A: Read-Only Proposal Exception Workbench & Review Queue
+    $routes->get('gis/api-proposal-workbench/(:num)', 'GisController::apiProposalWorkbenchDetail/$1');
+    $routes->get('gis/api-proposal-exception-queue', 'GisController::apiProposalExceptionQueue');
 
     // Phase 19 - AI Predictive Maintenance & Decision Support
     $routes->get('ai-predictive', 'AiPredictiveController::index');
@@ -640,10 +655,18 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->get('assets', 'Ajax\NetworkLookup::assets');
         // MAP-02: Read-Only Asset Context Drawer API
         $routes->get('asset-context/(:num)', 'Ajax\NetworkLookup::assetContext/$1');
+        // MAP-02C: Read-Only Canonical Construction Types API
+        $routes->get('constructions', 'Ajax\NetworkLookup::constructions');
+        // MAP-03: Read-Only Location Context Assistant API
+        $routes->get('location-context', 'Ajax\NetworkLookup::locationContext');
     });
 
     // MAP-02: Canonical API Alias for Read-Only Asset Context
     $routes->get('api/asset-context/(:num)', 'Ajax\NetworkLookup::assetContext/$1');
+    // MAP-02C: Canonical API Alias for Construction Types
+    $routes->get('api/constructions', 'Ajax\NetworkLookup::constructions');
+    // MAP-03: Canonical API Alias for Read-Only Location Context
+    $routes->get('api/location-context', 'Ajax\NetworkLookup::locationContext');
 
     $routes->group('api/master-network', static function ($routes) {
         $routes->get('ulps', 'Ajax\NetworkLookup::ulp');

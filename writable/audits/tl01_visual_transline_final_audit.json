@@ -1,0 +1,75 @@
+{
+    "audit_gate": "TL-01_PRODUCTION_VISUAL_VERIFICATION",
+    "status": "PASS_VERIFIED",
+    "verified_at": "2026-09-09T00:30:36+07:00",
+    "production_url": "https://sidaktejo.site/gis",
+    "selected_scope": {
+        "ulp_id": 1,
+        "nama_ulp": "ULP Sidoarjo Kota",
+        "penyulang_id": 15,
+        "nama_penyulang": "BANJAR KEMANTREN",
+        "total_assets": 205
+    },
+    "authoritative_translines": {
+        "total_in_db": 42,
+        "visible_on_map": 42,
+        "distinct_assets_bound": 44,
+        "endpoint_type": "ASSET_TO_ASSET_ONLY",
+        "temuan_nodes_count": 0,
+        "visual_styling": {
+            "color": "#0284c7",
+            "weight": 3.5,
+            "opacity": 0.9,
+            "hit_target": "24px invisible layer"
+        }
+    },
+    "inspection_findings_scope": {
+        "total_in_scope": 36,
+        "is_topology_node": false,
+        "is_transline_endpoint": false,
+        "affects_topology": false,
+        "visual_marker": "Triangle Exclamation Marker (#ea580c / #dc2626)"
+    },
+    "baseline_semantic_distinction": {
+        "canonical_tl01_fixture_baseline": {
+            "environment": "In-Memory Deterministic Test Fixture (SQLite Parity Engine)",
+            "assets": 2660,
+            "temuan": 623,
+            "gis_translines": 42,
+            "gis_transline_proposals": 5,
+            "sections": 134,
+            "penyulang": 28,
+            "temuan_materials": 1842,
+            "purpose": "Authoritative fixture baseline for regression testing & invariant mathematical proofs"
+        },
+        "production_active_scope_count": {
+            "environment": "Live Hostinger MariaDB Production (https://sidaktejo.site)",
+            "assets_total_raw": 4252,
+            "assets_active": 3939,
+            "temuan_active": 441,
+            "gis_translines": 42,
+            "gis_transline_proposals": 5,
+            "sections": 134,
+            "penyulang": 28,
+            "selected_feeder_assets_banjar_kemantren": 205,
+            "purpose": "Actual field operational database count currently running on production"
+        },
+        "governance_note": "These represent two distinct environments with differing operational lifecycles; they are NEVER conflated as the same database snapshot."
+    },
+    "sub_gate_d4b": {
+        "status": "LOCKED",
+        "mutation_allowed": false,
+        "operational_inserts": 0,
+        "operational_updates": 0,
+        "operational_deletes": 0,
+        "ddl_executed": 0
+    },
+    "ui_acceptance": {
+        "solid_line_authoritative": true,
+        "distinct_from_proposals": true,
+        "distinct_from_temuan": true,
+        "popup_read_only_verified": true,
+        "user_confirmation": "Manual authoritative translines verified visible along north-south corridor on sidaktejo.site/gis"
+    },
+    "final_verdict": "PASS"
+}

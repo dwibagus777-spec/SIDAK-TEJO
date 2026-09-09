@@ -143,6 +143,8 @@ class TranslineTemuanNetworkSafetyInvariantTest extends CIUnitTestCase
             ]);
             $forge->addKey('id', true);
             $forge->createTable('gis_translines', true);
+        } else {
+            $this->safeAddColumn('gis_translines', 'section_id', ['type' => 'INT', 'constraint' => 11, 'null' => true]);
         }
 
         // 6. gis_transline_proposals table

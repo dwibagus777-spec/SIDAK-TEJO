@@ -1041,6 +1041,8 @@ class TranslineCompletionService
             self::STATUS_NEEDS_REVIEW,
             self::STATUS_INVALID,
             self::STATUS_MISSING,
+            'AUTO_COMPLETE',
+            'REVIEW_REQUIRED',
         ];
 
         if (empty($candidates)) {
@@ -1191,6 +1193,14 @@ class TranslineCompletionService
     }
 
     /**
+     * Alias for persistProposalBatch with semantic proposal staging naming
+     */
+    public function commitCandidatesToProposals(array $candidates, array $options = []): array
+    {
+        return $this->persistProposalBatch($candidates, $options);
+    }
+
+    /**
      * TL-01 Hard Invariant: Candidate Engine Domain Firewall
      *
      * Validates that candidate endpoints strictly resolve to assets.id.
@@ -1214,6 +1224,201 @@ class TranslineCompletionService
         $tCount = $this->db->table('assets')->where('id', $targetAssetId)->countAllResults();
 
         return ($sCount === 1 && $tCount === 1);
+    }
+
+    /**
+     * TL-02: Deterministic Network Completion Candidate Generator
+     *
+     * Combines in-memory network graph analysis with spatial continuity,
+     * directional consistency, and empirical distance bounds.
+     *
+     * @param int $penyulangId Feeder primary key
+     * @param array $options Configuration and filtering options
+     * @return array<string, mixed> Structured candidates and classification summary
+     */
+    public function generateNetworkCompletionCandidates(int $penyulangId, array $options = []): array
+    {
+        if ($penyulangId <= 0) {
+            return [
+                'scope'      => ['penyulang_id' => $penyulangId, 'penyulang_name' => 'INVALID_SCOPE'],
+                'summary'    => ['total_candidates' => 0, 'auto_complete' => 0, 'review_required' => 0, 'blocked' => 0],
+                'candidates' => [],
+            ];
+        }
+
+        $graphService = new TranslineNetworkGraphService($this->db);
+        $graph = $graphService->buildGraphForFeeder($penyulangId);
+
+        $nodes = $graph['nodes'];
+        $adj = $graph['adjacency'];
+        $anchors = array_keys($graph['terminal_assets']);
+        $anchorMap = array_fill_keys($anchors, true);
+
+        $existingKeys = [];
+        foreach ($graph['edges'] as $edge) {
+            $existingKeys[$edge['natural_key']] = true;
+        }
+
+        $allIds = array_keys($nodes);
+        $n = count($allIds);
+        $maxAutoDistance = (float)($options['max_auto_distance'] ?? TranslineAutoCompletionService::MAX_AUTO_DISTANCE);
+
+        $pairCandidates = [];
+
+        for ($i = 0; $i < $n; $i++) {
+            $idA = $allIds[$i];
+            $nodeA = $nodes[$idA];
+            $latA = $nodeA['latitude'];
+            $lonA = $nodeA['longitude'];
+
+            for ($j = $i + 1; $j < $n; $j++) {
+                $idB = $allIds[$j];
+                $nodeB = $nodes[$idB];
+                $latB = $nodeB['latitude'];
+                $lonB = $nodeB['longitude'];
+
+                // Distance calculation
+                $dist = $this->haversineDistanceMeters($latA, $lonA, $latB, $lonB);
+                if ($dist <= $maxAutoDistance && $dist >= 2.0) {
+                    $minId = min($idA, $idB);
+                    $maxId = max($idA, $idB);
+                    $natKey = "TL-NAT:{$penyulangId}:{$minId}-{$maxId}";
+
+                    $pairCandidates[$natKey] = [
+                        'natural_key'     => $natKey,
+                        'source_asset_id' => $idA,
+                        'target_asset_id' => $idB,
+                        'distance_meters' => $dist,
+                        'is_existing'     => isset($existingKeys[$natKey]),
+                    ];
+                }
+            }
+        }
+
+        // Sort by distance ascending
+        uasort($pairCandidates, fn($a, $b) => $a['distance_meters'] <=> $b['distance_meters']);
+
+        $degreeSim = $graph['degrees'];
+        $candidates = [];
+        $autoCompleteCount = 0;
+        $reviewRequiredCount = 0;
+        $blockedCount = 0;
+
+        foreach ($pairCandidates as $natKey => $p) {
+            $sId = $p['source_asset_id'];
+            $tId = $p['target_asset_id'];
+            $dist = $p['distance_meters'];
+            $isExisting = $p['is_existing'];
+            $source = $nodes[$sId];
+            $target = $nodes[$tId];
+
+            if ($isExisting) {
+                $status = self::STATUS_AUTO_MATCH;
+                $classification = 'AUTO_COMPLETE';
+                $confidence = 1.0;
+                $evidence = ['EXISTING_AUTHORITATIVE_TRANSLINE', 'SAME_PENYULANG', 'SPATIAL_CONTINUITY'];
+            } else {
+                $degS = $degreeSim[$sId] ?? 0;
+                $degT = $degreeSim[$tId] ?? 0;
+
+                $evidence = ['SAME_PENYULANG', 'SPATIAL_CONTINUITY', 'VALID_COORDINATES'];
+                $confidence = 0.95;
+                $classification = 'AUTO_COMPLETE';
+                $status = self::STATUS_AUTO_MATCH;
+
+                if (isset($anchorMap[$sId]) || isset($anchorMap[$tId])) {
+                    $evidence[] = 'AUTHORITATIVE_ANCHOR_CONTINUATION';
+                    $confidence += 0.03;
+                }
+
+                if ($dist <= 55.0) {
+                    $evidence[] = 'NOMINAL_JTM_SPAN';
+                } elseif ($dist <= 85.0) {
+                    $evidence[] = 'EXTENDED_ROAD_SPAN';
+                } else {
+                    $evidence[] = 'LONG_SPAN_WARNING';
+                    $confidence -= 0.15;
+                    $classification = 'REVIEW_REQUIRED';
+                    $status = self::STATUS_NEEDS_REVIEW;
+                }
+
+                if ($degS >= 2 && $degT >= 2) {
+                    $evidence[] = 'BRANCHING_OR_CROSSING_AMBIGUITY';
+                    $confidence -= 0.20;
+                    $classification = 'REVIEW_REQUIRED';
+                    $status = self::STATUS_NEEDS_REVIEW;
+                }
+
+                if ($degS < 2 && $degT < 2 && $dist <= 75.0) {
+                    $degreeSim[$sId] = ($degreeSim[$sId] ?? 0) + 1;
+                    $degreeSim[$tId] = ($degreeSim[$tId] ?? 0) + 1;
+                    $classification = 'AUTO_COMPLETE';
+                    $status = self::STATUS_AUTO_MATCH;
+                } elseif ($classification === 'AUTO_COMPLETE' && ($degS >= 2 || $degT >= 2)) {
+                    $classification = 'REVIEW_REQUIRED';
+                    $status = self::STATUS_NEEDS_REVIEW;
+                }
+            }
+
+            if ($classification === 'AUTO_COMPLETE') {
+                $autoCompleteCount++;
+            } elseif ($classification === 'REVIEW_REQUIRED') {
+                $reviewRequiredCount++;
+            } else {
+                $blockedCount++;
+            }
+
+            $style = $this->resolveVisualStyleToken('AAAC', '150 mm²');
+
+            $candidates[] = [
+                'natural_key'              => $natKey,
+                'status'                   => $status,
+                'classification'           => $classification,
+                'confidence_score'         => min(1.0, round($confidence, 2)),
+                'penyulang_id'             => $penyulangId,
+                'section_id'               => $source['section_id'] ?? null,
+                'source_asset_id'          => $sId,
+                'target_asset_id'          => $tId,
+                'source_asset_code'        => $source['kode_asset'],
+                'target_asset_code'        => $target['kode_asset'],
+                'conductor_type'           => 'AAAC',
+                'conductor_size'           => '150 mm²',
+                'visual_style_token'       => $style['token'],
+                'visual_pattern'           => $style['pattern'],
+                'distance_meters'          => $dist,
+                'expected_distance_meters' => $dist,
+                'source_coordinates'       => ['lat' => $source['latitude'], 'lng' => $source['longitude']],
+                'target_coordinates'       => ['lat' => $target['latitude'], 'lng' => $target['longitude']],
+                'evidence'                 => $evidence,
+                'is_existing'              => $isExisting,
+            ];
+        }
+
+        // Deterministic sorting: Primary by confidence DESC, Secondary by distance ASC, Tertiary by natural_key ASC
+        usort($candidates, function ($a, $b) {
+            $cmpConf = ($b['confidence_score'] <=> $a['confidence_score']);
+            if ($cmpConf !== 0) return $cmpConf;
+            $cmpDist = ($a['distance_meters'] <=> $b['distance_meters']);
+            if ($cmpDist !== 0) return $cmpDist;
+            return strcmp($a['natural_key'], $b['natural_key']);
+        });
+
+        return [
+            'scope' => [
+                'penyulang_id'   => $penyulangId,
+                'penyulang_name' => $graph['scope']['penyulang_name'],
+                'penyulang_code' => $graph['scope']['penyulang_code'],
+            ],
+            'summary' => [
+                'total_candidates'      => count($candidates),
+                'auto_complete_count'   => $autoCompleteCount,
+                'review_required_count' => $reviewRequiredCount,
+                'blocked_count'         => $blockedCount,
+                'existing_edges_count'  => count($existingKeys),
+                'new_auto_complete'     => count(array_filter($candidates, fn($c) => $c['classification'] === 'AUTO_COMPLETE' && !$c['is_existing'])),
+            ],
+            'candidates' => $candidates,
+        ];
     }
 }
 

@@ -558,6 +558,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // TL-01 Sub-Gate D3: Read-Only Proposal Subsystem Integrity Scanner & Canonical Dashboard Summary
     $routes->get('gis/api-proposal-integrity-scan', 'GisController::apiProposalIntegrityScan');
     $routes->get('gis/api-proposal-dashboard-summary', 'GisController::apiProposalDashboardSummary');
+    // TL-02: AI-Assisted Automatic Transline Completion APIs
+    $routes->get('gis/api-transline-ai-preview', 'GisController::apiTranslineAiPreview');
+    $routes->post('gis/api-transline-ai-complete', 'GisController::apiTranslineAiComplete');
     // TL-01 Sub-Gate D4A: Read-Only Proposal Exception Workbench & Review Queue
     $routes->get('gis/api-proposal-workbench/(:num)', 'GisController::apiProposalWorkbenchDetail/$1');
     $routes->get('gis/api-proposal-exception-queue', 'GisController::apiProposalExceptionQueue');

@@ -686,6 +686,9 @@
             </div>
 
             <div class="d-flex align-items-center gap-1">
+                <button type="button" id="btn-open-transline-ai" class="btn btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-white px-2 px-md-3" style="font-size: 11px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: 1px solid #0284c7;">
+                    <i class="fas fa-bolt text-warning me-1"></i> Auto-Complete AI
+                </button>
                 <button type="button" id="btn-open-proposals-drawer" class="btn btn-warning btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-dark px-2 px-md-3" style="font-size: 11px; border: 1px solid #f59e0b; background: linear-gradient(135deg, #fef08a 0%, #facc15 100%);">
                     <i class="fas fa-robot text-dark me-1"></i> Proposal AI
                     <span id="proposals-badge-count" class="badge rounded-pill bg-dark text-warning ms-1" style="font-size:10px; padding: 2px 6px;">5</span>
@@ -2016,6 +2019,142 @@
             <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between align-items-center" style="font-size: 11px;">
                 <span class="text-muted"><i class="fas fa-shield-halved text-success me-1"></i> TL-01 D4A Read-Only Workbench (0 DB Writes)</span>
                 <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Tutup Workbench</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     TL-02: AI-ASSISTED JTM TRANSLINE AUTO-COMPLETION MODAL
+     ======================================================== -->
+<div class="modal fade" id="modal-transline-ai-completion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <!-- Modal Header -->
+            <div class="modal-header bg-dark text-white py-3 border-bottom border-secondary">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="rounded-circle p-2 bg-warning bg-opacity-25 text-warning">
+                        <i class="fas fa-bolt fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h6 class="modal-title fw-bold mb-0 text-white" style="font-size: 15px;">TL-02 — AI-ASSISTED JTM TRANSLINE AUTO-COMPLETION</h6>
+                            <span id="ai-modal-feeder-badge" class="badge bg-primary font-monospace" style="font-size: 11px;">-</span>
+                            <span class="badge bg-info text-dark font-monospace" style="font-size: 11px;">24 SAFETY GATES ACTIVE</span>
+                            <span class="badge bg-success font-monospace" style="font-size: 11px;">ZERO-WRITE PROTECTED</span>
+                        </div>
+                        <span class="small text-muted font-monospace" style="font-size: 11px;">Otomatisasi Topologi JTM Berdasarkan Proximity Spasial, Anchor Degree-1 &amp; Urutan Kode Aset</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-4 bg-light">
+                <!-- Loading State -->
+                <div id="ai-loading" class="text-center py-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <span class="d-block small text-muted mt-2">Menganalisis topologi &amp; menghitung 24 Safety Gates...</span>
+                </div>
+
+                <!-- Alert Result / Status -->
+                <div id="ai-alert-box" class="alert py-2 px-3 small my-2" style="display: none;"></div>
+
+                <!-- Main Content -->
+                <div id="ai-modal-content">
+                    <!-- Metrics Summary Cards -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-3">
+                            <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                <span class="text-muted small" style="font-size: 10px;">TOTAL ASET JTM</span>
+                                <strong id="ai-stat-total-assets" class="fs-5 text-dark font-monospace">-</strong>
+                                <span class="text-muted" style="font-size: 9px;">Penyulang Terpilih</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                <span class="text-muted small" style="font-size: 10px;">TRANSLINE OTORITATIF</span>
+                                <strong id="ai-stat-active-translines" class="fs-5 text-primary font-monospace">-</strong>
+                                <span class="text-muted" style="font-size: 9px;">Aktif di Database</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                <span class="text-muted small" style="font-size: 10px;">ELIGIBLE AUTO-COMPLETE</span>
+                                <strong id="ai-stat-auto-eligible" class="fs-5 text-success font-monospace">-</strong>
+                                <span class="text-muted" style="font-size: 9px;">Pass 24 Gates (Conf ≥ 0.95)</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                <span class="text-muted small" style="font-size: 10px;">BUTUH REVIEW MANUAL</span>
+                                <strong id="ai-stat-review-required" class="fs-5 text-warning font-monospace">-</strong>
+                                <span class="text-muted" style="font-size: 9px;">Exceptions / Multi-branch</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Safety & Policy Invariant Notice -->
+                    <div class="card border-0 shadow-sm rounded-3 mb-3 bg-white p-3 border-start border-primary border-4">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="fas fa-shield-halved text-primary fs-5 mt-1"></i>
+                            <div class="flex-fill small" style="font-size: 11px;">
+                                <strong class="text-dark d-block mb-1">TL-02 STRICT GOVERNANCE &amp; SAFETY INVARIANTS:</strong>
+                                <div class="row g-1 text-muted">
+                                    <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> Endpoint murni <code>Asset ↔ Asset</code> (Temuan firewall 100% aktif).</div>
+                                    <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> Zero-write pada tabel <code>assets</code>, <code>temuan</code>, <code>temuan_materials</code>.</div>
+                                    <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> 42 Transline baseline otentik 100% terjaga tanpa modifikasi.</div>
+                                    <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> Eksekusi bertahap terkontrol (Maksimal 10 segmen per batch dengan atomic rollback).</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pilot Batch Candidate Table -->
+                    <div class="card border rounded-3 shadow-sm bg-white mb-3">
+                        <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="small fw-bold text-uppercase text-secondary" style="font-size: 10px;">
+                                    <i class="fas fa-list-check text-success me-1"></i> KANDIDAT PILOT AUTO-COMPLETE (TOP 10 BATCH)
+                                </span>
+                            </div>
+                            <span id="ai-pilot-badge-count" class="badge bg-success font-monospace" style="font-size: 10px;">0 Segmen Siap</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 11px;">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Source Asset (Titik A)</th>
+                                            <th>Target Asset (Titik B)</th>
+                                            <th>Jarak Spasial</th>
+                                            <th>Confidence</th>
+                                            <th>Tipe Bentang</th>
+                                            <th>Status 24 Gates</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ai-candidate-tbody">
+                                        <!-- Dynamically loaded -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between align-items-center" style="font-size: 11px;">
+                <div class="text-muted font-monospace" style="font-size: 10px;">
+                    <i class="fas fa-code-branch text-secondary me-1"></i> Engine: TL-02 v1.0.0 · Batch Limit: 10
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" id="btn-execute-transline-ai" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none;">
+                        <i class="fas fa-bolt text-warning me-1"></i> Eksekusi Auto-Complete (10 Segmen)
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -3903,11 +4042,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 var feederName = currentFeederName || (tl.penyulang_name || `Penyulang #${currentFeederId}`);
                 var sectionName = tl.section_name || (fromAsset && fromAsset.properties.section_name) || (tl.section_id ? `Section #${tl.section_id}` : '-');
 
+                var createdBy = tl.created_by || '';
+                var isAiAuto = createdBy.includes('RUN:') || createdBy.includes('AI') || createdBy.includes('TL-02');
+                var originBadge = isAiAuto
+                    ? `<span class="badge bg-info text-dark" style="font-size: 9px;"><i class="fas fa-bolt text-warning me-1"></i>AI AUTO-COMPLETED</span>`
+                    : `<span class="badge bg-secondary" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i>OTORITATIF MANUAL</span>`;
+
                 var popupContent = `
-                    <div style="min-width: 260px; font-family: system-ui, -apple-system, sans-serif;">
+                    <div style="min-width: 270px; font-family: system-ui, -apple-system, sans-serif;">
                         <div class="d-flex align-items-center justify-content-between border-bottom pb-1 mb-2">
                             <strong style="color: #0284c7; font-size: 13px;">⚡ ${translineCode}</strong>
-                            <span class="badge bg-secondary" style="font-size: 9px;">READ-ONLY</span>
+                            ${originBadge}
                         </div>
                         <div class="small text-muted mb-2" style="font-size: 11px; line-height: 1.4;">
                             <div><strong>Penyulang:</strong> <span class="text-dark">${feederName}</span></div>
@@ -3916,11 +4061,12 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div><strong>Titik B (Target):</strong> <span class="text-dark">${toName}</span></div>
                             <div><strong>Konduktor:</strong> <span class="text-dark">${conductorLabel}</span></div>
                             <div><strong>Panjang:</strong> <span class="text-dark">${Number(lengthMeter).toFixed(1)} m</span></div>
-                            <div><strong>Status Topologi:</strong> <span class="badge bg-success" style="font-size: 9px;">ACTIVE</span></div>
+                            <div><strong>Status:</strong> <span class="badge bg-success" style="font-size: 9px;">ACTIVE</span></div>
+                            ${createdBy ? `<div class="mt-1 pt-1 border-top" style="font-size: 9px;"><strong>Provenance:</strong> <span class="font-monospace text-secondary">${createdBy}</span></div>` : ''}
                         </div>
                         <div class="p-1 bg-light rounded text-center border">
                             <span class="text-secondary fw-bold" style="font-size: 9px;">
-                                🔒 MODE BACA OTORITATIF (D4B Terkunci)
+                                🟢 TRANSLINE OTORITATIF JTM
                             </span>
                         </div>
                     </div>
@@ -4917,6 +5063,201 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             });
     };
+
+    // ========================================================
+    // ⚡ TL-02: AI-ASSISTED JTM TRANSLINE AUTO-COMPLETION UI
+    // ========================================================
+    var aiModalInstance = null;
+
+    function openTranslineAiModal() {
+        if (!currentFeederId) {
+            alert('Pilih penyulang terlebih dahulu sebelum membuka Auto-Complete AI.');
+            return;
+        }
+
+        var modalEl = document.getElementById('modal-transline-ai-completion');
+        if (!modalEl) return;
+
+        if (!aiModalInstance) {
+            aiModalInstance = new bootstrap.Modal(modalEl);
+        }
+
+        var feederTitle = currentFeederName || `Penyulang #${currentFeederId}`;
+        var feederBadge = document.getElementById('ai-modal-feeder-badge');
+        if (feederBadge) feederBadge.textContent = feederTitle;
+
+        var loadingEl = document.getElementById('ai-loading');
+        var contentEl = document.getElementById('ai-modal-content');
+        var alertBox  = document.getElementById('ai-alert-box');
+        if (alertBox) alertBox.style.display = 'none';
+
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (contentEl) contentEl.style.display = 'none';
+
+        aiModalInstance.show();
+
+        fetchJson(`<?= site_url('gis/api-transline-ai-preview') ?>?penyulang_id=${encodeURIComponent(currentFeederId)}`)
+            .then(res => {
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (contentEl) contentEl.style.display = 'block';
+
+                if (res && res.status === 'success') {
+                    populateTranslineAiModal(res);
+                } else {
+                    if (alertBox) {
+                        alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                        alertBox.textContent = res.message || 'Gagal memuat preview AI Transline.';
+                        alertBox.style.display = 'block';
+                    }
+                }
+            })
+            .catch(err => {
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (alertBox) {
+                    alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                    alertBox.textContent = 'Kendala koneksi AI Preview: ' + err.message;
+                    alertBox.style.display = 'block';
+                }
+            });
+    }
+
+    function populateTranslineAiModal(data) {
+        var summary = data.summary || {};
+        var pilotBatch = data.pilot_batch || [];
+
+        if (document.getElementById('ai-stat-total-assets')) {
+            document.getElementById('ai-stat-total-assets').textContent = summary.total_master_assets || 0;
+        }
+        if (document.getElementById('ai-stat-active-translines')) {
+            document.getElementById('ai-stat-active-translines').textContent = summary.active_translines || 0;
+        }
+        if (document.getElementById('ai-stat-auto-eligible')) {
+            document.getElementById('ai-stat-auto-eligible').textContent = summary.auto_eligible_count || 0;
+        }
+        if (document.getElementById('ai-stat-review-required')) {
+            document.getElementById('ai-stat-review-required').textContent = summary.review_required_count || 0;
+        }
+        if (document.getElementById('ai-pilot-badge-count')) {
+            document.getElementById('ai-pilot-badge-count').textContent = `${pilotBatch.length} Segmen Siap`;
+        }
+
+        var tbody = document.getElementById('ai-candidate-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        var btnExec = document.getElementById('btn-execute-transline-ai');
+
+        if (pilotBatch.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-check-circle text-success me-1"></i> Semua segmen berkeyakinan tinggi telah diselesaikan atau tidak ada kandidat eligible saat ini.</td></tr>`;
+            if (btnExec) btnExec.disabled = true;
+            return;
+        }
+
+        if (btnExec) btnExec.disabled = false;
+
+        pilotBatch.forEach(function (c, idx) {
+            var tr = document.createElement('tr');
+            var confPct = ((c.confidence_score || 0) * 100).toFixed(0);
+            var isAnchor = (c.candidate_type === 'ANCHOR_CONTINUATION');
+            var badgeType = isAnchor 
+                ? `<span class="badge bg-primary font-monospace" style="font-size: 9px;"><i class="fas fa-anchor me-1"></i>ANCHOR DEGREE-1</span>`
+                : `<span class="badge bg-secondary font-monospace" style="font-size: 9px;">NOMINAL ROAD</span>`;
+
+            tr.innerHTML = `
+                <td class="font-monospace text-muted">${idx + 1}</td>
+                <td>
+                    <strong class="font-monospace text-dark">${c.source_asset_code}</strong>
+                    <div class="text-muted" style="font-size: 9px;">${c.source_asset_name || '-'}</div>
+                </td>
+                <td>
+                    <strong class="font-monospace text-dark">${c.target_asset_code}</strong>
+                    <div class="text-muted" style="font-size: 9px;">${c.target_asset_name || '-'}</div>
+                </td>
+                <td class="font-monospace fw-bold text-primary">${Number(c.geodesic_distance_m).toFixed(1)} m</td>
+                <td>
+                    <span class="badge bg-success font-monospace" style="font-size: 10px;">${confPct}%</span>
+                </td>
+                <td>${badgeType}</td>
+                <td>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0" style="font-size: 9px;">
+                        <i class="fas fa-shield-check me-1"></i> PASS 24 GATES
+                    </span>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function executeTranslineAiBatch() {
+        if (!currentFeederId) return;
+        var btn = document.getElementById('btn-execute-transline-ai');
+        var alertBox = document.getElementById('ai-alert-box');
+
+        if (!confirm('Apakah Anda yakin ingin mengeksekusi 10 segmen transline otomatis ini ke database resmi? Tindakan ini dilindungi 24 safety gates dan atomic transaction.')) {
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengeksekusi...';
+        }
+
+        fetchJson('<?= site_url('gis/api-transline-ai-complete') ?>', {
+            method: 'POST',
+            body: JSON.stringify({
+                penyulang_id: currentFeederId,
+                auto_pilot: true
+            })
+        })
+        .then(res => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bolt text-warning me-1"></i> Eksekusi Auto-Complete (10 Segmen)';
+            }
+
+            if (res && res.status === 'success') {
+                if (alertBox) {
+                    alertBox.className = 'alert alert-success py-2 px-3 small my-2';
+                    alertBox.innerHTML = `<strong><i class="fas fa-check-circle me-1"></i> Berhasil!</strong> ${res.message || (res.created_count + ' Transline berhasil dibuat.')} Provenance: <code>${res.provenance_run_id || 'RUN:TL02'}</code>`;
+                    alertBox.style.display = 'block';
+                }
+
+                // Refresh GIS map layers to immediately display new authoritative lines
+                loadGisNetworkOnDemand(true);
+                loadGisProposalsOnDemand();
+
+                // Re-fetch preview in modal
+                setTimeout(function () {
+                    openTranslineAiModal();
+                }, 1200);
+            } else {
+                if (alertBox) {
+                    alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                    alertBox.innerHTML = `<strong><i class="fas fa-exclamation-triangle me-1"></i> Gagal:</strong> ${res.message || 'Eksekusi dibatalkan oleh Safety Gate.'}`;
+                    alertBox.style.display = 'block';
+                }
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bolt text-warning me-1"></i> Eksekusi Auto-Complete (10 Segmen)';
+            }
+            if (alertBox) {
+                alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                alertBox.innerHTML = `<strong><i class="fas fa-exclamation-circle me-1"></i> Error:</strong> ${err.message}`;
+                alertBox.style.display = 'block';
+            }
+        });
+    }
+
+    bindPointerSafeTap('btn-open-transline-ai', function () {
+        openTranslineAiModal();
+    }, 'OPEN_TRANSLINE_AI_MODAL');
+
+    bindPointerSafeTap('btn-execute-transline-ai', function () {
+        executeTranslineAiBatch();
+    }, 'EXECUTE_TRANSLINE_AI_BATCH');
 
     bindPointerSafeTap('btn-open-proposals-drawer', function () {
         loadGisProposalsOnDemand();

@@ -513,6 +513,219 @@ class GisController extends BaseController
     }
 
     /**
+     * TL-02: Read-Only JTM Network Completion Preview
+     * GET /gis/api-transline-ai-preview?penyulang_id=X
+     *
+     * STRICT READ-ONLY: SELECT only, 0 mutations.
+     */
+    public function apiTranslineAiPreview(): ResponseInterface
+    {
+        try {
+            $penyulangId = (int)(
+                (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+                ?? ($_GET['penyulang_id'] ?? 0)
+            );
+
+            if ($penyulangId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'success' => false,
+                    'reason'  => 'INVALID_PENYULANG_ID',
+                    'message' => 'Parameter penyulang_id wajib berupa integer positif.',
+                ]);
+            }
+
+            $session = session();
+            $userUlpId = $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null;
+
+            // Feeder & ULP Authorization check
+            $db = \Config\Database::connect();
+            $feeder = $db->tableExists('penyulang')
+                ? $db->table('penyulang')->where('id', $penyulangId)->get()->getRowArray()
+                : null;
+
+            if (!$feeder) {
+                return $this->response->setStatusCode(404)->setJSON([
+                    'status'  => 'error',
+                    'success' => false,
+                    'reason'  => 'FEEDER_NOT_FOUND',
+                    'message' => "Penyulang #{$penyulangId} tidak ditemukan.",
+                ]);
+            }
+
+            $feederUlpId = (int)($feeder['ulp_id'] ?? 0);
+            if ($userUlpId !== null && $userUlpId > 0 && $feederUlpId > 0 && $userUlpId !== $feederUlpId) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'status'  => 'error',
+                    'success' => false,
+                    'reason'  => 'UNAUTHORIZED_FEEDER_ACCESS',
+                    'message' => 'Akses ditolak: Penyulang berada di luar batas otorisasi ULP Anda.',
+                ]);
+            }
+
+            $graphService = new \App\Services\TranslineNetworkGraphService($db);
+            $graph = $graphService->buildGraphForFeeder($penyulangId);
+
+            $completionService = new \App\Services\TranslineCompletionService($db);
+            $completion = $completionService->generateNetworkCompletionCandidates($penyulangId);
+
+            $autoService = new \App\Services\TranslineAutoCompletionService($db);
+            $candidates = $completion['candidates'] ?? [];
+            $autoEligible = [];
+            $reviewRequired = [];
+
+            foreach ($candidates as &$cand) {
+                if (!empty($cand['is_existing'])) {
+                    continue;
+                }
+                $gate = $autoService->validateCandidateGates($cand);
+                $cand['gate_valid'] = $gate['valid'];
+                $cand['gate_reason'] = $gate['reason'];
+                if ($gate['valid'] && ($cand['classification'] ?? '') === 'AUTO_COMPLETE') {
+                    $autoEligible[] = $cand;
+                } else {
+                    $reviewRequired[] = $cand;
+                }
+            }
+            unset($cand);
+
+            $runId = 'TL02-PREVIEW-' . date('YmdHis') . '-' . bin2hex(random_bytes(3));
+
+            $summary = array_merge($completion['summary'] ?? [], [
+                'total_master_assets'     => $graph['summary']['total_nodes'],
+                'active_translines'       => $graph['summary']['total_authoritative_edges'],
+                'degree_one_anchors'      => $graph['summary']['terminal_nodes_count'],
+                'isolated_assets'         => $graph['summary']['isolated_nodes_count'],
+                'auto_eligible_count'     => count($autoEligible),
+                'review_required_count'   => count($reviewRequired),
+                'pilot_recommended_count' => min(\App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE, count($autoEligible)),
+            ]);
+
+            return $this->response->setStatusCode(200)->setJSON([
+                'status'              => 'success',
+                'success'             => true,
+                'run_id'              => $runId,
+                'scope'               => [
+                    'ulp_id'         => $feederUlpId,
+                    'penyulang_id'   => $penyulangId,
+                    'penyulang_name' => $feeder['nama_penyulang'] ?? '',
+                    'penyulang_code' => $feeder['kode_penyulang'] ?? '',
+                ],
+                'inventory'           => [
+                    'total_assets'       => $graph['summary']['total_nodes'],
+                    'connected_assets'   => $graph['summary']['connected_nodes_count'],
+                    'unconnected_assets' => $graph['summary']['isolated_nodes_count'],
+                    'terminal_assets'    => $graph['summary']['terminal_nodes_count'],
+                ],
+                'authoritative'       => [
+                    'translines_count'   => $graph['summary']['total_authoritative_edges'],
+                ],
+                'summary'             => $summary,
+                'candidate_summary'   => $completion['summary'] ?? [],
+                'pilot_batch'         => array_slice($autoEligible, 0, \App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE),
+                'candidates'          => $candidates,
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', '[TL02_PREVIEW_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'success' => false,
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat memuat preview AI: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-02: Controlled Execution Endpoint for AI Transline Completion
+     * POST /gis/api-transline-ai-complete
+     *
+     * STRICT GOVERNANCE:
+     * - Only authorized endpoint allowed to invoke TranslineAutoCompletionService::execute().
+     * - Server re-resolves all endpoints and gates; never trusts browser geometry or attributes.
+     */
+    public function apiTranslineAiComplete(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $proposalIds = $json['proposal_ids'] ?? $this->request->getPost('proposal_ids') ?? [];
+            $autoPilot = !empty($json['auto_pilot']) || !empty($this->request->getPost('auto_pilot'));
+            $penyulangId = (int)($json['penyulang_id'] ?? $this->request->getPost('penyulang_id') ?? 0);
+
+            $autoService = new \App\Services\TranslineAutoCompletionService();
+
+            if (empty($proposalIds) && $autoPilot && $penyulangId > 0) {
+                $completionService = new \App\Services\TranslineCompletionService();
+                $preview = $completionService->generateNetworkCompletionCandidates($penyulangId);
+                $eligibleCandidates = [];
+                foreach ($preview['candidates'] as $c) {
+                    if (!empty($c['is_existing'])) continue;
+                    $gate = $autoService->validateCandidateGates($c);
+                    if ($gate['valid'] && ($c['classification'] ?? '') === 'AUTO_COMPLETE') {
+                        $eligibleCandidates[] = $c;
+                        if (count($eligibleCandidates) >= \App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE) {
+                            break;
+                        }
+                    }
+                }
+
+                if (empty($eligibleCandidates)) {
+                    return $this->response->setStatusCode(422)->setJSON([
+                        'status'  => 'error',
+                        'reason'  => 'NO_ELIGIBLE_CANDIDATES',
+                        'message' => 'Tidak ditemukan kandidat yang memenuhi syarat AUTO_COMPLETE untuk feeder ini.',
+                    ]);
+                }
+
+                $session = session();
+                $actor = (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'TL02_OPERATOR') : 'TL02_OPERATOR');
+
+                $stageResult = $completionService->commitCandidatesToProposals($eligibleCandidates, [
+                    'actor'   => $actor,
+                    'dry_run' => false,
+                ]);
+
+                if ($stageResult['status'] !== 'success') {
+                    return $this->response->setStatusCode(500)->setJSON([
+                        'status'  => 'error',
+                        'reason'  => 'PROPOSAL_STAGING_FAILED',
+                        'message' => 'Gagal melakukan staging proposal kandidat: ' . ($stageResult['reason'] ?? 'UNKNOWN'),
+                        'details' => $stageResult,
+                    ]);
+                }
+
+                $proposalIds = array_column($stageResult['inserted_records'], 'id');
+            }
+
+            if (!is_array($proposalIds) || empty($proposalIds)) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'reason'  => 'EMPTY_PROPOSAL_SELECTION',
+                    'message' => 'Parameter proposal_ids wajib berupa array integer tidak kosong atau sertakan auto_pilot = true.',
+                ]);
+            }
+
+            $session = session();
+            $actor = (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'TL02_OPERATOR') : 'TL02_OPERATOR');
+
+            $result = $autoService->execute($proposalIds, [
+                'actor_name' => $actor,
+                'max_batch'  => \App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE,
+            ]);
+
+            $httpCode = ($result['status'] === 'success') ? 200 : 422;
+            return $this->response->setStatusCode($httpCode)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[TL02_EXECUTE_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat eksekusi TL-02: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Endpoint Audit Data Provenance & Boundary: GET /gis/api-network-audit?penyulang_id=X
      */
     public function apiNetworkAudit(): ResponseInterface
@@ -1157,4 +1370,5 @@ class GisController extends BaseController
         ]);
     }
 }
+
 

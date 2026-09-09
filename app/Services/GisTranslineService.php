@@ -722,7 +722,7 @@ class GisTranslineService
                 t.id, t.transline_code, t.penyulang_id, ' . $sectionSelect . '
                 t.source_asset_id, t.target_asset_id,
                 t.conductor_type, t.conductor_size, t.distance_meters,
-                t.status, t.is_active,
+                t.status, t.is_active, t.created_by,
                 sa.id AS sa_id, sa.kode_asset AS sa_code, sa.nama_asset AS sa_name,
                 sa.latitude AS sa_lat, sa.longitude AS sa_lng,
                 sa.penyulang_id AS sa_penyulang_id, sa.section_id AS sa_section_id,
@@ -880,6 +880,7 @@ class GisTranslineService
                 'conductor_material' => $r['conductor_material'] ?? 'ALUMINUM_ALLOY',
                 'status'             => $r['status'] ?? 'ACTIVE',
                 'is_active'          => 1,
+                'created_by'         => $r['created_by'] ?? null,
             ];
         }
 

@@ -654,6 +654,29 @@ class GisController extends BaseController
 
             $autoService = new \App\Services\TranslineAutoCompletionService();
 
+            // Idempotency guard for automated pilot: Avoid committing subsequent batches if pilot quota is already fulfilled
+            if ($autoPilot && empty($proposalIds) && empty($json['force'])) {
+                $db = \Config\Database::connect();
+                $existingAiCount = $db->table('gis_translines')
+                    ->where('penyulang_id', $penyulangId)
+                    ->where('is_active', 1)
+                    ->groupStart()
+                        ->like('created_by', 'TL02_')
+                        ->orLike('created_by', 'RUN:')
+                    ->groupEnd()
+                    ->countAllResults();
+
+                if ($existingAiCount >= \App\Services\TranslineAutoCompletionService::MAX_BATCH_SIZE) {
+                    return $this->response->setStatusCode(200)->setJSON([
+                        'status'         => 'success',
+                        'action'         => 'IDEMPOTENT_ALREADY_SATISFIED',
+                        'message'        => 'Pilot batch 10 translines AI telah aktif pada penyulang ini. Idempotensi terjaga (0 duplikat).',
+                        'created_count'  => 0,
+                        'total_ai_count' => $existingAiCount,
+                    ]);
+                }
+            }
+
             if (empty($proposalIds) && $autoPilot && $penyulangId > 0) {
                 $completionService = new \App\Services\TranslineCompletionService();
                 $preview = $completionService->generateNetworkCompletionCandidates($penyulangId);
@@ -721,6 +744,52 @@ class GisController extends BaseController
                 'status'  => 'error',
                 'reason'  => 'SERVER_EXCEPTION',
                 'message' => 'Kendala sistem saat eksekusi TL-02: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-02: Exact Primary-Key Rollback Endpoint
+     * POST /gis/api-transline-ai-rollback
+     */
+    public function apiTranslineAiRollback(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $translineIds = $json['transline_ids'] ?? [];
+            if (!empty($json['transline_id'])) {
+                $translineIds[] = (int)$json['transline_id'];
+            }
+            $runId = (string)($json['run_id'] ?? '');
+
+            if (empty($translineIds)) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Parameter transline_ids wajib diisi.',
+                ]);
+            }
+
+            $autoService = new \App\Services\TranslineAutoCompletionService();
+            $rolledBack = [];
+            $actor = $this->getActor();
+            foreach ($translineIds as $tId) {
+                $res = $autoService->rollback((int)$tId, $runId, $actor);
+                if (($res['status'] ?? '') === 'success') {
+                    $rolledBack[] = $tId;
+                }
+            }
+
+            return $this->response->setStatusCode(200)->setJSON([
+                'status'          => 'success',
+                'action'          => 'ROLLBACK_COMMITTED',
+                'rolled_back_ids' => $rolledBack,
+                'count'           => count($rolledBack),
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', '[TL02_ROLLBACK_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => 'Gagal melakukan rollback: ' . $e->getMessage(),
             ]);
         }
     }

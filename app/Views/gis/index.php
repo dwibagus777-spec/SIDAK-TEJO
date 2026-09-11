@@ -2738,6 +2738,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 'CANCEL_MODE');
 
     // ========================================================
+    // ⚡ GIS-01: HIGH-PERFORMANCE MULTI-FEEDER CACHE & INDEXING
+    // ========================================================
+    window.SIDAK_GIS_NETWORK_CACHE_BY_FEEDER = new Map();
+    window.SIDAK_GIS_NETWORK_CACHE = null;
+    var GIS_ICON_CACHE = new Map();
+    var markerByAssetId = new Map();
+    var activeNetworkRequestPromise = null;
+    var activeNetworkAbortController = null;
+    var currentRequestGeneration = 0;
+    var gisCanvasRenderer = null;
+
+    // ========================================================
     // 🛡️ ZERO-ERROR RUNTIME UTILITIES & API CONTRACT HELPER
     // ========================================================
     function isValidLatLng(lat, lng) {
@@ -2908,6 +2920,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         var opt = setupFeederSelect.options[setupFeederSelect.selectedIndex];
+        var isDifferentFeeder = (currentFeederId && String(currentFeederId) !== String(feederId));
         currentFeederId = feederId;
         currentFeederName = opt.dataset.feederName || opt.text;
         currentUlpName = opt.dataset.ulpName || 'PLN ULP';
@@ -2919,6 +2932,15 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('gis-workspace-screen').style.display = 'block';
 
         initializeMapWorkspace();
+
+        if (isDifferentFeeder) {
+            markerByAssetId.clear();
+            if (markerCluster && typeof markerCluster.clearLayers === 'function') markerCluster.clearLayers();
+            if (translinePolylineLayer && typeof translinePolylineLayer.clearLayers === 'function') translinePolylineLayer.clearLayers();
+            if (findingLayer && typeof findingLayer.clearLayers === 'function') findingLayer.clearLayers();
+            if (proposalsPreviewLayer && typeof proposalsPreviewLayer.clearLayers === 'function') proposalsPreviewLayer.clearLayers();
+        }
+
         loadGisNetworkOnDemand(true);
     }, 'SETUP_OPEN_MAP');
 
@@ -2980,6 +3002,11 @@ document.addEventListener("DOMContentLoaded", function () {
             markerCluster = L.featureGroup();
         }
         map.addLayer(markerCluster);
+
+        if (typeof L !== 'undefined' && typeof L.canvas === 'function') {
+            gisCanvasRenderer = L.canvas({ padding: 0.5, tolerance: 10 });
+            window.gisCanvasRenderer = gisCanvasRenderer;
+        }
 
         translinePolylineLayer = L.featureGroup().addTo(map);
         previewConnectionLayer = L.featureGroup().addTo(map);
@@ -3069,25 +3096,40 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var lat = geom.coordinates[1];
         var lng = geom.coordinates[0];
+        var assetId = props.id ? String(props.id) : null;
 
         var iconUrl = resolveAssetIconUrl(props, visual);
         var ringClass = overlay.ring_class || 'asset-ring-good';
         var symbolKey = visual.symbol_key || props.jenis_asset || 'ASET';
 
-        var iconHtml = `
-            <div class="asset-network-marker-wrap" id="marker-asset-${props.id}" title="${props.nama_asset || ''} (${symbolKey})">
-                <span class="asset-condition-halo ${ringClass}"></span>
-                <img src="${iconUrl}" alt="${symbolKey}" class="asset-flat-svg" />
-            </div>
-        `;
+        // 1. Icon Caching: Reuse cached L.divIcon instance per icon+ring+symbol
+        var iconKey = `${iconUrl}|${ringClass}|${symbolKey}`;
+        var customIcon = GIS_ICON_CACHE.get(iconKey);
+        if (!customIcon) {
+            var iconHtml = `
+                <div class="asset-network-marker-wrap" id="marker-asset-${props.id}" title="${props.nama_asset || ''} (${symbolKey})">
+                    <span class="asset-condition-halo ${ringClass}"></span>
+                    <img src="${iconUrl}" alt="${symbolKey}" class="asset-flat-svg" />
+                </div>
+            `;
 
-        var customIcon = L.divIcon({
-            html: iconHtml,
-            className: 'custom-gis-div-icon',
-            iconSize: [44, 44],
-            iconAnchor: [22, 22],
-            popupAnchor: [0, -22]
-        });
+            customIcon = L.divIcon({
+                html: iconHtml,
+                className: 'custom-gis-div-icon',
+                iconSize: [44, 44],
+                iconAnchor: [22, 22],
+                popupAnchor: [0, -22]
+            });
+            GIS_ICON_CACHE.set(iconKey, customIcon);
+        }
+
+        // 2. Marker Instance Reuse: If marker for this asset already exists, reuse it!
+        if (assetId && markerByAssetId.has(assetId)) {
+            var existingMarker = markerByAssetId.get(assetId);
+            existingMarker.setLatLng([lat, lng]);
+            existingMarker.setIcon(customIcon);
+            return existingMarker;
+        }
 
         var marker = L.marker([lat, lng], { icon: customIcon });
 
@@ -3098,6 +3140,10 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             handleMarkerTap(props, iconUrl, [lng, lat]);
         });
+
+        if (assetId) {
+            markerByAssetId.set(assetId, marker);
+        }
 
         return marker;
     }
@@ -4498,17 +4544,25 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
 
-            // Secondary Fallback: look up in currentData.features strictly for ASSET entity_type (Normalized ID comparison)
-            if (latLngs.length < 2 && fromId && toId && Array.isArray(currentData.features)) {
+            // Secondary Fallback: look up in canonical in-memory index or currentData.features
+            if (latLngs.length < 2 && fromId && toId) {
                 var sNorm = String(fromId);
                 var tNorm = String(toId);
-                var sFeat = currentData.features.find(f => f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === sNorm);
-                var tFeat = currentData.features.find(f => f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === tNorm);
-                if (sFeat && tFeat && sFeat.geometry && tFeat.geometry) {
-                    var sCoords = sFeat.geometry.coordinates;
-                    var tCoords = tFeat.geometry.coordinates;
-                    if (isValidLatLng(sCoords[1], sCoords[0]) && isValidLatLng(tCoords[1], tCoords[0])) {
-                        latLngs = [[sCoords[1], sCoords[0]], [tCoords[1], tCoords[0]]];
+                var activeIdx = (window.SIDAK_GIS_NETWORK_CACHE && window.SIDAK_GIS_NETWORK_CACHE.indexes)
+                    ? window.SIDAK_GIS_NETWORK_CACHE.indexes
+                    : null;
+
+                if (activeIdx && activeIdx.coordinateByAsset.has(sNorm) && activeIdx.coordinateByAsset.has(tNorm)) {
+                    latLngs = [activeIdx.coordinateByAsset.get(sNorm), activeIdx.coordinateByAsset.get(tNorm)];
+                } else if (Array.isArray(currentData.features)) {
+                    var sFeat = currentData.features.find(f => f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === sNorm);
+                    var tFeat = currentData.features.find(f => f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === tNorm);
+                    if (sFeat && tFeat && sFeat.geometry && tFeat.geometry) {
+                        var sCoords = sFeat.geometry.coordinates;
+                        var tCoords = tFeat.geometry.coordinates;
+                        if (isValidLatLng(sCoords[1], sCoords[0]) && isValidLatLng(tCoords[1], tCoords[0])) {
+                            latLngs = [[sCoords[1], sCoords[0]], [tCoords[1], tCoords[0]]];
+                        }
                     }
                 }
             }
@@ -4529,13 +4583,15 @@ document.addEventListener("DOMContentLoaded", function () {
             var lineColor = isTl04 ? '#10b981' : (isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7'));
             var lineWeight = isTl04 ? 4.5 : (isTl03 ? 4.0 : 3.5);
 
-            var visiblePoly = L.polyline(latLngs, {
+            var visPolyOpts = {
                 color: lineColor,
                 weight: lineWeight,
                 opacity: 0.9,
                 lineJoin: 'round',
                 interactive: false
-            });
+            };
+            if (gisCanvasRenderer) visPolyOpts.renderer = gisCanvasRenderer;
+            var visiblePoly = L.polyline(latLngs, visPolyOpts);
 
             visiblePoly.feature = {
                 properties: {
@@ -4558,13 +4614,15 @@ document.addEventListener("DOMContentLoaded", function () {
             translinePolylineLayer.addLayer(visiblePoly);
 
             // Invisible hit-layer for touch / mouse target (24px width)
-            var hitPoly = L.polyline(latLngs, {
+            var hitPolyOpts = {
                 color: lineColor,
                 weight: 24,
                 opacity: 0.001,
                 lineJoin: 'round',
                 interactive: true
-            });
+            };
+            if (gisCanvasRenderer) hitPolyOpts.renderer = gisCanvasRenderer;
+            var hitPoly = L.polyline(latLngs, hitPolyOpts);
 
             hitPoly.on('click', function (evt) {
                 L.DomEvent.stopPropagation(evt);
@@ -4576,9 +4634,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 window.activeSegmentHighlight = visiblePoly;
                 visiblePoly.setStyle({ color: '#f59e0b', weight: 5.5, opacity: 1 });
 
-                // Lookup source & target names strictly from ASSET features or properties
-                var fromAsset = (currentData.features || []).find(f => (f.properties && f.properties.entity_type === 'ASSET' && f.properties.id === fromId));
-                var toAsset = (currentData.features || []).find(f => (f.properties && f.properties.entity_type === 'ASSET' && f.properties.id === toId));
+                // Lookup source & target names strictly from ASSET features or properties via O(1) index
+                var fromAsset = (window.SIDAK_GIS_NETWORK_CACHE && window.SIDAK_GIS_NETWORK_CACHE.indexes)
+                    ? window.SIDAK_GIS_NETWORK_CACHE.indexes.assetById.get(String(fromId))
+                    : (currentData.features || []).find(f => (f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === String(fromId)));
+                var toAsset = (window.SIDAK_GIS_NETWORK_CACHE && window.SIDAK_GIS_NETWORK_CACHE.indexes)
+                    ? window.SIDAK_GIS_NETWORK_CACHE.indexes.assetById.get(String(toId))
+                    : (currentData.features || []).find(f => (f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === String(toId)));
 
                 var fromName = (fromAsset && fromAsset.properties) 
                     ? `${fromAsset.properties.nama_asset || fromAsset.properties.kode_asset} (#${fromId})` 
@@ -4775,23 +4837,116 @@ document.addEventListener("DOMContentLoaded", function () {
         return needles.some(n => str.includes(n));
     }
 
-    // Fetch Network Data On-Demand
+    // Canonical In-Memory Index Builder
+    function buildNetworkIndexes(data) {
+        var assetById = new Map();
+        var coordinateByAsset = new Map();
+        var translineById = new Map();
+        var neighborsByAsset = new Map();
+
+        if (!data) return { assetById, coordinateByAsset, translineById, neighborsByAsset };
+
+        var features = Array.isArray(data.features) ? data.features : [];
+        for (var i = 0; i < features.length; i++) {
+            var f = features[i];
+            var props = f.properties || {};
+            if (props.entity_type === 'ASSET' && props.id !== undefined && props.id !== null) {
+                var idStr = String(props.id);
+                assetById.set(idStr, f);
+                if (f.geometry && Array.isArray(f.geometry.coordinates)) {
+                    var c = f.geometry.coordinates;
+                    if (isValidLatLng(c[1], c[0])) {
+                        coordinateByAsset.set(idStr, [c[1], c[0]]);
+                    }
+                }
+            }
+        }
+
+        var translines = Array.isArray(data.translines) ? data.translines : [];
+        for (var j = 0; j < translines.length; j++) {
+            var tl = translines[j];
+            var tId = String(tl.id || tl.transline_id || tl.edge_id || (j + 1));
+            translineById.set(tId, tl);
+
+            var sId = String(tl.source_asset_id || tl.from_asset_id || '');
+            var tTargetId = String(tl.target_asset_id || tl.to_asset_id || '');
+
+            if (sId && tTargetId) {
+                if (!neighborsByAsset.has(sId)) neighborsByAsset.set(sId, []);
+                neighborsByAsset.get(sId).push(tTargetId);
+
+                if (!neighborsByAsset.has(tTargetId)) neighborsByAsset.set(tTargetId, []);
+                neighborsByAsset.get(tTargetId).push(sId);
+            }
+        }
+
+        return { assetById, coordinateByAsset, translineById, neighborsByAsset };
+    }
+
+    // Fetch Network Data On-Demand (With In-Memory Caching & Request Deduplication)
     function loadGisNetworkOnDemand(autoFitBounds, callback) {
         if (typeof autoFitBounds === 'undefined') autoFitBounds = true;
         if (!currentFeederId) return;
 
+        var fKey = String(currentFeederId);
+
+        // 1. In-Memory Cache Check: If feeder data already in memory, render immediately with 0 network calls!
+        var cachedEntry = window.SIDAK_GIS_NETWORK_CACHE_BY_FEEDER.get(fKey);
+        if (cachedEntry && cachedEntry.data) {
+            currentData = cachedEntry.data;
+            window.SIDAK_GIS_NETWORK_CACHE = cachedEntry;
+            renderFilteredLayers(autoFitBounds);
+            fetchPendingBadgeCount();
+            loadGisProposalsOnDemand();
+            if (typeof callback === 'function') callback();
+            return;
+        }
+
+        // 2. Request Deduplication: If identical feeder fetch is currently in-flight, reuse promise
+        if (activeNetworkRequestPromise && activeNetworkRequestPromise.feederId === fKey) {
+            activeNetworkRequestPromise.then(() => {
+                if (typeof callback === 'function') callback();
+            });
+            return;
+        }
+
+        // 3. Stale Request Cancellation: Abort previous feeder fetch if switching feeders
+        if (activeNetworkAbortController) {
+            try { activeNetworkAbortController.abort(); } catch (e) {}
+        }
+        activeNetworkAbortController = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+
+        var thisGeneration = ++currentRequestGeneration;
         var thisRequestId = ++currentRequestId;
         currentLOD = getLODCategory(map ? map.getZoom() : 14);
 
         var layersParam = getSelectedSetupLayers().join(',');
         toggleLoading(true);
 
-        fetchJson(`<?= site_url('gis/api-network') ?>?penyulang_id=${currentFeederId}&zoom=${map ? map.getZoom() : 14}&layers=${layersParam}`)
+        var fetchUrl = `<?= site_url('gis/api-network') ?>?penyulang_id=${currentFeederId}&zoom=${map ? map.getZoom() : 14}&layers=${layersParam}`;
+        var fetchOpts = activeNetworkAbortController ? { signal: activeNetworkAbortController.signal } : {};
+
+        var reqPromise = fetchJson(fetchUrl, fetchOpts)
             .then(res => {
-                if (thisRequestId !== currentRequestId) return;
+                if (thisGeneration !== currentRequestGeneration) return;
                 toggleLoading(false);
-                if (res.status === 'success' && res.data) {
+                activeNetworkRequestPromise = null;
+
+                if (res && res.status === 'success' && res.data) {
                     currentData = res.data;
+
+                    // Build canonical in-memory index
+                    var indexes = buildNetworkIndexes(currentData);
+                    var feederCache = {
+                        feederId: fKey,
+                        feederName: currentFeederName,
+                        loadedAt: Date.now(),
+                        data: currentData,
+                        indexes: indexes
+                    };
+                    window.SIDAK_GIS_NETWORK_CACHE_BY_FEEDER.set(fKey, feederCache);
+                    window.SIDAK_GIS_NETWORK_CACHE = feederCache;
+
                     renderFilteredLayers(autoFitBounds);
                     fetchPendingBadgeCount();
                     loadGisProposalsOnDemand();
@@ -4799,9 +4954,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             })
             .catch(err => {
-                if (thisRequestId === currentRequestId) toggleLoading(false);
+                if (err && err.name === 'AbortError') {
+                    // Stale request aborted cleanly
+                    return;
+                }
+                if (thisGeneration === currentRequestGeneration) {
+                    toggleLoading(false);
+                    activeNetworkRequestPromise = null;
+                }
                 console.error(err);
             });
+
+        reqPromise.feederId = fKey;
+        activeNetworkRequestPromise = reqPromise;
     }
 
     function getLODCategory(zoom) {
@@ -4886,7 +5051,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         safeHideOffcanvas('offcanvas-filter-sheet');
-        loadGisNetworkOnDemand(true);
+        var fKey = String(currentFeederId);
+        if (window.SIDAK_GIS_NETWORK_CACHE && window.SIDAK_GIS_NETWORK_CACHE.feederId === fKey) {
+            renderFilteredLayers(false);
+        } else {
+            loadGisNetworkOnDemand(true);
+        }
     }, 'APPLY_DRAWER_FILTER');
 
     bindPointerSafeTap('fab-locate-me', function () {
@@ -5208,14 +5378,16 @@ document.addEventListener("DOMContentLoaded", function () {
             else if (prop.visual_pattern === 'DASHED') dashPattern = '8, 6';
             else if (prop.visual_pattern === 'TWISTED_CHAIN') dashPattern = '10, 3, 3, 3';
 
-            var previewLine = L.polyline(latLngs, {
+            var previewLineOpts = {
                 color: color,
                 weight: 4.0,
                 opacity: 0.85,
                 dashArray: dashPattern,
                 lineCap: 'round',
                 interactive: true
-            });
+            };
+            if (gisCanvasRenderer) previewLineOpts.renderer = gisCanvasRenderer;
+            var previewLine = L.polyline(latLngs, previewLineOpts);
 
             previewLine.bindTooltip(`
                 <div class="font-monospace small">

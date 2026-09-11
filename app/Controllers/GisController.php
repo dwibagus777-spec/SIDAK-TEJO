@@ -745,6 +745,138 @@ class GisController extends BaseController
     }
 
     /**
+     * TL-03: Read-Only Advanced JTM Network Reconstruction Preview & Graph Component Analysis
+     * GET /gis/api-transline-tl03-preview?penyulang_id=X
+     *
+     * STRICT READ-ONLY: SELECT only, 0 mutations.
+     */
+    public function apiTranslineTl03Preview(): ResponseInterface
+    {
+        try {
+            $penyulangId = (int)(
+                (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+                ?? ($_GET['penyulang_id'] ?? 0)
+            );
+
+            if ($penyulangId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'success' => false,
+                    'reason'  => 'INVALID_PENYULANG_ID',
+                    'message' => 'Parameter penyulang_id wajib berupa integer positif.',
+                ]);
+            }
+
+            $session = session();
+            $userUlpId = $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null;
+
+            $db = \Config\Database::connect();
+            $feeder = $db->tableExists('penyulang')
+                ? $db->table('penyulang')->where('id', $penyulangId)->get()->getRowArray()
+                : null;
+
+            if (!$feeder) {
+                return $this->response->setStatusCode(404)->setJSON([
+                    'status'  => 'error',
+                    'success' => false,
+                    'reason'  => 'FEEDER_NOT_FOUND',
+                    'message' => "Penyulang #{$penyulangId} tidak ditemukan.",
+                ]);
+            }
+
+            $feederUlpId = (int)($feeder['ulp_id'] ?? 0);
+            if ($userUlpId !== null && $userUlpId > 0 && $feederUlpId > 0 && $userUlpId !== $feederUlpId) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'status'  => 'error',
+                    'success' => false,
+                    'reason'  => 'UNAUTHORIZED_FEEDER_ACCESS',
+                    'message' => 'Akses ditolak: Penyulang berada di luar batas otorisasi ULP Anda.',
+                ]);
+            }
+
+            $reconService = new \App\Services\TranslineReconstructionService();
+            $result = $reconService->analyzeFeeder($penyulangId);
+            $result['scope'] = [
+                'ulp_id'         => $feederUlpId,
+                'penyulang_id'   => $penyulangId,
+                'penyulang_name' => $feeder['nama_penyulang'] ?? '',
+                'penyulang_code' => $feeder['kode_penyulang'] ?? '',
+            ];
+
+            return $this->response->setStatusCode(200)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[TL03_PREVIEW_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'success' => false,
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat memuat preview TL-03: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-03: Controlled Production Write for Advanced Transline Reconstruction
+     * POST /gis/api-transline-tl03-complete
+     *
+     * Invariants:
+     * - Only authorized endpoints allowed.
+     * - Candidates re-validated server-side; 24 safety gates; score >= 90.
+     * - Max 10 per batch, atomic transaction with exact-PK capture.
+     */
+    public function apiTranslineTl03Complete(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $penyulangId = (int)($json['penyulang_id'] ?? $this->request->getPost('penyulang_id') ?? 0);
+            $candidateKeys = $json['candidate_natural_keys'] ?? $this->request->getPost('candidate_natural_keys') ?? [];
+            $maxBatch = (int)($json['max_batch'] ?? $this->request->getPost('max_batch') ?? \App\Services\TranslineReconstructionService::MAX_BATCH_SIZE);
+
+            if ($penyulangId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'reason'  => 'INVALID_PENYULANG_ID',
+                    'message' => 'Parameter penyulang_id wajib diisi.',
+                ]);
+            }
+
+            $session = session();
+            $actor = (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'ENGINEER_TRANSLINE_AI') : 'ENGINEER_TRANSLINE_AI');
+
+            $reconService = new \App\Services\TranslineReconstructionService();
+            $result = $reconService->executeBatch($penyulangId, [
+                'actor_name'             => $actor,
+                'candidate_natural_keys' => $candidateKeys,
+                'max_batch'              => $maxBatch,
+            ]);
+
+            $httpCode = ($result['status'] === 'success') ? 200 : 422;
+            return $this->response->setStatusCode($httpCode)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[TL03_EXECUTE_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat eksekusi TL-03: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * GIS Icon Modernization: Configuration & Metadata Endpoint
+     * GET /gis/api-icon-config
+     */
+    public function apiGisIconConfig(): ResponseInterface
+    {
+        $config = new \Config\GisIconConfig();
+        return $this->response->setStatusCode(200)->setJSON([
+            'status'    => 'success',
+            'base_path' => base_url($config->iconBasePath),
+            'icons'     => $config->icons,
+        ]);
+    }
+
+    /**
      * Endpoint Audit Data Provenance & Boundary: GET /gis/api-network-audit?penyulang_id=X
      */
     public function apiNetworkAudit(): ResponseInterface

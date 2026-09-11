@@ -562,6 +562,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('gis/api-transline-ai-preview', 'GisController::apiTranslineAiPreview');
     $routes->post('gis/api-transline-ai-complete', 'GisController::apiTranslineAiComplete');
     $routes->post('gis/api-transline-ai-rollback', 'GisController::apiTranslineAiRollback');
+    // TL-03: Advanced JTM Network Reconstruction & GIS Icon Modernization APIs
+    $routes->get('gis/api-transline-tl03-preview', 'GisController::apiTranslineTl03Preview');
+    $routes->post('gis/api-transline-tl03-complete', 'GisController::apiTranslineTl03Complete');
+    $routes->get('gis/api-icon-config', 'GisController::apiGisIconConfig');
     // TL-01 Sub-Gate D4A: Read-Only Proposal Exception Workbench & Review Queue
     $routes->get('gis/api-proposal-workbench/(:num)', 'GisController::apiProposalWorkbenchDetail/$1');
     $routes->get('gis/api-proposal-exception-queue', 'GisController::apiProposalExceptionQueue');

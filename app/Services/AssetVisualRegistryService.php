@@ -31,6 +31,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_CONTINUATION',
             'svg_file'           => 'tm-1.svg',
             'svg_path'           => '/assets/icons/network/tm-1.svg',
+            'png_file'           => 'tm1.png',
+            'png_path'           => '/assets/gis/icons/tm1.png',
             'color'              => '#111827',
             'shape'              => 'circle-donut',
             'map_priority'       => 40,
@@ -47,6 +49,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_ANGLE',
             'svg_file'           => 'tm-5.svg',
             'svg_path'           => '/assets/icons/network/tm-5.svg',
+            'png_file'           => 'tm5.png',
+            'png_path'           => '/assets/gis/icons/tm5.png',
             'color'              => '#111827',
             'shape'              => 'circle-donut-angle',
             'map_priority'       => 45,
@@ -63,6 +67,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_PORTAL',
             'svg_file'           => 'tm-8.svg',
             'svg_path'           => '/assets/icons/network/tm-8.svg',
+            'png_file'           => 'tm8.png',
+            'png_path'           => '/assets/gis/icons/tm8.png',
             'color'              => '#111827',
             'shape'              => 'circle-donut-portal',
             'map_priority'       => 82,
@@ -79,6 +85,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'TERMINAL_DEAD_END',
             'svg_file'           => 'tm-10.svg',
             'svg_path'           => '/assets/icons/network/tm-10.svg',
+            'png_file'           => 'tm10.png',
+            'png_path'           => '/assets/gis/icons/tm10.png',
             'color'              => '#111827',
             'shape'              => 'circle-donut-deadend',
             'map_priority'       => 48,
@@ -95,6 +103,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'BRANCH_T_OFF',
             'svg_file'           => 'tm-11.svg',
             'svg_path'           => '/assets/icons/network/tm-11.svg',
+            'png_file'           => 'tm11.png',
+            'png_path'           => '/assets/gis/icons/tm11.png',
             'color'              => '#111827',
             'shape'              => 'circle-donut-branch',
             'map_priority'       => 55,
@@ -111,6 +121,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_CONTINUATION',
             'svg_file'           => 'tm-1.svg',
             'svg_path'           => '/assets/icons/network/tm-1.svg',
+            'png_file'           => 'tm1.png',
+            'png_path'           => '/assets/gis/icons/tm1.png',
             'color'              => '#111827',
             'shape'              => 'circle-donut',
             'map_priority'       => 40,
@@ -131,6 +143,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_SWITCH',
             'svg_file'           => 'lbs.svg',
             'svg_path'           => '/assets/icons/network/lbs.svg',
+            'png_file'           => 'lbs.png',
+            'png_path'           => '/assets/gis/icons/lbs.png',
             'color'              => '#111827',
             'shape'              => 'circle-quadrants',
             'map_priority'       => 85,
@@ -147,6 +161,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'SOURCE_SUBSTATION',
             'svg_file'           => 'gardu-induk.svg',
             'svg_path'           => '/assets/icons/network/gardu-induk.svg',
+            'png_file'           => 'gi.png',
+            'png_path'           => '/assets/gis/icons/gi.png',
             'color'              => '#dc2626',
             'shape'              => 'triangle-lightning',
             'map_priority'       => 100,
@@ -163,6 +179,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_SWITCH',
             'svg_file'           => 'lbsm.svg',
             'svg_path'           => '/assets/icons/network/lbsm.svg',
+            'png_file'           => 'lbsm.png',
+            'png_path'           => '/assets/gis/icons/lbsm.png',
             'color'              => '#111827',
             'shape'              => 'square-bowtie',
             'map_priority'       => 75,
@@ -179,6 +197,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'BRANCH_PROTECTION',
             'svg_file'           => 'co-branch.svg',
             'svg_path'           => '/assets/icons/network/co-branch.svg',
+            'png_file'           => 'co-branch.png',
+            'png_path'           => '/assets/gis/icons/co-branch.png',
             'color'              => '#111827',
             'shape'              => 'vertical-branch-slash',
             'map_priority'       => 70,
@@ -195,6 +215,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_PROTECTION',
             'svg_file'           => 'pmcb-recloser.svg',
             'svg_path'           => '/assets/icons/network/pmcb-recloser.svg',
+            'png_file'           => 'pmcb-rec.png',
+            'png_path'           => '/assets/gis/icons/pmcb-rec.png',
             'color'              => '#dc2626',
             'shape'              => 'square-bowtie-arrows',
             'map_priority'       => 95,
@@ -211,6 +233,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_INDICATOR',
             'svg_file'           => 'indicator-3.svg',
             'svg_path'           => '/assets/icons/network/indicator-3.svg',
+            'png_file'           => 'tm11-i3.png',
+            'png_path'           => '/assets/gis/icons/tm11-i3.png',
             'color'              => '#2563eb',
             'shape'              => 'square-dark-center',
             'map_priority'       => 65,
@@ -227,6 +251,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'HUB_STATION',
             'svg_file'           => 'gardu-hubung.svg',
             'svg_path'           => '/assets/icons/network/gardu-hubung.svg',
+            'png_file'           => 'gi.png',
+            'png_path'           => '/assets/gis/icons/gi.png',
             'color'              => '#ea580c',
             'shape'              => 'box-orange-chain',
             'map_priority'       => 90,
@@ -243,6 +269,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_INDICATOR',
             'svg_file'           => 'indicator-2.svg',
             'svg_path'           => '/assets/icons/network/indicator-2.svg',
+            'png_file'           => 'gtt1-i2.png',
+            'png_path'           => '/assets/gis/icons/gtt1-i2.png',
             'color'              => '#3b82f6',
             'shape'              => 'triangle-blue',
             'map_priority'       => 60,
@@ -259,6 +287,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_EQUIPMENT',
             'svg_file'           => 'distribusi.svg',
             'svg_path'           => '/assets/icons/network/distribusi.svg',
+            'png_file'           => 'gtt1-dist.png',
+            'png_path'           => '/assets/gis/icons/gtt1-dist.png',
             'color'              => '#111827',
             'shape'              => 'triangle-solid-black',
             'map_priority'       => 80,
@@ -275,6 +305,8 @@ class AssetVisualRegistryService
             'transline_behavior' => 'INLINE_NODE',
             'svg_file'           => 'generic-network-asset.svg',
             'svg_path'           => '/assets/icons/network/generic-network-asset.svg',
+            'png_file'           => 'tm1.png',
+            'png_path'           => '/assets/gis/icons/tm1.png',
             'color'              => '#475569',
             'shape'              => 'hexagon-node',
             'map_priority'       => 50,
@@ -533,5 +565,18 @@ class AssetVisualRegistryService
     {
         $spec = self::SYMBOLS[$symbolKey] ?? self::SYMBOLS['DEFAULT'];
         return base_url($spec['svg_path']);
+    }
+
+    /**
+     * Get Web Asset PNG Path for an Asset Symbol (TL-03 Authentic Icons)
+     *
+     * @param string $symbolKey
+     * @return string
+     */
+    public function getPublicAssetPngPath(string $symbolKey): string
+    {
+        $spec = self::SYMBOLS[$symbolKey] ?? self::SYMBOLS['DEFAULT'];
+        $path = $spec['png_path'] ?? '/assets/gis/icons/tm1.png';
+        return base_url($path);
     }
 }

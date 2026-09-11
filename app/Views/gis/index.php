@@ -818,12 +818,12 @@
                 <button type="button" id="btn-close-legend" class="btn-close btn-close-sm" style="font-size: 9px;"></button>
             </div>
             <div class="d-flex flex-column gap-1 mb-2">
-                <span class="text-muted fw-bold" style="font-size: 10px; text-transform: uppercase;">Simbol Aset Master</span>
+                <span class="text-muted fw-bold" style="font-size: 10px; text-transform: uppercase;">Simbol Aset Master (PNG)</span>
                 <?php if (!empty($legendItems)): ?>
                     <?php foreach ($legendItems as $item): ?>
                         <?php if ($item['symbol_key'] === 'DEFAULT') continue; ?>
                         <div class="legend-item-row">
-                            <img src="<?= base_url($item['svg_path']) ?>" alt="<?= esc($item['label']) ?>" class="legend-icon-preview">
+                            <img src="<?= !empty($item['png_path']) ? base_url($item['png_path']) : base_url($item['svg_path']) ?>" alt="<?= esc($item['label']) ?>" class="legend-icon-preview">
                             <div class="d-flex flex-column" style="line-height: 1.1;">
                                 <strong class="text-dark" style="font-size: 10px;"><?= esc($item['symbol_key']) ?></strong>
                                 <span class="text-muted" style="font-size: 9px;"><?= esc($item['label']) ?></span>
@@ -838,15 +838,29 @@
                     <div class="legend-item-row align-items-center">
                         <div style="width: 22px; height: 4px; background-color: #0284c7; border-radius: 2px; flex-shrink: 0;"></div>
                         <div class="d-flex flex-column" style="line-height: 1.1;">
-                            <strong class="text-dark" style="font-size: 10px;">Transline JTM (Otoritatif)</strong>
-                            <span class="text-muted" style="font-size: 9px;">Koneksi Fisik Titik Aset ↔ Titik Aset (Aktif)</span>
+                            <strong class="text-dark" style="font-size: 10px;">Transline Manual (Otoritatif)</strong>
+                            <span class="text-muted" style="font-size: 9px;">Koneksi Baseline Manual</span>
+                        </div>
+                    </div>
+                    <div class="legend-item-row align-items-center">
+                        <div style="width: 22px; height: 4px; background-color: #2563eb; border-radius: 2px; flex-shrink: 0;"></div>
+                        <div class="d-flex flex-column" style="line-height: 1.1;">
+                            <strong class="text-dark" style="font-size: 10px;">Transline AI (TL-02)</strong>
+                            <span class="text-muted" style="font-size: 9px;">AI Auto-Complete Otoritatif</span>
+                        </div>
+                    </div>
+                    <div class="legend-item-row align-items-center">
+                        <div style="width: 22px; height: 4px; background-color: #06b6d4; border-radius: 2px; flex-shrink: 0;"></div>
+                        <div class="d-flex flex-column" style="line-height: 1.1;">
+                            <strong class="text-dark" style="font-size: 10px;">Rekonstruksi AI (TL-03)</strong>
+                            <span class="text-muted" style="font-size: 9px;">Advanced Network Reconstruction</span>
                         </div>
                     </div>
                     <div class="legend-item-row align-items-center">
                         <div style="width: 22px; height: 0px; border-top: 3px dashed #8b5cf6; flex-shrink: 0;"></div>
                         <div class="d-flex flex-column" style="line-height: 1.1;">
                             <strong class="text-dark" style="font-size: 10px;">Proposal AI (Dashed)</strong>
-                            <span class="text-muted" style="font-size: 9px;">Kandidat Rekomendasi (D4A Review)</span>
+                            <span class="text-muted" style="font-size: 9px;">Kandidat Rekomendasi (Review)</span>
                         </div>
                     </div>
                     <div class="legend-item-row align-items-center">
@@ -864,6 +878,31 @@
                             <strong class="text-dark" style="font-size: 10px;">Temuan (Konteks Inspeksi)</strong>
                             <span class="text-muted" style="font-size: 9px;">Bukan Node/Endpoint Jaringan</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-top pt-2 mt-2">
+                <span class="text-muted fw-bold d-block mb-1" style="font-size: 10px; text-transform: uppercase;">Standar Konduktor SUTM (PLN)</span>
+                <div class="d-flex flex-column gap-1">
+                    <div class="legend-item-row align-items-center">
+                        <img src="<?= base_url('assets/gis/icons/a3c-150.png') ?>" alt="AAAC 150" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
+                        <span class="text-dark font-monospace" style="font-size: 9px;">AAAC 150 mm²</span>
+                    </div>
+                    <div class="legend-item-row align-items-center">
+                        <img src="<?= base_url('assets/gis/icons/a3c-240.png') ?>" alt="AAAC 240" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
+                        <span class="text-dark font-monospace" style="font-size: 9px;">AAAC 240 mm²</span>
+                    </div>
+                    <div class="legend-item-row align-items-center">
+                        <img src="<?= base_url('assets/gis/icons/a3cs-150.png') ?>" alt="AAAC-S 150" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
+                        <span class="text-dark font-monospace" style="font-size: 9px;">AAAC-S 150 mm²</span>
+                    </div>
+                    <div class="legend-item-row align-items-center">
+                        <img src="<?= base_url('assets/gis/icons/mvtic-150.png') ?>" alt="MVTIC" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
+                        <span class="text-dark font-monospace" style="font-size: 9px;">MVTIC 150 mm²</span>
+                    </div>
+                    <div class="legend-item-row align-items-center">
+                        <img src="<?= base_url('assets/gis/icons/xlpe.png') ?>" alt="XLPE" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
+                        <span class="text-dark font-monospace" style="font-size: 9px;">XLPE 150 mm²</span>
                     </div>
                 </div>
                 <div class="mt-2 text-center">
@@ -2027,23 +2066,26 @@
 <!-- ========================================================
      TL-02: AI-ASSISTED JTM TRANSLINE AUTO-COMPLETION MODAL
      ======================================================== -->
+<!-- ========================================================
+     TL-03 & TL-02: AI-ASSISTED JTM TOPOLOGY RECONSTRUCTION MODAL
+     ======================================================== -->
 <div class="modal fade" id="modal-transline-ai-completion" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-4 border-0 shadow-lg">
             <!-- Modal Header -->
             <div class="modal-header bg-dark text-white py-3 border-bottom border-secondary">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <div class="rounded-circle p-2 bg-warning bg-opacity-25 text-warning">
-                        <i class="fas fa-bolt fs-5"></i>
+                    <div class="rounded-circle p-2 bg-info bg-opacity-25 text-info">
+                        <i class="fas fa-network-wired fs-5"></i>
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <h6 class="modal-title fw-bold mb-0 text-white" style="font-size: 15px;">TL-02 — AI-ASSISTED JTM TRANSLINE AUTO-COMPLETION</h6>
+                            <h6 class="modal-title fw-bold mb-0 text-white" style="font-size: 15px;">TL-03 &amp; TL-02 — AI JTM TOPOLOGY RECONSTRUCTION</h6>
                             <span id="ai-modal-feeder-badge" class="badge bg-primary font-monospace" style="font-size: 11px;">-</span>
                             <span class="badge bg-info text-dark font-monospace" style="font-size: 11px;">24 SAFETY GATES ACTIVE</span>
                             <span class="badge bg-success font-monospace" style="font-size: 11px;">ZERO-WRITE PROTECTED</span>
                         </div>
-                        <span class="small text-muted font-monospace" style="font-size: 11px;">Otomatisasi Topologi JTM Berdasarkan Proximity Spasial, Anchor Degree-1 &amp; Urutan Kode Aset</span>
+                        <span class="small text-muted font-monospace" style="font-size: 11px;">Rekonstruksi Topologi Jaringan &amp; Resolusi Aset Terisolasi Berbasis Spasial &amp; Multi-Evidence Reasoning</span>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -2051,93 +2093,231 @@
 
             <!-- Modal Body -->
             <div class="modal-body p-4 bg-light">
+                <!-- Nav Tabs for TL-03 & TL-02 -->
+                <ul class="nav nav-pills mb-3 border-bottom pb-2 gap-2" id="ai-engine-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold py-2 px-3 shadow-sm rounded-pill" id="tab-btn-tl03" data-bs-toggle="pill" data-bs-target="#tab-tl03" type="button" role="tab" style="font-size: 12px;">
+                            <i class="fas fa-network-wired text-info me-1"></i> TL-03 Rekonstruksi JTM (101 Aset)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold py-2 px-3 rounded-pill" id="tab-btn-tl02" data-bs-toggle="pill" data-bs-target="#tab-tl02" type="button" role="tab" style="font-size: 12px;">
+                            <i class="fas fa-bolt text-warning me-1"></i> TL-02 Progressive Pilot
+                        </button>
+                    </li>
+                </ul>
+
                 <!-- Loading State -->
                 <div id="ai-loading" class="text-center py-5" style="display: none;">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <span class="d-block small text-muted mt-2">Menganalisis topologi &amp; menghitung 24 Safety Gates...</span>
+                    <span class="d-block small text-muted mt-2">Menganalisis topologi, mendeteksi rantai spasial, &amp; mengevaluasi 24 Safety Gates...</span>
                 </div>
 
                 <!-- Alert Result / Status -->
                 <div id="ai-alert-box" class="alert py-2 px-3 small my-2" style="display: none;"></div>
 
-                <!-- Main Content -->
-                <div id="ai-modal-content">
-                    <!-- Metrics Summary Cards -->
-                    <div class="row g-2 mb-3">
-                        <div class="col-6 col-md-3">
-                            <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
-                                <span class="text-muted small" style="font-size: 10px;">TOTAL ASET JTM</span>
-                                <strong id="ai-stat-total-assets" class="fs-5 text-dark font-monospace">-</strong>
-                                <span class="text-muted" style="font-size: 9px;">Penyulang Terpilih</span>
+                <!-- Main Content Tabs -->
+                <div class="tab-content" id="ai-tab-content">
+                    <!-- ==============================================
+                         TAB 1: TL-03 ADVANCED RECONSTRUCTION
+                         ============================================== -->
+                    <div class="tab-pane fade show active" id="tab-tl03" role="tabpanel">
+                        <!-- TL-03 Metrics Summary Cards -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TOTAL ASET JTM</span>
+                                    <strong id="tl03-stat-total-assets" class="fs-5 text-dark font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Penyulang Terpilih</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TRANSLINE OTORITATIF</span>
+                                    <strong id="tl03-stat-active-translines" class="fs-5 text-primary font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Baseline Aktif</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TERKONEKSI (d ≥ 1)</span>
+                                    <strong id="tl03-stat-connected" class="fs-5 text-success font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Node Jaringan Aktif</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TERISOLASI (d = 0)</span>
+                                    <strong id="tl03-stat-isolated" class="fs-5 text-danger font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Target Analisis TL-03</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">ELIGIBLE TL-03</span>
+                                    <strong id="tl03-stat-auto-eligible" class="fs-5 text-info font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Skor ≥ 90 &amp; 24 Gates</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">RANTAI TERDETEKSI</span>
+                                    <strong id="tl03-stat-chains" class="fs-5 text-warning font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Klaster Terisolasi</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
-                            <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
-                                <span class="text-muted small" style="font-size: 10px;">TRANSLINE OTORITATIF</span>
-                                <strong id="ai-stat-active-translines" class="fs-5 text-primary font-monospace">-</strong>
-                                <span class="text-muted" style="font-size: 9px;">Aktif di Database</span>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
-                                <span class="text-muted small" style="font-size: 10px;">ELIGIBLE AUTO-COMPLETE</span>
-                                <strong id="ai-stat-auto-eligible" class="fs-5 text-success font-monospace">-</strong>
-                                <span class="text-muted" style="font-size: 9px;">Pass 24 Gates (Conf ≥ 0.95)</span>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
-                                <span class="text-muted small" style="font-size: 10px;">BUTUH REVIEW MANUAL</span>
-                                <strong id="ai-stat-review-required" class="fs-5 text-warning font-monospace">-</strong>
-                                <span class="text-muted" style="font-size: 9px;">Exceptions / Multi-branch</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Safety & Policy Invariant Notice -->
-                    <div class="card border-0 shadow-sm rounded-3 mb-3 bg-white p-3 border-start border-primary border-4">
-                        <div class="d-flex align-items-start gap-2">
-                            <i class="fas fa-shield-halved text-primary fs-5 mt-1"></i>
-                            <div class="flex-fill small" style="font-size: 11px;">
-                                <strong class="text-dark d-block mb-1">TL-02 STRICT GOVERNANCE &amp; SAFETY INVARIANTS:</strong>
-                                <div class="row g-1 text-muted">
-                                    <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> Endpoint murni <code>Asset ↔ Asset</code> (Temuan firewall 100% aktif).</div>
-                                    <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> Zero-write pada tabel <code>assets</code>, <code>temuan</code>, <code>temuan_materials</code>.</div>
-                                    <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> 42 Transline baseline otentik 100% terjaga tanpa modifikasi.</div>
-                                    <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> Eksekusi bertahap terkontrol (Maksimal 10 segmen per batch dengan atomic rollback).</div>
+                        <!-- TL-03 Governance Notice -->
+                        <div class="card border-0 shadow-sm rounded-3 mb-3 bg-white p-3 border-start border-info border-4">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="fas fa-shield-halved text-info fs-5 mt-1"></i>
+                                <div class="flex-fill small" style="font-size: 11px;">
+                                    <strong class="text-dark d-block mb-1">TL-03 TOPOLOGICAL RECONSTRUCTION &amp; SAFETY INVARIANTS:</strong>
+                                    <div class="row g-1 text-muted">
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Batas Seksi:</strong> Seksi sama = 15pt; Batas sah berdekatan (≤55m) = 10pt; Lintas feeder diblokir.</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Dekomposisi Rantai:</strong> Rantai terisolasi dipecah jadi pasangan diskrit (A-B, B-C).</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Kapasitas T-Off:</strong> Percabangan d=2→3 diizinkan; node saturasi d=4 diblokir mutlak.</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Kurva Jarak:</strong> 2m-15m = 25pt, 15m-55m optimal = 30pt; &gt;85m diblokir (0pt).</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Zero-Write Firewall:</strong> Tabel <code>assets</code> dan <code>temuan</code> 0 mutasi (Strict Read-Only).</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Diagnostik Jujur:</strong> Node tanpa relasi valid tetap terisolasi tanpa koneksi paksa.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Candidate Batch Table -->
+                        <div class="card border rounded-3 shadow-sm bg-white mb-3">
+                            <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="small fw-bold text-uppercase text-secondary" style="font-size: 10px;">
+                                        <i class="fas fa-list-check text-info me-1"></i> KANDIDAT REKONSTRUKSI TOPOLOGI TL-03 (BATCH MAKSIMAL 10 SEGMEN)
+                                    </span>
+                                </div>
+                                <span id="tl03-candidate-count" class="badge bg-info font-monospace text-dark" style="font-size: 10px;">0 Segmen Siap</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 11px;">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Source Asset (Titik A)</th>
+                                                <th>Target Asset (Titik B)</th>
+                                                <th>Jarak Spasial</th>
+                                                <th>Skor Bukti</th>
+                                                <th>Tipe Rekonstruksi</th>
+                                                <th>24 Safety Gates</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tl03-candidate-tbody">
+                                            <!-- Dynamically loaded -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Diagnostics of 101 Isolated Assets -->
+                        <div class="card border rounded-3 shadow-sm bg-white mb-2">
+                            <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="small fw-bold text-uppercase text-secondary" style="font-size: 10px;">
+                                        <i class="fas fa-stethoscope text-secondary me-1"></i> DIAGNOSTIK DETERMINISTIK ASET TERISOLASI (d = 0)
+                                    </span>
+                                </div>
+                                <div class="d-flex gap-1" style="font-size: 9px;">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0" id="tl03-diag-auto-badge">Auto: 0</span>
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-0" id="tl03-diag-high-badge">High Conf: 0</span>
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-0" id="tl03-diag-review-badge">Review: 0</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0" id="tl03-diag-blocked-badge">Isolated/Blocked: 0</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 180px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 10px;">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>ID Aset</th>
+                                                <th>Klasifikasi Diagnostik</th>
+                                                <th>Keterangan / Alasan Deterministic</th>
+                                                <th>Kandidat Ditemukan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tl03-diagnostics-tbody">
+                                            <!-- Dynamically loaded -->
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Pilot Batch Candidate Table -->
-                    <div class="card border rounded-3 shadow-sm bg-white mb-3">
-                        <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="small fw-bold text-uppercase text-secondary" style="font-size: 10px;">
-                                    <i class="fas fa-list-check text-success me-1"></i> KANDIDAT PILOT AUTO-COMPLETE (TOP 10 BATCH)
-                                </span>
+                    <!-- ==============================================
+                         TAB 2: TL-02 PROGRESSIVE PILOT
+                         ============================================== -->
+                    <div class="tab-pane fade" id="tab-tl02" role="tabpanel">
+                        <!-- TL-02 Metrics Summary Cards -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6 col-md-3">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TOTAL ASET JTM</span>
+                                    <strong id="ai-stat-total-assets" class="fs-5 text-dark font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Penyulang Terpilih</span>
+                                </div>
                             </div>
-                            <span id="ai-pilot-badge-count" class="badge bg-success font-monospace" style="font-size: 10px;">0 Segmen Siap</span>
+                            <div class="col-6 col-md-3">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TRANSLINE OTORITATIF</span>
+                                    <strong id="ai-stat-active-translines" class="fs-5 text-primary font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Aktif di Database</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">ELIGIBLE AUTO-COMPLETE</span>
+                                    <strong id="ai-stat-auto-eligible" class="fs-5 text-success font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Pass 24 Gates (Conf ≥ 0.95)</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">BUTUH REVIEW MANUAL</span>
+                                    <strong id="ai-stat-review-required" class="fs-5 text-warning font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Exceptions / Multi-branch</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
-                                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 11px;">
-                                    <thead class="table-light sticky-top">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Source Asset (Titik A)</th>
-                                            <th>Target Asset (Titik B)</th>
-                                            <th>Jarak Spasial</th>
-                                            <th>Confidence</th>
-                                            <th>Tipe Bentang</th>
-                                            <th>Status 24 Gates</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="ai-candidate-tbody">
-                                        <!-- Dynamically loaded -->
-                                    </tbody>
-                                </table>
+
+                        <!-- Pilot Batch Candidate Table -->
+                        <div class="card border rounded-3 shadow-sm bg-white mb-3">
+                            <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="small fw-bold text-uppercase text-secondary" style="font-size: 10px;">
+                                        <i class="fas fa-list-check text-success me-1"></i> KANDIDAT PILOT AUTO-COMPLETE TL-02 (TOP 10 BATCH)
+                                    </span>
+                                </div>
+                                <span id="ai-pilot-badge-count" class="badge bg-success font-monospace" style="font-size: 10px;">0 Segmen Siap</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 11px;">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Source Asset (Titik A)</th>
+                                                <th>Target Asset (Titik B)</th>
+                                                <th>Jarak Spasial</th>
+                                                <th>Confidence</th>
+                                                <th>Tipe Bentang</th>
+                                                <th>Status 24 Gates</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ai-candidate-tbody">
+                                            <!-- Dynamically loaded -->
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2146,13 +2326,16 @@
 
             <!-- Modal Footer -->
             <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between align-items-center" style="font-size: 11px;">
-                <div class="text-muted font-monospace" style="font-size: 10px;">
-                    <i class="fas fa-code-branch text-secondary me-1"></i> Engine: TL-02 v1.0.0 · Batch Limit: 10
+                <div id="ai-engine-footer-meta" class="text-muted font-monospace" style="font-size: 10px;">
+                    <i class="fas fa-network-wired text-info me-1"></i> Engine: TL-03 Advanced Reconstruction v1.0.0 · Batch Limit: 10
                 </div>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
-                    <button type="button" id="btn-execute-transline-ai" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none;">
-                        <i class="fas fa-bolt text-warning me-1"></i> Eksekusi Auto-Complete (10 Segmen)
+                    <button type="button" id="btn-execute-transline-tl03" class="btn text-white btn-sm rounded-pill px-4 fw-bold shadow-sm" style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); border: none;">
+                        <i class="fas fa-network-wired text-warning me-1"></i> Eksekusi Rekonstruksi TL-03 (10 Segmen)
+                    </button>
+                    <button type="button" id="btn-execute-transline-ai" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" style="display: none; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none;">
+                        <i class="fas fa-bolt text-warning me-1"></i> Eksekusi Progressive TL-02 (10 Segmen)
                     </button>
                 </div>
             </div>
@@ -2660,7 +2843,64 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /**
-     * Flat 2D SVG Marker Creation with Condition Ring
+     * TL-03: GIS Icon Resolution & Leaflet Icon Cache
+     */
+    var gisLeafletIconCache = {};
+
+    function resolveAssetIconUrl(props, visual) {
+        if (visual && visual.png_path) {
+            return `<?= base_url() ?>${visual.png_path.replace(/^\//, '')}`;
+        }
+        var type   = (props.jenis_asset || props.asset_type || props.type || '').toUpperCase();
+        var name   = (props.nama_asset || props.name || '').toUpperCase();
+        var code   = (props.kode_asset || props.code || '').toUpperCase();
+        var constr = (props.construction_type || props.konstruksi || props.construction_code || '').toUpperCase();
+        var basePath = '<?= base_url('assets/gis/icons/') ?>';
+
+        if (type === 'GARDU') {
+            if (name.includes('GI') || code.includes('GI-') || name.includes('INDUK')) return basePath + 'gi.png';
+            if (name.includes('PORTAL') || name.includes('GTT2') || constr.includes('2-TIANG')) {
+                return basePath + (name.includes('I2') ? 'gtt2-i2.png' : 'gtt2-dist.png');
+            }
+            if (name.includes('I2')) return basePath + 'gtt1-i2.png';
+            return basePath + 'gtt1-dist.png';
+        }
+
+        if (type === 'SWITCH' || name.includes('LBS') || name.includes('REC') || name.includes('PMCB')) {
+            if (name.includes('LBSM') || name.includes('MOTOR')) return basePath + 'lbsm.png';
+            if (name.includes('LBS')) return basePath + 'lbs.png';
+            if (name.includes('REC') || name.includes('PMCB') || name.includes('RECLOSER')) return basePath + 'pmcb-rec.png';
+            if (name.includes('FCO') || name.includes('CUTOUT') || name.includes('BRANCH')) return basePath + 'co-branch.png';
+            return basePath + 'lbs.png';
+        }
+
+        // JTM Poles
+        if (constr.includes('TM-11') || name.includes('TM11') || code.includes('TM11')) {
+            return basePath + (constr.includes('I3') || name.includes('I3') ? 'tm11-i3.png' : 'tm11.png');
+        }
+        if (constr.includes('TM-10') || name.includes('TM10') || code.includes('TM10')) return basePath + 'tm10.png';
+        if (constr.includes('TM-8') || name.includes('TM8') || code.includes('TM8')) return basePath + 'tm8.png';
+        if (constr.includes('TM-5') || name.includes('TM5') || code.includes('TM5')) return basePath + 'tm5.png';
+        if (constr.includes('TM-4') || name.includes('TM4') || code.includes('TM4')) return basePath + 'tm4.png';
+        if (constr.includes('TM-2') || name.includes('TM2') || code.includes('TM2')) return basePath + 'tm2.png';
+        if (constr.includes('TM-1') || name.includes('TM1') || code.includes('TM1')) return basePath + 'tm1.png';
+
+        return (visual && visual.svg_path) ? `<?= base_url() ?>${visual.svg_path.replace(/^\//, '')}` : (basePath + 'tm1.png');
+    }
+
+    function resolveConductorPng(type, size) {
+        var str = ((type || '') + ' ' + (size || '')).toUpperCase();
+        var basePath = '<?= base_url('assets/gis/icons/') ?>';
+        if (str.includes('240')) return (str.includes('-S') || str.includes('A3CS')) ? basePath + 'a3cs-240.png' : basePath + 'a3c-240.png';
+        if (str.includes('70')) return basePath + 'a3c-70.png';
+        if (str.includes('MVTIC')) return basePath + 'mvtic-150.png';
+        if (str.includes('XLPE')) return basePath + 'xlpe.png';
+        if (str.includes('-S') || str.includes('A3CS')) return basePath + 'a3cs-150.png';
+        return basePath + 'a3c-150.png';
+    }
+
+    /**
+     * Flat PNG / SVG Marker Creation with Condition Ring & Leaflet Icon Cache
      */
     function createAssetVisualMarker(feature) {
         var normalized = normalizeAssetFeature(feature);
@@ -2676,14 +2916,14 @@ document.addEventListener("DOMContentLoaded", function () {
         var lat = geom.coordinates[1];
         var lng = geom.coordinates[0];
 
-        var svgPath = visual.svg_path ? `<?= base_url() ?>${visual.svg_path}` : '<?= base_url('/assets/icons/network/generic-network-asset.svg') ?>';
+        var iconUrl = resolveAssetIconUrl(props, visual);
         var ringClass = overlay.ring_class || 'asset-ring-good';
         var symbolKey = visual.symbol_key || props.jenis_asset || 'ASET';
 
         var iconHtml = `
             <div class="asset-network-marker-wrap" id="marker-asset-${props.id}" title="${props.nama_asset || ''} (${symbolKey})">
                 <span class="asset-condition-halo ${ringClass}"></span>
-                <img src="${svgPath}" alt="${symbolKey}" class="asset-flat-svg" />
+                <img src="${iconUrl}" alt="${symbolKey}" class="asset-flat-svg" />
             </div>
         `;
 
@@ -2702,7 +2942,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (e.originalEvent) {
                 L.DomEvent.stopPropagation(e.originalEvent);
             }
-            handleMarkerTap(props, svgPath, [lng, lat]);
+            handleMarkerTap(props, iconUrl, [lng, lat]);
         });
 
         return marker;
@@ -3989,9 +4229,15 @@ document.addEventListener("DOMContentLoaded", function () {
             var lengthMeter = tl.length_meter || tl.distance_meters || 0;
             var translineCode = tl.transline_code || `TL-${currentFeederId}-${tId}`;
 
+            var createdBy = tl.created_by || '';
+            var isTl03 = createdBy.includes('ENGINE=TL03');
+            var isTl02 = !isTl03 && (createdBy.includes('RUN:') || createdBy.includes('AI') || createdBy.includes('TL-02') || createdBy.includes('TL02'));
+            var lineColor = isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7');
+            var lineWeight = isTl03 ? 4.0 : 3.5;
+
             var visiblePoly = L.polyline(latLngs, {
-                color: '#0284c7',
-                weight: 3.5,
+                color: lineColor,
+                weight: lineWeight,
                 opacity: 0.9,
                 lineJoin: 'round',
                 interactive: false
@@ -4003,8 +4249,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     transline_code: translineCode,
                     source_asset_id: fromId,
                     target_asset_id: toId,
+                    is_tl03: isTl03,
+                    is_tl02: isTl02,
                 }
             };
+
+            var condImgUrl = resolveConductorPng(tl.conductor_type, tl.conductor_size);
 
             visiblePoly.bindTooltip(`⚡ <strong>${conductorLabel}</strong> (${Number(lengthMeter).toFixed(1)}m)`, {
                 sticky: true,
@@ -4014,7 +4264,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Invisible hit-layer for touch / mouse target (24px width)
             var hitPoly = L.polyline(latLngs, {
-                color: '#0284c7',
+                color: lineColor,
                 weight: 24,
                 opacity: 0.001,
                 lineJoin: 'round',
@@ -4024,7 +4274,9 @@ document.addEventListener("DOMContentLoaded", function () {
             hitPoly.on('click', function (evt) {
                 L.DomEvent.stopPropagation(evt);
                 if (window.activeSegmentHighlight) {
-                    window.activeSegmentHighlight.setStyle({ color: '#0284c7', weight: 3.5, opacity: 0.9 });
+                    var prevProps = window.activeSegmentHighlight.feature ? window.activeSegmentHighlight.feature.properties : {};
+                    var prevColor = prevProps.is_tl03 ? '#06b6d4' : (prevProps.is_tl02 ? '#2563eb' : '#0284c7');
+                    window.activeSegmentHighlight.setStyle({ color: prevColor, weight: prevProps.is_tl03 ? 4.0 : 3.5, opacity: 0.9 });
                 }
                 window.activeSegmentHighlight = visiblePoly;
                 visiblePoly.setStyle({ color: '#f59e0b', weight: 5.5, opacity: 1 });
@@ -4042,16 +4294,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 var feederName = currentFeederName || (tl.penyulang_name || `Penyulang #${currentFeederId}`);
                 var sectionName = tl.section_name || (fromAsset && fromAsset.properties.section_name) || (tl.section_id ? `Section #${tl.section_id}` : '-');
 
-                var createdBy = tl.created_by || '';
-                var isAiAuto = createdBy.includes('RUN:') || createdBy.includes('AI') || createdBy.includes('TL-02');
-                var originBadge = isAiAuto
-                    ? `<span class="badge bg-info text-dark" style="font-size: 9px;"><i class="fas fa-bolt text-warning me-1"></i>AI AUTO-COMPLETED</span>`
-                    : `<span class="badge bg-secondary" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i>OTORITATIF MANUAL</span>`;
+                var originBadge = isTl03
+                    ? `<span class="badge" style="background-color: #06b6d4; color: #fff; font-size: 9px;"><i class="fas fa-network-wired me-1"></i>TL-03 ADVANCED RECON</span>`
+                    : (isTl02
+                        ? `<span class="badge bg-info text-dark" style="font-size: 9px;"><i class="fas fa-bolt text-warning me-1"></i>TL-02 AI AUTO-COMPLETED</span>`
+                        : `<span class="badge bg-secondary" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i>OTORITATIF MANUAL</span>`);
 
                 var popupContent = `
-                    <div style="min-width: 270px; font-family: system-ui, -apple-system, sans-serif;">
+                    <div style="min-width: 280px; font-family: system-ui, -apple-system, sans-serif;">
                         <div class="d-flex align-items-center justify-content-between border-bottom pb-1 mb-2">
-                            <strong style="color: #0284c7; font-size: 13px;">⚡ ${translineCode}</strong>
+                            <strong style="color: ${lineColor}; font-size: 13px;">⚡ ${translineCode}</strong>
                             ${originBadge}
                         </div>
                         <div class="small text-muted mb-2" style="font-size: 11px; line-height: 1.4;">
@@ -4059,7 +4311,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div><strong>Section:</strong> <span class="text-dark">${sectionName}</span></div>
                             <div><strong>Titik A (Source):</strong> <span class="text-dark">${fromName}</span></div>
                             <div><strong>Titik B (Target):</strong> <span class="text-dark">${toName}</span></div>
-                            <div><strong>Konduktor:</strong> <span class="text-dark">${conductorLabel}</span></div>
+                            <div class="d-flex align-items-center gap-1"><strong>Konduktor:</strong> <span class="text-dark">${conductorLabel}</span> <img src="${condImgUrl}" alt="Conductor" style="height: 12px; max-width: 45px; object-fit: contain;"></div>
                             <div><strong>Panjang:</strong> <span class="text-dark">${Number(lengthMeter).toFixed(1)} m</span></div>
                             <div><strong>Status:</strong> <span class="badge bg-success" style="font-size: 9px;">ACTIVE</span></div>
                             ${createdBy ? `<div class="mt-1 pt-1 border-top" style="font-size: 9px;"><strong>Provenance:</strong> <span class="font-monospace text-secondary">${createdBy}</span></div>` : ''}
@@ -5065,13 +5317,37 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     // ========================================================
-    // ⚡ TL-02: AI-ASSISTED JTM TRANSLINE AUTO-COMPLETION UI
+    // ⚡ TL-03 & TL-02: AI-ASSISTED JTM TOPOLOGY RECONSTRUCTION UI
     // ========================================================
     var aiModalInstance = null;
 
+    // Tab switching controls between TL-03 and TL-02
+    function setupAiEngineTabs() {
+        var btnTl03Tab = document.getElementById('tab-btn-tl03');
+        var btnTl02Tab = document.getElementById('tab-btn-tl02');
+        var btnExecTl03 = document.getElementById('btn-execute-transline-tl03');
+        var btnExecTl02 = document.getElementById('btn-execute-transline-ai');
+        var footerMeta = document.getElementById('ai-engine-footer-meta');
+
+        if (btnTl03Tab) {
+            btnTl03Tab.addEventListener('shown.bs.tab', function () {
+                if (btnExecTl03) btnExecTl03.style.display = 'inline-block';
+                if (btnExecTl02) btnExecTl02.style.display = 'none';
+                if (footerMeta) footerMeta.innerHTML = '<i class="fas fa-network-wired text-info me-1"></i> Engine: TL-03 Advanced Reconstruction v1.0.0 · Max Batch: 10';
+            });
+        }
+        if (btnTl02Tab) {
+            btnTl02Tab.addEventListener('shown.bs.tab', function () {
+                if (btnExecTl03) btnExecTl03.style.display = 'none';
+                if (btnExecTl02) btnExecTl02.style.display = 'inline-block';
+                if (footerMeta) footerMeta.innerHTML = '<i class="fas fa-bolt text-warning me-1"></i> Engine: TL-02 Progressive Completion v1.0.0 · Max Batch: 10';
+            });
+        }
+    }
+
     function openTranslineAiModal() {
         if (!currentFeederId) {
-            alert('Pilih penyulang terlebih dahulu sebelum membuka Auto-Complete AI.');
+            alert('Pilih penyulang terlebih dahulu sebelum membuka Rekonstruksi JTM AI.');
             return;
         }
 
@@ -5080,6 +5356,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!aiModalInstance) {
             aiModalInstance = new bootstrap.Modal(modalEl);
+            setupAiEngineTabs();
         }
 
         var feederTitle = currentFeederName || `Penyulang #${currentFeederId}`;
@@ -5087,7 +5364,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (feederBadge) feederBadge.textContent = feederTitle;
 
         var loadingEl = document.getElementById('ai-loading');
-        var contentEl = document.getElementById('ai-modal-content');
+        var contentEl = document.getElementById('ai-tab-content');
         var alertBox  = document.getElementById('ai-alert-box');
         if (alertBox) alertBox.style.display = 'none';
 
@@ -5096,29 +5373,161 @@ document.addEventListener("DOMContentLoaded", function () {
 
         aiModalInstance.show();
 
-        fetchJson(`<?= site_url('gis/api-transline-ai-preview') ?>?penyulang_id=${encodeURIComponent(currentFeederId)}`)
-            .then(res => {
-                if (loadingEl) loadingEl.style.display = 'none';
-                if (contentEl) contentEl.style.display = 'block';
+        Promise.allSettled([
+            fetchJson(`<?= site_url('gis/api-transline-tl03-preview') ?>?penyulang_id=${encodeURIComponent(currentFeederId)}`),
+            fetchJson(`<?= site_url('gis/api-transline-ai-preview') ?>?penyulang_id=${encodeURIComponent(currentFeederId)}`)
+        ]).then(results => {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (contentEl) contentEl.style.display = 'block';
 
-                if (res && res.status === 'success') {
-                    populateTranslineAiModal(res);
-                } else {
-                    if (alertBox) {
-                        alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
-                        alertBox.textContent = res.message || 'Gagal memuat preview AI Transline.';
-                        alertBox.style.display = 'block';
-                    }
-                }
-            })
-            .catch(err => {
-                if (loadingEl) loadingEl.style.display = 'none';
+            var resTl03 = (results[0].status === 'fulfilled') ? results[0].value : null;
+            var resTl02 = (results[1].status === 'fulfilled') ? results[1].value : null;
+
+            if (resTl03 && resTl03.status === 'success') {
+                populateTranslineTl03Modal(resTl03);
+            } else if (resTl03 && resTl03.message) {
                 if (alertBox) {
                     alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
-                    alertBox.textContent = 'Kendala koneksi AI Preview: ' + err.message;
+                    alertBox.textContent = 'TL-03 Preview: ' + resTl03.message;
                     alertBox.style.display = 'block';
                 }
-            });
+            }
+
+            if (resTl02 && resTl02.status === 'success') {
+                populateTranslineAiModal(resTl02);
+            }
+        }).catch(err => {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (alertBox) {
+                alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                alertBox.textContent = 'Kendala koneksi AI Preview: ' + err.message;
+                alertBox.style.display = 'block';
+            }
+        });
+    }
+
+    function populateTranslineTl03Modal(data) {
+        var inv = data.inventory || {};
+        var sum = data.summary || {};
+        var batch = data.auto_complete_batch_preview || [];
+        var diag = data.isolated_asset_diagnostics || {};
+        var diagBreakdown = diag.summary_breakdown || {};
+        var diagDetails = diag.assets_detail || [];
+
+        // Inventory cards
+        if (document.getElementById('tl03-stat-total-assets')) {
+            document.getElementById('tl03-stat-total-assets').textContent = inv.total_master_assets || 0;
+        }
+        if (document.getElementById('tl03-stat-active-translines')) {
+            document.getElementById('tl03-stat-active-translines').textContent = inv.authoritative_translines || 0;
+        }
+        if (document.getElementById('tl03-stat-connected')) {
+            document.getElementById('tl03-stat-connected').textContent = inv.connected_assets_count || 0;
+        }
+        if (document.getElementById('tl03-stat-isolated')) {
+            document.getElementById('tl03-stat-isolated').textContent = inv.isolated_assets_count || 0;
+        }
+        if (document.getElementById('tl03-stat-auto-eligible')) {
+            document.getElementById('tl03-stat-auto-eligible').textContent = sum.auto_complete_candidates || 0;
+        }
+        if (document.getElementById('tl03-stat-chains')) {
+            document.getElementById('tl03-stat-chains').textContent = sum.isolated_chains_detected || 0;
+        }
+        if (document.getElementById('tl03-candidate-count')) {
+            document.getElementById('tl03-candidate-count').textContent = `${batch.length} Segmen Siap`;
+        }
+
+        // Diagnostic summary badges
+        if (document.getElementById('tl03-diag-auto-badge')) {
+            document.getElementById('tl03-diag-auto-badge').textContent = `Auto: ${diagBreakdown.AUTO_COMPLETE || 0}`;
+        }
+        if (document.getElementById('tl03-diag-high-badge')) {
+            document.getElementById('tl03-diag-high-badge').textContent = `High Conf: ${diagBreakdown.HIGH_CONFIDENCE_REVIEW || 0}`;
+        }
+        if (document.getElementById('tl03-diag-review-badge')) {
+            document.getElementById('tl03-diag-review-badge').textContent = `Review: ${diagBreakdown.REVIEW_REQUIRED || 0}`;
+        }
+        if (document.getElementById('tl03-diag-blocked-badge')) {
+            var blockedCount = (diagBreakdown.BLOCKED || 0) + (diagBreakdown.NO_VALID_NETWORK_RELATIONSHIP || 0) + (diagBreakdown.AMBIGUOUS || 0);
+            document.getElementById('tl03-diag-blocked-badge').textContent = `Isolated/Blocked: ${blockedCount}`;
+        }
+
+        // Populate TL-03 Candidates Table
+        var tbody = document.getElementById('tl03-candidate-tbody');
+        var btnExec = document.getElementById('btn-execute-transline-tl03');
+        if (tbody) {
+            tbody.innerHTML = '';
+            if (batch.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-check-circle text-success me-1"></i> Tidak ada kandidat auto-complete dengan skor ≥ 90 saat ini. Semua node terisolasi lainnya memerlukan review manusia atau tetap aman terisolasi.</td></tr>`;
+                if (btnExec) btnExec.disabled = true;
+            } else {
+                if (btnExec) btnExec.disabled = false;
+                batch.forEach(function (c, idx) {
+                    var tr = document.createElement('tr');
+                    var typeLabel = c.candidate_type || 'RECONSTRUCTION';
+                    var typeBadgeClass = 'bg-secondary';
+                    if (typeLabel.includes('ANCHOR')) typeBadgeClass = 'bg-primary';
+                    else if (typeLabel.includes('TOFF')) typeBadgeClass = 'bg-warning text-dark';
+                    else if (typeLabel.includes('CHAIN')) typeBadgeClass = 'bg-info text-dark';
+
+                    tr.innerHTML = `
+                        <td class="font-monospace text-muted">${idx + 1}</td>
+                        <td>
+                            <strong class="font-monospace text-dark">${c.source_asset_code}</strong>
+                            <span class="badge bg-light text-secondary border ms-1" style="font-size: 9px;">d=${c.source_degree}</span>
+                            <div class="text-muted" style="font-size: 9px;">${c.source_asset_name || '-'}</div>
+                        </td>
+                        <td>
+                            <strong class="font-monospace text-dark">${c.target_asset_code}</strong>
+                            <span class="badge bg-light text-secondary border ms-1" style="font-size: 9px;">d=${c.target_degree}</span>
+                            <div class="text-muted" style="font-size: 9px;">${c.target_asset_name || '-'}</div>
+                        </td>
+                        <td class="font-monospace fw-bold text-info">${Number(c.distance_meters).toFixed(1)} m</td>
+                        <td>
+                            <span class="badge bg-info text-dark font-monospace" style="font-size: 10px;">${c.total_score}/100</span>
+                        </td>
+                        <td><span class="badge ${typeBadgeClass} font-monospace" style="font-size: 9px;">${typeLabel}</span></td>
+                        <td>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0" style="font-size: 9px;">
+                                <i class="fas fa-shield-check me-1"></i> PASS 24 GATES
+                            </span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Populate Isolated Asset Diagnostics Table
+        var diagTbody = document.getElementById('tl03-diagnostics-tbody');
+        if (diagTbody) {
+            diagTbody.innerHTML = '';
+            if (diagDetails.length === 0) {
+                diagTbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-2">Semua aset telah terhubung ke jaringan JTM.</td></tr>`;
+            } else {
+                diagDetails.slice(0, 30).forEach(function (d) {
+                    var tr = document.createElement('tr');
+                    var classBadge = 'bg-secondary';
+                    if (d.classification === 'AUTO_COMPLETE') classBadge = 'bg-success';
+                    else if (d.classification === 'HIGH_CONFIDENCE_REVIEW') classBadge = 'bg-info text-dark';
+                    else if (d.classification === 'REVIEW_REQUIRED') classBadge = 'bg-warning text-dark';
+                    else if (d.classification === 'BLOCKED') classBadge = 'bg-danger';
+
+                    tr.innerHTML = `
+                        <td class="font-monospace"><strong>#${d.asset_id}</strong></td>
+                        <td><span class="badge ${classBadge}" style="font-size: 9px;">${d.classification}</span></td>
+                        <td class="text-muted" style="font-size: 10px;">${d.reason}</td>
+                        <td class="text-center font-monospace">${d.candidate_count}</td>
+                    `;
+                    diagTbody.appendChild(tr);
+                });
+                if (diagDetails.length > 30) {
+                    var trMore = document.createElement('tr');
+                    trMore.innerHTML = `<td colspan="4" class="text-center text-muted py-1" style="font-size: 9px;">... dan ${diagDetails.length - 30} aset terisolasi lainnya (diagnosa lengkap tersedia di audit server).</td>`;
+                    diagTbody.appendChild(trMore);
+                }
+            }
+        }
     }
 
     function populateTranslineAiModal(data) {
@@ -5188,6 +5597,69 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    function executeTranslineTl03Batch() {
+        if (!currentFeederId) return;
+        var btn = document.getElementById('btn-execute-transline-tl03');
+        var alertBox = document.getElementById('ai-alert-box');
+
+        if (!confirm('Apakah Anda yakin ingin merekonstruksi hingga 10 segmen transline JTM dengan TL-03 Engine? Tindakan ini atomik dan dilindungi 24 safety gates serta zero-write firewall.')) {
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Merekonstruksi Topologi...';
+        }
+
+        fetchJson('<?= site_url('gis/api-transline-tl03-complete') ?>', {
+            method: 'POST',
+            body: JSON.stringify({
+                penyulang_id: currentFeederId,
+                auto_batch: true
+            })
+        })
+        .then(res => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-network-wired text-warning me-1"></i> Eksekusi Rekonstruksi TL-03 (10 Segmen)';
+            }
+
+            if (res && res.status === 'success') {
+                if (alertBox) {
+                    alertBox.className = 'alert alert-success py-2 px-3 small my-2';
+                    alertBox.innerHTML = `<strong><i class="fas fa-check-circle me-1"></i> Rekonstruksi Berhasil!</strong> ${res.message || (res.created_count + ' Transline berhasil direkonstruksi.')} Provenance: <code>${res.provenance_run_id || 'RUN:TL03'}</code>`;
+                    alertBox.style.display = 'block';
+                }
+
+                // Refresh GIS map layers to immediately display new authoritative lines
+                loadGisNetworkOnDemand(true);
+                loadGisProposalsOnDemand();
+
+                // Re-fetch preview in modal
+                setTimeout(function () {
+                    openTranslineAiModal();
+                }, 1200);
+            } else {
+                if (alertBox) {
+                    alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                    alertBox.innerHTML = `<strong><i class="fas fa-exclamation-triangle me-1"></i> Rekonstruksi Dibatalkan:</strong> ${res.message || 'Eksekusi dibatalkan oleh Safety Gate.'}`;
+                    alertBox.style.display = 'block';
+                }
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-network-wired text-warning me-1"></i> Eksekusi Rekonstruksi TL-03 (10 Segmen)';
+            }
+            if (alertBox) {
+                alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                alertBox.innerHTML = `<strong><i class="fas fa-exclamation-circle me-1"></i> Error:</strong> ${err.message}`;
+                alertBox.style.display = 'block';
+            }
+        });
+    }
+
     function executeTranslineAiBatch() {
         if (!currentFeederId) return;
         var btn = document.getElementById('btn-execute-transline-ai');
@@ -5254,6 +5726,10 @@ document.addEventListener("DOMContentLoaded", function () {
     bindPointerSafeTap('btn-open-transline-ai', function () {
         openTranslineAiModal();
     }, 'OPEN_TRANSLINE_AI_MODAL');
+
+    bindPointerSafeTap('btn-execute-transline-tl03', function () {
+        executeTranslineTl03Batch();
+    }, 'EXECUTE_TRANSLINE_TL03_BATCH');
 
     bindPointerSafeTap('btn-execute-transline-ai', function () {
         executeTranslineAiBatch();

@@ -1,0 +1,213 @@
+{
+  "timestamp": "2026-09-11T13:28:42.253Z",
+  "phase": "GIS-02_ACCEPTANCE_SEAL",
+  "status": "PASS_WITH_FINDINGS",
+  "icon_audit": {
+    "dom_rendered_icons": {
+      "tm11.png": 1,
+      "tm1.png": 1,
+      "lbsm.png": 1
+    },
+    "total_rendered_markers": 3,
+    "runtime_census": {
+      "TM1 -> tm1.png": {
+        "construction": "TM1",
+        "png": "tm1.png",
+        "count": 95,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3328,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-167",
+        "semanticRole": "Konstruksi TM-1 (Tiang Tumpu)"
+      },
+      "TM11 -> tm11.png": {
+        "construction": "TM11",
+        "png": "tm11.png",
+        "count": 17,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3330,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-169",
+        "semanticRole": "Konstruksi TM-11 (Tiang Percabangan)"
+      },
+      "TM5 -> tm5.png": {
+        "construction": "TM5",
+        "png": "tm5.png",
+        "count": 12,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3333,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-172",
+        "semanticRole": "Konstruksi TM-5 (Tiang Sudut)"
+      },
+      "TM10 -> tm10.png": {
+        "construction": "TM10",
+        "png": "tm10.png",
+        "count": 8,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3335,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-174",
+        "semanticRole": "Konstruksi TM-10 (Tiang Akhir)"
+      },
+      "TM8 -> tm8.png": {
+        "construction": "TM8",
+        "png": "tm8.png",
+        "count": 21,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3337,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-176",
+        "semanticRole": "Konstruksi TM-8 (Gardu Tiang Portal)"
+      },
+      "GTT2 -> gtt2-dist.png": {
+        "construction": "GTT2",
+        "png": "gtt2-dist.png",
+        "count": 15,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3339,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-178",
+        "semanticRole": "Gardu Trafo Portal 2-Tiang Distribusi (GTT-2)"
+      },
+      "TM4 -> tm4.png": {
+        "construction": "TM4",
+        "png": "tm4.png",
+        "count": 2,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3349,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-188",
+        "semanticRole": "Konstruksi TM-4 (Tiang Penegang Ganda)"
+      },
+      "TM2 -> tm2.png": {
+        "construction": "TM2",
+        "png": "tm2.png",
+        "count": 7,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3358,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-197",
+        "semanticRole": "Konstruksi TM-2 (Tiang Penegang Tunggal)"
+      },
+      "GTT -> gtt1-dist.png": {
+        "construction": "GTT",
+        "png": "gtt1-dist.png",
+        "count": 4,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3361,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-200",
+        "semanticRole": "Gardu Trafo 1-Tiang Cantilever (GTT-1)"
+      },
+      "GTT1 -> gtt1-dist.png": {
+        "construction": "GTT1",
+        "png": "gtt1-dist.png",
+        "count": 4,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3362,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-201",
+        "semanticRole": "Gardu Trafo 1-Tiang Cantilever (GTT-1)"
+      },
+      "TM1 -> tm2.png": {
+        "construction": "TM1",
+        "png": "tm2.png",
+        "count": 2,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3364,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-203",
+        "semanticRole": "Konstruksi TM-2 (Tiang Penegang Tunggal)"
+      },
+      "PMS -> lbsm.png": {
+        "construction": "PMS",
+        "png": "lbsm.png",
+        "count": 4,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3188,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-027",
+        "semanticRole": "LBS Manual / PMS"
+      },
+      "TMTP -> tm8.png": {
+        "construction": "TMTP",
+        "png": "tm8.png",
+        "count": 2,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3234,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-073",
+        "semanticRole": "Konstruksi TM-8 (Gardu Tiang Portal)"
+      },
+      "TM1 -> tm10.png": {
+        "construction": "TM1",
+        "png": "tm10.png",
+        "count": 6,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3261,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-100",
+        "semanticRole": "Konstruksi TM-10 (Tiang Akhir)"
+      },
+      "TM1 -> tm11.png": {
+        "construction": "TM1",
+        "png": "tm11.png",
+        "count": 4,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3271,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-110",
+        "semanticRole": "Konstruksi TM-11 (Tiang Percabangan)"
+      },
+      "TM10 -> tm11.png": {
+        "construction": "TM10",
+        "png": "tm11.png",
+        "count": 1,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3273,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-112",
+        "semanticRole": "Konstruksi TM-11 (Tiang Percabangan)"
+      },
+      "TM5 -> tm11.png": {
+        "construction": "TM5",
+        "png": "tm11.png",
+        "count": 1,
+        "isFallback": false,
+        "fallbackReason": null,
+        "sample_id": 3274,
+        "sample_code": "AST-KOTA-BNJRKMNTRN-JTM-113",
+        "semanticRole": "Konstruksi TM-11 (Tiang Percabangan)"
+      }
+    },
+    "total_assets": 205,
+    "fallback_count": 0,
+    "css_sample": {
+      "haloWidth": "38px",
+      "haloHeight": "38px",
+      "haloBorder": "1px solid rgb(16, 185, 129)",
+      "haloBg": "rgba(0, 0, 0, 0)",
+      "imgWidth": "33.0156px",
+      "imgHeight": "34px",
+      "imgDropShadow": "drop-shadow(rgba(0, 0, 0, 0.45) 0px 2px 4px)"
+    }
+  },
+  "performance": {
+    "measured_fps": 40.2,
+    "avg_frame_time_ms": 24.87,
+    "dropped_frames": 37,
+    "total_frames": 172,
+    "long_tasks": 6,
+    "zoom_pan_gis_calls": 0
+  },
+  "screenshots": [
+    "gis02_zoom14_overview.png",
+    "gis02_zoom16_network.png",
+    "gis02_zoom18_detail.png",
+    "gis02_closeup_gardu_gtt2.png",
+    "gis02_closeup_tiang_tm8.png",
+    "gis02_closeup_switch_pms.png",
+    "gis02_closeup_tiang_tm1.png"
+  ]
+}

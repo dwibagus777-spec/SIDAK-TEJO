@@ -382,4 +382,92 @@ class NetworkLookup extends BaseController
                 ]);
         }
     }
+
+    /**
+     * FIX-01: Persistent Operator Section Correction
+     * POST /ajax/network/correct-section or POST /gis/api-correct-section
+     */
+    public function correctSection(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $assetId = (int)($json['asset_id'] ?? $this->request->getPost('asset_id') ?? 0);
+            $newSectionId = (int)($json['section_id'] ?? $this->request->getPost('section_id') ?? 0);
+            $reason = (string)($json['reason'] ?? $this->request->getPost('reason') ?? 'Koreksi Section Operator via GIS');
+
+            $session = session();
+            $userId  = (int)($session->get('user_id') ?? 0);
+            $userRole = (string)($session->get('user_role') ?? $session->get('role') ?? '');
+            $userUlpId = $session->get('user_ulp_id') ? (int)$session->get('user_ulp_id') : null;
+
+            if ($assetId <= 0 || $newSectionId <= 0) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status'  => 'error',
+                    'code'    => 'INVALID_PAYLOAD',
+                    'message' => 'Asset ID dan Section ID wajib diisi.'
+                ]);
+            }
+
+            $service = new \App\Services\AssetContextService();
+            $result = $service->correctSection($assetId, $newSectionId, $userId, $userRole, $userUlpId, $reason);
+
+            $statusCode = ($result['status'] === 'success') ? 200 : (
+                in_array($result['code'] ?? '', ['FORBIDDEN_ULP', 'CROSS_ULP_REJECTED']) ? 403 : (
+                    in_array($result['code'] ?? '', ['ASSET_NOT_FOUND', 'SECTION_NOT_FOUND']) ? 404 : 400
+                )
+            );
+
+            return $this->response->setStatusCode($statusCode)->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'code'    => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat menyimpan koreksi section: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * FIX-01: Persistent Operator Construction Type Correction
+     * POST /ajax/network/correct-construction or POST /gis/api-correct-construction
+     */
+    public function correctConstruction(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $assetId = (int)($json['asset_id'] ?? $this->request->getPost('asset_id') ?? 0);
+            $newConstructionTypeId = (int)($json['construction_type_id'] ?? $this->request->getPost('construction_type_id') ?? 0);
+            $reason = (string)($json['reason'] ?? $this->request->getPost('reason') ?? 'Koreksi Standar Konstruksi Operator via GIS');
+
+            $session = session();
+            $userId  = (int)($session->get('user_id') ?? 0);
+            $userRole = (string)($session->get('user_role') ?? $session->get('role') ?? '');
+            $userUlpId = $session->get('user_ulp_id') ? (int)$session->get('user_ulp_id') : null;
+
+            if ($assetId <= 0 || $newConstructionTypeId <= 0) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status'  => 'error',
+                    'code'    => 'INVALID_PAYLOAD',
+                    'message' => 'Asset ID dan Construction Type ID wajib diisi.'
+                ]);
+            }
+
+            $service = new \App\Services\AssetContextService();
+            $result = $service->correctConstruction($assetId, $newConstructionTypeId, $userId, $userRole, $userUlpId, $reason);
+
+            $statusCode = ($result['status'] === 'success') ? 200 : (
+                in_array($result['code'] ?? '', ['FORBIDDEN_ULP', 'CROSS_ULP_REJECTED']) ? 403 : (
+                    in_array($result['code'] ?? '', ['ASSET_NOT_FOUND', 'CONSTRUCTION_NOT_FOUND']) ? 404 : 400
+                )
+            );
+
+            return $this->response->setStatusCode($statusCode)->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'code'    => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat menyimpan koreksi konstruksi: ' . $e->getMessage()
+            ]);
+        }
+    }
 }

@@ -863,6 +863,136 @@ class GisController extends BaseController
     }
 
     /**
+     * TL-04: Network-Level Evidence & Promotion Reconstruction Preview Endpoint
+     * GET /gis/api-transline-tl04-preview?penyulang_id=X
+     *
+     * STRICT READ-ONLY: SELECT only, 0 mutations.
+     */
+    public function apiTranslineTl04Preview(): ResponseInterface
+    {
+        try {
+            $penyulangId = (int)(
+                (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+                ?? ($_GET['penyulang_id'] ?? 0)
+            );
+
+            if ($penyulangId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'success' => false,
+                    'reason'  => 'INVALID_PENYULANG_ID',
+                    'message' => 'Parameter penyulang_id wajib berupa integer positif.',
+                ]);
+            }
+
+            $session = session();
+            $userUlpId = $session && $session->get('ulp_id') ? (int)$session->get('ulp_id') : null;
+
+            $db = \Config\Database::connect();
+            $feeder = $db->tableExists('penyulang')
+                ? $db->table('penyulang')->where('id', $penyulangId)->get()->getRowArray()
+                : null;
+
+            if (!$feeder) {
+                return $this->response->setStatusCode(404)->setJSON([
+                    'status'  => 'error',
+                    'success' => false,
+                    'reason'  => 'FEEDER_NOT_FOUND',
+                    'message' => "Penyulang #{$penyulangId} tidak ditemukan.",
+                ]);
+            }
+
+            $feederUlpId = (int)($feeder['ulp_id'] ?? 0);
+            if ($userUlpId !== null && $userUlpId > 0 && $feederUlpId > 0 && $userUlpId !== $feederUlpId) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'status'  => 'error',
+                    'success' => false,
+                    'reason'  => 'UNAUTHORIZED_FEEDER_ACCESS',
+                    'message' => 'Akses ditolak: Penyulang berada di luar batas otorisasi ULP Anda.',
+                ]);
+            }
+
+            $reconService = new \App\Services\TranslineTl04ReconstructionService();
+            $result = $reconService->analyzeFeeder($penyulangId);
+            $result['scope'] = [
+                'ulp_id'         => $feederUlpId,
+                'penyulang_id'   => $penyulangId,
+                'penyulang_name' => $feeder['nama_penyulang'] ?? '',
+                'penyulang_code' => $feeder['kode_penyulang'] ?? '',
+            ];
+
+            return $this->response->setStatusCode(200)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[TL04_PREVIEW_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'success' => false,
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat memuat preview TL-04: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-04: Controlled Accelerated Production Write
+     * POST /gis/api-transline-tl04-complete
+     *
+     * Invariants:
+     * - Batches up to 10 independent edges.
+     * - Dual scoring (Edge 80-89 + Network Promotion >= 20, or Edge >= 90).
+     * - 24 Hard safety gates.
+     * - Independent per-batch transactions.
+     * - Exact-PK rollback supported.
+     */
+    public function apiTranslineTl04Complete(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $penyulangId = (int)($json['penyulang_id'] ?? $this->request->getPost('penyulang_id') ?? 0);
+            $candidateKeys = $json['candidate_natural_keys'] ?? $this->request->getPost('candidate_natural_keys') ?? [];
+            $maxBatch = (int)($json['max_batch'] ?? $this->request->getPost('max_batch') ?? \App\Services\TranslineTl04ReconstructionService::MAX_BATCH_SIZE);
+            $mode = (string)($json['mode'] ?? $this->request->getPost('mode') ?? 'batch'); // 'batch' or 'progressive'
+
+            if ($penyulangId <= 0) {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'reason'  => 'INVALID_PENYULANG_ID',
+                    'message' => 'Parameter penyulang_id wajib diisi.',
+                ]);
+            }
+
+            $session = session();
+            $actor = (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'ENGINEER_TRANSLINE_AI') : 'ENGINEER_TRANSLINE_AI');
+
+            $reconService = new \App\Services\TranslineTl04ReconstructionService();
+            if ($mode === 'progressive') {
+                $result = $reconService->executeProgressiveLoop($penyulangId, [
+                    'actor_name'             => $actor,
+                    'max_iterations'         => (int)($json['max_iterations'] ?? 10),
+                    'candidate_natural_keys' => $candidateKeys,
+                    'max_batch'              => $maxBatch,
+                ]);
+            } else {
+                $result = $reconService->executeBatch($penyulangId, [
+                    'actor_name'             => $actor,
+                    'candidate_natural_keys' => $candidateKeys,
+                    'max_batch'              => $maxBatch,
+                ]);
+            }
+
+            $httpCode = ($result['status'] === 'success') ? 200 : 422;
+            return $this->response->setStatusCode($httpCode)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[TL04_EXECUTE_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat eksekusi TL-04: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * GIS Icon Modernization: Configuration & Metadata Endpoint
      * GET /gis/api-icon-config
      */

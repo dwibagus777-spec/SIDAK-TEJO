@@ -857,6 +857,13 @@
                         </div>
                     </div>
                     <div class="legend-item-row align-items-center">
+                        <div style="width: 22px; height: 4px; background-color: #10b981; border-radius: 2px; flex-shrink: 0;"></div>
+                        <div class="d-flex flex-column" style="line-height: 1.1;">
+                            <strong class="text-dark" style="font-size: 10px;">Promosi Jaringan (TL-04)</strong>
+                            <span class="text-muted" style="font-size: 9px;">Network-Level Promotion (Emerald)</span>
+                        </div>
+                    </div>
+                    <div class="legend-item-row align-items-center">
                         <div style="width: 22px; height: 0px; border-top: 3px dashed #8b5cf6; flex-shrink: 0;"></div>
                         <div class="d-flex flex-column" style="line-height: 1.1;">
                             <strong class="text-dark" style="font-size: 10px;">Proposal AI (Dashed)</strong>
@@ -2093,15 +2100,20 @@
 
             <!-- Modal Body -->
             <div class="modal-body p-4 bg-light">
-                <!-- Nav Tabs for TL-03 & TL-02 -->
+                <!-- Nav Tabs for TL-04, TL-03 & TL-02 -->
                 <ul class="nav nav-pills mb-3 border-bottom pb-2 gap-2" id="ai-engine-tabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-bold py-2 px-3 shadow-sm rounded-pill" id="tab-btn-tl03" data-bs-toggle="pill" data-bs-target="#tab-tl03" type="button" role="tab" style="font-size: 12px;">
-                            <i class="fas fa-network-wired text-info me-1"></i> TL-03 Rekonstruksi JTM (101 Aset)
+                        <button class="nav-link active fw-bold py-2 px-3 shadow-sm rounded-pill text-white" id="tab-btn-tl04" data-bs-toggle="pill" data-bs-target="#tab-tl04" type="button" role="tab" style="font-size: 12px; background: #10b981;">
+                            <i class="fas fa-project-diagram text-white me-1"></i> TL-04 Promosi Jaringan (Accelerated)
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold py-2 px-3 rounded-pill" id="tab-btn-tl02" data-bs-toggle="pill" data-bs-target="#tab-tl02" type="button" role="tab" style="font-size: 12px;">
+                        <button class="nav-link fw-bold py-2 px-3 rounded-pill text-info border border-info-subtle" id="tab-btn-tl03" data-bs-toggle="pill" data-bs-target="#tab-tl03" type="button" role="tab" style="font-size: 12px;">
+                            <i class="fas fa-network-wired text-info me-1"></i> TL-03 Rekonstruksi (Strict ≥ 90)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold py-2 px-3 rounded-pill text-warning border border-warning-subtle" id="tab-btn-tl02" data-bs-toggle="pill" data-bs-target="#tab-tl02" type="button" role="tab" style="font-size: 12px;">
                             <i class="fas fa-bolt text-warning me-1"></i> TL-02 Progressive Pilot
                         </button>
                     </li>
@@ -2119,9 +2131,145 @@
                 <!-- Main Content Tabs -->
                 <div class="tab-content" id="ai-tab-content">
                     <!-- ==============================================
+                         TAB 0: TL-04 NETWORK PROMOTION ACCELERATION
+                         ============================================== -->
+                    <div class="tab-pane fade show active" id="tab-tl04" role="tabpanel">
+                        <!-- TL-04 Metrics Summary Cards -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TOTAL ASET JTM</span>
+                                    <strong id="tl04-stat-total-assets" class="fs-5 text-dark font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Penyulang Terpilih</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TRANSLINE OTORITATIF</span>
+                                    <strong id="tl04-stat-active-translines" class="fs-5 text-primary font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Baseline Aktif</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TERKONEKSI (d ≥ 1)</span>
+                                    <strong id="tl04-stat-connected" class="fs-5 text-success font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Node Jaringan Aktif</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">TERISOLASI (d = 0)</span>
+                                    <strong id="tl04-stat-isolated" class="fs-5 text-danger font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Target TL-04</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">DEFENSIBEL TL-04</span>
+                                    <strong id="tl04-stat-defensible" class="fs-5 text-success font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Ready to Materialize</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <div class="card border rounded-3 p-2 bg-white shadow-sm text-center">
+                                    <span class="text-muted small" style="font-size: 10px;">PROMOSI JARINGAN</span>
+                                    <strong id="tl04-stat-promoted" class="fs-5 text-success font-monospace">-</strong>
+                                    <span class="text-muted" style="font-size: 9px;">Score 80-89 + Coherence</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TL-04 Governance Notice -->
+                        <div class="card border-0 shadow-sm rounded-3 mb-3 bg-white p-3 border-start border-success border-4">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="fas fa-project-diagram text-success fs-5 mt-1"></i>
+                                <div class="flex-fill small" style="font-size: 11px;">
+                                    <strong class="text-dark d-block mb-1">TL-04 ACCELERATED RECONSTRUCTION &amp; NETWORK PROMOTION INVARIANTS:</strong>
+                                    <div class="row g-1 text-muted">
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Dual-Scoring:</strong> Skor individual ≥90 ATAU 80-89 dengan bukti koherensi jaringan ≥20pt.</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>24 Safety Gates:</strong> Semua 24 hard gates wajib lulus 100% tanpa kompromi.</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Batch Hingga 10:</strong> Materialisasi hingga 10 edge defensibel per batch dengan rekalkulasi graf dinamis.</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Transaksi Independen:</strong> Setiap batch berjalan dalam transaksi atomik terisolasi (bukan monolitik).</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Zero-Write Firewall:</strong> Tabel <code>assets</code> dan <code>temuan</code> 0 mutasi (Strict Read-Only).</div>
+                                        <div class="col-md-6"><i class="fas fa-check text-success me-1"></i> <strong>Stabilisasi Jujur:</strong> Tidak memaksakan 205/205 jika tanpa bukti jaringan sah. Node unproven tetap terisolasi.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Candidate Batch Table -->
+                        <div class="card border rounded-3 shadow-sm bg-white mb-3">
+                            <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="small fw-bold text-uppercase text-secondary" style="font-size: 10px;">
+                                        <i class="fas fa-list-check text-success me-1"></i> KANDIDAT BATCH TL-04 SIAP DIEKSEKUSI (MAKSIMAL 10 SEGMEN)
+                                    </span>
+                                </div>
+                                <span id="tl04-candidate-count" class="badge bg-success font-monospace text-white" style="font-size: 10px;">0 Segmen Siap</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 260px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 11px;">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Source Asset (Titik A)</th>
+                                                <th>Target Asset (Titik B)</th>
+                                                <th>Jarak</th>
+                                                <th>Skor Bukti</th>
+                                                <th>Promosi Jaringan</th>
+                                                <th>Tipe Rekonstruksi</th>
+                                                <th>24 Safety Gates</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tl04-candidate-tbody">
+                                            <!-- Dynamically loaded -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Diagnostics Table -->
+                        <div class="card border rounded-3 shadow-sm bg-white mb-2">
+                            <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="small fw-bold text-uppercase text-secondary" style="font-size: 10px;">
+                                        <i class="fas fa-stethoscope text-secondary me-1"></i> DIAGNOSTIK DETERMINISTIK ASET TERISOLASI TL-04 (d = 0)
+                                    </span>
+                                </div>
+                                <div class="d-flex gap-1" style="font-size: 9px;">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0" id="tl04-diag-auto-badge">Auto: 0</span>
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-0" id="tl04-diag-high-badge">High Conf: 0</span>
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-0" id="tl04-diag-review-badge">Review: 0</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0" id="tl04-diag-blocked-badge">Isolated/Blocked: 0</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 180px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 10px;">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>ID Aset</th>
+                                                <th>Klasifikasi Diagnostik</th>
+                                                <th>Keterangan / Alasan Deterministic</th>
+                                                <th>Kandidat Ditemukan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tl04-diagnostics-tbody">
+                                            <!-- Dynamically loaded -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==============================================
                          TAB 1: TL-03 ADVANCED RECONSTRUCTION
                          ============================================== -->
-                    <div class="tab-pane fade show active" id="tab-tl03" role="tabpanel">
+                    <div class="tab-pane fade" id="tab-tl03" role="tabpanel">
                         <!-- TL-03 Metrics Summary Cards -->
                         <div class="row g-2 mb-3">
                             <div class="col-6 col-md-2">
@@ -2327,11 +2475,17 @@
             <!-- Modal Footer -->
             <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between align-items-center" style="font-size: 11px;">
                 <div id="ai-engine-footer-meta" class="text-muted font-monospace" style="font-size: 10px;">
-                    <i class="fas fa-network-wired text-info me-1"></i> Engine: TL-03 Advanced Reconstruction v1.0.0 · Batch Limit: 10
+                    <i class="fas fa-project-diagram text-success me-1"></i> Engine: TL-04 Network Promotion v1.0.0 · Dynamic Graph Batch
                 </div>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
-                    <button type="button" id="btn-execute-transline-tl03" class="btn text-white btn-sm rounded-pill px-4 fw-bold shadow-sm" style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); border: none;">
+                    <button type="button" id="btn-execute-transline-tl04" class="btn text-white btn-sm rounded-pill px-4 fw-bold shadow-sm" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none;">
+                        <i class="fas fa-play text-warning me-1"></i> Eksekusi 1 Batch TL-04 (Maks 10 Segmen)
+                    </button>
+                    <button type="button" id="btn-execute-transline-tl04-loop" class="btn text-white btn-sm rounded-pill px-3 fw-bold shadow-sm" style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); border: none;">
+                        <i class="fas fa-sync text-warning me-1"></i> Loop Hingga Stabil
+                    </button>
+                    <button type="button" id="btn-execute-transline-tl03" class="btn text-white btn-sm rounded-pill px-4 fw-bold shadow-sm" style="display: none; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); border: none;">
                         <i class="fas fa-network-wired text-warning me-1"></i> Eksekusi Rekonstruksi TL-03 (10 Segmen)
                     </button>
                     <button type="button" id="btn-execute-transline-ai" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" style="display: none; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none;">
@@ -3330,9 +3484,75 @@ document.addEventListener("DOMContentLoaded", function () {
 
     $(document).on('click', '.btn-select-section-item', function() {
         const secId = $(this).data('id');
-        currentWorkingSectionId = parseInt(secId, 10);
-        $('#ctx-section-selector-container').slideUp(150);
-        fetchAssetContextWithWorking();
+        const secName = $(this).data('name') || ('Section #' + secId);
+
+        // Render State B: Confirmation Box inside container
+        $('#section-confirm-box').remove();
+        const confirmHtml = `
+            <div id="section-confirm-box" class="p-2 mt-2 bg-white border border-primary rounded-3 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small fw-bold text-primary"><i class="fas fa-save me-1"></i> Konfirmasi Koreksi Section</span>
+                    <span class="badge bg-primary-subtle text-primary" style="font-size: 9px;">Menunggu Persetujuan</span>
+                </div>
+                <p class="small text-dark mb-2" style="font-size: 11px;">Simpan section baru ke database: <strong>${secName}</strong>?</p>
+                <div id="section-save-error" class="alert alert-danger py-1 px-2 small mb-2" style="display: none; font-size: 11px;"></div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-50 py-1" id="btn-cancel-section-confirm" style="font-size: 11px;">Batal</button>
+                    <button type="button" class="btn btn-sm btn-primary w-50 fw-bold py-1" id="btn-commit-section-correction" data-id="${secId}" style="font-size: 11px;">
+                        <i class="fas fa-check me-1"></i> Simpan ke DB
+                    </button>
+                </div>
+            </div>`;
+        $('#section-options-list').after(confirmHtml);
+    });
+
+    $(document).on('click', '#btn-cancel-section-confirm', function() {
+        $('#section-confirm-box').remove();
+    });
+
+    $(document).on('click', '#btn-commit-section-correction', function() {
+        const secId = $(this).data('id');
+        const $btn = $(this);
+        const $cancelBtn = $('#btn-cancel-section-confirm');
+        const $errBox = $('#section-save-error');
+
+        // State C: Saving
+        $btn.prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin me-1"></i>Menyimpan...');
+        $cancelBtn.prop('disabled', true);
+        $errBox.hide();
+
+        $.ajax({
+            url: "<?= site_url('ajax/network/correct-section') ?>",
+            type: "POST",
+            data: JSON.stringify({
+                asset_id: currentAssetContextId,
+                section_id: parseInt(secId, 10),
+                reason: 'Koreksi Section Operator via GIS Context Drawer'
+            }),
+            contentType: "application/json",
+            dataType: "json",
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(res) {
+                // State D: Saved / Persisted
+                currentWorkingSectionId = null;
+                $('#ctx-section-selector-container').slideUp(150);
+                $('#section-confirm-box').remove();
+                fetchAssetContextWithWorking();
+            },
+            error: function(xhr) {
+                // State E: Failed
+                $btn.prop('disabled', false).html('<i class="fas fa-check me-1"></i> Coba Simpan Lagi');
+                $cancelBtn.prop('disabled', false);
+                let errMsg = 'Gagal menyimpan koreksi section ke database.';
+                try {
+                    const err = JSON.parse(xhr.responseText);
+                    if (err && err.message) errMsg = err.message;
+                } catch(e) {}
+                $errBox.text(errMsg).show();
+            }
+        });
     });
 
     $(document).on('keyup', '#input-search-section', function() {
@@ -3396,7 +3616,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let html = '';
         constructions.forEach(function(c) {
             const isSelected = (currentWorkingConstructionId && currentWorkingConstructionId == c.id);
-            html += `<button type="button" class="list-group-item list-group-item-action py-2 px-3 d-flex justify-content-between align-items-center btn-select-const-item" data-id="${c.id}" style="min-height: 44px; font-size: 12px;">
+            html += `<button type="button" class="list-group-item list-group-item-action py-2 px-3 d-flex justify-content-between align-items-center btn-select-const-item" data-id="${c.id}" data-code="${c.code || ''}" data-name="${c.name || ''}" style="min-height: 44px; font-size: 12px;">
                 <div>
                     <span class="badge bg-primary font-monospace me-1">${c.code}</span>
                     <span class="fw-bold text-dark">${c.name}</span>
@@ -3410,9 +3630,75 @@ document.addEventListener("DOMContentLoaded", function () {
 
     $(document).on('click', '.btn-select-const-item', function() {
         const constId = $(this).data('id');
-        currentWorkingConstructionId = parseInt(constId, 10);
-        $('#ctx-const-selector-container').slideUp(150);
-        fetchAssetContextWithWorking();
+        const constCode = $(this).data('code') || '';
+        const constName = $(this).data('name') || '';
+
+        $('#const-confirm-box').remove();
+        const confirmHtml = `
+            <div id="const-confirm-box" class="p-2 mt-2 bg-white border border-warning rounded-3 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small fw-bold text-dark"><i class="fas fa-save text-warning me-1"></i> Konfirmasi Koreksi Konstruksi</span>
+                    <span class="badge bg-warning-subtle text-dark" style="font-size: 9px;">Menunggu Persetujuan</span>
+                </div>
+                <p class="small text-dark mb-2" style="font-size: 11px;">Simpan standar konstruksi baru ke database: <strong>${constCode} — ${constName}</strong>?</p>
+                <div id="const-save-error" class="alert alert-danger py-1 px-2 small mb-2" style="display: none; font-size: 11px;"></div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-50 py-1" id="btn-cancel-const-confirm" style="font-size: 11px;">Batal</button>
+                    <button type="button" class="btn btn-sm btn-warning text-dark w-50 fw-bold py-1" id="btn-commit-const-correction" data-id="${constId}" style="font-size: 11px;">
+                        <i class="fas fa-check me-1"></i> Simpan ke DB
+                    </button>
+                </div>
+            </div>`;
+        $('#const-options-list').after(confirmHtml);
+    });
+
+    $(document).on('click', '#btn-cancel-const-confirm', function() {
+        $('#const-confirm-box').remove();
+    });
+
+    $(document).on('click', '#btn-commit-const-correction', function() {
+        const constId = $(this).data('id');
+        const $btn = $(this);
+        const $cancelBtn = $('#btn-cancel-const-confirm');
+        const $errBox = $('#const-save-error');
+
+        // State C: Saving
+        $btn.prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin me-1"></i>Menyimpan...');
+        $cancelBtn.prop('disabled', true);
+        $errBox.hide();
+
+        $.ajax({
+            url: "<?= site_url('ajax/network/correct-construction') ?>",
+            type: "POST",
+            data: JSON.stringify({
+                asset_id: currentAssetContextId,
+                construction_type_id: parseInt(constId, 10),
+                reason: 'Koreksi Konstruksi Operator via GIS Context Drawer'
+            }),
+            contentType: "application/json",
+            dataType: "json",
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(res) {
+                // State D: Saved / Persisted
+                currentWorkingConstructionId = null;
+                $('#ctx-const-selector-container').slideUp(150);
+                $('#const-confirm-box').remove();
+                fetchAssetContextWithWorking();
+            },
+            error: function(xhr) {
+                // State E: Failed
+                $btn.prop('disabled', false).html('<i class="fas fa-check me-1"></i> Coba Simpan Lagi');
+                $cancelBtn.prop('disabled', false);
+                let errMsg = 'Gagal menyimpan koreksi konstruksi ke database.';
+                try {
+                    const err = JSON.parse(xhr.responseText);
+                    if (err && err.message) errMsg = err.message;
+                } catch(e) {}
+                $errBox.text(errMsg).show();
+            }
+        });
     });
 
     $(document).on('keyup', '#input-search-const', function() {
@@ -4230,10 +4516,11 @@ document.addEventListener("DOMContentLoaded", function () {
             var translineCode = tl.transline_code || `TL-${currentFeederId}-${tId}`;
 
             var createdBy = tl.created_by || '';
-            var isTl03 = createdBy.includes('ENGINE=TL03');
-            var isTl02 = !isTl03 && (createdBy.includes('RUN:') || createdBy.includes('AI') || createdBy.includes('TL-02') || createdBy.includes('TL02'));
-            var lineColor = isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7');
-            var lineWeight = isTl03 ? 4.0 : 3.5;
+            var isTl04 = createdBy.includes('ENGINE=TL04') || createdBy.includes('TL-04');
+            var isTl03 = !isTl04 && createdBy.includes('ENGINE=TL03');
+            var isTl02 = !isTl04 && !isTl03 && (createdBy.includes('RUN:') || createdBy.includes('AI') || createdBy.includes('TL-02') || createdBy.includes('TL02'));
+            var lineColor = isTl04 ? '#10b981' : (isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7'));
+            var lineWeight = isTl04 ? 4.5 : (isTl03 ? 4.0 : 3.5);
 
             var visiblePoly = L.polyline(latLngs, {
                 color: lineColor,
@@ -4249,6 +4536,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     transline_code: translineCode,
                     source_asset_id: fromId,
                     target_asset_id: toId,
+                    is_tl04: isTl04,
                     is_tl03: isTl03,
                     is_tl02: isTl02,
                 }
@@ -4275,8 +4563,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 L.DomEvent.stopPropagation(evt);
                 if (window.activeSegmentHighlight) {
                     var prevProps = window.activeSegmentHighlight.feature ? window.activeSegmentHighlight.feature.properties : {};
-                    var prevColor = prevProps.is_tl03 ? '#06b6d4' : (prevProps.is_tl02 ? '#2563eb' : '#0284c7');
-                    window.activeSegmentHighlight.setStyle({ color: prevColor, weight: prevProps.is_tl03 ? 4.0 : 3.5, opacity: 0.9 });
+                    var prevColor = prevProps.is_tl04 ? '#10b981' : (prevProps.is_tl03 ? '#06b6d4' : (prevProps.is_tl02 ? '#2563eb' : '#0284c7'));
+                    window.activeSegmentHighlight.setStyle({ color: prevColor, weight: prevProps.is_tl04 ? 4.5 : (prevProps.is_tl03 ? 4.0 : 3.5), opacity: 0.9 });
                 }
                 window.activeSegmentHighlight = visiblePoly;
                 visiblePoly.setStyle({ color: '#f59e0b', weight: 5.5, opacity: 1 });
@@ -4294,11 +4582,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 var feederName = currentFeederName || (tl.penyulang_name || `Penyulang #${currentFeederId}`);
                 var sectionName = tl.section_name || (fromAsset && fromAsset.properties.section_name) || (tl.section_id ? `Section #${tl.section_id}` : '-');
 
-                var originBadge = isTl03
-                    ? `<span class="badge" style="background-color: #06b6d4; color: #fff; font-size: 9px;"><i class="fas fa-network-wired me-1"></i>TL-03 ADVANCED RECON</span>`
-                    : (isTl02
-                        ? `<span class="badge bg-info text-dark" style="font-size: 9px;"><i class="fas fa-bolt text-warning me-1"></i>TL-02 AI AUTO-COMPLETED</span>`
-                        : `<span class="badge bg-secondary" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i>OTORITATIF MANUAL</span>`);
+                var originBadge = isTl04
+                    ? `<span class="badge" style="background-color: #10b981; color: #fff; font-size: 9px;"><i class="fas fa-project-diagram me-1"></i>TL-04 NETWORK PROMOTED</span>`
+                    : (isTl03
+                        ? `<span class="badge" style="background-color: #06b6d4; color: #fff; font-size: 9px;"><i class="fas fa-network-wired me-1"></i>TL-03 ADVANCED RECON</span>`
+                        : (isTl02
+                            ? `<span class="badge bg-info text-dark" style="font-size: 9px;"><i class="fas fa-bolt text-warning me-1"></i>TL-02 AI AUTO-COMPLETED</span>`
+                            : `<span class="badge bg-secondary" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i>OTORITATIF MANUAL</span>`));
 
                 var popupContent = `
                     <div style="min-width: 280px; font-family: system-ui, -apple-system, sans-serif;">
@@ -5321,16 +5611,30 @@ document.addEventListener("DOMContentLoaded", function () {
     // ========================================================
     var aiModalInstance = null;
 
-    // Tab switching controls between TL-03 and TL-02
+    // Tab switching controls between TL-04, TL-03, and TL-02
     function setupAiEngineTabs() {
+        var btnTl04Tab = document.getElementById('tab-btn-tl04');
         var btnTl03Tab = document.getElementById('tab-btn-tl03');
         var btnTl02Tab = document.getElementById('tab-btn-tl02');
+        var btnExecTl04 = document.getElementById('btn-execute-transline-tl04');
+        var btnExecTl04Loop = document.getElementById('btn-execute-transline-tl04-loop');
         var btnExecTl03 = document.getElementById('btn-execute-transline-tl03');
         var btnExecTl02 = document.getElementById('btn-execute-transline-ai');
         var footerMeta = document.getElementById('ai-engine-footer-meta');
 
+        if (btnTl04Tab) {
+            btnTl04Tab.addEventListener('shown.bs.tab', function () {
+                if (btnExecTl04) btnExecTl04.style.display = 'inline-block';
+                if (btnExecTl04Loop) btnExecTl04Loop.style.display = 'inline-block';
+                if (btnExecTl03) btnExecTl03.style.display = 'none';
+                if (btnExecTl02) btnExecTl02.style.display = 'none';
+                if (footerMeta) footerMeta.innerHTML = '<i class="fas fa-project-diagram text-success me-1"></i> Engine: TL-04 Network Promotion v1.0.0 · Dynamic Graph Batch (Max 10)';
+            });
+        }
         if (btnTl03Tab) {
             btnTl03Tab.addEventListener('shown.bs.tab', function () {
+                if (btnExecTl04) btnExecTl04.style.display = 'none';
+                if (btnExecTl04Loop) btnExecTl04Loop.style.display = 'none';
                 if (btnExecTl03) btnExecTl03.style.display = 'inline-block';
                 if (btnExecTl02) btnExecTl02.style.display = 'none';
                 if (footerMeta) footerMeta.innerHTML = '<i class="fas fa-network-wired text-info me-1"></i> Engine: TL-03 Advanced Reconstruction v1.0.0 · Max Batch: 10';
@@ -5338,6 +5642,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         if (btnTl02Tab) {
             btnTl02Tab.addEventListener('shown.bs.tab', function () {
+                if (btnExecTl04) btnExecTl04.style.display = 'none';
+                if (btnExecTl04Loop) btnExecTl04Loop.style.display = 'none';
                 if (btnExecTl03) btnExecTl03.style.display = 'none';
                 if (btnExecTl02) btnExecTl02.style.display = 'inline-block';
                 if (footerMeta) footerMeta.innerHTML = '<i class="fas fa-bolt text-warning me-1"></i> Engine: TL-02 Progressive Completion v1.0.0 · Max Batch: 10';
@@ -5374,23 +5680,29 @@ document.addEventListener("DOMContentLoaded", function () {
         aiModalInstance.show();
 
         Promise.allSettled([
+            fetchJson(`<?= site_url('gis/api-transline-tl04-preview') ?>?penyulang_id=${encodeURIComponent(currentFeederId)}`),
             fetchJson(`<?= site_url('gis/api-transline-tl03-preview') ?>?penyulang_id=${encodeURIComponent(currentFeederId)}`),
             fetchJson(`<?= site_url('gis/api-transline-ai-preview') ?>?penyulang_id=${encodeURIComponent(currentFeederId)}`)
         ]).then(results => {
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
 
-            var resTl03 = (results[0].status === 'fulfilled') ? results[0].value : null;
-            var resTl02 = (results[1].status === 'fulfilled') ? results[1].value : null;
+            var resTl04 = (results[0].status === 'fulfilled') ? results[0].value : null;
+            var resTl03 = (results[1].status === 'fulfilled') ? results[1].value : null;
+            var resTl02 = (results[2].status === 'fulfilled') ? results[2].value : null;
+
+            if (resTl04 && resTl04.status === 'success') {
+                populateTranslineTl04Modal(resTl04);
+            } else if (resTl04 && resTl04.message) {
+                if (alertBox) {
+                    alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                    alertBox.textContent = 'TL-04 Preview: ' + resTl04.message;
+                    alertBox.style.display = 'block';
+                }
+            }
 
             if (resTl03 && resTl03.status === 'success') {
                 populateTranslineTl03Modal(resTl03);
-            } else if (resTl03 && resTl03.message) {
-                if (alertBox) {
-                    alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
-                    alertBox.textContent = 'TL-03 Preview: ' + resTl03.message;
-                    alertBox.style.display = 'block';
-                }
             }
 
             if (resTl02 && resTl02.status === 'success') {
@@ -5404,6 +5716,140 @@ document.addEventListener("DOMContentLoaded", function () {
                 alertBox.style.display = 'block';
             }
         });
+    }
+
+    function populateTranslineTl04Modal(data) {
+        var inv = data.inventory || {};
+        var sum = data.summary || {};
+        var batch = data.defensible_batch_preview || [];
+        var diag = data.isolated_asset_diagnostics || {};
+        var diagBreakdown = diag.summary_breakdown || {};
+        var diagDetails = diag.assets_detail || [];
+
+        // Inventory cards
+        if (document.getElementById('tl04-stat-total-assets')) {
+            document.getElementById('tl04-stat-total-assets').textContent = inv.total_master_assets || 0;
+        }
+        if (document.getElementById('tl04-stat-active-translines')) {
+            document.getElementById('tl04-stat-active-translines').textContent = inv.authoritative_translines || 0;
+        }
+        if (document.getElementById('tl04-stat-connected')) {
+            document.getElementById('tl04-stat-connected').textContent = inv.connected_assets_count || 0;
+        }
+        if (document.getElementById('tl04-stat-isolated')) {
+            document.getElementById('tl04-stat-isolated').textContent = inv.isolated_assets_count || 0;
+        }
+        if (document.getElementById('tl04-stat-defensible')) {
+            document.getElementById('tl04-stat-defensible').textContent = sum.defensible_candidates_count || batch.length;
+        }
+        if (document.getElementById('tl04-stat-promoted')) {
+            document.getElementById('tl04-stat-promoted').textContent = sum.promoted_candidates_count || 0;
+        }
+        if (document.getElementById('tl04-candidate-count')) {
+            document.getElementById('tl04-candidate-count').textContent = `${batch.length} Segmen Siap`;
+        }
+
+        // Diagnostic summary badges
+        if (document.getElementById('tl04-diag-auto-badge')) {
+            document.getElementById('tl04-diag-auto-badge').textContent = `Auto: ${diagBreakdown.AUTO_COMPLETE || 0}`;
+        }
+        if (document.getElementById('tl04-diag-high-badge')) {
+            document.getElementById('tl04-diag-high-badge').textContent = `High Conf: ${diagBreakdown.HIGH_CONFIDENCE_REVIEW || 0}`;
+        }
+        if (document.getElementById('tl04-diag-review-badge')) {
+            document.getElementById('tl04-diag-review-badge').textContent = `Review: ${diagBreakdown.REVIEW_REQUIRED || 0}`;
+        }
+        if (document.getElementById('tl04-diag-blocked-badge')) {
+            var blockedCount = (diagBreakdown.BLOCKED || 0) + (diagBreakdown.NO_VALID_NETWORK_RELATIONSHIP || 0) + (diagBreakdown.AMBIGUOUS || 0);
+            document.getElementById('tl04-diag-blocked-badge').textContent = `Isolated/Blocked: ${blockedCount}`;
+        }
+
+        // Populate TL-04 Candidates Table
+        var tbody = document.getElementById('tl04-candidate-tbody');
+        var btnExec = document.getElementById('btn-execute-transline-tl04');
+        var btnExecLoop = document.getElementById('btn-execute-transline-tl04-loop');
+        if (tbody) {
+            tbody.innerHTML = '';
+            if (batch.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-check-circle text-success me-1"></i> Tidak ada kandidat TL-04 defensibel yang tersisa. Topologi telah stabil secara alami. Node terisolasi yang tersisa tetap aman terisolasi.</td></tr>`;
+                if (btnExec) btnExec.disabled = true;
+                if (btnExecLoop) btnExecLoop.disabled = true;
+            } else {
+                if (btnExec) btnExec.disabled = false;
+                if (btnExecLoop) btnExecLoop.disabled = false;
+                batch.forEach(function (c, idx) {
+                    var tr = document.createElement('tr');
+                    var typeLabel = c.candidate_type || 'MAINLINE';
+                    var typeBadgeClass = 'bg-secondary';
+                    if (typeLabel.includes('ANCHOR')) typeBadgeClass = 'bg-primary';
+                    else if (typeLabel.includes('T_OFF') || typeLabel.includes('TOFF')) typeBadgeClass = 'bg-warning text-dark';
+                    else if (typeLabel.includes('CHAIN')) typeBadgeClass = 'bg-info text-dark';
+
+                    var promoBadge = c.promoted
+                        ? `<span class="badge" style="background-color: #10b981; color: #fff; font-size: 9px;"><i class="fas fa-check-double me-1"></i>PROMOTED (+${c.network_score} Net)</span>`
+                        : (c.total_score >= 90
+                            ? `<span class="badge bg-primary font-monospace" style="font-size: 9px;"><i class="fas fa-star me-1"></i>SCORE ≥ 90</span>`
+                            : `<span class="badge bg-light text-muted border" style="font-size: 9px;">STANDARD</span>`);
+
+                    tr.innerHTML = `
+                        <td class="font-monospace text-muted">${idx + 1}</td>
+                        <td>
+                            <strong class="font-monospace text-dark">${c.source_asset_code}</strong>
+                            <span class="badge bg-light text-secondary border ms-1" style="font-size: 9px;">d=${c.source_degree}</span>
+                            <div class="text-muted" style="font-size: 9px;">${c.source_asset_name || '-'}</div>
+                        </td>
+                        <td>
+                            <strong class="font-monospace text-dark">${c.target_asset_code}</strong>
+                            <span class="badge bg-light text-secondary border ms-1" style="font-size: 9px;">d=${c.target_degree}</span>
+                            <div class="text-muted" style="font-size: 9px;">${c.target_asset_name || '-'}</div>
+                        </td>
+                        <td class="font-monospace fw-bold text-success">${Number(c.distance_meters).toFixed(1)} m</td>
+                        <td>
+                            <span class="badge font-monospace" style="background-color: #047857; color: #fff; font-size: 10px;">${c.total_score}/100</span>
+                        </td>
+                        <td>${promoBadge}</td>
+                        <td><span class="badge ${typeBadgeClass} font-monospace" style="font-size: 9px;">${typeLabel}</span></td>
+                        <td>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0" style="font-size: 9px;">
+                                <i class="fas fa-shield-check me-1"></i> PASS 24 GATES
+                            </span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Populate Isolated Asset Diagnostics Table
+        var diagTbody = document.getElementById('tl04-diagnostics-tbody');
+        if (diagTbody) {
+            diagTbody.innerHTML = '';
+            if (diagDetails.length === 0) {
+                diagTbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-2">Semua aset telah terhubung ke jaringan JTM.</td></tr>`;
+            } else {
+                diagDetails.slice(0, 30).forEach(function (d) {
+                    var tr = document.createElement('tr');
+                    var classBadge = 'bg-secondary';
+                    if (d.classification === 'AUTO_COMPLETE') classBadge = 'bg-success';
+                    else if (d.classification === 'HIGH_CONFIDENCE_REVIEW') classBadge = 'bg-info text-dark';
+                    else if (d.classification === 'REVIEW_REQUIRED') classBadge = 'bg-warning text-dark';
+                    else if (d.classification === 'BLOCKED') classBadge = 'bg-danger';
+
+                    tr.innerHTML = `
+                        <td class="font-monospace"><strong>#${d.asset_id}</strong></td>
+                        <td><span class="badge ${classBadge}" style="font-size: 9px;">${d.classification}</span></td>
+                        <td class="text-muted" style="font-size: 10px;">${d.reason}</td>
+                        <td class="text-center font-monospace">${d.candidate_count}</td>
+                    `;
+                    diagTbody.appendChild(tr);
+                });
+                if (diagDetails.length > 30) {
+                    var trMore = document.createElement('tr');
+                    trMore.innerHTML = `<td colspan="4" class="text-center text-muted py-1" style="font-size: 9px;">... dan ${diagDetails.length - 30} aset terisolasi lainnya (diagnosa lengkap di audit server).</td>`;
+                    diagTbody.appendChild(trMore);
+                }
+            }
+        }
     }
 
     function populateTranslineTl03Modal(data) {
@@ -5723,9 +6169,102 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    function executeTranslineTl04(mode) {
+        if (!currentFeederId) return;
+        var btnBatch = document.getElementById('btn-execute-transline-tl04');
+        var btnLoop = document.getElementById('btn-execute-transline-tl04-loop');
+        var alertBox = document.getElementById('ai-alert-box');
+
+        var isProgressive = (mode === 'progressive');
+        var confirmMsg = isProgressive
+            ? 'Apakah Anda yakin ingin menjalankan Loop Rekonstruksi TL-04 hingga stabil alami? Setiap batch (maks 10 edge) akan dieksekusi dalam transaksi atomik independen dengan rekalkulasi graf dinamis, 24 safety gates, dan zero-write firewall.'
+            : 'Apakah Anda yakin ingin mengeksekusi 1 batch (hingga 10 edge) TL-04? Tindakan ini atomik dan dilindungi 24 safety gates serta zero-write firewall.';
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        if (btnBatch) btnBatch.disabled = true;
+        if (btnLoop) btnLoop.disabled = true;
+
+        if (isProgressive && btnLoop) {
+            btnLoop.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menjalankan Loop...';
+        } else if (btnBatch) {
+            btnBatch.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengeksekusi Batch...';
+        }
+
+        fetchJson('<?= site_url('gis/api-transline-tl04-complete') ?>', {
+            method: 'POST',
+            body: JSON.stringify({
+                penyulang_id: currentFeederId,
+                mode: mode,
+                max_batch: 10
+            })
+        })
+        .then(res => {
+            if (btnBatch) {
+                btnBatch.disabled = false;
+                btnBatch.innerHTML = '<i class="fas fa-play text-warning me-1"></i> Eksekusi 1 Batch TL-04 (Maks 10 Segmen)';
+            }
+            if (btnLoop) {
+                btnLoop.disabled = false;
+                btnLoop.innerHTML = '<i class="fas fa-sync text-warning me-1"></i> Loop Hingga Stabil';
+            }
+
+            if (res && res.status === 'success') {
+                if (alertBox) {
+                    alertBox.className = 'alert alert-success py-2 px-3 small my-2';
+                    var countMsg = isProgressive 
+                        ? `${res.total_created_count || 0} Transline berhasil direkonstruksi dalam ${res.iterations_run || 0} batch!`
+                        : `${res.created_count || 0} Transline berhasil direkonstruksi!`;
+                    alertBox.innerHTML = `<strong><i class="fas fa-check-circle me-1"></i> Rekonstruksi TL-04 Berhasil!</strong> ${countMsg} Zero-Write Invariant: <code>PASS</code>`;
+                    alertBox.style.display = 'block';
+                }
+
+                // Refresh GIS map layers to immediately display new authoritative lines
+                loadGisNetworkOnDemand(true);
+                loadGisProposalsOnDemand();
+
+                // Re-fetch preview in modal
+                setTimeout(function () {
+                    openTranslineAiModal();
+                }, 1200);
+            } else {
+                if (alertBox) {
+                    alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                    alertBox.innerHTML = `<strong><i class="fas fa-exclamation-triangle me-1"></i> Rekonstruksi Dibatalkan:</strong> ${res.message || 'Eksekusi dibatalkan oleh Safety Gate.'}`;
+                    alertBox.style.display = 'block';
+                }
+            }
+        })
+        .catch(err => {
+            if (btnBatch) {
+                btnBatch.disabled = false;
+                btnBatch.innerHTML = '<i class="fas fa-play text-warning me-1"></i> Eksekusi 1 Batch TL-04 (Maks 10 Segmen)';
+            }
+            if (btnLoop) {
+                btnLoop.disabled = false;
+                btnLoop.innerHTML = '<i class="fas fa-sync text-warning me-1"></i> Loop Hingga Stabil';
+            }
+            if (alertBox) {
+                alertBox.className = 'alert alert-danger py-2 px-3 small my-2';
+                alertBox.innerHTML = `<strong><i class="fas fa-exclamation-circle me-1"></i> Error:</strong> ${err.message}`;
+                alertBox.style.display = 'block';
+            }
+        });
+    }
+
     bindPointerSafeTap('btn-open-transline-ai', function () {
         openTranslineAiModal();
     }, 'OPEN_TRANSLINE_AI_MODAL');
+
+    bindPointerSafeTap('btn-execute-transline-tl04', function () {
+        executeTranslineTl04('batch');
+    }, 'EXECUTE_TRANSLINE_TL04_BATCH');
+
+    bindPointerSafeTap('btn-execute-transline-tl04-loop', function () {
+        executeTranslineTl04('progressive');
+    }, 'EXECUTE_TRANSLINE_TL04_LOOP');
 
     bindPointerSafeTap('btn-execute-transline-tl03', function () {
         executeTranslineTl03Batch();

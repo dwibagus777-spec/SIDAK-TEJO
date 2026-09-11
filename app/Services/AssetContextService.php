@@ -19,6 +19,9 @@ class AssetContextService
     {
         $this->db = $db ?? Database::connect();
         $this->pickerService = $pickerService ?? new MaterialPickerService($this->db);
+        if (function_exists('helper')) {
+            helper('app');
+        }
     }
 
     /**
@@ -139,6 +142,11 @@ class AssetContextService
         $effectiveSectionId   = $authoritativeSectionId;
         $sectionSource        = 'SYSTEM';
         $sectionStatusBadge   = 'TERVERIFIKASI_SISTEM';
+
+        if (!empty($asset['section_resolution_method']) && $asset['section_resolution_method'] === 'OPERATOR_CORRECTION') {
+            $sectionSource      = 'OPERATOR';
+            $sectionStatusBadge = 'DIKOREKSI_OPERATOR';
+        }
 
         if ($workingSectionId !== null && $workingSectionId > 0) {
             if (!$this->db->tableExists('sections')) {
@@ -353,6 +361,355 @@ class AssetContextService
                 'create_temuan_url' => $createTemuanUrl,
                 'params'            => $navQueryParams,
             ],
+        ];
+    }
+
+    /**
+     * FIX-01: Persistent Operator Section Correction
+     * Atomically updates assets.section_id with strict boundary, field isolation, and audit validation.
+     */
+    public function correctSection(
+        int $assetId,
+        int $newSectionId,
+        int $userId,
+        string $userRole = '',
+        ?int $userUlpId = null,
+        string $reason = ''
+    ): array {
+        if ($assetId <= 0) {
+            return ['status' => 'error', 'code' => 'INVALID_ASSET', 'message' => 'Asset ID tidak valid.'];
+        }
+        if ($newSectionId <= 0) {
+            return ['status' => 'error', 'code' => 'INVALID_SECTION', 'message' => 'Section ID tidak valid.'];
+        }
+
+        $builder = $this->db->table('assets')->where('id', $assetId);
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $builder->where('deleted_at IS NULL');
+        }
+        $asset = $builder->get()->getRowArray();
+        if (!$asset) {
+            return ['status' => 'error', 'code' => 'ASSET_NOT_FOUND', 'message' => 'Aset tidak ditemukan atau telah dihapus.'];
+        }
+
+        if (!$this->db->tableExists('sections')) {
+            return ['status' => 'error', 'code' => 'TABLE_NOT_FOUND', 'message' => 'Tabel section tidak tersedia.'];
+        }
+
+        $section = $this->db->table('sections')->where('id', $newSectionId)->get()->getRowArray();
+        if (!$section) {
+            return ['status' => 'error', 'code' => 'SECTION_NOT_FOUND', 'message' => 'Section target tidak ditemukan di database.'];
+        }
+
+        // 1. Feeder Boundary Firewall
+        $assetPenyulangId = (int)($asset['penyulang_id'] ?? 0);
+        $sectionPenyulangId = (int)($section['penyulang_id'] ?? 0);
+        if ($assetPenyulangId > 0 && $sectionPenyulangId > 0 && $assetPenyulangId !== $sectionPenyulangId) {
+            return [
+                'status'  => 'error',
+                'code'    => 'CROSS_FEEDER_REJECTED',
+                'message' => "Pelanggaran batas penyulang: Section target (#{$newSectionId}) berada pada penyulang berbeda dari aset (#{$assetId})."
+            ];
+        }
+
+        // 2. ULP Boundary Firewall (for restricted roles)
+        $roleNorm = strtoupper(trim((string)$userRole));
+        if ($roleNorm === 'ADMIN_ULP' && $userUlpId !== null && $userUlpId > 0) {
+            $assetUlpId = (int)($asset['ulp_id'] ?? 0);
+            $secUlpId = (int)($section['ulp_id'] ?? 0);
+            if (($assetUlpId > 0 && $assetUlpId !== $userUlpId) || ($secUlpId > 0 && $secUlpId !== $userUlpId)) {
+                return [
+                    'status'  => 'error',
+                    'code'    => 'CROSS_ULP_REJECTED',
+                    'message' => 'Akses ditolak: Aset atau section berada di luar wilayah wewenang ULP Anda.'
+                ];
+            }
+        }
+
+        // 3. Capture Pre-Update Fingerprint (Strict Invariant Protection)
+        $before = [
+            'id'                   => (int)$asset['id'],
+            'section_id'           => $asset['section_id'] !== null ? (int)$asset['section_id'] : null,
+            'construction_type_id' => $asset['construction_type_id'] !== null ? (int)$asset['construction_type_id'] : null,
+            'latitude'             => (string)$asset['latitude'],
+            'longitude'            => (string)$asset['longitude'],
+            'kode_asset'           => (string)$asset['kode_asset'],
+            'nama_asset'           => (string)($asset['nama_asset'] ?? ''),
+            'penyulang_id'         => (int)($asset['penyulang_id'] ?? 0),
+            'ulp_id'               => (int)($asset['ulp_id'] ?? 0),
+        ];
+
+        // 4. Atomic Database Update
+        $this->db->transBegin();
+        try {
+            $updatePayload = [
+                'section_id' => $newSectionId,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+            if ($this->db->fieldExists('section_resolution_method', 'assets')) {
+                $updatePayload['section_resolution_method'] = 'OPERATOR_CORRECTION';
+            }
+            if ($this->db->fieldExists('section_verified_by', 'assets')) {
+                $updatePayload['section_verified_by'] = $userId > 0 ? $userId : null;
+            }
+            if ($this->db->fieldExists('section_verified_at', 'assets')) {
+                $updatePayload['section_verified_at'] = date('Y-m-d H:i:s');
+            }
+
+            $this->db->table('assets')->where('id', $assetId)->update($updatePayload);
+
+            // 5. Post-Update Server-Authoritative Verification
+            $after = $this->db->table('assets')->where('id', $assetId)->get()->getRowArray();
+            if (!$after) {
+                throw new \RuntimeException("Gagal memuat ulang aset pasca-update.");
+            }
+
+            if ((int)$after['section_id'] !== $newSectionId) {
+                throw new \RuntimeException("Integritas gagal: section_id di database tidak sesuai target.");
+            }
+
+            // Invariant assertions: Unrequested fields MUST NOT change
+            if ((string)$after['latitude'] !== $before['latitude'] ||
+                (string)$after['longitude'] !== $before['longitude'] ||
+                (string)$after['kode_asset'] !== $before['kode_asset'] ||
+                (string)($after['nama_asset'] ?? '') !== $before['nama_asset'] ||
+                (int)($after['penyulang_id'] ?? 0) !== $before['penyulang_id'] ||
+                (int)($after['ulp_id'] ?? 0) !== $before['ulp_id'] ||
+                (int)($after['construction_type_id'] ?? 0) !== (int)($before['construction_type_id'] ?? 0)
+            ) {
+                throw new \RuntimeException("Integritas gagal: Terdeteksi mutasi pada kolom terproteksi!");
+            }
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            return [
+                'status'  => 'error',
+                'code'    => 'TRANSACTION_ROLLBACK',
+                'message' => 'Gagal menyimpan koreksi section: ' . $e->getMessage()
+            ];
+        }
+
+        // 6. Audit Trail Logging (Existing infrastructure)
+        $auditReason = $reason ?: 'Koreksi Section Operator via GIS';
+        if (function_exists('log_activity')) {
+            log_activity(
+                'OPERATOR_CORRECT_SECTION',
+                "Asset #{$assetId} ({$before['kode_asset']}) Section changed: {$before['section_id']} -> {$newSectionId}. User: #{$userId}. Reason: {$auditReason}"
+            );
+        }
+
+        if ($this->db->tableExists('audit_logs')) {
+            try {
+                $this->db->table('audit_logs')->insert([
+                    'user_id'    => $userId > 0 ? $userId : null,
+                    'username'   => 'OPERATOR',
+                    'role'       => $userRole ?: 'operator',
+                    'aktivitas'  => 'OPERATOR_CORRECT_SECTION',
+                    'detail'     => "Asset #{$assetId} ({$before['kode_asset']}) Section: {$before['section_id']} -> {$newSectionId}. Reason: {$auditReason}",
+                    'ip_address' => '127.0.0.1',
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            } catch (\Throwable $ae) {
+                // Ignore optional audit errors
+            }
+        }
+
+        try {
+            if (class_exists('\App\Services\AssetHistoryService') && class_exists('\Config\AssetEvent')) {
+                (new \App\Services\AssetHistoryService())->logEvent(
+                    $assetId,
+                    \Config\AssetEvent::UPDATED ?? 'UPDATED',
+                    (string)$before['section_id'],
+                    (string)$newSectionId,
+                    $before['kode_asset'],
+                    "Koreksi Section oleh Operator: #{$before['section_id']} -> #{$newSectionId}. {$auditReason}",
+                    $userId
+                );
+            }
+        } catch (\Throwable $ae) {
+            // Ignore optional history logging errors
+        }
+
+        return [
+            'status'           => 'success',
+            'code'             => 'SECTION_CORRECTED',
+            'message'          => "Koreksi Section berhasil disimpan ke database master (Section ID: {$newSectionId}).",
+            'asset_id'         => $assetId,
+            'field'            => 'section_id',
+            'old_value'        => $before['section_id'],
+            'new_value'        => $newSectionId,
+            'persisted'        => true,
+            'updated_context'  => $this->getAssetContext($assetId, $userUlpId, $userRole),
+        ];
+    }
+
+    /**
+     * FIX-01: Persistent Operator Construction Type Correction
+     * Atomically updates assets.construction_type_id with strict boundary, field isolation, and audit validation.
+     */
+    public function correctConstruction(
+        int $assetId,
+        int $newConstructionTypeId,
+        int $userId,
+        string $userRole = '',
+        ?int $userUlpId = null,
+        string $reason = ''
+    ): array {
+        if ($assetId <= 0) {
+            return ['status' => 'error', 'code' => 'INVALID_ASSET', 'message' => 'Asset ID tidak valid.'];
+        }
+        if ($newConstructionTypeId <= 0) {
+            return ['status' => 'error', 'code' => 'INVALID_CONSTRUCTION', 'message' => 'Construction Type ID tidak valid.'];
+        }
+
+        $builder = $this->db->table('assets')->where('id', $assetId);
+        if ($this->db->fieldExists('deleted_at', 'assets')) {
+            $builder->where('deleted_at IS NULL');
+        }
+        $asset = $builder->get()->getRowArray();
+        if (!$asset) {
+            return ['status' => 'error', 'code' => 'ASSET_NOT_FOUND', 'message' => 'Aset tidak ditemukan atau telah dihapus.'];
+        }
+
+        // Validate construction type exists
+        $constructionExists = false;
+        if ($this->db->tableExists('construction_types')) {
+            $ct = $this->db->table('construction_types')->where('id', $newConstructionTypeId)->get()->getRowArray();
+            if ($ct) $constructionExists = true;
+        }
+        if (!$constructionExists && $this->db->tableExists('canonical_construction_types')) {
+            $cct = $this->db->table('canonical_construction_types')->where('id', $newConstructionTypeId)->get()->getRowArray();
+            if ($cct) $constructionExists = true;
+        }
+
+        if (!$constructionExists) {
+            return [
+                'status'  => 'error',
+                'code'    => 'CONSTRUCTION_NOT_FOUND',
+                'message' => "Standar konstruksi target (#{$newConstructionTypeId}) tidak ditemukan di database."
+            ];
+        }
+
+        // ULP Boundary Firewall
+        $roleNorm = strtoupper(trim((string)$userRole));
+        if ($roleNorm === 'ADMIN_ULP' && $userUlpId !== null && $userUlpId > 0) {
+            $assetUlpId = (int)($asset['ulp_id'] ?? 0);
+            if ($assetUlpId > 0 && $assetUlpId !== $userUlpId) {
+                return [
+                    'status'  => 'error',
+                    'code'    => 'CROSS_ULP_REJECTED',
+                    'message' => 'Akses ditolak: Aset berada di luar wilayah wewenang ULP Anda.'
+                ];
+            }
+        }
+
+        // Capture Pre-Update Fingerprint (Strict Invariant Protection)
+        $before = [
+            'id'                   => (int)$asset['id'],
+            'section_id'           => $asset['section_id'] !== null ? (int)$asset['section_id'] : null,
+            'construction_type_id' => $asset['construction_type_id'] !== null ? (int)$asset['construction_type_id'] : null,
+            'latitude'             => (string)$asset['latitude'],
+            'longitude'            => (string)$asset['longitude'],
+            'kode_asset'           => (string)$asset['kode_asset'],
+            'nama_asset'           => (string)($asset['nama_asset'] ?? ''),
+            'penyulang_id'         => (int)($asset['penyulang_id'] ?? 0),
+            'ulp_id'               => (int)($asset['ulp_id'] ?? 0),
+        ];
+
+        // Atomic Database Update
+        $this->db->transBegin();
+        try {
+            $updatePayload = [
+                'construction_type_id' => $newConstructionTypeId,
+                'updated_at'           => date('Y-m-d H:i:s'),
+            ];
+
+            $this->db->table('assets')->where('id', $assetId)->update($updatePayload);
+
+            // Post-Update Server-Authoritative Verification
+            $after = $this->db->table('assets')->where('id', $assetId)->get()->getRowArray();
+            if (!$after) {
+                throw new \RuntimeException("Gagal memuat ulang aset pasca-update.");
+            }
+
+            if ((int)$after['construction_type_id'] !== $newConstructionTypeId) {
+                throw new \RuntimeException("Integritas gagal: construction_type_id di database tidak sesuai target.");
+            }
+
+            // Invariant assertions: Unrequested fields MUST NOT change
+            if ((string)$after['latitude'] !== $before['latitude'] ||
+                (string)$after['longitude'] !== $before['longitude'] ||
+                (string)$after['kode_asset'] !== $before['kode_asset'] ||
+                (string)($after['nama_asset'] ?? '') !== $before['nama_asset'] ||
+                (int)($after['penyulang_id'] ?? 0) !== $before['penyulang_id'] ||
+                (int)($after['ulp_id'] ?? 0) !== $before['ulp_id'] ||
+                (int)($after['section_id'] ?? 0) !== (int)($before['section_id'] ?? 0)
+            ) {
+                throw new \RuntimeException("Integritas gagal: Terdeteksi mutasi pada kolom terproteksi!");
+            }
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            return [
+                'status'  => 'error',
+                'code'    => 'TRANSACTION_ROLLBACK',
+                'message' => 'Gagal menyimpan koreksi konstruksi: ' . $e->getMessage()
+            ];
+        }
+
+        // Audit Trail Logging
+        $auditReason = $reason ?: 'Koreksi Konstruksi Operator via GIS';
+        if (function_exists('log_activity')) {
+            log_activity(
+                'OPERATOR_CORRECT_CONSTRUCTION',
+                "Asset #{$assetId} ({$before['kode_asset']}) Construction Type changed: {$before['construction_type_id']} -> {$newConstructionTypeId}. User: #{$userId}. Reason: {$auditReason}"
+            );
+        }
+
+        if ($this->db->tableExists('audit_logs')) {
+            try {
+                $this->db->table('audit_logs')->insert([
+                    'user_id'    => $userId > 0 ? $userId : null,
+                    'username'   => 'OPERATOR',
+                    'role'       => $userRole ?: 'operator',
+                    'aktivitas'  => 'OPERATOR_CORRECT_CONSTRUCTION',
+                    'detail'     => "Asset #{$assetId} ({$before['kode_asset']}) Construction: {$before['construction_type_id']} -> {$newConstructionTypeId}. Reason: {$auditReason}",
+                    'ip_address' => '127.0.0.1',
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            } catch (\Throwable $ae) {
+                // Ignore optional audit errors
+            }
+        }
+
+        try {
+            if (class_exists('\App\Services\AssetHistoryService') && class_exists('\Config\AssetEvent')) {
+                (new \App\Services\AssetHistoryService())->logEvent(
+                    $assetId,
+                    \Config\AssetEvent::UPDATED ?? 'UPDATED',
+                    (string)$before['construction_type_id'],
+                    (string)$newConstructionTypeId,
+                    $before['kode_asset'],
+                    "Koreksi Konstruksi oleh Operator: #{$before['construction_type_id']} -> #{$newConstructionTypeId}. {$auditReason}",
+                    $userId
+                );
+            }
+        } catch (\Throwable $ae) {
+            // Ignore optional history logging errors
+        }
+
+        return [
+            'status'           => 'success',
+            'code'             => 'CONSTRUCTION_CORRECTED',
+            'message'          => "Koreksi Standar Konstruksi berhasil disimpan ke database master (Construction ID: {$newConstructionTypeId}).",
+            'asset_id'         => $assetId,
+            'field'            => 'construction_type_id',
+            'old_value'        => $before['construction_type_id'],
+            'new_value'        => $newConstructionTypeId,
+            'persisted'        => true,
+            'updated_context'  => $this->getAssetContext($assetId, $userUlpId, $userRole),
         ];
     }
 }

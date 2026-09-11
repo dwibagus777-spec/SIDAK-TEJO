@@ -565,6 +565,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // TL-03: Advanced JTM Network Reconstruction & GIS Icon Modernization APIs
     $routes->get('gis/api-transline-tl03-preview', 'GisController::apiTranslineTl03Preview');
     $routes->post('gis/api-transline-tl03-complete', 'GisController::apiTranslineTl03Complete');
+    // TL-04: Accelerated JTM Network Reconstruction & Network-Level Promotion APIs
+    $routes->get('gis/api-transline-tl04-preview', 'GisController::apiTranslineTl04Preview');
+    $routes->post('gis/api-transline-tl04-complete', 'GisController::apiTranslineTl04Complete');
     $routes->get('gis/api-icon-config', 'GisController::apiGisIconConfig');
     // TL-01 Sub-Gate D4A: Read-Only Proposal Exception Workbench & Review Queue
     $routes->get('gis/api-proposal-workbench/(:num)', 'GisController::apiProposalWorkbenchDetail/$1');
@@ -667,6 +670,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->get('constructions', 'Ajax\NetworkLookup::constructions');
         // MAP-03: Read-Only Location Context Assistant API
         $routes->get('location-context', 'Ajax\NetworkLookup::locationContext');
+        // FIX-01: Persistent Operator Correction APIs
+        $routes->post('correct-section', 'Ajax\NetworkLookup::correctSection');
+        $routes->post('correct-construction', 'Ajax\NetworkLookup::correctConstruction');
     });
 
     // MAP-02: Canonical API Alias for Read-Only Asset Context
@@ -675,6 +681,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('api/constructions', 'Ajax\NetworkLookup::constructions');
     // MAP-03: Canonical API Alias for Read-Only Location Context
     $routes->get('api/location-context', 'Ajax\NetworkLookup::locationContext');
+    // FIX-01: Canonical API Aliases for Operator Correction
+    $routes->post('gis/api-correct-section', 'Ajax\NetworkLookup::correctSection');
+    $routes->post('gis/api-correct-construction', 'Ajax\NetworkLookup::correctConstruction');
+    $routes->post('api/correct-section', 'Ajax\NetworkLookup::correctSection');
+    $routes->post('api/correct-construction', 'Ajax\NetworkLookup::correctConstruction');
 
     $routes->group('api/master-network', static function ($routes) {
         $routes->get('ulps', 'Ajax\NetworkLookup::ulp');

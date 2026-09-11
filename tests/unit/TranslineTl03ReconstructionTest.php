@@ -35,7 +35,7 @@ class TranslineTl03ReconstructionTest extends CIUnitTestCase
         $this->setupSchema();
         $this->seedTestData();
 
-        $this->reconService = new TranslineReconstructionService();
+        $this->reconService = new TranslineReconstructionService($this->db);
     }
 
     protected function safeAddColumn(string $table, string $column, array $def): void
@@ -484,7 +484,7 @@ class TranslineTl03ReconstructionTest extends CIUnitTestCase
             'max_batch'  => 10,
         ]);
 
-        $this->assertSame('success', $res['status']);
+        $this->assertSame('success', $res['status'], $res['message'] ?? '');
         $createdCount = $res['created_count'];
         $this->assertLessThanOrEqual(10, $createdCount);
 

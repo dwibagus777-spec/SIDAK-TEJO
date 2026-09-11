@@ -25,9 +25,9 @@ class TranslineReconstructionService
     protected $db;
     protected TranslineCompletionService $tl02Service;
 
-    public function __construct()
+    public function __construct($db = null)
     {
-        $this->db = Database::connect();
+        $this->db = $db ?? Database::connect();
         $this->tl02Service = new TranslineCompletionService();
     }
 
@@ -263,7 +263,9 @@ class TranslineReconstructionService
         $preHashes = $this->captureTableSignatures($penyulangId);
 
         // 3. Atomic Database Insertion
-        $this->db->transStart();
+        $validColumns = array_flip($this->db->getFieldNames('gis_translines'));
+
+        $this->db->transBegin();
 
         $createdTranslines = [];
         $createdIds = [];
@@ -290,23 +292,40 @@ class TranslineReconstructionService
                 $provenance = "{$actorName}|ENGINE=TL03|RUN:{$runId}|PROP:{$propNum}";
 
                 $translineCode = "TL-{$penyulangId}-{$minId}-{$maxId}";
+                $geoJson = json_encode([
+                    'type'        => 'LineString',
+                    'coordinates' => $cand['coordinates'],
+                ]);
+
                 $row = [
-                    'penyulang_id'       => $penyulangId,
-                    'section_id'         => $cand['section_id'] ?? null,
                     'transline_code'     => $translineCode,
+                    'penyulang_id'       => $penyulangId,
                     'source_asset_id'    => $minId,
                     'target_asset_id'    => $maxId,
+                    'geometry'           => $geoJson,
+                    'geometry_type'      => 'LineString',
                     'conductor_type'     => $cand['conductor_type'] ?? 'AAAC',
                     'conductor_size'     => $cand['conductor_size'] ?? '150 mm²',
-                    'length_meters'      => $cand['distance_meters'],
-                    'coordinates'        => json_encode($cand['coordinates']),
+                    'conductor_material' => 'ALUMINUM_ALLOY',
+                    'installation_type'  => 'OVERHEAD',
+                    'circuit_config'     => '3_PHASE',
+                    'distance_meters'    => round((float)$cand['distance_meters'], 2),
+                    'length_meters'      => round((float)$cand['distance_meters'], 2),
+                    'coordinates'        => $geoJson,
                     'status'             => 'ACTIVE',
                     'is_active'          => 1,
                     'created_by'         => $provenance,
                     'created_at'         => date('Y-m-d H:i:s'),
                 ];
 
-                $this->db->table('gis_translines')->insert($row);
+                // Filter row keys against actual database columns
+                $insertRow = array_intersect_key($row, $validColumns);
+
+                $inserted = $this->db->table('gis_translines')->insert($insertRow);
+                if (!$inserted) {
+                    $err = $this->db->error();
+                    throw new \RuntimeException("Insert into gis_translines failed: " . ($err['message'] ?? 'unknown'));
+                }
                 $newId = (int)$this->db->insertID();
 
                 $createdIds[] = $newId;
@@ -322,11 +341,7 @@ class TranslineReconstructionService
                 ];
             }
 
-            $this->db->transComplete();
-
-            if ($this->db->transStatus() === false) {
-                throw new \RuntimeException('Database transaction failed during TL-03 batch commit.');
-            }
+            $this->db->transCommit();
         } catch (\Throwable $e) {
             $this->db->transRollback();
             return [

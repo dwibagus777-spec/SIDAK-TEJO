@@ -262,7 +262,7 @@ class TranslineTl04ReconstructionService
                 if ($gateValid && $edgeScore >= 90) {
                     $isAuto = true;
                     $classification = 'AUTO_COMPLETE';
-                } elseif ($gateValid && $edgeScore >= 80 && $networkEvidence['is_network_coherent']) {
+                } elseif ($gateValid && $edgeScore >= 78 && $networkEvidence['is_network_coherent']) {
                     // NETWORK PROMOTION
                     $isAuto = true;
                     $promoted = true;
@@ -667,12 +667,9 @@ class TranslineTl04ReconstructionService
                         (float)$cAsset['latitude'], (float)$cAsset['longitude']
                     );
 
-                    if ($dist <= self::HARD_MAX_SPAN_METERS && $dist < $minDist) {
-                        $seqDelta = $this->calculateSequenceDelta($tailAsset['kode_asset'] ?? '', $cAsset['kode_asset'] ?? '');
-                        if ($seqDelta <= 3) {
-                            $minDist = $dist;
-                            $bestNeighbor = $candidateId;
-                        }
+                    if ($dist <= 55.0 && $dist < $minDist) {
+                        $minDist = $dist;
+                        $bestNeighbor = $candidateId;
                     }
                 }
 
@@ -734,7 +731,9 @@ class TranslineTl04ReconstructionService
                 if ($bearingDelta <= 15.0) {
                     $sBearing = 20; // Collinear mainline
                 } elseif ($bearingDelta <= 30.0) {
-                    $sBearing = 14; // Gentle curve
+                    $sBearing = 16; // Gentle curve
+                } elseif ($bearingDelta <= 45.0) {
+                    $sBearing = 12; // Corner turn
                 } elseif ($bearingDelta <= 60.0) {
                     $sBearing = 8;  // T-off / angle
                 } else {
@@ -744,10 +743,10 @@ class TranslineTl04ReconstructionService
                 $sBearing = 10;
             }
         } else {
-            $sBearing = $isChainEdge ? 16 : 10;
+            $sBearing = ($isChainEdge || $dist <= 35.0) ? 16 : 10;
         }
 
-        // Factor 3: Asset Sequence Adjacency (max 15)
+        // Factor 3: Asset Sequence Adjacency (max 15 - Evidence, not hard veto)
         $sSeq = 0;
         $seqDelta = $this->calculateSequenceDelta($u['kode_asset'] ?? '', $v['kode_asset'] ?? '');
         if ($seqDelta === 1) {
@@ -756,6 +755,10 @@ class TranslineTl04ReconstructionService
             $sSeq = 12;
         } elseif ($seqDelta <= 5) {
             $sSeq = 8;
+        } elseif ($dist <= 25.0) {
+            $sSeq = 8; // Physical proximity overrides non-contiguous survey numbering
+        } elseif ($dist <= 50.0) {
+            $sSeq = 5;
         } else {
             $sSeq = 2;
         }
@@ -782,13 +785,13 @@ class TranslineTl04ReconstructionService
 
         // Factor 6: Graph Continuity & Degree Prediction (max 10)
         $sGraph = 0;
-        if ($uDeg === 1 && $vDeg === 0) {
+        if (($uDeg === 1 && $vDeg === 0) || ($uDeg === 0 && $vDeg === 1)) {
             $sGraph = 10; // Mainline terminal extension
-        } elseif ($uDeg === 2 && $vDeg === 0) {
+        } elseif (($uDeg === 2 && $vDeg === 0) || ($uDeg === 0 && $vDeg === 2)) {
             $sGraph = 8;  // T-Off branching
-        } elseif ($uDeg === 0 && $vDeg === 0 && $isChainEdge) {
-            $sGraph = 9;  // Internal chain edge
-        } elseif ($uDeg === 3 && $vDeg === 0) {
+        } elseif ($uDeg === 0 && $vDeg === 0 && ($isChainEdge || $dist <= 35.0)) {
+            $sGraph = 9;  // Internal chain edge or close isolated span
+        } elseif (($uDeg === 3 && $vDeg === 0) || ($uDeg === 0 && $vDeg === 3)) {
             $sGraph = 4;  // Tertiary branch
         } else {
             $sGraph = 2;
@@ -834,15 +837,15 @@ class TranslineTl04ReconstructionService
         $netScore = 0;
         $reasons = [];
 
-        if ($isChain) {
+        if ($isChain || ($uDeg === 0 && $vDeg === 0 && $dist <= 35.0)) {
             $netScore += 15;
             $reasons[] = 'ISOLATED_LINEAR_CHAIN_MEMBER';
         }
-        if ($isTerminalExt && ($breakdown['bearing_delta_degrees'] ?? 999) <= 30.0) {
+        if ($isTerminalExt && (($breakdown['bearing_delta_degrees'] ?? 999) <= 45.0 || $dist <= 20.0)) {
             $netScore += 15;
             $reasons[] = 'COLLINEAR_MAINLINE_ANCHOR_EXTENSION';
         }
-        if ($isToff && ($breakdown['sequence_delta'] ?? 999) <= 3) {
+        if ($isToff && ($dist <= 50.0 || ($breakdown['sequence_delta'] ?? 999) <= 3)) {
             $netScore += 10;
             $reasons[] = 'LEGITIMATE_LATERAL_BRANCH';
         }

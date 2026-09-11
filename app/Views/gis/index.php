@@ -4475,6 +4475,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 try { rawCoords = JSON.parse(rawCoords); } catch (err) { rawCoords = []; }
             }
 
+            // Canonical unwrap: if rawCoords is GeoJSON object {"type":"LineString","coordinates":[...]}
+            if (rawCoords && !Array.isArray(rawCoords) && Array.isArray(rawCoords.coordinates)) {
+                rawCoords = rawCoords.coordinates;
+            }
+
             if (Array.isArray(rawCoords) && rawCoords.length >= 2) {
                 var validPts = rawCoords.filter(pt => Array.isArray(pt) && pt.length >= 2 && isValidLatLng(pt[1], pt[0]));
                 if (validPts.length >= 2) {
@@ -4493,10 +4498,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
 
-            // Secondary Fallback: look up in currentData.features strictly for ASSET entity_type
+            // Secondary Fallback: look up in currentData.features strictly for ASSET entity_type (Normalized ID comparison)
             if (latLngs.length < 2 && fromId && toId && Array.isArray(currentData.features)) {
-                var sFeat = currentData.features.find(f => f.properties && f.properties.entity_type === 'ASSET' && f.properties.id === fromId);
-                var tFeat = currentData.features.find(f => f.properties && f.properties.entity_type === 'ASSET' && f.properties.id === toId);
+                var sNorm = String(fromId);
+                var tNorm = String(toId);
+                var sFeat = currentData.features.find(f => f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === sNorm);
+                var tFeat = currentData.features.find(f => f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === tNorm);
                 if (sFeat && tFeat && sFeat.geometry && tFeat.geometry) {
                     var sCoords = sFeat.geometry.coordinates;
                     var tCoords = tFeat.geometry.coordinates;

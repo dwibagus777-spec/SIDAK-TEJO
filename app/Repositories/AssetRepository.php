@@ -437,19 +437,53 @@ class AssetRepository
                     $allNodes = [];
                     $edges = [];
 
+                    // Preload asset coordinates for read-time fallback if geometry in DB is empty/damaged
+                    $assetPointMap = [];
+                    $assetCoordsRows = $db->table('assets')
+                        ->select('id, latitude, longitude')
+                        ->where('penyulang_id', $penyulangId)
+                        ->where('deleted_at IS NULL')
+                        ->get()
+                        ->getResultArray();
+                    foreach ($assetCoordsRows as $acr) {
+                        $lat = (float)($acr['latitude'] ?? 0);
+                        $lng = (float)($acr['longitude'] ?? 0);
+                        if ($lat != 0.0 && $lng != 0.0) {
+                            $assetPointMap[(int)$acr['id']] = [$lng, $lat];
+                        }
+                    }
+
                     foreach ($translineRows as $r) {
                         $geomStr = $r['geometry'] ?? '';
                         $segCoords = !empty($geomStr) ? json_decode($geomStr, true) : null;
+                        
+                        // Canonical unwrap: if geometry was stored as GeoJSON object {"type":"LineString","coordinates":[...]}
+                        if (is_array($segCoords) && isset($segCoords['coordinates']) && is_array($segCoords['coordinates'])) {
+                            $segCoords = $segCoords['coordinates'];
+                        }
+
+                        $fromId = (int)$r['source_asset_id'];
+                        $toId   = (int)$r['target_asset_id'];
+
+                        // Read-time coordinate fallback strictly from authoritative Asset points (Zero-Write)
+                        if (empty($segCoords) || !is_array($segCoords) || count($segCoords) < 2 || !isset($segCoords[0][0])) {
+                            if (isset($assetPointMap[$fromId], $assetPointMap[$toId])) {
+                                $segCoords = [$assetPointMap[$fromId], $assetPointMap[$toId]];
+                            }
+                        }
+
                         if (!empty($segCoords) && is_array($segCoords) && count($segCoords) >= 2) {
                             $multiLineCoords[] = $segCoords;
                             foreach ($segCoords as $pt) {
-                                $allNodes[] = $pt;
+                                if (is_array($pt) && count($pt) >= 2) {
+                                    $allNodes[] = $pt;
+                                }
                             }
                             $edges[] = [
                                 'transline_id'       => (int)$r['id'],
                                 'edge_id'            => (int)$r['id'],
-                                'from_asset_id'      => (int)$r['source_asset_id'],
-                                'to_asset_id'        => (int)$r['target_asset_id'],
+                                'from_asset_id'      => $fromId,
+                                'to_asset_id'        => $toId,
                                 'conductor_type'     => $r['conductor_type'] ?? 'AAAC',
                                 'conductor_size'     => $r['conductor_size'] ?? '150 mm²',
                                 'conductor_label'    => "{$r['conductor_type']} {$r['conductor_size']}",

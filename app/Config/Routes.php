@@ -568,6 +568,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // TL-04: Accelerated JTM Network Reconstruction & Network-Level Promotion APIs
     $routes->get('gis/api-transline-tl04-preview', 'GisController::apiTranslineTl04Preview');
     $routes->post('gis/api-transline-tl04-complete', 'GisController::apiTranslineTl04Complete');
+    // NETWORK COMPLETION ENGINE v1: Scalable Multi-Feeder AI Network Completion APIs
+    $routes->get('gis/api-transline-ai/preview', 'GisController::apiTranslineAiCompletionPreview');
+    $routes->post('gis/api-transline-ai/run', 'GisController::apiTranslineAiCompletionRun');
     $routes->get('gis/api-icon-config', 'GisController::apiGisIconConfig');
     // TL-01 Sub-Gate D4A: Read-Only Proposal Exception Workbench & Review Queue
     $routes->get('gis/api-proposal-workbench/(:num)', 'GisController::apiProposalWorkbenchDetail/$1');

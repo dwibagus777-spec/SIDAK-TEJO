@@ -993,6 +993,77 @@ class GisController extends BaseController
     }
 
     /**
+     * NETWORK COMPLETION ENGINE v1: AI Reconstruction Preview Endpoint
+     * GET /gis/api-transline-ai/preview?penyulang_id=X
+     */
+    public function apiTranslineAiCompletionPreview(): ResponseInterface
+    {
+        try {
+            $penyulangId = (int)(
+                (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+                ?? ($_GET['penyulang_id'] ?? 0)
+            );
+
+            $engine = new \App\Services\TranslineNetworkCompletionEngine();
+            $result = $engine->preview($penyulangId > 0 ? $penyulangId : null);
+
+            return $this->response->setStatusCode(200)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[AI_COMPLETION_PREVIEW_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat memuat AI completion preview: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * NETWORK COMPLETION ENGINE v1: Progressive Auto Execution Endpoint
+     * POST /gis/api-transline-ai/run
+     *
+     * Payload:
+     * {
+     *   "penyulang_id": 15,
+     *   "mode": "AUTO",
+     *   "batch_size": 10,
+     *   "max_batches": null
+     * }
+     */
+    public function apiTranslineAiCompletionRun(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $penyulangId = isset($json['penyulang_id']) ? (int)$json['penyulang_id'] : (int)($this->request->getPost('penyulang_id') ?? 0);
+            $mode = (string)($json['mode'] ?? $this->request->getPost('mode') ?? 'AUTO');
+            $batchSize = (int)($json['batch_size'] ?? $this->request->getPost('batch_size') ?? 10);
+            $maxBatches = isset($json['max_batches']) && $json['max_batches'] !== null ? (int)$json['max_batches'] : null;
+
+            $session = session();
+            $actor = (string)($session ? ($session->get('username') ?? $session->get('nama') ?? 'ENGINEER_TRANSLINE_AI') : 'ENGINEER_TRANSLINE_AI');
+
+            $engine = new \App\Services\TranslineNetworkCompletionEngine();
+            $result = $engine->run([
+                'penyulang_id' => $penyulangId > 0 ? $penyulangId : null,
+                'mode'         => $mode,
+                'batch_size'   => $batchSize,
+                'max_batches'  => $maxBatches,
+                'actor_name'   => $actor,
+            ]);
+
+            $httpCode = ($result['status'] === 'STABILIZED' || $result['status'] === 'IDEMPOTENT' || $result['status'] === 'success') ? 200 : 422;
+            return $this->response->setStatusCode($httpCode)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[AI_COMPLETION_RUN_ERR] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat eksekusi AI completion: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * GIS Icon Modernization: Configuration & Metadata Endpoint
      * GET /gis/api-icon-config
      */

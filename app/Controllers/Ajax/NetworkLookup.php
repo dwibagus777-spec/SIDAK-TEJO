@@ -392,7 +392,7 @@ class NetworkLookup extends BaseController
         try {
             $json = $this->request->getJSON(true) ?? [];
             $assetId = (int)($json['asset_id'] ?? $this->request->getPost('asset_id') ?? 0);
-            $newSectionId = (int)($json['section_id'] ?? $this->request->getPost('section_id') ?? 0);
+            $newSectionId = (int)($json['section_id'] ?? $json['new_section_id'] ?? $this->request->getPost('section_id') ?? $this->request->getPost('new_section_id') ?? 0);
             $reason = (string)($json['reason'] ?? $this->request->getPost('reason') ?? 'Koreksi Section Operator via GIS');
 
             $session = session();
@@ -436,7 +436,7 @@ class NetworkLookup extends BaseController
         try {
             $json = $this->request->getJSON(true) ?? [];
             $assetId = (int)($json['asset_id'] ?? $this->request->getPost('asset_id') ?? 0);
-            $newConstructionTypeId = (int)($json['construction_type_id'] ?? $this->request->getPost('construction_type_id') ?? 0);
+            $newConstructionTypeId = (int)($json['construction_type_id'] ?? $json['new_construction_type_id'] ?? $this->request->getPost('construction_type_id') ?? $this->request->getPost('new_construction_type_id') ?? 0);
             $reason = (string)($json['reason'] ?? $this->request->getPost('reason') ?? 'Koreksi Standar Konstruksi Operator via GIS');
 
             $session = session();

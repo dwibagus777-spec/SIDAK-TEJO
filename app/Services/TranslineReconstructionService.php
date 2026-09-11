@@ -676,8 +676,8 @@ class TranslineReconstructionService
         $vSec = $v['section_id'] ?? null;
         $sameFeeder = (($u['penyulang_id'] ?? 0) === ($v['penyulang_id'] ?? 0) && ($u['penyulang_id'] ?? 0) > 0);
 
-        if ($uSec !== null && $vSec !== null && $uSec === $vSec) {
-            $sSection = 15; // Same section: strong evidence
+        if (($uSec !== null && $vSec !== null && $uSec === $vSec) || ($uSec === null && $vSec === null && $sameFeeder)) {
+            $sSection = 15; // Same section (or both unsectioned mainline on same feeder): strong evidence
         } elseif ($sameFeeder && ($uSec === null || $vSec === null || $dist <= 55.0)) {
             $sSection = 10; // Legitimate adjacent section boundary on same feeder
         } else {

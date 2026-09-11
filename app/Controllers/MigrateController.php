@@ -21,6 +21,10 @@ class MigrateController extends BaseController
             FCPATH . '../vendor/symfony/deprecation-contracts/function.php' => "<?php if (!function_exists('trigger_deprecation')) { function trigger_deprecation() {} }",
             FCPATH . '../vendor/phpunit/phpunit/src/Framework/Assert/Functions.php' => "<?php // Dummy placeholder",
             FCPATH . '../vendor/myclabs/deep-copy/src/DeepCopy/deep_copy.php' => "<?php // Dummy placeholder",
+            FCPATH . '../vendor/symfony/polyfill-ctype/bootstrap.php' => "<?php // Dummy placeholder for polyfill-ctype",
+            FCPATH . '../vendor/symfony/polyfill-mbstring/bootstrap.php' => "<?php // Dummy placeholder for polyfill-mbstring",
+            FCPATH . '../vendor/symfony/polyfill-php80/bootstrap.php' => "<?php // Dummy placeholder for polyfill-php80",
+            FCPATH . '../vendor/symfony/polyfill-php81/bootstrap.php' => "<?php // Dummy placeholder for polyfill-php81",
         ];
         foreach ($missingVendorFiles as $vPath => $vDummy) {
             if (!file_exists($vPath)) {

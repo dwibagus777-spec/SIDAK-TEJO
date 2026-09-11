@@ -471,21 +471,22 @@
     }
     .asset-condition-halo {
         position: absolute;
-        width: 32px;
-        height: 32px;
+        width: 38px;
+        height: 38px;
         border-radius: 50%;
         pointer-events: none;
         transition: all 0.2s ease;
         z-index: 1;
+        opacity: 0.85;
     }
-    .asset-ring-good { border: 2px solid #10b981; background: rgba(16, 185, 129, 0.12); }
-    .asset-ring-fair { border: 2px solid #0ea5e9; background: rgba(14, 165, 233, 0.12); }
-    .asset-ring-poor { border: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.15); }
-    .asset-ring-critical { border: 2.5px solid #ef4444; background: rgba(239, 68, 68, 0.2); animation: pulse-critical-flat 2s infinite; }
-    .asset-ring-emergency { border: 3px solid #dc2626; background: rgba(220, 38, 38, 0.25); animation: pulse-emergency-flat 1.4s infinite; }
-    .asset-ring-inactive { border: 2px solid #64748b; opacity: 0.6; }
-    .asset-ring-proposed { border: 3px dashed #10b981; background: rgba(16, 185, 129, 0.25); animation: pulse-proposed-flat 1.5s infinite; }
-    .asset-ring-unassigned { border: 2.5px dashed #f59e0b; background: rgba(245, 158, 11, 0.2); animation: pulse-proposed-flat 2s infinite; }
+    .asset-ring-good { border: 1.5px solid #10b981; background: transparent; }
+    .asset-ring-fair { border: 1.5px solid #0ea5e9; background: transparent; }
+    .asset-ring-poor { border: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.08); }
+    .asset-ring-critical { border: 2.5px solid #ef4444; background: rgba(239, 68, 68, 0.12); animation: pulse-critical-flat 2s infinite; }
+    .asset-ring-emergency { border: 3px solid #dc2626; background: rgba(220, 38, 38, 0.18); animation: pulse-emergency-flat 1.4s infinite; }
+    .asset-ring-inactive { border: 1.5px dashed #64748b; opacity: 0.5; }
+    .asset-ring-proposed { border: 2px dashed #10b981; animation: pulse-proposed-flat 1.5s infinite; }
+    .asset-ring-unassigned { border: 2px dashed #f59e0b; animation: pulse-proposed-flat 2s infinite; }
 
     @keyframes pulse-critical-flat {
         0%, 100% { transform: scale(1); opacity: 0.8; }
@@ -502,16 +503,16 @@
 
     .asset-flat-svg {
         position: relative;
-        width: 28px;
-        height: 28px;
+        width: 34px;
+        height: 34px;
         display: block;
         object-fit: contain;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
         transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         z-index: 2;
     }
     .asset-network-marker-wrap:hover .asset-flat-svg {
-        transform: scale(1.35);
+        transform: scale(1.3);
         z-index: 1000 !important;
     }
 
@@ -2995,7 +2996,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function') {
             markerCluster = L.markerClusterGroup({
                 chunkedLoading: true,
-                maxClusterRadius: 35,
+                maxClusterRadius: 30,
                 disableClusteringAtZoom: 16
             });
         } else {
@@ -3028,45 +3029,232 @@ document.addEventListener("DOMContentLoaded", function () {
      */
     var gisLeafletIconCache = {};
 
-    function resolveAssetIconUrl(props, visual) {
-        if (visual && visual.png_path) {
-            return `<?= base_url() ?>${visual.png_path.replace(/^\//, '')}`;
-        }
-        var type   = (props.jenis_asset || props.asset_type || props.type || '').toUpperCase();
-        var name   = (props.nama_asset || props.name || '').toUpperCase();
-        var code   = (props.kode_asset || props.code || '').toUpperCase();
-        var constr = (props.construction_type || props.konstruksi || props.construction_code || '').toUpperCase();
+    /**
+     * GIS-02: Authentic PLN GIS Icon Resolver (Hard Amendments 1, 2, 3, 4)
+     * Pure Read-Only Semantic Taxonomy Resolution Layer
+     */
+    function resolveAssetIcon(props, visual) {
+        props = props || {};
+        visual = visual || {};
         var basePath = '<?= base_url('assets/gis/icons/') ?>';
+        var constr = (props.construction_type || props.konstruksi || props.construction_code || '').toUpperCase().trim();
+        var type   = (props.jenis_asset || props.asset_type || props.type || '').toUpperCase().trim();
+        var name   = (props.nama_asset || props.name || '').toUpperCase().trim();
+        var code   = (props.kode_asset || props.code || '').toUpperCase().trim();
 
-        if (type === 'GARDU') {
-            if (name.includes('GI') || code.includes('GI-') || name.includes('INDUK')) return basePath + 'gi.png';
-            if (name.includes('PORTAL') || name.includes('GTT2') || constr.includes('2-TIANG')) {
-                return basePath + (name.includes('I2') ? 'gtt2-i2.png' : 'gtt2-dist.png');
-            }
-            if (name.includes('I2')) return basePath + 'gtt1-i2.png';
-            return basePath + 'gtt1-dist.png';
+        // 1. If backend visual provided valid non-fallback png_file / png_path
+        if (visual && visual.png_file && !visual.fallback && !visual.isFallback) {
+            return {
+                iconUrl: basePath + visual.png_file,
+                iconKey: visual.symbol_key || 'ASSET',
+                category: visual.category || type || 'structural',
+                semanticRole: visual.label || visual.description || 'Peralatan Jaringan PLN',
+                isFallback: false,
+                fallbackReason: null
+            };
         }
 
-        if (type === 'SWITCH' || name.includes('LBS') || name.includes('REC') || name.includes('PMCB')) {
-            if (name.includes('LBSM') || name.includes('MOTOR')) return basePath + 'lbsm.png';
-            if (name.includes('LBS')) return basePath + 'lbs.png';
-            if (name.includes('REC') || name.includes('PMCB') || name.includes('RECLOSER')) return basePath + 'pmcb-rec.png';
-            if (name.includes('FCO') || name.includes('CUTOUT') || name.includes('BRANCH')) return basePath + 'co-branch.png';
-            return basePath + 'lbs.png';
+        // 2. Semantic Resolver based on Construction Type & Subtype (Amendment 1 & 3)
+        // Gardu Tiang Trafo 2-Tiang (Portal GTT-2)
+        if (constr === 'GTT2' || constr.includes('GTT2') || constr.includes('GTT_2') || constr.includes('2-TIANG') || name.includes('GTT2') || name.includes('PORTAL')) {
+            var isI2 = constr.includes('I2') || name.includes('I2');
+            return {
+                iconUrl: basePath + (isI2 ? 'gtt2-i2.png' : 'gtt2-dist.png'),
+                iconKey: isI2 ? 'GARDU_GTT2_I2' : 'GARDU_GTT2_DIST',
+                category: 'GARDU',
+                semanticRole: 'Gardu Trafo Portal 2-Tiang Distribusi (GTT-2)',
+                isFallback: false,
+                fallbackReason: null
+            };
         }
 
-        // JTM Poles
-        if (constr.includes('TM-11') || name.includes('TM11') || code.includes('TM11')) {
-            return basePath + (constr.includes('I3') || name.includes('I3') ? 'tm11-i3.png' : 'tm11.png');
+        // Gardu Tiang Trafo 1-Tiang (Cantilever GTT-1 / GTT)
+        if (constr === 'GTT1' || constr === 'GTT' || constr.includes('GTT1') || constr.includes('GTT_1') || constr.includes('CANTOL') || name.includes('GTT')) {
+            var isI2 = constr.includes('I2') || name.includes('I2');
+            return {
+                iconUrl: basePath + (isI2 ? 'gtt1-i2.png' : 'gtt1-dist.png'),
+                iconKey: isI2 ? 'GARDU_GTT1_I2' : 'GARDU_GTT1_DIST',
+                category: 'GARDU',
+                semanticRole: 'Gardu Trafo 1-Tiang Cantilever (GTT-1)',
+                isFallback: false,
+                fallbackReason: null
+            };
         }
-        if (constr.includes('TM-10') || name.includes('TM10') || code.includes('TM10')) return basePath + 'tm10.png';
-        if (constr.includes('TM-8') || name.includes('TM8') || code.includes('TM8')) return basePath + 'tm8.png';
-        if (constr.includes('TM-5') || name.includes('TM5') || code.includes('TM5')) return basePath + 'tm5.png';
-        if (constr.includes('TM-4') || name.includes('TM4') || code.includes('TM4')) return basePath + 'tm4.png';
-        if (constr.includes('TM-2') || name.includes('TM2') || code.includes('TM2')) return basePath + 'tm2.png';
-        if (constr.includes('TM-1') || name.includes('TM1') || code.includes('TM1')) return basePath + 'tm1.png';
 
-        return (visual && visual.svg_path) ? `<?= base_url() ?>${visual.svg_path.replace(/^\//, '')}` : (basePath + 'tm1.png');
+        // Gardu Induk (GI)
+        if (type === 'GI' || constr.includes('GI') || name.includes('GARDU INDUK') || code.includes('GI-')) {
+            return {
+                iconUrl: basePath + 'gi.png',
+                iconKey: 'GARDU_INDUK',
+                category: 'GARDU',
+                semanticRole: 'Gardu Induk (150 kV / 20 kV)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // Gardu Hubung (GH)
+        if (type === 'GH' || constr.includes('GH') || name.includes('GARDU HUBUNG') || code.includes('GH-')) {
+            return {
+                iconUrl: basePath + 'gi.png',
+                iconKey: 'GH',
+                category: 'GARDU',
+                semanticRole: 'Gardu Hubung Distribusi (GH)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // Switching: PMS / LBS Manual
+        if (constr === 'PMS' || constr.includes('PMS') || constr.includes('LBSM') || name.includes('PMS') || name.includes('LBSM') || type === 'PMS') {
+            return {
+                iconUrl: basePath + 'lbsm.png',
+                iconKey: 'SWITCH_LBSM',
+                category: 'SWITCH',
+                semanticRole: 'LBS Manual / PMS (Pemisah)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // Switching: LBS Motorized
+        if (constr.includes('LBS') || name.includes('LBS') || type === 'LBS') {
+            return {
+                iconUrl: basePath + 'lbs.png',
+                iconKey: 'SWITCH_LBS',
+                category: 'SWITCH',
+                semanticRole: 'Load Break Switch (LBS Motorized)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // Protection: PMCB / Recloser
+        if (constr.includes('REC') || constr.includes('PMCB') || name.includes('RECLOSER') || name.includes('PMCB') || type === 'RECLOSER') {
+            return {
+                iconUrl: basePath + 'pmcb-rec.png',
+                iconKey: 'SWITCH_RECLOSER',
+                category: 'PROTECTION',
+                semanticRole: 'Recloser / PMCB Otomatis',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // Protection: Fuse Cut Out (FCO)
+        if (constr.includes('FCO') || constr.includes('CUTOUT') || name.includes('FCO') || type === 'FCO') {
+            return {
+                iconUrl: basePath + 'co-branch.png',
+                iconKey: 'SWITCH_CUTOUT',
+                category: 'PROTECTION',
+                semanticRole: 'Fuse Cut Out (FCO Percabangan)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // TM-8 / TMTP (Portal Double Pole)
+        if (constr === 'TM8' || constr.includes('TM-8') || constr.includes('TM8') || constr === 'TMTP' || constr.includes('TMTP') || name.includes('TM8')) {
+            return {
+                iconUrl: basePath + 'tm8.png',
+                iconKey: 'JTM_TM8',
+                category: 'structural',
+                semanticRole: 'Tiang TM-8 / Portal Distribusi',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // TM-11 (Percabangan T-Off)
+        if (constr === 'TM11' || constr.includes('TM-11') || constr.includes('TM11') || name.includes('TM11')) {
+            var isI3 = constr.includes('I3') || name.includes('I3');
+            return {
+                iconUrl: basePath + (isI3 ? 'tm11-i3.png' : 'tm11.png'),
+                iconKey: isI3 ? 'JTM_TM11_I3' : 'JTM_TM11',
+                category: 'structural',
+                semanticRole: 'Tiang TM-11 (Percabangan T-Off)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // TM-10 (Tiang Akhir / Dead-End)
+        if (constr === 'TM10' || constr.includes('TM-10') || constr.includes('TM10') || name.includes('TM10')) {
+            return {
+                iconUrl: basePath + 'tm10.png',
+                iconKey: 'JTM_TM10',
+                category: 'structural',
+                semanticRole: 'Tiang TM-10 (Tiang Akhir / Dead-End)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // TM-5 (Tiang Sudut)
+        if (constr === 'TM5' || constr.includes('TM-5') || constr.includes('TM5') || name.includes('TM5')) {
+            return {
+                iconUrl: basePath + 'tm5.png',
+                iconKey: 'JTM_TM5',
+                category: 'structural',
+                semanticRole: 'Tiang TM-5 (Tiang Sudut)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // TM-4 (Tiang Penegang Ganda)
+        if (constr === 'TM4' || constr.includes('TM-4') || constr.includes('TM4') || name.includes('TM4')) {
+            return {
+                iconUrl: basePath + 'tm4.png',
+                iconKey: 'JTM_TM4',
+                category: 'structural',
+                semanticRole: 'Tiang TM-4 (Tiang Penegang Ganda)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // TM-2 (Tiang Penegang Tunggal)
+        if (constr === 'TM2' || constr.includes('TM-2') || constr.includes('TM2') || name.includes('TM2')) {
+            return {
+                iconUrl: basePath + 'tm2.png',
+                iconKey: 'JTM_TM2',
+                category: 'structural',
+                semanticRole: 'Tiang TM-2 (Tiang Penegang Tunggal)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // TM-1 (Tiang Tumpu Garis Lurus)
+        if (constr === 'TM1' || constr.includes('TM-1') || constr.includes('TM1') || name.includes('TM1') || constr.includes('TUMPU')) {
+            return {
+                iconUrl: basePath + 'tm1.png',
+                iconKey: 'JTM_TM1',
+                category: 'structural',
+                semanticRole: 'Tiang TM-1 (Tiang Tumpu Garis Lurus)',
+                isFallback: false,
+                fallbackReason: null
+            };
+        }
+
+        // 3. Fallback (Hard Amendment 2): Safe fallback to tm1.png with diagnostic metadata
+        return {
+            iconUrl: basePath + 'tm1.png',
+            iconKey: 'JTM_DEFAULT',
+            category: 'structural',
+            semanticRole: 'Peralatan Jaringan (Fallback TM-1)',
+            isFallback: true,
+            fallbackReason: 'UNKNOWN_CONSTRUCTION_TYPE'
+        };
+    }
+
+    // Expose on window for runtime verification (Hard Amendment 7)
+    window.resolveAssetIcon = resolveAssetIcon;
+
+    function resolveAssetIconUrl(props, visual) {
+        var res = resolveAssetIcon(props, visual);
+        return res.iconUrl;
     }
 
     function resolveConductorPng(type, size) {
@@ -3098,16 +3286,17 @@ document.addEventListener("DOMContentLoaded", function () {
         var lng = geom.coordinates[0];
         var assetId = props.id ? String(props.id) : null;
 
-        var iconUrl = resolveAssetIconUrl(props, visual);
+        var resolved = resolveAssetIcon(props, visual);
+        var iconUrl = resolved.iconUrl;
         var ringClass = overlay.ring_class || 'asset-ring-good';
-        var symbolKey = visual.symbol_key || props.jenis_asset || 'ASET';
+        var symbolKey = resolved.iconKey || visual.symbol_key || props.jenis_asset || 'ASET';
 
         // 1. Icon Caching: Reuse cached L.divIcon instance per icon+ring+symbol
         var iconKey = `${iconUrl}|${ringClass}|${symbolKey}`;
         var customIcon = GIS_ICON_CACHE.get(iconKey);
         if (!customIcon) {
             var iconHtml = `
-                <div class="asset-network-marker-wrap" id="marker-asset-${props.id}" title="${props.nama_asset || ''} (${symbolKey})">
+                <div class="asset-network-marker-wrap" id="marker-asset-${props.id}" title="${props.nama_asset || ''} (${resolved.semanticRole || symbolKey})">
                     <span class="asset-condition-halo ${ringClass}"></span>
                     <img src="${iconUrl}" alt="${symbolKey}" class="asset-flat-svg" />
                 </div>

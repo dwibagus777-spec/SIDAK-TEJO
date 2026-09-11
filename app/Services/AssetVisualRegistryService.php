@@ -40,6 +40,42 @@ class AssetVisualRegistryService
             'popup_anchor'       => [0, -22],
             'description'        => 'Tiang tumpu garis lurus penumpu konduktor SUTM 20kV (Master Shape)',
         ],
+        'TM_2' => [
+            'symbol_key'         => 'TM_2',
+            'label'              => 'Konstruksi TM-2 (Tiang Penegang Tunggal)',
+            'category'           => 'structural',
+            'family'             => 'TM',
+            'visual_family'      => 'NETWORK_STRUCTURE',
+            'transline_behavior' => 'INLINE_TENSION',
+            'svg_file'           => 'tm-1.svg',
+            'svg_path'           => '/assets/icons/network/tm-1.svg',
+            'png_file'           => 'tm2.png',
+            'png_path'           => '/assets/gis/icons/tm2.png',
+            'color'              => '#111827',
+            'shape'              => 'circle-donut-tension',
+            'map_priority'       => 42,
+            'marker_anchor'      => [22, 22],
+            'popup_anchor'       => [0, -22],
+            'description'        => 'Tiang penegang tunggal (tension pole) SUTM 20kV',
+        ],
+        'TM_4' => [
+            'symbol_key'         => 'TM_4',
+            'label'              => 'Konstruksi TM-4 (Tiang Penegang Ganda)',
+            'category'           => 'structural',
+            'family'             => 'TM',
+            'visual_family'      => 'NETWORK_STRUCTURE',
+            'transline_behavior' => 'INLINE_DOUBLE_TENSION',
+            'svg_file'           => 'tm-1.svg',
+            'svg_path'           => '/assets/icons/network/tm-1.svg',
+            'png_file'           => 'tm4.png',
+            'png_path'           => '/assets/gis/icons/tm4.png',
+            'color'              => '#111827',
+            'shape'              => 'circle-donut-double-tension',
+            'map_priority'       => 44,
+            'marker_anchor'      => [22, 22],
+            'popup_anchor'       => [0, -22],
+            'description'        => 'Tiang penegang ganda (double tension pole) SUTM 20kV',
+        ],
         'TM_5' => [
             'symbol_key'         => 'TM_5',
             'label'              => 'Konstruksi TM-5 (Tiang Sudut)',
@@ -296,6 +332,42 @@ class AssetVisualRegistryService
             'popup_anchor'       => [0, -22],
             'description'        => 'Trafo distribusi penurun tegangan 20kV ke 380V/220V',
         ],
+        'GARDU_GTT2_DIST' => [
+            'symbol_key'         => 'GARDU_GTT2_DIST',
+            'label'              => 'Gardu Trafo Portal 2-Tiang Distribusi (GTT-2)',
+            'category'           => 'transformer',
+            'family'             => 'TRANSFORMER',
+            'visual_family'      => 'TRANSFORMER',
+            'transline_behavior' => 'INLINE_PORTAL',
+            'svg_file'           => 'distribusi.svg',
+            'svg_path'           => '/assets/icons/network/distribusi.svg',
+            'png_file'           => 'gtt2-dist.png',
+            'png_path'           => '/assets/gis/icons/gtt2-dist.png',
+            'color'              => '#059669',
+            'shape'              => 'portal-transformer',
+            'map_priority'       => 83,
+            'marker_anchor'      => [22, 22],
+            'popup_anchor'       => [0, -22],
+            'description'        => 'Gardu trafo distribusi konstruksi portal 2 tiang (GTT-2)',
+        ],
+        'GARDU_GTT1_DIST' => [
+            'symbol_key'         => 'GARDU_GTT1_DIST',
+            'label'              => 'Gardu Trafo 1-Tiang Cantilever (GTT-1)',
+            'category'           => 'transformer',
+            'family'             => 'TRANSFORMER',
+            'visual_family'      => 'TRANSFORMER',
+            'transline_behavior' => 'INLINE_CANTILEVER',
+            'svg_file'           => 'distribusi.svg',
+            'svg_path'           => '/assets/icons/network/distribusi.svg',
+            'png_file'           => 'gtt1-dist.png',
+            'png_path'           => '/assets/gis/icons/gtt1-dist.png',
+            'color'              => '#059669',
+            'shape'              => 'cantilever-transformer',
+            'map_priority'       => 81,
+            'marker_anchor'      => [22, 22],
+            'popup_anchor'       => [0, -22],
+            'description'        => 'Gardu trafo distribusi konstruksi cantol 1 tiang (GTT-1)',
+        ],
         'DEFAULT' => [
             'symbol_key'         => 'DEFAULT',
             'label'              => 'Aset Jaringan',
@@ -330,96 +402,98 @@ class AssetVisualRegistryService
         $c = strtoupper(trim(str_replace(['-', ' '], '_', (string)$constructionType)));
         $k = strtoupper(trim((string)$kode));
 
-        // -------------------------------------------------------------
-        // STEP 1: TM CONSTRUCTION FAMILY RESOLUTION (Highest Priority)
-        // Preserves Canonical Donut Ring Shape with Internal Accents
-        // -------------------------------------------------------------
-        $tmMatched = match(true) {
-            // TM-8 / Portal Double Pole
-            str_contains($c, 'TM_8') || str_contains($c, 'TM8') || str_contains($c, 'PORTAL') || str_contains($j, 'TM_8') || str_contains($j, 'TM8') || str_contains($k, 'TM8') || str_contains($k, 'TM-8') => 'TM_8',
-
-            // TM-5 / Pole Angle
-            str_contains($c, 'TM_5') || str_contains($c, 'TM5') || str_contains($c, 'SUDUT') || str_contains($j, 'TM_5') || str_contains($j, 'TM5') => 'TM_5',
-
-            // TM-10 / Dead-End Pole
-            str_contains($c, 'TM_10') || str_contains($c, 'TM10') || str_contains($c, 'AKHIR') || str_contains($c, 'DEAD_END') || str_contains($j, 'TM_10') || str_contains($j, 'TM10') => 'TM_10',
-
-            // TM-11 / Branch Pole (T-Off)
-            str_contains($c, 'TM_11') || str_contains($c, 'TM11') || str_contains($c, 'PERCABANGAN') || str_contains($j, 'TM_11') || str_contains($j, 'TM11') => 'TM_11',
-
-            // TM-1 / Tangent Pole Standard
-            str_contains($c, 'TM_1') || str_contains($c, 'TM1') || str_contains($c, 'TUMPU') || str_contains($j, 'TM_1') || str_contains($j, 'TM1') => 'TM_1',
-
-            default => null,
-        };
-
-        if ($tmMatched !== null) {
-            $spec = self::SYMBOLS[$tmMatched];
-            return array_merge($spec, [
-                'fallback'        => false,
-                'family'          => 'TM',
-                'base_silhouette' => 'TM_1',
-            ]);
-        }
+        $matchedKey = null;
+        $isFallback = false;
+        $fallbackReason = null;
 
         // -------------------------------------------------------------
-        // STEP 2: PRIMARY ASSET CATEGORY RESOLUTION (Switching/Substation/Protection/Indicators)
+        // STEP 1: ENGINEERING SUBTYPE RESOLUTION (Highest Priority)
+        // Resolves authentic equipment identities from construction_type
         // -------------------------------------------------------------
         $matchedKey = match(true) {
-            // LBS
-            in_array($j, ['LBS', 'LOAD_BREAK_SWITCH', 'LBS_MOTOR', 'LBS_MOTORIZED', 'LBS_OTOMATIS'], true) || str_contains($c, 'LBS_MOTOR') => 'LBS',
-            
-            // GI
-            in_array($j, ['GI', 'GARDU_INDUK', 'SUBSTATION', 'BAY_TRAFO'], true) || str_contains($c, 'GARDU_INDUK') || str_contains($c, 'GI') => 'GI',
-            
-            // LBSM
-            in_array($j, ['LBSM', 'LBS_MANUAL', 'LOAD_BREAK_SWITCH_MANUAL', 'PMS', 'PEMISAH', 'SEKSI'], true) || str_contains($c, 'PMS') || str_contains($c, 'LBSM') => 'LBSM',
-            
-            // CO_BRANCH
-            in_array($j, ['CO_BRANCH', 'CUT_OUT_BRANCH', 'FCO', 'FUSE_CUT_OUT', 'CO', 'PERCABANGAN_CO'], true) || str_contains($c, 'FCO') || str_contains($c, 'CUT_OUT') => 'CO_BRANCH',
-            
-            // PMCB / RECLOSER
-            in_array($j, ['PMCB_REC', 'PMCB', 'RECLOSER', 'REC', 'ACR', 'AUTO_RECLOSER', 'PMT', 'PEMUTUS'], true) || str_contains($c, 'RECLOSER') || str_contains($c, 'PMCB') || str_contains($c, 'PMT') => 'PMCB_REC',
-            
-            // I3
-            in_array($j, ['I3', 'INDIKATOR_3', 'FAULT_INDICATOR_3', 'FPI_3', 'FPI_3PHASE'], true) || str_contains($c, 'FPI_3') => 'I3',
-            
-            // GH
-            in_array($j, ['GH', 'GARDU_HUBUNG', 'SWITCHING_STATION', 'KUBIKEL_GH'], true) || str_contains($c, 'GARDU_HUBUNG') || str_contains($c, 'GH') => 'GH',
-            
-            // I2
-            in_array($j, ['I2', 'INDIKATOR_2', 'FAULT_INDICATOR_2', 'FPI_2', 'FPI_2PHASE'], true) || str_contains($c, 'FPI_2') => 'I2',
+            // Gardu Tiang Trafo 2-Tiang Portal (GTT-2)
+            $c === 'GTT2' || str_contains($c, 'GTT2') || str_contains($c, 'GTT_2') || str_contains($c, '2_TIANG') || str_contains($k, 'GTT2') || str_contains($k, 'GTT-2') => (str_contains($c, 'I2') || str_contains($k, 'I2') ? 'I2' : 'GARDU_GTT2_DIST'),
 
-            // TIANG / STRUCTURAL POLES
-            in_array($j, ['TIANG', 'POLE', 'TIANG_BETON', 'TIANG_BESI', 'TIANG_SUTM', 'JTM'], true) || str_contains($c, 'TIANG') || str_contains($c, 'POLE') => 'TM_1',
-            
-            // DISTRIBUSI / TRAFO
-            in_array($j, ['DISTRIBUSI', 'TRAFO', 'TRAFO_DISTRIBUSI', 'GARDU', 'GARDU_DISTRIBUSI', 'GTT', 'GTM', 'TRANSFORMER'], true) || str_contains($c, 'TRAFO') || str_contains($c, 'GTT') => 'DISTRIBUSI',
-            
+            // Gardu Tiang Trafo 1-Tiang Cantilever (GTT-1 / GTT)
+            $c === 'GTT1' || $c === 'GTT' || str_contains($c, 'GTT1') || str_contains($c, 'GTT_1') || str_contains($c, 'CANTOL') || str_contains($c, 'CANTILEVER') || str_contains($k, 'GTT1') || str_contains($k, 'GTT-1') => (str_contains($c, 'I2') || str_contains($k, 'I2') ? 'I2' : 'GARDU_GTT1_DIST'),
+
+            // Gardu Induk (GI)
+            in_array($j, ['GI', 'GARDU_INDUK', 'SUBSTATION', 'BAY_TRAFO'], true) || str_contains($c, 'GARDU_INDUK') || str_contains($c, 'GI') || str_starts_with($k, 'GI-') => 'GI',
+
+            // Gardu Hubung (GH)
+            in_array($j, ['GH', 'GARDU_HUBUNG', 'SWITCHING_STATION', 'KUBIKEL_GH'], true) || str_contains($c, 'GARDU_HUBUNG') || str_contains($c, 'GH') || str_starts_with($k, 'GH-') => 'GH',
+
+            // Switching: PMS / LBS Manual
+            $c === 'PMS' || str_contains($c, 'PMS') || str_contains($c, 'LBSM') || in_array($j, ['LBSM', 'LBS_MANUAL', 'LOAD_BREAK_SWITCH_MANUAL', 'PMS', 'PEMISAH', 'SEKSI'], true) || str_starts_with($k, 'PMS-') || str_starts_with($k, 'LBSM-') => 'LBSM',
+
+            // Switching: LBS Motorized
+            in_array($j, ['LBS', 'LOAD_BREAK_SWITCH', 'LBS_MOTOR', 'LBS_MOTORIZED', 'LBS_OTOMATIS'], true) || str_contains($c, 'LBS_MOTOR') || (str_contains($c, 'LBS') && !str_contains($c, 'LBSM')) || str_starts_with($k, 'LBS-') => 'LBS',
+
+            // Protection: PMCB / Recloser
+            in_array($j, ['PMCB_REC', 'PMCB', 'RECLOSER', 'REC', 'ACR', 'AUTO_RECLOSER', 'PMT', 'PEMUTUS'], true) || str_contains($c, 'RECLOSER') || str_contains($c, 'PMCB') || str_contains($c, 'PMT') || str_starts_with($k, 'REC-') || str_starts_with($k, 'PMCB-') => 'PMCB_REC',
+
+            // Protection: Fuse Cut Out (FCO / Cutout Branch)
+            in_array($j, ['CO_BRANCH', 'CUT_OUT_BRANCH', 'FCO', 'FUSE_CUT_OUT', 'CO', 'PERCABANGAN_CO'], true) || str_contains($c, 'FCO') || str_contains($c, 'CUT_OUT') || str_starts_with($k, 'CO-') => 'CO_BRANCH',
+
+            // TM-8 / TMTP / Portal Double Pole
+            $c === 'TM8' || str_contains($c, 'TM_8') || str_contains($c, 'TM8') || $c === 'TMTP' || str_contains($c, 'TMTP') || str_contains($c, 'PORTAL') || str_contains($j, 'TM_8') || str_contains($j, 'TM8') || str_contains($k, 'TM8') || str_contains($k, 'TM-8') => 'TM_8',
+
+            // TM-11 / Percabangan T-Off
+            $c === 'TM11' || str_contains($c, 'TM_11') || str_contains($c, 'TM11') || str_contains($c, 'PERCABANGAN') || str_contains($j, 'TM_11') || str_contains($j, 'TM11') || str_contains($k, 'TM11') || str_contains($k, 'TM-11') => (str_contains($c, 'I3') || str_contains($k, 'I3') ? 'I3' : 'TM_11'),
+
+            // TM-10 / Dead-End Pole (Tiang Akhir)
+            $c === 'TM10' || str_contains($c, 'TM_10') || str_contains($c, 'TM10') || str_contains($c, 'AKHIR') || str_contains($c, 'DEAD_END') || str_contains($j, 'TM_10') || str_contains($j, 'TM10') || str_contains($k, 'TM10') || str_contains($k, 'TM-10') => 'TM_10',
+
+            // TM-5 / Pole Angle (Tiang Sudut)
+            $c === 'TM5' || str_contains($c, 'TM_5') || str_contains($c, 'TM5') || str_contains($c, 'SUDUT') || str_contains($j, 'TM_5') || str_contains($j, 'TM5') || str_contains($k, 'TM5') || str_contains($k, 'TM-5') => 'TM_5',
+
+            // TM-4 / Double Tension Pole (Tiang Penegang Ganda)
+            $c === 'TM4' || str_contains($c, 'TM_4') || str_contains($c, 'TM4') || str_contains($j, 'TM_4') || str_contains($j, 'TM4') || str_contains($k, 'TM4') || str_contains($k, 'TM-4') => 'TM_4',
+
+            // TM-2 / Single Tension Pole (Tiang Penegang Tunggal)
+            $c === 'TM2' || str_contains($c, 'TM_2') || str_contains($c, 'TM2') || str_contains($j, 'TM_2') || str_contains($j, 'TM2') || str_contains($k, 'TM2') || str_contains($k, 'TM-2') => 'TM_2',
+
+            // TM-1 / Tangent Pole Standard (Tiang Tumpu Garis Lurus)
+            $c === 'TM1' || str_contains($c, 'TM_1') || str_contains($c, 'TM1') || str_contains($c, 'TUMPU') || str_contains($j, 'TM_1') || str_contains($j, 'TM1') || str_contains($k, 'TM1') || str_contains($k, 'TM-1') => 'TM_1',
+
+            // Fault Passage Indicators
+            str_contains($c, 'FPI_3') || str_contains($c, 'I3') || in_array($j, ['I3', 'INDIKATOR_3', 'FAULT_INDICATOR_3', 'FPI_3'], true) => 'I3',
+            str_contains($c, 'FPI_2') || str_contains($c, 'I2') || in_array($j, ['I2', 'INDIKATOR_2', 'FAULT_INDICATOR_2', 'FPI_2'], true) => 'I2',
+
+            // Explicit Category Fallbacks
+            in_array($j, ['DISTRIBUSI', 'TRAFO', 'TRAFO_DISTRIBUSI', 'GARDU', 'GARDU_DISTRIBUSI', 'TRANSFORMER'], true) || str_contains($c, 'TRAFO') || str_starts_with($k, 'SDJ-') || str_starts_with($k, 'GD-') || str_starts_with($k, 'TR-') => 'GARDU_GTT1_DIST',
+
+            in_array($j, ['TIANG', 'POLE', 'TIANG_BETON', 'TIANG_BESI', 'TIANG_SUTM'], true) || str_contains($c, 'TIANG') || str_contains($c, 'POLE') || str_starts_with($k, 'TG-') || str_starts_with($k, 'T-') => 'TM_1',
+
             default => null,
         };
 
         // -------------------------------------------------------------
-        // STEP 3: ASSET CODE PREFIX INSPECTION (Fallback)
+        // STEP 2: SAFE CONTROLLED FALLBACK (Hard Amendment 2)
+        // If unknown construction type, fallback to TM-1 with diagnostic metadata
         // -------------------------------------------------------------
-        if ($matchedKey === null && !empty($k)) {
-            $matchedKey = match(true) {
-                str_starts_with($k, 'LBS-') || str_starts_with($k, 'LBSM-') => str_starts_with($k, 'LBSM-') ? 'LBSM' : 'LBS',
-                str_starts_with($k, 'GI-') => 'GI',
-                str_starts_with($k, 'GH-') => 'GH',
-                str_starts_with($k, 'REC-') || str_starts_with($k, 'PMCB-') => 'PMCB_REC',
-                str_starts_with($k, 'CO-') => 'CO_BRANCH',
-                str_starts_with($k, 'TG-') || str_starts_with($k, 'T-') => 'TM_1',
-                str_starts_with($k, 'SDJ-') || str_starts_with($k, 'GD-') || str_starts_with($k, 'TR-') => 'DISTRIBUSI',
-                default => null,
-            };
+        if ($matchedKey !== null) {
+            $symbolKey = $matchedKey;
+            $isFallback = false;
+            $fallbackReason = null;
+        } elseif ($j === 'JTM' || empty($c)) {
+            $symbolKey = 'TM_1';
+            $isFallback = true;
+            $fallbackReason = 'UNKNOWN_CONSTRUCTION_TYPE';
+        } else {
+            $symbolKey = 'DEFAULT';
+            $isFallback = true;
+            $fallbackReason = 'UNRECOGNIZED_EQUIPMENT_SPECIFICATION';
         }
 
-        $symbolKey = $matchedKey ?? 'DEFAULT';
-        $spec = self::SYMBOLS[$symbolKey] ?? self::SYMBOLS['DEFAULT'];
+        $spec = self::SYMBOLS[$symbolKey] ?? self::SYMBOLS['TM_1'];
 
         return array_merge($spec, [
-            'fallback' => ($symbolKey === 'DEFAULT'),
+            'fallback'        => $isFallback,
+            'isFallback'      => $isFallback,
+            'fallbackReason'  => $fallbackReason,
+            'family'          => $spec['family'] ?? 'TM',
+            'base_silhouette' => $spec['symbol_key'] ?? 'TM_1',
         ]);
     }
 

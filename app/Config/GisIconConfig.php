@@ -198,13 +198,20 @@ class GisIconConfig extends BaseConfig
      */
     public function resolveIconKey(array $asset): string
     {
-        $type = strtoupper(trim((string)($asset['type'] ?? 'JTM')));
+        $type = strtoupper(trim((string)($asset['jenis_asset'] ?? $asset['type'] ?? 'JTM')));
         $name = strtoupper(trim((string)($asset['nama_asset'] ?? $asset['name'] ?? '')));
         $code = strtoupper(trim((string)($asset['kode_asset'] ?? $asset['code'] ?? '')));
-        $constr = strtoupper(trim((string)($asset['construction_code'] ?? $asset['konstruksi'] ?? '')));
+        $constr = strtoupper(trim((string)($asset['construction_type'] ?? $asset['construction_code'] ?? $asset['konstruksi'] ?? '')));
 
+        // 1. Gardu Tiang Trafo (Portal 2-Tiang & Cantilever)
+        if ($constr === 'GTT2' || str_contains($constr, 'GTT2') || str_contains($constr, 'GTT_2') || str_contains($constr, '2-TIANG') || str_contains($name, 'GTT2') || str_contains($code, 'GTT2')) {
+            return (str_contains($constr, 'I2') || str_contains($name, 'I2')) ? 'GARDU_GTT2_I2' : 'GARDU_GTT2_DIST';
+        }
+        if ($constr === 'GTT1' || $constr === 'GTT' || str_contains($constr, 'GTT1') || str_contains($constr, 'GTT_1') || str_contains($name, 'GTT') || str_contains($code, 'GTT')) {
+            return (str_contains($constr, 'I2') || str_contains($name, 'I2')) ? 'GARDU_GTT1_I2' : 'GARDU_GTT1_DIST';
+        }
         if ($type === 'GARDU') {
-            if (str_contains($name, 'GI') || str_contains($code, 'GI-') || str_contains($name, 'INDUK')) {
+            if (str_contains($name, 'GI') || str_contains($code, 'GI-') || str_contains($name, 'INDUK') || str_contains($constr, 'GI')) {
                 return 'GARDU_INDUK';
             }
             if (str_contains($name, 'PORTAL') || str_contains($name, 'GTT2') || str_contains($constr, '2-TIANG')) {
@@ -216,42 +223,46 @@ class GisIconConfig extends BaseConfig
             return 'GARDU_GTT1_DIST';
         }
 
-        if ($type === 'SWITCH' || str_contains($name, 'LBS') || str_contains($name, 'REC') || str_contains($name, 'PMCB')) {
+        // 2. Switching & Protection Equipment
+        if ($constr === 'PMS' || str_contains($constr, 'PMS') || str_contains($constr, 'LBSM') || str_contains($name, 'PMS') || str_contains($name, 'LBSM') || str_contains($name, 'MOTOR') || $type === 'PMS') {
+            return 'SWITCH_LBSM';
+        }
+        if ($type === 'SWITCH' || str_contains($name, 'LBS') || str_contains($name, 'REC') || str_contains($name, 'PMCB') || str_contains($constr, 'LBS')) {
             if (str_contains($name, 'LBSM') || str_contains($name, 'MOTOR')) {
                 return 'SWITCH_LBSM';
             }
-            if (str_contains($name, 'LBS')) {
+            if (str_contains($name, 'LBS') || str_contains($constr, 'LBS')) {
                 return 'SWITCH_LBS';
             }
-            if (str_contains($name, 'REC') || str_contains($name, 'PMCB') || str_contains($name, 'RECLOSER')) {
+            if (str_contains($name, 'REC') || str_contains($name, 'PMCB') || str_contains($name, 'RECLOSER') || str_contains($constr, 'REC')) {
                 return 'SWITCH_RECLOSER';
             }
-            if (str_contains($name, 'FCO') || str_contains($name, 'CUTOUT') || str_contains($name, 'BRANCH')) {
+            if (str_contains($name, 'FCO') || str_contains($name, 'CUTOUT') || str_contains($name, 'BRANCH') || str_contains($constr, 'FCO')) {
                 return 'SWITCH_CUTOUT';
             }
             return 'SWITCH_LBS';
         }
 
-        // JTM Poles
-        if (str_contains($constr, 'TM-11') || str_contains($name, 'TM11') || str_contains($code, 'TM11')) {
+        // 3. JTM Poles
+        if ($constr === 'TM11' || str_contains($constr, 'TM-11') || str_contains($constr, 'TM11') || str_contains($name, 'TM11') || str_contains($code, 'TM11')) {
             return str_contains($constr, 'I3') || str_contains($name, 'I3') ? 'JTM_TM11_I3' : 'JTM_TM11';
         }
-        if (str_contains($constr, 'TM-10') || str_contains($name, 'TM10') || str_contains($code, 'TM10')) {
+        if ($constr === 'TM10' || str_contains($constr, 'TM-10') || str_contains($constr, 'TM10') || str_contains($name, 'TM10') || str_contains($code, 'TM10')) {
             return 'JTM_TM10';
         }
-        if (str_contains($constr, 'TM-8') || str_contains($name, 'TM8') || str_contains($code, 'TM8')) {
+        if ($constr === 'TM8' || $constr === 'TMTP' || str_contains($constr, 'TM-8') || str_contains($constr, 'TM8') || str_contains($constr, 'TMTP') || str_contains($name, 'TM8') || str_contains($code, 'TM8')) {
             return 'JTM_TM8';
         }
-        if (str_contains($constr, 'TM-5') || str_contains($name, 'TM5') || str_contains($code, 'TM5')) {
+        if ($constr === 'TM5' || str_contains($constr, 'TM-5') || str_contains($constr, 'TM5') || str_contains($name, 'TM5') || str_contains($code, 'TM5')) {
             return 'JTM_TM5';
         }
-        if (str_contains($constr, 'TM-4') || str_contains($name, 'TM4') || str_contains($code, 'TM4')) {
+        if ($constr === 'TM4' || str_contains($constr, 'TM-4') || str_contains($constr, 'TM4') || str_contains($name, 'TM4') || str_contains($code, 'TM4')) {
             return 'JTM_TM4';
         }
-        if (str_contains($constr, 'TM-2') || str_contains($name, 'TM2') || str_contains($code, 'TM2')) {
+        if ($constr === 'TM2' || str_contains($constr, 'TM-2') || str_contains($constr, 'TM2') || str_contains($name, 'TM2') || str_contains($code, 'TM2')) {
             return 'JTM_TM2';
         }
-        if (str_contains($constr, 'TM-1') || str_contains($name, 'TM1') || str_contains($code, 'TM1')) {
+        if ($constr === 'TM1' || str_contains($constr, 'TM-1') || str_contains($constr, 'TM1') || str_contains($name, 'TM1') || str_contains($code, 'TM1') || str_contains($constr, 'TUMPU')) {
             return 'JTM_TM1';
         }
 

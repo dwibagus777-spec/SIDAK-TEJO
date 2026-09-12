@@ -351,8 +351,8 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         body.is-mobile-app .mobile-app-header {
             display: flex !important;
         }
-        body.is-mobile-app .mobile-bottom-nav {
-            display: flex !important;
+        body.is-mobile-app .sidak-mobile-dock {
+            display: block !important;
         }
 
         .mobile-app-header {
@@ -1055,18 +1055,16 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                         </div>
                     </div>
 
-                    <!-- STEP 6: GLOBAL SMART SEARCH BAR -->
-                    <div class="flex-grow-1 mx-2 d-none d-md-block" style="max-width: 340px; position: relative;" id="global-search-wrapper">
+                    <!-- AI COMMAND BAR & GLOBAL SMART SEARCH -->
+                    <div class="flex-grow-1 mx-2 d-none d-md-block sidak-cmd-wrapper" style="max-width: 420px; position: relative;" id="global-search-wrapper">
                         <form method="GET" action="<?= site_url('smart-search') ?>" autocomplete="off" id="global-search-form">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text" style="border-radius: 10px 0 0 10px; background: #f8fafc; border-color: #e2e8f0;">
-                                    <i class="fas fa-search text-muted" style="font-size: 11px;"></i>
-                                </span>
-                                <input type="text" name="q" id="global-search-input" class="form-control"
-                                       placeholder="Cari temuan, WO, penyulang..."
-                                       style="border-left: none; border-right: none; border-color: #e2e8f0; font-size: 12px;"
+                            <div class="sidak-cmd-bar">
+                                <span class="text-muted me-1" style="font-size: 13px;">✨</span>
+                                <input type="text" name="q" id="global-search-input" class="form-control sidak-cmd-input flex-grow-1"
+                                       placeholder="Tanya AI atau cari PA1656, gardu, temuan..."
                                        autocomplete="off">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-qr-scan-header" title="Scan QR Code Asset / Temuan" style="border-radius: 0 10px 10px 0; border-color: #e2e8f0; background: #f8fafc;" onclick="triggerQrScanModal()">
+                                <kbd class="sidak-cmd-kbd" title="Shortcut keyboard (Ctrl+K / Cmd+K)">⌘K</kbd>
+                                <button type="button" class="btn btn-sm btn-light border-0 p-1 rounded-circle" id="btn-qr-scan-header" title="Scan QR Code Asset / Temuan" onclick="triggerQrScanModal()">
                                     <i class="fas fa-qrcode text-primary" style="font-size: 13px;"></i>
                                 </button>
                             </div>
@@ -1154,48 +1152,128 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         </div>
     </div>
 
-    <!-- ===== MOBILE BOTTOM NAVIGATION BAR ===== -->
-    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-        <!-- Dashboard -->
-        <a href="<?= site_url('dashboard') ?>" class="mob-nav-item <?= url_is('dashboard') ? 'active' : '' ?>">
-            <i class="fas fa-tachometer-alt"></i>
-            <span>Dashboard</span>
-        </a>
-        <!-- Data Temuan -->
-        <a href="<?= site_url('temuan') ?>" class="mob-nav-item <?= url_is('temuan') ? 'active' : '' ?>">
-            <i class="fas fa-list-check"></i>
-            <span>Temuan</span>
-        </a>
-        <!-- Input Temuan (Center FAB) -->
-        <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
-        <a href="<?= site_url('temuan/create') ?>" class="mob-nav-item" style="flex:0 0 60px;">
-            <div class="mob-nav-center">
-                <i class="fas fa-plus"></i>
-            </div>
-        </a>
-        <?php else: ?>
-        <a href="<?= site_url('eviden/trafo') ?>" class="mob-nav-item" style="flex:0 0 60px;">
-            <div class="mob-nav-center">
-                <i class="fas fa-folder-open"></i>
-            </div>
-        </a>
-        <?php endif; ?>
-        <!-- Eviden Lapangan -->
-        <a href="<?= site_url('eviden/kubikel') ?>" class="mob-nav-item <?= url_is('eviden*') ? 'active' : '' ?>">
-            <i class="fas fa-folder-open"></i>
-            <span>Eviden</span>
-        </a>
-        <!-- Laporan -->
-        <a href="<?= site_url('laporan/temuan') ?>" class="mob-nav-item <?= url_is('laporan*') ? 'active' : '' ?>">
-            <i class="fas fa-print"></i>
-            <span>Laporan</span>
-        </a>
-        <!-- Logout Mobile -->
-        <a href="<?= site_url('logout') ?>" class="mob-nav-item text-danger" title="Keluar dari Sistem">
-            <i class="fas fa-power-off text-danger"></i>
-            <span class="text-danger fw-bold">Logout</span>
-        </a>
+    <!-- ===== UNIFIED ENTERPRISE MOBILE BOTTOM DOCK (PHASE 1) ===== -->
+    <nav id="sidak-mobile-dock" class="sidak-mobile-dock d-lg-none d-print-none" aria-label="Navigasi Bawah Mobile">
+        <div class="sidak-dock-inner">
+            <!-- Slot 1: Home (Dashboard) -->
+            <a href="<?= site_url('dashboard') ?>" class="sidak-dock-item <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'active' : '' ?>">
+                <i class="fas fa-gauge-high"></i>
+                <span>Home</span>
+            </a>
+            <!-- Slot 2: GIS (Peta Jaringan) -->
+            <a href="<?= site_url('gis') ?>" class="sidak-dock-item <?= url_is('gis*') ? 'active' : '' ?>">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>GIS</span>
+            </a>
+            <!-- Slot 3: Tugas (Planning & Inspeksi) -->
+            <a href="<?= site_url('planning') ?>" class="sidak-dock-item <?= (url_is('planning*') || url_is('my-inspections*') || url_is('inspections*') || url_is('my-progress*')) ? 'active' : '' ?>">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Tugas</span>
+            </a>
+            <!-- Slot 4: Center FAB (+) Input Temuan -->
+            <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
+            <a href="<?= site_url('temuan/create') ?>" class="sidak-dock-fab" title="Input Temuan Baru Lapangan">
+                <div class="sidak-fab-circle">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <span class="sidak-fab-label">Input</span>
+            </a>
+            <?php else: ?>
+            <a href="<?= site_url('smart-wo') ?>" class="sidak-dock-fab" title="Smart WO Center">
+                <div class="sidak-fab-circle">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                </div>
+                <span class="sidak-fab-label">WO</span>
+            </a>
+            <?php endif; ?>
+            <!-- Slot 5: AI / More (Pusat Akses 40 Modul Terpadu) -->
+            <button type="button" class="sidak-dock-item btn p-0 border-0" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMoreMenu" aria-controls="offcanvasMoreMenu" title="Semua Modul & Alat Lapangan">
+                <i class="fas fa-bars-staggered"></i>
+                <span>More</span>
+            </button>
+        </div>
     </nav>
+
+    <!-- ===== OFFCANVAS BOTTOM SHEET: PUSAT ALAT & 40 MODUL TERPADU ===== -->
+    <div class="offcanvas offcanvas-bottom sidak-more-sheet" tabindex="-1" id="offcanvasMoreMenu" aria-labelledby="offcanvasMoreMenuLabel" style="max-height: 82vh; border-top-left-radius: 24px; border-top-right-radius: 24px; z-index: 1060; background: #ffffff;">
+        <div class="sidak-sheet-handle mx-auto my-2" style="width: 44px; height: 5px; background: #cbd5e1; border-radius: 4px;"></div>
+        <div class="offcanvas-header pt-1 pb-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="offcanvas-title fw-bold text-dark d-flex align-items-center gap-2 mb-0" id="offcanvasMoreMenuLabel" style="font-size: 14px;">
+                <span class="badge bg-primary text-white p-1 rounded-circle"><i class="fas fa-compass"></i></span>
+                Pusat Modul & Navigasi Terpadu
+            </h6>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-3" style="overflow-y: auto;">
+            <!-- Grid Cepat Modul Lapangan -->
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <a href="<?= site_url('temuan') ?>" class="sidak-more-tile shadow-xs">
+                        <i class="fas fa-list-check text-primary"></i>
+                        <span>Data Temuan</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="<?= site_url('work-orders') ?>" class="sidak-more-tile shadow-xs">
+                        <i class="fas fa-file-invoice text-warning"></i>
+                        <span>Work Orders</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <button type="button" class="sidak-more-tile btn w-100 p-0 border-0 shadow-xs" onclick="bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMoreMenu')).hide(); triggerQrScanModal();">
+                        <i class="fas fa-qrcode text-success"></i>
+                        <span>Scan QR</span>
+                    </button>
+                </div>
+                <div class="col-4">
+                    <a href="<?= site_url('ai-copilot') ?>" class="sidak-more-tile shadow-xs">
+                        <i class="fas fa-robot text-info"></i>
+                        <span>AI Copilot</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="<?= site_url('eviden/kubikel') ?>" class="sidak-more-tile shadow-xs">
+                        <i class="fas fa-folder-open text-purple"></i>
+                        <span>Eviden</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="<?= site_url('laporan/temuan') ?>" class="sidak-more-tile shadow-xs">
+                        <i class="fas fa-print text-danger"></i>
+                        <span>Laporan</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="<?= site_url('master-assets') ?>" class="sidak-more-tile shadow-xs">
+                        <i class="fas fa-boxes-stacked text-secondary"></i>
+                        <span>Master Asset</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="<?= site_url('documents') ?>" class="sidak-more-tile shadow-xs">
+                        <i class="fas fa-file-contract text-teal"></i>
+                        <span>Dokumen</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="<?= site_url('my-dashboard') ?>" class="sidak-more-tile shadow-xs">
+                        <i class="fas fa-user-circle text-dark"></i>
+                        <span>Profil Saya</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Utility Shortcuts Footer -->
+            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                <a href="<?= site_url('notifications') ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="fas fa-bell me-1 text-warning"></i> Notifikasi
+                </a>
+                <a href="<?= site_url('logout') ?>" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                    <i class="fas fa-power-off me-1"></i> Logout
+                </a>
+            </div>
+        </div>
+    </div>
 
     <!-- Local JS Files (Offline-Safe & Correct Scope) -->
     <?php foreach ($jsFiles as $file): ?>
@@ -2146,34 +2224,24 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 }
             }
         });
-    </script>
 
-    <!-- Mobile Field Bottom Navigation Bar (< 992px) -->
-    <div class="mobile-bottom-nav d-lg-none d-print-none fixed-bottom border-top border-secondary py-1 px-2 d-flex justify-content-around align-items-center" style="z-index: 1040; background-color: #003637 !important; height: 58px; box-shadow: 0 -4px 12px rgba(0,0,0,0.25);">
-        <a href="<?= site_url('dashboard') ?>" class="text-center text-white text-decoration-none <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 18%;">
-            <i class="fas fa-gauge-high d-block fs-5 mb-1 <?= (url_is('dashboard') && !url_is('executive-dashboard')) ? 'text-warning' : 'text-white' ?>"></i>
-            <span>Home</span>
-        </a>
-        <a href="<?= site_url('gis') ?>" class="text-center text-white text-decoration-none <?= url_is('gis*') ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 18%;">
-            <i class="fas fa-map-marked-alt d-block fs-5 mb-1 <?= url_is('gis*') ? 'text-warning' : 'text-success' ?>"></i>
-            <span>GIS</span>
-        </a>
-        <!-- PROMINENT MOBILE QR CODE SCANNER BUTTON -->
-        <button type="button" class="btn text-center text-white p-0 border-0 text-decoration-none" onclick="triggerQrScanModal()" style="font-size: 10px; width: 24%; background: transparent;" title="Scan QR Code">
-            <div class="bg-warning text-dark rounded-circle mx-auto d-flex align-items-center justify-content-center shadow-lg" style="width: 40px; height: 40px; margin-top: -14px; border: 2px solid #003637;">
-                <i class="fas fa-qrcode fs-5 text-dark"></i>
-            </div>
-            <span class="fw-bold text-warning" style="font-size: 9px; line-height: 1;">Scan QR</span>
-        </button>
-        <a href="<?= site_url('my-inspections') ?>" class="text-center text-white text-decoration-none <?= (url_is('my-inspections*') || url_is('planning*') || url_is('inspections*')) ? 'fw-bold text-warning' : 'opacity-75' ?>" style="font-size: 10px; width: 18%;">
-            <i class="fas fa-tasks d-block fs-5 mb-1 <?= (url_is('my-inspections*') || url_is('planning*') || url_is('inspections*')) ? 'text-warning' : 'text-info' ?>"></i>
-            <span>Inspeksi</span>
-        </a>
-        <a href="<?= site_url('logout') ?>" class="text-center text-white text-decoration-none opacity-75" style="font-size: 10px; width: 18%;">
-            <i class="fas fa-power-off d-block fs-5 mb-1 text-danger"></i>
-            <span class="text-danger fw-bold">Logout</span>
-        </a>
-    </div>
+        // AI Command Bar Shortcut (Ctrl+K / Cmd+K) & Escape handler
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                var searchInput = document.getElementById('global-search-input');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            } else if (e.key === 'Escape') {
+                var dropdown = document.getElementById('global-search-dropdown');
+                if (dropdown && dropdown.style.display !== 'none') {
+                    dropdown.style.display = 'none';
+                }
+            }
+        });
+    </script>
 
     <!-- Modal QR Code Scanner (Release v2.5.0 Enterprise) -->
     <div class="modal fade" id="modalQrScannerHeader" tabindex="-1" aria-labelledby="modalQrScannerHeaderLabel" aria-hidden="true" style="z-index: 1055;">

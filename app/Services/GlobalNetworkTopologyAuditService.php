@@ -49,30 +49,29 @@ class GlobalNetworkTopologyAuditService
 
         $fingerprints = [];
         foreach ($tables as $table) {
-            if (!$this->db->tableExists($table)) {
-                $fingerprints[$table] = ['count' => 0, 'sha256' => hash('sha256', 'TABLE_NOT_FOUND')];
-                continue;
-            }
+            try {
+                if (!$this->db->tableExists($table)) {
+                    $fingerprints[$table] = ['count' => 0, 'sha256' => hash('sha256', 'TABLE_NOT_FOUND')];
+                    continue;
+                }
 
-            $count = (int)$this->db->table($table)->countAllResults();
-            
-            // Checksum based on primary keys and update timestamps
-            $builder = $this->db->table($table)->select('id');
-            $fields = $this->db->getFieldNames($table);
-            if (in_array('updated_at', $fields)) {
-                $builder->select('updated_at');
-            }
-            if (in_array('deleted_at', $fields)) {
-                $builder->select('deleted_at');
-            }
-            $builder->orderBy('id', 'ASC');
-            $rows = $builder->get()->getResultArray();
-            $sha256 = hash('sha256', json_encode($rows));
+                $count = (int)$this->db->table($table)->countAllResults();
+                $fields = $this->db->getFieldNames($table);
+                $builder = $this->db->table($table);
+                if (in_array('id', $fields)) {
+                    $builder->orderBy('id', 'ASC');
+                }
+                $query = $builder->limit(1000)->get();
+                $rows = ($query && !is_bool($query)) ? $query->getResultArray() : [];
+                $sha256 = hash('sha256', json_encode($rows));
 
-            $fingerprints[$table] = [
-                'count'  => $count,
-                'sha256' => $sha256,
-            ];
+                $fingerprints[$table] = [
+                    'count'  => $count,
+                    'sha256' => $sha256,
+                ];
+            } catch (\Throwable $e) {
+                $fingerprints[$table] = ['count' => 0, 'sha256' => hash('sha256', 'ERR_' . $e->getMessage())];
+            }
         }
 
         return $fingerprints;
@@ -92,10 +91,8 @@ class GlobalNetworkTopologyAuditService
         // 2. Discover All ULPs and Feeders (Phase 1)
         $ulps = [];
         if ($this->db->tableExists('ulps')) {
-            $ulpRows = $this->db->table('ulps')
-                ->select('id, kode_ulp, nama_ulp, status')
-                ->orderBy('id', 'ASC')
-                ->get()->getResultArray();
+            $query = $this->db->table('ulps')->get();
+            $ulpRows = ($query && !is_bool($query)) ? $query->getResultArray() : [];
             foreach ($ulpRows as $u) {
                 $ulps[(int)$u['id']] = $u;
             }
@@ -103,11 +100,8 @@ class GlobalNetworkTopologyAuditService
 
         $feeders = [];
         if ($this->db->tableExists('penyulang')) {
-            $feederRows = $this->db->table('penyulang')
-                ->select('id, kode_penyulang, nama_penyulang, ulp_id, status')
-                ->orderBy('ulp_id', 'ASC')
-                ->orderBy('id', 'ASC')
-                ->get()->getResultArray();
+            $query = $this->db->table('penyulang')->get();
+            $feederRows = ($query && !is_bool($query)) ? $query->getResultArray() : [];
             foreach ($feederRows as $f) {
                 $feeders[(int)$f['id']] = $f;
             }
@@ -116,10 +110,13 @@ class GlobalNetworkTopologyAuditService
         // 3. Build Reusable In-Memory Hash Map Indexes (Phase 6 - O(1) Lookups)
         $sectionsByFeeder = [];
         if ($this->db->tableExists('sections')) {
-            $secRows = $this->db->table('sections')
-                ->select('id, penyulang_id, kode_section, nama_section')
-                ->where('deleted_at IS NULL')
-                ->get()->getResultArray();
+            $secFields = $this->db->getFieldNames('sections');
+            $builder = $this->db->table('sections');
+            if (in_array('deleted_at', $secFields)) {
+                $builder->where('deleted_at IS NULL');
+            }
+            $query = $builder->get();
+            $secRows = ($query && !is_bool($query)) ? $query->getResultArray() : [];
             foreach ($secRows as $sec) {
                 $fId = (int)($sec['penyulang_id'] ?? 0);
                 $sectionsByFeeder[$fId][] = $sec;
@@ -133,10 +130,13 @@ class GlobalNetworkTopologyAuditService
         $totalJtmAssetsAll = 0;
 
         if ($this->db->tableExists('assets')) {
-            $assetRows = $this->db->table('assets')
-                ->select('id, penyulang_id, ulp_id, section_id, kode_asset, nama_asset, jenis_asset, type, construction_type_id, latitude, longitude, status')
-                ->where('deleted_at IS NULL')
-                ->get()->getResultArray();
+            $assetFields = $this->db->getFieldNames('assets');
+            $builder = $this->db->table('assets');
+            if (in_array('deleted_at', $assetFields)) {
+                $builder->where('deleted_at IS NULL');
+            }
+            $query = $builder->get();
+            $assetRows = ($query && !is_bool($query)) ? $query->getResultArray() : [];
 
             foreach ($assetRows as $a) {
                 $id   = (int)$a['id'];
@@ -174,10 +174,13 @@ class GlobalNetworkTopologyAuditService
         $globalEdgeKeySet      = [];
 
         if ($this->db->tableExists('gis_translines')) {
-            $tlRows = $this->db->table('gis_translines')
-                ->select('id, penyulang_id, section_id, source_asset_id, target_asset_id, conductor_id, length_meters, status')
-                ->where('deleted_at IS NULL')
-                ->get()->getResultArray();
+            $tlFields = $this->db->getFieldNames('gis_translines');
+            $builder = $this->db->table('gis_translines');
+            if (in_array('deleted_at', $tlFields)) {
+                $builder->where('deleted_at IS NULL');
+            }
+            $query = $builder->get();
+            $tlRows = ($query && !is_bool($query)) ? $query->getResultArray() : [];
 
             foreach ($tlRows as $tl) {
                 $id  = (int)$tl['id'];
@@ -211,10 +214,10 @@ class GlobalNetworkTopologyAuditService
 
                 // Cross-feeder / Cross-ULP check
                 if ($uExists && $vExists) {
-                    $uFeeder = (int)$assetMap[$u]['penyulang_id'];
-                    $vFeeder = (int)$assetMap[$v]['penyulang_id'];
-                    $uUlp    = (int)$assetMap[$u]['ulp_id'];
-                    $vUlp    = (int)$assetMap[$v]['ulp_id'];
+                    $uFeeder = (int)($assetMap[$u]['penyulang_id'] ?? 0);
+                    $vFeeder = (int)($assetMap[$v]['penyulang_id'] ?? 0);
+                    $uUlp    = (int)($assetMap[$u]['ulp_id'] ?? 0);
+                    $vUlp    = (int)($assetMap[$v]['ulp_id'] ?? 0);
 
                     if ($uFeeder !== $vFeeder || $uFeeder !== $fId || $vFeeder !== $fId) {
                         $globalCrossFeederEdges++;
@@ -235,10 +238,13 @@ class GlobalNetworkTopologyAuditService
         // Proposals by Feeder
         $proposalsByFeeder = [];
         if ($this->db->tableExists('gis_transline_proposals')) {
-            $propRows = $this->db->table('gis_transline_proposals')
-                ->select('id, penyulang_id, source_asset_id, target_asset_id, status')
-                ->where('deleted_at IS NULL')
-                ->get()->getResultArray();
+            $propFields = $this->db->getFieldNames('gis_transline_proposals');
+            $builder = $this->db->table('gis_transline_proposals');
+            if (in_array('deleted_at', $propFields)) {
+                $builder->where('deleted_at IS NULL');
+            }
+            $query = $builder->get();
+            $propRows = ($query && !is_bool($query)) ? $query->getResultArray() : [];
             foreach ($propRows as $prop) {
                 $fId = (int)($prop['penyulang_id'] ?? 0);
                 $proposalsByFeeder[$fId][] = $prop;

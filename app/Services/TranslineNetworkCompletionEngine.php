@@ -107,7 +107,7 @@ class TranslineNetworkCompletionEngine
     /**
      * Build in-memory Graph G(V,E) for a given feeder or globally
      */
-    public function buildGraph(?int $penyulangId = null): array
+    public function buildGraph(?int $penyulangId = null, array $extraTranslines = []): array
     {
         // 1. Authoritative Assets (Strict Read-Only)
         $assetQuery = $this->db->table('assets')
@@ -152,6 +152,9 @@ class TranslineNetworkCompletionEngine
         }
 
         $translines = $tlQuery->get()->getResultArray();
+        if (!empty($extraTranslines)) {
+            $translines = array_merge($translines, $extraTranslines);
+        }
         $existingEdgeKeys = [];
 
         foreach ($translines as $tl) {

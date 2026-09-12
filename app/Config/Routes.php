@@ -573,6 +573,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('gis/api-transline-ai/run', 'GisController::apiTranslineAiCompletionRun');
     $routes->get('gis/api-icon-config', 'GisController::apiGisIconConfig');
     $routes->get('gis/api-global-topology-audit', 'GisController::apiGlobalTopologyAudit');
+    // TL-MF-02: Controlled Multi-Feeder Completion Orchestrator APIs
+    $routes->get('gis/api-multi-feeder/status', 'GisController::apiMultiFeederStatus');
+    $routes->post('gis/api-multi-feeder/dry-run', 'GisController::apiMultiFeederDryRun');
     // TL-01 Sub-Gate D4A: Read-Only Proposal Exception Workbench & Review Queue
     $routes->get('gis/api-proposal-workbench/(:num)', 'GisController::apiProposalWorkbenchDetail/$1');
     $routes->get('gis/api-proposal-exception-queue', 'GisController::apiProposalExceptionQueue');

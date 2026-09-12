@@ -1099,6 +1099,66 @@ class GisController extends BaseController
     }
 
     /**
+     * TL-MF-02: Multi-Feeder Orchestrator State & Queue Status (Read-Only)
+     * GET /gis/api-multi-feeder/status
+     */
+    public function apiMultiFeederStatus(): ResponseInterface
+    {
+        try {
+            $orchestrator = new \App\Services\MultiFeederCompletionOrchestrator();
+            $state = $orchestrator->loadState();
+            $queue = $orchestrator->buildGlobalFeederQueue();
+
+            return $this->response->setStatusCode(200)->setJSON([
+                'status'         => 'success',
+                'active_state'   => $state,
+                'queue_summary'  => [
+                    'total_feeders'       => $queue['total_feeders'],
+                    'no_asset_count'      => $queue['no_asset_count'],
+                    'near_complete_count' => $queue['near_complete_count'],
+                    'ready_for_ai_count'  => $queue['ready_for_ai_count'],
+                    'priority_queue'      => $queue['priority_queue'],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala memuat status multi-feeder: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * TL-MF-02: Multi-Feeder Dry-Run Simulation Endpoint (STRICT READ-ONLY: 0 WRITES)
+     * POST /gis/api-multi-feeder/dry-run
+     */
+    public function apiMultiFeederDryRun(): ResponseInterface
+    {
+        try {
+            $json = $this->request->getJSON(true) ?? [];
+            $feederId = isset($json['feeder_id']) ? (int)$json['feeder_id'] : null;
+            $maxFeeders = isset($json['max_feeders']) ? (int)$json['max_feeders'] : null;
+
+            $orchestrator = new \App\Services\MultiFeederCompletionOrchestrator();
+            $result = $orchestrator->run([
+                'mode'        => 'dry-run',
+                'feeder_id'   => $feederId,
+                'max_feeders' => $maxFeeders,
+                'actor_name'  => 'OPERATOR_HTTP_DRY_RUN',
+            ]);
+
+            return $this->response->setStatusCode(200)->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala simulasi dry-run multi-feeder: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Endpoint Audit Data Provenance & Boundary: GET /gis/api-network-audit?penyulang_id=X
      */
     public function apiNetworkAudit(): ResponseInterface

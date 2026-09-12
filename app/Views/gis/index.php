@@ -2983,11 +2983,13 @@ document.addEventListener("DOMContentLoaded", function () {
         map = L.map('gisMap', {
             center: [defaultLat, defaultLng],
             zoom: 14,
+            maxZoom: 22,
             zoomControl: false
         });
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
+            maxNativeZoom: 19,
+            maxZoom: 22,
             attribution: '&copy; PLN SIDAK TEJO GIS'
         }).addTo(map);
 

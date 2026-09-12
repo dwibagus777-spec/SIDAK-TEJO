@@ -22,6 +22,7 @@ class TranslineTl04ReconstructionService
     public const MAX_BATCH_SIZE = 10;
     public const HARD_MAX_DEGREE = 4;
     public const HARD_MAX_SPAN_METERS = 85.0;
+    public const SHORT_SPAN_FIREWALL_METERS = 5.0;
 
     protected $db;
     protected TranslineCompletionService $tl02Service;
@@ -259,7 +260,12 @@ class TranslineTl04ReconstructionService
                 $promoted = false;
                 $promotionReason = '';
 
-                if ($gateValid && $edgeScore >= 90) {
+                if ($dist < self::SHORT_SPAN_FIREWALL_METERS) {
+                    // Very short distance firewall: < 5.0m requires field review (ambiguous equipment/portal/duplicate tag)
+                    $isAuto = false;
+                    $classification = 'REVIEW_REQUIRED';
+                    $gateReasons[] = 'SHORT_SPAN_FIREWALL: Span < 5.0m requires field review for equipment/portal collision';
+                } elseif ($gateValid && $edgeScore >= 90) {
                     $isAuto = true;
                     $classification = 'AUTO_COMPLETE';
                 } elseif ($gateValid && $edgeScore >= 78 && $networkEvidence['is_network_coherent']) {
@@ -406,13 +412,15 @@ class TranslineTl04ReconstructionService
 
         // 1. Fresh Graph Analysis
         $analysis = $this->analyzeFeeder($penyulangId);
-        $eligible = $analysis['defensible_batch_preview'] ?? [];
 
         // Filter by requested proposal keys if provided
         $requestedKeys = $options['candidate_natural_keys'] ?? [];
         if (!empty($requestedKeys) && is_array($requestedKeys)) {
             $reqMap = array_flip($requestedKeys);
-            $eligible = array_values(array_filter($eligible, fn($c) => isset($reqMap[$c['natural_key']])));
+            $allDefensible = array_values(array_filter($analysis['candidates'] ?? [], fn($c) => !empty($c['is_auto_complete']) && !empty($c['gate_valid']) && (float)$c['distance_meters'] >= self::SHORT_SPAN_FIREWALL_METERS));
+            $eligible = array_values(array_filter($allDefensible, fn($c) => isset($reqMap[$c['natural_key']])));
+        } else {
+            $eligible = $analysis['defensible_batch_preview'] ?? [];
         }
 
         $batchToCommit = array_slice($eligible, 0, $maxBatch);
@@ -446,6 +454,11 @@ class TranslineTl04ReconstructionService
 
                 $minId = min($srcId, $tgtId);
                 $maxId = max($srcId, $tgtId);
+
+                // Final server-side validation firewall before INSERT
+                if ((float)$cand['distance_meters'] < self::SHORT_SPAN_FIREWALL_METERS) {
+                    throw new \RuntimeException("SHORT_SPAN_FIREWALL breach: Edge {$cand['natural_key']} has span {$cand['distance_meters']}m < " . self::SHORT_SPAN_FIREWALL_METERS . "m. Transaction aborted.");
+                }
 
                 // Check duplicate before insert
                 $exists = $this->db->table('gis_translines')

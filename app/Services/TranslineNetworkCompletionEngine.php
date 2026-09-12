@@ -30,6 +30,7 @@ class TranslineNetworkCompletionEngine
     public const HARD_MAX_DEGREE = 4;
     public const HARD_MAX_SPAN_METERS = 85.0;
     public const HARD_MIN_SPAN_METERS = 1.0;
+    public const SHORT_SPAN_FIREWALL_METERS = 5.0;
 
     protected BaseConnection $db;
 
@@ -413,7 +414,12 @@ class TranslineNetworkCompletionEngine
                 $isAuto = false;
                 $classification = 'BLOCKED';
 
-                if ($gateValid && $totalScore >= 85) {
+                if ($dist < self::SHORT_SPAN_FIREWALL_METERS) {
+                    // Very short distance firewall: < 5.0m requires field review (ambiguous equipment/portal/duplicate tag)
+                    $isAuto = false;
+                    $classification = 'REVIEW_REQUIRED';
+                    $gateReasons[] = 'SHORT_SPAN_FIREWALL: Span < 5.0m requires field review for equipment/portal collision';
+                } elseif ($gateValid && $totalScore >= 85) {
                     $isAuto = true;
                     $classification = 'AUTO_COMPLETE';
                 } elseif ($gateValid && $totalScore >= 78 && $networkEvidence['is_network_coherent']) {
@@ -790,6 +796,13 @@ class TranslineNetworkCompletionEngine
             $candidates = $this->discoverCandidates($currentGraph);
             $autoCandidates = array_values(array_filter($candidates, fn($c) => $c['is_auto_complete'] && $c['gate_valid']));
 
+            // Filter by requested proposal keys if provided
+            $requestedKeys = $options['candidate_natural_keys'] ?? [];
+            if (!empty($requestedKeys) && is_array($requestedKeys)) {
+                $reqMap = array_flip($requestedKeys);
+                $autoCandidates = array_values(array_filter($autoCandidates, fn($c) => isset($reqMap[$c['natural_key']])));
+            }
+
             if (empty($autoCandidates)) {
                 $haltReason = 'NATURAL_STABILIZATION_REACHED';
                 break; // Natural stop gate: no more defensible candidates!
@@ -845,6 +858,11 @@ class TranslineNetworkCompletionEngine
                 foreach ($selectedBatch as $idx => $edge) {
                     $minId = $edge['source_asset_id'];
                     $maxId = $edge['target_asset_id'];
+
+                    // Final server-side validation firewall before INSERT
+                    if ((float)$edge['distance_meters'] < self::SHORT_SPAN_FIREWALL_METERS) {
+                        throw new RuntimeException("SHORT_SPAN_FIREWALL breach: Edge {$edge['natural_key']} has span {$edge['distance_meters']}m < " . self::SHORT_SPAN_FIREWALL_METERS . "m. Transaction aborted.");
+                    }
 
                     // Anti-duplicate verification against current database
                     $exists = $this->db->table('gis_translines')

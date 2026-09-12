@@ -1044,11 +1044,12 @@ class GisController extends BaseController
 
             $engine = new \App\Services\TranslineNetworkCompletionEngine();
             $result = $engine->run([
-                'penyulang_id' => $penyulangId > 0 ? $penyulangId : null,
-                'mode'         => $mode,
-                'batch_size'   => $batchSize,
-                'max_batches'  => $maxBatches,
-                'actor_name'   => $actor,
+                'penyulang_id'           => $penyulangId > 0 ? $penyulangId : null,
+                'mode'                   => $mode,
+                'batch_size'             => $batchSize,
+                'max_batches'            => $maxBatches,
+                'actor_name'             => $actor,
+                'candidate_natural_keys' => $json['candidate_natural_keys'] ?? $this->request->getPost('candidate_natural_keys') ?? [],
             ]);
 
             $httpCode = ($result['status'] === 'STABILIZED' || $result['status'] === 'IDEMPOTENT' || $result['status'] === 'success') ? 200 : 422;

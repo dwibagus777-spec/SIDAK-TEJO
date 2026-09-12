@@ -572,6 +572,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('gis/api-transline-ai/preview', 'GisController::apiTranslineAiCompletionPreview');
     $routes->post('gis/api-transline-ai/run', 'GisController::apiTranslineAiCompletionRun');
     $routes->get('gis/api-icon-config', 'GisController::apiGisIconConfig');
+    $routes->get('gis/api-global-topology-audit', 'GisController::apiGlobalTopologyAudit');
     // TL-01 Sub-Gate D4A: Read-Only Proposal Exception Workbench & Review Queue
     $routes->get('gis/api-proposal-workbench/(:num)', 'GisController::apiProposalWorkbenchDetail/$1');
     $routes->get('gis/api-proposal-exception-queue', 'GisController::apiProposalExceptionQueue');

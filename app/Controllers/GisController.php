@@ -1078,6 +1078,26 @@ class GisController extends BaseController
     }
 
     /**
+     * GLOBAL NETWORK TOPOLOGY COVERAGE AUDIT (STRICT READ-ONLY)
+     * GET /gis/api-global-topology-audit
+     */
+    public function apiGlobalTopologyAudit(): ResponseInterface
+    {
+        try {
+            $auditService = new \App\Services\GlobalNetworkTopologyAuditService();
+            $result = $auditService->runAudit();
+            return $this->response->setStatusCode(200)->setJSON($result);
+        } catch (\Throwable $e) {
+            log_message('error', '[GLOBAL_TOPOLOGY_AUDIT_ERR] ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'reason'  => 'SERVER_EXCEPTION',
+                'message' => 'Kendala sistem saat audit topologi global: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Endpoint Audit Data Provenance & Boundary: GET /gis/api-network-audit?penyulang_id=X
      */
     public function apiNetworkAudit(): ResponseInterface

@@ -711,3 +711,336 @@ img {
         padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
     }
 }
+
+/* ==========================================================================
+   PHASE 2B: BENTO DASHBOARD & EXECUTIVE ANALYTICS SYSTEM
+   Scoped tokens under .sidak-bento-*
+   ========================================================================== */
+
+.sidak-bento-container {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.sidak-bento-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    border-radius: 18px;
+    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.05);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+    overflow: hidden;
+}
+
+[data-theme="dark"] .sidak-bento-card {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(51, 65, 85, 0.8);
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.3);
+}
+
+.sidak-bento-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px -6px rgba(15, 23, 42, 0.1);
+}
+
+[data-theme="dark"] .sidak-bento-card:hover {
+    box-shadow: 0 16px 32px -6px rgba(0, 0, 0, 0.45);
+}
+
+/* Section A: Welcome Banner */
+.sidak-bento-welcome {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Section B: Quick Actions */
+.sidak-bento-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.sidak-bento-action-pill {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    min-height: 44px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a !important;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    touch-action: manipulation;
+}
+
+[data-theme="dark"] .sidak-bento-action-pill {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f8fafc !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.sidak-bento-action-pill:hover {
+    transform: translateY(-2px) scale(1.02);
+    border-color: #0284c7;
+    color: #0284c7 !important;
+    box-shadow: 0 6px 14px rgba(2, 132, 199, 0.18);
+}
+
+.sidak-bento-action-pill:active {
+    transform: scale(0.97);
+}
+
+/* Section C: KPI Bento Grid */
+.sidak-bento-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1199.98px) {
+    .sidak-bento-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .sidak-bento-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+}
+
+@media (max-width: 340px) {
+    .sidak-bento-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sidak-bento-kpi-card {
+    padding: 20px;
+    border-radius: 18px;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 130px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+
+.sidak-bento-kpi-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.2) !important;
+}
+
+.sidak-bento-val {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -1px;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+}
+
+.sidak-bento-lbl {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    opacity: 0.9;
+}
+
+.sidak-bento-sub {
+    font-size: 11px;
+    opacity: 0.85;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Gradients for KPI Cards */
+.sidak-bento-kpi-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.sidak-bento-kpi-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.sidak-bento-kpi-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.sidak-bento-kpi-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.sidak-bento-kpi-dark {
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+}
+
+.sidak-bento-kpi-cyan {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+}
+
+.sidak-bento-kpi-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.sidak-bento-kpi-target {
+    background: #ffffff;
+    color: #0f172a;
+    border: 2px solid #2563eb;
+}
+
+[data-theme="dark"] .sidak-bento-kpi-target {
+    background: #1e293b;
+    color: #f8fafc;
+    border-color: #38bdf8;
+}
+
+/* Section F: Executive CTA Card */
+.sidak-bento-cta-card {
+    background: linear-gradient(135deg, #0c4a6e 0%, #075985 50%, #0369a1 100%);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #ffffff;
+    border-radius: 18px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.sidak-bento-cta-btn {
+    background: #ffffff;
+    color: #0369a1 !important;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 12px;
+    padding: 10px 20px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none !important;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.sidak-bento-cta-btn:hover {
+    background: #f0f9ff;
+    color: #0284c7 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+}
+
+/* Section D & E: Mini GIS, Operational Feed & SLA Bento Tokens */
+.sidak-bento-icon-box {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.sidak-bento-feed-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.sidak-bento-feed-item:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    transform: translateX(3px);
+}
+
+[data-theme="dark"] .sidak-bento-feed-item {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .sidak-bento-feed-item:hover {
+    background: #334155;
+    border-color: #475569;
+}
+
+.sidak-bento-sla-card {
+    padding: 16px;
+    border-radius: 14px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none !important;
+    display: block;
+    height: 100%;
+}
+
+.sidak-bento-sla-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Phase 2D: Responsive Matrix Polish & Zero Horizontal Overflow */
+@media (max-width: 575.98px) {
+    .sidak-bento-kpi-card {
+        padding: 14px 12px;
+        min-height: 105px;
+        border-radius: 14px;
+    }
+    .sidak-bento-val {
+        font-size: 22px;
+    }
+    .sidak-bento-lbl {
+        font-size: 10px;
+        letter-spacing: 0.5px;
+    }
+    .sidak-bento-sub {
+        font-size: 10px;
+    }
+    .sidak-bento-action-pill {
+        padding: 8px 12px;
+        font-size: 12px;
+        gap: 6px;
+    }
+    #emc-mini-map {
+        height: 250px !important;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+    .sidak-bento-kpi-card {
+        padding: 16px 14px;
+        min-height: 120px;
+    }
+    .sidak-bento-val {
+        font-size: 28px;
+    }
+    #emc-mini-map {
+        height: 280px !important;
+    }
+}
+
+/* Zero Horizontal Overflow Enforcer */
+html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+.sidak-bento-container {
+    max-width: 100%;
+    overflow-x: hidden;
+}

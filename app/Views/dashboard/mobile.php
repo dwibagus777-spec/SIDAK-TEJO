@@ -154,13 +154,18 @@
         </div>
 
         <!-- 3. TARGET HARIAN PROGRESS BAR -->
+        <?php
+            $mDailyTarget = max(1, (int)($stats['target_harian'] ?? 25));
+            $mDailyDone = (int)($stats['hari_ini'] ?? $stats['selesai_hari_ini'] ?? ($stats['selesai'] ?? 0));
+            $mDailyPct = min(100, (int)round(($mDailyDone / $mDailyTarget) * 100));
+        ?>
         <div class="emc-m-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-bold text-dark" style="font-size: 12px;"><i class="fas fa-bullseye text-warning me-1"></i> Target Harian Pekerjaan</span>
-                <span class="badge bg-success">72%</span>
+                <span class="badge bg-success" id="m-kpi-target-harian-pct"><?= $mDailyPct ?>%</span>
             </div>
-            <p class="text-muted mb-2" style="font-size: 11px;">Realisasi: 18 / 25 Pekerjaan Selesai</p>
-            <div class="progress" style="height: 8px;"><div class="progress-bar bg-success" style="width: 72%;"></div></div>
+            <p class="text-muted mb-2" style="font-size: 11px;">Realisasi: <?= number_format($mDailyDone) ?> / <?= number_format($mDailyTarget) ?> Pekerjaan Selesai</p>
+            <div class="progress" style="height: 8px;"><div class="progress-bar bg-success" style="width: <?= $mDailyPct ?>%;" id="m-kpi-target-harian-bar"></div></div>
         </div>
 
         <!-- 4. QUICK ACTION GRID 2x3 -->

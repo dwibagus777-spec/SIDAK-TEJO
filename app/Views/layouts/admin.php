@@ -66,9 +66,10 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <!-- Local Google Fonts: Outfit & Inter -->
     <link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
 
-    <!-- Local CSS Files (Offline-Safe & Correct Pathing) -->
+    <!-- Local CSS Files (Offline-Safe, Cache-Busted & Correct Pathing) -->
     <?php foreach ($cssFiles as $file): ?>
-        <link rel="stylesheet" href="<?= base_url($file) ?>">
+        <?php $fileVer = @filemtime(FCPATH . $file) ?: '20260913_bento'; ?>
+        <link rel="stylesheet" href="<?= base_url($file) ?>?v=<?= $fileVer ?>">
     <?php endforeach; ?>
 
     <style>

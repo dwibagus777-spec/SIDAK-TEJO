@@ -5,31 +5,322 @@
 
 <?= $this->section('content') ?>
 <style>
-    /* Local dashboard layout helpers (leveraging .sidak-bento-* tokens in custom_modern.css) */
+    /* Scoped Modern Bento Design System — SIDAK TEJO Enterprise */
     .emc-container, .sidak-bento-container {
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
-    .activity-stream-item {
+    /* Bento Cards Baseline */
+    .sidak-bento-card, .emc-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Section A: Welcome Banner */
+    .sidak-bento-welcome {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff;
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
+    }
+
+    /* Section B: Quick Action Bar */
+    .sidak-bento-action-bar, .quick-action-bar-emc {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .sidak-bento-action-pill, .quick-emc-btn {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 10px 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 13px;
+        color: #1e293b !important;
+        text-decoration: none !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .sidak-bento-action-pill:hover, .quick-emc-btn:hover {
+        transform: translateY(-2px);
+        border-color: #00B5B8;
+        color: #00B5B8 !important;
+        box-shadow: 0 6px 16px rgba(0, 181, 184, 0.15);
+    }
+
+    /* Section C: KPI Bento Grid */
+    .sidak-bento-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    @media (max-width: 1199.98px) {
+        .sidak-bento-kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .sidak-bento-kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+    }
+
+    @media (max-width: 340px) {
+        .sidak-bento-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .sidak-bento-kpi-card {
+        padding: 20px;
+        border-radius: 18px;
         position: relative;
-        padding-left: 24px;
-        padding-bottom: 14px;
-        border-left: 2px solid #e2e8f0;
+        overflow: hidden;
+        text-decoration: none !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 130px;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.03);
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
     }
-    .activity-stream-item:last-child {
-        padding-bottom: 0;
-        border-left: 2px solid transparent;
+
+    .sidak-bento-kpi-card:hover {
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08) !important;
     }
-    .activity-stream-item::before {
-        content: '';
-        position: absolute;
-        left: -6px;
-        top: 2px;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #0284c7;
-        border: 2px solid #ffffff;
+
+    .sidak-bento-val {
+        font-size: 34px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -1px;
+        font-feature-settings: "tnum";
+        font-variant-numeric: tabular-nums;
+    }
+
+    .sidak-bento-lbl {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+
+    .sidak-bento-sub {
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Soft Pastel Executive Tints — Prototype Faithful */
+    .sidak-bento-kpi-primary {
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 1px solid #a7f3d0;
+        color: #065f46;
+    }
+    .sidak-bento-kpi-primary .sidak-bento-val { color: #047857; }
+    .sidak-bento-kpi-primary .sidak-bento-lbl { color: #065f46; }
+    .sidak-bento-kpi-primary .sidak-bento-sub { color: #047857; }
+
+    .sidak-bento-kpi-danger {
+        background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+        border: 1px solid #fecdd3;
+        color: #9f1239;
+    }
+    .sidak-bento-kpi-danger .sidak-bento-val { color: #be123c; }
+    .sidak-bento-kpi-danger .sidak-bento-lbl { color: #9f1239; }
+    .sidak-bento-kpi-danger .sidak-bento-sub { color: #be123c; }
+
+    .sidak-bento-kpi-warning {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 1px solid #fde68a;
+        color: #92400e;
+    }
+    .sidak-bento-kpi-warning .sidak-bento-val { color: #b45309; }
+    .sidak-bento-kpi-warning .sidak-bento-lbl { color: #92400e; }
+    .sidak-bento-kpi-warning .sidak-bento-sub { color: #b45309; }
+
+    .sidak-bento-kpi-info {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 1px solid #bae6fd;
+        color: #075985;
+    }
+    .sidak-bento-kpi-info .sidak-bento-val { color: #0284c7; }
+    .sidak-bento-kpi-info .sidak-bento-lbl { color: #075985; }
+    .sidak-bento-kpi-info .sidak-bento-sub { color: #0284c7; }
+
+    .sidak-bento-kpi-dark {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid #cbd5e1;
+        color: #334155;
+    }
+    .sidak-bento-kpi-dark .sidak-bento-val { color: #1e293b; }
+    .sidak-bento-kpi-dark .sidak-bento-lbl { color: #334155; }
+    .sidak-bento-kpi-dark .sidak-bento-sub { color: #475569; }
+
+    .sidak-bento-kpi-cyan {
+        background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+        border: 1px solid #99f6e4;
+        color: #115e59;
+    }
+    .sidak-bento-kpi-cyan .sidak-bento-val { color: #0f766e; }
+    .sidak-bento-kpi-cyan .sidak-bento-lbl { color: #115e59; }
+    .sidak-bento-kpi-cyan .sidak-bento-sub { color: #0f766e; }
+
+    .sidak-bento-kpi-success {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #86efac;
+        color: #14532d;
+    }
+    .sidak-bento-kpi-success .sidak-bento-val { color: #15803d; }
+    .sidak-bento-kpi-success .sidak-bento-lbl { color: #14532d; }
+    .sidak-bento-kpi-success .sidak-bento-sub { color: #15803d; }
+
+    .sidak-bento-kpi-target {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #0f172a;
+    }
+
+    /* Section D: Mini GIS & Operational Feed */
+    .sidak-bento-icon-box {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .sidak-bento-feed-item {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+
+    .sidak-bento-feed-item:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        transform: translateX(3px);
+    }
+
+    /* Section E: SLA Cards */
+    .sidak-bento-sla-card {
+        padding: 16px;
+        border-radius: 14px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none !important;
+        display: block;
+        height: 100%;
+    }
+
+    .sidak-bento-sla-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Section F: Executive CTA Card */
+    .sidak-bento-cta-card {
+        background: linear-gradient(135deg, #0c4a6e 0%, #075985 50%, #0369a1 100%);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        color: #ffffff;
+        border-radius: 18px;
+        padding: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .sidak-bento-cta-btn {
+        background: #ffffff;
+        color: #0369a1 !important;
+        font-weight: 700;
+        font-size: 13px;
+        border-radius: 12px;
+        padding: 10px 20px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none !important;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .sidak-bento-cta-btn:hover {
+        background: #f0f9ff;
+        color: #0284c7 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Responsive Matrix Scaling */
+    @media (max-width: 575.98px) {
+        .sidak-bento-kpi-card {
+            padding: 14px 12px;
+            min-height: 105px;
+            border-radius: 14px;
+        }
+        .sidak-bento-val {
+            font-size: 22px;
+        }
+        .sidak-bento-lbl {
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+        .sidak-bento-sub {
+            font-size: 10px;
+        }
+        .sidak-bento-action-pill {
+            padding: 8px 12px;
+            font-size: 12px;
+            gap: 6px;
+        }
+        #emc-mini-map {
+            height: 250px !important;
+        }
+    }
+
+    @media (min-width: 768px) and (max-width: 1024px) {
+        .sidak-bento-kpi-card {
+            padding: 16px 14px;
+            min-height: 120px;
+        }
+        .sidak-bento-val {
+            font-size: 28px;
+        }
+        #emc-mini-map {
+            height: 280px !important;
+        }
+    }
+
+    /* Zero Horizontal Overflow Enforcer */
+    html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+
+    .sidak-bento-container {
+        max-width: 100%;
+        overflow-x: hidden;
     }
 </style>
 

@@ -195,6 +195,43 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             }
         }
 
+        /* Phase 2E Remediation: Mission Control Launcher Mode on /dashboard */
+        body.sidak-mission-control .navbar-vertical {
+            position: fixed !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            left: -300px !important;
+            width: 280px !important;
+            z-index: 1060 !important;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 10px 0 35px rgba(0, 0, 0, 0.35) !important;
+        }
+        body.sidak-mission-control .navbar-vertical.drawer-open {
+            left: 0 !important;
+        }
+        body.sidak-mission-control .page-wrapper {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        #sidebar-drawer-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1055;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        #sidebar-drawer-backdrop.active {
+            display: block;
+            opacity: 1;
+        }
+
         /* Styling dropdowns di sidebar Tabler */
         .navbar-vertical .dropdown-menu {
             background-color: #003637 !important; /* Darker tosca for submenus */
@@ -677,8 +714,14 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     animation-play-state: paused !important;
 }
 </style>
+<?php
+$isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive'));
+?>
 </head>
-<body class="<?= $isMobileMode ? 'is-mobile-app' : '' ?>">
+<body class="<?= $isMobileMode ? 'is-mobile-app' : '' ?> <?= $isDashboardRoute ? 'sidak-mission-control' : '' ?>">
+
+    <!-- Sidebar Drawer Backdrop (Mission Control Launcher) -->
+    <div id="sidebar-drawer-backdrop" onclick="toggleSidebarDrawer()"></div>
 
     <!-- Loading Spinner -->
     <div id="loading-spinner" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #ffffff; z-index: 9999; display: flex; align-items: center; justify-content: center;">
@@ -707,9 +750,17 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     </div>
 
     <div class="page">
-        <!-- Sidebar Menu (Tabler Vertical Navbar) -->
-        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark d-print-none">
+        <!-- Sidebar Menu (Tabler Vertical Navbar / Offcanvas Drawer on Mission Control) -->
+        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark d-print-none" id="main-sidebar-aside">
             <div class="container-fluid">
+                <?php if ($isDashboardRoute): ?>
+                <div class="d-flex justify-content-between align-items-center w-100 px-3 py-2 mb-2 border-bottom border-secondary border-opacity-25 d-none d-lg-flex" style="background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <span class="text-white-50 small fw-bold" style="font-size: 11px; letter-spacing: 0.5px;"><i class="fas fa-bars-staggered me-1 text-primary"></i> MENU SEKUNDER</span>
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-circle" onclick="toggleSidebarDrawer()" title="Tutup Drawer" style="width:26px;height:26px;padding:0;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-times" style="font-size: 11px;"></i>
+                    </button>
+                </div>
+                <?php endif; ?>
                 <!-- Sidebar Toggle Button -->
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -1036,9 +1087,15 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             <header class="navbar navbar-expand navbar-light d-flex d-print-none navbar-top-wrapper" style="border-bottom: 1px solid rgba(0, 0, 0, 0.08); background-color: #ffffff; padding: 0.5rem 1rem;">
                 <div class="container-xl d-flex justify-content-between align-items-center flex-nowrap" style="gap: 8px;">
                     <div class="d-flex align-items-center flex-shrink-0">
+                        <?php if ($isDashboardRoute): ?>
+                        <button type="button" class="btn btn-outline-primary btn-sm me-2 d-none d-lg-inline-flex align-items-center fw-bold" id="btn-collapse-sidebar" onclick="toggleSidebarDrawer()" title="Buka Menu Sekunder">
+                            <i class="fas fa-bars-staggered me-1"></i> <span style="font-size: 11px;">Menu Lengkap</span>
+                        </button>
+                        <?php else: ?>
                         <button type="button" class="btn btn-outline-secondary btn-sm me-2 d-none d-lg-inline-flex align-items-center" id="btn-collapse-sidebar" title="Toggle Sidebar Mode">
                             <i class="fas fa-bars"></i>
                         </button>
+                        <?php endif; ?>
                         <!-- Mobile toggle view for desktop -->
                         <a href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>" class="btn btn-outline-primary btn-sm px-2 py-1" style="font-size: 11px; font-weight: 700; border-radius: 4px; white-space: nowrap;">
                             <i class="fas fa-mobile-screen-button me-1"></i> Versi Mobile
@@ -1059,12 +1116,13 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                     <!-- AI COMMAND BAR & GLOBAL SMART SEARCH -->
                     <div class="flex-grow-1 mx-2 d-none d-md-block sidak-cmd-wrapper" style="max-width: 420px; position: relative;" id="global-search-wrapper">
                         <form method="GET" action="<?= site_url('smart-search') ?>" autocomplete="off" id="global-search-form">
-                            <div class="sidak-cmd-bar">
+                            <div class="sidak-cmd-bar" <?= $isDashboardRoute ? 'onclick="openCommandPalette()"' : '' ?>>
                                 <span class="text-muted me-1" style="font-size: 13px;">✨</span>
                                 <input type="text" name="q" id="global-search-input" class="form-control sidak-cmd-input flex-grow-1"
-                                       placeholder="Tanya AI atau cari PA1656, gardu, temuan..."
-                                       autocomplete="off">
-                                <kbd class="sidak-cmd-kbd" title="Shortcut keyboard (Ctrl+K / Cmd+K)">⌘K</kbd>
+                                       placeholder="<?= $isDashboardRoute ? 'Cari menu atau fungsi (Ctrl+K)...' : 'Tanya AI atau cari PA1656, gardu, temuan...' ?>"
+                                       autocomplete="off"
+                                       <?= $isDashboardRoute ? 'onclick="openCommandPalette(); event.preventDefault();"' : '' ?>>
+                                <kbd class="sidak-cmd-kbd" title="Shortcut keyboard (Ctrl+K / Cmd+K)" style="cursor: pointer;" onclick="openCommandPalette()">⌘K</kbd>
                                 <button type="button" class="btn btn-sm btn-light border-0 p-1 rounded-circle" id="btn-qr-scan-header" title="Scan QR Code Asset / Temuan" onclick="triggerQrScanModal()">
                                     <i class="fas fa-qrcode text-primary" style="font-size: 13px;"></i>
                                 </button>
@@ -2693,6 +2751,56 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         .cinematic-reveal { display: none !important; }
     }
     </style>
+
+    <script>
+    window.toggleSidebarDrawer = function() {
+        var aside = document.getElementById('main-sidebar-aside');
+        var backdrop = document.getElementById('sidebar-drawer-backdrop');
+        if (aside) {
+            aside.classList.toggle('drawer-open');
+            if (backdrop) {
+                if (aside.classList.contains('drawer-open')) {
+                    backdrop.classList.add('active');
+                } else {
+                    backdrop.classList.remove('active');
+                }
+            }
+        }
+    };
+    window.openCommandPalette = function() {
+        var modal = document.getElementById('sidak-command-palette-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            var input = document.getElementById('cmd-palette-search-input');
+            if (input) {
+                input.value = '';
+                input.focus();
+                if (typeof window.filterCommandPalette === 'function') {
+                    window.filterCommandPalette('');
+                }
+            }
+        }
+    };
+    window.closeCommandPalette = function() {
+        var modal = document.getElementById('sidak-command-palette-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    };
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+            e.preventDefault();
+            openCommandPalette();
+        }
+        if (e.key === 'Escape') {
+            closeCommandPalette();
+            var aside = document.getElementById('main-sidebar-aside');
+            if (aside && aside.classList.contains('drawer-open')) {
+                toggleSidebarDrawer();
+            }
+        }
+    });
+    </script>
 
     <?= $this->renderSection('scripts') ?>
 </body>

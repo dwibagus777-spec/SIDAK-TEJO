@@ -54,19 +54,19 @@ class ConstellationPhase2ETest extends CIUnitTestCase
         $this->assertStringContainsString("site_url('temuan')", $this->dashboardView);
         $this->assertStringContainsString('Data Temuan', $this->dashboardView);
 
-        // 3. Work Orders
+        // 3. Work Orders (WO)
         $this->assertStringContainsString('id="node-wo"', $this->dashboardView);
-        $this->assertStringContainsString("site_url('pekerjaan')", $this->dashboardView);
+        $this->assertStringContainsString("site_url('work-orders')", $this->dashboardView);
         $this->assertStringContainsString('Work Orders', $this->dashboardView);
 
-        // 4. Emergency Priority
-        $this->assertStringContainsString('id="node-emergency"', $this->dashboardView);
-        $this->assertStringContainsString("site_url('temuan?prioritas=EMERGENCY')", $this->dashboardView);
-        $this->assertStringContainsString('Emergency', $this->dashboardView);
+        // 4. Master Asset PLN
+        $this->assertStringContainsString('id="node-assets"', $this->dashboardView);
+        $this->assertStringContainsString("site_url('master-assets')", $this->dashboardView);
+        $this->assertStringContainsString('Master Asset', $this->dashboardView);
 
         // 5. Tugas Saya
         $this->assertStringContainsString('id="node-tugas"', $this->dashboardView);
-        $this->assertStringContainsString("site_url('inspeksi/tugas')", $this->dashboardView);
+        $this->assertStringContainsString("site_url('my-inspections')", $this->dashboardView);
         $this->assertStringContainsString('Tugas Saya', $this->dashboardView);
 
         // 6. AI Copilot
@@ -377,11 +377,14 @@ class ConstellationPhase2ETest extends CIUnitTestCase
             "site_url('dashboard')",
             "site_url('gis')",
             "site_url('temuan')",
-            "site_url('pekerjaan')",
+            "site_url('work-orders')",
             "site_url('planning')",
-            "site_url('ai-copilot')",
-            "site_url('inspeksi/tugas')",
+            "site_url('master-assets')",
             "site_url('executive-dashboard')",
+            "site_url('my-inspections')",
+            "site_url('ai-copilot')",
+            "site_url('pekerjaan')",
+            "site_url('audit-log')",
         ];
 
         foreach ($routes as $route) {
@@ -494,5 +497,87 @@ class ConstellationPhase2ETest extends CIUnitTestCase
         $this->assertStringContainsString('id="permanent-motivation-text"', $this->dashboardView);
         $this->assertStringContainsString('editMotivation()', $this->dashboardView);
         $this->assertStringContainsString('get_daily_announcement()', $this->dashboardView);
+    }
+
+    /**
+     * 26. All 9 Contextual Views Containers Verification
+     */
+    public function testAllNineContextualViewsExist(): void
+    {
+        $expectedViews = [
+            'id="view-dashboard"',
+            'id="view-gis"',
+            'id="view-wo"',
+            'id="view-temuan"',
+            'id="view-planning"',
+            'id="view-assets"',
+            'id="view-analytics"',
+            'id="view-tugas"',
+            'id="view-ai"',
+        ];
+
+        foreach ($expectedViews as $viewId) {
+            $this->assertStringContainsString(
+                $viewId,
+                $this->dashboardView,
+                "Contextual panel must have view container '{$viewId}'"
+            );
+        }
+
+        // Preview interaction functions
+        $this->assertStringContainsString('showNodePreview', $this->dashboardView);
+        $this->assertStringContainsString('scheduleResetPreview', $this->dashboardView);
+        $this->assertStringContainsString('selectNode', $this->dashboardView);
+    }
+
+    /**
+     * 27. Mission Control Offcanvas Sidebar Drawer Integration
+     */
+    public function testMissionControlSidebarDrawerIntegration(): void
+    {
+        $adminLayout = file_get_contents(APPPATH . 'Views/layouts/admin.php');
+
+        // Route detection & body class injection
+        $this->assertStringContainsString('$isDashboardRoute', $adminLayout);
+        $this->assertStringContainsString('sidak-mission-control', $adminLayout);
+
+        // Offcanvas drawer CSS & backdrop
+        $this->assertStringContainsString('body.sidak-mission-control .navbar-vertical', $adminLayout);
+        $this->assertStringContainsString('left: -300px', $adminLayout);
+        $this->assertStringContainsString('.navbar-vertical.drawer-open', $adminLayout);
+        $this->assertStringContainsString('id="sidebar-drawer-backdrop"', $adminLayout);
+
+        // Toggle function & topbar button
+        $this->assertStringContainsString('toggleSidebarDrawer', $adminLayout);
+        $this->assertStringContainsString('Menu Lengkap', $adminLayout);
+    }
+
+    /**
+     * 28. Command Palette Modal & Global Hotkeys
+     */
+    public function testCommandPaletteModalAndKeybindings(): void
+    {
+        $adminLayout = file_get_contents(APPPATH . 'Views/layouts/admin.php');
+
+        // Global hotkey Ctrl+K / Cmd+K in admin.php
+        $this->assertStringContainsString('openCommandPalette()', $adminLayout);
+        $this->assertStringContainsString('closeCommandPalette()', $adminLayout);
+        $this->assertStringContainsString("(e.key === 'k' || e.key === 'K')", $adminLayout);
+
+        // Modal container & Search input in dashboard index.php
+        $this->assertStringContainsString('id="sidak-command-palette-modal"', $this->dashboardView);
+        $this->assertStringContainsString('id="cmd-palette-search-input"', $this->dashboardView);
+        $this->assertStringContainsString('id="cmd-palette-results"', $this->dashboardView);
+        $this->assertStringContainsString('filterCommandPalette', $this->dashboardView);
+        $this->assertStringContainsString('handleCommandPaletteKey', $this->dashboardView);
+
+        // All 8+1 Constellation capabilities present in Command Palette
+        $this->assertStringContainsString('MENU CONSTELLATION (8 + 1)', $this->dashboardView);
+        $this->assertStringContainsString('OPERASIONAL &amp; ANOMALI LAPANGAN', $this->dashboardView);
+        $this->assertStringContainsString('WORK ORDERS (SPK) &amp; EKSEKUSI', $this->dashboardView);
+        $this->assertStringContainsString('SPASIAL &amp; GIS MONITORING', $this->dashboardView);
+        $this->assertStringContainsString('PLANNING &amp; PENJADWALAN', $this->dashboardView);
+        $this->assertStringContainsString('ANALITIK, LAPORAN &amp; AUDIT', $this->dashboardView);
+        $this->assertStringContainsString('MASTER DATA &amp; ADMINISTRASI', $this->dashboardView);
     }
 }

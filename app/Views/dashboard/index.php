@@ -779,6 +779,224 @@
             font-size: 10px;
         }
     }
+
+    /* Node Highlight and Dynamic Previews */
+    .constellation-svg-line.highlighted {
+        stroke: #10b981 !important;
+        stroke-width: 3px !important;
+        stroke-dasharray: none !important;
+        filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.7));
+    }
+    .constellation-node.active-hover {
+        transform: translate(-50%, -50%) scale(1.15) !important;
+        z-index: 15 !important;
+    }
+    .constellation-node.active-hover .constellation-node-aura {
+        opacity: 1 !important;
+        filter: blur(12px) !important;
+    }
+
+    /* Command Palette Modal (Identical to Foto #4 / User Reference) */
+    .cmd-palette-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 1090;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: cmdFadeIn 0.2s ease-out;
+    }
+
+    @keyframes cmdFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .cmd-palette-dialog {
+        width: 100%;
+        max-width: 580px;
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25), 0 10px 20px rgba(15, 23, 42, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: 85vh;
+        animation: cmdSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes cmdSlideDown {
+        from { transform: translateY(-16px) scale(0.97); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .cmd-palette-search-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        background: #ffffff;
+    }
+
+    .cmd-palette-search-icon {
+        color: #94a3b8;
+        font-size: 16px;
+    }
+
+    .cmd-palette-input {
+        border: none;
+        outline: none;
+        font-size: 15px;
+        font-weight: 500;
+        color: #1e293b;
+        background: transparent;
+        flex: 1;
+        width: 100%;
+        font-family: inherit;
+    }
+
+    .cmd-palette-input::placeholder {
+        color: #94a3b8;
+    }
+
+    .cmd-palette-esc-btn {
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        line-height: 1;
+        transition: all 0.15s ease;
+    }
+
+    .cmd-palette-esc-btn:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+
+    .cmd-palette-results {
+        overflow-y: auto;
+        padding: 10px 12px;
+        flex: 1;
+        max-height: 480px;
+    }
+
+    .cmd-group-header {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #94a3b8;
+        padding: 8px 12px 4px 12px;
+    }
+
+    .cmd-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        text-decoration: none !important;
+        color: #1e293b !important;
+        transition: all 0.15s ease;
+        margin-bottom: 2px;
+        cursor: pointer;
+    }
+
+    .cmd-item:hover, .cmd-item.active {
+        background: #1e293b !important;
+        color: #ffffff !important;
+    }
+
+    .cmd-item:hover .cmd-item-sub, .cmd-item.active .cmd-item-sub {
+        color: #94a3b8 !important;
+    }
+
+    .cmd-item:hover .cmd-chevron, .cmd-item.active .cmd-chevron {
+        color: #ffffff !important;
+        transform: translateX(2px);
+    }
+
+    .cmd-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .cmd-item-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cmd-item-title {
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .cmd-item-sub {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    .cmd-chevron {
+        font-size: 11px;
+        color: #cbd5e1;
+        transition: transform 0.15s ease;
+    }
+
+    .cmd-palette-footer {
+        padding: 10px 18px;
+        background: #f8fafc;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #64748b;
+    }
+
+    .cmd-shortcut-badge {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 2px 6px;
+        font-weight: 700;
+        font-size: 10px;
+        color: #475569;
+    }
+
+    .cmd-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 9999px;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        margin-left: auto;
+    }
+
+    .cmd-item:hover .cmd-badge, .cmd-item.active .cmd-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.3);
+    }
 </style>
 
 <div class="sidak-bento-container emc-container container-fluid py-3">
@@ -887,28 +1105,29 @@
                 <div class="constellation-canvas-body position-relative">
                     <!-- SVG Vector Connecting Lines Overlay -->
                     <svg class="constellation-svg-network" viewBox="0 0 1000 600" preserveAspectRatio="none">
-                        <!-- Inter-satellite vector connections (Topology web) -->
-                        <line x1="200" y1="120" x2="800" y2="120" class="constellation-svg-line" />
-                        <line x1="800" y1="120" x2="650" y2="204" class="constellation-svg-line" />
-                        <line x1="650" y1="204" x2="820" y2="372" class="constellation-svg-line" />
-                        <line x1="820" y1="372" x2="700" y2="492" class="constellation-svg-line" />
-                        <line x1="240" y1="432" x2="460" y2="504" class="constellation-svg-line" />
-                        <line x1="160" y1="276" x2="240" y2="432" class="constellation-svg-line" />
-                        <line x1="160" y1="276" x2="200" y2="120" class="constellation-svg-line" />
+                        <!-- Ring web connections between adjacent satellites -->
+                        <line x1="500" y1="72" x2="820" y2="156" class="constellation-svg-line" />
+                        <line x1="820" y1="156" x2="840" y2="324" class="constellation-svg-line" />
+                        <line x1="840" y1="324" x2="740" y2="492" class="constellation-svg-line" />
+                        <line x1="740" y1="492" x2="500" y2="516" class="constellation-svg-line" />
+                        <line x1="500" y1="516" x2="260" y2="492" class="constellation-svg-line" />
+                        <line x1="260" y1="492" x2="160" y2="324" class="constellation-svg-line" />
+                        <line x1="160" y1="324" x2="180" y2="156" class="constellation-svg-line" />
+                        <line x1="180" y1="156" x2="500" y2="72" class="constellation-svg-line" />
 
-                        <!-- Center to satellite vector lines -->
-                        <line x1="480" y1="288" x2="200" y2="120" class="constellation-svg-line active" />
-                        <line x1="480" y1="288" x2="800" y2="120" class="constellation-svg-line active" />
-                        <line x1="480" y1="288" x2="650" y2="204" class="constellation-svg-line active" />
-                        <line x1="480" y1="288" x2="820" y2="372" class="constellation-svg-line active" />
-                        <line x1="480" y1="288" x2="700" y2="492" class="constellation-svg-line active" />
-                        <line x1="480" y1="288" x2="460" y2="504" class="constellation-svg-line active" />
-                        <line x1="480" y1="288" x2="240" y2="432" class="constellation-svg-line active" />
-                        <line x1="480" y1="288" x2="160" y2="276" class="constellation-svg-line active" />
+                        <!-- Center to satellite vector lines with discrete IDs for hover highlight -->
+                        <line id="svg-line-ai" x1="500" y1="288" x2="500" y2="72" class="constellation-svg-line active" />
+                        <line id="svg-line-wo" x1="500" y1="288" x2="820" y2="156" class="constellation-svg-line active" />
+                        <line id="svg-line-temuan" x1="500" y1="288" x2="840" y2="324" class="constellation-svg-line active" />
+                        <line id="svg-line-analytics" x1="500" y1="288" x2="740" y2="492" class="constellation-svg-line active" />
+                        <line id="svg-line-planning" x1="500" y1="288" x2="500" y2="516" class="constellation-svg-line active" />
+                        <line id="svg-line-assets" x1="500" y1="288" x2="260" y2="492" class="constellation-svg-line active" />
+                        <line id="svg-line-tugas" x1="500" y1="288" x2="160" y2="324" class="constellation-svg-line active" />
+                        <line id="svg-line-gis" x1="500" y1="288" x2="180" y2="156" class="constellation-svg-line active" />
                     </svg>
 
                     <!-- 1. Central Hub Node: ◎ Dashboard Utama -->
-                    <div class="constellation-central-node" style="left: 48%; top: 48%;" id="node-hub-dashboard">
+                    <div class="constellation-central-node" style="left: 50%; top: 48%;" id="node-hub-dashboard" data-node="dashboard" onmouseenter="showNodePreview('dashboard')" onmouseleave="scheduleResetPreview()">
                         <div class="constellation-central-halo"></div>
                         <a href="<?= site_url('dashboard') ?>" class="constellation-central-ring" title="Dashboard Utama">
                             <i class="fas fa-dot-circle"></i>
@@ -921,57 +1140,8 @@
                         </a>
                     </div>
 
-                    <!-- 2. Satellite Node: Planning Inspeksi -->
-                    <a href="<?= site_url('planning') ?>" class="constellation-node" style="left: 20%; top: 20%;" title="Planning Inspeksi" id="node-planning">
-                        <div class="constellation-node-aura" style="background: rgba(59, 130, 246, 0.4);"></div>
-                        <div class="constellation-node-disc" style="border-color: #3b82f6;">
-                            <i class="fas fa-calendar-check text-primary"></i>
-                            <span class="constellation-node-badge bg-primary text-white"><?= number_format($stats['target_harian'] ?? 25) ?></span>
-                        </div>
-                        <span class="constellation-node-label">Planning Inspeksi</span>
-                    </a>
-
-                    <!-- 3. Satellite Node: Data Temuan -->
-                    <a href="<?= site_url('temuan') ?>" class="constellation-node" style="left: 80%; top: 20%;" title="Data Temuan" id="node-temuan">
-                        <div class="constellation-node-aura" style="background: rgba(245, 158, 11, 0.4);"></div>
-                        <div class="constellation-node-disc" style="border-color: #f59e0b;">
-                            <i class="fas fa-clipboard-list text-warning"></i>
-                            <span class="constellation-node-badge bg-warning text-dark"><?= number_format($stats['total'] ?? 0) ?></span>
-                        </div>
-                        <span class="constellation-node-label">Data Temuan</span>
-                    </a>
-
-                    <!-- 4. Satellite Node: Work Orders (WO) -->
-                    <a href="<?= site_url('pekerjaan') ?>" class="constellation-node" style="left: 65%; top: 34%;" title="Work Orders (WO)" id="node-wo">
-                        <div class="constellation-node-aura" style="background: rgba(100, 116, 139, 0.35);"></div>
-                        <span class="constellation-node-pill bg-dark text-white border border-secondary shadow-sm">
-                            <i class="fas fa-bolt text-warning me-1"></i><?= number_format($woStats['aktif'] ?? 0) ?> WO
-                        </span>
-                        <span class="constellation-node-label">Work Orders</span>
-                    </a>
-
-                    <!-- 5. Satellite Node: Emergency Priority -->
-                    <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="constellation-node" style="left: 82%; top: 62%;" title="Emergency SLA" id="node-emergency">
-                        <div class="constellation-node-aura" style="background: rgba(239, 68, 68, 0.45);"></div>
-                        <div class="constellation-node-disc" style="border-color: #ef4444;">
-                            <i class="fas fa-triangle-exclamation text-danger"></i>
-                            <span class="constellation-node-badge bg-danger text-white"><?= number_format($stats['emergency'] ?? 0) ?></span>
-                        </div>
-                        <span class="constellation-node-label text-danger">Emergency</span>
-                    </a>
-
-                    <!-- 6. Satellite Node: Tugas Inspeksi Saya -->
-                    <a href="<?= site_url('inspeksi/tugas') ?>" class="constellation-node" style="left: 70%; top: 82%;" title="Tugas Saya" id="node-tugas">
-                        <div class="constellation-node-aura" style="background: rgba(244, 63, 94, 0.4);"></div>
-                        <div class="constellation-node-disc" style="border-color: #f43f5e;">
-                            <i class="fas fa-user-check text-danger"></i>
-                            <span class="constellation-node-badge bg-danger text-white"><?= number_format($stats['belum'] ?? 0) ?></span>
-                        </div>
-                        <span class="constellation-node-label">Tugas Saya</span>
-                    </a>
-
-                    <!-- 7. Satellite Node: AI Copilot -->
-                    <a href="<?= site_url('ai-copilot') ?>" class="constellation-node" style="left: 46%; top: 84%;" title="AI Copilot Voice" id="node-ai">
+                    <!-- 2. Satellite Node: AI Center & Copilot (Top Center) -->
+                    <a href="<?= site_url('ai-copilot') ?>" class="constellation-node" style="left: 50%; top: 12%;" title="AI Copilot & Intelligence" id="node-ai" data-node="ai" onmouseenter="showNodePreview('ai')" onmouseleave="scheduleResetPreview()">
                         <div class="constellation-node-aura" style="background: rgba(6, 182, 212, 0.45);"></div>
                         <div class="constellation-node-disc" style="border-color: #06b6d4;">
                             <i class="fas fa-robot text-info"></i>
@@ -980,24 +1150,73 @@
                         <span class="constellation-node-label text-info">AI Copilot</span>
                     </a>
 
-                    <!-- 8. Satellite Node: Peta Jaringan GIS -->
-                    <a href="<?= site_url('gis') ?>" class="constellation-node" style="left: 24%; top: 72%;" title="Peta Jaringan GIS" id="node-gis">
-                        <div class="constellation-node-aura" style="background: rgba(2, 132, 199, 0.4);"></div>
-                        <div class="constellation-node-disc" style="border-color: #0284c7;">
-                            <i class="fas fa-map-marked-alt text-primary"></i>
-                            <span class="constellation-node-badge bg-primary text-white"><?= number_format($gisPinCount) ?></span>
-                        </div>
-                        <span class="constellation-node-label">Peta GIS</span>
+                    <!-- 3. Satellite Node: Work Orders (WO) (Top Right) -->
+                    <a href="<?= site_url('work-orders') ?>" class="constellation-node" style="left: 82%; top: 26%;" title="Work Orders (WO)" id="node-wo" data-node="wo" onmouseenter="showNodePreview('wo')" onmouseleave="scheduleResetPreview()">
+                        <div class="constellation-node-aura" style="background: rgba(239, 68, 68, 0.35);"></div>
+                        <span class="constellation-node-pill bg-dark text-white border border-secondary shadow-sm">
+                            <i class="fas fa-bolt text-warning me-1"></i><?= number_format($woStats['aktif'] ?? 0) ?> WO
+                        </span>
+                        <span class="constellation-node-label">Work Orders</span>
                     </a>
 
-                    <!-- 9. Satellite Node: Executive Analytics -->
-                    <a href="<?= site_url('executive-dashboard') ?>" class="constellation-node" style="left: 16%; top: 46%;" title="Executive Analytics" id="node-analytics">
+                    <!-- 4. Satellite Node: Data Temuan (Right Center) -->
+                    <a href="<?= site_url('temuan') ?>" class="constellation-node" style="left: 84%; top: 54%;" title="Data Temuan" id="node-temuan" data-node="temuan" onmouseenter="showNodePreview('temuan')" onmouseleave="scheduleResetPreview()">
+                        <div class="constellation-node-aura" style="background: rgba(245, 158, 11, 0.45);"></div>
+                        <div class="constellation-node-disc" style="border-color: #f59e0b;">
+                            <i class="fas fa-clipboard-list text-warning"></i>
+                            <span class="constellation-node-badge bg-warning text-dark"><?= number_format($stats['total'] ?? 0) ?></span>
+                        </div>
+                        <span class="constellation-node-label">Data Temuan</span>
+                    </a>
+
+                    <!-- 5. Satellite Node: Executive Analytics (Bottom Right) -->
+                    <a href="<?= site_url('executive-dashboard') ?>" class="constellation-node" style="left: 74%; top: 82%;" title="Executive Analytics" id="node-analytics" data-node="analytics" onmouseenter="showNodePreview('analytics')" onmouseleave="scheduleResetPreview()">
                         <div class="constellation-node-aura" style="background: rgba(16, 185, 129, 0.4);"></div>
                         <div class="constellation-node-disc" style="border-color: #10b981;">
                             <i class="fas fa-chart-line text-success"></i>
                             <span class="constellation-node-badge bg-success text-white"><?= $dailyPct ?>%</span>
                         </div>
                         <span class="constellation-node-label">Analytics</span>
+                    </a>
+
+                    <!-- 6. Satellite Node: Planning Inspeksi (Bottom Center) -->
+                    <a href="<?= site_url('planning') ?>" class="constellation-node" style="left: 50%; top: 86%;" title="Planning Inspeksi" id="node-planning" data-node="planning" onmouseenter="showNodePreview('planning')" onmouseleave="scheduleResetPreview()">
+                        <div class="constellation-node-aura" style="background: rgba(59, 130, 246, 0.4);"></div>
+                        <div class="constellation-node-disc" style="border-color: #3b82f6;">
+                            <i class="fas fa-calendar-check text-primary"></i>
+                            <span class="constellation-node-badge bg-primary text-white"><?= number_format($stats['target_harian'] ?? 25) ?></span>
+                        </div>
+                        <span class="constellation-node-label">Planning Inspeksi</span>
+                    </a>
+
+                    <!-- 7. Satellite Node: Master Asset (Bottom Left) -->
+                    <a href="<?= site_url('master-assets') ?>" class="constellation-node" style="left: 26%; top: 82%;" title="Master Asset PLN" id="node-assets" data-node="assets" onmouseenter="showNodePreview('assets')" onmouseleave="scheduleResetPreview()">
+                        <div class="constellation-node-aura" style="background: rgba(100, 116, 139, 0.4);"></div>
+                        <div class="constellation-node-disc" style="border-color: #64748b;">
+                            <i class="fas fa-boxes-stacked text-secondary"></i>
+                            <span class="constellation-node-badge bg-secondary text-white">Asset</span>
+                        </div>
+                        <span class="constellation-node-label">Master Asset</span>
+                    </a>
+
+                    <!-- 8. Satellite Node: Tugas Inspeksi Saya (Left Center) -->
+                    <a href="<?= site_url('my-inspections') ?>" class="constellation-node" style="left: 16%; top: 54%;" title="Tugas Saya" id="node-tugas" data-node="tugas" onmouseenter="showNodePreview('tugas')" onmouseleave="scheduleResetPreview()">
+                        <div class="constellation-node-aura" style="background: rgba(244, 63, 94, 0.4);"></div>
+                        <div class="constellation-node-disc" style="border-color: #f43f5e;">
+                            <i class="fas fa-user-check text-danger"></i>
+                            <span class="constellation-node-badge bg-danger text-white"><?= number_format($stats['belum'] ?? 0) ?></span>
+                        </div>
+                        <span class="constellation-node-label">Tugas Saya</span>
+                    </a>
+
+                    <!-- 9. Satellite Node: Peta Jaringan GIS (Top Left) -->
+                    <a href="<?= site_url('gis') ?>" class="constellation-node" style="left: 18%; top: 26%;" title="Peta Jaringan GIS" id="node-gis" data-node="gis" onmouseenter="showNodePreview('gis')" onmouseleave="scheduleResetPreview()">
+                        <div class="constellation-node-aura" style="background: rgba(2, 132, 199, 0.45);"></div>
+                        <div class="constellation-node-disc" style="border-color: #0284c7;">
+                            <i class="fas fa-map-marked-alt text-primary"></i>
+                            <span class="constellation-node-badge bg-primary text-white"><?= number_format($gisPinCount) ?></span>
+                        </div>
+                        <span class="constellation-node-label">Peta GIS</span>
                     </a>
                 </div>
 
@@ -1016,157 +1235,360 @@
         </div>
 
         <!-- 3B. CONTEXTUAL DASHBOARD PANEL (RIGHT) -->
-        <div class="col-lg-5 col-12">
+        <div class="col-lg-5 col-12" id="contextual-panel-container">
             <div class="sidak-bento-card contextual-dashboard-card emc-card p-4 d-flex flex-column justify-content-between h-100">
-                <div>
-                    <!-- Panel Top Header -->
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="sidak-bento-icon-box bg-success-subtle text-success rounded-3 fs-5">
-                                <i class="fas fa-th-large"></i>
-                            </div>
-                            <div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <h5 class="fw-bold text-dark mb-0">Dashboard Utama</h5>
-                                    <span class="badge bg-light text-dark border rounded-pill px-2 py-0 small fw-bold">
-                                        <?= number_format($stats['total'] ?? 0) ?>
-                                    </span>
+                <div id="contextual-views-container">
+                    <!-- VIEW 1: DASHBOARD UTAMA OVERVIEW (DEFAULT) -->
+                    <div id="view-dashboard" class="contextual-view-block">
+                        <!-- Panel Top Header -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="sidak-bento-icon-box bg-success-subtle text-success rounded-3 fs-5">
+                                    <i class="fas fa-th-large"></i>
                                 </div>
-                                <small class="text-muted" style="font-size: 11px;">Ringkasan &amp; KPI &bull; Constellation &rarr; HOME</small>
-                            </div>
-                        </div>
-                        <a href="<?= site_url('dashboard') ?>" class="btn btn-sm btn-outline-light text-muted border rounded-circle" title="Refresh Dashboard">
-                            <i class="fas fa-sync-alt"></i>
-                        </a>
-                    </div>
-
-                    <!-- 4 Pastel Bento KPI Cards (2x2 Grid) -->
-                    <div class="contextual-kpi-grid sidak-bento-kpi-grid mb-3">
-                        <!-- 1. Jumlah Temuan (Mint) -->
-                        <a href="<?= site_url('temuan') ?>" class="contextual-kpi-card contextual-kpi-mint sidak-bento-kpi-card kpi-drilldown-link">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="contextual-kpi-val sidak-bento-val" id="kpi-total-temuan"><?= number_format($stats['total'] ?? 0) ?></div>
-                                <i class="fas fa-arrow-up-right text-muted opacity-75"></i>
-                            </div>
-                            <div>
-                                <div class="contextual-kpi-title sidak-bento-lbl">Jumlah Temuan</div>
-                                <div class="contextual-kpi-sub">Total Inspeksi Fisik</div>
-                            </div>
-                        </a>
-
-                        <!-- 2. Emergency (Rose) -->
-                        <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="contextual-kpi-card contextual-kpi-rose sidak-bento-kpi-card kpi-drilldown-link">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="contextual-kpi-val text-danger sidak-bento-val" id="kpi-emergency"><?= number_format($stats['emergency'] ?? 0) ?></div>
-                                <i class="fas fa-arrow-up-right text-danger opacity-75"></i>
-                            </div>
-                            <div>
-                                <div class="contextual-kpi-title text-danger sidak-bento-lbl">Emergency</div>
-                                <div class="contextual-kpi-sub">Prioritas Tinggi</div>
-                            </div>
-                        </a>
-
-                        <!-- 3. Belum Selesai (Peach) — User Amendment #1 Preserved -->
-                        <a href="<?= site_url('temuan?status=BELUM') ?>" class="contextual-kpi-card contextual-kpi-peach sidak-bento-kpi-card kpi-drilldown-link">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="contextual-kpi-val text-warning sidak-bento-val" id="kpi-belum"><?= number_format($stats['belum'] ?? 0) ?></div>
-                                <i class="fas fa-arrow-up-right text-warning opacity-75"></i>
-                            </div>
-                            <div>
-                                <div class="contextual-kpi-title text-warning sidak-bento-lbl">Belum Selesai</div>
-                                <div class="contextual-kpi-sub">Dalam Antrian</div>
-                            </div>
-                        </a>
-
-                        <!-- 4. GIS Node (Sky Blue) -->
-                        <a href="<?= site_url('gis') ?>" class="contextual-kpi-card contextual-kpi-blue sidak-bento-kpi-card kpi-drilldown-link">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="contextual-kpi-val text-primary sidak-bento-val" id="kpi-gis-pins"><?= number_format($gisPinCount) ?></div>
-                                <i class="fas fa-arrow-up-right text-primary opacity-75"></i>
-                            </div>
-                            <div>
-                                <div class="contextual-kpi-title text-primary sidak-bento-lbl">GIS Node</div>
-                                <div class="contextual-kpi-sub">Terverifikasi</div>
-                            </div>
-                        </a>
-                    </div>
-
-                    <!-- 3 Mini Metric Indicator Cards (Row of 3) -->
-                    <div class="row g-2 mb-3">
-                        <div class="col-4">
-                            <a href="<?= site_url('temuan?status=SELESAI') ?>" class="contextual-mini-metric text-center p-2 d-block text-decoration-none">
-                                <div class="fw-bold fs-5 text-dark" id="kpi-selesai"><?= number_format($stats['selesai'] ?? 0) ?></div>
-                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">Selesai</div>
-                            </a>
-                        </div>
-                        <div class="col-4">
-                            <a href="<?= site_url('work-orders?status=AKTIF') ?>" class="contextual-mini-metric text-center p-2 d-block text-decoration-none">
-                                <div class="fw-bold fs-5 text-dark" id="kpi-wo-aktif"><?= number_format($woStats['aktif'] ?? 0) ?></div>
-                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">Progress</div>
-                            </a>
-                        </div>
-                        <div class="col-4">
-                            <div class="contextual-mini-metric text-center p-2">
-                                <span class="fw-bold fs-5 text-primary" id="kpi-target-harian-pct"><?= $dailyPct ?>%</span>
-                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">Target</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Compact Target Progress & Secondary Priority Strip -->
-                    <div class="p-2 mb-3 rounded-3 bg-light border">
-                        <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 11px;">
-                            <span class="text-muted fw-semibold">
-                                Target Harian: <strong id="kpi-target-harian-text"><?= number_format($dailyDone) ?> <span class="text-muted">/ <?= number_format($dailyTarget) ?></span></strong>
-                            </span>
-                            <div class="d-flex align-items-center gap-2">
-                                <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="text-decoration-none text-muted">
-                                    High: <div class="d-inline fw-bold text-warning" id="kpi-high"><?= number_format($stats['high'] ?? 0) ?></div>
-                                </a>
-                                &bull;
-                                <a href="<?= site_url('temuan?prioritas=MEDIUM') ?>" class="text-decoration-none text-muted">
-                                    Med: <div class="d-inline fw-bold text-info" id="kpi-medium"><?= number_format($stats['medium'] ?? 0) ?></div>
-                                </a>
-                            </div>
-                        </div>
-                        <div class="progress" style="height: 6px; border-radius: 4px; background: #e2e8f0;">
-                            <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width: <?= $dailyPct ?>%;" id="kpi-target-harian-bar" aria-valuenow="<?= $dailyPct ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-
-                    <!-- Operational Live Feed: AKTIVITAS HARI INI -->
-                    <div class="contextual-activity-section">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="fw-bold text-dark text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
-                                <i class="fas fa-satellite-dish text-primary me-1"></i> Aktivitas Hari Ini
-                            </div>
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0 small">
-                                <span class="status-pulse-live me-1"></span> Live
-                            </span>
-                        </div>
-                        <div class="contextual-activity-list">
-                            <?php 
-                            $contextualFeed = !empty($mapPins) ? array_slice($mapPins, 0, 3) : [];
-                            if (!empty($contextualFeed)): 
-                                foreach ($contextualFeed as $feedItem): 
-                                    $prio = strtoupper((string)($feedItem['prioritas'] ?? 'MEDIUM'));
-                                    $dotColor = $prio === 'EMERGENCY' ? '#ef4444' : ($prio === 'HIGH' ? '#f59e0b' : '#10b981');
-                                    $nomor = !empty($feedItem['nomor_temuan']) ? $feedItem['nomor_temuan'] : 'STJ-' . ($feedItem['id'] ?? '0');
-                                    $title = !empty($feedItem['judul']) ? $feedItem['judul'] : (!empty($feedItem['penyulang_nama']) ? 'Penyulang ' . $feedItem['penyulang_nama'] : 'Temuan Lapangan');
-                            ?>
-                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-light">
-                                    <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
-                                        <span class="rounded-circle flex-shrink-0" style="width: 8px; height: 8px; background-color: <?= $dotColor ?>;"></span>
-                                        <span class="small text-dark text-truncate fw-medium" style="font-size: 12px;"><?= esc($nomor) ?> &ndash; <?= esc($title) ?></span>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h5 class="fw-bold text-dark mb-0">Dashboard Utama</h5>
+                                        <span class="badge bg-light text-dark border rounded-pill px-2 py-0 small fw-bold">
+                                            <?= number_format($stats['total'] ?? 0) ?>
+                                        </span>
                                     </div>
-                                    <a href="<?= site_url('temuan/detail/' . ($feedItem['id'] ?? 0)) ?>" class="small text-primary text-nowrap text-decoration-none fw-semibold" style="font-size: 11px;">
-                                        Lihat <i class="fas fa-chevron-right ms-1 opacity-75"></i>
+                                    <small class="text-muted" style="font-size: 11px;">Ringkasan &amp; KPI &bull; Constellation &rarr; HOME</small>
+                                </div>
+                            </div>
+                            <a href="<?= site_url('dashboard') ?>" class="btn btn-sm btn-outline-light text-muted border rounded-circle" title="Refresh Dashboard">
+                                <i class="fas fa-sync-alt"></i>
+                            </a>
+                        </div>
+
+                        <!-- 4 Pastel Bento KPI Cards (2x2 Grid) -->
+                        <div class="contextual-kpi-grid sidak-bento-kpi-grid mb-3">
+                            <!-- 1. Jumlah Temuan (Mint) -->
+                            <a href="<?= site_url('temuan') ?>" class="contextual-kpi-card contextual-kpi-mint sidak-bento-kpi-card kpi-drilldown-link">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="contextual-kpi-val sidak-bento-val" id="kpi-total-temuan"><?= number_format($stats['total'] ?? 0) ?></div>
+                                    <i class="fas fa-arrow-up-right text-muted opacity-75"></i>
+                                </div>
+                                <div>
+                                    <div class="contextual-kpi-title sidak-bento-lbl">Jumlah Temuan</div>
+                                    <div class="contextual-kpi-sub">Total Inspeksi Fisik</div>
+                                </div>
+                            </a>
+
+                            <!-- 2. Emergency (Rose) -->
+                            <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="contextual-kpi-card contextual-kpi-rose sidak-bento-kpi-card kpi-drilldown-link">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="contextual-kpi-val text-danger sidak-bento-val" id="kpi-emergency"><?= number_format($stats['emergency'] ?? 0) ?></div>
+                                    <i class="fas fa-arrow-up-right text-danger opacity-75"></i>
+                                </div>
+                                <div>
+                                    <div class="contextual-kpi-title text-danger sidak-bento-lbl">Emergency</div>
+                                    <div class="contextual-kpi-sub">Prioritas Tinggi</div>
+                                </div>
+                            </a>
+
+                            <!-- 3. Belum Selesai (Peach) — User Amendment #1 Preserved -->
+                            <a href="<?= site_url('temuan?status=BELUM') ?>" class="contextual-kpi-card contextual-kpi-peach sidak-bento-kpi-card kpi-drilldown-link">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="contextual-kpi-val text-warning sidak-bento-val" id="kpi-belum"><?= number_format($stats['belum'] ?? 0) ?></div>
+                                    <i class="fas fa-arrow-up-right text-warning opacity-75"></i>
+                                </div>
+                                <div>
+                                    <div class="contextual-kpi-title text-warning sidak-bento-lbl">Belum Selesai</div>
+                                    <div class="contextual-kpi-sub">Dalam Antrian</div>
+                                </div>
+                            </a>
+
+                            <!-- 4. GIS Node (Sky Blue) -->
+                            <a href="<?= site_url('gis') ?>" class="contextual-kpi-card contextual-kpi-blue sidak-bento-kpi-card kpi-drilldown-link">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="contextual-kpi-val text-primary sidak-bento-val" id="kpi-gis-pins"><?= number_format($gisPinCount) ?></div>
+                                    <i class="fas fa-arrow-up-right text-primary opacity-75"></i>
+                                </div>
+                                <div>
+                                    <div class="contextual-kpi-title text-primary sidak-bento-lbl">GIS Node</div>
+                                    <div class="contextual-kpi-sub">Terverifikasi</div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <!-- 3 Mini Metric Indicator Cards (Row of 3) -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <a href="<?= site_url('temuan?status=SELESAI') ?>" class="contextual-mini-metric text-center p-2 d-block text-decoration-none">
+                                    <div class="fw-bold fs-5 text-dark" id="kpi-selesai"><?= number_format($stats['selesai'] ?? 0) ?></div>
+                                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">Selesai</div>
+                                </a>
+                            </div>
+                            <div class="col-4">
+                                <a href="<?= site_url('work-orders?status=AKTIF') ?>" class="contextual-mini-metric text-center p-2 d-block text-decoration-none">
+                                    <div class="fw-bold fs-5 text-dark" id="kpi-wo-aktif"><?= number_format($woStats['aktif'] ?? 0) ?></div>
+                                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">Progress</div>
+                                </a>
+                            </div>
+                            <div class="col-4">
+                                <div class="contextual-mini-metric text-center p-2">
+                                    <span class="fw-bold fs-5 text-primary" id="kpi-target-harian-pct"><?= $dailyPct ?>%</span>
+                                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">Target</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Compact Target Progress & Secondary Priority Strip -->
+                        <div class="p-2 mb-3 rounded-3 bg-light border">
+                            <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 11px;">
+                                <span class="text-muted fw-semibold">
+                                    Target Harian: <strong id="kpi-target-harian-text"><?= number_format($dailyDone) ?> <span class="text-muted">/ <?= number_format($dailyTarget) ?></span></strong>
+                                </span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="text-decoration-none text-muted">
+                                        High: <div class="d-inline fw-bold text-warning" id="kpi-high"><?= number_format($stats['high'] ?? 0) ?></div>
+                                    </a>
+                                    &bull;
+                                    <a href="<?= site_url('temuan?prioritas=MEDIUM') ?>" class="text-decoration-none text-muted">
+                                        Med: <div class="d-inline fw-bold text-info" id="kpi-medium"><?= number_format($stats['medium'] ?? 0) ?></div>
                                     </a>
                                 </div>
-                            <?php endforeach; else: ?>
-                                <div class="text-muted small py-3 text-center">Belum ada temuan terpetakan hari ini.</div>
-                            <?php endif; ?>
+                            </div>
+                            <div class="progress" style="height: 6px; border-radius: 4px; background: #e2e8f0;">
+                                <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width: <?= $dailyPct ?>%;" id="kpi-target-harian-bar" aria-valuenow="<?= $dailyPct ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
                         </div>
+
+                        <!-- Operational Live Feed: AKTIVITAS HARI INI -->
+                        <div class="contextual-activity-section">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="fw-bold text-dark text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                                    <i class="fas fa-satellite-dish text-primary me-1"></i> Aktivitas Hari Ini
+                                </div>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0 small">
+                                    <span class="status-pulse-live me-1"></span> Live
+                                </span>
+                            </div>
+                            <div class="contextual-activity-list">
+                                <?php 
+                                $contextualFeed = !empty($mapPins) ? array_slice($mapPins, 0, 3) : [];
+                                if (!empty($contextualFeed)): 
+                                    foreach ($contextualFeed as $feedItem): 
+                                        $prio = strtoupper((string)($feedItem['prioritas'] ?? 'MEDIUM'));
+                                        $dotColor = $prio === 'EMERGENCY' ? '#ef4444' : ($prio === 'HIGH' ? '#f59e0b' : '#10b981');
+                                        $nomor = !empty($feedItem['nomor_temuan']) ? $feedItem['nomor_temuan'] : 'STJ-' . ($feedItem['id'] ?? '0');
+                                        $title = !empty($feedItem['judul']) ? $feedItem['judul'] : (!empty($feedItem['penyulang_nama']) ? 'Penyulang ' . $feedItem['penyulang_nama'] : 'Temuan Lapangan');
+                                ?>
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                                        <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
+                                            <span class="rounded-circle flex-shrink-0" style="width: 8px; height: 8px; background-color: <?= $dotColor ?>;"></span>
+                                            <span class="small text-dark text-truncate fw-medium" style="font-size: 12px;"><?= esc($nomor) ?> &ndash; <?= esc($title) ?></span>
+                                        </div>
+                                        <a href="<?= site_url('temuan/detail/' . ($feedItem['id'] ?? 0)) ?>" class="small text-primary text-nowrap text-decoration-none fw-semibold" style="font-size: 11px;">
+                                            Lihat <i class="fas fa-chevron-right ms-1 opacity-75"></i>
+                                        </a>
+                                    </div>
+                                <?php endforeach; else: ?>
+                                    <div class="text-muted small py-3 text-center">Belum ada temuan terpetakan hari ini.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW 2: GIS PREVIEW -->
+                    <div id="view-gis" class="contextual-view-block" style="display: none;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="sidak-bento-icon-box bg-primary-subtle text-primary rounded-3 fs-4">
+                                <i class="fas fa-map-marked-alt"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">Peta Jaringan GIS</h5>
+                                <small class="text-muted">Monitoring Spasial &bull; JTM / JTR / Gardu</small>
+                            </div>
+                        </div>
+                        <div class="p-3 mb-3 rounded-3 bg-primary-subtle border border-primary-subtle">
+                            <div class="fs-2 fw-bold text-primary mb-1"><?= number_format($gisPinCount) ?> Node</div>
+                            <p class="small text-dark mb-0">Total titik anomali terpetakan di seluruh wilayah kerja PLN UP3 Sidoarjo (Sidoarjo Kota, Gedangan, Candi, Porong, Krian).</p>
+                        </div>
+                        <ul class="list-unstyled small text-muted mb-4">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>OpenStreetMap &amp; Leaflet Engine</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Auto-Complete AI Section Jaringan</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Filter Multi-Penyulang &amp; ULP</li>
+                        </ul>
+                        <a href="<?= site_url('gis') ?>" class="btn btn-primary w-100 py-2 rounded-pill fw-bold">
+                            <i class="fas fa-map-location-dot me-1"></i> Buka Peta GIS Lengkap &rarr;
+                        </a>
+                    </div>
+
+                    <!-- VIEW 3: WORK ORDERS PREVIEW -->
+                    <div id="view-wo" class="contextual-view-block" style="display: none;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="sidak-bento-icon-box bg-danger-subtle text-danger rounded-3 fs-4">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">Work Orders (WO)</h5>
+                                <small class="text-muted">Manajemen Perintah Kerja Lapangan</small>
+                            </div>
+                        </div>
+                        <div class="p-3 mb-3 rounded-3 bg-danger-subtle border border-danger-subtle">
+                            <div class="fs-2 fw-bold text-danger mb-1"><?= number_format($woStats['aktif'] ?? 0) ?> WO Aktif</div>
+                            <p class="small text-dark mb-0">Perintah kerja penanganan fisik lapangan yang sedang berjalan dan diawasi oleh supervisor teknik.</p>
+                        </div>
+                        <ul class="list-unstyled small text-muted mb-4">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Smart WO Dispatch System</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Tracking SLA &amp; Material Checklist</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Integrasi Regu Yantek &amp; Har</li>
+                        </ul>
+                        <a href="<?= site_url('work-orders') ?>" class="btn btn-danger w-100 py-2 rounded-pill fw-bold">
+                            <i class="fas fa-file-signature me-1"></i> Buka Work Orders &rarr;
+                        </a>
+                    </div>
+
+                    <!-- VIEW 4: DATA TEMUAN PREVIEW -->
+                    <div id="view-temuan" class="contextual-view-block" style="display: none;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="sidak-bento-icon-box bg-warning-subtle text-warning rounded-3 fs-4">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">Data Temuan</h5>
+                                <small class="text-muted">Database Anomali &amp; Inspeksi Fisik</small>
+                            </div>
+                        </div>
+                        <div class="p-3 mb-3 rounded-3 bg-warning-subtle border border-warning-subtle">
+                            <div class="fs-2 fw-bold text-warning mb-1"><?= number_format($stats['total'] ?? 0) ?> Temuan</div>
+                            <p class="small text-dark mb-0">Rekam jejak anomali inspeksi preventif: <strong><?= number_format($stats['emergency'] ?? 0) ?> Emergency</strong>, <strong><?= number_format($stats['high'] ?? 0) ?> High</strong>.</p>
+                        </div>
+                        <ul class="list-unstyled small text-muted mb-4">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Ekspor Excel, CSV &amp; Cetak PDF</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Filter Prioritas, Status &amp; ULP</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Penyelarasan Material Transaksi</li>
+                        </ul>
+                        <a href="<?= site_url('temuan') ?>" class="btn btn-warning text-dark w-100 py-2 rounded-pill fw-bold">
+                            <i class="fas fa-list-check me-1"></i> Buka Data Temuan &rarr;
+                        </a>
+                    </div>
+
+                    <!-- VIEW 5: PLANNING INSPEKSI PREVIEW -->
+                    <div id="view-planning" class="contextual-view-block" style="display: none;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="sidak-bento-icon-box bg-info-subtle text-info rounded-3 fs-4">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">Planning Inspeksi</h5>
+                                <small class="text-muted">Perencanaan Rute &amp; Jadwal Lapangan</small>
+                            </div>
+                        </div>
+                        <div class="p-3 mb-3 rounded-3 bg-info-subtle border border-info-subtle">
+                            <div class="fs-2 fw-bold text-info mb-1"><?= number_format($stats['target_harian'] ?? 25) ?> Target Harian</div>
+                            <p class="small text-dark mb-0">Rencana target inspeksi preventif jaringan per hari untuk menjaga keandalan SAIDI/SAIFI UP3 Sidoarjo.</p>
+                        </div>
+                        <ul class="list-unstyled small text-muted mb-4">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Penjadwalan Rute per Penyulang</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Alokasi Petugas &amp; Tim Inspeksi</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Monitoring Kepatuhan Rencana</li>
+                        </ul>
+                        <a href="<?= site_url('planning') ?>" class="btn btn-info text-white w-100 py-2 rounded-pill fw-bold">
+                            <i class="fas fa-calendar-days me-1"></i> Buka Planning Inspeksi &rarr;
+                        </a>
+                    </div>
+
+                    <!-- VIEW 6: MASTER ASSET PREVIEW -->
+                    <div id="view-assets" class="contextual-view-block" style="display: none;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="sidak-bento-icon-box bg-secondary-subtle text-secondary rounded-3 fs-4">
+                                <i class="fas fa-boxes-stacked"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">Master Asset PLN</h5>
+                                <small class="text-muted">Inventaris Aset Distribusi Sidoarjo</small>
+                            </div>
+                        </div>
+                        <div class="p-3 mb-3 rounded-3 bg-light border">
+                            <div class="fs-2 fw-bold text-dark mb-1">Aset Distribusi</div>
+                            <p class="small text-muted mb-0">Master data Gardu Induk, Penyulang, Section JTM, Tiang, Trafo Distribusi &amp; Kubikel UP3 Sidoarjo.</p>
+                        </div>
+                        <ul class="list-unstyled small text-muted mb-4">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Asset Health Monitoring</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>QR Code Asset Tagging</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Sinkronisasi Spasial &amp; GIS</li>
+                        </ul>
+                        <a href="<?= site_url('master-assets') ?>" class="btn btn-secondary w-100 py-2 rounded-pill fw-bold">
+                            <i class="fas fa-database me-1"></i> Buka Master Asset &rarr;
+                        </a>
+                    </div>
+
+                    <!-- VIEW 7: EXECUTIVE ANALYTICS PREVIEW -->
+                    <div id="view-analytics" class="contextual-view-block" style="display: none;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="sidak-bento-icon-box bg-success-subtle text-success rounded-3 fs-4">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">Executive Analytics</h5>
+                                <small class="text-muted">Strategic Decision &amp; SLA Korporat</small>
+                            </div>
+                        </div>
+                        <div class="p-3 mb-3 rounded-3 bg-success-subtle border border-success-subtle">
+                            <div class="fs-2 fw-bold text-success mb-1"><?= $dailyPct ?>% Realisasi</div>
+                            <p class="small text-dark mb-0">Pencapaian target inspeksi hari ini terhadap target harian korporat UP3 Sidoarjo.</p>
+                        </div>
+                        <ul class="list-unstyled small text-muted mb-4">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Komparasi Performa 3 ULP</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Tren Gangguan Periodik Penyulang</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Audit Kepatuhan SLA Kritis</li>
+                        </ul>
+                        <a href="<?= site_url('executive-dashboard') ?>" class="btn btn-success w-100 py-2 rounded-pill fw-bold">
+                            <i class="fas fa-chart-pie me-1"></i> Buka Executive Dashboard &rarr;
+                        </a>
+                    </div>
+
+                    <!-- VIEW 8: TUGAS SAYA PREVIEW -->
+                    <div id="view-tugas" class="contextual-view-block" style="display: none;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="sidak-bento-icon-box bg-danger-subtle text-danger rounded-3 fs-4">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">Tugas Inspeksi Saya</h5>
+                                <small class="text-muted">Antrian &amp; Penugasan Petugas Lapangan</small>
+                            </div>
+                        </div>
+                        <div class="p-3 mb-3 rounded-3 bg-danger-subtle border border-danger-subtle">
+                            <div class="fs-2 fw-bold text-danger mb-1"><?= number_format($stats['belum'] ?? 0) ?> Antrian</div>
+                            <p class="small text-dark mb-0">Temuan belum selesai yang memerlukan tindak lanjut inspeksi atau verifikasi lapangan.</p>
+                        </div>
+                        <ul class="list-unstyled small text-muted mb-4">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Daftar Tugas per Shift Petugas</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Checklist Pekerjaan Cepat</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Log Riwayat Eksekusi Mandiri</li>
+                        </ul>
+                        <a href="<?= site_url('my-inspections') ?>" class="btn btn-danger w-100 py-2 rounded-pill fw-bold">
+                            <i class="fas fa-tasks me-1"></i> Buka Tugas Saya &rarr;
+                        </a>
+                    </div>
+
+                    <!-- VIEW 9: AI COPILOT & CENTER PREVIEW -->
+                    <div id="view-ai" class="contextual-view-block" style="display: none;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="sidak-bento-icon-box bg-info-subtle text-info rounded-3 fs-4">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">AI Copilot &amp; Center</h5>
+                                <small class="text-muted">Kecerdasan Buatan &amp; Prediksi Anomali</small>
+                            </div>
+                        </div>
+                        <div class="p-3 mb-3 rounded-3 bg-info-subtle border border-info-subtle">
+                            <div class="fs-2 fw-bold text-info mb-1">AI Copilot Live</div>
+                            <p class="small text-dark mb-0">Asisten cerdas berbasis suara untuk pelaporan temuan cepat, perankingan otomatis dan prediksi kegagalan aset.</p>
+                        </div>
+                        <ul class="list-unstyled small text-muted mb-4">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Voice-to-Text Temuan Lapangan</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Auto-Ranking Risiko Anomali Jaringan</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Auto-Complete Section Topology GIS</li>
+                        </ul>
+                        <a href="<?= site_url('ai-copilot') ?>" class="btn btn-info text-white w-100 py-2 rounded-pill fw-bold">
+                            <i class="fas fa-headset me-1"></i> Buka SIDAK AI Copilot &rarr;
+                        </a>
                     </div>
                 </div>
 
@@ -1183,9 +1605,9 @@
     <!-- 3C. FLOATING COMMAND DOCK (DESKTOP ONLY) -->
     <div class="sidak-floating-dock-container d-none d-lg-flex">
         <div class="sidak-floating-dock">
-            <a href="<?= site_url('dashboard') ?>" class="dock-pill-btn active" title="Dashboard Utama">
-                <i class="fas fa-th-large"></i>
-            </a>
+            <button type="button" class="dock-pill-btn" onclick="openCommandPalette()" title="Command Search (Ctrl+K)">
+                <i class="fas fa-terminal"></i>
+            </button>
             <a href="<?= site_url('gis') ?>" class="dock-pill-btn" title="Peta Jaringan GIS">
                 <i class="fas fa-map-marked-alt"></i>
             </a>
@@ -1193,15 +1615,12 @@
                 <i class="fas fa-clipboard-list"></i>
                 <span class="dock-badge bg-warning text-dark"><?= min(99, (int)($stats['total'] ?? 0)) ?></span>
             </a>
-            <a href="<?= site_url('pekerjaan') ?>" class="dock-pill-btn has-badge" title="Work Orders">
+            <a href="<?= site_url('work-orders') ?>" class="dock-pill-btn has-badge" title="Work Orders">
                 <i class="fas fa-tools"></i>
                 <span class="dock-badge bg-danger text-white"><?= min(99, (int)($woStats['aktif'] ?? 0)) ?></span>
             </a>
             <a href="<?= site_url('planning') ?>" class="dock-pill-btn" title="Planning Inspeksi">
                 <i class="fas fa-calendar-alt"></i>
-            </a>
-            <a href="<?= site_url('executive-dashboard') ?>" class="dock-pill-btn" title="Executive Analytics">
-                <i class="fas fa-chart-line"></i>
             </a>
             <?php if ($canInput ?? check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
             <a href="<?= site_url('temuan/create') ?>" class="dock-pill-btn dock-btn-create" title="Input Temuan Baru">
@@ -1212,6 +1631,9 @@
                 <i class="fas fa-robot me-1"></i>
                 <span>Input Temuan / AI</span>
             </a>
+            <button type="button" class="dock-pill-btn" onclick="toggleSidebarDrawer()" title="Menu Lengkap Drawer">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="dock-pill-status">
                 <span class="status-pulse-dot bg-success me-1"></span> Synced
             </div>
@@ -1374,14 +1796,506 @@
                 </a>
             </div>
         </div>
-    </div>
+</div>
 
+<!-- 7. COMMAND PALETTE MODAL (CTRL+K / CMD+K / TOPBAR SEARCH / DOCK BUTTON) -->
+<div id="sidak-command-palette-modal" class="cmd-palette-backdrop" style="display: none;" onclick="if(event.target === this) closeCommandPalette()">
+    <div class="cmd-palette-dialog" onclick="event.stopPropagation()">
+        <!-- Search Input Header -->
+        <div class="cmd-palette-search-box">
+            <i class="fas fa-search cmd-palette-search-icon"></i>
+            <input type="text" id="cmd-palette-search-input" class="cmd-palette-input" placeholder="Cari menu constellation (GIS, WO, Temuan, Planning, Master Asset, AI)..." autocomplete="off" oninput="filterCommandPalette(this.value)" onkeydown="handleCommandPaletteKey(event)">
+            <button type="button" class="cmd-palette-esc-btn" onclick="closeCommandPalette()">ESC</button>
+        </div>
+
+        <!-- Search Results List -->
+        <div class="cmd-palette-results" id="cmd-palette-results">
+            <!-- Group 1: CONSTELLATION CAPABILITIES (8 + 1) -->
+            <div class="cmd-group-block">
+                <div class="cmd-group-header">MENU CONSTELLATION (8 + 1)</div>
+                <a href="<?= site_url('dashboard') ?>" class="cmd-item" data-search="dashboard utama home kpi beranda total temuan ringkasan">
+                    <span class="cmd-dot" style="background: #10b981;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">Dashboard Utama</span>
+                            <span class="cmd-badge">9 nodes</span>
+                        </div>
+                        <span class="cmd-item-sub">Ringkasan KPI, target harian &amp; aktivitas live</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('gis') ?>" class="cmd-item" data-search="peta jaringan gis map geospasial sebaran tiang gardu krian porong candi gedangan sidoarjo">
+                    <span class="cmd-dot" style="background: #0284c7;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">Peta Jaringan GIS</span>
+                            <span class="cmd-badge"><?= number_format($gisPinCount) ?> Node</span>
+                        </div>
+                        <span class="cmd-item-sub">Peta sebaran anomali, gardu, penyulang &amp; GIS</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('work-orders') ?>" class="cmd-item" data-search="work orders wo spk perintah kerja lapangan overdue perbaikan yantek pemeliharaan">
+                    <span class="cmd-dot" style="background: #ef4444;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">Work Orders (WO)</span>
+                            <span class="cmd-badge"><?= number_format($woStats['aktif'] ?? 0) ?> WO</span>
+                        </div>
+                        <span class="cmd-item-sub">Manajemen SPK penanganan fisik &amp; SLA lapangan</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('temuan') ?>" class="cmd-item" data-search="data temuan inspeksi anomali daftar list ekspor filter riwayat fisik">
+                    <span class="cmd-dot" style="background: #f59e0b;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">Data Temuan</span>
+                            <span class="cmd-badge"><?= number_format($stats['total'] ?? 0) ?></span>
+                        </div>
+                        <span class="cmd-item-sub">Database lengkap temuan inspeksi, filter &amp; ekspor</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('planning') ?>" class="cmd-item" data-search="planning inspeksi jadwal rute rencana kalender target harian agenda">
+                    <span class="cmd-dot" style="background: #3b82f6;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">Planning Inspeksi</span>
+                            <span class="cmd-badge"><?= number_format($stats['target_harian'] ?? 25) ?> Target</span>
+                        </div>
+                        <span class="cmd-item-sub">Perencanaan jadwal, rute inspeksi &amp; target harian</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('master-assets') ?>" class="cmd-item" data-search="master asset data aset gardu tiang trafo kubikel jaringan distribusi">
+                    <span class="cmd-dot" style="background: #64748b;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">Master Asset PLN</span>
+                            <span class="cmd-badge">Asset</span>
+                        </div>
+                        <span class="cmd-item-sub">Data aset GI, penyulang, tiang, trafo &amp; kubikel</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('executive-dashboard') ?>" class="cmd-item" data-search="executive analytics dashboard pimpinan manajemen ulp saidi saifi sla korporat">
+                    <span class="cmd-dot" style="background: #10b981;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">Executive Analytics</span>
+                            <span class="cmd-badge"><?= $dailyPct ?>% SLA</span>
+                        </div>
+                        <span class="cmd-item-sub">Analisis performa ULP, SLA korporat &amp; tren gangguan</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('my-inspections') ?>" class="cmd-item" data-search="tugas saya antrian inspeksi penugasan petugas shift pekerjaan mandiri">
+                    <span class="cmd-dot" style="background: #f43f5e;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">Tugas Saya</span>
+                            <span class="cmd-badge"><?= number_format($stats['belum'] ?? 0) ?> Antrian</span>
+                        </div>
+                        <span class="cmd-item-sub">Daftar tugas &amp; antrian inspeksi petugas lapangan</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('ai-copilot') ?>" class="cmd-item" data-search="ai copilot voice voice-to-text asisten cerdas intelligence kecerdasan buatan suara">
+                    <span class="cmd-dot" style="background: #06b6d4;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">AI Copilot &amp; Center</span>
+                            <span class="cmd-badge">AI Voice</span>
+                        </div>
+                        <span class="cmd-item-sub">Voice inspection, AI auto-rank &amp; rekomendasi</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+            </div>
+
+            <!-- Group 2: OPERASIONAL & ANOMALI LAPANGAN -->
+            <div class="cmd-group-block">
+                <div class="cmd-group-header">OPERASIONAL &amp; ANOMALI LAPANGAN</div>
+                <a href="<?= site_url('temuan/create') ?>" class="cmd-item" data-search="input temuan baru form lapor tambah foto upload anomali">
+                    <span class="cmd-dot" style="background: #10b981;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Input Temuan Baru</span>
+                        <span class="cmd-item-sub">Form input inspeksi fisik &amp; upload foto anomali</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('temuan/update-pekerjaan') ?>" class="cmd-item" data-search="update pekerjaan lapangan status progres tindak lanjut fisik">
+                    <span class="cmd-dot" style="background: #f59e0b;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Update Pekerjaan Lapangan</span>
+                        <span class="cmd-item-sub">Update status progres penanganan temuan</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('temuan/terdekat') ?>" class="cmd-item" data-search="lokasi terdekat gps radius sekitar posisi koordinat anomali">
+                    <span class="cmd-dot" style="background: #ef4444;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Lokasi Terdekat GPS</span>
+                        <span class="cmd-item-sub">Pencarian anomali terdekat dari posisi saat ini</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('temuan/riwayat') ?>" class="cmd-item" data-search="riwayat temuan historis arsip pelaporan user petugas">
+                    <span class="cmd-dot" style="background: #64748b;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Riwayat Temuan Terinput</span>
+                        <span class="cmd-item-sub">Arsip pelaporan historis per user/petugas</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('temuan?status=BELUM') ?>" class="cmd-item" data-search="temuan status belum selesai pending antrian">
+                    <span class="cmd-dot" style="background: #f59e0b;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Temuan Status Belum Selesai</span>
+                        <span class="cmd-item-sub">Daftar anomali antrian belum ditangani</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="cmd-item" data-search="temuan emergency darurat kritis 3 hari sla bahaya keselamatan">
+                    <span class="cmd-dot" style="background: #ef4444;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Temuan Emergency Kritis</span>
+                        <span class="cmd-item-sub">Prioritas darurat tinggi batas waktu 3 hari</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="cmd-item" data-search="temuan high priority 7 hari tinggi penting">
+                    <span class="cmd-dot" style="background: #f59e0b;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Temuan High Priority</span>
+                        <span class="cmd-item-sub">Prioritas tinggi batas waktu 7 hari</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="javascript:void(0)" onclick="triggerQrScanModal(); closeCommandPalette();" class="cmd-item" data-search="qr scanner scan barcode kamera aset tiang gardu">
+                    <span class="cmd-dot" style="background: #8b5cf6;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">QR Scanner Aset Lapangan</span>
+                        <span class="cmd-item-sub">Scan barcode tiang/gardu untuk detail aset</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+            </div>
+
+            <!-- Group 3: WORK ORDERS (SPK) -->
+            <div class="cmd-group-block">
+                <div class="cmd-group-header">WORK ORDERS (SPK) &amp; EKSEKUSI</div>
+                <a href="<?= site_url('work-orders') ?>" class="cmd-item" data-search="daftar work orders wo spk perintah kerja lapangan">
+                    <span class="cmd-dot" style="background: #ef4444;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Daftar Work Orders (WO)</span>
+                        <span class="cmd-item-sub">Monitoring seluruh SPK penanganan lapangan</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('work-orders/create') ?>" class="cmd-item" data-search="buat work order baru spk perintah kerja yantek har">
+                    <span class="cmd-dot" style="background: #ef4444;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Buat Work Order Baru</span>
+                        <span class="cmd-item-sub">Terbitkan perintah kerja regu pemeliharaan</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('work-orders?status=AKTIF') ?>" class="cmd-item" data-search="work order aktif progress pengerjaan berjalan tim">
+                    <span class="cmd-dot" style="background: #3b82f6;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Work Order Aktif</span>
+                        <span class="cmd-item-sub">SPK sedang dalam pengerjaan tim yantek</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('pekerjaan') ?>" class="cmd-item" data-search="pekerjaan melewati sla overdue terlambat eskalasi segera">
+                    <span class="cmd-dot" style="background: #dc2626;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Pekerjaan Melewati SLA (Overdue)</span>
+                        <span class="cmd-item-sub">Daftar SPK yang melewati target waktu SLA</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('pekerjaan/selesai') ?>" class="cmd-item" data-search="pekerjaan selesai verifikasi supervisor tuntas arsip">
+                    <span class="cmd-dot" style="background: #10b981;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Pekerjaan Selesai Diverifikasi</span>
+                        <span class="cmd-item-sub">Arsip pekerjaan yang telah diverifikasi supervisor</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+            </div>
+
+            <!-- Group 4: SPASIAL & GIS MONITORING -->
+            <div class="cmd-group-block">
+                <div class="cmd-group-header">SPASIAL &amp; GIS MONITORING</div>
+                <a href="<?= site_url('gis') ?>" class="cmd-item" data-search="peta spasial gis leaflet maps interaktif sebaran sidoarjo">
+                    <span class="cmd-dot" style="background: #0284c7;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Peta Jaringan Spasial GIS</span>
+                        <span class="cmd-item-sub">Peta interaktif sebaran anomali se-Sidoarjo</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('gis') ?>" class="cmd-item" data-search="filter temuan penyulang jtm jaringan feeder isolasi">
+                    <span class="cmd-dot" style="background: #0284c7;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Filter Temuan per Penyulang</span>
+                        <span class="cmd-item-sub">Isolasi jalur distribusi anomali tertentu</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('gis') ?>" class="cmd-item" data-search="filter temuan wilayah ulp sidoarjo kota gedangan candi porong krian">
+                    <span class="cmd-dot" style="background: #0284c7;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Filter Temuan per Wilayah ULP</span>
+                        <span class="cmd-item-sub">Sidoarjo Kota, Gedangan, Candi, Porong, Krian</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+            </div>
+
+            <!-- Group 5: PLANNING & PENJADWALAN -->
+            <div class="cmd-group-block">
+                <div class="cmd-group-header">PLANNING &amp; PENJADWALAN</div>
+                <a href="<?= site_url('planning') ?>" class="cmd-item" data-search="jadwal planning inspeksi kalender rute rutin target">
+                    <span class="cmd-dot" style="background: #3b82f6;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Jadwal Planning Inspeksi</span>
+                        <span class="cmd-item-sub">Kalender &amp; rencana inspeksi rutin penyulang</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('planning/create') ?>" class="cmd-item" data-search="buat jadwal planning baru agenda rencana inspeksi tim target">
+                    <span class="cmd-dot" style="background: #3b82f6;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Buat Jadwal Planning Baru</span>
+                        <span class="cmd-item-sub">Jadwalkan tim inspeksi ke penyulang target</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+            </div>
+
+            <!-- Group 6: ANALITIK, LAPORAN & AUDIT -->
+            <div class="cmd-group-block">
+                <div class="cmd-group-header">ANALITIK, LAPORAN &amp; AUDIT</div>
+                <a href="<?= site_url('executive-dashboard') ?>" class="cmd-item" data-search="executive analytics analisis sla saidi saifi pimpinan performa ulp">
+                    <span class="cmd-dot" style="background: #10b981;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Executive Analytics Dashboard</span>
+                        <span class="cmd-item-sub">Ringkasan performa pimpinan &amp; metrik SLA</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('temuan/export-excel') ?>" class="cmd-item" data-search="ekspor data temuan excel xlsx download unduh rekap spreadsheet">
+                    <span class="cmd-dot" style="background: #10b981;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Ekspor Data Temuan Excel (XLSX)</span>
+                        <span class="cmd-item-sub">Unduh spreadsheet rekapan temuan lapangan</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('temuan/export-pdf') ?>" class="cmd-item" data-search="cetak laporan pdf resmi unduh dokumen cetak pimpinan">
+                    <span class="cmd-dot" style="background: #ef4444;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Cetak Laporan PDF Resmi</span>
+                        <span class="cmd-item-sub">Format laporan siap cetak untuk manajemen</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('audit-log') ?>" class="cmd-item" data-search="audit log riwayat aktivitas sistem jejak logbook user perubahan transaksi">
+                    <span class="cmd-dot" style="background: #64748b;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Audit Log &amp; Riwayat Sistem</span>
+                        <span class="cmd-item-sub">Rekam jejak aktivitas pengguna &amp; perubahan data</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('notifikasi') ?>" class="cmd-item" data-search="pusat notifikasi alert peringatan pengumuman broadcast info">
+                    <span class="cmd-dot" style="background: #f59e0b;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Pusat Notifikasi &amp; Alert</span>
+                        <span class="cmd-item-sub">Daftar peringatan batas waktu &amp; update sistem</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+            </div>
+
+            <!-- Group 7: MASTER DATA & ADMINISTRASI -->
+            <div class="cmd-group-block">
+                <div class="cmd-group-header">MASTER DATA &amp; ADMINISTRASI</div>
+                <a href="<?= site_url('master-assets') ?>" class="cmd-item" data-search="master data aset gardu tiang transformator penyulang distribusi">
+                    <span class="cmd-dot" style="background: #64748b;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Master Asset PLN Distribusi</span>
+                        <span class="cmd-item-sub">Inventaris GI, penyulang, tiang &amp; transformator</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('master-penyulang') ?>" class="cmd-item" data-search="master data penyulang feeder kode panjang jaringan gardu">
+                    <span class="cmd-dot" style="background: #64748b;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Master Data Penyulang</span>
+                        <span class="cmd-item-sub">Database kode penyulang &amp; panjang jaringan</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('user') ?>" class="cmd-item" data-search="manajemen pengguna user role akun hak akses password regu inspeksi">
+                    <span class="cmd-dot" style="background: #0284c7;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Manajemen Pengguna (User Management)</span>
+                        <span class="cmd-item-sub">Pengaturan akun, tim inspeksi &amp; hak akses role</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('setting') ?>" class="cmd-item" data-search="pengaturan sistem setting konfigurasi parameter target pengumuman motivasi">
+                    <span class="cmd-dot" style="background: #64748b;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Pengaturan Sistem &amp; Parameter</span>
+                        <span class="cmd-item-sub">Konfigurasi kuota, pengumuman &amp; parameter app</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('panduan') ?>" class="cmd-item" data-search="panduan petunjuk penggunaan manual sop dokumentasi tutorial">
+                    <span class="cmd-dot" style="background: #10b981;"></span>
+                    <div class="cmd-item-info">
+                        <span class="cmd-item-title">Panduan Penggunaan &amp; SOP</span>
+                        <span class="cmd-item-sub">Buku panduan operasional aplikasi SIDAK TEJO</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer Shortcuts -->
+        <div class="cmd-palette-footer">
+            <div class="d-flex align-items-center gap-2">
+                <span><kbd class="cmd-shortcut-badge">&uarr;</kbd> <kbd class="cmd-shortcut-badge">&darr;</kbd> Navigasi</span>
+                <span>&bull;</span>
+                <span><kbd class="cmd-shortcut-badge">&crarr;</kbd> Pilih</span>
+                <span>&bull;</span>
+                <span><kbd class="cmd-shortcut-badge">ESC</kbd> Tutup</span>
+            </div>
+            <span class="fw-semibold text-muted">SIDAK TEJO &bull; PLN UP3 Sidoarjo</span>
+        </div>
+    </div>
 </div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+// Phase 2E Constellation Preview & Command Palette Engine
+var activePreviewTimeout = null;
+var currentSelectedNode = 'dashboard';
+
+window.showNodePreview = function(nodeKey) {
+    if (activePreviewTimeout) {
+        clearTimeout(activePreviewTimeout);
+        activePreviewTimeout = null;
+    }
+    var views = document.querySelectorAll('.contextual-view-block');
+    views.forEach(function(v) { v.style.display = 'none'; });
+    var target = document.getElementById('view-' + nodeKey);
+    if (target) {
+        target.style.display = 'block';
+    } else {
+        var fallback = document.getElementById('view-dashboard');
+        if (fallback) fallback.style.display = 'block';
+    }
+
+    // Highlight connecting line
+    document.querySelectorAll('.constellation-svg-line').forEach(function(l) {
+        l.classList.remove('highlighted');
+    });
+    var line = document.getElementById('svg-line-' + nodeKey);
+    if (line) line.classList.add('highlighted');
+
+    // Highlight node
+    document.querySelectorAll('.constellation-node, .constellation-central-node').forEach(function(n) {
+        n.classList.remove('active-hover');
+    });
+    var nodeEl = document.getElementById('node-' + nodeKey) || document.getElementById('node-hub-' + nodeKey);
+    if (nodeEl) nodeEl.classList.add('active-hover');
+};
+
+window.scheduleResetPreview = function() {
+    if (activePreviewTimeout) clearTimeout(activePreviewTimeout);
+    activePreviewTimeout = setTimeout(function() {
+        showNodePreview(currentSelectedNode);
+    }, 320);
+};
+
+window.selectNode = function(nodeKey) {
+    currentSelectedNode = nodeKey;
+    showNodePreview(nodeKey);
+};
+
+// Command Palette Search Filter & Keyboard Navigation
+window.filterCommandPalette = function(query) {
+    var q = (query || '').toLowerCase().trim();
+    var items = document.querySelectorAll('#cmd-palette-results .cmd-item');
+    var groups = document.querySelectorAll('#cmd-palette-results .cmd-group-block');
+
+    items.forEach(function(item) {
+        var text = (item.getAttribute('data-search') || item.innerText).toLowerCase();
+        if (!q || text.indexOf(q) !== -1) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+
+    // Hide empty group headers
+    groups.forEach(function(grp) {
+        var visibleItems = grp.querySelectorAll('.cmd-item[style*="display: flex"]');
+        if (q && visibleItems.length === 0) {
+            grp.style.display = 'none';
+        } else {
+            grp.style.display = 'block';
+        }
+    });
+
+    // Set active item to first visible
+    items.forEach(function(i) { i.classList.remove('active'); });
+    var firstVisible = document.querySelector('#cmd-palette-results .cmd-item[style*="display: flex"]');
+    if (firstVisible) firstVisible.classList.add('active');
+};
+
+window.handleCommandPaletteKey = function(e) {
+    var modal = document.getElementById('sidak-command-palette-modal');
+    if (!modal || modal.style.display === 'none') return;
+
+    var visibleItems = Array.from(document.querySelectorAll('#cmd-palette-results .cmd-item[style*="display: flex"]'));
+    if (visibleItems.length === 0) return;
+
+    var activeIndex = visibleItems.findIndex(function(el) { return el.classList.contains('active'); });
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (activeIndex !== -1) visibleItems[activeIndex].classList.remove('active');
+        var nextIndex = (activeIndex + 1) % visibleItems.length;
+        visibleItems[nextIndex].classList.add('active');
+        visibleItems[nextIndex].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (activeIndex !== -1) visibleItems[activeIndex].classList.remove('active');
+        var prevIndex = (activeIndex - 1 + visibleItems.length) % visibleItems.length;
+        visibleItems[prevIndex].classList.add('active');
+        visibleItems[prevIndex].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeIndex !== -1 && visibleItems[activeIndex]) {
+            visibleItems[activeIndex].click();
+        }
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeCommandPalette();
+    }
+};
+
 document.addEventListener("DOMContentLoaded", function() {
     // Realtime Clock
     setInterval(function() {

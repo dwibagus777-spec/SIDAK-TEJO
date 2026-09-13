@@ -322,6 +322,460 @@
         max-width: 100%;
         overflow-x: hidden;
     }
+
+    /* Phase 2E: Constellation Mission Control & Contextual Dashboard Scoped Styles */
+    .constellation-canvas-card {
+        background: #fcfcfd;
+        background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+        background-size: 24px 24px;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+        position: relative;
+        overflow: hidden;
+        min-height: 520px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .constellation-canvas-body {
+        position: relative;
+        flex: 1;
+        min-height: 420px;
+        overflow: hidden;
+    }
+
+    .constellation-svg-network {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .constellation-svg-line {
+        stroke: #cbd5e1;
+        stroke-width: 1.5;
+        stroke-dasharray: 4, 4;
+        transition: stroke 0.3s ease, stroke-width 0.3s ease;
+    }
+
+    .constellation-central-node {
+        position: absolute;
+        z-index: 10;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        text-decoration: none !important;
+    }
+
+    .constellation-central-halo {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.08) 55%, transparent 72%);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        animation: constellation-halo-pulse 3s infinite ease-in-out;
+    }
+
+    @keyframes constellation-halo-pulse {
+        0%, 100% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0.85;
+        }
+        50% {
+            transform: translate(-50%, -50%) scale(1.15);
+            opacity: 0.45;
+        }
+    }
+
+    .constellation-central-ring {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 3px solid #10b981;
+        box-shadow: 0 0 24px rgba(16, 185, 129, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 800;
+        color: #047857;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        z-index: 2;
+    }
+
+    .constellation-central-node:hover .constellation-central-ring {
+        transform: scale(1.1);
+        box-shadow: 0 0 32px rgba(16, 185, 129, 0.6);
+        border-color: #059669;
+    }
+
+    .constellation-central-pill {
+        position: absolute;
+        left: 60px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 9999px;
+        padding: 6px 14px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        text-decoration: none !important;
+        transition: all 0.2s ease;
+        z-index: 2;
+    }
+
+    .constellation-central-node:hover .constellation-central-pill {
+        transform: translateY(-50%) translateX(2px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+        border-color: #10b981;
+    }
+
+    .constellation-node {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        z-index: 8;
+        text-decoration: none !important;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .constellation-node:hover {
+        transform: translate(-50%, -50%) scale(1.12);
+        z-index: 12;
+    }
+
+    .constellation-node-aura {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        filter: blur(8px);
+        opacity: 0.55;
+        transition: opacity 0.2s ease;
+    }
+
+    .constellation-node:hover .constellation-node-aura {
+        opacity: 0.9;
+    }
+
+    .constellation-node-disc {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #cbd5e1;
+        box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        position: relative;
+        z-index: 2;
+        transition: all 0.2s ease;
+    }
+
+    .constellation-node-badge {
+        position: absolute;
+        top: -6px;
+        right: -8px;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 9999px;
+        line-height: 1;
+        z-index: 3;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .constellation-node-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #475569;
+        margin-top: 5px;
+        white-space: nowrap;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 2px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(226, 232, 240, 0.6);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .constellation-node-pill {
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 700;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        white-space: nowrap;
+    }
+
+    .contextual-dashboard-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+    }
+
+    .contextual-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .contextual-kpi-card {
+        padding: 16px;
+        border-radius: 16px;
+        text-decoration: none !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 105px;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    }
+
+    .contextual-kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .contextual-kpi-val {
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.5px;
+    }
+
+    .contextual-kpi-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-top: 8px;
+    }
+
+    .contextual-kpi-sub {
+        font-size: 11px;
+        opacity: 0.8;
+    }
+
+    .contextual-kpi-mint {
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 1px solid #a7f3d0;
+        color: #065f46 !important;
+    }
+    .contextual-kpi-mint .contextual-kpi-val { color: #047857; }
+
+    .contextual-kpi-rose {
+        background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+        border: 1px solid #fecdd3;
+        color: #9f1239 !important;
+    }
+    .contextual-kpi-rose .contextual-kpi-val { color: #be123c; }
+
+    .contextual-kpi-peach {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 1px solid #fde68a;
+        color: #92400e !important;
+    }
+    .contextual-kpi-peach .contextual-kpi-val { color: #b45309; }
+
+    .contextual-kpi-blue {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 1px solid #bae6fd;
+        color: #075985 !important;
+    }
+    .contextual-kpi-blue .contextual-kpi-val { color: #0284c7; }
+
+    .contextual-mini-metric {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        transition: background-color 0.2s ease;
+    }
+
+    .contextual-mini-metric:hover {
+        background: #f1f5f9;
+    }
+
+    .sidak-floating-dock-container {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1040;
+        pointer-events: none;
+    }
+
+    .sidak-floating-dock {
+        pointer-events: auto;
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(203, 213, 225, 0.85);
+        border-radius: 9999px;
+        padding: 6px 14px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.25s ease;
+    }
+
+    .sidak-floating-dock:hover {
+        box-shadow: 0 14px 36px rgba(15, 23, 42, 0.18);
+        border-color: #94a3b8;
+    }
+
+    .dock-pill-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #475569 !important;
+        text-decoration: none !important;
+        font-size: 15px;
+        position: relative;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .dock-pill-btn:hover {
+        background: #f1f5f9;
+        color: #0f172a !important;
+        transform: translateY(-2px);
+    }
+
+    .dock-pill-btn.active {
+        background: #0f172a;
+        color: #ffffff !important;
+    }
+
+    .dock-pill-btn.has-badge .dock-badge {
+        position: absolute;
+        top: -2px;
+        right: -4px;
+        font-size: 9px;
+        font-weight: 800;
+        padding: 1px 5px;
+        border-radius: 9999px;
+        line-height: 1.1;
+        border: 1px solid #ffffff;
+    }
+
+    .dock-btn-create {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #00B5B8 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 10px rgba(0, 181, 184, 0.3);
+    }
+
+    .dock-btn-create:hover {
+        background: #009699 !important;
+        color: #ffffff !important;
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 6px 14px rgba(0, 181, 184, 0.4);
+    }
+
+    .dock-btn-ai {
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 9999px;
+        background: #0f172a !important;
+        color: #ffffff !important;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none !important;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+        transition: all 0.2s ease;
+    }
+
+    .dock-btn-ai:hover {
+        background: #1e293b !important;
+        color: #38bdf8 !important;
+        transform: translateY(-2px);
+    }
+
+    .dock-pill-status {
+        display: flex;
+        align-items: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        padding-left: 6px;
+        border-left: 1px solid #e2e8f0;
+    }
+
+    @media (max-width: 991.98px) {
+        .constellation-canvas-card {
+            min-height: 440px;
+        }
+        .constellation-canvas-body {
+            min-height: 380px;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .constellation-canvas-card {
+            min-height: 380px;
+        }
+        .constellation-canvas-body {
+            min-height: 320px;
+        }
+        .constellation-central-ring {
+            width: 44px;
+            height: 44px;
+            font-size: 16px;
+        }
+        .constellation-central-halo {
+            width: 120px;
+            height: 120px;
+        }
+        .constellation-node-disc {
+            width: 32px;
+            height: 32px;
+            font-size: 12px;
+        }
+        .constellation-node-aura {
+            width: 48px;
+            height: 48px;
+        }
+        .constellation-node-label {
+            font-size: 9px;
+            padding: 1px 5px;
+        }
+        .contextual-kpi-val {
+            font-size: 22px;
+        }
+        .contextual-kpi-title {
+            font-size: 10px;
+        }
+    }
 </style>
 
 <div class="sidak-bento-container emc-container container-fluid py-3">
@@ -401,121 +855,363 @@
         </a>
     </div>
 
-    <!-- 3. SECTION C: 8-CARD BENTO KPI GRID -->
+    <!-- 3. SECTION C: CONSTELLATION MISSION CONTROL & CONTEXTUAL DASHBOARD (PHASE 2E) -->
     <?php
         $dailyTarget = max(1, (int)($stats['target_harian'] ?? 25));
         $dailyDone = (int)($stats['hari_ini'] ?? $stats['selesai_hari_ini'] ?? ($stats['selesai'] ?? 0));
         $dailyPct = min(100, (int)round(($dailyDone / $dailyTarget) * 100));
+        $gisPinCount = count($mapPins ?? []);
     ?>
-    <div class="sidak-bento-kpi-grid mb-4">
-        <!-- 1. Jumlah Temuan -->
-        <a href="<?= site_url('temuan') ?>" class="sidak-bento-kpi-card sidak-bento-kpi-primary kpi-emc-card kpi-drilldown-link">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="sidak-bento-lbl kpi-emc-lbl">Jumlah Temuan</span>
-                <i class="fas fa-arrow-up-right-from-square opacity-50"></i>
-            </div>
-            <div class="sidak-bento-val kpi-emc-val mt-2" id="kpi-total-temuan"><?= number_format($stats['total'] ?? 0) ?></div>
-            <div class="sidak-bento-sub">
-                <span>Total Inspeksi Fisik</span>
-                <i class="fas fa-chevron-right opacity-75"></i>
-            </div>
-        </a>
-
-        <!-- 2. Emergency -->
-        <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="sidak-bento-kpi-card sidak-bento-kpi-danger kpi-emc-card kpi-drilldown-link">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="sidak-bento-lbl kpi-emc-lbl">Emergency</span>
-                <i class="fas fa-triangle-exclamation opacity-50"></i>
-            </div>
-            <div class="sidak-bento-val kpi-emc-val mt-2" id="kpi-emergency"><?= number_format($stats['emergency'] ?? 0) ?></div>
-            <div class="sidak-bento-sub">
-                <span>Tindak Lanjut Darurat</span>
-                <i class="fas fa-chevron-right opacity-75"></i>
-            </div>
-        </a>
-
-        <!-- 3. High Priority -->
-        <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="sidak-bento-kpi-card sidak-bento-kpi-warning kpi-emc-card kpi-drilldown-link">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="sidak-bento-lbl kpi-emc-lbl">High Priority</span>
-                <i class="fas fa-clock opacity-50"></i>
-            </div>
-            <div class="sidak-bento-val kpi-emc-val mt-2" id="kpi-high"><?= number_format($stats['high'] ?? 0) ?></div>
-            <div class="sidak-bento-sub">
-                <span>SLA 7 Hari</span>
-                <i class="fas fa-chevron-right opacity-75"></i>
-            </div>
-        </a>
-
-        <!-- 4. Medium Priority -->
-        <a href="<?= site_url('temuan?prioritas=MEDIUM') ?>" class="sidak-bento-kpi-card sidak-bento-kpi-info kpi-emc-card kpi-drilldown-link">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="sidak-bento-lbl kpi-emc-lbl">Medium Priority</span>
-                <i class="fas fa-calendar-check opacity-50"></i>
-            </div>
-            <div class="sidak-bento-val kpi-emc-val mt-2" id="kpi-medium"><?= number_format($stats['medium'] ?? 0) ?></div>
-            <div class="sidak-bento-sub">
-                <span>SLA 31 Hari</span>
-                <i class="fas fa-chevron-right opacity-75"></i>
-            </div>
-        </a>
-
-        <!-- 5. Belum Selesai -->
-        <a href="<?= site_url('temuan?status=BELUM') ?>" class="sidak-bento-kpi-card sidak-bento-kpi-dark kpi-emc-card kpi-drilldown-link">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="sidak-bento-lbl kpi-emc-lbl">Belum Selesai</span>
-                <i class="fas fa-hourglass-half opacity-50"></i>
-            </div>
-            <div class="sidak-bento-val kpi-emc-val mt-2" id="kpi-belum"><?= number_format($stats['belum'] ?? 0) ?></div>
-            <div class="sidak-bento-sub">
-                <span>Outstanding</span>
-                <i class="fas fa-chevron-right opacity-75"></i>
-            </div>
-        </a>
-
-        <!-- 6. WO Aktif -->
-        <a href="<?= site_url('work-orders?status=AKTIF') ?>" class="sidak-bento-kpi-card sidak-bento-kpi-cyan kpi-emc-card kpi-drilldown-link">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="sidak-bento-lbl kpi-emc-lbl">WO Aktif</span>
-                <i class="fas fa-bolt opacity-50"></i>
-            </div>
-            <div class="sidak-bento-val kpi-emc-val mt-2" id="kpi-wo-aktif"><?= number_format($woStats['aktif'] ?? 0) ?></div>
-            <div class="sidak-bento-sub">
-                <span>SPK Work Order Aktif</span>
-                <i class="fas fa-chevron-right opacity-75"></i>
-            </div>
-        </a>
-
-        <!-- 7. Sudah Selesai -->
-        <a href="<?= site_url('temuan?status=SELESAI') ?>" class="sidak-bento-kpi-card sidak-bento-kpi-success kpi-emc-card kpi-drilldown-link">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="sidak-bento-lbl kpi-emc-lbl">Sudah Selesai</span>
-                <i class="fas fa-circle-check opacity-50"></i>
-            </div>
-            <div class="sidak-bento-val kpi-emc-val mt-2" id="kpi-selesai"><?= number_format($stats['selesai'] ?? 0) ?></div>
-            <div class="sidak-bento-sub">
-                <span>Tuntas 100%</span>
-                <i class="fas fa-chevron-right opacity-75"></i>
-            </div>
-        </a>
-
-        <!-- 8. Target Harian -->
-        <div class="sidak-bento-kpi-card sidak-bento-kpi-target p-3 d-flex flex-column justify-content-between">
-            <div>
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="sidak-bento-lbl text-muted">TARGET HARIAN</span>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" id="kpi-target-harian-pct"><?= $dailyPct ?>%</span>
+    <div class="row g-4 mb-4 align-items-stretch">
+        <!-- 3A. CONSTELLATION MISSION CONTROL CANVAS (LEFT / CENTER) -->
+        <div class="col-lg-7 col-12">
+            <div class="sidak-bento-card emc-card constellation-canvas-card h-100">
+                <!-- Canvas Top Header -->
+                <div class="p-3 pb-2 d-flex justify-content-between align-items-start z-2 position-relative">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">
+                                <i class="fas fa-network-wired me-1"></i> CONSTELLATION NAV &bull; LIVE
+                            </span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1" style="letter-spacing: -0.3px;">Pilih titik cahaya untuk membuka menu</h5>
+                        <p class="text-muted small mb-0" style="font-size: 11px;">Setiap node adalah lokasi menu operasional. Hover untuk preview, klik untuk navigasi langsung.</p>
+                    </div>
+                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-1 small fw-bold">9 nodes</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-baseline mt-2">
-                    <div class="sidak-bento-val text-primary" id="kpi-target-harian-text"><?= number_format($dailyDone) ?> <span class="fs-5 text-muted fw-semibold">/ <?= number_format($dailyTarget) ?></span></div>
+
+                <!-- Constellation Interactive Body -->
+                <div class="constellation-canvas-body position-relative">
+                    <!-- SVG Vector Connecting Lines Overlay -->
+                    <svg class="constellation-svg-network" viewBox="0 0 1000 600" preserveAspectRatio="none">
+                        <!-- Inter-satellite vector connections (Topology web) -->
+                        <line x1="200" y1="120" x2="800" y2="120" class="constellation-svg-line" />
+                        <line x1="800" y1="120" x2="650" y2="204" class="constellation-svg-line" />
+                        <line x1="650" y1="204" x2="820" y2="372" class="constellation-svg-line" />
+                        <line x1="820" y1="372" x2="700" y2="492" class="constellation-svg-line" />
+                        <line x1="240" y1="432" x2="460" y2="504" class="constellation-svg-line" />
+                        <line x1="160" y1="276" x2="240" y2="432" class="constellation-svg-line" />
+                        <line x1="160" y1="276" x2="200" y2="120" class="constellation-svg-line" />
+
+                        <!-- Center to satellite vector lines -->
+                        <line x1="480" y1="288" x2="200" y2="120" class="constellation-svg-line active" />
+                        <line x1="480" y1="288" x2="800" y2="120" class="constellation-svg-line active" />
+                        <line x1="480" y1="288" x2="650" y2="204" class="constellation-svg-line active" />
+                        <line x1="480" y1="288" x2="820" y2="372" class="constellation-svg-line active" />
+                        <line x1="480" y1="288" x2="700" y2="492" class="constellation-svg-line active" />
+                        <line x1="480" y1="288" x2="460" y2="504" class="constellation-svg-line active" />
+                        <line x1="480" y1="288" x2="240" y2="432" class="constellation-svg-line active" />
+                        <line x1="480" y1="288" x2="160" y2="276" class="constellation-svg-line active" />
+                    </svg>
+
+                    <!-- 1. Central Hub Node: ◎ Dashboard Utama -->
+                    <div class="constellation-central-node" style="left: 48%; top: 48%;" id="node-hub-dashboard">
+                        <div class="constellation-central-halo"></div>
+                        <a href="<?= site_url('dashboard') ?>" class="constellation-central-ring" title="Dashboard Utama">
+                            <i class="fas fa-circle-dot"></i>
+                        </a>
+                        <a href="<?= site_url('dashboard') ?>" class="constellation-central-pill">
+                            <span class="rounded-circle bg-success" style="width: 8px; height: 8px;"></span>
+                            <strong class="text-dark" style="font-size: 12px;">Dashboard Utama</strong>
+                            <span class="badge bg-light text-dark border px-2 py-0" style="font-size: 11px;"><?= number_format($stats['total'] ?? 0) ?></span>
+                            <span class="text-muted small">Klik untuk buka</span>
+                        </a>
+                    </div>
+
+                    <!-- 2. Satellite Node: Planning Inspeksi -->
+                    <a href="<?= site_url('planning') ?>" class="constellation-node" style="left: 20%; top: 20%;" title="Planning Inspeksi" id="node-planning">
+                        <div class="constellation-node-aura" style="background: rgba(59, 130, 246, 0.4);"></div>
+                        <div class="constellation-node-disc" style="border-color: #3b82f6;">
+                            <i class="fas fa-calendar-check text-primary"></i>
+                            <span class="constellation-node-badge bg-primary text-white"><?= number_format($stats['target_harian'] ?? 25) ?></span>
+                        </div>
+                        <span class="constellation-node-label">Planning Inspeksi</span>
+                    </a>
+
+                    <!-- 3. Satellite Node: Data Temuan -->
+                    <a href="<?= site_url('temuan') ?>" class="constellation-node" style="left: 80%; top: 20%;" title="Data Temuan" id="node-temuan">
+                        <div class="constellation-node-aura" style="background: rgba(245, 158, 11, 0.4);"></div>
+                        <div class="constellation-node-disc" style="border-color: #f59e0b;">
+                            <i class="fas fa-list-check text-warning"></i>
+                            <span class="constellation-node-badge bg-warning text-dark"><?= number_format($stats['total'] ?? 0) ?></span>
+                        </div>
+                        <span class="constellation-node-label">Data Temuan</span>
+                    </a>
+
+                    <!-- 4. Satellite Node: Work Orders (WO) -->
+                    <a href="<?= site_url('pekerjaan') ?>" class="constellation-node" style="left: 65%; top: 34%;" title="Work Orders (WO)" id="node-wo">
+                        <div class="constellation-node-aura" style="background: rgba(100, 116, 139, 0.35);"></div>
+                        <span class="constellation-node-pill bg-dark text-white border border-secondary shadow-sm">
+                            <i class="fas fa-bolt text-warning me-1"></i><?= number_format($woStats['aktif'] ?? 0) ?> WO
+                        </span>
+                        <span class="constellation-node-label">Work Orders</span>
+                    </a>
+
+                    <!-- 5. Satellite Node: Emergency Priority -->
+                    <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="constellation-node" style="left: 82%; top: 62%;" title="Emergency SLA" id="node-emergency">
+                        <div class="constellation-node-aura" style="background: rgba(239, 68, 68, 0.45);"></div>
+                        <div class="constellation-node-disc" style="border-color: #ef4444;">
+                            <i class="fas fa-triangle-exclamation text-danger"></i>
+                            <span class="constellation-node-badge bg-danger text-white"><?= number_format($stats['emergency'] ?? 0) ?></span>
+                        </div>
+                        <span class="constellation-node-label text-danger">Emergency</span>
+                    </a>
+
+                    <!-- 6. Satellite Node: Tugas Inspeksi Saya -->
+                    <a href="<?= site_url('inspeksi/tugas') ?>" class="constellation-node" style="left: 70%; top: 82%;" title="Tugas Saya" id="node-tugas">
+                        <div class="constellation-node-aura" style="background: rgba(244, 63, 94, 0.4);"></div>
+                        <div class="constellation-node-disc" style="border-color: #f43f5e;">
+                            <i class="fas fa-user-check text-danger"></i>
+                            <span class="constellation-node-badge bg-danger text-white"><?= number_format($stats['belum'] ?? 0) ?></span>
+                        </div>
+                        <span class="constellation-node-label">Tugas Saya</span>
+                    </a>
+
+                    <!-- 7. Satellite Node: AI Copilot -->
+                    <a href="<?= site_url('ai-copilot') ?>" class="constellation-node" style="left: 46%; top: 84%;" title="AI Copilot Voice" id="node-ai">
+                        <div class="constellation-node-aura" style="background: rgba(6, 182, 212, 0.45);"></div>
+                        <div class="constellation-node-disc" style="border-color: #06b6d4;">
+                            <i class="fas fa-robot text-info"></i>
+                            <span class="constellation-node-badge bg-info text-white">AI</span>
+                        </div>
+                        <span class="constellation-node-label text-info">AI Copilot</span>
+                    </a>
+
+                    <!-- 8. Satellite Node: Peta Jaringan GIS -->
+                    <a href="<?= site_url('gis') ?>" class="constellation-node" style="left: 24%; top: 72%;" title="Peta Jaringan GIS" id="node-gis">
+                        <div class="constellation-node-aura" style="background: rgba(2, 132, 199, 0.4);"></div>
+                        <div class="constellation-node-disc" style="border-color: #0284c7;">
+                            <i class="fas fa-map-location-dot text-primary"></i>
+                            <span class="constellation-node-badge bg-primary text-white"><?= number_format($gisPinCount) ?></span>
+                        </div>
+                        <span class="constellation-node-label">Peta GIS</span>
+                    </a>
+
+                    <!-- 9. Satellite Node: Executive Analytics -->
+                    <a href="<?= site_url('executive-dashboard') ?>" class="constellation-node" style="left: 16%; top: 46%;" title="Executive Analytics" id="node-analytics">
+                        <div class="constellation-node-aura" style="background: rgba(16, 185, 129, 0.4);"></div>
+                        <div class="constellation-node-disc" style="border-color: #10b981;">
+                            <i class="fas fa-chart-line text-success"></i>
+                            <span class="constellation-node-badge bg-success text-white"><?= $dailyPct ?>%</span>
+                        </div>
+                        <span class="constellation-node-label">Analytics</span>
+                    </a>
                 </div>
-                <div class="progress mt-2" style="height: 8px; border-radius: 6px; background-color: #e2e8f0;">
-                    <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width: <?= $dailyPct ?>%;" id="kpi-target-harian-bar" aria-valuenow="<?= $dailyPct ?>" aria-valuemin="0" aria-valuemax="100"></div>
+
+                <!-- Canvas Footer Legend -->
+                <div class="p-3 pt-2 d-flex flex-wrap align-items-center justify-content-between gap-2 z-2 position-relative border-top border-light" style="font-size: 11px;">
+                    <div class="d-flex flex-wrap align-items-center gap-3 text-muted">
+                        <span><span class="badge bg-primary rounded-circle p-1 me-1 d-inline-block"></span> GIS</span>
+                        <span><span class="badge bg-warning rounded-circle p-1 me-1 d-inline-block"></span> Temuan</span>
+                        <span><span class="badge bg-danger rounded-circle p-1 me-1 d-inline-block"></span> WO / Darurat</span>
+                        <span><span class="badge bg-info rounded-circle p-1 me-1 d-inline-block"></span> AI Copilot</span>
+                        <span><span class="badge bg-success rounded-circle p-1 me-1 d-inline-block"></span> Analytics</span>
+                    </div>
+                    <span class="text-muted small"><i class="fas fa-circle-info me-1"></i> Interactive Constellation Canvas</span>
                 </div>
             </div>
-            <small class="text-muted d-block mt-2" style="font-size: 11px;">
-                <i class="fas fa-bullseye text-primary me-1"></i> Realisasi Inspeksi &amp; Pemulihan
-            </small>
+        </div>
+
+        <!-- 3B. CONTEXTUAL DASHBOARD PANEL (RIGHT) -->
+        <div class="col-lg-5 col-12">
+            <div class="sidak-bento-card contextual-dashboard-card emc-card p-4 d-flex flex-column justify-content-between h-100">
+                <div>
+                    <!-- Panel Top Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="sidak-bento-icon-box bg-success-subtle text-success rounded-3 fs-5">
+                                <i class="fas fa-th-large"></i>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <h5 class="fw-bold text-dark mb-0">Dashboard Utama</h5>
+                                    <span class="badge bg-light text-dark border rounded-pill px-2 py-0 small fw-bold">
+                                        <?= number_format($stats['total'] ?? 0) ?>
+                                    </span>
+                                </div>
+                                <small class="text-muted" style="font-size: 11px;">Ringkasan &amp; KPI &bull; Constellation &rarr; HOME</small>
+                            </div>
+                        </div>
+                        <a href="<?= site_url('dashboard') ?>" class="btn btn-sm btn-outline-light text-muted border rounded-circle" title="Refresh Dashboard">
+                            <i class="fas fa-sync-alt"></i>
+                        </a>
+                    </div>
+
+                    <!-- 4 Pastel Bento KPI Cards (2x2 Grid) -->
+                    <div class="contextual-kpi-grid sidak-bento-kpi-grid mb-3">
+                        <!-- 1. Jumlah Temuan (Mint) -->
+                        <a href="<?= site_url('temuan') ?>" class="contextual-kpi-card contextual-kpi-mint sidak-bento-kpi-card kpi-drilldown-link">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="contextual-kpi-val sidak-bento-val" id="kpi-total-temuan"><?= number_format($stats['total'] ?? 0) ?></div>
+                                <i class="fas fa-arrow-up-right text-muted opacity-75"></i>
+                            </div>
+                            <div>
+                                <div class="contextual-kpi-title sidak-bento-lbl">Jumlah Temuan</div>
+                                <div class="contextual-kpi-sub">Total Inspeksi Fisik</div>
+                            </div>
+                        </a>
+
+                        <!-- 2. Emergency (Rose) -->
+                        <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="contextual-kpi-card contextual-kpi-rose sidak-bento-kpi-card kpi-drilldown-link">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="contextual-kpi-val text-danger sidak-bento-val" id="kpi-emergency"><?= number_format($stats['emergency'] ?? 0) ?></div>
+                                <i class="fas fa-arrow-up-right text-danger opacity-75"></i>
+                            </div>
+                            <div>
+                                <div class="contextual-kpi-title text-danger sidak-bento-lbl">Emergency</div>
+                                <div class="contextual-kpi-sub">Prioritas Tinggi</div>
+                            </div>
+                        </a>
+
+                        <!-- 3. Belum Selesai (Peach) — User Amendment #1 Preserved -->
+                        <a href="<?= site_url('temuan?status=BELUM') ?>" class="contextual-kpi-card contextual-kpi-peach sidak-bento-kpi-card kpi-drilldown-link">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="contextual-kpi-val text-warning sidak-bento-val" id="kpi-belum"><?= number_format($stats['belum'] ?? 0) ?></div>
+                                <i class="fas fa-arrow-up-right text-warning opacity-75"></i>
+                            </div>
+                            <div>
+                                <div class="contextual-kpi-title text-warning sidak-bento-lbl">Belum Selesai</div>
+                                <div class="contextual-kpi-sub">Dalam Antrian</div>
+                            </div>
+                        </a>
+
+                        <!-- 4. GIS Node (Sky Blue) -->
+                        <a href="<?= site_url('gis') ?>" class="contextual-kpi-card contextual-kpi-blue sidak-bento-kpi-card kpi-drilldown-link">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="contextual-kpi-val text-primary sidak-bento-val" id="kpi-gis-pins"><?= number_format($gisPinCount) ?></div>
+                                <i class="fas fa-arrow-up-right text-primary opacity-75"></i>
+                            </div>
+                            <div>
+                                <div class="contextual-kpi-title text-primary sidak-bento-lbl">GIS Node</div>
+                                <div class="contextual-kpi-sub">Terverifikasi</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- 3 Mini Metric Indicator Cards (Row of 3) -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <a href="<?= site_url('temuan?status=SELESAI') ?>" class="contextual-mini-metric text-center p-2 d-block text-decoration-none">
+                                <div class="fw-bold fs-5 text-dark" id="kpi-selesai"><?= number_format($stats['selesai'] ?? 0) ?></div>
+                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">Selesai</div>
+                            </a>
+                        </div>
+                        <div class="col-4">
+                            <a href="<?= site_url('work-orders?status=AKTIF') ?>" class="contextual-mini-metric text-center p-2 d-block text-decoration-none">
+                                <div class="fw-bold fs-5 text-dark" id="kpi-wo-aktif"><?= number_format($woStats['aktif'] ?? 0) ?></div>
+                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">Progress</div>
+                            </a>
+                        </div>
+                        <div class="col-4">
+                            <div class="contextual-mini-metric text-center p-2">
+                                <span class="fw-bold fs-5 text-primary" id="kpi-target-harian-pct"><?= $dailyPct ?>%</span>
+                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">Target</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compact Target Progress & Secondary Priority Strip -->
+                    <div class="p-2 mb-3 rounded-3 bg-light border">
+                        <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 11px;">
+                            <span class="text-muted fw-semibold">
+                                Target Harian: <strong id="kpi-target-harian-text"><?= number_format($dailyDone) ?> <span class="text-muted">/ <?= number_format($dailyTarget) ?></span></strong>
+                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="text-decoration-none text-muted">
+                                    High: <div class="d-inline fw-bold text-warning" id="kpi-high"><?= number_format($stats['high'] ?? 0) ?></div>
+                                </a>
+                                &bull;
+                                <a href="<?= site_url('temuan?prioritas=MEDIUM') ?>" class="text-decoration-none text-muted">
+                                    Med: <div class="d-inline fw-bold text-info" id="kpi-medium"><?= number_format($stats['medium'] ?? 0) ?></div>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="progress" style="height: 6px; border-radius: 4px; background: #e2e8f0;">
+                            <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width: <?= $dailyPct ?>%;" id="kpi-target-harian-bar" aria-valuenow="<?= $dailyPct ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <!-- Operational Live Feed: AKTIVITAS HARI INI -->
+                    <div class="contextual-activity-section">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="fw-bold text-dark text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                                <i class="fas fa-satellite-dish text-primary me-1"></i> Aktivitas Hari Ini
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0 small">
+                                <span class="status-pulse-live me-1"></span> Live
+                            </span>
+                        </div>
+                        <div class="contextual-activity-list">
+                            <?php 
+                            $contextualFeed = !empty($mapPins) ? array_slice($mapPins, 0, 3) : [];
+                            if (!empty($contextualFeed)): 
+                                foreach ($contextualFeed as $feedItem): 
+                                    $prio = strtoupper((string)($feedItem['prioritas'] ?? 'MEDIUM'));
+                                    $dotColor = $prio === 'EMERGENCY' ? '#ef4444' : ($prio === 'HIGH' ? '#f59e0b' : '#10b981');
+                                    $nomor = !empty($feedItem['nomor_temuan']) ? $feedItem['nomor_temuan'] : 'STJ-' . ($feedItem['id'] ?? '0');
+                                    $title = !empty($feedItem['judul']) ? $feedItem['judul'] : (!empty($feedItem['penyulang_nama']) ? 'Penyulang ' . $feedItem['penyulang_nama'] : 'Temuan Lapangan');
+                            ?>
+                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                                    <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
+                                        <span class="rounded-circle flex-shrink-0" style="width: 8px; height: 8px; background-color: <?= $dotColor ?>;"></span>
+                                        <span class="small text-dark text-truncate fw-medium" style="font-size: 12px;"><?= esc($nomor) ?> &ndash; <?= esc($title) ?></span>
+                                    </div>
+                                    <a href="<?= site_url('temuan/detail/' . ($feedItem['id'] ?? 0)) ?>" class="small text-primary text-nowrap text-decoration-none fw-semibold" style="font-size: 11px;">
+                                        Lihat <i class="fas fa-chevron-right ms-1 opacity-75"></i>
+                                    </a>
+                                </div>
+                            <?php endforeach; else: ?>
+                                <div class="text-muted small py-3 text-center">Belum ada temuan terpetakan hari ini.</div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel Quick Footer Action -->
+                <div class="pt-3 border-top border-light mt-3">
+                    <a href="<?= site_url('audit-log') ?>" class="btn btn-sm btn-outline-secondary w-100 rounded-pill fw-semibold" style="font-size: 11px;">
+                        <i class="fas fa-clock-rotate-left me-1"></i> Buka Log Audit &amp; Aktivitas Lengkap
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3C. FLOATING COMMAND DOCK (BOTTOM CENTER) -->
+    <div class="sidak-floating-dock-container d-none d-md-flex">
+        <div class="sidak-floating-dock">
+            <a href="<?= site_url('dashboard') ?>" class="dock-pill-btn active" title="Dashboard Utama">
+                <i class="fas fa-th-large"></i>
+            </a>
+            <a href="<?= site_url('gis') ?>" class="dock-pill-btn" title="Peta Jaringan GIS">
+                <i class="fas fa-map-location-dot"></i>
+            </a>
+            <a href="<?= site_url('temuan') ?>" class="dock-pill-btn has-badge" title="Data Temuan">
+                <i class="fas fa-list-check"></i>
+                <span class="dock-badge bg-warning text-dark"><?= min(99, (int)($stats['total'] ?? 0)) ?></span>
+            </a>
+            <a href="<?= site_url('pekerjaan') ?>" class="dock-pill-btn has-badge" title="Work Orders">
+                <i class="fas fa-screwdriver-wrench"></i>
+                <span class="dock-badge bg-danger text-white"><?= min(99, (int)($woStats['aktif'] ?? 0)) ?></span>
+            </a>
+            <a href="<?= site_url('planning') ?>" class="dock-pill-btn" title="Planning Inspeksi">
+                <i class="fas fa-calendar-days"></i>
+            </a>
+            <a href="<?= site_url('executive-dashboard') ?>" class="dock-pill-btn" title="Executive Analytics">
+                <i class="fas fa-chart-line"></i>
+            </a>
+            <?php if ($canInput ?? check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
+            <a href="<?= site_url('temuan/create') ?>" class="dock-pill-btn dock-btn-create" title="Input Temuan Baru">
+                <i class="fas fa-plus"></i>
+            </a>
+            <?php endif; ?>
+            <a href="<?= site_url('ai-copilot') ?>" class="dock-pill-btn dock-btn-ai" title="AI Copilot Voice">
+                <i class="fas fa-robot me-1"></i>
+                <span>Input Temuan / AI</span>
+            </a>
+            <div class="dock-pill-status">
+                <span class="status-pulse-dot bg-success me-1"></span> Synced
+            </div>
         </div>
     </div>
 

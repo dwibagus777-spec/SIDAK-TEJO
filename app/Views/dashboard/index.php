@@ -209,7 +209,7 @@
         </a>
 
         <!-- 8. Target Harian -->
-        <div class="sidak-bento-card sidak-bento-kpi-target p-3 d-flex flex-column justify-content-between">
+        <div class="sidak-bento-kpi-card sidak-bento-kpi-target p-3 d-flex flex-column justify-content-between">
             <div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <span class="sidak-bento-lbl text-muted">TARGET HARIAN</span>

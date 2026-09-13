@@ -701,7 +701,9 @@
 
     .dock-btn-ai {
         height: 38px;
-        padding: 0 14px;
+        width: auto !important;
+        min-width: 140px;
+        padding: 0 16px !important;
         border-radius: 9999px;
         background: #0f172a !important;
         color: #ffffff !important;
@@ -713,6 +715,7 @@
         text-decoration: none !important;
         box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
         transition: all 0.2s ease;
+        white-space: nowrap;
     }
 
     .dock-btn-ai:hover {
@@ -908,7 +911,7 @@
                     <div class="constellation-central-node" style="left: 48%; top: 48%;" id="node-hub-dashboard">
                         <div class="constellation-central-halo"></div>
                         <a href="<?= site_url('dashboard') ?>" class="constellation-central-ring" title="Dashboard Utama">
-                            <i class="fas fa-circle-dot"></i>
+                            <i class="fas fa-dot-circle"></i>
                         </a>
                         <a href="<?= site_url('dashboard') ?>" class="constellation-central-pill">
                             <span class="rounded-circle bg-success" style="width: 8px; height: 8px;"></span>
@@ -932,7 +935,7 @@
                     <a href="<?= site_url('temuan') ?>" class="constellation-node" style="left: 80%; top: 20%;" title="Data Temuan" id="node-temuan">
                         <div class="constellation-node-aura" style="background: rgba(245, 158, 11, 0.4);"></div>
                         <div class="constellation-node-disc" style="border-color: #f59e0b;">
-                            <i class="fas fa-list-check text-warning"></i>
+                            <i class="fas fa-clipboard-list text-warning"></i>
                             <span class="constellation-node-badge bg-warning text-dark"><?= number_format($stats['total'] ?? 0) ?></span>
                         </div>
                         <span class="constellation-node-label">Data Temuan</span>
@@ -981,7 +984,7 @@
                     <a href="<?= site_url('gis') ?>" class="constellation-node" style="left: 24%; top: 72%;" title="Peta Jaringan GIS" id="node-gis">
                         <div class="constellation-node-aura" style="background: rgba(2, 132, 199, 0.4);"></div>
                         <div class="constellation-node-disc" style="border-color: #0284c7;">
-                            <i class="fas fa-map-location-dot text-primary"></i>
+                            <i class="fas fa-map-marked-alt text-primary"></i>
                             <span class="constellation-node-badge bg-primary text-white"><?= number_format($gisPinCount) ?></span>
                         </div>
                         <span class="constellation-node-label">Peta GIS</span>
@@ -1177,25 +1180,25 @@
         </div>
     </div>
 
-    <!-- 3C. FLOATING COMMAND DOCK (BOTTOM CENTER) -->
-    <div class="sidak-floating-dock-container d-none d-md-flex">
+    <!-- 3C. FLOATING COMMAND DOCK (DESKTOP ONLY) -->
+    <div class="sidak-floating-dock-container d-none d-lg-flex">
         <div class="sidak-floating-dock">
             <a href="<?= site_url('dashboard') ?>" class="dock-pill-btn active" title="Dashboard Utama">
                 <i class="fas fa-th-large"></i>
             </a>
             <a href="<?= site_url('gis') ?>" class="dock-pill-btn" title="Peta Jaringan GIS">
-                <i class="fas fa-map-location-dot"></i>
+                <i class="fas fa-map-marked-alt"></i>
             </a>
             <a href="<?= site_url('temuan') ?>" class="dock-pill-btn has-badge" title="Data Temuan">
-                <i class="fas fa-list-check"></i>
+                <i class="fas fa-clipboard-list"></i>
                 <span class="dock-badge bg-warning text-dark"><?= min(99, (int)($stats['total'] ?? 0)) ?></span>
             </a>
             <a href="<?= site_url('pekerjaan') ?>" class="dock-pill-btn has-badge" title="Work Orders">
-                <i class="fas fa-screwdriver-wrench"></i>
+                <i class="fas fa-tools"></i>
                 <span class="dock-badge bg-danger text-white"><?= min(99, (int)($woStats['aktif'] ?? 0)) ?></span>
             </a>
             <a href="<?= site_url('planning') ?>" class="dock-pill-btn" title="Planning Inspeksi">
-                <i class="fas fa-calendar-days"></i>
+                <i class="fas fa-calendar-alt"></i>
             </a>
             <a href="<?= site_url('executive-dashboard') ?>" class="dock-pill-btn" title="Executive Analytics">
                 <i class="fas fa-chart-line"></i>

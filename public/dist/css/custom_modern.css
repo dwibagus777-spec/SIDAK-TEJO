@@ -1468,7 +1468,9 @@ html, body {
 
 .dock-btn-ai {
     height: 38px;
-    padding: 0 14px;
+    width: auto !important;
+    min-width: 140px;
+    padding: 0 16px !important;
     border-radius: 9999px;
     background: #0f172a !important;
     color: #ffffff !important;
@@ -1480,6 +1482,7 @@ html, body {
     text-decoration: none !important;
     box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
 .dock-btn-ai:hover {

@@ -623,10 +623,22 @@ class SldTopologyReadModelService
         // 1. Try Live Database if available
         if ($this->db && method_exists($this->db, 'table')) {
             try {
-                $rows = $this->db->table('gis_translines')
-                    ->where('penyulang_id', $penyulangId)
-                    ->get()
-                    ->getResultArray();
+                $builder = $this->db->table('gis_translines')
+                    ->where('penyulang_id', $penyulangId);
+                
+                // MANDATORY AMENDMENT #2: Load ONLY authoritative active physical translines
+                if (method_exists($this->db, 'fieldExists')) {
+                    if ($this->db->fieldExists('is_active', 'gis_translines')) {
+                        $builder->where('is_active', 1);
+                    }
+                    if ($this->db->fieldExists('status', 'gis_translines')) {
+                        $builder->where('status', 'ACTIVE');
+                    }
+                } else {
+                    $builder->where('is_active', 1)->where('status', 'ACTIVE');
+                }
+
+                $rows = $builder->get()->getResultArray();
                 if (!empty($rows)) return $rows;
             } catch (\Throwable $e) {
                 // fall through

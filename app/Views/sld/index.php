@@ -33,13 +33,14 @@
             padding: 8px 12px;
         }
         .sld-canvas-box {
-            background: #090e1d;
-            border: 1px solid #1e293b;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
             border-radius: 12px;
             height: calc(100vh - 270px);
             min-height: 520px;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
         }
         .sld-legend-item {
             display: inline-flex;
@@ -77,11 +78,11 @@
     <div class="sld-header-card mb-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-primary px-2 py-1">SLD-05</span>
+                <span class="badge bg-primary px-2 py-1">SLD-05R</span>
                 <h4 class="fw-bold m-0 text-white">Single Line Diagram (SLD) Engine</h4>
             </div>
             <div class="text-white-50 small">
-                Deterministic Visual Renderer &bull; Aligned with PLN/IEC Distribution Symbology &bull; Strict Read-Only (&Delta; = 0)
+                Engineering Drawing Readability &bull; PLN/IEC Distribution Symbology &bull; Strict Read-Only (&Delta; = 0)
             </div>
         </div>
 
@@ -150,32 +151,46 @@
     <div class="d-flex flex-wrap align-items-center px-2 py-1 mb-2 bg-dark rounded border border-secondary border-opacity-25">
         <span class="text-white-50 small me-2 fw-bold text-uppercase" style="font-size: 0.72rem;">Legenda Simbol:</span>
         <div class="sld-legend-item">
-            <span class="legend-indicator" style="background: #0284c7; border: 1px solid #38bdf8;"></span>
-            <span><strong>GI Incomer</strong> (Substation Header)</span>
+            <span class="legend-indicator" style="background: #ffffff; border: 2px solid #0f172a; position: relative;">
+                <span style="position: absolute; top: 1px; left: 2px; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 7px solid #0f172a;"></span>
+            </span>
+            <span><strong>GI Incomer</strong> (Substation Origin)</span>
         </div>
         <div class="sld-legend-item">
-            <span class="legend-indicator" style="background: #1e1b4b; border: 1px solid #f59e0b; transform: rotate(45deg);"></span>
-            <span><strong>PMS (UNKNOWN)</strong> (Belum ada Telemetri SCADA)</span>
+            <span class="legend-indicator" style="background: #0f172a; height: 3.5px; width: 16px; border-radius: 1px;"></span>
+            <span><strong>Rute Utama</strong> (C15-01 3.2px)</span>
         </div>
         <div class="sld-legend-item">
-            <span class="legend-indicator" style="background: #064e3b; border: 1px solid #10b981; border-radius: 50%;"></span>
+            <span class="legend-indicator" style="background: #fef3c7; border: 1.5px solid #d97706; transform: rotate(45deg);"></span>
+            <span><strong>PMS (UNKNOWN)</strong> (?)</span>
+        </div>
+        <div class="sld-legend-item">
+            <span class="legend-indicator" style="background: conic-gradient(#0f172a 0deg 90deg, #ffffff 90deg 180deg, #0f172a 180deg 270deg, #ffffff 270deg 360deg); border: 1px solid #0f172a; border-radius: 50%;"></span>
+            <span><strong>LBS / LBSM</strong> (PLN/IEC)</span>
+        </div>
+        <div class="sld-legend-item">
+            <span class="legend-indicator" style="background: #ffffff; border: 1.5px solid #0f172a; display: inline-flex; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; color: #0f172a;">&#9986;</span>
+            <span><strong>Recloser</strong> (Bowtie)</span>
+        </div>
+        <div class="sld-legend-item">
+            <span class="legend-indicator" style="background: #f0fdf4; border: 1.5px solid #059669; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; color: #059669;">1T</span>
             <span><strong>GTT Cantol</strong> (1 Tiang)</span>
         </div>
         <div class="sld-legend-item">
-            <span class="legend-indicator" style="background: #164e63; border: 1px solid #06b6d4; border-radius: 50%;"></span>
+            <span class="legend-indicator" style="background: #f0f9ff; border: 1.5px solid #0284c7; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; color: #0284c7;">2T</span>
             <span><strong>GTT Portal</strong> (2 Tiang)</span>
         </div>
         <div class="sld-legend-item">
-            <span class="legend-indicator" style="background: #e11d48; border-radius: 50%;"></span>
-            <span><strong>Branch Node</strong> (Percabangan)</span>
+            <span class="legend-indicator" style="background: #dc2626; border-radius: 50%; width: 10px; height: 10px;"></span>
+            <span><strong>Branch</strong> (Junction)</span>
         </div>
         <div class="sld-legend-item">
-            <span class="legend-indicator" style="background: #ef4444; width: 3px; height: 14px;"></span>
-            <span><strong>Terminal Node</strong> (Dead-End Ujung)</span>
+            <span class="legend-indicator" style="background: #dc2626; width: 3px; height: 14px;"></span>
+            <span><strong>Terminal</strong> (Dead-End)</span>
         </div>
         <div class="sld-legend-item">
             <span class="legend-indicator" style="border: 1px dashed #94a3b8; border-radius: 50%;"></span>
-            <span><strong>Aset Terisolasi</strong> (Zona 3)</span>
+            <span><strong>Fragmen / Terisolasi</strong></span>
         </div>
     </div>
 

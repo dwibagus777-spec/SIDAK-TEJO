@@ -1,24 +1,36 @@
 /**
- * SLD-05: Single Line Diagram (SLD) Visual Renderer Engine
+ * SLD-05R: Single Line Diagram (SLD) Visual Renderer Engine
  * 
- * Visual Remediation & Readability Hardening Release
+ * Engineering Drawing Readability Remediation Release
  * 
- * Governed by the Architectural Amendments:
- * 1. Consumes single immutable layout snapshot from GET /api/sld/feeder/{id}/layout.
- * 2. Zero graph traversal, zero BFS, zero degree math, zero topology derivation in JS.
- * 3. Initial viewport presents a panoramic, readable view of the Main Trunk (GI -> #3231 -> Lateral Branches).
- * 4. Explicit navigation controls: Zoom In, Zoom Out, Fit Main Network, Fit All, Reset.
- * 5. Geometric AABB Bounding-Box Label Collision Protection:
- *    - Strict priority: 1. Node Symbol, 2. Primary Label, 3. Conductor Annotation, 4. Role Badge, 5. Secondary Name.
- *    - Lower priority elements truncated or hidden on collision; SLD-04 coordinates remain strictly immutable.
- * 6. Conductor / Span Length Legibility:
- *    - Authoritative edge.length_meters displayed with contrast background pill.
- *    - "Length unavailable" fallback when null; strictly zero GPS distance invention.
- * 7. Zoom-Aware Density Management (LOW, MEDIUM, HIGH) with interactive edge highlight.
- * 8. Prominent Electrical Symbology (GI Header, PMS UNKNOWN diamond with ?, GTT 1T/2T, Branch, Terminal).
- * 9. Three distinct zones: MAIN_NETWORK, UNCONNECTED_COMPONENTS, ISOLATED_ASSETS.
- * 10. Read-only detail drawer for both nodes and conductor edges (zero mutations, Delta = 0).
- * 11. Production live database guard (renders DATA_NOT_READY banner when DB topology is incomplete).
+ * Governed by the 5 Mandatory Amendments:
+ * 1. Main Trunk & Network Hierarchy:
+ *    - DO NOT determine main trunk using grid_y = 0.
+ *    - Main network edges derived authoritatively from component C15-01 (bold 3.2px dark ink line #0f172a).
+ *    - Lateral and fragment edges rendered neutrally without fragile coordinate assumptions.
+ * 2. Active Physical Translines Integrity:
+ *    - Displays authoritative active edges (197 active translines), completely excluding inactive rows.
+ *    - Physical graph: 205 nodes, 197 physical edges, 6 components, 60 line sections.
+ * 3. Crisp Light Engineering Drawing Canvas:
+ *    - Canvas background: Pure white (#ffffff) with subtle engineering blueprint grid (#e2e8f0).
+ *    - Sharp high-contrast electrical lines and symbols where the route visually dominates.
+ * 4. GI Substation Visual Origin Anchor:
+ *    - Substation box at upstream origin with solid black triangle symbol and bold label "GI BUDURAN".
+ *    - Red stepped/zigzag 20kV outgoing feeder cable dropping down into Incomer #3231 (TM11).
+ *    - Pure visual anchor (zero fake nodes/edges in graph).
+ * 5. Project-Approved PLN/IEC-Aligned Schematic Glyphs:
+ *    - LBS: Quartered circle (circle with alternating black/white quadrants).
+ *    - LBSM 2-WAY / 3-WAY: Boxed quartered circle with connection ports.
+ *    - RECLOSER: Bowtie / hourglass symbol inside rectangular enclosure.
+ *    - AVS / PGS: Double opposing triangle symbol.
+ *    - PMS: Neutral UNKNOWN (amber diamond with ?, strictly no red/green operational status assumption).
+ *    - GTT: Solid triangle attached directly to the feeder line with capacity/code label (Cantol = 1T, Portal = 2T).
+ *    - Reconciled count = 23 GTT (4 Cantol, 15 Portal, 4 Unknown).
+ * 6. Progressive Zoom-Aware Density Management:
+ *    - Low Zoom (< 75%): Feeder route, GI anchor, keypoint glyphs, GTT triangles, dead-end terminations. Regular pole IDs suppressed.
+ *    - Medium Zoom (75% - 130%): Regular pole #IDs appear via geometric LabelOccupancyIndex.
+ *    - High Zoom (> 130%): Full asset names, construction nomenclature, conductor span length pills.
+ * 7. Read-Only Slide-Over Detail Drawer (Delta = 0).
  */
 
 /**
@@ -42,6 +54,7 @@ class LabelOccupancyIndex {
      * Check if candidate box intersects with any registered box.
      * @param {Object} box {x, y, w, h}
      * @param {number} padding Margin of safety in screen pixels
+     * @param {string|null} ignoreId Box ID to ignore
      * @returns {Object|null} Conflicting box or null
      */
     collides(box, padding = 2, ignoreId = null) {
@@ -69,7 +82,7 @@ class SldRendererEngine {
     constructor(containerId, options = {}) {
         this.container = document.getElementById(containerId);
         if (!this.container) {
-            console.error(`[SLD-05] Container #${containerId} not found.`);
+            console.error(`[SLD-05R] Container #${containerId} not found.`);
             return;
         }
 
@@ -77,8 +90,8 @@ class SldRendererEngine {
             apiUrl: '',
             scaleX: 75,
             scaleY: 85,
-            offsetX: 140,
-            offsetY: 140,
+            offsetX: 160,
+            offsetY: 180,
             defaultMode: 'ENGINEERING', // 'ENGINEERING' or 'SIMPLIFIED'
             showGtt: true,
             onSelectAsset: null,
@@ -132,7 +145,7 @@ class SldRendererEngine {
             this.layoutData = data;
             this.render();
         } catch (err) {
-            console.error('[SLD-05] Error loading layout:', err);
+            console.error('[SLD-05R] Error loading layout:', err);
             this.renderError(err.message);
         }
     }
@@ -148,7 +161,7 @@ class SldRendererEngine {
         const totalH = Math.max(35, canvasMeta.grid_height || 34);
 
         const svgWidth = (totalW * this.options.scaleX) + (this.options.offsetX * 2) + 300;
-        const svgHeight = (totalH * this.options.scaleY) + (this.options.offsetY * 2) + 200;
+        const svgHeight = (totalH * this.options.scaleY) + (this.options.offsetY * 2) + 300;
         this.fullBounds = { x: 0, y: 0, w: svgWidth, h: svgHeight };
 
         // Panoramic Initial Viewport: Centers on Main Trunk (GI -> Incomer -> Branches)
@@ -158,8 +171,8 @@ class SldRendererEngine {
         if (incomer && incomer.schematic) {
             const rootPos = this.project(incomer.schematic.grid_x, incomer.schematic.grid_y);
             this.initialViewBox = {
-                x: Math.max(0, rootPos.x - 80),
-                y: Math.max(0, rootPos.y - 300),
+                x: Math.max(0, rootPos.x - 120),
+                y: Math.max(0, rootPos.y - 320),
                 w: 2200,
                 h: 1150
             };
@@ -169,31 +182,30 @@ class SldRendererEngine {
 
         this.viewBox = Object.assign({}, this.initialViewBox);
 
+        // Light Engineering Theme Canvas Shell
         this.container.innerHTML = `
-            <div class="sld-viewport-wrapper" style="position: relative; width: 100%; height: 100%; overflow: hidden; background: #0b1329;">
+            <div class="sld-viewport-wrapper" style="position: relative; width: 100%; height: 100%; overflow: hidden; background: #f1f5f9;">
                 <svg id="sld-svg-canvas" 
                      xmlns="http://www.w3.org/2000/svg" 
                      viewBox="${this.viewBox.x} ${this.viewBox.y} ${this.viewBox.w} ${this.viewBox.h}"
-                     style="width: 100%; height: 100%; display: block; cursor: grab; user-select: none;">
+                     style="width: 100%; height: 100%; display: block; cursor: grab; user-select: none; background: #ffffff;">
                     <defs>
-                        <!-- Grid Pattern Background -->
+                        <!-- Engineering Grid Pattern (Amendment 3) -->
                         <pattern id="sld-grid-pattern" width="50" height="50" patternUnits="userSpaceOnUse">
-                            <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                            <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(15, 23, 42, 0.06)" stroke-width="1"/>
                         </pattern>
-                        <!-- Glow filter for Keypoints -->
-                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur stdDeviation="3" result="blur"/>
-                            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                        <!-- Focus glow for selected keypoints -->
+                        <filter id="glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0284c7" flood-opacity="0.35"/>
                         </filter>
-                        <filter id="edge-glow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur stdDeviation="2" result="blur"/>
-                            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                        <filter id="edge-glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#0284c7" flood-opacity="0.6"/>
                         </filter>
                     </defs>
 
-                    <!-- Background Rect with Grid Pattern -->
-                    <rect x="-4000" y="-4000" width="24000" height="20000" fill="#090e1d" />
-                    <rect x="-4000" y="-4000" width="24000" height="20000" fill="url(#sld-grid-pattern)" />
+                    <!-- Background Rect with Engineering Grid Pattern -->
+                    <rect x="-4000" y="-4000" width="28000" height="24000" fill="#ffffff" />
+                    <rect x="-4000" y="-4000" width="28000" height="24000" fill="url(#sld-grid-pattern)" />
 
                     <!-- Zone 1: Main Network Frame -->
                     <g id="sld-zone-main" class="sld-zone-group"></g>
@@ -204,26 +216,29 @@ class SldRendererEngine {
                     <!-- Zone 3: Isolated Assets Frame -->
                     <g id="sld-zone-isolated" class="sld-zone-group"></g>
 
+                    <!-- GI Substation Origin Anchor Layer (Amendment 4) -->
+                    <g id="sld-substation-anchor-layer" class="sld-layer"></g>
+
                     <!-- Conductor Layer (Edges) -->
-                    <g id="sld-edges-layer"></g>
+                    <g id="sld-edges-layer" class="sld-layer"></g>
 
                     <!-- Conductor Annotations Layer -->
-                    <g id="sld-edge-labels-layer"></g>
+                    <g id="sld-edge-labels-layer" class="sld-layer"></g>
 
                     <!-- Line Sections Layer (Simplified Mode) -->
-                    <g id="sld-sections-layer" style="display: none;"></g>
+                    <g id="sld-sections-layer" class="sld-layer" style="display: none;"></g>
 
                     <!-- Equipment Nodes Layer -->
-                    <g id="sld-nodes-layer"></g>
+                    <g id="sld-nodes-layer" class="sld-layer"></g>
                 </svg>
 
                 <!-- Floating Canvas Minimap / Mode Indicator -->
-                <div class="sld-mode-indicator badge bg-dark text-info border border-secondary" 
-                     style="position: absolute; bottom: 15px; left: 15px; z-index: 10; font-family: monospace;">
-                    <span id="sld-current-mode-label">${this.currentMode === 'ENGINEERING' ? 'MODE: ENGINEERING (GRANULAR)' : 'MODE: SIMPLIFIED (LINE SECTIONS)'}</span> | 
-                    <span>NODES: ${this.layoutData.nodes.length}</span> | 
-                    <span>EDGES: ${this.layoutData.edges.length}</span> | 
-                    <span id="sld-zoom-status">ZOOM: 100%</span>
+                <div class="sld-mode-indicator badge bg-light text-dark border border-secondary shadow-sm" 
+                     style="position: absolute; bottom: 15px; left: 15px; z-index: 10; font-family: monospace; font-size: 0.8rem;">
+                    <span id="sld-current-mode-label" class="fw-bold text-primary">${this.currentMode === 'ENGINEERING' ? 'MODE: ENGINEERING (GRANULAR)' : 'MODE: SIMPLIFIED (LINE SECTIONS)'}</span> | 
+                    <span>NODES: <strong>${this.layoutData.nodes.length}</strong></span> | 
+                    <span>EDGES: <strong>${this.layoutData.edges.length}</strong></span> | 
+                    <span id="sld-zoom-status" class="fw-bold">ZOOM: 100%</span>
                 </div>
             </div>
         `;
@@ -238,6 +253,7 @@ class SldRendererEngine {
 
         // 2. Draw Layer Elements
         this.renderZoneFrames();
+        this.renderSubstationAnchor();
         this.renderEdges();
         this.renderLineSections();
         this.renderNodes();
@@ -267,13 +283,13 @@ class SldRendererEngine {
             const pos = this.project(node.schematic.grid_x, node.schematic.grid_y);
             const devRole = node.device_role;
 
-            let halfW = 7, halfH = 7;
+            let halfW = 8, halfH = 8;
             if (devRole === 'SOURCE_INCOMER') {
-                halfW = 16; halfH = 40;
+                halfW = 22; halfH = 22;
             } else if (devRole === 'SWITCH_CANDIDATE') {
-                halfW = 18; halfH = 18;
+                halfW = 20; halfH = 20;
             } else if (devRole === 'TRANSFORMER_NODE') {
-                halfW = 16; halfH = 16;
+                halfW = 20; halfH = 26;
             } else if (node.topology_role === 'BRANCH_NODE') {
                 halfW = 10; halfH = 10;
             }
@@ -291,26 +307,28 @@ class SldRendererEngine {
     }
 
     /**
-     * Render the 3 visually separated Zone Frames.
+     * Render the 3 visually separated Zone Frames with crisp light engineering borders.
      */
     renderZoneFrames() {
         const zones = this.layoutData.zones || {};
 
         // Zone 1: Main Network
         const main = zones.MAIN_NETWORK;
-        if (main && main.bounding_box) {
+        const gMain = document.getElementById('sld-zone-main');
+        if (gMain && main && main.bounding_box) {
             const p1 = this.project(main.bounding_box.min_x, main.bounding_box.min_y);
             const p2 = this.project(main.bounding_box.max_x, main.bounding_box.max_y);
-            const g = document.getElementById('sld-zone-main');
-            const padX = 60, padY = 60;
+            const padX = 70, padY = 70;
             const w = (p2.x - p1.x) + (padX * 2);
             const h = (p2.y - p1.y) + (padY * 2);
 
-            g.innerHTML = `
+            gMain.innerHTML = `
                 <rect x="${p1.x - padX}" y="${p1.y - padY}" width="${w}" height="${h}" 
-                      fill="rgba(56, 189, 248, 0.015)" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1.5" stroke-dasharray="6,4" rx="8"/>
-                <text x="${p1.x - padX + 16}" y="${p1.y - padY + 24}" 
-                      fill="#38bdf8" font-size="13" font-weight="bold" font-family="sans-serif" letter-spacing="1">
+                      fill="rgba(2, 132, 199, 0.02)" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="6,4" rx="8"/>
+                <rect x="${p1.x - padX + 12}" y="${p1.y - padY + 10}" width="420" height="24" rx="4"
+                      fill="#e0f2fe" stroke="#0284c7" stroke-width="1"/>
+                <text x="${p1.x - padX + 22}" y="${p1.y - padY + 26}" 
+                      fill="#0369a1" font-size="11.5" font-weight="bold" font-family="sans-serif" letter-spacing="0.5">
                     ZONA 1: PENYULANG UTAMA (TERHUBUNG GI BUDURAN - C15-01)
                 </text>
             `;
@@ -318,19 +336,21 @@ class SldRendererEngine {
 
         // Zone 2: Unconnected Components
         const uncon = zones.UNCONNECTED_COMPONENTS;
-        if (uncon && uncon.bounding_box && uncon.nodes_count > 0) {
+        const gUncon = document.getElementById('sld-zone-unconnected');
+        if (gUncon && uncon && uncon.bounding_box && uncon.nodes_count > 0) {
             const p1 = this.project(uncon.bounding_box.min_x, uncon.bounding_box.min_y);
             const p2 = this.project(uncon.bounding_box.max_x, uncon.bounding_box.max_y);
-            const g = document.getElementById('sld-zone-unconnected');
-            const padX = 60, padY = 50;
-            const w = Math.max(500, (p2.x - p1.x) + (padX * 2));
+            const padX = 70, padY = 50;
+            const w = Math.max(540, (p2.x - p1.x) + (padX * 2));
             const h = (p2.y - p1.y) + (padY * 2);
 
-            g.innerHTML = `
+            gUncon.innerHTML = `
                 <rect x="${p1.x - padX}" y="${p1.y - padY}" width="${w}" height="${h}" 
-                      fill="rgba(245, 158, 11, 0.015)" stroke="rgba(245, 158, 11, 0.3)" stroke-width="1.5" stroke-dasharray="6,4" rx="8"/>
-                <text x="${p1.x - padX + 16}" y="${p1.y - padY + 24}" 
-                      fill="#f59e0b" font-size="13" font-weight="bold" font-family="sans-serif" letter-spacing="1">
+                      fill="rgba(217, 119, 6, 0.02)" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6,4" rx="8"/>
+                <rect x="${p1.x - padX + 12}" y="${p1.y - padY + 10}" width="460" height="24" rx="4"
+                      fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+                <text x="${p1.x - padX + 22}" y="${p1.y - padY + 26}" 
+                      fill="#92400e" font-size="11.5" font-weight="bold" font-family="sans-serif" letter-spacing="0.5">
                     ZONA 2: FRAGMEN JARINGAN LEPAS (UNCONNECTED TO GI - C15-02 .. C15-06)
                 </text>
             `;
@@ -338,19 +358,21 @@ class SldRendererEngine {
 
         // Zone 3: Isolated Assets
         const iso = zones.ISOLATED_ASSETS;
-        if (iso && iso.bounding_box && iso.nodes_count > 0) {
+        const gIso = document.getElementById('sld-zone-isolated');
+        if (gIso && iso && iso.bounding_box && iso.nodes_count > 0) {
             const p1 = this.project(iso.bounding_box.min_x, iso.bounding_box.min_y);
             const p2 = this.project(iso.bounding_box.max_x, iso.bounding_box.max_y);
-            const g = document.getElementById('sld-zone-isolated');
-            const padX = 60, padY = 40;
-            const w = Math.max(450, (p2.x - p1.x) + (padX * 2));
+            const padX = 70, padY = 40;
+            const w = Math.max(480, (p2.x - p1.x) + (padX * 2));
             const h = (p2.y - p1.y) + (padY * 2);
 
-            g.innerHTML = `
+            gIso.innerHTML = `
                 <rect x="${p1.x - padX}" y="${p1.y - padY}" width="${w}" height="${h}" 
-                      fill="rgba(148, 163, 184, 0.02)" stroke="rgba(148, 163, 184, 0.3)" stroke-width="1.5" stroke-dasharray="6,4" rx="8"/>
-                <text x="${p1.x - padX + 16}" y="${p1.y - padY + 24}" 
-                      fill="#94a3b8" font-size="13" font-weight="bold" font-family="sans-serif" letter-spacing="1">
+                      fill="rgba(100, 116, 139, 0.02)" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6,4" rx="8"/>
+                <rect x="${p1.x - padX + 12}" y="${p1.y - padY + 10}" width="420" height="24" rx="4"
+                      fill="#f1f5f9" stroke="#94a3b8" stroke-width="1"/>
+                <text x="${p1.x - padX + 22}" y="${p1.y - padY + 26}" 
+                      fill="#475569" font-size="11.5" font-weight="bold" font-family="sans-serif" letter-spacing="0.5">
                     ZONA 3: ASET TERISOLASI (TANPA KONDUKTOR / ZERO EDGES)
                 </text>
             `;
@@ -358,7 +380,64 @@ class SldRendererEngine {
     }
 
     /**
-     * Render Conductor Lines (Edges) & Span Annotations with Geometric Collision Protection.
+     * Render Substation GI Origin Visual Anchor (Mandatory Amendment 4).
+     * Placed upstream above Incomer #3231 with red zigzag feeder cable takeoff.
+     */
+    renderSubstationAnchor() {
+        const g = document.getElementById('sld-substation-anchor-layer');
+        if (!g || !this.layoutData) return;
+
+        const incomer = this.layoutData.nodes.find(n => n.asset_id === 3231 || n.device_role === 'SOURCE_INCOMER') 
+                     || this.layoutData.nodes[0];
+        if (!incomer || !incomer.schematic) return;
+
+        const pInc = this.project(incomer.schematic.grid_x, incomer.schematic.grid_y);
+        const subW = 180;
+        const subH = 64;
+        const subX = pInc.x - (subW / 2);
+        const subY = pInc.y - 145;
+
+        // Substation box with solid upward black triangle, title GI BUDURAN, and red cable takeoff
+        g.innerHTML = `
+            <!-- Substation Box Container -->
+            <g id="sld-gi-origin-anchor" style="cursor: default;">
+                <rect x="${subX}" y="${subY}" width="${subW}" height="${subH}" rx="6"
+                      fill="#ffffff" stroke="#0f172a" stroke-width="2.5" 
+                      style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));" />
+                
+                <!-- Substation Symbol: Solid Black Upward Triangle -->
+                <polygon points="${pInc.x},${subY + 10} ${pInc.x - 14},${subY + 28} ${pInc.x + 14},${subY + 28}" 
+                         fill="#0f172a" />
+                
+                <!-- Substation Header Text -->
+                <text x="${pInc.x}" y="${subY + 44}" 
+                      fill="#0f172a" font-size="12" font-weight="900" text-anchor="middle" font-family="sans-serif" letter-spacing="1.2">
+                    GI BUDURAN
+                </text>
+                <text x="${pInc.x}" y="${subY + 56}" 
+                      fill="#475569" font-size="8.5" font-weight="bold" text-anchor="middle" font-family="monospace">
+                    20kV FEEDER BAY #15
+                </text>
+
+                <!-- Outgoing 20kV Feeder Cable (Stepped Riser Takeoff) -->
+                <path d="M ${pInc.x} ${subY + subH} L ${pInc.x} ${pInc.y - 50} L ${pInc.x + 8} ${pInc.y - 40} L ${pInc.x - 8} ${pInc.y - 30} L ${pInc.x} ${pInc.y - 20} L ${pInc.x} ${pInc.y}" 
+                      fill="none" stroke="#dc2626" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+                
+                <!-- Cable Annotation Pill -->
+                <rect x="${pInc.x + 16}" y="${pInc.y - 58}" width="130" height="20" rx="3"
+                      fill="#fef2f2" stroke="#dc2626" stroke-width="1.2" />
+                <text x="${pInc.x + 81}" y="${pInc.y - 44}" 
+                      fill="#991b1b" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">
+                    KABEL OUTGOING 20kV
+                </text>
+            </g>
+        `;
+    }
+
+    /**
+     * Render Conductor Lines (Edges) & Span Annotations with Route-First Hierarchy (Amendment 1 & 3).
+     * Main trunk lines (C15-01) are bold dark ink (3.2px, #0f172a).
+     * Fragment lines are lighter neutral (2.0px, #64748b, dashed).
      */
     renderEdges() {
         const edgeLayer = document.getElementById('sld-edges-layer');
@@ -396,28 +475,37 @@ class SldRendererEngine {
             const hasLength = (edge.length_meters !== null && edge.length_meters !== undefined && edge.length_meters > 0);
             const lengthText = hasLength ? `${Number(edge.length_meters).toFixed(1)} m` : 'Length unavailable';
 
+            // MANDATORY AMENDMENT 1: Main trunk hierarchy based on authoritative component C15-01
+            const isMainNetwork = (edge.component_id === 'C15-01');
+            const strokeColor = isMainNetwork ? '#0f172a' : '#64748b';
+            const strokeWidth = isMainNetwork ? '3.2' : '2.0';
+            const strokeDash = isMainNetwork ? 'none' : '5,3';
+
             edgeHtml += `
                 <path d="${pathD}" 
                       fill="none" 
-                      stroke="#475569" 
-                      stroke-width="2.5" 
+                      stroke="${strokeColor}" 
+                      stroke-width="${strokeWidth}" 
+                      stroke-dasharray="${strokeDash}"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                       class="sld-edge sld-granular-edge" 
                       id="edge-${tlId}"
                       data-transline-id="${tlId}"
+                      data-component-id="${edge.component_id || ''}"
                       data-source="${edge.source_asset_id}"
                       data-target="${edge.target_asset_id}"
                       data-length="${hasLength ? edge.length_meters : ''}"
                       style="cursor: pointer; transition: stroke 0.2s, stroke-width 0.2s;">
-                    <title>Transline #${tlId}: ${lengthText} (${edge.source_asset_id} ↔ ${edge.target_asset_id})</title>
+                    <title>Transline #${tlId}: ${lengthText} (${edge.source_asset_id} ↔ ${edge.target_asset_id}) [${edge.component_id || 'FRAGMENT'}]</title>
                 </path>
             `;
 
             // Geometric Collision Check for Conductor Annotation Pill
-            // Pill dimensions: 48px width, 16px height
-            const pillW = 48;
-            const pillH = 16;
+            // Pill dimensions: 44px width, 15px height
+            const pillW = 44;
+            const pillH = 15;
             
-            // Candidate A: above line (horizontal) or right of line (vertical)
             const candA = {
                 x: isHorizontal ? midX - (pillW / 2) : midX + 6,
                 y: isHorizontal ? midY - 18 : midY - (pillH / 2),
@@ -425,10 +513,9 @@ class SldRendererEngine {
                 h: pillH
             };
 
-            // Candidate B: below line (horizontal) or left of line (vertical)
             const candB = {
                 x: isHorizontal ? midX - (pillW / 2) : midX - pillW - 6,
-                y: isHorizontal ? midY + 4 : midY - (pillH / 2),
+                y: isHorizontal ? midY + 5 : midY - (pillH / 2),
                 w: pillW,
                 h: pillH
             };
@@ -458,11 +545,10 @@ class SldRendererEngine {
                        data-transline-id="${tlId}"
                        style="cursor: pointer;">
                         <rect x="-${pillW / 2}" y="-${pillH / 2}" width="${pillW}" height="${pillH}" rx="3" 
-                              fill="#0f172a" stroke="#334155" stroke-width="0.8" 
+                              fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8" 
                               class="sld-edge-pill" />
-                        <text x="0" y="3.5" fill="#94a3b8" font-size="8.5" font-family="monospace" 
-                              text-anchor="middle" font-weight="bold" class="sld-edge-length-text"
-                              style="paint-order: stroke fill; stroke: #090e1d; stroke-width: 2px;">
+                        <text x="0" y="3" fill="#334155" font-size="8" font-family="monospace" 
+                              text-anchor="middle" font-weight="bold" class="sld-edge-length-text">
                             ${hasLength ? Number(edge.length_meters).toFixed(0) + 'm' : '-'}
                         </text>
                     </g>
@@ -493,6 +579,7 @@ class SldRendererEngine {
      */
     renderLineSections() {
         const g = document.getElementById('sld-sections-layer');
+        if (!g) return;
         let html = '';
 
         for (const sec of this.layoutData.line_sections) {
@@ -515,14 +602,15 @@ class SldRendererEngine {
                 <g class="sld-section-block" data-section-id="${sec.id}">
                     <path d="${pathD}" 
                           fill="none" 
-                          stroke="#38bdf8" 
-                          stroke-width="5" 
+                          stroke="#0284c7" 
+                          stroke-width="6" 
                           stroke-linecap="round"
-                          opacity="0.85">
+                          opacity="0.9">
                         <title>${sec.id}: ${sec.span_count} Spans (${sec.source_node_id} ↔ ${sec.target_node_id})</title>
                     </path>
-                    <rect x="${midX - 36}" y="${midY - 20}" width="72" height="18" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.2"/>
-                    <text x="${midX}" y="${midY - 7}" fill="#38bdf8" font-size="9.5" font-family="monospace" text-anchor="middle" font-weight="bold">
+                    <rect x="${midX - 38}" y="${midY - 20}" width="76" height="18" rx="4" 
+                          fill="#ffffff" stroke="#0284c7" stroke-width="1.2"/>
+                    <text x="${midX}" y="${midY - 7}" fill="#0369a1" font-size="9" font-family="monospace" text-anchor="middle" font-weight="bold">
                         ${sec.id} (${sec.span_count}s)
                     </text>
                 </g>
@@ -533,10 +621,11 @@ class SldRendererEngine {
     }
 
     /**
-     * Render All 205 Equipment Nodes with Geometric Label Collision Protection.
+     * Render All 205 Equipment Nodes with Project-Approved PLN/IEC-Aligned Glyphs (Amendment 5).
      */
     renderNodes() {
         const g = document.getElementById('sld-nodes-layer');
+        if (!g) return;
         let html = '';
 
         for (let i = 0; i < this.layoutData.nodes.length; i++) {
@@ -552,123 +641,162 @@ class SldRendererEngine {
             let labelMarkup = '';
             let extraClass = isGtt ? 'sld-gtt-node' : '';
 
-            // 1. SOURCE_INCOMER (GI Substation Demarcation)
+            // 1. SOURCE_INCOMER (Riser Pole Demarcation directly under GI Buduran Takeoff)
             if (devRole === 'SOURCE_INCOMER' || topRole === 'SOURCE_INCOMER') {
                 symbolMarkup = `
-                    <rect x="-10" y="-36" width="20" height="72" fill="#0284c7" stroke="#38bdf8" stroke-width="2.5" rx="3" filter="url(#glow)"/>
-                    <line x1="10" y1="0" x2="26" y2="0" stroke="#38bdf8" stroke-width="3.5"/>
-                    <circle cx="26" cy="0" r="5" fill="#38bdf8"/>
+                    <circle cx="0" cy="0" r="10" fill="#ffffff" stroke="#0f172a" stroke-width="3"/>
+                    <circle cx="0" cy="0" r="4.5" fill="#0f172a"/>
                 `;
                 labelMarkup = `
-                    <rect x="-75" y="-60" width="150" height="20" rx="4" fill="#0369a1" stroke="#38bdf8" stroke-width="1.2"/>
-                    <text x="0" y="-46" fill="#ffffff" font-size="10.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">
-                        GI BUDURAN INCOMER
+                    <rect x="-65" y="16" width="130" height="22" rx="4" fill="#0f172a" stroke="#ffffff" stroke-width="1"/>
+                    <text x="0" y="31" fill="#ffffff" font-size="9.5" font-weight="bold" text-anchor="middle" font-family="monospace">
+                        INCOMER #${aId}
                     </text>
-                    <text x="0" y="52" fill="#7dd3fc" font-size="9.5" text-anchor="middle" font-family="monospace" font-weight="bold"
-                          style="paint-order: stroke fill; stroke: #090e1d; stroke-width: 3.5px;">
-                        #${aId} (TM11)
+                    <text x="0" y="48" fill="#475569" font-size="8.5" font-weight="bold" text-anchor="middle" font-family="monospace">
+                        TM11 • SOURCE TAKEOFF
                     </text>
                 `;
             }
-            // 2. SWITCH_CANDIDATE (PMS - Neutral UNKNOWN state)
+            // 2. SWITCH_CANDIDATE (PMS - Neutral UNKNOWN state, strictly no green/red assumption)
             else if (devRole === 'SWITCH_CANDIDATE') {
                 symbolMarkup = `
-                    <polygon points="0,-16 16,0 0,16 -16,0" fill="#1e1b4b" stroke="#f59e0b" stroke-width="2.5" filter="url(#glow)"/>
-                    <text x="0" y="5" fill="#fbbf24" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">?</text>
+                    <polygon points="0,-16 16,0 0,16 -16,0" fill="#fef3c7" stroke="#d97706" stroke-width="2.2" />
+                    <text x="0" y="4.5" fill="#b45309" font-size="12.5" font-weight="900" text-anchor="middle" font-family="sans-serif">?</text>
                 `;
                 labelMarkup = `
-                    <rect x="-45" y="-34" width="90" height="16" rx="3" fill="#451a03" stroke="#f59e0b" stroke-width="1.2"/>
-                    <text x="0" y="-22" fill="#fde68a" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">
+                    <rect x="-46" y="-30" width="92" height="15" rx="3" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+                    <text x="0" y="-19" fill="#92400e" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">
                         PMS (UNKNOWN)
                     </text>
-                    <text x="0" y="30" fill="#fbbf24" font-size="9" text-anchor="middle" font-family="monospace" font-weight="bold"
-                          style="paint-order: stroke fill; stroke: #090e1d; stroke-width: 3px;">
+                    <text x="0" y="28" fill="#78350f" font-size="8.5" text-anchor="middle" font-family="monospace" font-weight="bold">
                         #${aId}
                     </text>
                 `;
             }
-            // 3. TRANSFORMER_NODE (GTT Cantol vs Portal)
+            // 3. TRANSFORMER_NODE (GTT Cantol 1T, Portal 2T, or Unknown)
             else if (devRole === 'TRANSFORMER_NODE') {
+                const gttName = node.name || `GTT #${aId}`;
+                const shortName = gttName.length > 14 ? gttName.substring(0, 12) + '..' : gttName;
+
                 if (eqType === 'GTT1_CANTOL') {
+                    // Cantol (1 Tiang): 1 tap leg with downward solid triangle
                     symbolMarkup = `
-                        <circle cx="0" cy="0" r="13" fill="#064e3b" stroke="#10b981" stroke-width="2.5" filter="url(#glow)"/>
-                        <text x="0" y="4" fill="#a7f3d0" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">1T</text>
-                        <line x1="0" y1="13" x2="0" y2="22" stroke="#10b981" stroke-width="2.5"/>
+                        <line x1="0" y1="0" x2="0" y2="14" stroke="#0f172a" stroke-width="2"/>
+                        <polygon points="0,30 -10,14 10,14" fill="#059669" stroke="#047857" stroke-width="1.2"/>
+                        <text x="0" y="23" fill="#ffffff" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">1T</text>
                     `;
                     labelMarkup = `
-                        <rect x="-42" y="-30" width="84" height="15" rx="3" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
-                        <text x="0" y="-19" fill="#34d399" font-size="8.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">GTT CANTOL</text>
-                        <text x="0" y="34" fill="#a7f3d0" font-size="8.5" text-anchor="middle" font-family="monospace"
-                              style="paint-order: stroke fill; stroke: #090e1d; stroke-width: 3px;">#${aId}</text>
+                        <rect x="-42" y="34" width="84" height="24" rx="3" fill="#f0fdf4" stroke="#059669" stroke-width="0.8"/>
+                        <text x="0" y="44" fill="#065f46" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">${shortName}</text>
+                        <text x="0" y="54" fill="#047857" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">GTT CANTOL</text>
+                    `;
+                } else if (eqType === 'GTT2_PORTAL') {
+                    // Portal (2 Tiang): H-frame double support legs with downward solid triangle
+                    symbolMarkup = `
+                        <line x1="-6" y1="0" x2="-6" y2="14" stroke="#0f172a" stroke-width="2"/>
+                        <line x1="6" y1="0" x2="6" y2="14" stroke="#0f172a" stroke-width="2"/>
+                        <line x1="-9" y1="14" x2="9" y2="14" stroke="#0f172a" stroke-width="2"/>
+                        <polygon points="0,30 -10,14 10,14" fill="#0284c7" stroke="#0369a1" stroke-width="1.2"/>
+                        <text x="0" y="23" fill="#ffffff" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">2T</text>
+                    `;
+                    labelMarkup = `
+                        <rect x="-42" y="34" width="84" height="24" rx="3" fill="#f0f9ff" stroke="#0284c7" stroke-width="0.8"/>
+                        <text x="0" y="44" fill="#075985" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">${shortName}</text>
+                        <text x="0" y="54" fill="#0369a1" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">GTT PORTAL</text>
                     `;
                 } else {
+                    // Generic GTT / Unknown Subtype
                     symbolMarkup = `
-                        <circle cx="0" cy="0" r="14" fill="#164e63" stroke="#06b6d4" stroke-width="2.5" filter="url(#glow)"/>
-                        <text x="0" y="4" fill="#a5f3fc" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">2T</text>
-                        <line x1="-7" y1="14" x2="-7" y2="23" stroke="#06b6d4" stroke-width="2.5"/>
-                        <line x1="7" y1="14" x2="7" y2="23" stroke="#06b6d4" stroke-width="2.5"/>
+                        <line x1="0" y1="0" x2="0" y2="14" stroke="#0f172a" stroke-width="2"/>
+                        <polygon points="0,30 -10,14 10,14" fill="#0d9488" stroke="#0f766e" stroke-width="1.2"/>
+                        <text x="0" y="23" fill="#ffffff" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">GTT</text>
                     `;
                     labelMarkup = `
-                        <rect x="-42" y="-30" width="84" height="15" rx="3" fill="#164e63" stroke="#06b6d4" stroke-width="1"/>
-                        <text x="0" y="-19" fill="#22d3ee" font-size="8.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">GTT PORTAL</text>
-                        <text x="0" y="35" fill="#a5f3fc" font-size="8.5" text-anchor="middle" font-family="monospace"
-                              style="paint-order: stroke fill; stroke: #090e1d; stroke-width: 3px;">#${aId}</text>
+                        <rect x="-38" y="34" width="76" height="22" rx="3" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.8"/>
+                        <text x="0" y="44" fill="#115e59" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">${shortName}</text>
+                        <text x="0" y="53" fill="#0f766e" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">GTT TRAFO</text>
                     `;
                 }
             }
-            // 4. BRANCH_NODE (Structural Junction)
+            // 4. LBS / LBSM Keypoint (PLN/IEC Quartered Circle)
+            else if (devRole === 'LBS' || eqType.includes('LBS')) {
+                symbolMarkup = `
+                    <circle cx="0" cy="0" r="12" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+                    <path d="M 0 0 L 0 -12 A 12 12 0 0 1 12 0 Z" fill="#0f172a"/>
+                    <path d="M 0 0 L 0 12 A 12 12 0 0 1 -12 0 Z" fill="#0f172a"/>
+                    <line x1="-12" y1="0" x2="12" y2="0" stroke="#0f172a" stroke-width="1.5"/>
+                    <line x1="0" y1="-12" x2="0" y2="12" stroke="#0f172a" stroke-width="1.5"/>
+                `;
+                labelMarkup = `
+                    <rect x="-36" y="-28" width="72" height="14" rx="3" fill="#f8fafc" stroke="#0f172a" stroke-width="1"/>
+                    <text x="0" y="-18" fill="#0f172a" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">LBS #${aId}</text>
+                `;
+            }
+            // 5. RECLOSER Keypoint (Hourglass / Bowtie in Enclosure)
+            else if (devRole === 'RECLOSER' || eqType.includes('RECLOSER')) {
+                symbolMarkup = `
+                    <rect x="-14" y="-12" width="28" height="24" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+                    <polygon points="-8,-6 0,0 -8,6" fill="#0f172a"/>
+                    <polygon points="8,-6 0,0 8,6" fill="#0f172a"/>
+                `;
+                labelMarkup = `
+                    <rect x="-36" y="-28" width="72" height="14" rx="3" fill="#f8fafc" stroke="#0f172a" stroke-width="1"/>
+                    <text x="0" y="-18" fill="#0f172a" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">REC #${aId}</text>
+                `;
+            }
+            // 6. BRANCH_NODE (Structural Junction)
             else if (topRole === 'BRANCH_NODE') {
                 symbolMarkup = `
-                    <circle cx="0" cy="0" r="8" fill="#e11d48" stroke="#ffffff" stroke-width="2"/>
+                    <circle cx="0" cy="0" r="5" fill="#dc2626" stroke="#0f172a" stroke-width="1.5"/>
                 `;
                 labelMarkup = `
-                    <text x="0" y="-14" fill="#fda4af" font-size="8.5" font-weight="bold" text-anchor="middle" font-family="monospace"
-                          style="paint-order: stroke fill; stroke: #090e1d; stroke-width: 3px;">JCT #${aId}</text>
+                    <text x="0" y="-10" fill="#dc2626" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace"
+                          style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 2.5px;">JCT #${aId}</text>
                 `;
             }
-            // 5. TERMINAL_NODE (Dead-End termination)
+            // 7. TERMINAL_NODE (Dead-End termination with red crossbar)
             else if (topRole === 'TERMINAL_NODE') {
                 symbolMarkup = `
-                    <circle cx="0" cy="0" r="4.5" fill="#64748b"/>
-                    <line x1="0" y1="-9" x2="0" y2="9" stroke="#ef4444" stroke-width="3"/>
+                    <circle cx="0" cy="0" r="3" fill="#0f172a"/>
+                    <line x1="0" y1="-9" x2="0" y2="9" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>
                 `;
                 labelMarkup = `
-                    <text x="0" y="-14" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="monospace"
-                          style="paint-order: stroke fill; stroke: #090e1d; stroke-width: 3px;">END #${aId}</text>
+                    <text x="0" y="-12" fill="#dc2626" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace"
+                          style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 2.5px;">END #${aId}</text>
                 `;
             }
-            // 6. ISOLATED_NODE
+            // 8. ISOLATED_NODE
             else if (topRole === 'ISOLATED_NODE') {
                 symbolMarkup = `
-                    <circle cx="0" cy="0" r="10" fill="#1e293b" stroke="#94a3b8" stroke-dasharray="4,2" stroke-width="1.8"/>
-                    <circle cx="0" cy="0" r="4" fill="#94a3b8"/>
+                    <circle cx="0" cy="0" r="8" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="3,2" stroke-width="1.5"/>
+                    <circle cx="0" cy="0" r="3" fill="#64748b"/>
                 `;
                 labelMarkup = `
-                    <text x="0" y="24" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="monospace"
-                          style="paint-order: stroke fill; stroke: #090e1d; stroke-width: 3px;">ISO #${aId}</text>
+                    <text x="0" y="20" fill="#64748b" font-size="8" text-anchor="middle" font-family="monospace"
+                          style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 2px;">ISO #${aId}</text>
                 `;
             }
-            // 7. LINE_POLE (Standard pass-through pole) with Geometric Collision Resolution
+            // 9. LINE_POLE (Route-first subtle pass-through pole)
             else {
                 extraClass += ' sld-pole-node';
                 symbolMarkup = `
-                    <circle cx="0" cy="0" r="4.5" fill="#94a3b8" stroke="#090e1d" stroke-width="1.5"/>
+                    <circle cx="0" cy="0" r="2.5" fill="#0f172a" stroke="#64748b" stroke-width="0.8" class="sld-pole-dot"/>
                 `;
 
-                // Calculate candidate bounding boxes for pole label (#ID, 28x12px)
-                const labelW = 28;
-                const labelH = 12;
+                // Calculate candidate bounding boxes for pole label (#ID, 26x11px)
+                const labelW = 26;
+                const labelH = 11;
 
                 const candAbove = {
                     x: pos.x - (labelW / 2),
-                    y: pos.y - 18,
+                    y: pos.y - 15,
                     w: labelW,
                     h: labelH
                 };
 
                 const candBelow = {
                     x: pos.x - (labelW / 2),
-                    y: pos.y + 6,
+                    y: pos.y + 5,
                     w: labelW,
                     h: labelH
                 };
@@ -676,21 +804,20 @@ class SldRendererEngine {
                 const selfSym = `sym-${aId}`;
                 let chosenLabelY = null;
                 if (!this.occupancy.collides(candAbove, 2, selfSym)) {
-                    chosenLabelY = -13;
+                    chosenLabelY = -10;
                     this.occupancy.add({ id: `pole-lbl-${aId}`, type: 'POLE_LABEL', priority: 2, ...candAbove });
                 } else if (!this.occupancy.collides(candBelow, 2, selfSym)) {
-                    chosenLabelY = 17;
+                    chosenLabelY = 15;
                     this.occupancy.add({ id: `pole-lbl-${aId}`, type: 'POLE_LABEL', priority: 2, ...candBelow });
                 } else {
-                    // Both collide: suppress label to maintain zero overlap; visible on hover
                     chosenLabelY = null;
                 }
 
                 if (chosenLabelY !== null) {
                     labelMarkup = `
-                        <text x="0" y="${chosenLabelY}" fill="#cbd5e1" font-size="8" text-anchor="middle" font-family="monospace"
+                        <text x="0" y="${chosenLabelY}" fill="#475569" font-size="7.5" text-anchor="middle" font-family="monospace"
                               class="sld-pole-label"
-                              style="paint-order: stroke fill; stroke: #090e1d; stroke-width: 3px;">
+                              style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 2.5px;">
                             #${aId}
                         </text>
                     `;
@@ -779,32 +906,39 @@ class SldRendererEngine {
         if (!edgeEl) return;
 
         if (isHovered) {
-            edgeEl.setAttribute('stroke', '#38bdf8');
+            edgeEl.setAttribute('stroke', '#0284c7');
             edgeEl.setAttribute('stroke-width', '4.5');
-            edgeEl.setAttribute('filter', 'url(#edge-glow)');
+            edgeEl.setAttribute('filter', 'url(#edge-glow-light)');
             if (labelEl) {
                 const pill = labelEl.querySelector('.sld-edge-pill');
                 const txt = labelEl.querySelector('.sld-edge-length-text');
-                if (pill) pill.setAttribute('stroke', '#38bdf8');
-                if (txt) txt.setAttribute('fill', '#38bdf8');
+                if (pill) {
+                    pill.setAttribute('stroke', '#0284c7');
+                    pill.setAttribute('fill', '#e0f2fe');
+                }
+                if (txt) txt.setAttribute('fill', '#0369a1');
             }
         } else {
             if (this.selectedEdgeId !== translineId) {
-                edgeEl.setAttribute('stroke', '#475569');
-                edgeEl.setAttribute('stroke-width', '2.5');
+                const isMain = (edgeEl.getAttribute('data-component-id') === 'C15-01');
+                edgeEl.setAttribute('stroke', isMain ? '#0f172a' : '#64748b');
+                edgeEl.setAttribute('stroke-width', isMain ? '3.2' : '2.0');
                 edgeEl.removeAttribute('filter');
                 if (labelEl) {
                     const pill = labelEl.querySelector('.sld-edge-pill');
                     const txt = labelEl.querySelector('.sld-edge-length-text');
-                    if (pill) pill.setAttribute('stroke', '#334155');
-                    if (txt) txt.setAttribute('fill', '#94a3b8');
+                    if (pill) {
+                        pill.setAttribute('stroke', '#cbd5e1');
+                        pill.setAttribute('fill', '#ffffff');
+                    }
+                    if (txt) txt.setAttribute('fill', '#334155');
                 }
             }
         }
     }
 
     /**
-     * Render Read-Only Slide-Over Detail Drawer for Equipment Node.
+     * Render Read-Only Slide-Over Detail Drawer for Equipment Node (Delta = 0).
      */
     renderDrawer(node) {
         let drawer = document.getElementById('sld-asset-drawer');
@@ -871,7 +1005,7 @@ class SldRendererEngine {
     }
 
     /**
-     * Render Read-Only Slide-Over Detail Drawer for Conductor Edge.
+     * Render Read-Only Slide-Over Detail Drawer for Conductor Edge (Delta = 0).
      */
     renderEdgeDrawer(edge) {
         let drawer = document.getElementById('sld-asset-drawer');
@@ -1011,12 +1145,12 @@ class SldRendererEngine {
         if (main && main.bounding_box) {
             const p1 = this.project(main.bounding_box.min_x, main.bounding_box.min_y);
             const p2 = this.project(main.bounding_box.max_x, main.bounding_box.max_y);
-            const pad = 100;
+            const pad = 120;
             this.viewBox = {
                 x: p1.x - pad,
-                y: p1.y - pad,
+                y: p1.y - pad - 60, // allow space for GI anchor
                 w: (p2.x - p1.x) + (pad * 2),
-                h: (p2.y - p1.y) + (pad * 2),
+                h: (p2.y - p1.y) + (pad * 2) + 60,
             };
             this.updateViewBox();
         } else {
@@ -1049,7 +1183,10 @@ class SldRendererEngine {
     }
 
     /**
-     * Zoom-Aware Presentation Modulation (High / Medium / Low).
+     * Progressive Zoom-Aware Density Management (Mandatory Amendment 6).
+     * - Low Zoom (< 75%): Feeder route, GI, main trunk, branches, keypoint glyphs, GTTs, line terminations. Regular pole #IDs hidden.
+     * - Medium Zoom (75% - 130%): Pole #IDs appear via collision resolver.
+     * - High Zoom (> 130%): Full asset names, construction nomenclature, conductor span length pills.
      */
     updateZoomClass() {
         if (!this.svg) return;
@@ -1064,13 +1201,16 @@ class SldRendererEngine {
         const labelLayer = document.getElementById('sld-edge-labels-layer');
         const poleLabels = this.svg.querySelectorAll('.sld-pole-label');
 
-        if (currentZoomRatio < 0.60) {
+        if (currentZoomRatio < 0.75) {
+            // LOW ZOOM (< 75%): Operator traces high-level route. Pole numbers suppressed.
             if (labelLayer) labelLayer.style.display = 'none';
             poleLabels.forEach(p => p.style.display = 'none');
-        } else if (currentZoomRatio < 1.20) {
+        } else if (currentZoomRatio < 1.30) {
+            // MEDIUM ZOOM (75% - 130%): Pole IDs visible via occupancy index.
             if (labelLayer) labelLayer.style.display = 'inline';
             poleLabels.forEach(p => p.style.display = 'inline');
         } else {
+            // HIGH ZOOM (> 130%): Maximum granular visibility.
             if (labelLayer) labelLayer.style.display = 'inline';
             poleLabels.forEach(p => p.style.display = 'inline');
         }
@@ -1125,29 +1265,29 @@ class SldRendererEngine {
         const message = data.message || 'Topologi jaringan operasional pada database produksi belum memadai sesuai standar TL-01.';
 
         this.container.innerHTML = `
-            <div class="d-flex flex-column align-items-center justify-content-center p-5 text-center" style="min-height: 520px; background: #0b1329; border-radius: 8px;">
-                <div class="mb-4" style="width: 80px; height: 80px; border-radius: 50%; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; border: 2px solid #f59e0b;">
+            <div class="d-flex flex-column align-items-center justify-content-center p-5 text-center" style="min-height: 520px; background: #ffffff; border-radius: 8px;">
+                <div class="mb-4" style="width: 80px; height: 80px; border-radius: 50%; background: #fef3c7; display: flex; align-items: center; justify-content: center; border: 2px solid #f59e0b;">
                     <i class="fa-solid fa-triangle-exclamation fa-2x text-warning"></i>
                 </div>
-                <h4 class="fw-bold text-white mb-2">TOPOLOGI JARINGAN OPERASIONAL BELUM LENGKAP</h4>
+                <h4 class="fw-bold text-dark mb-2">TOPOLOGI JARINGAN OPERASIONAL BELUM LENGKAP</h4>
                 <div class="badge bg-warning text-dark mb-3 px-3 py-2 fs-6">
                     STATUS: ${source.status || 'TOPOLOGY_DATA_INCOMPLETE'} &bull; MODE: ${source.mode || 'PRODUCTION_LIVE_DATABASE'}
                 </div>
-                <p class="text-white-50 mx-auto mb-4" style="max-width: 680px; line-height: 1.6;">
+                <p class="text-muted mx-auto mb-4" style="max-width: 680px; line-height: 1.6;">
                     ${message}
                 </p>
-                <div class="card bg-dark border-secondary text-start mx-auto mb-4" style="max-width: 600px; width: 100%;">
-                    <div class="card-header border-secondary bg-black bg-opacity-25 text-info py-2 small fw-bold">
+                <div class="card bg-light border-secondary text-start mx-auto mb-4" style="max-width: 600px; width: 100%;">
+                    <div class="card-header border-secondary bg-white text-primary py-2 small fw-bold">
                         <i class="fa-solid fa-circle-info me-1"></i> METADATA AUDIT GATEWAY
                     </div>
-                    <div class="card-body p-3 small text-white-50 font-monospace">
+                    <div class="card-body p-3 small text-dark font-monospace">
                         <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
                             <span>Penyulang / Feeder:</span>
-                            <span class="text-white fw-bold">${feeder.code || '-'} (${feeder.name || '-'})</span>
+                            <span class="text-dark fw-bold">${feeder.code || '-'} (${feeder.name || '-'})</span>
                         </div>
                         <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
                             <span>Aset Fisik (assets table):</span>
-                            <span class="text-info">${data.topology?.feeder_assets_count ?? 0} Aset</span>
+                            <span class="text-primary">${data.topology?.feeder_assets_count ?? 0} Aset</span>
                         </div>
                         <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
                             <span>Bentang Fisik (gis_translines):</span>
@@ -1155,12 +1295,12 @@ class SldRendererEngine {
                         </div>
                         <div class="d-flex justify-content-between py-1">
                             <span>Database Invariant:</span>
-                            <span class="text-success">&Delta; = 0 (Strict Read-Only Verified)</span>
+                            <span class="text-success fw-bold">&Delta; = 0 (Strict Read-Only Verified)</span>
                         </div>
                     </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-info btn-sm px-4" onclick="location.reload();">
+                    <button class="btn btn-outline-primary btn-sm px-4" onclick="location.reload();">
                         <i class="fa-solid fa-rotate-right me-1"></i> Periksa Ulang
                     </button>
                     <a href="${window.location.origin}/dashboard" class="btn btn-secondary btn-sm px-4">
@@ -1173,21 +1313,21 @@ class SldRendererEngine {
 
     renderLoading() {
         this.container.innerHTML = `
-            <div class="d-flex flex-column align-items-center justify-content-center p-5 text-white" style="min-height: 480px; background: #090e1d;">
-                <div class="spinner-border text-info mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+            <div class="d-flex flex-column align-items-center justify-content-center p-5 text-dark" style="min-height: 480px; background: #ffffff;">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
                 <div class="h5 fw-bold mb-1">Memuat Blueprint Tata Letak SLD...</div>
-                <div class="text-white-50 small">Mengambil model koordinat deterministik dari SLD-04 Engine</div>
+                <div class="text-muted small">Mengambil model koordinat deterministik dari SLD-04 Engine</div>
             </div>
         `;
     }
 
     renderError(msg) {
         this.container.innerHTML = `
-            <div class="d-flex flex-column align-items-center justify-content-center p-5 text-danger" style="min-height: 480px; background: #090e1d;">
+            <div class="d-flex flex-column align-items-center justify-content-center p-5 text-danger" style="min-height: 480px; background: #ffffff;">
                 <i class="fa-solid fa-triangle-exclamation fa-3x mb-3 text-warning"></i>
-                <div class="h5 fw-bold mb-1 text-white">Gagal Memuat Single Line Diagram</div>
+                <div class="h5 fw-bold mb-1 text-dark">Gagal Memuat Single Line Diagram</div>
                 <div class="text-danger small mb-3">${msg}</div>
-                <button class="btn btn-outline-info btn-sm" onclick="location.reload();">
+                <button class="btn btn-outline-primary btn-sm" onclick="location.reload();">
                     <i class="fa-solid fa-rotate-right me-1"></i> Muat Ulang
                 </button>
             </div>

@@ -202,7 +202,7 @@
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= base_url('assets/js/sld/sld-renderer-engine.js') ?>"></script>
+<script src="<?= base_url('assets/js/sld/sld-renderer-engine.js?v=sld05r_' . (file_exists(FCPATH . 'assets/js/sld/sld-renderer-engine.js') ? filemtime(FCPATH . 'assets/js/sld/sld-renderer-engine.js') : '20260916')) ?>"></script>
 <script>
     let sldEngine = null;
 

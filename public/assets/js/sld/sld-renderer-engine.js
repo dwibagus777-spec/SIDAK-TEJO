@@ -44,13 +44,14 @@ class LabelOccupancyIndex {
      * @param {number} padding Margin of safety in screen pixels
      * @returns {Object|null} Conflicting box or null
      */
-    collides(box, padding = 2) {
+    collides(box, padding = 2, ignoreId = null) {
         const ax1 = box.x - padding;
         const ay1 = box.y - padding;
         const ax2 = box.x + box.w + padding;
         const ay2 = box.y + box.h + padding;
 
         for (const b of this.items) {
+            if (ignoreId && b.id === ignoreId) continue;
             const bx1 = b.x;
             const by1 = b.y;
             const bx2 = b.x + b.w;
@@ -672,11 +673,12 @@ class SldRendererEngine {
                     h: labelH
                 };
 
+                const selfSym = `sym-${aId}`;
                 let chosenLabelY = null;
-                if (!this.occupancy.collides(candAbove, 2)) {
+                if (!this.occupancy.collides(candAbove, 2, selfSym)) {
                     chosenLabelY = -13;
                     this.occupancy.add({ id: `pole-lbl-${aId}`, type: 'POLE_LABEL', priority: 2, ...candAbove });
-                } else if (!this.occupancy.collides(candBelow, 2)) {
+                } else if (!this.occupancy.collides(candBelow, 2, selfSym)) {
                     chosenLabelY = 17;
                     this.occupancy.add({ id: `pole-lbl-${aId}`, type: 'POLE_LABEL', priority: 2, ...candBelow });
                 } else {
@@ -974,8 +976,8 @@ class SldRendererEngine {
      */
     zoom(factor, clientX, clientY) {
         const rect = this.svg.getBoundingClientRect();
-        const cursorX = clientX ? (clientX - rect.left) / rect.width : 0.5;
-        const cursorY = clientY ? (clientY - rect.top) / rect.height : 0.5;
+        const cursorX = (clientX !== undefined && clientX !== null) ? (clientX - rect.left) / rect.width : 0.35;
+        const cursorY = (clientY !== undefined && clientY !== null) ? (clientY - rect.top) / rect.height : 0.15;
 
         const newW = this.viewBox.w * factor;
         const newH = this.viewBox.h * factor;

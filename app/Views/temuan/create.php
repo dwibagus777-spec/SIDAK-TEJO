@@ -665,8 +665,7 @@
                 $flowContainer.hide();
                 $reqIndicator.html('<span class="badge bg-light text-muted border ms-1 fw-normal" style="font-size: 11px;">Opsional</span>');
                 $assetHelp.html('Aset jaringan tidak wajib diisi. Hanya diperlukan jika menambahkan kebutuhan material konstruksi.');
-                $badge.attr('class', 'badge bg-light text-muted border p-2')
-                      .html('<i class="fas fa-info-circle me-1"></i> Tidak ada material diminta');
+                $('#mr01_construction_badge_container').html('<span class="badge bg-light text-muted border p-2" id="mr01_construction_badge" style="font-size: 12px; font-weight: 600;"><i class="fas fa-info-circle me-1"></i> Tidak ada material diminta</span>');
 
                 // Clear material selections and reset hidden fields
                 $('.mr01-mat-check').prop('checked', false);
@@ -687,8 +686,7 @@
                     $emptyAssetState.show();
                     $('#mr01_bom_preview_container').hide();
                     $('#mr01_picker_alert').hide();
-                    $badge.attr('class', 'badge bg-warning text-dark p-2')
-                          .html('<i class="fas fa-arrow-pointer me-1"></i> Pilih Aset Jaringan Dahulu');
+                    $('#mr01_construction_badge_container').html('<span class="badge bg-warning text-dark p-2" id="mr01_construction_badge"><i class="fas fa-arrow-pointer me-1"></i> Pilih Aset Jaringan Dahulu</span>');
 
                     if (autoFocusAsset) {
                         $('html, body').animate({
@@ -774,6 +772,7 @@
 
         function loadMaterialPickerForAsset(assetId, sectionId) {
             const $badge = $('#mr01_construction_badge');
+            const $badgeContainer = $('#mr01_construction_badge_container');
             const $bomContainer = $('#mr01_bom_preview_container');
             const $chips = $('#mr01_bom_chips_container');
             const $countInfo = $('#mr01_bom_count_info');
@@ -790,15 +789,13 @@
             if (!assetId) {
                 $loadingState.hide();
                 $emptyState.show();
-                $badge.attr('class', 'badge bg-warning text-dark p-2')
-                      .html('<i class="fas fa-arrow-pointer me-1"></i> Pilih Aset Jaringan Dahulu');
+                $badgeContainer.html('<span class="badge bg-warning text-dark p-2" id="mr01_construction_badge"><i class="fas fa-arrow-pointer me-1"></i> Pilih Aset Jaringan Dahulu</span>');
                 return;
             }
 
             $emptyState.hide();
             $loadingState.show();
-            $badge.attr('class', 'badge bg-light text-primary border p-2')
-                  .html('<i class="fas fa-spinner fa-spin me-1"></i> Mengidentifikasi konstruksi...');
+            $badgeContainer.html('<span class="badge bg-light text-primary border p-2" id="mr01_construction_badge"><i class="fas fa-spinner fa-spin me-1"></i> Mengidentifikasi konstruksi...</span>');
 
             $.ajax({
                 url: "<?= site_url('temuan/ajax-material-picker') ?>",
@@ -811,12 +808,32 @@
                     if (!res) return;
 
                     if (res.status === 'READY') {
-                        $badge.attr('class', 'badge bg-success text-white p-2')
-                              .html('<i class="fas fa-lock me-1"></i> Konstruksi: ' + (res.construction.code ? res.construction.code + ' &mdash; ' : '') + res.construction.name);
+                        const c = res.construction;
+                        const cardHtml = `
+                            <div class="card border-0 shadow-sm p-2 mb-2 text-start" style="background: #f0fdf4; border: 1px solid #bbf7d0 !important; border-left: 5px solid #16a34a !important; border-radius: 8px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-primary px-2 py-1 fw-bold" style="font-size: 13px; letter-spacing: 0.5px;">${c.canonical_code || c.code}</span>
+                                    <span class="badge bg-warning text-dark border fw-bold px-2 py-1" style="font-size: 11px;">${c.feature_badge || 'STANDAR PLN'}</span>
+                                </div>
+                                <div class="fw-bold text-dark" style="font-size: 13px; line-height: 1.3;">${c.technical_name || c.name}</div>
+                                <div class="text-muted small mt-1" style="font-size: 11px;">
+                                    <i class="fas fa-layer-group me-1 text-success"></i>${c.family || 'JTM'} &bull; Standar Konstruksi PLN
+                                </div>
+                            </div>`;
+                        $badgeContainer.html(cardHtml);
 
                         if (Array.isArray(res.materials) && res.materials.length > 0) {
                             $countInfo.text(res.materials.length + ' material eligible');
                             res.materials.forEach(function(m) {
+                                const sem = m.assembly_semantics;
+                                const assemblyBadge = (sem && sem.is_3phase_assembly && sem.display_caption) 
+                                    ? `<div class="mt-1">
+                                           <span class="badge bg-light text-primary border border-info px-2 py-0.5" style="font-size: 11px; font-weight: 600;">
+                                               <i class="fas fa-layer-group me-1 text-info"></i>${sem.display_caption}
+                                           </span>
+                                       </div>`
+                                    : '';
+
                                 const row = `
                                 <div class="mr01-material-item border-bottom py-2" data-material-id="${m.id}">
                                     <div class="d-flex justify-content-between align-items-center">
@@ -827,6 +844,7 @@
                                                 ${m.code ? '<code class="ms-1 small text-secondary">[' + m.code + ']</code>' : ''}
                                                 ${m.field_alias ? '<small class="text-muted ms-1">(' + m.field_alias + ')</small>' : ''}
                                             </label>
+                                            ${assemblyBadge}
                                         </div>
                                         <span class="badge bg-secondary text-white">${m.unit || 'SET'}</span>
                                     </div>
@@ -854,26 +872,22 @@
                                   .show();
                         }
                     } else if (res.status === 'NO_CONSTRUCTION') {
-                        $badge.attr('class', 'badge bg-warning text-dark p-2')
-                              .html('<i class="fas fa-exclamation-triangle me-1"></i> NON-KONSTRUKSI');
+                        $badgeContainer.html('<span class="badge bg-warning text-dark p-2" id="mr01_construction_badge"><i class="fas fa-exclamation-triangle me-1"></i> NON-KONSTRUKSI</span>');
                         $alert.attr('class', 'alert alert-warning py-2 px-3 mb-0 mt-2')
                               .html('<i class="fas fa-exclamation-triangle me-1"></i> <strong>KONSTRUKSI BELUM TERPETAKAN</strong>: Aset ini belum memiliki standar konstruksi PLN terdaftar. Material picker tidak tersedia.')
                               .show();
                     } else if (res.status === 'NO_BOM') {
-                        $badge.attr('class', 'badge bg-info text-white p-2')
-                              .html('<i class="fas fa-info-circle me-1"></i> ' + (res.construction ? res.construction.code : 'KONSTRUKSI'));
+                        $badgeContainer.html('<span class="badge bg-info text-white p-2" id="mr01_construction_badge"><i class="fas fa-info-circle me-1"></i> ' + (res.construction ? (res.construction.canonical_code || res.construction.code) : 'KONSTRUKSI') + '</span>');
                         $alert.attr('class', 'alert alert-info py-2 px-3 mb-0 mt-2')
-                              .html('<i class="fas fa-info-circle me-1"></i> <strong>BOM KONSTRUKSI BELUM TERSEDIA</strong>: Standar konstruksi terdaftar' + (res.construction ? ' (' + res.construction.name + ')' : '') + ', namun rincian material BOM belum tersedia di sistem.')
+                              .html('<i class="fas fa-info-circle me-1"></i> <strong>BOM KONSTRUKSI BELUM TERSEDIA</strong>: Standar konstruksi terdaftar' + (res.construction ? ' (' + (res.construction.display_label || res.construction.name) + ')' : '') + ', namun rincian material BOM belum tersedia di sistem.')
                               .show();
                     } else if (res.status === 'PROVISIONAL_BLOCKED') {
-                        $badge.attr('class', 'badge bg-secondary text-white p-2')
-                              .html('<i class="fas fa-ban me-1"></i> DRAFT (BELUM FIX)');
+                        $badgeContainer.html('<span class="badge bg-secondary text-white p-2" id="mr01_construction_badge"><i class="fas fa-ban me-1"></i> DRAFT (BELUM FIX)</span>');
                         $alert.attr('class', 'alert alert-secondary py-2 px-3 mb-0 mt-2')
                               .html('<i class="fas fa-ban me-1"></i> <strong>DRAFT / PROVISIONAL</strong>: ' + res.message)
                               .show();
                     } else {
-                        $badge.attr('class', 'badge bg-danger text-white p-2')
-                              .html('<i class="fas fa-times-circle me-1"></i> ' + (res.status || 'ERROR'));
+                        $badgeContainer.html('<span class="badge bg-danger text-white p-2" id="mr01_construction_badge"><i class="fas fa-times-circle me-1"></i> ' + (res.status || 'ERROR') + '</span>');
                         $alert.attr('class', 'alert alert-danger py-2 px-3 mb-0 mt-2')
                               .html('<i class="fas fa-times-circle me-1"></i> ' + (res.message || 'Terjadi kesalahan sistem.'))
                               .show();
@@ -881,10 +895,9 @@
                 },
                 error: function(xhr) {
                     $loadingState.hide();
-                    $badge.attr('class', 'badge bg-danger text-white p-2')
-                          .html('<i class="fas fa-times-circle me-1"></i> Gagal Memuat');
+                    $badgeContainer.html('<span class="badge bg-danger text-white p-2" id="mr01_construction_badge"><i class="fas fa-times-circle me-1"></i> Gagal Memuat</span>');
                     $alert.attr('class', 'alert alert-danger py-2 px-3 mb-0 mt-2')
-                          .html('<i class="fas fa-times-circle me-1"></i> Gagal memverifikasi konstruksi aset (Status: ' + xhr.status + ')')
+                          .html('<i class="fas fa-exclamation-circle me-1"></i> Gagal memuat material untuk aset ini. Silakan coba lagi.')
                           .show();
                 }
             });

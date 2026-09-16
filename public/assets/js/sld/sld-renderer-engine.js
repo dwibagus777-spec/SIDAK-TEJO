@@ -250,9 +250,28 @@ class SldRendererEngine {
 
         this.viewBox = Object.assign({}, this.initialViewBox);
 
+        // Ensure container has both SVG and GIS map sub-containers
+        let svgContainer = document.getElementById('sld-svg-container');
+        let gisContainer = document.getElementById('sld-gis-map-container');
+        if (!svgContainer || !gisContainer) {
+            this.container.innerHTML = `
+                <div id="sld-svg-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;"></div>
+                <div id="sld-gis-map-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: none; z-index: 5;"></div>
+                <!-- Floating Canvas Minimap / Mode Indicator -->
+                <div class="sld-mode-indicator badge bg-light text-dark border border-secondary shadow-sm" 
+                     style="position: absolute; bottom: 15px; left: 15px; z-index: 20; font-family: monospace; font-size: 0.8rem;">
+                    <span id="sld-current-mode-label" class="fw-bold text-primary">${this.currentMode === 'ENGINEERING' ? 'MODE: ENGINEERING (GRANULAR)' : (this.currentMode === 'HYBRID' ? 'MODE: HYBRID (CAD + JALAN)' : (this.currentMode === 'GIS' ? 'MODE: GIS MAP (SPASIAL)' : 'MODE: SIMPLIFIED (LINE SECTIONS)'))}</span> | 
+                    <span>NODES: <strong>${this.layoutData.nodes.length}</strong></span> | 
+                    <span>EDGES: <strong>${this.layoutData.edges.length}</strong></span> | 
+                    <span id="sld-zoom-status" class="fw-bold">ZOOM: 100%</span>
+                </div>
+            `;
+            svgContainer = document.getElementById('sld-svg-container');
+            gisContainer = document.getElementById('sld-gis-map-container');
+        }
+
         // Light Engineering Theme Canvas Shell
-        const targetBox = document.getElementById('sld-svg-container') || this.container;
-        targetBox.innerHTML = `
+        svgContainer.innerHTML = `
             <div class="sld-viewport-wrapper" style="position: relative; width: 100%; height: 100%; overflow: hidden; background: #f1f5f9;">
                 <svg id="sld-svg-canvas" 
                      xmlns="http://www.w3.org/2000/svg" 
@@ -306,15 +325,6 @@ class SldRendererEngine {
                     <!-- Mode C: North Orientation Indicator (top overlay) -->
                     <g id="sld-north-indicator" class="sld-layer" style="display: none;"></g>
                 </svg>
-
-                <!-- Floating Canvas Minimap / Mode Indicator -->
-                <div class="sld-mode-indicator badge bg-light text-dark border border-secondary shadow-sm" 
-                     style="position: absolute; bottom: 15px; left: 15px; z-index: 10; font-family: monospace; font-size: 0.8rem;">
-                    <span id="sld-current-mode-label" class="fw-bold text-primary">${this.currentMode === 'ENGINEERING' ? 'MODE: ENGINEERING (GRANULAR)' : (this.currentMode === 'HYBRID' ? 'MODE: HYBRID (CAD + JALAN)' : (this.currentMode === 'GIS' ? 'MODE: GIS MAP (SPASIAL)' : 'MODE: SIMPLIFIED (LINE SECTIONS)'))}</span> | 
-                    <span>NODES: <strong>${this.layoutData.nodes.length}</strong></span> | 
-                    <span>EDGES: <strong>${this.layoutData.edges.length}</strong></span> | 
-                    <span id="sld-zoom-status" class="fw-bold">ZOOM: 100%</span>
-                </div>
             </div>
         `;
 

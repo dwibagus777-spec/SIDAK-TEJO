@@ -1,8 +1,8 @@
 {
     "status": "success",
     "phase": "GLOBAL_NETWORK_TOPOLOGY_COVERAGE_AUDIT",
-    "timestamp": "2026-09-12T11:05:24+07:00",
-    "duration_ms": 1638.64,
+    "timestamp": "2026-09-13T15:43:29+07:00",
+    "duration_ms": 1544.52,
     "governance": {
         "strict_read_only": true,
         "operational_inserts": 0,
@@ -16,13 +16,13 @@
         "total_ulps": 3,
         "total_jtm_assets": 5236,
         "total_valid_gps_assets": 5236,
-        "total_existing_translines": 171,
-        "total_connected_assets": 203,
-        "total_isolated_assets": 5033,
-        "total_auto_complete": 0,
-        "total_high_confidence": 331,
-        "total_review_required": 10970,
-        "total_blocked": 6208,
+        "total_existing_translines": 216,
+        "total_connected_assets": 239,
+        "total_isolated_assets": 4997,
+        "total_auto_complete": 8,
+        "total_high_confidence": 332,
+        "total_review_required": 10923,
+        "total_blocked": 6193,
         "duplicate_edges_all": 0,
         "self_loops_all": 0,
         "cross_feeder_edges_all": 0,
@@ -31,16 +31,16 @@
     },
     "classification_summary": {
         "COMPLETE_STABLE": 0,
-        "PARTIALLY_CONNECTED_AUTO_READY": 0,
-        "PARTIALLY_CONNECTED_REVIEW_REQ": 33,
-        "BLOCKED_DATA_QUALITY": 0,
+        "PARTIALLY_CONNECTED_AUTO_READY": 2,
+        "PARTIALLY_CONNECTED_REVIEW_REQ": 30,
+        "BLOCKED_DATA_QUALITY": 1,
         "NO_TOPOLOGY_DATA": 0,
         "NOT_ELIGIBLE_SCOPE": 101
     },
     "automation_opportunity": {
-        "READY_FOR_AUTOMATED_COMPLETION": 0,
-        "READY_FOR_REVIEW": 33,
-        "BLOCKED": 0,
+        "READY_FOR_AUTOMATED_COMPLETION": 2,
+        "READY_FOR_REVIEW": 30,
+        "BLOCKED": 1,
         "NO_DATA": 0,
         "ALREADY_STABLE": 0,
         "NOT_ELIGIBLE": 101
@@ -476,12 +476,12 @@
             "section_count": 5,
             "total_jtm_assets": 205,
             "valid_gps_assets": 205,
-            "existing_translines": 169,
-            "connected_assets": 200,
-            "isolated_assets": 5,
-            "terminal_assets": 67,
-            "passthrough_nodes": 128,
-            "branch_nodes": 5,
+            "existing_translines": 197,
+            "connected_assets": 203,
+            "isolated_assets": 2,
+            "terminal_assets": 31,
+            "passthrough_nodes": 153,
+            "branch_nodes": 19,
             "saturated_nodes": 0,
             "duplicate_edges": 0,
             "self_loops": 0,
@@ -490,10 +490,10 @@
             "invalid_endpoints": 0,
             "auto_complete": 0,
             "high_confidence": 0,
-            "review_required": 7,
-            "blocked": 10,
-            "classification": "C. PARTIALLY CONNECTED \u2014 REVIEW REQUIRED",
-            "opportunity": "READY_FOR_REVIEW",
+            "review_required": 0,
+            "blocked": 3,
+            "classification": "D. BLOCKED BY DATA QUALITY",
+            "opportunity": "BLOCKED",
             "pending_proposals": 56
         },
         {
@@ -1706,11 +1706,11 @@
             "section_count": 4,
             "total_jtm_assets": 403,
             "valid_gps_assets": 403,
-            "existing_translines": 0,
-            "connected_assets": 0,
-            "isolated_assets": 403,
-            "terminal_assets": 0,
-            "passthrough_nodes": 0,
+            "existing_translines": 9,
+            "connected_assets": 17,
+            "isolated_assets": 386,
+            "terminal_assets": 16,
+            "passthrough_nodes": 1,
             "branch_nodes": 0,
             "saturated_nodes": 0,
             "duplicate_edges": 0,
@@ -1718,12 +1718,12 @@
             "cross_feeder_edges": 0,
             "cross_ulp_edges": 0,
             "invalid_endpoints": 0,
-            "auto_complete": 0,
+            "auto_complete": 1,
             "high_confidence": 9,
-            "review_required": 564,
-            "blocked": 377,
-            "classification": "C. PARTIALLY CONNECTED \u2014 REVIEW REQUIRED",
-            "opportunity": "READY_FOR_REVIEW",
+            "review_required": 548,
+            "blocked": 373,
+            "classification": "B. PARTIALLY CONNECTED \u2014 AUTO-COMPLETE AVAILABLE",
+            "opportunity": "READY_FOR_AUTOMATED_COMPLETION",
             "pending_proposals": 0
         },
         {
@@ -3956,10 +3956,10 @@
             "section_count": 9,
             "total_jtm_assets": 406,
             "valid_gps_assets": 406,
-            "existing_translines": 0,
-            "connected_assets": 0,
-            "isolated_assets": 406,
-            "terminal_assets": 0,
+            "existing_translines": 8,
+            "connected_assets": 16,
+            "isolated_assets": 390,
+            "terminal_assets": 16,
             "passthrough_nodes": 0,
             "branch_nodes": 0,
             "saturated_nodes": 0,
@@ -3968,12 +3968,12 @@
             "cross_feeder_edges": 0,
             "cross_ulp_edges": 0,
             "invalid_endpoints": 0,
-            "auto_complete": 0,
-            "high_confidence": 37,
-            "review_required": 912,
-            "blocked": 589,
-            "classification": "C. PARTIALLY CONNECTED \u2014 REVIEW REQUIRED",
-            "opportunity": "READY_FOR_REVIEW",
+            "auto_complete": 7,
+            "high_confidence": 38,
+            "review_required": 888,
+            "blocked": 585,
+            "classification": "B. PARTIALLY CONNECTED \u2014 AUTO-COMPLETE AVAILABLE",
+            "opportunity": "READY_FOR_AUTOMATED_COMPLETION",
             "pending_proposals": 0
         },
         {
@@ -4071,19 +4071,19 @@
         "pre": {
             "assets": {
                 "count": 5549,
-                "sha256": "c5a510f51bcf09167eeb78e6457e02e1ef6d527efffc45002a643e5f6618b267"
+                "sha256": "d774be4f9d338fcdcdac5f6eac9f4a06f74300e1a293e10a8968c133df799ee9"
             },
             "gis_translines": {
-                "count": 171,
-                "sha256": "e5c26a6a18ffb6ccbe39d218d3ed176b60541c35f61a8a4afb9711249aa21c2d"
+                "count": 225,
+                "sha256": "d6f4627aa24c9e0215572b0c698166ea851f72bd30d5992530f2781ddc66b530"
             },
             "gis_transline_proposals": {
                 "count": 56,
                 "sha256": "74974b866f483ea7fc624c5ffe5f506e85a7a66da4a1e9eb64ee401c8a6d8ca5"
             },
             "temuan": {
-                "count": 638,
-                "sha256": "48ae4d223e842a85ae509eeee49203ee2240cb4517b66a0e11bd3db05bb94a3a"
+                "count": 641,
+                "sha256": "069292ee9a1ec5855aaa70f8f01381b6f6f6a8e861c1c65b69c22a6ca4f853d4"
             },
             "temuan_materials": {
                 "count": 0,
@@ -4105,19 +4105,19 @@
         "post": {
             "assets": {
                 "count": 5549,
-                "sha256": "c5a510f51bcf09167eeb78e6457e02e1ef6d527efffc45002a643e5f6618b267"
+                "sha256": "d774be4f9d338fcdcdac5f6eac9f4a06f74300e1a293e10a8968c133df799ee9"
             },
             "gis_translines": {
-                "count": 171,
-                "sha256": "e5c26a6a18ffb6ccbe39d218d3ed176b60541c35f61a8a4afb9711249aa21c2d"
+                "count": 225,
+                "sha256": "d6f4627aa24c9e0215572b0c698166ea851f72bd30d5992530f2781ddc66b530"
             },
             "gis_transline_proposals": {
                 "count": 56,
                 "sha256": "74974b866f483ea7fc624c5ffe5f506e85a7a66da4a1e9eb64ee401c8a6d8ca5"
             },
             "temuan": {
-                "count": 638,
-                "sha256": "48ae4d223e842a85ae509eeee49203ee2240cb4517b66a0e11bd3db05bb94a3a"
+                "count": 641,
+                "sha256": "069292ee9a1ec5855aaa70f8f01381b6f6f6a8e861c1c65b69c22a6ca4f853d4"
             },
             "temuan_materials": {
                 "count": 0,

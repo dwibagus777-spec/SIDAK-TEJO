@@ -146,6 +146,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('sld/feeder/(:num)', 'DynamicSldController::getFeederGraph/$1');
     $routes->get('sld/section-detail/(:num)', 'DynamicSldController::getSectionDetail/$1');
 
+    // SLD-02, SLD-03 & SLD-04 — Topology, Semantics & Layout Engine
+    $routes->get('api/sld/feeder/(:num)', 'Api\SldApiController::getFeederTopology/$1');
+    $routes->get('api/sld/feeder/(:num)/semantic', 'Api\SldApiController::getFeederSemanticHierarchy/$1');
+    $routes->get('api/sld/feeder/(:num)/layout', 'Api\SldApiController::getFeederLayout/$1');
+
     // Field Inspection & Living Asset Condition (Phase CR-06)
     $routes->get('inspections', 'FieldInspectionController::index');
     $routes->get('api/inspections/summary', 'FieldInspectionController::apiSummary');

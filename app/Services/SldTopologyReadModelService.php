@@ -348,6 +348,14 @@ class SldTopologyReadModelService
         // 8. Assemble Read Model Output Contract
         return [
             'status' => 'success',
+            'projection' => [
+                'engine'                  => 'SLD-05S',
+                'data_fingerprint'        => $this->getFeederFingerprint($penyulangId)['data_fingerprint'] ?? null,
+                'active_assets_count'     => $feederAssetsCount,
+                'active_translines_count' => $edgesCount,
+                'generated_at'            => date('Y-m-d H:i:s'),
+                'source'                  => $dataSourceMode,
+            ],
             'data_source' => [
                 'mode'               => $dataSourceMode,
                 'is_production_live' => ($this->db !== null),
@@ -521,10 +529,22 @@ class SldTopologyReadModelService
         // 1. Try Live Database if available
         if ($this->db && method_exists($this->db, 'table')) {
             try {
-                $rows = $this->db->table('assets')
-                    ->where('penyulang_id', $penyulangId)
-                    ->get()
-                    ->getResultArray();
+                $builder = $this->db->table('assets')
+                    ->where('penyulang_id', $penyulangId);
+
+                // SLD-05S.1: Active asset filter
+                if (method_exists($this->db, 'fieldExists')) {
+                    if ($this->db->fieldExists('status', 'assets')) {
+                        $builder->where('(status != "INACTIVE" OR status IS NULL)');
+                    }
+                    if ($this->db->fieldExists('deleted_at', 'assets')) {
+                        $builder->where('deleted_at IS NULL');
+                    }
+                } else {
+                    $builder->where('(status != "INACTIVE" OR status IS NULL)')->where('deleted_at IS NULL');
+                }
+
+                $rows = $builder->get()->getResultArray();
                 if (!empty($rows)) return $rows;
             } catch (\Throwable $e) {
                 // fall through
@@ -657,5 +677,131 @@ class SldTopologyReadModelService
         }
 
         return [];
+    }
+
+    /**
+     * SLD-05S.8: Cryptographic SHA-256 Topology Data Fingerprint.
+     *
+     * Computes a deterministic SHA-256 hash across all active assets and active translines.
+     * Guaranteed to change whenever assets or translines are added, updated, or deactivated.
+     *
+     * @param int $penyulangId
+     * @return array
+     */
+    public function getFeederFingerprint(int $penyulangId): array
+    {
+        $assetSignatures = [];
+        $transSignatures = [];
+        $assetCount = 0;
+        $transCount = 0;
+
+        if ($this->db && method_exists($this->db, 'table')) {
+            try {
+                // Query active assets
+                $assetBuilder = $this->db->table('assets')->where('penyulang_id', $penyulangId);
+                if (method_exists($this->db, 'fieldExists')) {
+                    if ($this->db->fieldExists('status', 'assets')) {
+                        $assetBuilder->where('(status != "INACTIVE" OR status IS NULL)');
+                    }
+                    if ($this->db->fieldExists('deleted_at', 'assets')) {
+                        $assetBuilder->where('deleted_at IS NULL');
+                    }
+                }
+                $assetRows = $assetBuilder->orderBy('id', 'ASC')->get()->getResultArray();
+                $assetCount = count($assetRows);
+                foreach ($assetRows as $a) {
+                    $assetSignatures[] = sprintf(
+                        "id:%s|code:%s|status:%s|penyulang:%s|section:%s|lat:%s|lng:%s|updated:%s",
+                        $a['id'] ?? '',
+                        $a['kode_asset'] ?? '',
+                        $a['status'] ?? 'ACTIVE',
+                        $a['penyulang_id'] ?? '',
+                        $a['section_id'] ?? '',
+                        $a['latitude'] ?? '',
+                        $a['longitude'] ?? '',
+                        $a['updated_at'] ?? 'NULL'
+                    );
+                }
+
+                // Query active translines
+                $transBuilder = $this->db->table('gis_translines')->where('penyulang_id', $penyulangId);
+                if (method_exists($this->db, 'fieldExists')) {
+                    if ($this->db->fieldExists('is_active', 'gis_translines')) {
+                        $transBuilder->where('is_active', 1);
+                    }
+                    if ($this->db->fieldExists('status', 'gis_translines')) {
+                        $transBuilder->where('status', 'ACTIVE');
+                    }
+                    if ($this->db->fieldExists('deleted_at', 'gis_translines')) {
+                        $transBuilder->where('deleted_at IS NULL');
+                    }
+                }
+                $transRows = $transBuilder->orderBy('id', 'ASC')->get()->getResultArray();
+                $transCount = count($transRows);
+                foreach ($transRows as $t) {
+                    $transSignatures[] = sprintf(
+                        "id:%s|src:%s|tgt:%s|penyulang:%s|status:%s|active:%s|dist:%s|updated:%s",
+                        $t['id'] ?? '',
+                        $t['source_asset_id'] ?? '',
+                        $t['target_asset_id'] ?? '',
+                        $t['penyulang_id'] ?? '',
+                        $t['status'] ?? 'ACTIVE',
+                        $t['is_active'] ?? 1,
+                        $t['distance_meters'] ?? $t['length_meters'] ?? 'NULL',
+                        $t['updated_at'] ?? 'NULL'
+                    );
+                }
+            } catch (\Throwable $e) {
+                // fall through
+            }
+        }
+
+        // Offline / Test / Fixture mode fallback
+        if (empty($assetSignatures)) {
+            $assets = $this->loadFeederAssets($penyulangId);
+            $assetCount = count($assets);
+            foreach ($assets as $a) {
+                $assetSignatures[] = sprintf(
+                    "id:%s|code:%s|status:%s|penyulang:%s|section:%s|lat:%s|lng:%s|updated:%s",
+                    $a['id'] ?? '',
+                    $a['kode_asset'] ?? '',
+                    $a['status'] ?? 'ACTIVE',
+                    $penyulangId,
+                    $a['section_id'] ?? '',
+                    $a['latitude'] ?? '',
+                    $a['longitude'] ?? '',
+                    $a['updated_at'] ?? 'NULL'
+                );
+            }
+
+            $translines = $this->loadFeederTranslines($penyulangId);
+            $transCount = count($translines);
+            foreach ($translines as $t) {
+                $transSignatures[] = sprintf(
+                    "id:%s|src:%s|tgt:%s|penyulang:%s|status:%s|active:%s|dist:%s|updated:%s",
+                    $t['id'] ?? '',
+                    $t['source_asset_id'] ?? '',
+                    $t['target_asset_id'] ?? '',
+                    $penyulangId,
+                    $t['status'] ?? 'ACTIVE',
+                    $t['is_active'] ?? 1,
+                    $t['distance_meters'] ?? $t['length_meters'] ?? 'NULL',
+                    $t['updated_at'] ?? 'NULL'
+                );
+            }
+        }
+
+        $canonicalAssetSignature = hash('sha256', implode(';', $assetSignatures));
+        $canonicalTranslineSignature = hash('sha256', implode(';', $transSignatures));
+        $sldFingerprint = hash('sha256', $canonicalAssetSignature . ':' . $canonicalTranslineSignature);
+
+        return [
+            'status'                  => 'success',
+            'feeder_id'               => $penyulangId,
+            'data_fingerprint'        => $sldFingerprint,
+            'active_assets_count'     => $assetCount,
+            'active_translines_count' => $transCount,
+            'timestamp'               => date('Y-m-d H:i:s'),
+        ];
     }
 }

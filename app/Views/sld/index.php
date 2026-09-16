@@ -7,6 +7,8 @@
     <!-- Bootstrap 5 & FontAwesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet CSS for Mode B (GIS Map) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
             --sld-bg-dark: #090e1d;
@@ -78,11 +80,15 @@
     <div class="sld-header-card mb-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-primary px-2 py-1">SLD-05R</span>
-                <h4 class="fw-bold m-0 text-white">Single Line Diagram (SLD) Engine</h4>
+                <span class="badge bg-success px-2 py-1">SLD-05S</span>
+                <span class="badge bg-secondary px-2 py-1" style="font-size: 0.75rem;">SLD-05R COMPLIANT</span>
+                <h4 class="fw-bold m-0 text-white">Dynamic Single Line Diagram & GIS Context Engine</h4>
+                <span id="sld-fingerprint-badge" class="badge bg-dark border border-secondary text-info px-2 py-1 ms-2" style="font-family: monospace; font-size: 0.75rem;">
+                    <i class="fa-solid fa-fingerprint me-1"></i>FINGERPRINT: INITIALIZING...
+                </span>
             </div>
             <div class="text-white-50 small">
-                Engineering Drawing Readability &bull; PLN/IEC Distribution Symbology &bull; Strict Read-Only (&Delta; = 0)
+                Dynamic Read Model Discovery &bull; Tri-Mode (Engineering, GIS Map, Hybrid) &bull; Strict Read-Only (&Delta; = 0)
             </div>
         </div>
 
@@ -106,16 +112,28 @@
         </div>
     </div>
 
+    <!-- Dynamic Auto-Refresh Alert Banner (Amendment 8) -->
+    <div id="sld-refresh-alert" class="alert alert-info py-2 px-3 d-none align-items-center justify-content-between mb-2 shadow-sm" style="font-size: 0.85rem; border-left: 4px solid #0284c7;">
+        <span><i class="fa-solid fa-arrows-rotate fa-spin me-2 text-primary"></i><strong>Data Jaringan Diperbarui:</strong> Terdeteksi perubahan authoritative database. Memperbarui diagram SLD secara otomatis...</span>
+        <button type="button" class="btn-close btn-sm" onclick="document.getElementById('sld-refresh-alert').classList.add('d-none')"></button>
+    </div>
+
     <!-- Toolbar & Legend Bar -->
     <div class="sld-toolbar mb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
         <!-- Controls -->
         <div class="d-flex align-items-center gap-2">
-            <!-- Mode Switcher -->
+            <!-- Tri-Mode Switcher -->
             <div class="btn-group btn-group-sm" role="group" aria-label="Mode Tampilan">
                 <button type="button" class="btn btn-primary active" id="btn-mode-engineering" onclick="setRendererMode('ENGINEERING')">
-                    <i class="fa-solid fa-code-fork me-1"></i> Mode Engineering
+                    <i class="fa-solid fa-bolt me-1"></i> Mode Engineering
                 </button>
-                <button type="button" class="btn btn-outline-primary" id="btn-mode-simplified" onclick="setRendererMode('SIMPLIFIED')">
+                <button type="button" class="btn btn-outline-primary" id="btn-mode-hybrid" onclick="setRendererMode('HYBRID')">
+                    <i class="fa-solid fa-road me-1"></i> Mode Hybrid (CAD + Jalan)
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="btn-mode-gis" onclick="setRendererMode('GIS')">
+                    <i class="fa-solid fa-map-location-dot me-1"></i> Mode GIS Map
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="btn-mode-simplified" onclick="setRendererMode('SIMPLIFIED')">
                     <i class="fa-solid fa-diagram-project me-1"></i> Mode Simplified
                 </button>
             </div>
@@ -189,27 +207,33 @@
             <span><strong>Terminal</strong> (Dead-End)</span>
         </div>
         <div class="sld-legend-item">
-            <span class="legend-indicator" style="border: 1px dashed #94a3b8; border-radius: 50%;"></span>
-            <span><strong>Fragmen / Terisolasi</strong></span>
+            <span class="legend-indicator" style="border: 1.5px solid #94a3b8; background: #f8fafc;"></span>
+            <span><strong>Koridor Jalan</strong> (Hybrid Road)</span>
         </div>
     </div>
 
     <!-- Main Interactive SLD Canvas -->
     <div id="sld-canvas-container" class="sld-canvas-box shadow-sm">
-        <!-- SVG Canvas rendered dynamically by sld-renderer-engine.js -->
+        <div id="sld-svg-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;"></div>
+        <div id="sld-gis-map-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: none; z-index: 5;"></div>
     </div>
 </div>
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= base_url('assets/js/sld/sld-renderer-engine.js?v=sld05r_' . (file_exists(FCPATH . 'assets/js/sld/sld-renderer-engine.js') ? filemtime(FCPATH . 'assets/js/sld/sld-renderer-engine.js') : '20260916')) ?>"></script>
+<!-- Leaflet JS for Mode B (GIS Map) -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="<?= base_url('assets/js/sld/sld-renderer-engine.js?v=sld05s_' . (file_exists(FCPATH . 'assets/js/sld/sld-renderer-engine.js') ? filemtime(FCPATH . 'assets/js/sld/sld-renderer-engine.js') : '20260916')) ?>"></script>
 <script>
     let sldEngine = null;
 
     document.addEventListener('DOMContentLoaded', function() {
         const layoutApiUrl = '<?= esc($layoutApiUrl) ?>';
+        const fingerprintApiUrl = '<?= site_url('api/sld/feeder/' . $selectedFeederId . '/fingerprint') ?>';
         sldEngine = new SldRendererEngine('sld-canvas-container', {
             apiUrl: layoutApiUrl,
+            fingerprintApiUrl: fingerprintApiUrl,
+            feederId: <?= (int)$selectedFeederId ?>,
             defaultMode: 'ENGINEERING',
             showGtt: true
         });
@@ -223,14 +247,29 @@
         sldEngine.setMode(mode);
 
         const btnEng = document.getElementById('btn-mode-engineering');
+        const btnHyb = document.getElementById('btn-mode-hybrid');
+        const btnGis = document.getElementById('btn-mode-gis');
         const btnSimp = document.getElementById('btn-mode-simplified');
 
-        if (mode === 'ENGINEERING') {
-            btnEng.className = 'btn btn-primary active';
-            btnSimp.className = 'btn btn-outline-primary';
-        } else {
-            btnEng.className = 'btn btn-outline-primary';
-            btnSimp.className = 'btn btn-primary active';
+        [btnEng, btnHyb, btnGis, btnSimp].forEach(b => {
+            if (b) {
+                b.classList.remove('active', 'btn-primary');
+                b.classList.add('btn-outline-primary');
+            }
+        });
+
+        if (mode === 'ENGINEERING' && btnEng) {
+            btnEng.classList.add('active', 'btn-primary');
+            btnEng.classList.remove('btn-outline-primary');
+        } else if (mode === 'HYBRID' && btnHyb) {
+            btnHyb.classList.add('active', 'btn-primary');
+            btnHyb.classList.remove('btn-outline-primary');
+        } else if (mode === 'GIS' && btnGis) {
+            btnGis.classList.add('active', 'btn-primary');
+            btnGis.classList.remove('btn-outline-primary');
+        } else if (mode === 'SIMPLIFIED' && btnSimp) {
+            btnSimp.classList.add('active', 'btn-primary');
+            btnSimp.classList.remove('btn-outline-secondary', 'btn-outline-primary');
         }
     }
 

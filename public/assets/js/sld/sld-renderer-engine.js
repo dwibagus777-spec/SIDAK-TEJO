@@ -88,11 +88,13 @@ class SldRendererEngine {
 
         this.options = Object.assign({
             apiUrl: '',
+            fingerprintApiUrl: '',
+            feederId: null,
             scaleX: 75,
             scaleY: 85,
             offsetX: 160,
             offsetY: 180,
-            defaultMode: 'ENGINEERING', // 'ENGINEERING' or 'SIMPLIFIED'
+            defaultMode: 'ENGINEERING', // 'ENGINEERING', 'HYBRID', 'GIS', or 'SIMPLIFIED'
             showGtt: true,
             onSelectAsset: null,
         }, options);
@@ -113,6 +115,14 @@ class SldRendererEngine {
 
         // Geometric Label Occupancy Index
         this.occupancy = new LabelOccupancyIndex();
+
+        // SLD-05S: Dynamic Polling & GIS Leaflet State
+        this.fingerprintApiUrl = this.options.fingerprintApiUrl || null;
+        this.feederId = this.options.feederId || null;
+        this.cachedFingerprint = null;
+        this.pollingTimer = null;
+        this.leafletMap = null;
+        this.leafletFeatureGroup = null;
     }
 
     /**
@@ -143,10 +153,68 @@ class SldRendererEngine {
             }
 
             this.layoutData = data;
+
+            // SLD-05S: Update Fingerprint Badge & Cache
+            if (data.projection && data.projection.data_fingerprint) {
+                this.cachedFingerprint = data.projection.data_fingerprint;
+                const fpBadge = document.getElementById('sld-fingerprint-badge');
+                if (fpBadge) {
+                    fpBadge.innerHTML = `<i class="fa-solid fa-fingerprint me-1 text-success"></i>FINGERPRINT: ${data.projection.data_fingerprint.substring(0, 12)}...`;
+                }
+            }
+
+            this.startChangeDetectionPolling();
             this.render();
         } catch (err) {
-            console.error('[SLD-05R] Error loading layout:', err);
+            console.error('[SLD-05S] Error loading layout:', err);
             this.renderError(err.message);
+        }
+    }
+
+    /**
+     * SLD-05S.8: Automatic Change Detection Polling (30s interval + tab focus).
+     */
+    startChangeDetectionPolling() {
+        if (this.pollingTimer) clearInterval(this.pollingTimer);
+        if (!this.fingerprintApiUrl) return;
+
+        this.pollingTimer = setInterval(() => {
+            this.checkFingerprint();
+        }, 30000);
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) this.checkFingerprint();
+        });
+        window.addEventListener('focus', () => {
+            this.checkFingerprint();
+        });
+    }
+
+    async checkFingerprint() {
+        if (!this.fingerprintApiUrl) return;
+        try {
+            const res = await fetch(this.fingerprintApiUrl);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.status === 'success' && data.data_fingerprint) {
+                const fpBadge = document.getElementById('sld-fingerprint-badge');
+                if (fpBadge) {
+                    fpBadge.innerHTML = `<i class="fa-solid fa-fingerprint me-1 text-success"></i>FINGERPRINT: ${data.data_fingerprint.substring(0, 12)}...`;
+                }
+
+                if (this.cachedFingerprint && data.data_fingerprint !== this.cachedFingerprint) {
+                    console.log(`[SLD-05S] Network data changed (${this.cachedFingerprint.substring(0,8)} -> ${data.data_fingerprint.substring(0,8)}). Refreshing SLD in place...`);
+                    this.cachedFingerprint = data.data_fingerprint;
+                    const alertEl = document.getElementById('sld-refresh-alert');
+                    if (alertEl) alertEl.classList.remove('d-none');
+                    await this.load();
+                    setTimeout(() => {
+                        if (alertEl) alertEl.classList.add('d-none');
+                    }, 3500);
+                }
+            }
+        } catch (e) {
+            // Non-blocking resilient fallback
         }
     }
 
@@ -183,7 +251,8 @@ class SldRendererEngine {
         this.viewBox = Object.assign({}, this.initialViewBox);
 
         // Light Engineering Theme Canvas Shell
-        this.container.innerHTML = `
+        const targetBox = document.getElementById('sld-svg-container') || this.container;
+        targetBox.innerHTML = `
             <div class="sld-viewport-wrapper" style="position: relative; width: 100%; height: 100%; overflow: hidden; background: #f1f5f9;">
                 <svg id="sld-svg-canvas" 
                      xmlns="http://www.w3.org/2000/svg" 
@@ -216,6 +285,9 @@ class SldRendererEngine {
                     <!-- Zone 3: Isolated Assets Frame -->
                     <g id="sld-zone-isolated" class="sld-zone-group"></g>
 
+                    <!-- Mode C: Hybrid Road Corridors Layer -->
+                    <g id="sld-corridors-layer" class="sld-layer" style="display: none;"></g>
+
                     <!-- GI Substation Origin Anchor Layer (Amendment 4) -->
                     <g id="sld-substation-anchor-layer" class="sld-layer"></g>
 
@@ -230,12 +302,15 @@ class SldRendererEngine {
 
                     <!-- Equipment Nodes Layer -->
                     <g id="sld-nodes-layer" class="sld-layer"></g>
+
+                    <!-- Mode C: North Orientation Indicator (top overlay) -->
+                    <g id="sld-north-indicator" class="sld-layer" style="display: none;"></g>
                 </svg>
 
                 <!-- Floating Canvas Minimap / Mode Indicator -->
                 <div class="sld-mode-indicator badge bg-light text-dark border border-secondary shadow-sm" 
                      style="position: absolute; bottom: 15px; left: 15px; z-index: 10; font-family: monospace; font-size: 0.8rem;">
-                    <span id="sld-current-mode-label" class="fw-bold text-primary">${this.currentMode === 'ENGINEERING' ? 'MODE: ENGINEERING (GRANULAR)' : 'MODE: SIMPLIFIED (LINE SECTIONS)'}</span> | 
+                    <span id="sld-current-mode-label" class="fw-bold text-primary">${this.currentMode === 'ENGINEERING' ? 'MODE: ENGINEERING (GRANULAR)' : (this.currentMode === 'HYBRID' ? 'MODE: HYBRID (CAD + JALAN)' : (this.currentMode === 'GIS' ? 'MODE: GIS MAP (SPASIAL)' : 'MODE: SIMPLIFIED (LINE SECTIONS)'))}</span> | 
                     <span>NODES: <strong>${this.layoutData.nodes.length}</strong></span> | 
                     <span>EDGES: <strong>${this.layoutData.edges.length}</strong></span> | 
                     <span id="sld-zoom-status" class="fw-bold">ZOOM: 100%</span>
@@ -254,6 +329,8 @@ class SldRendererEngine {
         // 2. Draw Layer Elements
         this.renderZoneFrames();
         this.renderSubstationAnchor();
+        this.renderRoadCorridors();
+        this.renderNorthIndicator();
         this.renderEdges();
         this.renderLineSections();
         this.renderNodes();
@@ -432,6 +509,245 @@ class SldRendererEngine {
                 </text>
             </g>
         `;
+    }
+
+    /**
+     * Render Road Corridors for Mode C (Hybrid CAD + Road Corridors View - Amendment #8).
+     * Strictly visual schematic corridor boundaries with road names.
+     */
+    renderRoadCorridors() {
+        const g = document.getElementById('sld-corridors-layer');
+        if (!g || !this.layoutData || !this.layoutData.corridors) return;
+
+        let html = '';
+        for (const corr of this.layoutData.corridors) {
+            const b = corr.bounds;
+            if (!b) continue;
+
+            const p1 = this.project(b.min_grid_x, b.min_grid_y);
+            const p2 = this.project(b.max_grid_x, b.max_grid_y);
+
+            const padX = 45;
+            const padY = 40;
+            const x = Math.min(p1.x, p2.x) - padX;
+            const y = Math.min(p1.y, p2.y) - padY;
+            const w = Math.abs(p2.x - p1.x) + (padX * 2);
+            const h = Math.abs(p2.y - p1.y) + (padY * 2);
+
+            const roadTitle = (corr.road_name || 'KORIDOR JALAN').toUpperCase();
+            const localityTitle = corr.locality || '';
+            const bannerText = `${roadTitle} • ${localityTitle}`;
+            const bannerW = Math.min(Math.max(220, bannerText.length * 7.5 + 40), Math.max(220, w - 20));
+
+            html += `
+                <g class="sld-road-corridor" data-corridor-id="${corr.corridor_id}">
+                    <!-- Outer Road Corridor Band / Double Guide Lines -->
+                    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10"
+                          fill="#f8fafc" fill-opacity="0.5"
+                          stroke="#cbd5e1" stroke-width="1.8" stroke-dasharray="6,4" />
+                    <rect x="${x + 4}" y="${y + 4}" width="${Math.max(0, w - 8)}" height="${Math.max(0, h - 8)}" rx="8"
+                          fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3,3" />
+
+                    <!-- Road Corridor Header Banner Pill -->
+                    <rect x="${x + 14}" y="${y - 12}" width="${bannerW}" height="22" rx="4"
+                          fill="#0284c7" stroke="#0369a1" stroke-width="1" />
+                    <text x="${x + 22}" y="${y + 2}" 
+                          fill="#ffffff" font-size="9.5" font-weight="bold" font-family="sans-serif">
+                        <tspan fill="#bae6fd">&#128739; JALAN:</tspan> ${roadTitle}
+                    </text>
+                </g>
+            `;
+        }
+
+        g.innerHTML = html;
+    }
+
+    /**
+     * Render PLN North Orientation Indicator (⬆ U) for Mode C (Hybrid CAD View).
+     */
+    renderNorthIndicator() {
+        const g = document.getElementById('sld-north-indicator');
+        if (!g || !this.layoutData) return;
+
+        const incomer = this.layoutData.nodes.find(n => n.asset_id === 3231 || n.device_role === 'SOURCE_INCOMER') 
+                     || this.layoutData.nodes[0];
+        if (!incomer || !incomer.schematic) return;
+
+        const pInc = this.project(incomer.schematic.grid_x, incomer.schematic.grid_y);
+        const compassX = pInc.x + 360;
+        const compassY = pInc.y - 120;
+
+        g.innerHTML = `
+            <g id="sld-north-compass" transform="translate(${compassX}, ${compassY})" style="cursor: default;">
+                <!-- Rosette Background Circle -->
+                <circle cx="0" cy="0" r="24" fill="#ffffff" stroke="#0f172a" stroke-width="2" 
+                        style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));" />
+                <circle cx="0" cy="0" r="20" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2,2" />
+                
+                <!-- North-South Compass Needles -->
+                <polygon points="0,-17 6,0 0,-3 -6,0" fill="#dc2626" />
+                <polygon points="0,17 6,0 0,3 -6,0" fill="#0f172a" />
+                <circle cx="0" cy="0" r="2.5" fill="#ffffff" stroke="#0f172a" stroke-width="1" />
+
+                <!-- Cardinal Labels -->
+                <text x="0" y="-21" fill="#dc2626" font-size="10.5" font-weight="900" font-family="sans-serif" text-anchor="middle">U</text>
+                <text x="0" y="27" fill="#64748b" font-size="8" font-weight="bold" font-family="sans-serif" text-anchor="middle">S</text>
+                <text x="21" y="3" fill="#64748b" font-size="7.5" font-weight="bold" font-family="sans-serif" text-anchor="middle">T</text>
+                <text x="-21" y="3" fill="#64748b" font-size="7.5" font-weight="bold" font-family="sans-serif" text-anchor="middle">B</text>
+            </g>
+        `;
+    }
+
+    /**
+     * Render Mode B: Interactive GIS Map View with real GPS coordinates (Leaflet).
+     * Governed by Amendment #7: Authoritative GPS only. If GPS coordinates missing, node/edge omitted gracefully.
+     */
+    renderGisMap() {
+        if (!window.L) {
+            console.warn('[SLD-05S] Leaflet library not loaded.');
+            return;
+        }
+
+        const mapContainer = document.getElementById('sld-gis-map-container');
+        if (!mapContainer) return;
+
+        if (!this.leafletMap) {
+            this.leafletMap = L.map('sld-gis-map-container', {
+                center: [-7.428, 112.723],
+                zoom: 14,
+                zoomControl: true,
+            });
+
+            // Resilient OpenStreetMap tile layer (Refinement #4)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors | SIDAK TEJO'
+            }).addTo(this.leafletMap);
+
+            this.leafletFeatureGroup = L.featureGroup().addTo(this.leafletMap);
+        } else {
+            this.leafletFeatureGroup.clearLayers();
+        }
+
+        if (!this.layoutData) return;
+
+        const nodeMap = new Map();
+        const validGeoNodes = [];
+
+        // 1. Plot Conductor Edges (Lines between GPS points)
+        for (const node of this.layoutData.nodes) {
+            const lat = parseFloat(node.geo ? node.geo.latitude : 0);
+            const lng = parseFloat(node.geo ? node.geo.longitude : 0);
+            if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                nodeMap.set(node.asset_id, { node, lat, lng });
+                validGeoNodes.push({ node, lat, lng });
+            }
+        }
+
+        for (const edge of this.layoutData.edges) {
+            const src = nodeMap.get(edge.source_asset_id);
+            const tgt = nodeMap.get(edge.target_asset_id);
+            if (src && tgt) {
+                const isMain = (edge.component_id === 'C15-01');
+                const hasLength = (edge.length_meters !== null && edge.length_meters !== undefined && edge.length_meters > 0);
+                const lenLabel = hasLength ? `${Number(edge.length_meters).toFixed(1)} m` : 'Length unavailable';
+
+                const poly = L.polyline([[src.lat, src.lng], [tgt.lat, tgt.lng]], {
+                    color: isMain ? '#0284c7' : '#64748b',
+                    weight: isMain ? 4 : 2.5,
+                    dashArray: isMain ? null : '5,5',
+                    opacity: 0.85,
+                }).addTo(this.leafletFeatureGroup);
+
+                poly.bindPopup(`
+                    <div style="font-family: sans-serif; font-size: 12px; min-width: 180px;">
+                        <div style="font-weight: bold; color: #0284c7; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
+                            TRANSLINE #${edge.transline_id}
+                        </div>
+                        <div><strong>Source:</strong> #${edge.source_asset_id}</div>
+                        <div><strong>Target:</strong> #${edge.target_asset_id}</div>
+                        <div><strong>Panjang:</strong> ${lenLabel}</div>
+                        <div><strong>Komponen:</strong> ${edge.component_id || 'FRAGMENT'}</div>
+                    </div>
+                `);
+            }
+        }
+
+        // 2. Plot Nodes (Equipment Points)
+        for (const item of validGeoNodes) {
+            const n = item.node;
+            const devRole = n.device_role;
+            const topRole = n.topology_role;
+            const loc = n.location_context || {};
+
+            let markerColor = '#334155';
+            let radius = 5;
+
+            if (devRole === 'SOURCE_INCOMER' || topRole === 'SOURCE_INCOMER') {
+                markerColor = '#dc2626';
+                radius = 9;
+            } else if (devRole === 'SWITCH_CANDIDATE') {
+                markerColor = '#d97706';
+                radius = 8;
+            } else if (devRole === 'TRANSFORMER_NODE') {
+                markerColor = '#059669';
+                radius = 7;
+            } else if (topRole === 'BRANCH_NODE') {
+                markerColor = '#e11d48';
+                radius = 6;
+            } else if (topRole === 'TERMINAL_NODE') {
+                markerColor = '#9333ea';
+                radius = 5;
+            }
+
+            const circle = L.circleMarker([item.lat, item.lng], {
+                radius: radius,
+                fillColor: markerColor,
+                color: '#ffffff',
+                weight: 1.5,
+                opacity: 1,
+                fillOpacity: 0.9,
+            }).addTo(this.leafletFeatureGroup);
+
+            const popupContent = `
+                <div style="font-family: sans-serif; font-size: 12px; min-width: 200px;">
+                    <div style="font-weight: bold; color: #0f172a; font-size: 13px; margin-bottom: 4px;">
+                        ${n.name}
+                    </div>
+                    <div style="margin-bottom: 6px;">
+                        <span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 10px;">
+                            ${devRole}
+                        </span>
+                        <span style="font-family: monospace; color: #64748b; font-size: 11px; margin-left: 4px;">#${n.asset_id}</span>
+                    </div>
+                    <div style="color: #475569; margin-bottom: 3px;"><strong>Lokasi:</strong> ${loc.road_name || '-'}</div>
+                    <div style="color: #475569; margin-bottom: 3px;"><strong>Wilayah:</strong> ${loc.locality || '-'}</div>
+                    <div style="color: #64748b; font-family: monospace; font-size: 11px;">GPS: ${item.lat.toFixed(6)}, ${item.lng.toFixed(6)}</div>
+                    <div style="margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 6px;">
+                        <button onclick="sldEngine.selectAsset(${n.asset_id})" style="background: #0284c7; color: #ffffff; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 11px; width: 100%;">
+                            Buka Detail Drawer
+                        </button>
+                    </div>
+                </div>
+            `;
+            circle.bindPopup(popupContent);
+            circle.on('click', () => {
+                this.selectAsset(n.asset_id);
+            });
+        }
+
+        // Fit bounds to entire feeder
+        if (validGeoNodes.length > 0) {
+            try {
+                this.leafletMap.fitBounds(this.leafletFeatureGroup.getBounds().pad(0.08));
+            } catch (e) {
+                // Ignore bounds fitting if single point
+            }
+        }
+
+        setTimeout(() => {
+            if (this.leafletMap) this.leafletMap.invalidateSize();
+        }, 200);
     }
 
     /**
@@ -982,6 +1298,27 @@ class SldRendererEngine {
                 </div>
             </div>
 
+            <!-- SLD-05S: Location & Road Context Card (Amendment #5 & #6) -->
+            <div class="card bg-dark border-secondary mb-3">
+                <div class="card-header border-secondary py-2 small fw-bold text-info bg-dark">
+                    <i class="fa-solid fa-road me-1"></i> KONTEKS GEOGRAFIS (ROAD_CONTEXT)
+                </div>
+                <div class="card-body p-3">
+                    <div class="small text-muted text-uppercase fw-bold mb-1">Koridor Jalan</div>
+                    <div class="fw-bold text-white mb-2">
+                        ${(node.location_context && node.location_context.road_name) ? node.location_context.road_name : 'Wilayah Feeder'}
+                    </div>
+                    <div class="small text-muted text-uppercase fw-bold mb-1">Wilayah Administrasi / Desa</div>
+                    <div class="text-white-50 mb-2">
+                        ${(node.location_context && node.location_context.locality) ? node.location_context.locality : '-'}
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted border-top border-secondary pt-2 mt-2">
+                        <span>Sumber Resolusi:</span>
+                        <span class="badge bg-secondary font-monospace">${(node.location_context && node.location_context.source) ? node.location_context.source : 'FEEDER_DEFAULT'}</span>
+                    </div>
+                </div>
+            </div>
+
             <table class="table table-dark table-sm table-borderless small mb-4">
                 <tbody>
                     <tr><td class="text-muted">Topology Role:</td><td class="fw-bold text-end font-monospace">${node.topology_role}</td></tr>
@@ -1217,14 +1554,39 @@ class SldRendererEngine {
     }
 
     /**
-     * Toggle between Engineering Mode and Simplified Mode.
+     * SLD-05S: Tri-Mode Visual Architecture Switcher.
+     * Modes:
+     * - 'ENGINEERING': Pure orthogonal schematic route
+     * - 'HYBRID': Orthogonal schematic + Road Corridors & North Compass (Amendment #8)
+     * - 'GIS': Interactive spatial Leaflet Map with real GPS coordinates (Amendment #7)
+     * - 'SIMPLIFIED': Line section blocks (high level)
      */
     setMode(mode) {
         this.currentMode = mode;
-        this.applyDisplayModes();
+
+        const svgContainer = document.getElementById('sld-svg-container');
+        const gisContainer = document.getElementById('sld-gis-map-container');
+
+        if (mode === 'GIS') {
+            if (svgContainer) svgContainer.style.display = 'none';
+            if (gisContainer) gisContainer.style.display = 'block';
+            this.renderGisMap();
+            if (this.leafletMap) {
+                setTimeout(() => this.leafletMap.invalidateSize(), 150);
+            }
+        } else {
+            if (svgContainer) svgContainer.style.display = 'block';
+            if (gisContainer) gisContainer.style.display = 'none';
+            this.applyDisplayModes();
+        }
+
         const label = document.getElementById('sld-current-mode-label');
         if (label) {
-            label.textContent = mode === 'ENGINEERING' ? 'MODE: ENGINEERING (GRANULAR)' : 'MODE: SIMPLIFIED (LINE SECTIONS)';
+            let modeTitle = 'MODE: ENGINEERING (GRANULAR)';
+            if (mode === 'HYBRID') modeTitle = 'MODE: HYBRID (CAD + JALAN)';
+            else if (mode === 'GIS') modeTitle = 'MODE: GIS MAP (SPASIAL)';
+            else if (mode === 'SIMPLIFIED') modeTitle = 'MODE: SIMPLIFIED (LINE SECTIONS)';
+            label.textContent = modeTitle;
         }
     }
 
@@ -1239,8 +1601,19 @@ class SldRendererEngine {
         const edgesLayer = document.getElementById('sld-edges-layer');
         const labelLayer = document.getElementById('sld-edge-labels-layer');
         const sectionsLayer = document.getElementById('sld-sections-layer');
+        const corridorsLayer = document.getElementById('sld-corridors-layer');
+        const northIndicator = document.getElementById('sld-north-indicator');
         const poleNodes = this.svg.querySelectorAll('.sld-pole-node');
         const gttNodes = this.svg.querySelectorAll('.sld-gtt-node');
+
+        // Mode C: Hybrid Road Corridors & North Compass
+        if (this.currentMode === 'HYBRID') {
+            if (corridorsLayer) corridorsLayer.style.display = 'inline';
+            if (northIndicator) northIndicator.style.display = 'inline';
+        } else {
+            if (corridorsLayer) corridorsLayer.style.display = 'none';
+            if (northIndicator) northIndicator.style.display = 'none';
+        }
 
         if (this.currentMode === 'SIMPLIFIED') {
             if (edgesLayer) edgesLayer.style.display = 'none';

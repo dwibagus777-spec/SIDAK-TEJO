@@ -150,6 +150,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('api/sld/feeder/(:num)', 'Api\SldApiController::getFeederTopology/$1');
     $routes->get('api/sld/feeder/(:num)/semantic', 'Api\SldApiController::getFeederSemanticHierarchy/$1');
     $routes->get('api/sld/feeder/(:num)/layout', 'Api\SldApiController::getFeederLayout/$1');
+    $routes->get('api/sld/feeder/(:num)/fingerprint', 'Api\SldApiController::getFeederFingerprint/$1');
 
     // Field Inspection & Living Asset Condition (Phase CR-06)
     $routes->get('inspections', 'FieldInspectionController::index');

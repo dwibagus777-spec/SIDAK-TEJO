@@ -103,6 +103,18 @@ class SldApiController extends BaseController
 
         return $this->response->setStatusCode($statusCode)->setJSON($result);
     }
+
+    /**
+     * GET /api/sld/feeder/(:num)/fingerprint
+     *
+     * Returns the lightweight cryptographic SHA-256 change-detection fingerprint for a feeder.
+     * Used by client-side dynamic auto-refresh polling without loading full layout.
+     */
+    public function getFeederFingerprint(int $penyulangId)
+    {
+        $result = $this->sldService->getFeederFingerprint($penyulangId);
+        return $this->response->setStatusCode(200)->setJSON($result);
+    }
 }
 
 

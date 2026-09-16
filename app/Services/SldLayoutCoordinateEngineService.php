@@ -22,10 +22,14 @@ namespace App\Services;
 class SldLayoutCoordinateEngineService
 {
     protected SldSemanticClassificationService $semanticService;
+    protected SldLocationContextService $locationService;
 
-    public function __construct(?SldSemanticClassificationService $semanticService = null)
-    {
+    public function __construct(
+        ?SldSemanticClassificationService $semanticService = null,
+        ?SldLocationContextService $locationService = null
+    ) {
         $this->semanticService = $semanticService ?? new SldSemanticClassificationService();
+        $this->locationService = $locationService ?? new SldLocationContextService();
     }
 
     /**
@@ -246,6 +250,7 @@ class SldLayoutCoordinateEngineService
                 'depth_from_source' => $node['depth_from_source'],
                 'parent_asset_id'   => $node['parent_asset_id'],
                 'child_asset_ids'   => $node['child_asset_ids'],
+                'location_context'  => $this->locationService->resolveAssetLocationContext($node, $semGraph['feeder'] ?? []),
             ];
         }
 
@@ -334,6 +339,15 @@ class SldLayoutCoordinateEngineService
 
         return [
             'status' => 'success',
+            'projection' => [
+                'engine'                  => 'SLD-05S',
+                'data_fingerprint'        => $semGraph['projection']['data_fingerprint'] ?? null,
+                'active_assets_count'     => count($layoutNodes),
+                'active_translines_count' => count($layoutEdges),
+                'generated_at'            => date('Y-m-d H:i:s'),
+                'source'                  => $semGraph['data_source']['mode'] ?? 'PRODUCTION_LIVE_DATABASE',
+            ],
+            'corridors' => $this->locationService->buildRoadCorridors($penyulangId, $layoutNodes, $layoutEdges, $semGraph['feeder'] ?? []),
             'data_source' => $semGraph['data_source'] ?? [
                 'mode'               => 'CANONICAL_FORENSIC_BASELINE',
                 'is_production_live' => false,

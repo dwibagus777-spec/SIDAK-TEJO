@@ -294,6 +294,7 @@ class SldSemanticClassificationService
         // Step 6: Assemble Final Authoritative Semantic Output Contract
         return [
             'status' => 'success',
+            'projection' => $rawGraph['projection'] ?? null,
             'data_source' => $rawGraph['data_source'] ?? [
                 'mode'               => 'CANONICAL_FORENSIC_BASELINE',
                 'is_production_live' => false,

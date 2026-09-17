@@ -376,7 +376,7 @@ class SldRendererEngine {
             } else if (devRole === 'SWITCH_CANDIDATE') {
                 halfW = 20; halfH = 20;
             } else if (devRole === 'TRANSFORMER_NODE') {
-                halfW = 20; halfH = 26;
+                halfW = 48; halfH = 38;
             } else if (node.topology_role === 'BRANCH_NODE') {
                 halfW = 10; halfH = 10;
             }
@@ -522,8 +522,13 @@ class SldRendererEngine {
     }
 
     /**
-     * Render Road Corridors for Mode C (Hybrid CAD + Road Corridors View - Amendment #8).
+     * Render Road Corridors for Mode C (Hybrid CAD + Road Corridors View - Reference Slide Style).
      * Strictly visual schematic corridor boundaries with road names.
+     * Features:
+     * - Double parallel boundary lines (═══════ ROAD CORRIDOR ═══════)
+     * - Subtle roadway asphalt background shading
+     * - Dashed road centerline
+     * - High-contrast banner pills with road name, locality, and node count
      */
     renderRoadCorridors() {
         const g = document.getElementById('sld-corridors-layer');
@@ -537,34 +542,69 @@ class SldRendererEngine {
             const p1 = this.project(b.min_grid_x, b.min_grid_y);
             const p2 = this.project(b.max_grid_x, b.max_grid_y);
 
-            const padX = 45;
-            const padY = 40;
+            const padX = 60;
+            const padY = 50;
             const x = Math.min(p1.x, p2.x) - padX;
             const y = Math.min(p1.y, p2.y) - padY;
             const w = Math.abs(p2.x - p1.x) + (padX * 2);
             const h = Math.abs(p2.y - p1.y) + (padY * 2);
 
             const roadTitle = (corr.road_name || 'KORIDOR JALAN').toUpperCase();
-            const localityTitle = corr.locality || '';
-            const bannerText = `${roadTitle} • ${localityTitle}`;
-            const bannerW = Math.min(Math.max(220, bannerText.length * 7.5 + 40), Math.max(220, w - 20));
+            const localityTitle = corr.locality || 'Wilayah Sidoarjo';
+            const nodeCount = corr.node_count || 0;
+            const bannerW = Math.min(Math.max(280, (roadTitle.length * 8) + 80), Math.max(260, w - 40));
+            const midY = y + (h / 2);
 
             html += `
-                <g class="sld-road-corridor" data-corridor-id="${corr.corridor_id}">
-                    <!-- Outer Road Corridor Band / Double Guide Lines -->
-                    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10"
-                          fill="#f8fafc" fill-opacity="0.5"
-                          stroke="#cbd5e1" stroke-width="1.8" stroke-dasharray="6,4" />
-                    <rect x="${x + 4}" y="${y + 4}" width="${Math.max(0, w - 8)}" height="${Math.max(0, h - 8)}" rx="8"
-                          fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3,3" />
+                <g class="sld-road-corridor" data-corridor-id="${corr.corridor_id}" style="cursor: default;">
+                    <!-- Roadway Easement Background Bed -->
+                    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12"
+                          fill="#f1f5f9" fill-opacity="0.65" stroke="none" />
 
-                    <!-- Road Corridor Header Banner Pill -->
-                    <rect x="${x + 14}" y="${y - 12}" width="${bannerW}" height="22" rx="4"
-                          fill="#0284c7" stroke="#0369a1" stroke-width="1" />
-                    <text x="${x + 22}" y="${y + 2}" 
-                          fill="#ffffff" font-size="9.5" font-weight="bold" font-family="sans-serif">
-                        <tspan fill="#bae6fd">&#128739; JALAN:</tspan> ${roadTitle}
-                    </text>
+                    <!-- Top Double Road Boundaries (═══════) -->
+                    <line x1="${x}" y1="${y}" x2="${x + w}" y2="${y}" 
+                          stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+                    <line x1="${x}" y1="${y + 5}" x2="${x + w}" y2="${y + 5}" 
+                          stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="8,5" />
+
+                    <!-- Bottom Double Road Boundaries (═══════) -->
+                    <line x1="${x}" y1="${y + h - 5}" x2="${x + w}" y2="${y + h - 5}" 
+                          stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="8,5" />
+                    <line x1="${x}" y1="${y + h}" x2="${x + w}" y2="${y + h}" 
+                          stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+
+                    <!-- Side End Caps -->
+                    <line x1="${x}" y1="${y}" x2="${x}" y2="${y + h}" 
+                          stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4" />
+                    <line x1="${x + w}" y1="${y}" x2="${x + w}" y2="${y + h}" 
+                          stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4" />
+
+                    <!-- Schematic Road Dividing Centerline (Subtle Yellow Dash) -->
+                    <line x1="${x + 20}" y1="${midY}" x2="${x + w - 20}" y2="${midY}" 
+                          stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="14,10" opacity="0.7" />
+
+                    <!-- Top-Left Road Corridor Header Banner -->
+                    <g transform="translate(${x + 20}, ${y - 14})">
+                        <rect x="0" y="0" width="${bannerW}" height="28" rx="5"
+                              fill="#0369a1" stroke="#075985" stroke-width="1.5" 
+                              style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));" />
+                        <text x="12" y="14" fill="#ffffff" font-size="9.5" font-weight="900" font-family="sans-serif">
+                            <tspan fill="#7dd3fc">&#128739; JALAN:</tspan> ${roadTitle}
+                        </text>
+                        <text x="12" y="23" fill="#bae6fd" font-size="7.5" font-weight="bold" font-family="sans-serif">
+                            ${localityTitle} &bull; ${nodeCount} TIANG DISTRIBUSI
+                        </text>
+                    </g>
+
+                    <!-- Bottom-Right Street Marker Tag -->
+                    <g transform="translate(${x + w - 190}, ${y + h - 12})">
+                        <rect x="0" y="0" width="175" height="20" rx="3"
+                              fill="#ffffff" stroke="#64748b" stroke-width="1"
+                              style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.06));" />
+                        <text x="88" y="13" fill="#334155" font-size="8" font-weight="bold" font-family="monospace" text-anchor="middle">
+                            &#128205; KORIDOR ROW &bull; 20kV
+                        </text>
+                    </g>
                 </g>
             `;
         }
@@ -851,6 +891,8 @@ class SldRendererEngine {
                 chosenBox = candA;
             } else if (!this.occupancy.collides(candB, 3)) {
                 chosenBox = candB;
+            } else {
+                chosenBox = candA;
             }
 
             if (chosenBox) {
@@ -999,50 +1041,75 @@ class SldRendererEngine {
                     </text>
                 `;
             }
-            // 3. TRANSFORMER_NODE (GTT Cantol 1T, Portal 2T, or Unknown)
+            // 3. TRANSFORMER_NODE (GTT Cantol 1T, Portal 2T, or Trafo - Full Reference Technical Block)
             else if (devRole === 'TRANSFORMER_NODE') {
                 const gttName = node.name || `GTT #${aId}`;
-                const shortName = gttName.length > 14 ? gttName.substring(0, 12) + '..' : gttName;
+                const gttCode = node.code || `#${aId}`;
+                const shortCode = gttCode.length > 15 ? gttCode.substring(0, 13) + '..' : gttCode;
+                
+                // Extract capacity kVA if present in name or default
+                const kvaMatch = gttName.match(/(\d+)\s*kVA/i);
+                const kvaText = kvaMatch ? `${kvaMatch[1]} kVA` : '160 kVA';
 
-                if (eqType === 'GTT1_CANTOL') {
-                    // Cantol (1 Tiang): 1 tap leg with downward solid triangle
-                    symbolMarkup = `
-                        <line x1="0" y1="0" x2="0" y2="14" stroke="#0f172a" stroke-width="2"/>
-                        <polygon points="0,30 -10,14 10,14" fill="#059669" stroke="#047857" stroke-width="1.2"/>
-                        <text x="0" y="23" fill="#ffffff" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">1T</text>
-                    `;
-                    labelMarkup = `
-                        <rect x="-42" y="34" width="84" height="24" rx="3" fill="#f0fdf4" stroke="#059669" stroke-width="0.8"/>
-                        <text x="0" y="44" fill="#065f46" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">${shortName}</text>
-                        <text x="0" y="54" fill="#047857" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">GTT CANTOL</text>
-                    `;
-                } else if (eqType === 'GTT2_PORTAL') {
-                    // Portal (2 Tiang): H-frame double support legs with downward solid triangle
-                    symbolMarkup = `
-                        <line x1="-6" y1="0" x2="-6" y2="14" stroke="#0f172a" stroke-width="2"/>
-                        <line x1="6" y1="0" x2="6" y2="14" stroke="#0f172a" stroke-width="2"/>
-                        <line x1="-9" y1="14" x2="9" y2="14" stroke="#0f172a" stroke-width="2"/>
-                        <polygon points="0,30 -10,14 10,14" fill="#0284c7" stroke="#0369a1" stroke-width="1.2"/>
-                        <text x="0" y="23" fill="#ffffff" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">2T</text>
-                    `;
-                    labelMarkup = `
-                        <rect x="-42" y="34" width="84" height="24" rx="3" fill="#f0f9ff" stroke="#0284c7" stroke-width="0.8"/>
-                        <text x="0" y="44" fill="#075985" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">${shortName}</text>
-                        <text x="0" y="54" fill="#0369a1" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">GTT PORTAL</text>
-                    `;
-                } else {
-                    // Generic GTT / Unknown Subtype
-                    symbolMarkup = `
-                        <line x1="0" y1="0" x2="0" y2="14" stroke="#0f172a" stroke-width="2"/>
-                        <polygon points="0,30 -10,14 10,14" fill="#0d9488" stroke="#0f766e" stroke-width="1.2"/>
-                        <text x="0" y="23" fill="#ffffff" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">GTT</text>
-                    `;
-                    labelMarkup = `
-                        <rect x="-38" y="34" width="76" height="22" rx="3" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.8"/>
-                        <text x="0" y="44" fill="#115e59" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">${shortName}</text>
-                        <text x="0" y="53" fill="#0f766e" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">GTT TRAFO</text>
-                    `;
-                }
+                // Locality snippet from location_context
+                const roadLoc = (node.location_context && node.location_context.road_name) ? node.location_context.road_name : 'SIDOARJO';
+                const shortLoc = roadLoc.length > 18 ? roadLoc.substring(0, 16) + '..' : roadLoc;
+
+                const isCantol = (eqType === 'GTT1_CANTOL' || eqType.includes('CANTOL'));
+                const isPortal = (eqType === 'GTT2_PORTAL' || eqType.includes('PORTAL'));
+                const headerText = isCantol ? 'GTT CANTOL (1T)' : (isPortal ? 'GTT PORTAL (2T)' : 'TRAFO DISTRIBUSI');
+                const themeColor = isCantol ? '#059669' : (isPortal ? '#0284c7' : '#0d9488');
+                const badgeText = isCantol ? '1T' : (isPortal ? '2T' : 'TR');
+
+                const cardW = 110;
+                const cardH = 56;
+                const cardX = -(cardW / 2);
+                const cardY = 32;
+
+                symbolMarkup = `
+                    <!-- Tap Conductor Drop -->
+                    ${isPortal 
+                        ? `<line x1="-5" y1="0" x2="-5" y2="14" stroke="#0f172a" stroke-width="2"/>
+                           <line x1="5" y1="0" x2="5" y2="14" stroke="#0f172a" stroke-width="2"/>
+                           <line x1="-8" y1="14" x2="8" y2="14" stroke="#0f172a" stroke-width="2"/>` 
+                        : `<line x1="0" y1="0" x2="0" y2="14" stroke="#0f172a" stroke-width="2"/>`
+                    }
+                    <!-- Downward Solid Transformer Triangle -->
+                    <polygon points="0,28 -9,14 9,14" fill="${themeColor}" stroke="#0f172a" stroke-width="1.5"/>
+                    <text x="0" y="23" fill="#ffffff" font-size="7" font-weight="900" text-anchor="middle" font-family="monospace">${badgeText}</text>
+                `;
+
+                labelMarkup = `
+                    <!-- GTT Enclosed Technical Block -->
+                    <g class="sld-gtt-technical-block">
+                        <!-- Card Border & Background -->
+                        <rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="4"
+                              fill="#ffffff" stroke="${themeColor}" stroke-width="1.4"
+                              style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" />
+                        
+                        <!-- Header Banner -->
+                        <path d="M ${cardX} ${cardY + 4} A 4 4 0 0 1 ${cardX + 4} ${cardY} L ${cardX + cardW - 4} ${cardY} A 4 4 0 0 1 ${cardX + cardW} ${cardY + 4} L ${cardX + cardW} ${cardY + 15} L ${cardX} ${cardY + 15} Z" 
+                              fill="${themeColor}" />
+                        <text x="0" y="${cardY + 11}" fill="#ffffff" font-size="7.5" font-weight="900" text-anchor="middle" font-family="sans-serif" letter-spacing="0.4">
+                            ${headerText}
+                        </text>
+
+                        <!-- Asset Identifier -->
+                        <text x="0" y="${cardY + 26}" fill="#0f172a" font-size="8.5" font-weight="bold" text-anchor="middle" font-family="monospace">
+                            ${shortCode}
+                        </text>
+
+                        <!-- Rating Specs -->
+                        <text x="0" y="${cardY + 38}" fill="#334155" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">
+                            ${kvaText} &bull; 20kV / 400V
+                        </text>
+
+                        <!-- Road Locality -->
+                        <text x="0" y="${cardY + 49}" fill="#64748b" font-size="7" font-weight="500" text-anchor="middle" font-family="sans-serif">
+                            &#128739; ${shortLoc}
+                        </text>
+                    </g>
+                `;
             }
             // 4. LBS / LBSM Keypoint (PLN/IEC Quartered Circle)
             else if (devRole === 'LBS' || eqType.includes('LBS')) {
@@ -1548,7 +1615,11 @@ class SldRendererEngine {
         const labelLayer = document.getElementById('sld-edge-labels-layer');
         const poleLabels = this.svg.querySelectorAll('.sld-pole-label');
 
-        if (currentZoomRatio < 0.75) {
+        if (this.currentMode === 'HYBRID') {
+            // Mode C: Hybrid CAD + Road Corridors View - Conductor span length labels always visible
+            if (labelLayer) labelLayer.style.display = 'inline';
+            poleLabels.forEach(p => p.style.display = 'inline');
+        } else if (currentZoomRatio < 0.75) {
             // LOW ZOOM (< 75%): Operator traces high-level route. Pole numbers suppressed.
             if (labelLayer) labelLayer.style.display = 'none';
             poleLabels.forEach(p => p.style.display = 'none');

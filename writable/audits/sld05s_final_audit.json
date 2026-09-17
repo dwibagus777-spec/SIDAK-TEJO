@@ -1,0 +1,57 @@
+{
+    "stage": "SLD-05S",
+    "title": "Dynamic SLD & GIS Context Read Model Engine",
+    "feeder_id": 15,
+    "feeder_name": "BANJAR KEMANTRAN",
+    "substation": "GI BUDURAN",
+    "timestamp": "2026-09-17T06:55:59+07:00",
+    "production_url": "https://sidaktejo.site/sld/view/15",
+    "api_fingerprint_url": "https://sidaktejo.site/api/sld/feeder/15/fingerprint",
+    "api_layout_url": "https://sidaktejo.site/api/sld/feeder/15/layout",
+    "gate_status": "HOLD / NOT SEALED",
+    "database_delta": 0,
+    "cryptographic_hash": "e827892fd518366c7fe35d4c808d58da36bd3dafbb743e2c61b57972388fae03",
+    "network_counts": {
+        "nodes": 205,
+        "edges": 197,
+        "isolated_nodes": 2,
+        "connected_nodes": 203,
+        "components": 6,
+        "line_sections": 60,
+        "gtt_transformers": 23,
+        "road_corridors": 2
+    },
+    "tri_mode_features": {
+        "mode_a_engineering": "ACTIVE",
+        "mode_b_gis_map": "ACTIVE",
+        "mode_c_hybrid_cad": "ACTIVE",
+        "mode_d_simplified": "ACTIVE"
+    },
+    "amendments_verdict": {
+        "amendment_1_dynamic_asset_not_topology": "PASS",
+        "amendment_2_zero_length_fabrication": "PASS",
+        "amendment_3_cryptographic_fingerprint": "PASS",
+        "amendment_4_selective_invalidation": "PASS",
+        "amendment_5_road_context_isolation": "PASS",
+        "amendment_6_zero_nominatim_lag": "PASS",
+        "amendment_7_gis_map_authoritative_gps": "PASS",
+        "amendment_8_hybrid_road_corridors": "PASS"
+    },
+    "test_suite_summary": {
+        "total_tests": 117,
+        "total_assertions": 8829,
+        "failures": 0,
+        "errors": 0,
+        "verdict": "100% PASS"
+    },
+    "visual_artifacts": {
+        "mode_a_screenshot": "sld05s_view1_engineering_mode.png",
+        "mode_b_screenshot": "sld05s_view3_gis_map_mode.png",
+        "mode_c_screenshot": "sld05s_view2_hybrid_road_mode.png",
+        "drawer_screenshot": "sld05s_view4_detail_drawer_road_context.png"
+    },
+    "downstream_gates": {
+        "sld_06": "LOCKED",
+        "sld_07": "LOCKED"
+    }
+}

@@ -6,6 +6,8 @@ use App\Controllers\BaseController;
 use App\Services\SldTopologyReadModelService;
 use App\Services\SldSemanticClassificationService;
 use App\Services\SldLayoutCoordinateEngineService;
+use App\Services\SldSheetComposerService;
+use App\Services\SldFindingOverlayService;
 
 /**
  * SLD API Controller
@@ -14,6 +16,8 @@ use App\Services\SldLayoutCoordinateEngineService;
  * - GET /api/sld/feeder/(:num)          : SLD-02 Topology Graph Read Model
  * - GET /api/sld/feeder/(:num)/semantic : SLD-03 Semantic Network Hierarchy & Device Classification
  * - GET /api/sld/feeder/(:num)/layout   : SLD-04 Deterministic Layout & Coordinate Model
+ * - GET /api/sld/feeder/(:num)/sheets   : SLD-05T GIS Sheet Composer Partitions
+ * - GET /api/sld/feeder/(:num)/findings : SLD-05T Decoupled Finding Overlay Read Model
  *
  * Zero database writes: Delta = 0 (INSERT=0, UPDATE=0, DELETE=0, DDL=0).
  */
@@ -22,14 +26,18 @@ class SldApiController extends BaseController
     protected SldTopologyReadModelService $sldService;
     protected SldSemanticClassificationService $semanticService;
     protected SldLayoutCoordinateEngineService $layoutService;
+    protected SldSheetComposerService $sheetService;
+    protected SldFindingOverlayService $findingService;
 
     public function __construct(
         ?SldTopologyReadModelService $sldService = null,
         ?SldSemanticClassificationService $semanticService = null,
-        ?SldLayoutCoordinateEngineService $layoutService = null
+        ?SldLayoutCoordinateEngineService $layoutService = null,
+        ?SldSheetComposerService $sheetService = null,
+        ?SldFindingOverlayService $findingService = null
     ) {
+        $db = null;
         if ($sldService === null) {
-            $db = null;
             try {
                 $db = \Config\Database::connect();
             } catch (\Throwable $e) {
@@ -42,6 +50,8 @@ class SldApiController extends BaseController
 
         $this->semanticService = $semanticService ?? new SldSemanticClassificationService($this->sldService);
         $this->layoutService = $layoutService ?? new SldLayoutCoordinateEngineService($this->semanticService);
+        $this->sheetService = $sheetService ?? new SldSheetComposerService($this->layoutService);
+        $this->findingService = $findingService ?? new SldFindingOverlayService($db);
     }
 
     /**
@@ -115,6 +125,58 @@ class SldApiController extends BaseController
         $result = $this->sldService->getFeederFingerprint($penyulangId);
         return $this->response->setStatusCode(200)->setJSON($result);
     }
+
+    /**
+     * GET /api/sld/feeder/(:num)/sheets
+     *
+     * SLD-05T: Returns print-safe dynamic sheet partitions with 100% coverage invariant.
+     */
+    public function getFeederSheets(int $penyulangId)
+    {
+        $targetPoles = (int)($this->request->getGet('target_poles') ?? 45);
+        $result = $this->sheetService->composeFeederSheets($penyulangId, [
+            'target_poles_per_sheet' => $targetPoles,
+        ]);
+
+        $status = $result['status'] ?? '';
+        $statusCode = ($status === 'success') ? 200 : 400;
+
+        return $this->response->setStatusCode($statusCode)->setJSON($result);
+    }
+
+    /**
+     * GET /api/sld/feeder/(:num)/findings
+     *
+     * SLD-05T: Returns decoupled read-only finding overlays (asset-linked and location-linked).
+     */
+    public function getFeederFindings(int $penyulangId)
+    {
+        // Load active asset IDs to ensure asset-linked validity
+        $graph = $this->sldService->buildFeederGraph($penyulangId);
+        $validAssetIds = array_column($graph['nodes'] ?? [], 'asset_id');
+
+        // Load layout nodes and composed sheets for runtime technical annotation layout
+        $layout = $this->layoutService->buildFeederLayout($penyulangId);
+        $nodes = $layout['nodes'] ?? [];
+        $canvasMeta = $layout['canvas'] ?? [];
+
+        $sheetsResult = $this->sheetService->composeFeederSheets($penyulangId);
+        $sheets = $sheetsResult['sheets'] ?? [];
+
+        $result = $this->findingService->getFeederFindingOverlay(
+            $penyulangId,
+            $validAssetIds,
+            $nodes,
+            $sheets,
+            $canvasMeta
+        );
+
+        $status = $result['status'] ?? '';
+        $statusCode = ($status === 'success' || $status === 'DATA_NOT_READY') ? 200 : ($result['code'] ?? 400);
+
+        return $this->response->setStatusCode($statusCode)->setJSON($result);
+    }
 }
+
 
 

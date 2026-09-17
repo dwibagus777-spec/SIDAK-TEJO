@@ -180,6 +180,9 @@ class SldTopologyReadModelService
             $firewallDiagnostics['status'] = 'REVIEW';
         }
 
+        // Canonical deterministic ordering of admitted edges
+        usort($admittedEdges, fn($a, $b) => $a['transline_id'] <=> $b['transline_id']);
+
         // 4. Build Undirected Adjacency List for Connected Nodes
         $adj = [];
         $edgeMap = [];
@@ -307,6 +310,7 @@ class SldTopologyReadModelService
                 'code'              => $code,
                 'name'              => $name,
                 'construction_type' => $ct ?: 'JTM',
+                'jenis_asset'       => $jenis ?: 'JTM',
                 'degree'            => $deg,
                 'role'              => $role,
                 'is_switch'         => $isSwitch,
@@ -543,6 +547,7 @@ class SldTopologyReadModelService
                 } else {
                     $builder->where('(status != "INACTIVE" OR status IS NULL)')->where('deleted_at IS NULL');
                 }
+                $builder->orderBy('id', 'ASC');
 
                 $rows = $builder->get()->getResultArray();
                 if (!empty($rows)) return $rows;
@@ -657,6 +662,7 @@ class SldTopologyReadModelService
                 } else {
                     $builder->where('is_active', 1)->where('status', 'ACTIVE');
                 }
+                $builder->orderBy('id', 'ASC');
 
                 $rows = $builder->get()->getResultArray();
                 if (!empty($rows)) return $rows;
@@ -797,11 +803,13 @@ class SldTopologyReadModelService
 
         return [
             'status'                  => 'success',
+            'engine'                  => 'SLD-05S',
             'feeder_id'               => $penyulangId,
             'data_fingerprint'        => $sldFingerprint,
             'active_assets_count'     => $assetCount,
             'active_translines_count' => $transCount,
-            'timestamp'               => date('Y-m-d H:i:s'),
+            'generated_at'            => date('c'),
+            'source'                  => $this->db ? 'PRODUCTION_LIVE_DATABASE' : 'CANONICAL_FIXTURES',
         ];
     }
 }

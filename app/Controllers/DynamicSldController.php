@@ -43,12 +43,16 @@ class DynamicSldController extends BaseController
 
         $selectedFeederId = $penyulangId ? (int)$penyulangId : 15;
         $layoutApiUrl = site_url("api/sld/feeder/{$selectedFeederId}/layout");
+        $sheetsApiUrl = site_url("api/sld/feeder/{$selectedFeederId}/sheets");
+        $findingsApiUrl = site_url("api/sld/feeder/{$selectedFeederId}/findings");
 
         return view('sld/index', [
             'title'            => 'Single Line Diagram (SLD) Engine | SIDAK TEJO',
             'feeders'          => $feeders,
             'selectedFeederId' => $selectedFeederId,
             'layoutApiUrl'     => $layoutApiUrl,
+            'sheetsApiUrl'     => $sheetsApiUrl,
+            'findingsApiUrl'   => $findingsApiUrl,
         ]);
     }
 

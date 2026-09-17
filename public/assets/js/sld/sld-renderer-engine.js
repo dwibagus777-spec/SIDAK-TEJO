@@ -78,6 +78,286 @@ class LabelOccupancyIndex {
     }
 }
 
+/**
+ * SLD-05T Unified Device Symbol Registry
+ * Single authoritative source of truth for PLN/IEC device symbology across Mode A, Mode B, and Mode C.
+ */
+const SldDeviceSymbolRegistry = {
+    roles: {
+        GI: {
+            label: 'GI Substation Incomer',
+            code: 'GI',
+            category: 'SUBSTATION',
+            color: '#dc2626',
+            bg: '#fef2f2',
+            renderSvg: () => `
+                <circle cx="0" cy="0" r="11" fill="#ffffff" stroke="#dc2626" stroke-width="2.5"/>
+                <circle cx="0" cy="0" r="5" fill="#dc2626"/>
+                <polygon points="-5,-12 5,-12 0,-18" fill="#dc2626"/>
+            `
+        },
+        LBS: {
+            label: 'Manual LBS',
+            code: 'LBS',
+            category: 'SWITCH',
+            color: '#0f172a',
+            bg: '#f8fafc',
+            renderSvg: () => `
+                <circle cx="0" cy="0" r="11" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+                <path d="M 0 0 L 0 -11 A 11 11 0 0 1 11 0 Z" fill="#0f172a"/>
+                <path d="M 0 0 L 0 11 A 11 11 0 0 1 -11 0 Z" fill="#0f172a"/>
+                <line x1="-11" y1="0" x2="11" y2="0" stroke="#0f172a" stroke-width="1.5"/>
+                <line x1="0" y1="-11" x2="0" y2="11" stroke="#0f172a" stroke-width="1.5"/>
+            `
+        },
+        LBSM_2WAY: {
+            label: 'LBS Motor 2-Way',
+            code: 'LBSM_2WAY',
+            category: 'SWITCH',
+            color: '#0284c7',
+            bg: '#f0f9ff',
+            renderSvg: () => `
+                <rect x="-15" y="-12" width="30" height="24" rx="3" fill="#f8fafc" stroke="#0284c7" stroke-width="1.8"/>
+                <circle cx="0" cy="0" r="8" fill="#ffffff" stroke="#0f172a" stroke-width="1.4"/>
+                <path d="M 0 0 L 0 -8 A 8 8 0 0 1 8 0 Z" fill="#0f172a"/>
+                <path d="M 0 0 L 0 8 A 8 8 0 0 1 -8 0 Z" fill="#0f172a"/>
+                <line x1="-15" y1="0" x2="-8" y2="0" stroke="#0284c7" stroke-width="2"/>
+                <line x1="8" y1="0" x2="15" y2="0" stroke="#0284c7" stroke-width="2"/>
+            `
+        },
+        LBSM_3WAY: {
+            label: 'LBS Motor 3-Way',
+            code: 'LBSM_3WAY',
+            category: 'SWITCH',
+            color: '#0369a1',
+            bg: '#e0f2fe',
+            renderSvg: () => `
+                <rect x="-15" y="-13" width="30" height="26" rx="3" fill="#f8fafc" stroke="#0369a1" stroke-width="1.8"/>
+                <circle cx="0" cy="-2" r="7.5" fill="#ffffff" stroke="#0f172a" stroke-width="1.4"/>
+                <path d="M 0 -2 L 0 -9.5 A 7.5 7.5 0 0 1 7.5 -2 Z" fill="#0f172a"/>
+                <path d="M 0 -2 L 0 5.5 A 7.5 7.5 0 0 1 -7.5 -2 Z" fill="#0f172a"/>
+                <line x1="-15" y1="-2" x2="-7.5" y2="-2" stroke="#0369a1" stroke-width="2"/>
+                <line x1="7.5" y1="-2" x2="15" y2="-2" stroke="#0369a1" stroke-width="2"/>
+                <line x1="0" y1="5.5" x2="0" y2="13" stroke="#0369a1" stroke-width="2"/>
+            `
+        },
+        PMCB: {
+            label: 'PMCB (Circuit Breaker)',
+            code: 'PMCB',
+            category: 'PROTECTION',
+            color: '#0f172a',
+            bg: '#ffffff',
+            renderSvg: () => `
+                <rect x="-12" y="-12" width="24" height="24" rx="2" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+                <line x1="-12" y1="0" x2="-4" y2="0" stroke="#0f172a" stroke-width="2"/>
+                <line x1="4" y1="0" x2="12" y2="0" stroke="#0f172a" stroke-width="2"/>
+                <line x1="-4" y1="0" x2="6" y2="-7" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round"/>
+                <circle cx="-4" cy="0" r="1.8" fill="#0f172a"/>
+                <circle cx="4" cy="0" r="1.8" fill="#0f172a"/>
+            `
+        },
+        RECLOSER: {
+            label: 'Automatic Recloser',
+            code: 'RECLOSER',
+            category: 'PROTECTION',
+            color: '#7c3aed',
+            bg: '#f5f3ff',
+            renderSvg: () => `
+                <rect x="-14" y="-12" width="28" height="24" rx="3" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+                <polygon points="-8,-6 0,0 -8,6" fill="#7c3aed"/>
+                <polygon points="8,-6 0,0 8,6" fill="#7c3aed"/>
+                <rect x="7" y="-9" width="4" height="6" fill="#7c3aed"/>
+            `
+        },
+        AVS: {
+            label: 'Automatic Voltage Switch',
+            code: 'AVS',
+            category: 'REGULATION',
+            color: '#0284c7',
+            bg: '#f0f9ff',
+            renderSvg: () => `
+                <polygon points="-11,-7 -11,7 0,0" fill="#ffffff" stroke="#0284c7" stroke-width="1.8"/>
+                <polygon points="11,-7 11,7 0,0" fill="#ffffff" stroke="#0284c7" stroke-width="1.8"/>
+                <line x1="0" y1="-8" x2="0" y2="8" stroke="#0284c7" stroke-width="2"/>
+            `
+        },
+        PGS: {
+            label: 'Pole Gas Switch',
+            code: 'PGS',
+            category: 'SWITCH',
+            color: '#059669',
+            bg: '#f0fdf4',
+            renderSvg: () => `
+                <circle cx="0" cy="0" r="11" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+                <line x1="-6" y1="-3" x2="5" y2="-3" stroke="#059669" stroke-width="1.8"/>
+                <line x1="0" y1="-3" x2="0" y2="5" stroke="#059669" stroke-width="1.8"/>
+                <line x1="-4" y1="5" x2="4" y2="5" stroke="#059669" stroke-width="1.8"/>
+                <line x1="-2" y1="8" x2="2" y2="8" stroke="#059669" stroke-width="1.5"/>
+            `
+        },
+        PMS: {
+            label: 'PMS (UNKNOWN)',
+            code: 'PMS',
+            category: 'SWITCH',
+            color: '#d97706',
+            bg: '#fef3c7',
+            renderSvg: () => `
+                <polygon points="0,-14 14,0 0,14 -14,0" fill="#fef3c7" stroke="#d97706" stroke-width="2.2" />
+                <text x="0" y="4.5" fill="#b45309" font-size="12" font-weight="900" text-anchor="middle" font-family="sans-serif">?</text>
+            `
+        },
+        GTT_CANTOL: {
+            label: 'GTT Cantol (1T)',
+            code: 'GTT_CANTOL',
+            category: 'TRANSFORMER',
+            color: '#059669',
+            bg: '#f0fdf4',
+            renderSvg: () => `
+                <line x1="0" y1="0" x2="0" y2="12" stroke="#0f172a" stroke-width="2"/>
+                <polygon points="0,26 -9,12 9,12" fill="#059669" stroke="#0f172a" stroke-width="1.5"/>
+                <text x="0" y="21" fill="#ffffff" font-size="7" font-weight="900" text-anchor="middle" font-family="monospace">1T</text>
+            `
+        },
+        GTT_PORTAL: {
+            label: 'GTT Portal (2T)',
+            code: 'GTT_PORTAL',
+            category: 'TRANSFORMER',
+            color: '#0284c7',
+            bg: '#f0f9ff',
+            renderSvg: () => `
+                <line x1="-5" y1="0" x2="-5" y2="12" stroke="#0f172a" stroke-width="2"/>
+                <line x1="5" y1="0" x2="5" y2="12" stroke="#0f172a" stroke-width="2"/>
+                <line x1="-8" y1="12" x2="8" y2="12" stroke="#0f172a" stroke-width="2"/>
+                <polygon points="0,26 -9,12 9,12" fill="#0284c7" stroke="#0f172a" stroke-width="1.5"/>
+                <text x="0" y="21" fill="#ffffff" font-size="7" font-weight="900" text-anchor="middle" font-family="monospace">2T</text>
+            `
+        },
+        LINE_POLE: {
+            label: 'Tiang JTM',
+            code: 'LINE_POLE',
+            category: 'POLE',
+            color: '#0f172a',
+            bg: '#ffffff',
+            renderSvg: () => `
+                <circle cx="0" cy="0" r="3" fill="#0f172a" stroke="#64748b" stroke-width="0.9" class="sld-pole-dot"/>
+            `
+        },
+        BRANCH: {
+            label: 'Percabangan',
+            code: 'BRANCH',
+            category: 'TOPOLOGY',
+            color: '#dc2626',
+            bg: '#fef2f2',
+            renderSvg: () => `
+                <circle cx="0" cy="0" r="5.5" fill="#dc2626" stroke="#0f172a" stroke-width="1.6"/>
+                <circle cx="0" cy="0" r="2" fill="#ffffff"/>
+            `
+        },
+        TERMINAL: {
+            label: 'Tiang Akhir',
+            code: 'TERMINAL',
+            category: 'TOPOLOGY',
+            color: '#dc2626',
+            bg: '#fef2f2',
+            renderSvg: () => `
+                <circle cx="0" cy="0" r="3" fill="#0f172a"/>
+                <line x1="0" y1="-8" x2="0" y2="8" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>
+            `
+        },
+        DEVICE_UNKNOWN: {
+            label: 'Device (Unknown Subtype)',
+            code: 'DEVICE_UNKNOWN',
+            category: 'UNKNOWN',
+            color: '#d97706',
+            bg: '#fef3c7',
+            renderSvg: () => `
+                <polygon points="0,-12 12,9 -12,9" fill="#fef3c7" stroke="#d97706" stroke-width="1.8"/>
+                <text x="0" y="6" fill="#b45309" font-size="9" font-weight="bold" text-anchor="middle">?</text>
+            `
+        },
+        ISOLATED: {
+            label: 'Tiang Terisolasi',
+            code: 'ISOLATED',
+            category: 'TOPOLOGY',
+            color: '#ef4444',
+            bg: '#fef2f2',
+            renderSvg: () => `
+                <circle cx="0" cy="0" r="8" fill="#fef2f2" stroke="#ef4444" stroke-dasharray="3,2" stroke-width="1.8"/>
+                <circle cx="0" cy="0" r="3.5" fill="#dc2626"/>
+            `
+        }
+    },
+
+    resolveRole(node) {
+        if (node.official_device_role && this.roles[node.official_device_role]) {
+            return node.official_device_role;
+        }
+        if (node.sld_glyph && this.roles[node.sld_glyph]) {
+            return node.sld_glyph;
+        }
+
+        const devRole = node.device_role;
+        const topRole = node.topology_role;
+        const eqType = (node.equipment_type || '').toUpperCase();
+        const rawCt = (node.construction_type || '').toUpperCase();
+
+        if (devRole === 'SOURCE_INCOMER' || topRole === 'SOURCE_INCOMER' || node.asset_id === 3231) {
+            return 'GI';
+        }
+        if (devRole === 'TRANSFORMER_NODE') {
+            if (eqType.includes('PORTAL') || rawCt.includes('PORTAL') || rawCt.includes('GTT2')) return 'GTT_PORTAL';
+            if (eqType.includes('CANTOL') || rawCt.includes('CANTOL') || rawCt.includes('GTT1')) return 'GTT_CANTOL';
+            return 'DEVICE_UNKNOWN';
+        }
+        if (devRole === 'SWITCH_CANDIDATE') {
+            if (eqType.includes('LBSM_3WAY') || rawCt.includes('3WAY')) return 'LBSM_3WAY';
+            if (eqType.includes('LBSM_2WAY') || rawCt.includes('2WAY')) return 'LBSM_2WAY';
+            if (eqType === 'LBS' || rawCt.includes('LBS')) return 'LBS';
+            if (eqType.includes('RECLOSER') || rawCt.includes('REC')) return 'RECLOSER';
+            if (eqType.includes('PMCB') || rawCt.includes('PMCB') || rawCt.includes('CB')) return 'PMCB';
+            if (eqType.includes('AVS') || rawCt.includes('AVS')) return 'AVS';
+            if (eqType.includes('PGS') || rawCt.includes('PGS')) return 'PGS';
+            if (eqType.includes('PMS') || rawCt.includes('PMS')) return 'PMS';
+            return 'PMS';
+        }
+        if (topRole === 'BRANCH_NODE') return 'BRANCH';
+        if (topRole === 'TERMINAL_NODE') return 'TERMINAL';
+        if (node.zone === 'ISOLATED_ASSETS' || topRole === 'ISOLATED_NODE') return 'ISOLATED';
+
+        return 'LINE_POLE';
+    },
+
+    getDef(role) {
+        return this.roles[role] || this.roles['DEVICE_UNKNOWN'];
+    },
+
+    createLeafletIcon(node, isSelected = false) {
+        const role = this.resolveRole(node);
+        const def = this.getDef(role);
+        const isSmallPole = (role === 'LINE_POLE');
+        const size = isSmallPole ? [22, 22] : [32, 32];
+        const borderStyle = isSelected 
+            ? 'border: 2px solid #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.9);' 
+            : `border: 1.5px solid ${def.color}; box-shadow: 0 1px 4px rgba(0,0,0,0.25);`;
+
+        const iconHtml = `
+            <div style="width: ${size[0]}px; height: ${size[1]}px; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 50%; ${borderStyle}">
+                <svg width="${size[0] - 6}" height="${size[1] - 6}" viewBox="-16 -16 32 32" style="overflow: visible;">
+                    ${def.renderSvg()}
+                </svg>
+            </div>
+        `;
+
+        return L.divIcon({
+            className: 'sld-custom-leaflet-marker',
+            html: iconHtml,
+            iconSize: size,
+            iconAnchor: [size[0] / 2, size[1] / 2],
+            popupAnchor: [0, -size[1] / 2],
+        });
+    }
+};
+
 class SldRendererEngine {
     constructor(containerId, options = {}) {
         this.container = document.getElementById(containerId);
@@ -89,19 +369,37 @@ class SldRendererEngine {
         this.options = Object.assign({
             apiUrl: '',
             fingerprintApiUrl: '',
+            sheetsApiUrl: '',
+            findingsApiUrl: '',
             feederId: null,
             scaleX: 75,
             scaleY: 85,
             offsetX: 160,
             offsetY: 180,
-            defaultMode: 'ENGINEERING', // 'ENGINEERING', 'HYBRID', 'GIS', or 'SIMPLIFIED'
+            defaultMode: 'HYBRID', // 'HYBRID' (Default Mode C), 'ENGINEERING', 'GIS', or 'SIMPLIFIED'
             showGtt: true,
+            showFindings: false,
             onSelectAsset: null,
         }, options);
 
+        // Derive sheets & findings API URLs if not provided
+        if (!this.options.sheetsApiUrl && this.options.apiUrl) {
+            this.options.sheetsApiUrl = this.options.apiUrl.replace('/layout', '/sheets');
+        }
+        if (!this.options.findingsApiUrl && this.options.apiUrl) {
+            this.options.findingsApiUrl = this.options.apiUrl.replace('/layout', '/findings');
+        }
+
         this.layoutData = null;
+        this.sheetsData = [];
+        this.currentSheetIndex = null;
+        this.findingsData = null;
+        this.showFindings = this.options.showFindings;
         this.currentMode = this.options.defaultMode;
         this.showGtt = this.options.showGtt;
+        this.showAssetLabels = true;
+        this.showSpanLengths = true;
+        this.showRoadNames = true;
 
         // Viewport Pan/Zoom state
         this.viewBox = { x: 0, y: 0, w: 2200, h: 1150 };
@@ -123,6 +421,7 @@ class SldRendererEngine {
         this.pollingTimer = null;
         this.leafletMap = null;
         this.leafletFeatureGroup = null;
+        this.leafletFindingsGroup = null;
     }
 
     /**
@@ -165,6 +464,10 @@ class SldRendererEngine {
 
             this.startChangeDetectionPolling();
             this.render();
+
+            // SLD-05T: Load sheets partitions and decoupled finding overlays
+            this.loadSheets();
+            this.loadFindings();
         } catch (err) {
             console.error('[SLD-05S] Error loading layout:', err);
             this.renderError(err.message);
@@ -204,18 +507,121 @@ class SldRendererEngine {
 
                 if (this.cachedFingerprint && data.data_fingerprint !== this.cachedFingerprint) {
                     console.log(`[SLD-05S] Network data changed (${this.cachedFingerprint.substring(0,8)} -> ${data.data_fingerprint.substring(0,8)}). Refreshing SLD in place...`);
+                    const prevNodes = (this.layoutData && this.layoutData.nodes) ? this.layoutData.nodes.length : 0;
+                    const prevEdges = (this.layoutData && this.layoutData.edges) ? this.layoutData.edges.length : 0;
                     this.cachedFingerprint = data.data_fingerprint;
-                    const alertEl = document.getElementById('sld-refresh-alert');
-                    if (alertEl) alertEl.classList.remove('d-none');
                     await this.load();
-                    setTimeout(() => {
-                        if (alertEl) alertEl.classList.add('d-none');
-                    }, 3500);
+                    const newNodes = (this.layoutData && this.layoutData.nodes) ? this.layoutData.nodes.length : 0;
+                    const newEdges = (this.layoutData && this.layoutData.edges) ? this.layoutData.edges.length : 0;
+                    this.showDynamicUpdateToast(prevNodes, newNodes, prevEdges, newEdges);
                 }
             }
         } catch (e) {
             // Non-blocking resilient fallback
         }
+    }
+
+    /**
+     * SLD-05S.8: In-page notification for dynamic database updates.
+     */
+    showDynamicUpdateToast(prevNodes, newNodes, prevEdges, newEdges) {
+        const alertEl = document.getElementById('sld-refresh-alert');
+        if (!alertEl) return;
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0];
+        const deltaNodes = newNodes - prevNodes;
+        const deltaStr = deltaNodes >= 0 ? `+${deltaNodes}` : `${deltaNodes}`;
+        alertEl.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div>
+                    <i class="fa-solid fa-bolt text-warning me-2"></i>
+                    <strong>DATA JARINGAN DIPERBARUI:</strong> 
+                    Nodes ${prevNodes} &rarr; <strong>${newNodes}</strong> (${deltaStr}) | 
+                    Edges ${prevEdges} &rarr; <strong>${newEdges}</strong> | 
+                    <span class="font-monospace text-muted small ms-1">Updated ${timeStr}</span>
+                </div>
+                <button type="button" class="btn-close btn-sm ms-3" onclick="document.getElementById('sld-refresh-alert').classList.add('d-none')"></button>
+            </div>
+        `;
+        alertEl.classList.remove('d-none');
+        setTimeout(() => {
+            if (alertEl) alertEl.classList.add('d-none');
+        }, 6000);
+    }
+
+    /**
+     * SLD-05S-VH: Dynamic Optimal ViewBox Calculator
+     * Guarantees Target Occupancy:
+     * - Width: 85–92% (target: 0.88)
+     * - Height: 75–85% (target: 0.80)
+     * Strictly preserves aspect ratio with zero letterboxing and zero cropping of GI, branches, terminals, GTTs, or corridors.
+     */
+    calculateOptimalViewBox(scope = 'MAIN_NETWORK') {
+        if (!this.layoutData || !this.layoutData.nodes || this.layoutData.nodes.length === 0) {
+            return { x: 0, y: 0, w: 2200, h: 1150 };
+        }
+
+        let targetNodes = [];
+        if (scope === 'MAIN_NETWORK') {
+            targetNodes = this.layoutData.nodes.filter(n => n.zone === 'MAIN_NETWORK' || n.component_id === 'C15-01');
+            if (targetNodes.length === 0) targetNodes = this.layoutData.nodes;
+        } else {
+            targetNodes = this.layoutData.nodes;
+        }
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        for (const n of targetNodes) {
+            const p = this.project(n.schematic.grid_x, n.schematic.grid_y);
+            const isGtt = (n.device_role === 'TRANSFORMER_NODE');
+            const padX = isGtt ? 70 : 35;
+            const padYTop = 35;
+            const padYBottom = isGtt ? 100 : 35;
+
+            minX = Math.min(minX, p.x - padX);
+            maxX = Math.max(maxX, p.x + padX);
+            minY = Math.min(minY, p.y - padYTop);
+            maxY = Math.max(maxY, p.y + padYBottom);
+        }
+
+        // Substation GI Buduran Anchor extents
+        const incomer = this.layoutData.nodes.find(n => n.asset_id === 3231 || n.device_role === 'SOURCE_INCOMER');
+        if (incomer && (scope === 'ALL' || targetNodes.includes(incomer))) {
+            const pInc = this.project(incomer.schematic.grid_x, incomer.schematic.grid_y);
+            minX = Math.min(minX, pInc.x - 120);
+            minY = Math.min(minY, pInc.y - 180);
+            maxX = Math.max(maxX, pInc.x + 120);
+        }
+
+        // Mode C Hybrid Road Corridor margins
+        if (this.currentMode === 'HYBRID') {
+            minY = Math.min(minY, minY - 45);
+            maxY = Math.max(maxY, maxY + 45);
+        }
+
+        const contentW = Math.max(200, maxX - minX);
+        const contentH = Math.max(200, maxY - minY);
+        const contentCenterX = minX + (contentW / 2);
+        const contentCenterY = minY + (contentH / 2);
+
+        // Measure container size dynamically
+        const containerW = (this.container && this.container.clientWidth > 0) ? this.container.clientWidth : 1800;
+        const containerH = (this.container && this.container.clientHeight > 0) ? this.container.clientHeight : 600;
+        const containerAspect = Math.max(0.5, containerW / containerH);
+
+        // TARGET OCCUPANCY: Width 85–92% (0.88), Height 75–85% (0.80)
+        const targetOccW = 0.88;
+        const targetOccH = 0.80;
+
+        let vh = Math.max(contentH / targetOccH, contentW / (targetOccW * containerAspect));
+        let vw = vh * containerAspect;
+
+        return {
+            x: Math.round(contentCenterX - (vw / 2)),
+            y: Math.round(contentCenterY - (vh / 2)),
+            w: Math.round(vw),
+            h: Math.round(vh)
+        };
     }
 
     /**
@@ -232,23 +638,11 @@ class SldRendererEngine {
         const svgHeight = (totalH * this.options.scaleY) + (this.options.offsetY * 2) + 300;
         this.fullBounds = { x: 0, y: 0, w: svgWidth, h: svgHeight };
 
-        // Panoramic Initial Viewport: Centers on Main Trunk (GI -> Incomer -> Branches)
-        const incomer = this.layoutData.nodes.find(n => n.device_role === 'SOURCE_INCOMER' || n.topology_role === 'SOURCE_INCOMER') 
-                     || this.layoutData.nodes[0];
-        
-        if (incomer && incomer.schematic) {
-            const rootPos = this.project(incomer.schematic.grid_x, incomer.schematic.grid_y);
-            this.initialViewBox = {
-                x: Math.max(0, rootPos.x - 120),
-                y: Math.max(0, rootPos.y - 320),
-                w: 2200,
-                h: 1150
-            };
-        } else {
-            this.initialViewBox = { x: 0, y: 0, w: 2200, h: 1150 };
-        }
-
+        // SLD-05S-VH: Dynamically calculate optimal viewBox guaranteeing 85–92% width & 75–85% height occupancy
+        this.optimalMainViewBox = this.calculateOptimalViewBox('MAIN_NETWORK');
+        this.initialViewBox = Object.assign({}, this.optimalMainViewBox);
         this.viewBox = Object.assign({}, this.initialViewBox);
+        this.currentScope = 'MAIN_NETWORK';
 
         // Ensure container has both SVG and GIS map sub-containers
         let svgContainer = document.getElementById('sld-svg-container');
@@ -322,8 +716,17 @@ class SldRendererEngine {
                     <!-- Equipment Nodes Layer -->
                     <g id="sld-nodes-layer" class="sld-layer"></g>
 
+                    <!-- SLD-05T: Finding Overlay Layer (Toggleable) -->
+                    <g id="sld-findings-layer" class="sld-layer" style="display: none;"></g>
+
+                    <!-- SLD-05T: CAD Match Lines Layer -->
+                    <g id="sld-match-lines-layer" class="sld-layer" style="display: none;"></g>
+
                     <!-- Mode C: North Orientation Indicator (top overlay) -->
                     <g id="sld-north-indicator" class="sld-layer" style="display: none;"></g>
+
+                    <!-- SLD-05T: CAD Title Block Layer -->
+                    <g id="sld-cad-title-block-layer" class="sld-layer" style="display: none;"></g>
                 </svg>
             </div>
         `;
@@ -344,6 +747,14 @@ class SldRendererEngine {
         this.renderEdges();
         this.renderLineSections();
         this.renderNodes();
+        this.renderFindings();
+        if (this.currentSheetIndex !== null && this.sheetsData) {
+            const sheet = this.sheetsData.find(s => s.sheet_index === this.currentSheetIndex);
+            if (sheet) {
+                this.renderCadTitleBlock(sheet);
+                this.renderMatchLines(sheet);
+            }
+        }
 
         // Attach Interactions & Initial Zoom Class
         this.setupPanZoom();
@@ -523,90 +934,119 @@ class SldRendererEngine {
 
     /**
      * Render Road Corridors for Mode C (Hybrid CAD + Road Corridors View - Reference Slide Style).
-     * Strictly visual schematic corridor boundaries with road names.
+     * Strictly visual schematic corridor avenue ribbons along road routes.
      * Features:
      * - Double parallel boundary lines (═══════ ROAD CORRIDOR ═══════)
-     * - Subtle roadway asphalt background shading
-     * - Dashed road centerline
+     * - Subtle roadway asphalt background shading (#f8fafc / #f1f5f9)
+     * - Dashed road centerline (yellow dash offset from conductor route)
      * - High-contrast banner pills with road name, locality, and node count
      */
     renderRoadCorridors() {
         const g = document.getElementById('sld-corridors-layer');
-        if (!g || !this.layoutData || !this.layoutData.corridors) return;
+        if (!g || !this.layoutData || !this.layoutData.nodes) return;
+
+        // Group nodes dynamically by road_name
+        const nodesByRoad = {};
+        for (const node of this.layoutData.nodes) {
+            const roadName = (node.location_context && node.location_context.road_name) ? node.location_context.road_name : null;
+            if (!roadName) continue;
+            if (!nodesByRoad[roadName]) nodesByRoad[roadName] = [];
+            nodesByRoad[roadName].push(node);
+        }
 
         let html = '';
-        for (const corr of this.layoutData.corridors) {
-            const b = corr.bounds;
-            if (!b) continue;
+        let corridorIdx = 0;
 
-            const p1 = this.project(b.min_grid_x, b.min_grid_y);
-            const p2 = this.project(b.max_grid_x, b.max_grid_y);
+        for (const [roadName, roadNodes] of Object.entries(nodesByRoad)) {
+            // Find distinct rows (grid_y) in this road that have multiple nodes (avenues)
+            const nodesByY = {};
+            for (const n of roadNodes) {
+                const gy = n.schematic.grid_y;
+                if (!nodesByY[gy]) nodesByY[gy] = [];
+                nodesByY[gy].push(n);
+            }
 
-            const padX = 60;
-            const padY = 50;
-            const x = Math.min(p1.x, p2.x) - padX;
-            const y = Math.min(p1.y, p2.y) - padY;
-            const w = Math.abs(p2.x - p1.x) + (padX * 2);
-            const h = Math.abs(p2.y - p1.y) + (padY * 2);
+            for (const [gyStr, yNodes] of Object.entries(nodesByY)) {
+                const gy = parseInt(gyStr, 10);
+                if (yNodes.length < 5) continue;
 
-            const roadTitle = (corr.road_name || 'KORIDOR JALAN').toUpperCase();
-            const localityTitle = corr.locality || 'Wilayah Sidoarjo';
-            const nodeCount = corr.node_count || 0;
-            const bannerW = Math.min(Math.max(280, (roadTitle.length * 8) + 80), Math.max(260, w - 40));
-            const midY = y + (h / 2);
+                const xs = yNodes.map(n => n.schematic.grid_x);
+                const minGridX = Math.min(...xs);
+                const maxGridX = Math.max(...xs);
 
-            html += `
-                <g class="sld-road-corridor" data-corridor-id="${corr.corridor_id}" style="cursor: default;">
-                    <!-- Roadway Easement Background Bed -->
-                    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12"
-                          fill="#f1f5f9" fill-opacity="0.65" stroke="none" />
+                const p1 = this.project(minGridX, gy);
+                const p2 = this.project(maxGridX, gy);
 
-                    <!-- Top Double Road Boundaries (═══════) -->
-                    <line x1="${x}" y1="${y}" x2="${x + w}" y2="${y}" 
-                          stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
-                    <line x1="${x}" y1="${y + 5}" x2="${x + w}" y2="${y + 5}" 
-                          stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="8,5" />
+                const padX = 65;
+                const x = Math.min(p1.x, p2.x) - padX;
+                const w = Math.abs(p2.x - p1.x) + (padX * 2);
+                
+                // Avenue ribbon centered around the row of poles
+                const ribbonHeight = 84;
+                const y = p1.y - (ribbonHeight / 2);
 
-                    <!-- Bottom Double Road Boundaries (═══════) -->
-                    <line x1="${x}" y1="${y + h - 5}" x2="${x + w}" y2="${y + h - 5}" 
-                          stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="8,5" />
-                    <line x1="${x}" y1="${y + h}" x2="${x + w}" y2="${y + h}" 
-                          stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+                const roadTitle = roadName.toUpperCase();
+                const locality = (yNodes[0].location_context && yNodes[0].location_context.locality) ? yNodes[0].location_context.locality : 'Sidoarjo';
+                const nodeCount = yNodes.length;
+                const bannerW = Math.min(Math.max(260, (roadTitle.length * 8.5) + 60), Math.max(240, w - 30));
 
-                    <!-- Side End Caps -->
-                    <line x1="${x}" y1="${y}" x2="${x}" y2="${y + h}" 
-                          stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4" />
-                    <line x1="${x + w}" y1="${y}" x2="${x + w}" y2="${y + h}" 
-                          stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4" />
+                corridorIdx++;
 
-                    <!-- Schematic Road Dividing Centerline (Subtle Yellow Dash) -->
-                    <line x1="${x + 20}" y1="${midY}" x2="${x + w - 20}" y2="${midY}" 
-                          stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="14,10" opacity="0.7" />
+                html += `
+                    <g class="sld-road-corridor" data-corridor-id="corr-${corridorIdx}" data-corridor-row="${gy}" data-road-name="${roadName}" style="cursor: default;">
+                        <!-- Roadway Easement Background Bed -->
+                        <rect x="${x}" y="${y}" width="${w}" height="${ribbonHeight}" rx="10"
+                              fill="#f1f5f9" fill-opacity="0.75" stroke="none" />
 
-                    <!-- Top-Left Road Corridor Header Banner -->
-                    <g transform="translate(${x + 20}, ${y - 14})">
-                        <rect x="0" y="0" width="${bannerW}" height="28" rx="5"
-                              fill="#0369a1" stroke="#075985" stroke-width="1.5" 
-                              style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));" />
-                        <text x="12" y="14" fill="#ffffff" font-size="9.5" font-weight="900" font-family="sans-serif">
-                            <tspan fill="#7dd3fc">&#128739; JALAN:</tspan> ${roadTitle}
-                        </text>
-                        <text x="12" y="23" fill="#bae6fd" font-size="7.5" font-weight="bold" font-family="sans-serif">
-                            ${localityTitle} &bull; ${nodeCount} TIANG DISTRIBUSI
-                        </text>
+                        <!-- Top Double Road Boundaries (═══════) -->
+                        <line x1="${x}" y1="${y}" x2="${x + w}" y2="${y}" 
+                              stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+                        <line x1="${x}" y1="${y + 5}" x2="${x + w}" y2="${y + 5}" 
+                              stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="8,5" />
+
+                        <!-- Bottom Double Road Boundaries (═══════) -->
+                        <line x1="${x}" y1="${y + ribbonHeight - 5}" x2="${x + w}" y2="${y + ribbonHeight - 5}" 
+                              stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="8,5" />
+                        <line x1="${x}" y1="${y + ribbonHeight}" x2="${x + w}" y2="${y + ribbonHeight}" 
+                              stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+
+                        <!-- Side End Caps -->
+                        <line x1="${x}" y1="${y}" x2="${x}" y2="${y + ribbonHeight}" 
+                              stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4" />
+                        <line x1="${x + w}" y1="${y}" x2="${x + w}" y2="${y + ribbonHeight}" 
+                              stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4" />
+
+                        <!-- Schematic Road Dividing Centerlines (Subtle Yellow Dash on sides) -->
+                        <line x1="${x + 15}" y1="${y + 16}" x2="${x + w - 15}" y2="${y + 16}" 
+                              stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="14,10" opacity="0.65" />
+                        <line x1="${x + 15}" y1="${y + ribbonHeight - 16}" x2="${x + w - 15}" y2="${y + ribbonHeight - 16}" 
+                              stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="14,10" opacity="0.65" />
+
+                        <!-- Top-Left Road Corridor Header Banner -->
+                        <g transform="translate(${x + 15}, ${y - 32})">
+                            <rect x="0" y="0" width="${bannerW}" height="28" rx="5"
+                                  fill="#0369a1" stroke="#075985" stroke-width="1.5" 
+                                  style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));" />
+                            <text x="12" y="14" fill="#ffffff" font-size="10" font-weight="900" font-family="sans-serif">
+                                <tspan fill="#7dd3fc">&#128739; JALAN:</tspan> ${roadTitle}
+                            </text>
+                            <text x="12" y="23" fill="#bae6fd" font-size="7.5" font-weight="bold" font-family="sans-serif">
+                                ${locality} &bull; ${nodeCount} TIANG DISTRIBUSI
+                            </text>
+                        </g>
+
+                        <!-- Bottom-Right ROW Tag -->
+                        <g transform="translate(${x + w - 185}, ${y + ribbonHeight - 12})">
+                            <rect x="0" y="0" width="170" height="20" rx="3"
+                                  fill="#ffffff" stroke="#64748b" stroke-width="1"
+                                  style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.06));" />
+                            <text x="85" y="13" fill="#334155" font-size="8" font-weight="bold" font-family="monospace" text-anchor="middle">
+                                &#128205; KORIDOR ROW &bull; 20kV
+                            </text>
+                        </g>
                     </g>
-
-                    <!-- Bottom-Right Street Marker Tag -->
-                    <g transform="translate(${x + w - 190}, ${y + h - 12})">
-                        <rect x="0" y="0" width="175" height="20" rx="3"
-                              fill="#ffffff" stroke="#64748b" stroke-width="1"
-                              style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.06));" />
-                        <text x="88" y="13" fill="#334155" font-size="8" font-weight="bold" font-family="monospace" text-anchor="middle">
-                            &#128205; KORIDOR ROW &bull; 20kV
-                        </text>
-                    </g>
-                </g>
-            `;
+                `;
+            }
         }
 
         g.innerHTML = html;
@@ -723,40 +1163,15 @@ class SldRendererEngine {
             }
         }
 
-        // 2. Plot Nodes (Equipment Points)
+        // 2. Plot Nodes (Equipment Points using Unified SldDeviceSymbolRegistry)
         for (const item of validGeoNodes) {
             const n = item.node;
-            const devRole = n.device_role;
-            const topRole = n.topology_role;
+            const officialRole = SldDeviceSymbolRegistry.resolveRole(n);
+            const def = SldDeviceSymbolRegistry.getDef(officialRole);
             const loc = n.location_context || {};
 
-            let markerColor = '#334155';
-            let radius = 5;
-
-            if (devRole === 'SOURCE_INCOMER' || topRole === 'SOURCE_INCOMER') {
-                markerColor = '#dc2626';
-                radius = 9;
-            } else if (devRole === 'SWITCH_CANDIDATE') {
-                markerColor = '#d97706';
-                radius = 8;
-            } else if (devRole === 'TRANSFORMER_NODE') {
-                markerColor = '#059669';
-                radius = 7;
-            } else if (topRole === 'BRANCH_NODE') {
-                markerColor = '#e11d48';
-                radius = 6;
-            } else if (topRole === 'TERMINAL_NODE') {
-                markerColor = '#9333ea';
-                radius = 5;
-            }
-
-            const circle = L.circleMarker([item.lat, item.lng], {
-                radius: radius,
-                fillColor: markerColor,
-                color: '#ffffff',
-                weight: 1.5,
-                opacity: 1,
-                fillOpacity: 0.9,
+            const marker = L.marker([item.lat, item.lng], {
+                icon: SldDeviceSymbolRegistry.createLeafletIcon(n, this.selectedAssetId === n.asset_id)
             }).addTo(this.leafletFeatureGroup);
 
             const popupContent = `
@@ -765,8 +1180,8 @@ class SldRendererEngine {
                         ${n.name}
                     </div>
                     <div style="margin-bottom: 6px;">
-                        <span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 10px;">
-                            ${devRole}
+                        <span style="background: ${def.bg}; color: ${def.color}; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 10px; border: 1px solid ${def.color};">
+                            ${def.code} - ${def.label}
                         </span>
                         <span style="font-family: monospace; color: #64748b; font-size: 11px; margin-left: 4px;">#${n.asset_id}</span>
                     </div>
@@ -780,11 +1195,14 @@ class SldRendererEngine {
                     </div>
                 </div>
             `;
-            circle.bindPopup(popupContent);
-            circle.on('click', () => {
+            marker.bindPopup(popupContent);
+            marker.on('click', () => {
                 this.selectAsset(n.asset_id);
             });
         }
+
+        // 3. Plot Finding Overlays on Leaflet Map
+        this.renderFindingMarkersOnLeaflet();
 
         // Fit bounds to entire feeder
         if (validGeoNodes.length > 0) {
@@ -1003,18 +1421,25 @@ class SldRendererEngine {
             const topRole = node.topology_role;
             const devRole = node.device_role;
             const eqType = node.equipment_type || '';
-            const isGtt = (devRole === 'TRANSFORMER_NODE');
+            const officialRole = SldDeviceSymbolRegistry.resolveRole(node);
+            const def = SldDeviceSymbolRegistry.getDef(officialRole);
+            const isGtt = (officialRole === 'GTT_PORTAL' || officialRole === 'GTT_CANTOL' || devRole === 'TRANSFORMER_NODE');
+
+            // SLD-05S Two-Dimensional Node Modeling:
+            // Dimension 1: Semantic Role (devRole / topRole / officialRole)
+            // Dimension 2: Topology State (CONNECTED vs ISOLATED)
+            const isIsolated = (topRole === 'ISOLATED_NODE' || node.zone === 'ISOLATED_ASSETS' || node.topology_state === 'ISOLATED');
+            const topologyState = isIsolated ? 'ISOLATED' : 'CONNECTED';
 
             let symbolMarkup = '';
             let labelMarkup = '';
             let extraClass = isGtt ? 'sld-gtt-node' : '';
+            if (isIsolated) extraClass += ' sld-node-isolated';
+            if (officialRole !== 'LINE_POLE') extraClass += ` sld-device-${officialRole.toLowerCase()}`;
 
-            // 1. SOURCE_INCOMER (Riser Pole Demarcation directly under GI Buduran Takeoff)
-            if (devRole === 'SOURCE_INCOMER' || topRole === 'SOURCE_INCOMER') {
-                symbolMarkup = `
-                    <circle cx="0" cy="0" r="10" fill="#ffffff" stroke="#0f172a" stroke-width="3"/>
-                    <circle cx="0" cy="0" r="4.5" fill="#0f172a"/>
-                `;
+            // 1. SOURCE_INCOMER (GI Buduran Substation Demarcation)
+            if (officialRole === 'GI') {
+                symbolMarkup = def.renderSvg();
                 labelMarkup = `
                     <rect x="-65" y="16" width="130" height="22" rx="4" fill="#0f172a" stroke="#ffffff" stroke-width="1"/>
                     <text x="0" y="31" fill="#ffffff" font-size="9.5" font-weight="bold" text-anchor="middle" font-family="monospace">
@@ -1025,175 +1450,99 @@ class SldRendererEngine {
                     </text>
                 `;
             }
-            // 2. SWITCH_CANDIDATE (PMS - Neutral UNKNOWN state, strictly no green/red assumption)
-            else if (devRole === 'SWITCH_CANDIDATE') {
-                symbolMarkup = `
-                    <polygon points="0,-16 16,0 0,16 -16,0" fill="#fef3c7" stroke="#d97706" stroke-width="2.2" />
-                    <text x="0" y="4.5" fill="#b45309" font-size="12.5" font-weight="900" text-anchor="middle" font-family="sans-serif">?</text>
-                `;
-                labelMarkup = `
-                    <rect x="-46" y="-30" width="92" height="15" rx="3" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
-                    <text x="0" y="-19" fill="#92400e" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">
-                        PMS (UNKNOWN)
-                    </text>
-                    <text x="0" y="28" fill="#78350f" font-size="8.5" text-anchor="middle" font-family="monospace" font-weight="bold">
-                        #${aId}
-                    </text>
-                `;
-            }
-            // 3. TRANSFORMER_NODE (GTT Cantol 1T, Portal 2T, or Trafo - Full Reference Technical Block)
-            else if (devRole === 'TRANSFORMER_NODE') {
+            // 2. TRANSFORMER_NODE (GTT Cantol 1T, Portal 2T, or Trafo - Full Reference Technical Block)
+            else if (isGtt) {
                 const gttName = node.name || `GTT #${aId}`;
                 const gttCode = node.code || `#${aId}`;
                 const shortCode = gttCode.length > 15 ? gttCode.substring(0, 13) + '..' : gttCode;
-                
-                // Extract capacity kVA if present in name or default
                 const kvaMatch = gttName.match(/(\d+)\s*kVA/i);
                 const kvaText = kvaMatch ? `${kvaMatch[1]} kVA` : '160 kVA';
-
-                // Locality snippet from location_context
                 const roadLoc = (node.location_context && node.location_context.road_name) ? node.location_context.road_name : 'SIDOARJO';
                 const shortLoc = roadLoc.length > 18 ? roadLoc.substring(0, 16) + '..' : roadLoc;
 
-                const isCantol = (eqType === 'GTT1_CANTOL' || eqType.includes('CANTOL'));
-                const isPortal = (eqType === 'GTT2_PORTAL' || eqType.includes('PORTAL'));
-                const headerText = isCantol ? 'GTT CANTOL (1T)' : (isPortal ? 'GTT PORTAL (2T)' : 'TRAFO DISTRIBUSI');
-                const themeColor = isCantol ? '#059669' : (isPortal ? '#0284c7' : '#0d9488');
-                const badgeText = isCantol ? '1T' : (isPortal ? '2T' : 'TR');
+                const isCantol = (officialRole === 'GTT_CANTOL' || eqType.includes('CANTOL'));
+                const headerText = isCantol ? 'GTT CANTOL (1T)' : 'GTT PORTAL (2T)';
+                const themeColor = def.color;
 
                 const cardW = 110;
                 const cardH = 56;
                 const cardX = -(cardW / 2);
                 const cardY = 32;
 
-                symbolMarkup = `
-                    <!-- Tap Conductor Drop -->
-                    ${isPortal 
-                        ? `<line x1="-5" y1="0" x2="-5" y2="14" stroke="#0f172a" stroke-width="2"/>
-                           <line x1="5" y1="0" x2="5" y2="14" stroke="#0f172a" stroke-width="2"/>
-                           <line x1="-8" y1="14" x2="8" y2="14" stroke="#0f172a" stroke-width="2"/>` 
-                        : `<line x1="0" y1="0" x2="0" y2="14" stroke="#0f172a" stroke-width="2"/>`
-                    }
-                    <!-- Downward Solid Transformer Triangle -->
-                    <polygon points="0,28 -9,14 9,14" fill="${themeColor}" stroke="#0f172a" stroke-width="1.5"/>
-                    <text x="0" y="23" fill="#ffffff" font-size="7" font-weight="900" text-anchor="middle" font-family="monospace">${badgeText}</text>
-                `;
+                symbolMarkup = def.renderSvg();
 
                 labelMarkup = `
                     <!-- GTT Enclosed Technical Block -->
                     <g class="sld-gtt-technical-block">
-                        <!-- Card Border & Background -->
                         <rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="4"
                               fill="#ffffff" stroke="${themeColor}" stroke-width="1.4"
                               style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" />
                         
-                        <!-- Header Banner -->
                         <path d="M ${cardX} ${cardY + 4} A 4 4 0 0 1 ${cardX + 4} ${cardY} L ${cardX + cardW - 4} ${cardY} A 4 4 0 0 1 ${cardX + cardW} ${cardY + 4} L ${cardX + cardW} ${cardY + 15} L ${cardX} ${cardY + 15} Z" 
                               fill="${themeColor}" />
                         <text x="0" y="${cardY + 11}" fill="#ffffff" font-size="7.5" font-weight="900" text-anchor="middle" font-family="sans-serif" letter-spacing="0.4">
                             ${headerText}
                         </text>
 
-                        <!-- Asset Identifier -->
                         <text x="0" y="${cardY + 26}" fill="#0f172a" font-size="8.5" font-weight="bold" text-anchor="middle" font-family="monospace">
                             ${shortCode}
                         </text>
 
-                        <!-- Rating Specs -->
                         <text x="0" y="${cardY + 38}" fill="#334155" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">
                             ${kvaText} &bull; 20kV / 400V
                         </text>
 
-                        <!-- Road Locality -->
                         <text x="0" y="${cardY + 49}" fill="#64748b" font-size="7" font-weight="500" text-anchor="middle" font-family="sans-serif">
                             &#128739; ${shortLoc}
                         </text>
                     </g>
                 `;
             }
-            // 4. LBS / LBSM Keypoint (PLN/IEC Quartered Circle)
-            else if (devRole === 'LBS' || eqType.includes('LBS')) {
-                symbolMarkup = `
-                    <circle cx="0" cy="0" r="12" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
-                    <path d="M 0 0 L 0 -12 A 12 12 0 0 1 12 0 Z" fill="#0f172a"/>
-                    <path d="M 0 0 L 0 12 A 12 12 0 0 1 -12 0 Z" fill="#0f172a"/>
-                    <line x1="-12" y1="0" x2="12" y2="0" stroke="#0f172a" stroke-width="1.5"/>
-                    <line x1="0" y1="-12" x2="0" y2="12" stroke="#0f172a" stroke-width="1.5"/>
-                `;
+            // 3. Official Switch & Protective Devices (LBS, LBSM_2WAY, LBSM_3WAY, PMCB, RECLOSER, AVS, PGS, PMS, DEVICE_UNKNOWN)
+            else if (['LBS', 'LBSM_2WAY', 'LBSM_3WAY', 'PMCB', 'RECLOSER', 'AVS', 'PGS', 'PMS', 'DEVICE_UNKNOWN'].includes(officialRole) || devRole === 'SWITCH_CANDIDATE') {
+                symbolMarkup = def.renderSvg();
                 labelMarkup = `
-                    <rect x="-36" y="-28" width="72" height="14" rx="3" fill="#f8fafc" stroke="#0f172a" stroke-width="1"/>
-                    <text x="0" y="-18" fill="#0f172a" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">LBS #${aId}</text>
+                    <rect x="-46" y="-30" width="92" height="15" rx="3" fill="${def.bg}" stroke="${def.color}" stroke-width="1"/>
+                    <text x="0" y="-19" fill="${def.color}" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">
+                        ${def.code} #${aId}
+                    </text>
                 `;
             }
-            // 5. RECLOSER Keypoint (Hourglass / Bowtie in Enclosure)
-            else if (devRole === 'RECLOSER' || eqType.includes('RECLOSER')) {
-                symbolMarkup = `
-                    <rect x="-14" y="-12" width="28" height="24" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
-                    <polygon points="-8,-6 0,0 -8,6" fill="#0f172a"/>
-                    <polygon points="8,-6 0,0 8,6" fill="#0f172a"/>
-                `;
-                labelMarkup = `
-                    <rect x="-36" y="-28" width="72" height="14" rx="3" fill="#f8fafc" stroke="#0f172a" stroke-width="1"/>
-                    <text x="0" y="-18" fill="#0f172a" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">REC #${aId}</text>
-                `;
-            }
-            // 6. BRANCH_NODE (Structural Junction)
-            else if (topRole === 'BRANCH_NODE') {
-                symbolMarkup = `
-                    <circle cx="0" cy="0" r="5" fill="#dc2626" stroke="#0f172a" stroke-width="1.5"/>
-                `;
+            // 4. BRANCH
+            else if (officialRole === 'BRANCH' || topRole === 'BRANCH_NODE') {
+                symbolMarkup = def.renderSvg();
                 labelMarkup = `
                     <text x="0" y="-10" fill="#dc2626" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace"
                           style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 2.5px;">JCT #${aId}</text>
                 `;
             }
-            // 7. TERMINAL_NODE (Dead-End termination with red crossbar)
-            else if (topRole === 'TERMINAL_NODE') {
-                symbolMarkup = `
-                    <circle cx="0" cy="0" r="3" fill="#0f172a"/>
-                    <line x1="0" y1="-9" x2="0" y2="9" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>
-                `;
+            // 5. TERMINAL
+            else if (officialRole === 'TERMINAL' || topRole === 'TERMINAL_NODE') {
+                symbolMarkup = def.renderSvg();
                 labelMarkup = `
                     <text x="0" y="-12" fill="#dc2626" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace"
                           style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 2.5px;">END #${aId}</text>
                 `;
             }
-            // 8. ISOLATED_NODE
-            else if (topRole === 'ISOLATED_NODE') {
-                symbolMarkup = `
-                    <circle cx="0" cy="0" r="8" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="3,2" stroke-width="1.5"/>
-                    <circle cx="0" cy="0" r="3" fill="#64748b"/>
-                `;
+            // 6. ISOLATED
+            else if (isIsolated || officialRole === 'ISOLATED') {
+                symbolMarkup = def.renderSvg();
                 labelMarkup = `
-                    <text x="0" y="20" fill="#64748b" font-size="8" text-anchor="middle" font-family="monospace"
-                          style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 2px;">ISO #${aId}</text>
+                    <rect x="-42" y="14" width="84" height="15" rx="3" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+                    <text x="0" y="25" fill="#b91c1c" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">
+                        ○ ISO #${aId}
+                    </text>
                 `;
             }
-            // 9. LINE_POLE (Route-first subtle pass-through pole)
+            // 7. LINE_POLE
             else {
                 extraClass += ' sld-pole-node';
-                symbolMarkup = `
-                    <circle cx="0" cy="0" r="2.5" fill="#0f172a" stroke="#64748b" stroke-width="0.8" class="sld-pole-dot"/>
-                `;
+                symbolMarkup = def.renderSvg();
 
-                // Calculate candidate bounding boxes for pole label (#ID, 26x11px)
                 const labelW = 26;
                 const labelH = 11;
-
-                const candAbove = {
-                    x: pos.x - (labelW / 2),
-                    y: pos.y - 15,
-                    w: labelW,
-                    h: labelH
-                };
-
-                const candBelow = {
-                    x: pos.x - (labelW / 2),
-                    y: pos.y + 5,
-                    w: labelW,
-                    h: labelH
-                };
-
+                const candAbove = { x: pos.x - (labelW / 2), y: pos.y - 15, w: labelW, h: labelH };
+                const candBelow = { x: pos.x - (labelW / 2), y: pos.y + 5, w: labelW, h: labelH };
                 const selfSym = `sym-${aId}`;
                 let chosenLabelY = null;
                 if (!this.occupancy.collides(candAbove, 2, selfSym)) {
@@ -1202,8 +1551,6 @@ class SldRendererEngine {
                 } else if (!this.occupancy.collides(candBelow, 2, selfSym)) {
                     chosenLabelY = 15;
                     this.occupancy.add({ id: `pole-lbl-${aId}`, type: 'POLE_LABEL', priority: 2, ...candBelow });
-                } else {
-                    chosenLabelY = null;
                 }
 
                 if (chosenLabelY !== null) {
@@ -1223,12 +1570,14 @@ class SldRendererEngine {
                    transform="translate(${pos.x}, ${pos.y})" 
                    tabindex="0"
                    role="button"
-                   aria-label="${node.name} (${topRole}, ${devRole})"
+                   aria-label="${node.name} (${topRole}, ${devRole}, ${topologyState})"
                    data-asset-id="${aId}"
                    data-topology-role="${topRole}"
                    data-device-role="${devRole}"
+                   data-topology-state="${topologyState}"
                    style="cursor: pointer;">
-                    <title>${node.name} [ID: #${aId}]\nRole: ${topRole} | ${devRole}\nKonstruksi: ${eqType}\nStatus: ${node.operational_state}</title>
+                    <title>${node.name} [ID: #${aId}]\nTopology State: ${topologyState}\nRole: ${topRole} | ${devRole}\nKonstruksi: ${eqType}\nStatus: ${node.operational_state}</title>
+                    ${isIsolated ? '<circle cx="0" cy="0" r="' + (isGtt ? '18' : '13') + '" fill="none" stroke="#ef4444" stroke-width="1.6" stroke-dasharray="3,2"/>' : ''}
                     ${symbolMarkup}
                     ${labelMarkup}
                 </g>
@@ -1350,6 +1699,34 @@ class SldRendererEngine {
 
         const isSwitch = (node.device_role === 'SWITCH_CANDIDATE');
         const isGtt = (node.device_role === 'TRANSFORMER_NODE');
+        const isIsolated = (node.topology_role === 'ISOLATED_NODE' || node.zone === 'ISOLATED_ASSETS' || node.topology_state === 'ISOLATED');
+
+        // SLD-05T: Check active findings for this asset
+        let findingsCardHtml = '';
+        if (this.findingsData && Array.isArray(this.findingsData.findings)) {
+            const assetFindings = this.findingsData.findings.filter(f => f.asset_id === node.asset_id);
+            if (assetFindings.length > 0) {
+                findingsCardHtml = `
+                    <div class="card bg-dark border-warning mb-3">
+                        <div class="card-header border-warning py-2 small fw-bold text-warning bg-dark d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-triangle-exclamation me-1"></i> TEMUAN LAPANGAN AKTIF (${assetFindings.length})</span>
+                            <span class="badge bg-warning text-dark font-monospace">${assetFindings.length} ANOMALI</span>
+                        </div>
+                        <div class="card-body p-2">
+                            ${assetFindings.map(af => `
+                                <div class="p-2 mb-1 bg-black bg-opacity-50 rounded border border-secondary border-opacity-50" style="cursor: pointer;" onclick="sldEngine.selectFinding(${af.id})">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-warning small">${af.nomor_temuan || '#' + af.id}</span>
+                                        <span class="badge ${af.prioritas === 'HIGH' ? 'bg-danger' : 'bg-warning text-dark'} small" style="font-size: 8px;">${af.prioritas}</span>
+                                    </div>
+                                    <div class="small text-white-50 text-truncate">${af.jenis_temuan}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
 
         drawer.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary">
@@ -1358,20 +1735,45 @@ class SldRendererEngine {
             </div>
 
             <div class="mb-3">
-                <span class="badge ${isSwitch ? 'bg-warning text-dark' : (isGtt ? 'bg-success' : 'bg-primary')} px-2 py-1 mb-2">
-                    ${node.device_role}
-                </span>
+                <div class="d-flex flex-wrap gap-1 mb-2">
+                    <span class="badge ${isSwitch ? 'bg-warning text-dark' : (isGtt ? 'bg-success' : 'bg-primary')} px-2 py-1">
+                        ${node.device_role}
+                    </span>
+                    <span class="badge ${isIsolated ? 'bg-danger' : 'bg-success'} px-2 py-1">
+                        ${isIsolated ? '○ ISOLATED' : '● CONNECTED'}
+                    </span>
+                </div>
                 <h4 class="fw-bold mb-1 text-white">${node.name}</h4>
                 <div class="text-white-50 font-monospace small">ID: #${node.asset_id} | ${node.code}</div>
             </div>
 
+            ${findingsCardHtml}
+
+            <!-- Two-Dimensional Modeling & Operational Status Card -->
             <div class="card bg-dark border-secondary mb-3">
+                <div class="card-header border-secondary py-2 small fw-bold text-info bg-dark">
+                    <i class="fa-solid fa-layer-group me-1"></i> ARSITEKTUR 2-DIMENSI NODE
+                </div>
                 <div class="card-body p-3">
-                    <div class="small text-muted text-uppercase fw-bold mb-1">Status Operasional</div>
-                    <div class="fw-bold ${isSwitch ? 'text-warning' : 'text-success'}">
-                        ${node.operational_state}
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary border-opacity-25">
+                        <span class="small text-muted text-uppercase fw-bold">Dimensi 1 (Semantic Role)</span>
+                        <span class="badge ${isSwitch ? 'bg-warning text-dark' : (isGtt ? 'bg-success' : 'bg-primary')} font-monospace">
+                            ${node.device_role}
+                        </span>
                     </div>
-                    ${isSwitch ? '<div class="small text-white-50 mt-1"><i class="fa-solid fa-circle-info me-1"></i>Belum ada telemetri SCADA. Posisi fisik tidak diketahui sistem.</div>' : ''}
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary border-opacity-25">
+                        <span class="small text-muted text-uppercase fw-bold">Dimensi 2 (Topology State)</span>
+                        <span class="badge ${isIsolated ? 'bg-danger' : 'bg-success'} font-monospace">
+                            ${isIsolated ? '○ ISOLATED (ZERO EDGES)' : '● CONNECTED (AKTIF)'}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small text-muted text-uppercase fw-bold">Status Operasional</span>
+                        <span class="fw-bold ${isSwitch ? 'text-warning' : 'text-success'}">
+                            ${node.operational_state}
+                        </span>
+                    </div>
+                    ${isSwitch ? '<div class="small text-white-50 mt-2"><i class="fa-solid fa-circle-info me-1"></i>Belum ada telemetri SCADA. Posisi fisik tidak diketahui sistem.</div>' : ''}
                 </div>
             </div>
 
@@ -1549,35 +1951,22 @@ class SldRendererEngine {
     }
 
     /**
-     * Fit Main Network (Zone 1: C15-01).
+     * Fit Main Network (Zone 1: C15-01) with optimal occupancy (Width 85–92%, Height 75–85%).
      */
     fitMainNetwork() {
         if (!this.layoutData) return;
-        const zones = this.layoutData.zones || {};
-        const main = zones.MAIN_NETWORK;
-
-        if (main && main.bounding_box) {
-            const p1 = this.project(main.bounding_box.min_x, main.bounding_box.min_y);
-            const p2 = this.project(main.bounding_box.max_x, main.bounding_box.max_y);
-            const pad = 120;
-            this.viewBox = {
-                x: p1.x - pad,
-                y: p1.y - pad - 60, // allow space for GI anchor
-                w: (p2.x - p1.x) + (pad * 2),
-                h: (p2.y - p1.y) + (pad * 2) + 60,
-            };
-            this.updateViewBox();
-        } else {
-            this.resetView();
-        }
+        this.currentScope = 'MAIN_NETWORK';
+        this.viewBox = this.calculateOptimalViewBox('MAIN_NETWORK');
+        this.updateViewBox();
     }
 
     /**
-     * Fit All Zones (Main Network, Unconnected Fragments, Isolated Assets).
+     * Fit All Zones (Main Network, Unconnected Fragments, Isolated Assets) with optimal occupancy.
      */
     fitAll() {
         if (!this.layoutData) return;
-        this.viewBox = Object.assign({}, this.fullBounds);
+        this.currentScope = 'ALL';
+        this.viewBox = this.calculateOptimalViewBox('ALL');
         this.updateViewBox();
     }
 
@@ -1585,7 +1974,22 @@ class SldRendererEngine {
      * Reset View to Panoramic Main Trunk focus.
      */
     resetView() {
-        this.viewBox = Object.assign({}, this.initialViewBox);
+        if (!this.layoutData) return;
+        this.currentScope = 'MAIN_NETWORK';
+        this.viewBox = this.calculateOptimalViewBox('MAIN_NETWORK');
+        this.updateViewBox();
+    }
+
+    /**
+     * Responsive container resize handler.
+     */
+    handleResize() {
+        if (!this.layoutData || !this.container) return;
+        if (this.currentScope === 'ALL') {
+            this.viewBox = this.calculateOptimalViewBox('ALL');
+        } else {
+            this.viewBox = this.calculateOptimalViewBox('MAIN_NETWORK');
+        }
         this.updateViewBox();
     }
 
@@ -1597,14 +2001,15 @@ class SldRendererEngine {
     }
 
     /**
-     * Progressive Zoom-Aware Density Management (Mandatory Amendment 6).
-     * - Low Zoom (< 75%): Feeder route, GI, main trunk, branches, keypoint glyphs, GTTs, line terminations. Regular pole #IDs hidden.
-     * - Medium Zoom (75% - 130%): Pole #IDs appear via collision resolver.
-     * - High Zoom (> 130%): Full asset names, construction nomenclature, conductor span length pills.
+     * Progressive Zoom-Aware Density Management (Mandatory Amendment 6 & SLD-05S-VH).
+     * - Baseline Zoom (100%): Main trunk fits container at 85–92% width.
+     * - Mode C (HYBRID): Conductor spans & pole IDs ALWAYS visible.
+     * - Mode Engineering: Low zoom (< 65%) hides pole labels to avoid clutter; >= 65% displays granular labels.
      */
     updateZoomClass() {
         if (!this.svg) return;
-        const currentZoomRatio = 2200 / this.viewBox.w;
+        const baselineW = (this.optimalMainViewBox && this.optimalMainViewBox.w > 0) ? this.optimalMainViewBox.w : 8000;
+        const currentZoomRatio = baselineW / this.viewBox.w;
         const zoomPercentage = Math.round(currentZoomRatio * 100);
 
         const zoomLabel = document.getElementById('sld-zoom-status');
@@ -1616,19 +2021,15 @@ class SldRendererEngine {
         const poleLabels = this.svg.querySelectorAll('.sld-pole-label');
 
         if (this.currentMode === 'HYBRID') {
-            // Mode C: Hybrid CAD + Road Corridors View - Conductor span length labels always visible
+            // Mode C: Hybrid CAD + Road Corridors View - Conductor span length labels & pole IDs ALWAYS visible
             if (labelLayer) labelLayer.style.display = 'inline';
             poleLabels.forEach(p => p.style.display = 'inline');
-        } else if (currentZoomRatio < 0.75) {
-            // LOW ZOOM (< 75%): Operator traces high-level route. Pole numbers suppressed.
+        } else if (currentZoomRatio < 0.65) {
+            // LOW ZOOM (< 65%): Multi-zone bird's eye view. Regular pole labels suppressed.
             if (labelLayer) labelLayer.style.display = 'none';
             poleLabels.forEach(p => p.style.display = 'none');
-        } else if (currentZoomRatio < 1.30) {
-            // MEDIUM ZOOM (75% - 130%): Pole IDs visible via occupancy index.
-            if (labelLayer) labelLayer.style.display = 'inline';
-            poleLabels.forEach(p => p.style.display = 'inline');
         } else {
-            // HIGH ZOOM (> 130%): Maximum granular visibility.
+            // NORMAL (100%) & HIGH ZOOM: Full granular visibility.
             if (labelLayer) labelLayer.style.display = 'inline';
             poleLabels.forEach(p => p.style.display = 'inline');
         }
@@ -1676,6 +2077,24 @@ class SldRendererEngine {
         this.applyDisplayModes();
     }
 
+    toggleAssetLabels(show) {
+        this.showAssetLabels = (typeof show === 'boolean') ? show : !this.showAssetLabels;
+        const labels = this.svg ? this.svg.querySelectorAll('.sld-pole-label') : [];
+        labels.forEach(l => l.style.display = this.showAssetLabels ? 'inline' : 'none');
+    }
+
+    toggleSpanLengths(show) {
+        this.showSpanLengths = (typeof show === 'boolean') ? show : !this.showSpanLengths;
+        const layer = document.getElementById('sld-edge-labels-layer');
+        if (layer) layer.style.display = this.showSpanLengths ? 'inline' : 'none';
+    }
+
+    toggleRoadNames(show) {
+        this.showRoadNames = (typeof show === 'boolean') ? show : !this.showRoadNames;
+        const layer = document.getElementById('sld-corridors-layer');
+        if (layer) layer.style.display = this.showRoadNames ? 'inline' : 'none';
+    }
+
     applyDisplayModes() {
         if (!this.svg) return;
 
@@ -1711,6 +2130,687 @@ class SldRendererEngine {
         gttNodes.forEach(g => {
             g.style.display = this.showGtt ? 'inline' : 'none';
         });
+    }
+
+    /**
+     * SLD-05T: Fetch sequential CAD print-safe sheet partitions.
+     */
+    async loadSheets() {
+        if (!this.options.sheetsApiUrl) return;
+        try {
+            const res = await fetch(this.options.sheetsApiUrl);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.status === 'success' && Array.isArray(data.sheets)) {
+                this.sheetsData = data.sheets;
+                this.renderSheetControls();
+                if (this.currentSheetIndex !== null) {
+                    const sheet = this.sheetsData.find(s => s.sheet_index === this.currentSheetIndex);
+                    if (sheet) {
+                        this.renderCadTitleBlock(sheet);
+                        this.renderMatchLines(sheet);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[SLD-05T] Sheet composer endpoint unavailable:', e.message);
+        }
+    }
+
+    /**
+     * SLD-05T: Render sheet navigation controls in the toolbar.
+     */
+    renderSheetControls() {
+        const ctrl = document.getElementById('sld-sheet-controls');
+        if (!ctrl || !this.sheetsData || this.sheetsData.length === 0) return;
+
+        let html = `
+            <button type="button" class="btn btn-sm ${this.currentSheetIndex === null ? 'btn-info text-dark fw-bold' : 'btn-dark border-secondary text-white-50'}" 
+                    onclick="sldEngine.setSheet(null)" title="Lihat Penyulang Lengkap (Fit Main Network)">
+                <i class="fa-solid fa-map me-1"></i> Penuh (Fit Main)
+            </button>
+        `;
+
+        for (const sheet of this.sheetsData) {
+            const idx = sheet.sheet_index;
+            const isActive = (this.currentSheetIndex === idx);
+            const btnClass = isActive ? 'btn-info text-dark fw-bold' : 'btn-dark border-secondary text-white';
+            const nodeCount = sheet.nodes ? sheet.nodes.length : (sheet.node_ids ? sheet.node_ids.length : 0);
+            const corridor = (sheet.corridors && sheet.corridors[0]) ? sheet.corridors[0].replace('JL. RAYA ', '') : `Bagian ${idx}`;
+            html += `
+                <button type="button" class="btn btn-sm ${btnClass}" 
+                        onclick="sldEngine.setSheet(${idx})" 
+                        title="${sheet.sheet_code}: ${corridor} (${nodeCount} Tiang)">
+                    <i class="fa-solid fa-file-lines me-1"></i> Lembar 0${idx}
+                </button>
+            `;
+        }
+
+        ctrl.innerHTML = html;
+    }
+
+    /**
+     * SLD-05T: Focus viewport to a specific CAD sheet with 100% coverage and CAD annotations.
+     */
+    setSheet(sheetNum) {
+        if (!this.sheetsData || this.sheetsData.length === 0) return;
+
+        const cadLayer = document.getElementById('sld-cad-title-block-layer');
+        const matchLayer = document.getElementById('sld-match-lines-layer');
+
+        if (sheetNum === null || sheetNum === 'ALL') {
+            this.currentSheetIndex = null;
+            if (cadLayer) cadLayer.style.display = 'none';
+            if (matchLayer) matchLayer.style.display = 'none';
+            this.fitMainNetwork();
+            this.renderSheetControls();
+            if (this.showFindings) this.renderFindings();
+            return;
+        }
+
+        const sheet = this.sheetsData.find(s => s.sheet_index === sheetNum);
+        if (!sheet) return;
+
+        this.currentSheetIndex = sheetNum;
+
+        // Container aspect-aware viewport fitting
+        const containerW = (this.container && this.container.clientWidth > 0) ? this.container.clientWidth : 1800;
+        const containerH = (this.container && this.container.clientHeight > 0) ? this.container.clientHeight : 600;
+        const containerAspect = Math.max(0.5, containerW / containerH);
+
+        const baseVb = sheet.view_box;
+        let vh = baseVb.h;
+        let vw = vh * containerAspect;
+        if (vw < baseVb.w) {
+            vw = baseVb.w;
+            vh = vw / containerAspect;
+        }
+
+        const centerX = baseVb.x + (baseVb.w / 2);
+        const centerY = baseVb.y + (baseVb.h / 2);
+
+        this.viewBox = {
+            x: Math.round(centerX - (vw / 2)),
+            y: Math.round(centerY - (vh / 2)),
+            w: Math.round(vw),
+            h: Math.round(vh)
+        };
+
+        this.updateViewBox();
+        this.renderCadTitleBlock(sheet);
+        this.renderMatchLines(sheet);
+        this.renderSheetControls();
+        if (this.showFindings) this.renderFindings();
+    }
+
+    /**
+     * SLD-05T: Render PLN Standard Engineering CAD Title Block & Frame for the Sheet.
+     */
+    renderCadTitleBlock(sheet) {
+        const g = document.getElementById('sld-cad-title-block-layer');
+        if (!g || !sheet) return;
+
+        const vb = sheet.view_box;
+        const tb = sheet.title_block || {};
+        const stats = tb.statistics || {};
+
+        // Outer CAD Engineering Frame (15px inset from sheet viewBox)
+        const frameX = vb.x + 15;
+        const frameY = vb.y + 15;
+        const frameW = vb.w - 30;
+        const frameH = vb.h - 30;
+
+        // Title Block Box Dimensions (at bottom right of frame)
+        const tbW = Math.min(520, frameW * 0.45);
+        const tbH = 140;
+        const tbX = frameX + frameW - tbW;
+        const tbY = frameY + frameH - tbH;
+
+        // Top Right CAD North Compass
+        const compassX = frameX + frameW - 45;
+        const compassY = frameY + 45;
+
+        const corridorStr = (sheet.corridors && sheet.corridors.length > 0) 
+            ? sheet.corridors.join(' / ') 
+            : 'WILAYAH KERJA FEEDER';
+
+        g.innerHTML = `
+            <!-- CAD Outer Border Frame -->
+            <rect x="${frameX}" y="${frameY}" width="${frameW}" height="${frameH}" 
+                  fill="none" stroke="#0f172a" stroke-width="3" />
+            <rect x="${frameX + 4}" y="${frameY + 4}" width="${frameW - 8}" height="${frameH - 8}" 
+                  fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="8,4" />
+
+            <!-- Sheet Header Banner (Top Left) -->
+            <rect x="${frameX + 10}" y="${frameY + 10}" width="260" height="32" rx="4" fill="#0f172a" />
+            <text x="${frameX + 22}" y="${frameY + 31}" fill="#38bdf8" font-size="13" font-weight="900" font-family="monospace">
+                ${sheet.sheet_code}: ${sheet.sheet_label}
+            </text>
+
+            <!-- Sheet Corridor Tag -->
+            <rect x="${frameX + 280}" y="${frameY + 10}" width="${Math.min(450, frameW - 350)}" height="32" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+            <text x="${frameX + 295}" y="${frameY + 30}" fill="#334155" font-size="11" font-weight="bold" font-family="sans-serif">
+                KORIDOR: ${corridorStr} (${sheet.nodes ? sheet.nodes.length : 0} TIANG)
+            </text>
+
+            <!-- Top Right CAD North Compass -->
+            <g transform="translate(${compassX}, ${compassY})">
+                <circle cx="0" cy="0" r="22" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+                <polygon points="0,-16 5,0 0,-2 -5,0" fill="#dc2626" />
+                <polygon points="0,16 5,0 0,2 -5,0" fill="#0f172a" />
+                <circle cx="0" cy="0" r="2" fill="#ffffff" />
+                <text x="0" y="-19" fill="#dc2626" font-size="9" font-weight="900" font-family="sans-serif" text-anchor="middle">U</text>
+            </g>
+
+            <!-- CAD Standard Title Block Table (Bottom Right) -->
+            <g transform="translate(${tbX}, ${tbY})">
+                <rect x="0" y="0" width="${tbW}" height="${tbH}" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+                
+                <!-- Row 1: Company Header -->
+                <rect x="0" y="0" width="${tbW}" height="28" fill="#0f172a" />
+                <text x="12" y="19" fill="#ffffff" font-size="12" font-weight="900" font-family="sans-serif" letter-spacing="1">
+                    PT PLN (PERSERO) &bull; ${tb.unit_induk || 'UID JAWA TIMUR'}
+                </text>
+                
+                <!-- Row 2: Sub-Unit Info -->
+                <line x1="0" y1="50" x2="${tbW}" y2="50" stroke="#0f172a" stroke-width="1.2" />
+                <text x="12" y="42" fill="#334155" font-size="9.5" font-weight="bold" font-family="sans-serif">
+                    ${tb.up3 || 'UP3 SIDOARJO'} &bull; ${tb.ulp || 'ULP SIDOARJO KOTA'}
+                </text>
+                <text x="${tbW - 12}" y="42" fill="#0284c7" font-size="9.5" font-weight="bold" font-family="monospace" text-anchor="end">
+                    SUBSTATION: ${tb.substation || 'GI BUDURAN'}
+                </text>
+
+                <!-- Row 3: Drawing Title & Feeder -->
+                <line x1="0" y1="84" x2="${tbW}" y2="84" stroke="#0f172a" stroke-width="1.2" />
+                <text x="12" y="66" fill="#64748b" font-size="8" font-weight="bold" font-family="sans-serif">JUDUL GAMBAR:</text>
+                <text x="12" y="79" fill="#0f172a" font-size="11" font-weight="900" font-family="sans-serif">
+                    SINGLE LINE DIAGRAM 20 kV &bull; ${tb.feeder_name || 'BANJAR KEMANTRAN'}
+                </text>
+
+                <!-- Row 4: Columns for Sheet Number, Scale, Invariant -->
+                <line x1="${tbW * 0.4}" y1="84" x2="${tbW * 0.4}" y2="${tbH}" stroke="#0f172a" stroke-width="1" />
+                <line x1="${tbW * 0.72}" y1="84" x2="${tbW * 0.72}" y2="${tbH}" stroke="#0f172a" stroke-width="1" />
+
+                <!-- Col 1: Sheet & Statistics -->
+                <text x="12" y="99" fill="#64748b" font-size="7.5" font-weight="bold" font-family="sans-serif">NOMOR LEMBAR:</text>
+                <text x="12" y="116" fill="#0284c7" font-size="13" font-weight="900" font-family="monospace">
+                    ${sheet.sheet_code} / 0${this.sheetsData.length}
+                </text>
+                <text x="12" y="131" fill="#475569" font-size="8" font-family="monospace">
+                    Nodes: ${stats.total_nodes || 0} | Edges: ${stats.total_edges || 0}
+                </text>
+
+                <!-- Col 2: Skala & Tanggal -->
+                <text x="${tbW * 0.4 + 10}" y="99" fill="#64748b" font-size="7.5" font-weight="bold" font-family="sans-serif">SKALA & SISTEM:</text>
+                <text x="${tbW * 0.4 + 10}" y="114" fill="#0f172a" font-size="9.5" font-weight="bold" font-family="sans-serif">
+                    ${tb.scale || 'N.T.S. (SCHEMATIC)'}
+                </text>
+                <text x="${tbW * 0.4 + 10}" y="129" fill="#64748b" font-size="8" font-family="monospace">
+                    ${tb.approval_date || new Date().toISOString().split('T')[0]}
+                </text>
+
+                <!-- Col 3: Status Audit -->
+                <text x="${tbW * 0.72 + 10}" y="99" fill="#64748b" font-size="7.5" font-weight="bold" font-family="sans-serif">INVARIANT:</text>
+                <text x="${tbW * 0.72 + 10}" y="114" fill="#059669" font-size="10" font-weight="900" font-family="monospace">
+                    &Delta; = 0 READ-ONLY
+                </text>
+                <text x="${tbW * 0.72 + 10}" y="129" fill="#0284c7" font-size="7.5" font-weight="bold" font-family="sans-serif">
+                    SLD-05T CERTIFIED
+                </text>
+            </g>
+        `;
+
+        g.style.display = 'inline';
+    }
+
+    /**
+     * SLD-05T: Render Boundary Match Lines connecting sequential sheets.
+     */
+    renderMatchLines(sheet) {
+        const g = document.getElementById('sld-match-lines-layer');
+        if (!g || !sheet) return;
+
+        let html = '';
+        const matchLines = sheet.match_lines || {};
+
+        // Backward Match Line (From previous sheet)
+        if (matchLines.backward) {
+            const b = matchLines.backward;
+            const bNode = this.layoutData.nodes.find(n => n.asset_id === b.boundary_node_id);
+            if (bNode) {
+                const pos = this.project(bNode.schematic.grid_x, bNode.schematic.grid_y);
+                const lineX = pos.x - 30;
+
+                html += `
+                    <g class="sld-match-line-backward" transform="translate(${lineX}, ${pos.y})">
+                        <line x1="0" y1="-65" x2="0" y2="65" stroke="#dc2626" stroke-width="2.2" stroke-dasharray="6,4" />
+                        <rect x="-175" y="-14" width="165" height="28" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1.2"
+                              style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" />
+                        <text x="-92" y="4" fill="#b91c1c" font-size="8.5" font-weight="900" text-anchor="middle" font-family="monospace">
+                            ${b.label}
+                        </text>
+                        <text x="-92" y="16" fill="#64748b" font-size="7.5" text-anchor="middle" font-family="monospace">
+                            TIANG #${b.boundary_node_id}
+                        </text>
+                    </g>
+                `;
+            }
+        }
+
+        // Forward Match Line (To next sheet)
+        if (matchLines.forward) {
+            const f = matchLines.forward;
+            const fNode = this.layoutData.nodes.find(n => n.asset_id === f.boundary_node_id);
+            if (fNode) {
+                const pos = this.project(fNode.schematic.grid_x, fNode.schematic.grid_y);
+                const lineX = pos.x + 30;
+
+                html += `
+                    <g class="sld-match-line-forward" transform="translate(${lineX}, ${pos.y})">
+                        <line x1="0" y1="-65" x2="0" y2="65" stroke="#0284c7" stroke-width="2.2" stroke-dasharray="6,4" />
+                        <rect x="10" y="-14" width="185" height="28" rx="4" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.2"
+                              style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" />
+                        <text x="102" y="4" fill="#0369a1" font-size="8.5" font-weight="900" text-anchor="middle" font-family="monospace">
+                            ${f.label}
+                        </text>
+                        <text x="102" y="16" fill="#64748b" font-size="7.5" text-anchor="middle" font-family="monospace">
+                            TIANG #${f.boundary_node_id}
+                        </text>
+                    </g>
+                `;
+            }
+        }
+
+        g.innerHTML = html;
+        g.style.display = 'inline';
+    }
+
+    /**
+     * SLD-05T: Fetch decoupled findings overlay read model.
+     */
+    async loadFindings() {
+        if (!this.options.findingsApiUrl) return;
+        try {
+            const res = await fetch(this.options.findingsApiUrl);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.status === 'success' && Array.isArray(data.findings)) {
+                this.findingsData = data;
+                if (this.showFindings) {
+                    this.renderFindings();
+                    this.renderFindingMarkersOnLeaflet();
+                }
+            }
+        } catch (e) {
+            console.warn('[SLD-05T] Finding overlay endpoint unavailable:', e.message);
+        }
+    }
+
+    /**
+     * SLD-05T: Toggle Finding Layer Visibility (Guarantees Delta Nodes = 0, Delta Edges = 0).
+     */
+    toggleFindings(show) {
+        this.showFindings = (typeof show === 'boolean') ? show : !this.showFindings;
+
+        const beforeNodes = this.layoutData ? this.layoutData.nodes.length : 0;
+        const beforeEdges = this.layoutData ? this.layoutData.edges.length : 0;
+
+        const findingsLayer = document.getElementById('sld-findings-layer');
+        if (findingsLayer) {
+            findingsLayer.style.display = this.showFindings ? 'inline' : 'none';
+        }
+
+        if (this.showFindings) {
+            if (!this.findingsData) {
+                this.loadFindings();
+            } else {
+                this.renderFindings();
+                this.renderFindingMarkersOnLeaflet();
+            }
+        } else {
+            if (this.leafletMap && this.leafletFindingsGroup) {
+                this.leafletFindingsGroup.clearLayers();
+            }
+        }
+
+        const afterNodes = this.layoutData ? this.layoutData.nodes.length : 0;
+        const afterEdges = this.layoutData ? this.layoutData.edges.length : 0;
+        if (beforeNodes !== afterNodes || beforeEdges !== afterEdges) {
+            console.error('[SLD-05T INVARIANT VIOLATION] Finding overlay mutated topology graph!');
+        }
+    }
+
+    /**
+     * SLD-05T: Render Technical Finding Annotations (CAD Callouts + Leader Lines + Collision Avoidance).
+     * Follows PLN Engineering Drawing standards:
+     * 1. Sheet Filtering (Refinement 4): Only findings for active sheet are rendered.
+     * 2. Leader Line (Refinement 2): Orthogonal elbow lines connecting physical anchor to box.
+     * 3. Arrow Marker: Pointer at physical anchor (ax, ay) pointing directly to asset node.
+     * 4. Technical Callout Box:
+     *    - Header strip with explicit Priority text (HIGH / MED / LOW) for B/W print compliance
+     *    - Line 1: Asset Code / Title
+     *    - Line 2: Finding brief description
+     *    - Line 3: Registration Code (or [NOT TOPOLOGY NODE] for ROW)
+     */
+    renderFindings() {
+        const g = document.getElementById('sld-findings-layer');
+        if (!g || !this.findingsData || !this.findingsData.findings) return;
+
+        let html = '';
+        const allFindings = this.findingsData.findings;
+
+        // Sheet boundary firewall (Refinement 4):
+        // If currentSheetIndex is set, filter strictly to findings assigned to this sheet
+        const findings = (this.currentSheetIndex !== null)
+            ? allFindings.filter(f => {
+                const sId = (f.annotation && f.annotation.sheet_id) ? f.annotation.sheet_id : (f.sheet_id || null);
+                return sId === this.currentSheetIndex;
+            })
+            : allFindings;
+
+        for (const f of findings) {
+            const ann = f.annotation;
+            const prio = ((ann && ann.priority) || f.prioritas || 'MEDIUM').toUpperCase();
+
+            // PLN Technical priority styling
+            let prioColor = '#0284c7'; // LOW
+            let headerBg = '#0284c7';
+            let boxBorder = '#0f172a';
+            if (prio === 'HIGH' || prio === 'CRITICAL' || prio === 'DARURAT') {
+                prioColor = '#dc2626';
+                headerBg = '#dc2626';
+                boxBorder = '#dc2626';
+            } else if (prio === 'MEDIUM' || prio === 'SEDANG') {
+                prioColor = '#d97706';
+                headerBg = '#d97706';
+                boxBorder = '#d97706';
+            }
+
+            if (ann && typeof ann.box_x === 'number') {
+                const ax = ann.anchor_x;
+                const ay = ann.anchor_y;
+                const bx = ann.box_x;
+                const by = ann.box_y;
+                const bw = ann.box_width || 168;
+                const bh = ann.box_height || 54;
+                const isRow = (ann.callout_type === 'LOCATION_ROW');
+
+                // 1. Leader Line Path
+                let leaderPath = '';
+                if (Array.isArray(ann.leader_points) && ann.leader_points.length >= 2) {
+                    const pts = ann.leader_points;
+                    leaderPath = `M ${pts[0].x} ${pts[0].y}`;
+                    for (let i = 1; i < pts.length; i++) {
+                        leaderPath += ` L ${pts[i].x} ${pts[i].y}`;
+                    }
+                } else {
+                    leaderPath = `M ${ax} ${ay} L ${bx + bw/2} ${by + bh}`;
+                }
+
+                html += `
+                    <g class="sld-technical-callout" id="callout-finding-${f.id}" style="cursor: pointer;" onclick="sldEngine.selectFinding(${f.id})">
+                        <!-- Leader Line (CAD Solid) -->
+                        <path d="${leaderPath}" fill="none" stroke="${headerBg}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                        
+                        <!-- Arrow Head / Anchor Dot at Physical Object -->
+                        <circle cx="${ax}" cy="${ay}" r="4.5" fill="${headerBg}" stroke="#ffffff" stroke-width="1.5" />
+                        <circle cx="${ax}" cy="${ay}" r="1.8" fill="#ffffff" />
+                        
+                        <!-- Callout Box Frame -->
+                        <g transform="translate(${bx}, ${by})">
+                            <!-- Drop Shadow & Background -->
+                            <rect x="0" y="0" width="${bw}" height="${bh}" rx="3" fill="#ffffff" stroke="${boxBorder}" stroke-width="1.8" 
+                                  ${isRow ? 'stroke-dasharray="5,3"' : ''}
+                                  style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.18));" />
+                            
+                            <!-- Header Bar -->
+                            <rect x="0" y="0" width="${bw}" height="18" rx="2" fill="${headerBg}" />
+                            
+                            <!-- Header Text: Asset ID & Priority (Explicit Text for B/W Print) -->
+                            <text x="8" y="12.5" fill="#ffffff" font-size="9" font-weight="900" font-family="monospace">
+                                ${ann.title || ('TIANG #' + (f.asset_id || 'ROW'))}
+                            </text>
+                            <text x="${bw - 8}" y="12.5" fill="#ffffff" font-size="8.5" font-weight="900" font-family="monospace" text-anchor="end">
+                                [${ann.priority}]
+                            </text>
+                            
+                            <!-- Row 2: Subtitle / Technical Issue -->
+                            <text x="8" y="31" fill="#0f172a" font-size="8.5" font-weight="bold" font-family="sans-serif">
+                                ${ann.subtitle || f.jenis_temuan || ''}
+                            </text>
+                            
+                            <!-- Row 3: Code / ROW Disclaimer -->
+                            ${isRow ? `
+                                <text x="8" y="44" fill="#dc2626" font-size="7.5" font-weight="900" font-family="monospace">
+                                    [NOT TOPOLOGY NODE]
+                                </text>
+                                <text x="8" y="55" fill="#64748b" font-size="7.5" font-family="monospace">
+                                    ${ann.display_code || f.nomor_temuan || ''}
+                                </text>
+                            ` : `
+                                <text x="8" y="45" fill="#64748b" font-size="8" font-family="monospace">
+                                    ${ann.display_code || f.nomor_temuan || ''}
+                                </text>
+                            `}
+                        </g>
+                        <title>[${prio}] ${ann.title || ''}: ${ann.subtitle || ''}\nKlik untuk inspeksi detail</title>
+                    </g>
+                `;
+            } else {
+                // Fallback rendering if annotation coordinates not pre-calculated
+                const isAssetLinked = (f.model_type === 'ASSET_LINKED' && f.asset_id);
+                let ax = 0, ay = 0;
+                let title = f.nomor_temuan || ('TMN #' + f.id);
+                let isRow = !isAssetLinked;
+
+                if (isAssetLinked) {
+                    const node = this.layoutData.nodes.find(n => n.asset_id === f.asset_id);
+                    if (node) {
+                        const pos = this.project(node.schematic.grid_x, node.schematic.grid_y);
+                        ax = pos.x;
+                        ay = pos.y;
+                        title = node.asset_code || ('TIANG #' + node.asset_id);
+                    }
+                } else {
+                    ax = this.viewBox.x + 300;
+                    ay = this.viewBox.y + 200;
+                }
+
+                const bx = ax - 80;
+                const by = ay - 80;
+                const bw = 168;
+                const bh = isRow ? 64 : 54;
+
+                html += `
+                    <g class="sld-technical-callout" id="callout-finding-${f.id}" style="cursor: pointer;" onclick="sldEngine.selectFinding(${f.id})">
+                        <line x1="${ax}" y1="${ay}" x2="${bx + bw/2}" y2="${by + bh}" stroke="${headerBg}" stroke-width="1.8" />
+                        <circle cx="${ax}" cy="${ay}" r="4.5" fill="${headerBg}" stroke="#ffffff" stroke-width="1.5" />
+                        <g transform="translate(${bx}, ${by})">
+                            <rect x="0" y="0" width="${bw}" height="${bh}" rx="3" fill="#ffffff" stroke="${boxBorder}" stroke-width="1.8" 
+                                  ${isRow ? 'stroke-dasharray="5,3"' : ''}
+                                  style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.18));" />
+                            <rect x="0" y="0" width="${bw}" height="18" rx="2" fill="${headerBg}" />
+                            <text x="8" y="12.5" fill="#ffffff" font-size="9" font-weight="900" font-family="monospace">${title}</text>
+                            <text x="${bw - 8}" y="12.5" fill="#ffffff" font-size="8.5" font-weight="900" font-family="monospace" text-anchor="end">[${prio}]</text>
+                            <text x="8" y="31" fill="#0f172a" font-size="8.5" font-weight="bold" font-family="sans-serif">${f.jenis_temuan || ''}</text>
+                            <text x="8" y="45" fill="#64748b" font-size="8" font-family="monospace">${f.nomor_temuan || ''}</text>
+                        </g>
+                    </g>
+                `;
+            }
+        }
+
+        g.innerHTML = html;
+        g.style.display = this.showFindings ? 'inline' : 'none';
+    }
+
+    /**
+     * SLD-05T: Plot findings on GIS Leaflet Map with severity styling.
+     */
+    renderFindingMarkersOnLeaflet() {
+        if (!this.leafletMap || !this.findingsData || !this.findingsData.findings) return;
+
+        if (!this.leafletFindingsGroup) {
+            this.leafletFindingsGroup = L.featureGroup();
+        } else {
+            this.leafletFindingsGroup.clearLayers();
+        }
+
+        if (!this.showFindings) {
+            if (this.leafletMap.hasLayer(this.leafletFindingsGroup)) {
+                this.leafletMap.removeLayer(this.leafletFindingsGroup);
+            }
+            return;
+        }
+
+        for (const f of this.findingsData.findings) {
+            const lat = parseFloat(f.latitude);
+            const lng = parseFloat(f.longitude);
+            if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) continue;
+
+            const prio = (f.prioritas || 'MEDIUM').toUpperCase();
+            const color = (prio === 'HIGH' || prio === 'CRITICAL') ? '#ef4444' : ((prio === 'MEDIUM') ? '#f59e0b' : '#eab308');
+
+            const icon = L.divIcon({
+                className: 'sld-leaflet-finding-pin',
+                html: `
+                    <div style="width: 28px; height: 28px; background: #ffffff; border: 2px solid ${color}; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; cursor: pointer;">
+                        &#9888;
+                    </div>
+                `,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -14],
+            });
+
+            const marker = L.marker([lat, lng], { icon }).addTo(this.leafletFindingsGroup);
+            marker.bindPopup(`
+                <div style="font-family: sans-serif; font-size: 12px; min-width: 200px;">
+                    <div style="font-weight: bold; color: ${color}; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
+                        &#9888; TEMUAN: ${f.nomor_temuan || '#' + f.id}
+                    </div>
+                    <div style="margin-bottom: 4px;"><strong>Jenis:</strong> ${f.jenis_temuan}</div>
+                    <div style="margin-bottom: 4px;"><strong>Prioritas:</strong> <span style="background: ${color}; color: #fff; padding: 1px 5px; border-radius: 3px; font-weight: bold; font-size: 10px;">${prio}</span></div>
+                    <div style="margin-bottom: 4px;"><strong>Model:</strong> ${f.model_type}</div>
+                    <div style="margin-bottom: 6px; color: #64748b;">${f.detail_temuan || '-'}</div>
+                    <button onclick="sldEngine.selectFinding(${f.id})" style="background: ${color}; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 11px; width: 100%;">
+                        Lihat Detail Temuan
+                    </button>
+                </div>
+            `);
+        }
+
+        if (!this.leafletMap.hasLayer(this.leafletFindingsGroup)) {
+            this.leafletFindingsGroup.addTo(this.leafletMap);
+        }
+    }
+
+    /**
+     * SLD-05T: Open Read-Only Slide-Over Detail Drawer for Finding.
+     */
+    selectFinding(findingId) {
+        if (!this.findingsData || !this.findingsData.findings) return;
+        const f = this.findingsData.findings.find(item => item.id === findingId);
+        if (!f) return;
+        this.renderFindingDrawer(f);
+    }
+
+    /**
+     * SLD-05T: Render Finding Drawer details.
+     */
+    renderFindingDrawer(f) {
+        let drawer = document.getElementById('sld-asset-drawer');
+        if (!drawer) {
+            drawer = document.createElement('div');
+            drawer.id = 'sld-asset-drawer';
+            drawer.className = 'sld-drawer shadow-lg';
+            drawer.style.cssText = `
+                position: fixed; top: 0; right: 0; width: 380px; height: 100vh;
+                background: #0f172a; color: #f8fafc; border-left: 1px solid #334155;
+                z-index: 1050; padding: 24px; overflow-y: auto; font-family: 'Segoe UI', sans-serif;
+                box-shadow: -5px 0 25px rgba(0,0,0,0.5); transition: transform 0.3s ease;
+            `;
+            document.body.appendChild(drawer);
+        }
+
+        const prio = (f.prioritas || 'MEDIUM').toUpperCase();
+        const prioBadgeClass = (prio === 'HIGH' || prio === 'CRITICAL') ? 'bg-danger' : ((prio === 'MEDIUM') ? 'bg-warning text-dark' : 'bg-info text-dark');
+        const isLocationLinked = (f.model_type === 'LOCATION_LINKED' || !f.asset_id);
+
+        drawer.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary">
+                <h5 class="fw-bold m-0 text-warning"><i class="fa-solid fa-triangle-exclamation me-2"></i>Detail Temuan Lapangan</h5>
+                <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('sld-asset-drawer').style.display='none';"></button>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex flex-wrap gap-1 mb-2">
+                    <span class="badge ${prioBadgeClass} px-2 py-1">${prio} PRIORITY</span>
+                    <span class="badge bg-secondary px-2 py-1">${f.status || 'BELUM_DITANGANI'}</span>
+                    <span class="badge ${isLocationLinked ? 'bg-danger' : 'bg-primary'} px-2 py-1">${f.model_type}</span>
+                </div>
+                <h4 class="fw-bold mb-1 text-white">${f.jenis_temuan}</h4>
+                <div class="text-white-50 font-monospace small">Nomor: ${f.nomor_temuan || '#' + f.id}</div>
+            </div>
+
+            <!-- Invariant Card: Non-Topology Node Confirmation -->
+            <div class="card bg-dark border-secondary mb-3">
+                <div class="card-header border-secondary py-2 small fw-bold text-info bg-dark">
+                    <i class="fa-solid fa-shield-halved me-1"></i> TOPOLOGY READ MODEL STATUS
+                </div>
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary border-opacity-25">
+                        <span class="small text-muted text-uppercase fw-bold">Klasifikasi Model</span>
+                        <span class="badge ${isLocationLinked ? 'bg-warning text-dark' : 'bg-info text-dark'} font-monospace">
+                            ${isLocationLinked ? 'LOCATION FINDING / NOT TOPOLOGY NODE' : 'ASSET LINKED FINDING'}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary border-opacity-25">
+                        <span class="small text-muted text-uppercase fw-bold">Topological Node Effect</span>
+                        <span class="badge bg-success font-monospace">&Delta; Nodes = 0, &Delta; Edges = 0</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small text-muted text-uppercase fw-bold">Aset Terkait</span>
+                        <span class="fw-bold text-info font-monospace">
+                            ${f.asset_id ? '#' + f.asset_id : 'TIDAK TERKAIT (SPASIAL ROW)'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finding Details Card -->
+            <div class="card bg-dark border-secondary mb-3">
+                <div class="card-header border-secondary py-2 small fw-bold text-warning bg-dark">
+                    <i class="fa-solid fa-clipboard-list me-1"></i> DESKRIPSI ANOMALI
+                </div>
+                <div class="card-body p-3">
+                    <p class="small text-light mb-2" style="line-height: 1.5;">
+                        ${f.detail_temuan || 'Tidak ada catatan rinci temuan.'}
+                    </p>
+                    <div class="d-flex justify-content-between small text-muted border-top border-secondary pt-2 mt-2">
+                        <span>Tanggal Temuan:</span>
+                        <span class="font-monospace text-white">${f.tanggal_temuan || '-'}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted pt-1">
+                        <span>Koordinat GPS:</span>
+                        <span class="font-monospace text-white">${f.latitude ? f.latitude + ', ' + f.longitude : '-'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mb-3">
+                <a href="${window.location.origin}/temuan/detail/${f.id}" target="_blank" class="btn btn-warning btn-sm fw-bold">
+                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Buka Modul Temuan Resmi
+                </a>
+            </div>
+
+            <div class="alert alert-info py-2 px-3 small mb-0 border-0 bg-opacity-25 bg-info text-white">
+                <i class="fa-solid fa-circle-info me-1"></i> Temuan ini dimuat secara dinamis sebagai read-only overlay tanpa merekayasa topologi jaringan listrik.
+            </div>
+        `;
+
+        drawer.style.display = 'block';
     }
 
     renderDataNotReady(data) {

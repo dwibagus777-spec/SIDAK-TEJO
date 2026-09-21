@@ -54,6 +54,7 @@ class AuthFilter implements FilterInterface
                         'ulp_id'       => $user['ulp_id'],
                         'user_ulp'     => $user['ulp'] ?? '',
                         'logged_in'    => true,
+                        'is_logged_in' => true, // Defense-in-depth compatibility alias
                         'last_activity'=> time()
                     ]);
 

@@ -168,34 +168,34 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             transform: rotate(180deg);
         }
 
-        /* Desktop Collapsed Sidebar Mode (~68px) */
+        /* Desktop Collapsed Sidebar Mode (~68px) - CR-NAV-01 Scoped to Non-Mission-Control */
         @media (min-width: 992px) {
-            body.sidebar-collapsed .navbar-vertical {
+            body.sidebar-collapsed:not(.sidak-mission-control) .navbar-vertical {
                 width: 68px !important;
             }
-            body.sidebar-collapsed .page-wrapper {
+            body.sidebar-collapsed:not(.sidak-mission-control) .page-wrapper {
                 margin-left: 68px !important;
             }
-            body.sidebar-collapsed .navbar-vertical .nav-link-title,
-            body.sidebar-collapsed .navbar-vertical .nav-header span,
-            body.sidebar-collapsed .navbar-vertical .nav-header .chevron-icon,
-            body.sidebar-collapsed .navbar-vertical .navbar-brand .text-start,
-            body.sidebar-collapsed .navbar-vertical .border,
-            body.sidebar-collapsed .navbar-vertical #live-sidebar-clock {
+            body.sidebar-collapsed:not(.sidak-mission-control) .navbar-vertical .nav-link-title,
+            body.sidebar-collapsed:not(.sidak-mission-control) .navbar-vertical .nav-header span,
+            body.sidebar-collapsed:not(.sidak-mission-control) .navbar-vertical .nav-header .chevron-icon,
+            body.sidebar-collapsed:not(.sidak-mission-control) .navbar-vertical .navbar-brand .text-start,
+            body.sidebar-collapsed:not(.sidak-mission-control) .navbar-vertical .border,
+            body.sidebar-collapsed:not(.sidak-mission-control) .navbar-vertical #live-sidebar-clock {
                 display: none !important;
             }
-            body.sidebar-collapsed .navbar-vertical .nav-link {
+            body.sidebar-collapsed:not(.sidak-mission-control) .navbar-vertical .nav-link {
                 margin: 0.15rem 0.35rem;
                 padding: 0.6rem 0.5rem;
                 text-align: center;
             }
-            body.sidebar-collapsed .navbar-vertical .nav-link i.nav-icon {
+            body.sidebar-collapsed:not(.sidak-mission-control) .navbar-vertical .nav-link i.nav-icon {
                 margin-right: 0 !important;
                 font-size: 1.2rem;
             }
         }
 
-        /* Phase 2E Remediation: Mission Control Launcher Mode on /dashboard */
+        /* Phase 2E + CR-NAV-01 Remediation: Mission Control Launcher Mode & Drawer Label Immunity */
         body.sidak-mission-control .navbar-vertical {
             position: fixed !important;
             top: 0 !important;
@@ -213,6 +213,33 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             margin-left: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
+        }
+
+        /* CR-NAV-01: High-Specificity Drawer & Mission Control Label Protection */
+        body.sidak-mission-control .navbar-vertical .nav-link-title,
+        body.sidak-mission-control .navbar-vertical.drawer-open .nav-link-title,
+        .navbar-vertical.drawer-open .nav-link-title {
+            display: inline-block !important;
+        }
+        body.sidak-mission-control .navbar-vertical .nav-header span,
+        body.sidak-mission-control .navbar-vertical.drawer-open .nav-header span,
+        .navbar-vertical.drawer-open .nav-header span {
+            display: inline !important;
+        }
+        body.sidak-mission-control .navbar-vertical .nav-header .chevron-icon,
+        body.sidak-mission-control .navbar-vertical.drawer-open .nav-header .chevron-icon,
+        .navbar-vertical.drawer-open .nav-header .chevron-icon {
+            display: inline-block !important;
+        }
+        body.sidak-mission-control .navbar-vertical .navbar-brand .text-start,
+        body.sidak-mission-control .navbar-vertical.drawer-open .navbar-brand .text-start,
+        .navbar-vertical.drawer-open .navbar-brand .text-start {
+            display: block !important;
+        }
+        body.sidak-mission-control .navbar-vertical #live-sidebar-clock,
+        body.sidak-mission-control .navbar-vertical.drawer-open #live-sidebar-clock,
+        .navbar-vertical.drawer-open #live-sidebar-clock {
+            display: block !important;
         }
         #sidebar-drawer-backdrop {
             display: none;
@@ -839,6 +866,26 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                                 <a class="nav-link" href="<?= site_url('gis') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-map-marked-alt text-success"></i></span>
                                     <span class="nav-link-title">Peta Jaringan (GIS)</span>
+                                </a>
+                            </li>
+                        </div>
+
+                        <!-- CATEGORY: SINGLE LINE DIAGRAM (CR-NAV-01) -->
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-sld" aria-expanded="<?= url_is('sld*') ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                            <span><i class="fas fa-bolt me-1 text-warning"></i> SINGLE LINE DIAGRAM</span>
+                            <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
+                        </li>
+                        <div class="collapse <?= url_is('sld*') ? 'show' : '' ?>" id="group-sld">
+                            <li class="nav-item <?= (url_is('sld/view*') || url_is('sld/feeder*')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('sld/view/15') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-diagram-project text-warning"></i></span>
+                                    <span class="nav-link-title">SLD Feeder</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('sld/validation*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('sld/validation') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-shield-halved text-info"></i></span>
+                                    <span class="nav-link-title">SLD Validation</span>
                                 </a>
                             </li>
                         </div>
@@ -1830,7 +1877,11 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                 'X-Requested-With': 'XMLHttpRequest'
             },
             statusCode: {
-                401: function() {
+                401: function(xhr) {
+                    console.error('[SIDAK TEJO AJAX 401]', {
+                        status: xhr ? xhr.status : 401,
+                        response: xhr ? xhr.responseText : null
+                    });
                     if (navigator.onLine) {
                         Swal.fire({
                             title: 'Sesi Berakhir!',
@@ -2266,23 +2317,46 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             });
         })();
 
-        // Desktop Sidebar Collapse & Storage Handler
-        document.addEventListener("DOMContentLoaded", function() {
-            var btnCollapse = document.getElementById('btn-collapse-sidebar');
-            if (btnCollapse) {
-                btnCollapse.addEventListener('click', function() {
-                    document.body.classList.toggle('sidebar-collapsed');
-                    var isCollapsed = document.body.classList.contains('sidebar-collapsed');
-                    localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
-                    if (typeof window.L !== 'undefined' && typeof window.map !== 'undefined' && window.map) {
-                        setTimeout(function() { window.map.invalidateSize(); }, 200);
+        // CR-NAV-01: Desktop Sidebar Collapse & Storage Handler with Mission Control Isolation
+        (function initSidebarCollapse() {
+            function setupSidebar() {
+                var isMissionControl = document.body.classList.contains('sidak-mission-control');
+                if (isMissionControl) {
+                    // Mission Control secondary drawer is strictly immune to collapsed mode
+                    document.body.classList.remove('sidebar-collapsed');
+                    return;
+                }
+
+                var btnCollapse = document.getElementById('btn-collapse-sidebar');
+                if (btnCollapse && !btnCollapse.dataset.collapseBound) {
+                    btnCollapse.dataset.collapseBound = 'true';
+                    btnCollapse.addEventListener('click', function() {
+                        document.body.classList.toggle('sidebar-collapsed');
+                        var isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                        localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                        if (typeof window.L !== 'undefined' && typeof window.map !== 'undefined' && window.map) {
+                            window.map.invalidateSize();
+                        }
+                    });
+                    if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                        document.body.classList.add('sidebar-collapsed');
                     }
-                });
-                if (localStorage.getItem('sidebar_collapsed') === 'true') {
-                    document.body.classList.add('sidebar-collapsed');
                 }
             }
-        });
+
+            if (document.readyState === 'loading') {
+                document.addEventListener("DOMContentLoaded", setupSidebar);
+            } else {
+                setupSidebar();
+            }
+
+            // Clean state if restored via bfcache
+            window.addEventListener('pageshow', function() {
+                if (document.body.classList.contains('sidak-mission-control')) {
+                    document.body.classList.remove('sidebar-collapsed');
+                }
+            });
+        })();
 
         // AI Command Bar Shortcut (Ctrl+K / Cmd+K) & Escape handler
         document.addEventListener('keydown', function(e) {

@@ -71,6 +71,45 @@
                                 <i class="fas fa-exclamation-triangle me-1"></i> <span id="map03-warning-text"></span>
                             </div>
                         </div>
+                    <!-- CR-HOTFIX-02 Part B: Authoritative Asset Banner / Card -->
+                    <input type="hidden" name="authoritative_asset_id" id="authoritative_asset_id" value="<?= esc($preselectedAsset['id'] ?? old('authoritative_asset_id', '')) ?>">
+                    <div id="authoritative-asset-card" class="card border-success mb-3 shadow-sm" style="<?= empty($preselectedAsset) ? 'display: none;' : '' ?> background: #f0fdf4; border: 1.5px solid #86efac !important; border-radius: 12px;">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success text-white px-2 py-1"><i class="fas fa-lock me-1"></i> ASET TERPILIH (AUTHORITATIVE)</span>
+                                    <span id="asset-card-code-badge" class="badge bg-primary text-white font-monospace"><?= esc($preselectedAsset['kode_asset'] ?? '-') ?></span>
+                                </div>
+                                <div id="asset-card-coord-badge">
+                                    <?php if (!empty($preselectedAsset['has_coordinates'])): ?>
+                                        <span class="badge bg-success text-white"><i class="fas fa-location-dot me-1"></i> Koordinat Terkunci</span>
+                                    <?php elseif (!empty($preselectedAsset)): ?>
+                                        <span class="badge bg-danger text-white"><i class="fas fa-exclamation-triangle me-1"></i> Belum Memiliki Koordinat</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="row g-2 small text-dark">
+                                <div class="col-sm-4">
+                                    <span class="text-muted d-block">Nama Aset:</span>
+                                    <strong id="asset-card-name"><?= esc($preselectedAsset['nama_asset'] ?? '-') ?></strong>
+                                    <span class="badge bg-light text-secondary border ms-1" id="asset-card-type"><?= esc($preselectedAsset['jenis_asset'] ?? 'TIANG') ?></span>
+                                </div>
+                                <div class="col-sm-4">
+                                    <span class="text-muted d-block">Jaringan / Penyulang:</span>
+                                    <strong id="asset-card-feeder"><?= esc($preselectedAsset['nama_penyulang'] ?? '-') ?></strong>
+                                    <small class="text-muted d-block" id="asset-card-section"><?= esc($preselectedAsset['nama_section'] ?? '-') ?></small>
+                                </div>
+                                <div class="col-sm-4">
+                                    <span class="text-muted d-block">Koordinat Titik Aset:</span>
+                                    <strong id="asset-card-coords" class="font-monospace text-success">
+                                        <?= !empty($preselectedAsset['has_coordinates']) ? esc($preselectedAsset['latitude']) . ', ' . esc($preselectedAsset['longitude']) : '<span class="text-danger">Tidak tersedia</span>' ?>
+                                    </strong>
+                                </div>
+                            </div>
+                            <div id="asset-coord-alert" class="alert alert-danger py-1 px-2 mt-2 mb-0 small" style="<?= (!empty($preselectedAsset) && empty($preselectedAsset['has_coordinates'])) ? '' : 'display: none;' ?>">
+                                <i class="fas fa-triangle-exclamation me-1"></i> <strong>Asset belum memiliki koordinat authoritative.</strong> Temuan untuk asset ini tidak dapat disimpan sebelum data koordinat dilengkapi.
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -288,6 +327,65 @@
                         </label>
                         <small class="text-muted d-block mb-2">Keterangan jenis pohon, diameter, atau jarak bebas dahan terhadap kabel/jaringan.</small>
                         <input type="text" name="catatan_row" id="catatan_row" class="form-control form-control-sm" placeholder="Contoh: Pohon Sengon diameter 30cm mendekati konduktor 1.5 meter">
+                    <!-- CR-HOTFIX-02 Part C: Aksesoris JTM / Konduktor (Profil Jaringan Aset) -->
+                    <div class="form-group mb-4 p-3 rounded" id="jtm-accessories-section" style="background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">
+                            <div>
+                                <label class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
+                                    <i class="fas fa-shield-halved text-warning me-2"></i> Aksesoris JTM / Konduktor (Profil Aset)
+                                </label>
+                                <small class="text-muted d-block" style="font-size: 11px;">
+                                    Catat keberadaan & kondisi perlengkapan proteksi / aksesoris jaringan pada titik tiang ini.
+                                </small>
+                            </div>
+                            <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 11px;">
+                                Standar PLN (6 Aksesoris)
+                            </span>
+                        </div>
+
+                        <!-- Aksesoris Item Grid -->
+                        <div class="row g-3" id="jtm-accessories-grid">
+                            <?php if (!empty($jtmAccessories) && is_array($jtmAccessories)): ?>
+                                <?php foreach ($jtmAccessories as $acc): ?>
+                                <div class="col-md-6 col-12">
+                                    <div class="card h-100 border shadow-xs p-3 jtm-acc-card" id="acc_card_<?= $acc['id'] ?>" style="border-radius: 10px; background: #ffffff; transition: all 0.2s ease;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input jtm-acc-toggle" type="checkbox" role="switch" id="acc_toggle_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>">
+                                                <label class="form-check-label fw-bold text-dark ms-1" for="acc_toggle_<?= $acc['id'] ?>" style="cursor: pointer; font-size: 13px;">
+                                                    <?= esc($acc['nama_aksesoris'] ?? $acc['name'] ?? $acc['kode_aksesoris']) ?>
+                                                    <code class="text-primary small">[<?= esc($acc['kode_aksesoris'] ?? $acc['code']) ?>]</code>
+                                                </label>
+                                            </div>
+                                            <span class="badge bg-secondary text-white jtm-acc-status-badge" id="acc_badge_<?= $acc['id'] ?>">TIDAK ADA</span>
+                                        </div>
+                                        <small class="text-muted mb-2 d-block" style="font-size: 11px; line-height: 1.3;">
+                                            <?= esc($acc['keterangan'] ?? 'Aksesoris jaringan SUTM') ?>
+                                        </small>
+                                        <div class="jtm-acc-detail-inputs mt-2" id="acc_inputs_<?= $acc['id'] ?>" style="display: none;">
+                                            <div class="row g-2">
+                                                <div class="col-sm-5">
+                                                    <label class="small text-muted mb-1" style="font-size: 11px;">Kondisi</label>
+                                                    <select class="form-select form-select-sm jtm-acc-condition" id="acc_cond_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>">
+                                                        <option value="BAIK">BAIK</option>
+                                                        <option value="RUSAK">RUSAK</option>
+                                                        <option value="PERLU_PENGGANTIAN">PERLU PENGGANTIAN</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-sm-7">
+                                                    <label class="small text-muted mb-1" style="font-size: 11px;">Catatan Lapangan</label>
+                                                    <input type="text" class="form-control form-control-sm jtm-acc-note" id="acc_note_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>" placeholder="Catatan kondisi (opsional)">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Hidden JSON input for accessories payload -->
+                        <input type="hidden" name="structured_accessories_json" id="structured_accessories_json" value="">
                     </div>
 
                     <!-- Detail Temuan -->
@@ -309,17 +407,28 @@
                     </div>
 
                     <!-- Geolocation / Coordinates -->
+                    <?php
+                    $isPreselectedWithCoords = !empty($preselectedAsset) && !empty($preselectedAsset['has_coordinates']);
+                    $initLat = $isPreselectedWithCoords ? $preselectedAsset['latitude'] : old('latitude');
+                    $initLng = $isPreselectedWithCoords ? $preselectedAsset['longitude'] : old('longitude');
+                    ?>
                     <div class="row">
                         <div class="col-md-6 form-group mb-3">
-                            <label for="latitude">Latitude <small class="text-muted">(manual atau klik peta)</small></label>
-                            <input type="text" name="latitude" id="latitude" class="form-control <?= ($validation && $validation->hasError('latitude')) ? 'is-invalid' : '' ?>" placeholder="Contoh: -7.447812" value="<?= old('latitude') ?>">
+                            <label for="latitude">
+                                Latitude <small class="text-muted">(manual atau klik peta)</small>
+                                <span id="latitude-lock-badge" class="badge bg-success ms-1" style="<?= $isPreselectedWithCoords ? '' : 'display: none;' ?>"><i class="fas fa-lock me-1"></i> Terkunci dari Aset</span>
+                            </label>
+                            <input type="text" name="latitude" id="latitude" class="form-control <?= ($validation && $validation->hasError('latitude')) ? 'is-invalid' : '' ?>" placeholder="Contoh: -7.447812" value="<?= esc($initLat) ?>" <?= $isPreselectedWithCoords ? 'readonly style="background-color: #f1f5f9; cursor: not-allowed;"' : '' ?>>
                             <?php if ($validation && $validation->hasError('latitude')): ?>
                                 <div class="invalid-feedback"><?= $validation->getError('latitude') ?></div>
                             <?php endif; ?>
                         </div>
                         <div class="col-md-6 form-group mb-3">
-                            <label for="longitude">Longitude <small class="text-muted">(manual atau klik peta)</small></label>
-                            <input type="text" name="longitude" id="longitude" class="form-control <?= ($validation && $validation->hasError('longitude')) ? 'is-invalid' : '' ?>" placeholder="Contoh: 112.718324" value="<?= old('longitude') ?>">
+                            <label for="longitude">
+                                Longitude <small class="text-muted">(manual atau klik peta)</small>
+                                <span id="longitude-lock-badge" class="badge bg-success ms-1" style="<?= $isPreselectedWithCoords ? '' : 'display: none;' ?>"><i class="fas fa-lock me-1"></i> Terkunci dari Aset</span>
+                            </label>
+                            <input type="text" name="longitude" id="longitude" class="form-control <?= ($validation && $validation->hasError('longitude')) ? 'is-invalid' : '' ?>" placeholder="Contoh: 112.718324" value="<?= esc($initLng) ?>" <?= $isPreselectedWithCoords ? 'readonly style="background-color: #f1f5f9; cursor: not-allowed;"' : '' ?>>
                             <?php if ($validation && $validation->hasError('longitude')): ?>
                                 <div class="invalid-feedback"><?= $validation->getError('longitude') ?></div>
                             <?php endif; ?>
@@ -331,7 +440,14 @@
                         <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-sync-map" title="Perbarui posisi pin peta sesuai koordinat yang diketik">
                             <i class="fas fa-map-pin mr-1"></i> Sinkronkan ke Peta
                         </button>
-                        <span class="text-muted small align-self-center">*Atau klik/geser pin pada peta di sebelah kanan.</span>
+                        <span class="text-muted small align-self-center" id="coords-hint-text">
+                            <?= $isPreselectedWithCoords ? '<span class="text-success fw-bold"><i class="fas fa-lock me-1"></i> Koordinat terkunci pada titik Aset.</span>' : '*Atau klik/geser pin pada peta di sebelah kanan.' ?>
+                        </span>
+                    </div>
+
+                    <!-- Geolocation Verification Distance Alert Banner -->
+                    <div id="gps-verification-banner" class="alert alert-info py-2 px-3 mb-3 small" style="display: none;">
+                        <i class="fas fa-satellite-dish me-1"></i> <span id="gps-verification-text"></span>
                     </div>
 
                     <div class="row">
@@ -441,6 +557,8 @@
             return;
         }
         var $ = jQuery;
+        let map = null;
+        let marker = null;
         $(function() {
             // --- CR-06: TEMUAN DATE STALE-FORM HARDENING ---
             const isValidationReturn = <?= (!empty($isValidationReturn)) ? 'true' : 'false' ?>;
@@ -474,11 +592,12 @@
             });
 
             // --- 1. CASCADING DROPDOWNS WITH REQUEST TOKEN GUARD ---
+            const preselectedAsset = <?= !empty($preselectedAsset) ? json_encode($preselectedAsset) : 'null' ?>;
             const urlParams = new URLSearchParams(window.location.search);
-            const oldPenyulangId = "<?= old('penyulang_id') ?>" || urlParams.get('penyulang_id') || "";
-            const oldSectionId = "<?= old('section_id') ?>" || urlParams.get('section_id') || "";
-            const oldAssetId = "<?= old('asset_id') ?>" || urlParams.get('asset_id') || "";
-            const urlUlpId = urlParams.get('ulp_id') || "";
+            const oldPenyulangId = "<?= old('penyulang_id') ?>" || (preselectedAsset ? preselectedAsset.penyulang_id : '') || urlParams.get('penyulang_id') || "";
+            const oldSectionId = "<?= old('section_id') ?>" || (preselectedAsset ? preselectedAsset.section_id : '') || urlParams.get('section_id') || "";
+            const oldAssetId = "<?= old('asset_id') ?>" || (preselectedAsset ? preselectedAsset.id : '') || urlParams.get('asset_id') || "";
+            const urlUlpId = (preselectedAsset ? preselectedAsset.ulp_id : '') || urlParams.get('ulp_id') || "";
             let penyulangRequestToken = 0;
             let sectionRequestToken = 0;
 
@@ -903,9 +1022,90 @@
             });
         }
 
+        // --- CR-HOTFIX-02 Part B: AUTHORITATIVE ASSET COORDINATE LOCKING ---
+        function handleAssetCoordinateLock(assetId) {
+            const $authCard = $('#authoritative-asset-card');
+            const $latInput = $('#latitude');
+            const $lngInput = $('#longitude');
+            const $latBadge = $('#latitude-lock-badge');
+            const $lngBadge = $('#longitude-lock-badge');
+            const $hintText = $('#coords-hint-text');
+            const $coordAlert = $('#asset-coord-alert');
+            const $hiddenAsset = $('#authoritative_asset_id');
+
+            if (!assetId) {
+                $hiddenAsset.val('');
+                $latInput.prop('readonly', false).css({ 'background-color': '', 'cursor': '' });
+                $lngInput.prop('readonly', false).css({ 'background-color': '', 'cursor': '' });
+                $latBadge.hide();
+                $lngBadge.hide();
+                $authCard.slideUp(150);
+                $coordAlert.hide();
+                $hintText.html('*Atau klik/geser pin pada peta di sebelah kanan.');
+                if (marker && marker.dragging) {
+                    marker.dragging.enable();
+                }
+                return;
+            }
+
+            $hiddenAsset.val(assetId);
+
+            $.ajax({
+                url: "<?= site_url('temuan/ajax-asset-coordinates') ?>",
+                type: "GET",
+                data: { asset_id: assetId },
+                dataType: "json",
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(res) {
+                    if (res && res.status === 'SUCCESS' && res.asset) {
+                        const a = res.asset;
+                        $('#asset-card-code-badge').text(a.kode_asset || `AST-${a.id}`);
+                        $('#asset-card-name').text(a.nama_asset || '-');
+                        $('#asset-card-type').text(a.jenis_asset || 'TIANG');
+                        $('#asset-card-feeder').text(a.nama_penyulang || '-');
+                        $('#asset-card-section').text(a.nama_section || '-');
+
+                        if (a.has_coordinates && a.latitude !== null && a.longitude !== null) {
+                            const lat = parseFloat(a.latitude);
+                            const lng = parseFloat(a.longitude);
+                            $('#asset-card-coords').html(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                            $('#asset-card-coord-badge').html('<span class="badge bg-success text-white"><i class="fas fa-location-dot me-1"></i> Koordinat Terkunci</span>');
+                            $coordAlert.hide();
+
+                            $latInput.val(lat.toFixed(8)).prop('readonly', true).css({ 'background-color': '#f1f5f9', 'cursor': 'not-allowed' });
+                            $lngInput.val(lng.toFixed(8)).prop('readonly', true).css({ 'background-color': '#f1f5f9', 'cursor': 'not-allowed' });
+                            $latBadge.show();
+                            $lngBadge.show();
+                            $hintText.html('<span class="text-success fw-bold"><i class="fas fa-lock me-1"></i> Koordinat terkunci pada titik Aset.</span>');
+
+                            if (marker && map) {
+                                marker.setLatLng([lat, lng]);
+                                map.setView([lat, lng], 17);
+                                if (marker.dragging) marker.dragging.disable();
+                            }
+                        } else {
+                            $('#asset-card-coords').html('<span class="text-danger">Tidak tersedia</span>');
+                            $('#asset-card-coord-badge').html('<span class="badge bg-danger text-white"><i class="fas fa-exclamation-triangle me-1"></i> Belum Memiliki Koordinat</span>');
+                            $coordAlert.show();
+                            $latInput.prop('readonly', false).css({ 'background-color': '', 'cursor': '' });
+                            $lngInput.prop('readonly', false).css({ 'background-color': '', 'cursor': '' });
+                            $latBadge.hide();
+                            $lngBadge.hide();
+                            $hintText.html('<span class="text-danger fw-bold"><i class="fas fa-exclamation-triangle me-1"></i> Asset belum memiliki koordinat authoritative!</span>');
+                            if (marker && marker.dragging) {
+                                marker.dragging.enable();
+                            }
+                        }
+                        $authCard.slideDown(200);
+                    }
+                }
+            });
+        }
+
         $('#mr01_asset_id').on('change', function() {
             const assetId = $(this).val();
             const sectionId = $('#section_id').val();
+            handleAssetCoordinateLock(assetId);
             if (isMaterialFlowActive) {
                 loadMaterialPickerForAsset(assetId, sectionId);
             }
@@ -1205,6 +1405,28 @@
                 }
             }
 
+            // CR-HOTFIX-02 Part B: Check authoritative asset coordinate requirement
+            const chosenAssetId = $('#authoritative_asset_id').val() || $('#mr01_asset_id').val();
+            if (chosenAssetId) {
+                const latVal = $('#latitude').val();
+                const lngVal = $('#longitude').val();
+                if (!latVal || !lngVal || parseFloat(latVal) === 0 || parseFloat(lngVal) === 0) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Koordinat Asset Belum Tersedia',
+                        text: 'Asset yang dipilih belum memiliki koordinat authoritative. Temuan untuk asset ini tidak dapat disimpan sebelum data koordinat dilengkapi.',
+                        confirmButtonColor: '#005eb8'
+                    });
+                    return false;
+                }
+            }
+
+            // CR-HOTFIX-02 Part C: Sync accessories JSON
+            if (typeof updateAccessoriesJson === 'function') {
+                updateAccessoriesJson();
+            }
+
             const btnSubmit = $('#btn-submit');
             btnSubmit.html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan data...');
             // Clear draft storage so next fresh visit gets today's date
@@ -1218,11 +1440,12 @@
             L.Icon.Default.imagePath = '<?= base_url('plugins/images/') ?>/';
         }
 
-        const defaultLat = -7.4478;
-        const defaultLng = 112.7183;
+        const defaultLat = (preselectedAsset && preselectedAsset.has_coordinates) ? parseFloat(preselectedAsset.latitude) : -7.4478;
+        const defaultLng = (preselectedAsset && preselectedAsset.has_coordinates) ? parseFloat(preselectedAsset.longitude) : 112.7183;
+        const defaultZoom = (preselectedAsset && preselectedAsset.has_coordinates) ? 17 : 12;
 
         // Initialize Selector Map
-        const map = L.map('selector-map').setView([defaultLat, defaultLng], 12);
+        map = L.map('selector-map').setView([defaultLat, defaultLng], defaultZoom);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -1242,12 +1465,15 @@
             popupAnchor: [0, -38]
         });
 
-        // Marker (draggable)
-        let marker = L.marker([defaultLat, defaultLng], {
-            draggable: true,
+        // Marker
+        const isInitialLocked = (preselectedAsset && preselectedAsset.has_coordinates);
+        marker = L.marker([defaultLat, defaultLng], {
+            draggable: !isInitialLocked,
             icon: customIcon
         }).addTo(map);
-        marker.bindPopup('<b>Geser pin untuk menetapkan lokasi</b>').openPopup();
+
+        const popupText = isInitialLocked ? '<b>Aset Terpilih: ' + (preselectedAsset.kode_asset || 'Aset') + '</b><br><small class="text-success">Koordinat Terkunci</small>' : '<b>Geser pin untuk menetapkan lokasi</b>';
+        marker.bindPopup(popupText).openPopup();
 
         function updateCoordinates(lat, lng) {
             $('#latitude').val(lat.toFixed(8));
@@ -1256,15 +1482,40 @@
 
         // Trigger on marker drag end
         marker.on('dragend', function(e) {
+            if ($('#latitude').prop('readonly')) {
+                const curLat = parseFloat($('#latitude').val());
+                const curLng = parseFloat($('#longitude').val());
+                marker.setLatLng([curLat, curLng]);
+                Toast.fire({ icon: 'info', title: 'Koordinat terkunci pada Aset yang dipilih.' });
+                return;
+            }
             const position = marker.getLatLng();
             updateCoordinates(position.lat, position.lng);
         });
 
         // Trigger on map click
         map.on('click', function(e) {
+            if ($('#latitude').prop('readonly')) {
+                Toast.fire({ icon: 'info', title: 'Koordinat terkunci pada Aset yang dipilih.' });
+                return;
+            }
             marker.setLatLng(e.latlng);
             updateCoordinates(e.latlng.lat, e.latlng.lng);
         });
+
+        // Haversine Distance Function (Meters)
+        function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // meters
+            const phi1 = lat1 * Math.PI / 180;
+            const phi2 = lat2 * Math.PI / 180;
+            const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+            const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                      Math.cos(phi1) * Math.cos(phi2) *
+                      Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
 
         // Geolocation trigger
         $('#btn-geolocation').click(function() {
@@ -1274,12 +1525,31 @@
                     function(position) {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
-                        
+                        $('#btn-geolocation').html('<i class="fas fa-location-crosshairs mr-1"></i> Ambil Lokasi Saya');
+
+                        const isLocked = $('#latitude').prop('readonly');
+                        if (isLocked) {
+                            const assetLat = parseFloat($('#latitude').val());
+                            const assetLng = parseFloat($('#longitude').val());
+                            if (!isNaN(assetLat) && !isNaN(assetLng)) {
+                                const distMeters = calculateHaversineDistance(lat, lng, assetLat, assetLng);
+                                $('#gps-verification-text').html(
+                                    '<strong>Verifikasi Jarak GPS:</strong> Posisi perangkat Anda saat ini berjarak <strong>± ' +
+                                    Math.round(distMeters) + ' meter</strong> dari titik Aset. (Koordinat temuan tetap dikunci ke Aset).'
+                                );
+                                $('#gps-verification-banner').slideDown(200);
+                                Toast.fire({
+                                    icon: 'info',
+                                    title: 'Verifikasi GPS: Jarak ± ' + Math.round(distMeters) + ' m dari Aset.'
+                                });
+                                return;
+                            }
+                        }
+
                         marker.setLatLng([lat, lng]);
                         map.setView([lat, lng], 16);
                         updateCoordinates(lat, lng);
                         
-                        $('#btn-geolocation').html('<i class="fas fa-location-crosshairs mr-1"></i> Ambil Lokasi Saya');
                         Toast.fire({
                             icon: 'success',
                             title: 'Lokasi Anda berhasil didapatkan!'
@@ -1311,6 +1581,52 @@
                 });
             }
         });
+
+        // --- CR-HOTFIX-02 Part C: AKSESORIS JTM / KONDUKTOR SERIALIZATION ---
+        function updateAccessoriesJson() {
+            const items = [];
+            $('.jtm-acc-card').each(function() {
+                const $card = $(this);
+                const toggle = $card.find('.jtm-acc-toggle');
+                const accId = parseInt(toggle.data('acc-id'));
+                const isAda = toggle.is(':checked');
+                const condition = $card.find('.jtm-acc-condition').val() || 'BAIK';
+                const note = ($card.find('.jtm-acc-note').val() || '').trim();
+
+                items.push({
+                    accessory_type_id: accId,
+                    status: isAda ? 'ADA' : 'TIDAK_ADA',
+                    condition: condition,
+                    note: note ? note : null
+                });
+            });
+            $('#structured_accessories_json').val(JSON.stringify(items));
+        }
+
+        $(document).on('change', '.jtm-acc-toggle', function() {
+            const accId = $(this).data('acc-id');
+            const isAda = $(this).is(':checked');
+            const $inputs = $('#acc_inputs_' + accId);
+            const $badge = $('#acc_badge_' + accId);
+            const $card = $('#acc_card_' + accId);
+
+            if (isAda) {
+                $badge.attr('class', 'badge bg-success text-white jtm-acc-status-badge').html('<i class="fas fa-check me-1"></i> ADA');
+                $card.css({ 'border-color': '#86efac', 'background': '#f0fdf4' });
+                $inputs.slideDown(150);
+            } else {
+                $badge.attr('class', 'badge bg-secondary text-white jtm-acc-status-badge').text('TIDAK ADA');
+                $card.css({ 'border-color': '#cbd5e1', 'background': '#ffffff' });
+                $inputs.slideUp(150);
+            }
+            updateAccessoriesJson();
+        });
+
+        $(document).on('change input', '.jtm-acc-condition, .jtm-acc-note', function() {
+            updateAccessoriesJson();
+        });
+
+        updateAccessoriesJson();
 
         // --- MAP-03: LOCATION CONTEXT ASSISTANT JS ---
         let activeLocationContext = null;

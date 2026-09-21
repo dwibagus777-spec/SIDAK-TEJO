@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sidak-tejo-v9-enterprise';
+const CACHE_NAME = 'sidak-tejo-v10-enterprise';
 const MAPS_CACHE_NAME = 'sidak-tejo-maps-v7';
 
 // Assets to cache on install
@@ -43,17 +43,21 @@ self.addEventListener('fetch', (event) => {
 
     // Do NOT intercept navigation, HTML, JSON, or dynamic API/AJAX requests
     // Always fetch fresh data directly from server
-    if (
+    const isDynamicApi =
         event.request.mode === 'navigate' ||
         url.includes('/ajax/') ||
+        url.includes('/ajax-') ||
         url.includes('/api/') ||
+        url.includes('/temuan/ajax-') ||
+        url.includes('/temuan/api/') ||
         url.endsWith('.json') ||
         url.includes('/i18n/') ||
         (event.request.headers.get('accept') && (
             event.request.headers.get('accept').includes('text/html') ||
             event.request.headers.get('accept').includes('application/json')
-        ))
-    ) {
+        ));
+
+    if (isDynamicApi) {
         return;
     }
 

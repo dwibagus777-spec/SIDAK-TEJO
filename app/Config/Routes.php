@@ -145,6 +145,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('sld/view/(:num)', 'DynamicSldController::view/$1');
     $routes->get('sld/feeder/(:num)', 'DynamicSldController::getFeederGraph/$1');
     $routes->get('sld/section-detail/(:num)', 'DynamicSldController::getSectionDetail/$1');
+    $routes->get('sld/validation', 'DynamicSldController::validation');
 
     // SLD-02, SLD-03, SLD-04 & SLD-05T — Topology, Semantics, Layout, Sheets & Findings
     $routes->get('api/sld/feeder/(:num)', 'Api\SldApiController::getFeederTopology/$1');
@@ -668,6 +669,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('temuan/ajax-material-transaction', 'Temuan::ajaxMaterialTransaction');
     $routes->get('temuan/material-recap', 'Temuan::materialRecap');
     $routes->get('temuan/ajax-material-recap', 'Temuan::ajaxMaterialRecap');
+    $routes->get('temuan/ajax-asset-coordinates', 'Temuan::ajaxAssetCoordinates');
+    $routes->get('temuan/ajax-jtm-accessories', 'Temuan::ajaxJtmAccessories');
 
     // MNF-01: Shared Master Network Fabric Lookup API (Canonical 4-Level Master Fabric)
     $routes->group('ajax/network', static function ($routes) {

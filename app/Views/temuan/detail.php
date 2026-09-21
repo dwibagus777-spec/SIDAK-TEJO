@@ -522,6 +522,21 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                             <div class="small text-secondary mt-1">
                                 ⚡ Penyulang: <strong><?= esc($temuan['nama_penyulang']) ?></strong> | Section: <strong><?= esc($temuan['nama_section']) ?></strong>
                             </div>
+                            <?php if (!empty($linkedAsset)): ?>
+                            <div class="mt-2 pt-2 border-top">
+                                <span class="badge bg-success text-white px-2 py-1 mb-1">
+                                    <i class="fas fa-lock me-1"></i> ASET TERHUBUNG: <?= esc($linkedAsset['kode_asset'] ?? 'AST-' . $linkedAsset['id']) ?>
+                                </span>
+                                <div class="small text-dark font-weight-bold">
+                                    <?= esc($linkedAsset['nama_asset'] ?? 'Aset #' . $linkedAsset['id']) ?>
+                                    <span class="badge bg-light text-secondary border ms-1"><?= esc($linkedAsset['jenis_asset'] ?? 'TIANG') ?></span>
+                                </div>
+                                <div class="text-muted small mt-1" style="font-size: 11px;">
+                                    <i class="fas fa-location-crosshairs text-success me-1"></i> Koordinat Authoritative:
+                                    <code><?= esc($temuan['latitude']) ?>, <?= esc($temuan['longitude']) ?></code>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="col-md-6 col-12">
@@ -628,6 +643,63 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                     </div>
                     <?php endif; ?>
                 </div>
+
+                <?php if (!empty($accessories)): ?>
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="font-weight-bold text-primary mb-0" style="font-size: 14px;">
+                            <i class="fas fa-shield-halved text-warning me-2"></i> Aksesoris JTM / Konduktor Terpasang:
+                        </h6>
+                        <span class="badge bg-primary"><?= count($accessories) ?> Item Tercatat</span>
+                    </div>
+                    <div class="table-responsive rounded border bg-white shadow-sm">
+                        <table class="table table-sm table-hover mb-0" style="font-size: 12px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Aksesoris</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Kondisi</th>
+                                    <th>Catatan Lapangan</th>
+                                    <th class="text-end">Waktu Inspeksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($accessories as $acc): ?>
+                                <tr>
+                                    <td class="fw-bold text-dark">
+                                        <i class="fas fa-check-circle text-info me-1"></i>
+                                        <?= esc($acc['accessory_name_snapshot'] ?? $acc['nama_aksesoris'] ?? $acc['kode_aksesoris'] ?? '-') ?>
+                                        <?php if (!empty($acc['accessory_code'])): ?>
+                                            <code class="ms-1 small">[<?= esc($acc['accessory_code']) ?>]</code>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php if (($acc['status'] ?? '') === 'ADA'): ?>
+                                            <span class="badge bg-success px-2 py-1"><i class="fas fa-check me-1"></i> ADA</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary px-2 py-1"><i class="fas fa-times me-1"></i> TIDAK ADA</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php
+                                        $kondisi = strtoupper($acc['condition'] ?? 'BAIK');
+                                        $badgeKondisi = match($kondisi) {
+                                            'RUSAK'             => 'badge bg-danger',
+                                            'PERLU_PENGGANTIAN' => 'badge bg-warning text-dark',
+                                            default             => 'badge bg-success'
+                                        };
+                                        ?>
+                                        <span class="<?= $badgeKondisi ?> px-2 py-1"><?= esc($kondisi) ?></span>
+                                    </td>
+                                    <td class="text-muted"><?= esc($acc['note'] ?: '-') ?></td>
+                                    <td class="text-end text-muted small"><?= !empty($acc['created_at']) ? date('d-m-Y H:i', strtotime($acc['created_at'])) : '-' ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <div class="mb-4">
                     <h6 class="font-weight-bold text-danger mb-2" style="font-size: 14px;">
@@ -818,6 +890,11 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCopyCoords">
                         <i class="fas fa-copy me-1"></i> Salin Koordinat (<?= esc($temuan['latitude']) ?>, <?= esc($temuan['longitude']) ?>)
                     </button>
+                    <?php if (!empty($linkedAsset)): ?>
+                    <div class="p-1 px-2 bg-white rounded border text-center small text-success font-weight-bold">
+                        <i class="fas fa-lock me-1"></i> Koordinat Authoritative: <?= esc($linkedAsset['kode_asset'] ?? 'AST-' . $linkedAsset['id']) ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

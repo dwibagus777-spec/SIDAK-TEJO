@@ -239,11 +239,50 @@ class Temuan extends BaseController
         $isValidationReturn = $session->has('_ci_old_input') && $hasErrorFlash;
         $defaultTanggal     = $isValidationReturn ? (old('tanggal_temuan') ?: $serverToday) : $serverToday;
 
+        // CR-HOTFIX-02 Part B: Authoritative Asset Pre-selection and Coordinate Resolution
+        $preselectedAsset = null;
+        $queryAssetId = (int)($this->request->getGet('asset_id') ?: old('asset_id') ?: 0);
+        if ($queryAssetId > 0) {
+            $db = \Config\Database::connect();
+            $assetRow = $db->table('assets a')
+                ->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.latitude, a.longitude, a.ulp_id, a.penyulang_id, a.section_id, u.nama_ulp, p.nama_penyulang, s.nama_section')
+                ->join('ulps u', 'u.id = a.ulp_id', 'left')
+                ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+                ->join('sections s', 's.id = a.section_id', 'left')
+                ->where('a.id', $queryAssetId)
+                ->get()
+                ->getRowArray();
+            if ($assetRow) {
+                $hasCoords = ($assetRow['latitude'] !== null && $assetRow['longitude'] !== null && (float)$assetRow['latitude'] != 0.0 && (float)$assetRow['longitude'] != 0.0);
+                $preselectedAsset = [
+                    'id'              => (int)$assetRow['id'],
+                    'kode_asset'      => $assetRow['kode_asset'] ?? 'AST-' . $assetRow['id'],
+                    'nama_asset'      => $assetRow['nama_asset'] ?? 'Asset #' . $assetRow['id'],
+                    'jenis_asset'     => $assetRow['jenis_asset'] ?? 'TIANG',
+                    'ulp_id'          => (int)($assetRow['ulp_id'] ?? 0),
+                    'nama_ulp'        => $assetRow['nama_ulp'] ?? '',
+                    'penyulang_id'    => (int)($assetRow['penyulang_id'] ?? 0),
+                    'nama_penyulang'  => $assetRow['nama_penyulang'] ?? '',
+                    'section_id'      => (int)($assetRow['section_id'] ?? 0),
+                    'nama_section'    => $assetRow['nama_section'] ?? '',
+                    'latitude'        => $hasCoords ? (float)$assetRow['latitude'] : null,
+                    'longitude'       => $hasCoords ? (float)$assetRow['longitude'] : null,
+                    'has_coordinates' => $hasCoords,
+                ];
+            }
+        }
+
+        // CR-HOTFIX-02 Part C: Active Master JTM / Conductor Accessories Catalog
+        $accService = new \App\Services\JtmAccessoryService();
+        $jtmAccessories = $accService->getActiveAccessories();
+
         return view('temuan/create', [
             'ulps'               => $ulps,
             'defaultTanggal'     => $defaultTanggal,
             'isValidationReturn' => $isValidationReturn,
             'serverToday'        => $serverToday,
+            'preselectedAsset'   => $preselectedAsset,
+            'jtmAccessories'     => $jtmAccessories,
         ]);
     }
 
@@ -260,6 +299,7 @@ class Temuan extends BaseController
         $serverToday = date('Y-m-d');
 
         if (!$this->validate($this->getTemuanFormRules())) {
+            log_message('error', '[TEMUAN_VALIDATION_ERRORS] ' . json_encode($this->validator->getErrors()));
             $defaultTanggal = $this->request->getPost('tanggal_temuan') ?: (old('tanggal_temuan') ?: $serverToday);
 
             return view('temuan/create', [
@@ -334,7 +374,7 @@ class Temuan extends BaseController
             }
         }
 
-        $assetIdInput = $this->request->getPost('asset_id');
+        $assetIdInput = $this->request->getPost('asset_id') ?: $this->request->getPost('authoritative_asset_id');
         $assetId = (!empty($assetIdInput) && is_numeric($assetIdInput)) ? (int)$assetIdInput : null;
 
         // INVARIANT 1: If material is requested, asset_id is strictly MANDATORY
@@ -358,6 +398,19 @@ class Temuan extends BaseController
                 if (isset($assetRow['penyulang_id']) && (int)$assetRow['penyulang_id'] !== (int)$data['penyulang_id']) {
                     return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam penyulang yang sesuai.');
                 }
+
+                // CR-HOTFIX-02 PART B: COORDINATE INVARIANT ENFORCEMENT
+                // Server strictly resolves latitude & longitude from the authoritative asset
+                $assetLat = $assetRow['latitude'] ?? null;
+                $assetLng = $assetRow['longitude'] ?? null;
+
+                if ($assetLat === null || $assetLng === null || (float)$assetLat == 0.0 || (float)$assetLng == 0.0) {
+                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Asset belum memiliki koordinat authoritative.');
+                }
+
+                // Strictly override any client-submitted coordinates with authoritative asset coordinates
+                $data['latitude']  = (float)$assetLat;
+                $data['longitude'] = (float)$assetLng;
             }
         }
 
@@ -390,6 +443,19 @@ class Temuan extends BaseController
                     $txResult = $txService->persistTransaction($structuredData, $session->get('user_id') ? (int)$session->get('user_id') : null);
                     if (($txResult['status'] ?? '') !== 'SUCCESS') {
                         log_message('error', '[MR01_TX_FAIL] Temuan #' . $insertedId . ': ' . ($txResult['message'] ?? 'Unknown error'));
+                    }
+                }
+
+                // CR-HOTFIX-02 Part C: JTM / Conductor Accessories persistence
+                $accJson = $this->request->getPost('structured_accessories_json');
+                if (!empty($accJson) && $assetId !== null) {
+                    $accData = json_decode((string)$accJson, true);
+                    if (is_array($accData) && !empty($accData)) {
+                        $accService = new \App\Services\JtmAccessoryService();
+                        $accResult = $accService->persistAccessories((int)$insertedId, (int)$assetId, $accData, $session->get('user_id') ? (int)$session->get('user_id') : null);
+                        if (($accResult['status'] ?? '') !== 'SUCCESS') {
+                            log_message('error', '[JTM_ACC_FAIL] Temuan #' . $insertedId . ': ' . ($accResult['message'] ?? 'Unknown error'));
+                        }
                     }
                 }
 
@@ -485,6 +551,26 @@ class Temuan extends BaseController
                 ->getResultArray() ?: [];
         }
 
+        // CR-HOTFIX-02 Part C: Load JTM / Conductor Accessories
+        $accessories = [];
+        if ($db->tableExists('temuan_accessories')) {
+            $accService = new \App\Services\JtmAccessoryService($db);
+            $accessories = $accService->getAccessoriesForTemuan($id);
+        }
+
+        // CR-HOTFIX-02 Part B: Load linked authoritative asset if present
+        $linkedAsset = null;
+        if (!empty($temuan['asset_id']) && $db->tableExists('assets')) {
+            $linkedAsset = $db->table('assets a')
+                ->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section')
+                ->join('ulps u', 'u.id = a.ulp_id', 'left')
+                ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+                ->join('sections s', 's.id = a.section_id', 'left')
+                ->where('a.id', (int)$temuan['asset_id'])
+                ->get()
+                ->getRowArray();
+        }
+
         $trace = [
             'ROUTE_TRACE_2026'      => 'temuan/detail/' . $id,
             'CONTROLLER_TRACE_2026' => __METHOD__ . ' (' . realpath(__FILE__) . ')',
@@ -502,6 +588,8 @@ class Temuan extends BaseController
             'sla'                 => $sla,
             'history'             => $history,
             'structuredMaterials' => $structuredMaterials,
+            'accessories'         => $accessories,
+            'linkedAsset'         => $linkedAsset,
             'trace'               => $trace
         ]);
     }
@@ -709,6 +797,25 @@ class Temuan extends BaseController
             'tanggal_temuan'   => $this->request->getPost('tanggal_temuan'),
         ];
 
+        // CR-HOTFIX-02 Part B: Coordinate Invariant on Update
+        $assetIdInput = $this->request->getPost('asset_id') ?: $this->request->getPost('authoritative_asset_id') ?: ($temuan['asset_id'] ?? null);
+        $assetId = (!empty($assetIdInput) && is_numeric($assetIdInput)) ? (int)$assetIdInput : null;
+        if ($assetId !== null && $assetId > 0) {
+            $db = \Config\Database::connect();
+            if ($db->tableExists('assets')) {
+                $assetRow = $db->table('assets')->where('id', $assetId)->get()->getRowArray();
+                if ($assetRow) {
+                    $assetLat = $assetRow['latitude'] ?? null;
+                    $assetLng = $assetRow['longitude'] ?? null;
+                    if ($assetLat !== null && $assetLng !== null && (float)$assetLat != 0.0 && (float)$assetLng != 0.0) {
+                        $data['latitude']  = (float)$assetLat;
+                        $data['longitude'] = (float)$assetLng;
+                        $data['asset_id']  = $assetId;
+                    }
+                }
+            }
+        }
+
         $newFiles = $this->request->getFileMultiple('foto');
         $replaceOld = $this->request->getPost('replace_photos') !== '0';
         $res = $this->temuanService->updateTemuan($id, $data, $newFiles, $replaceOld);
@@ -857,7 +964,12 @@ class Temuan extends BaseController
     public function ajaxMaterialPicker(): \CodeIgniter\HTTP\ResponseInterface
     {
         $session = session();
-        if (!$session->get('is_logged_in') && !function_exists('auth')) {
+        $isLoggedIn = (bool) (
+            $session->get('logged_in')
+            || $session->get('is_logged_in')
+            || $session->get('user_id')
+        );
+        if (!$isLoggedIn) {
             return $this->response->setStatusCode(401)->setJSON(['status' => 'ERROR', 'message' => 'Unauthorized']);
         }
 
@@ -881,7 +993,12 @@ class Temuan extends BaseController
     public function ajaxMaterialTransaction(): \CodeIgniter\HTTP\ResponseInterface
     {
         $session = session();
-        if (!$session->get('is_logged_in') && !function_exists('auth')) {
+        $isLoggedIn = (bool) (
+            $session->get('logged_in')
+            || $session->get('is_logged_in')
+            || $session->get('user_id')
+        );
+        if (!$isLoggedIn) {
             return $this->response->setStatusCode(401)->setJSON([
                 'status'  => 'FORBIDDEN',
                 'message' => 'Autentikasi diperlukan untuk menyimpan transaksi material.',
@@ -920,7 +1037,12 @@ class Temuan extends BaseController
     public function materialRecap()
     {
         $session = session();
-        if (!$session->get('is_logged_in') && !function_exists('auth')) {
+        $isLoggedIn = (bool) (
+            $session->get('logged_in')
+            || $session->get('is_logged_in')
+            || $session->get('user_id')
+        );
+        if (!$isLoggedIn) {
             return redirect()->to(site_url('login'))->with('error', 'Silakan login terlebih dahulu.');
         }
 
@@ -941,7 +1063,12 @@ class Temuan extends BaseController
     public function ajaxMaterialRecap(): \CodeIgniter\HTTP\ResponseInterface
     {
         $session = session();
-        if (!$session->get('is_logged_in') && !function_exists('auth')) {
+        $isLoggedIn = (bool) (
+            $session->get('logged_in')
+            || $session->get('is_logged_in')
+            || $session->get('user_id')
+        );
+        if (!$isLoggedIn) {
             return $this->response->setStatusCode(401)->setJSON([
                 'status'  => 'FORBIDDEN',
                 'message' => 'Autentikasi diperlukan untuk mengakses rekapitulasi material.',
@@ -977,6 +1104,98 @@ class Temuan extends BaseController
             ->setStatusCode($statusCode)
             ->setContentType('application/json')
             ->setJSON($result);
+    }
+
+    /**
+     * CR-HOTFIX-02 Part B: Authoritative Asset Coordinates Lookup
+     * GET /temuan/ajax-asset-coordinates?asset_id=X
+     * Resolves canonical asset coordinates, verifying precision and existence.
+     */
+    public function ajaxAssetCoordinates(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $session = session();
+        $isLoggedIn = (bool) (
+            $session->get('logged_in')
+            || $session->get('is_logged_in')
+            || $session->get('user_id')
+        );
+        if (!$isLoggedIn) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'ERROR', 'message' => 'Unauthorized']);
+        }
+
+        $assetId = (int)($this->request->getGet('asset_id') ?? 0);
+        if ($assetId <= 0) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'INVALID_ASSET',
+                'message' => 'Asset ID tidak valid.',
+                'asset'   => null,
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $assetRow = $db->table('assets a')
+            ->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.latitude, a.longitude, a.ulp_id, a.penyulang_id, a.section_id, u.nama_ulp, p.nama_penyulang, s.nama_section')
+            ->join('ulps u', 'u.id = a.ulp_id', 'left')
+            ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+            ->join('sections s', 's.id = a.section_id', 'left')
+            ->where('a.id', $assetId)
+            ->get()
+            ->getRowArray();
+
+        if (!$assetRow) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 'NOT_FOUND',
+                'message' => 'Aset tidak ditemukan.',
+                'asset'   => null,
+            ]);
+        }
+
+        $hasCoords = ($assetRow['latitude'] !== null && $assetRow['longitude'] !== null && (float)$assetRow['latitude'] != 0.0 && (float)$assetRow['longitude'] != 0.0);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status' => 'SUCCESS',
+            'asset'  => [
+                'id'              => (int)$assetRow['id'],
+                'kode_asset'      => $assetRow['kode_asset'] ?? 'AST-' . $assetRow['id'],
+                'nama_asset'      => $assetRow['nama_asset'] ?? 'Asset #' . $assetRow['id'],
+                'jenis_asset'     => $assetRow['jenis_asset'] ?? 'TIANG',
+                'ulp_id'          => (int)($assetRow['ulp_id'] ?? 0),
+                'nama_ulp'        => $assetRow['nama_ulp'] ?? '',
+                'penyulang_id'    => (int)($assetRow['penyulang_id'] ?? 0),
+                'nama_penyulang'  => $assetRow['nama_penyulang'] ?? '',
+                'section_id'      => (int)($assetRow['section_id'] ?? 0),
+                'nama_section'    => $assetRow['nama_section'] ?? '',
+                'latitude'        => $hasCoords ? (float)$assetRow['latitude'] : null,
+                'longitude'       => $hasCoords ? (float)$assetRow['longitude'] : null,
+                'has_coordinates' => $hasCoords,
+            ],
+        ]);
+    }
+
+    /**
+     * CR-HOTFIX-02 Part C: Active Master JTM Accessories Catalog API
+     * GET /temuan/ajax-jtm-accessories
+     * Strictly Read-Only.
+     */
+    public function ajaxJtmAccessories(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $session = session();
+        $isLoggedIn = (bool) (
+            $session->get('logged_in')
+            || $session->get('is_logged_in')
+            || $session->get('user_id')
+        );
+        if (!$isLoggedIn) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'ERROR', 'message' => 'Unauthorized']);
+        }
+
+        $service = new \App\Services\JtmAccessoryService();
+        $list = $service->getActiveAccessories();
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status'      => 'SUCCESS',
+            'accessories' => $list,
+        ]);
     }
 
     public function terdekat()

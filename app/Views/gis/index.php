@@ -1435,9 +1435,14 @@
 
     <!-- Pinned Action Footer (Navigation Only, Always Visible) -->
     <div class="sheet-sticky-footer px-3 pt-2 pb-3 bg-white border-top flex-shrink-0" style="z-index: 1060;">
-        <a id="btn-context-drawer-create-temuan" href="#" class="btn btn-primary w-100 fw-bold rounded-pill text-white py-2 shadow-sm d-flex justify-content-center align-items-center gap-2" style="font-size: 13px;">
-            <i class="fas fa-plus-circle"></i> Buat Temuan dari Aset Ini
-        </a>
+        <div class="d-flex gap-2">
+            <a id="btn-context-drawer-create-temuan" href="#" class="btn btn-primary flex-fill fw-bold rounded-pill text-white py-2 shadow-sm d-flex justify-content-center align-items-center gap-1" style="font-size: 13px;">
+                <i class="fas fa-plus-circle"></i> Input Temuan
+            </a>
+            <a id="btn-context-drawer-view-temuan" href="#" class="btn btn-outline-info flex-fill fw-bold rounded-pill py-2 shadow-sm d-flex justify-content-center align-items-center gap-1" style="font-size: 13px;">
+                <i class="fas fa-clipboard-list"></i> Lihat Temuan (<span id="ctx-drawer-findings-count">0</span>)
+            </a>
+        </div>
     </div>
 </div>
 
@@ -2536,6 +2541,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var previewConnectionLayer = null;
     var segmentEditLayer = null;
     var proposalsPreviewLayer = null;
+    var findingLayer = null;
     var proposalsData = [];
     var currentProposalFilter = 'ALL';
     var userLocationMarker = null;
@@ -3635,9 +3641,23 @@ document.addEventListener("DOMContentLoaded", function () {
                     $bomTbody.html(bomHtml);
                 }
 
-                // 5. Navigation Link (Context Handoff Only)
+                // 5. Navigation Links (Context Handoff Only)
                 const navUrl = (res.navigation && res.navigation.create_temuan_url) ? res.navigation.create_temuan_url : `<?= site_url('temuan/create') ?>?asset_id=${currentAssetContextId}`;
                 $btnCreate.attr('href', navUrl);
+
+                const viewUrl = (res.navigation && res.navigation.view_temuan_url) ? res.navigation.view_temuan_url : `<?= site_url('temuan') ?>?asset_id=${currentAssetContextId}`;
+                $('#btn-context-drawer-view-temuan').attr('href', viewUrl);
+                const findingsCount = (res.asset && res.asset.active_findings_count !== undefined) ? res.asset.active_findings_count : 0;
+                $('#ctx-drawer-findings-count').text(findingsCount);
+
+                // Auto fly/pan map to authoritative asset location
+                if (res.asset && res.asset.latitude && res.asset.longitude && typeof map !== 'undefined' && map) {
+                    const aLat = Number(res.asset.latitude);
+                    const aLng = Number(res.asset.longitude);
+                    if (isValidLatLng(aLat, aLng)) {
+                        map.flyTo([aLat, aLng], 18, { animate: true, duration: 1 });
+                    }
+                }
             },
             error: function(xhr) {
                 $loading.hide();
@@ -4891,6 +4911,49 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
+    // ========================================================
+    // 🛡️ GIS TOPOLOGY RENDERING FIREWALL (CR-GIS-TOPO-01)
+    // ========================================================
+    var GIS_TOPOLOGY_STATE = {
+        TOPOLOGY_READY: 'TOPOLOGY_READY',
+        TOPOLOGY_NOT_READY: 'TOPOLOGY_NOT_READY',
+        TOPOLOGY_UNKNOWN: 'TOPOLOGY_UNKNOWN'
+    };
+
+    /**
+     * Resolve authoritative feeder topology state from API response metadata.
+     * Guaranteed never to throw, never to invent synthetic lines,
+     * and strictly independent of visual filter rendering state.
+     *
+     * @param {Object|null} data - currentData from API
+     * @returns {{ status: string, hasTopology: boolean, edgeCount: number }}
+     */
+    function resolveAuthoritativeTopologyContext(data) {
+        if (!data || typeof data !== 'object') {
+            return {
+                status: GIS_TOPOLOGY_STATE.TOPOLOGY_UNKNOWN,
+                hasTopology: false,
+                edgeCount: 0
+            };
+        }
+
+        var meta = data.meta;
+        if (meta && typeof meta === 'object' && typeof meta.has_topology === 'boolean') {
+            var edgeCount = (typeof meta.topology_count === 'number') ? meta.topology_count : 0;
+            return {
+                status: meta.has_topology ? GIS_TOPOLOGY_STATE.TOPOLOGY_READY : GIS_TOPOLOGY_STATE.TOPOLOGY_NOT_READY,
+                hasTopology: meta.has_topology,
+                edgeCount: edgeCount
+            };
+        }
+
+        return {
+            status: GIS_TOPOLOGY_STATE.TOPOLOGY_UNKNOWN,
+            hasTopology: false,
+            edgeCount: 0
+        };
+    }
+
     // Render Markers & Network Lines with Conductor Popup Tooltips
     function renderFilteredLayers(autoFitBounds) {
         if (typeof autoFitBounds === 'undefined') autoFitBounds = false;
@@ -4903,6 +4966,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (!currentData) return;
+
+        // 🛡️ CR-GIS-TOPO-01: Authoritative topology state resolution & rendering firewall
+        var topoContext = resolveAuthoritativeTopologyContext(currentData);
+        var hasTopology = topoContext.hasTopology;
 
         // Render all independent transline segments
         renderAllTranslines();
@@ -4959,7 +5026,9 @@ document.addEventListener("DOMContentLoaded", function () {
             if (shouldRender && geom.coordinates && isValidLatLng(geom.coordinates[1], geom.coordinates[0])) {
                 var marker = createAssetVisualMarker(norm);
                 if (marker) {
-                    markerCluster.addLayer(marker);
+                    if (markerCluster && typeof markerCluster.addLayer === 'function') {
+                        markerCluster.addLayer(marker);
+                    }
                     if (scope === 'FEEDER') {
                         renderedFeederAssetCount++;
                         feederAssetIds.push(props.id);
@@ -4991,6 +5060,7 @@ document.addEventListener("DOMContentLoaded", function () {
         console.group('[GIS ASSET SCOPE DEBUG]');
         console.log('Selected Penyulang:', currentFeederId + ' (' + (currentFeederName || '-') + ')');
         console.log('Selected ULP:', (currentData.meta && currentData.meta.selected_ulp_id) || 1);
+        console.log('Topology State:', topoContext.status, 'Edges:', topoContext.edgeCount, 'HasTopology:', hasTopology);
         console.log('Feeder Assets:', renderedFeederAssetCount, 'IDs:', feederAssetIds);
         console.log('ULP Unassigned Assets:', renderedUnassignedAssetCount, 'IDs:', unassignedAssetIds);
         console.log('Rejected Cross-Feeder Assets:', (currentData.summary && currentData.summary.rejected_cross_feeder ? currentData.summary.rejected_cross_feeder : 0));
@@ -6653,6 +6723,17 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(function () {
         loadGisProposalsOnDemand();
     }, 400);
+
+    // 🎯 CR-HOTFIX-03: Auto-open asset context drawer if asset_id is present in URL query param
+    const urlParams = new URLSearchParams(window.location.search);
+    const focusAssetId = urlParams.get('asset_id');
+    if (focusAssetId && parseInt(focusAssetId) > 0) {
+        setTimeout(function () {
+            if (typeof openAssetContextDrawer === 'function') {
+                openAssetContextDrawer(parseInt(focusAssetId));
+            }
+        }, 500);
+    }
 
 });
 </script>

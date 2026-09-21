@@ -13,14 +13,15 @@ class TemuanRepository extends BaseRepository
     }
 
     /**
-     * Helper Query Builder Terpusat: Join ULP, Penyulang, & Section
+     * Helper Query Builder Terpusat: Join ULP, Penyulang, Section, & Assets
      */
     protected function getJoinedBuilder(bool $includeUsers = false): BaseBuilder
     {
         $builder = $this->getBuilder('temuan')
             ->join('ulps', 'ulps.id = temuan.ulp_id', 'left')
             ->join('penyulang', 'penyulang.id = temuan.penyulang_id', 'left')
-            ->join('sections', 'sections.id = temuan.section_id', 'left');
+            ->join('sections', 'sections.id = temuan.section_id', 'left')
+            ->join('assets', 'assets.id = temuan.asset_id', 'left');
 
         if ($includeUsers) {
             $builder->join('users c', 'c.id = temuan.created_by', 'left')
@@ -67,6 +68,10 @@ class TemuanRepository extends BaseRepository
 
         if (!empty($filters['section_id'])) {
             $builder->where('temuan.section_id', (int)$filters['section_id']);
+        }
+
+        if (!empty($filters['asset_id'])) {
+            $builder->where('temuan.asset_id', (int)$filters['asset_id']);
         }
 
         if (!empty($filters['start_date'])) {
@@ -131,12 +136,13 @@ class TemuanRepository extends BaseRepository
     }
 
     /**
-     * Detail Temuan dengan Join ULP, Penyulang, Section, User Pembuat/Pengupdate
+     * Detail Temuan dengan Join ULP, Penyulang, Section, Assets, User Pembuat/Pengupdate
      */
     public function getDetail(int $id, ?int $ulpIdFilter = null): ?array
     {
         $builder = $this->getJoinedBuilder(true)
             ->select('temuan.*, ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section, 
+                      assets.kode_asset, assets.nama_asset, assets.jenis_asset, assets.latitude as asset_latitude, assets.longitude as asset_longitude,
                       c.nama as creator_name, u.nama as updater_name')
             ->where('temuan.id', $id);
 
@@ -156,8 +162,9 @@ class TemuanRepository extends BaseRepository
             $builder = $this->getJoinedBuilder(false)
                 ->select('temuan.id, temuan.nomor_temuan, temuan.jenis_temuan, temuan.pelaksana, 
                           temuan.prioritas, temuan.potensi_gangguan, temuan.tanggal_temuan, temuan.status, 
-                          temuan.detail_temuan, temuan.foto, temuan.foto_path, temuan.created_at,
-                          ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section');
+                          temuan.detail_temuan, temuan.foto, temuan.foto_path, temuan.created_at, temuan.asset_id,
+                          ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section,
+                          assets.kode_asset, assets.nama_asset, assets.jenis_asset');
 
             $this->applyTemuanFilters($builder, $postData, $ulpIdFilter, $jenisTemuanFilter);
 
@@ -191,6 +198,9 @@ class TemuanRepository extends BaseRepository
                     ->orLike('ulps.nama_ulp', $searchValue)
                     ->orLike('penyulang.nama_penyulang', $searchValue)
                     ->orLike('sections.nama_section', $searchValue)
+                    ->orLike('assets.kode_asset', $searchValue)
+                    ->orLike('assets.nama_asset', $searchValue)
+                    ->orLike('assets.jenis_asset', $searchValue)
                     ->groupEnd();
             }
 
@@ -198,19 +208,20 @@ class TemuanRepository extends BaseRepository
             $totalFiltered = (int)$builder->countAllResults(false);
 
             // Order & Pagination
-            $orderColumnIdx = isset($postData['order'][0]['column']) ? (int)$postData['order'][0]['column'] : 6;
+            $orderColumnIdx = isset($postData['order'][0]['column']) ? (int)$postData['order'][0]['column'] : 7;
             $orderDir = isset($postData['order'][0]['dir']) && strtolower($postData['order'][0]['dir']) === 'asc' ? 'ASC' : 'DESC';
             
             $columnsMap = [
                 0 => 'temuan.nomor_temuan',
-                1 => 'penyulang.nama_penyulang',
-                2 => 'sections.nama_section',
-                3 => 'temuan.jenis_temuan',
-                4 => 'temuan.id',
-                5 => 'temuan.prioritas',
-                6 => 'temuan.created_at',
-                7 => 'temuan.status',
-                8 => 'temuan.id',
+                1 => 'assets.nama_asset',
+                2 => 'penyulang.nama_penyulang',
+                3 => 'sections.nama_section',
+                4 => 'temuan.jenis_temuan',
+                5 => 'temuan.id',
+                6 => 'temuan.prioritas',
+                7 => 'temuan.created_at',
+                8 => 'temuan.status',
+                9 => 'temuan.id',
             ];
             
             $orderColumn = $columnsMap[$orderColumnIdx] ?? 'temuan.created_at';

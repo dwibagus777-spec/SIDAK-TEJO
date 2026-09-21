@@ -143,8 +143,32 @@ class Temuan extends BaseController
             }
         }
 
+        // CR-HOTFIX-03: Network Asset Context Column
+        $assetHtml = '<span class="text-muted small"><em>- Tanpa Aset -</em></span>';
+        if (!empty($row['asset_id']) || !empty($row['nama_asset']) || !empty($row['kode_asset'])) {
+            $kodeAsset = (string)($row['kode_asset'] ?? '');
+            $namaAsset = (string)($row['nama_asset'] ?? $kodeAsset);
+            $assetId = (int)($row['asset_id'] ?? 0);
+            
+            $gisUrl = site_url('gis?asset_id=' . $assetId);
+            $assetHtml = '<div class="d-flex flex-column">';
+            $assetHtml .= '<div class="fw-bold text-dark text-truncate" style="max-width: 190px;" title="' . esc($namaAsset, 'attr') . '">';
+            $assetHtml .= '<i class="fas fa-network-wired text-primary me-1"></i>' . esc($namaAsset);
+            $assetHtml .= '</div>';
+            $assetHtml .= '<div class="small text-muted d-flex align-items-center gap-1 mt-1">';
+            if ($kodeAsset) {
+                $assetHtml .= '<span class="badge bg-light text-dark border" style="font-size:10px;">' . esc($kodeAsset) . '</span>';
+            }
+            if ($assetId > 0) {
+                $assetHtml .= '<a href="' . $gisUrl . '" class="text-success text-decoration-none ms-1 fw-bold" title="Buka di GIS" target="_blank"><i class="fas fa-location-dot"></i> GIS</a>';
+            }
+            $assetHtml .= '</div>';
+            $assetHtml .= '</div>';
+        }
+
         return [
             '<a href="' . $detailUrl . '" class="font-weight-bold text-primary text-decoration-none"><i class="fas fa-file-invoice me-1"></i>' . esc($nomorTemuan) . '</a>',
+            $assetHtml,
             esc((string)($row['nama_penyulang'] ?? '-')),
             esc((string)($row['nama_section'] ?? '-')),
             esc((string)($row['jenis_temuan'] ?? '-')),
@@ -1354,5 +1378,84 @@ class Temuan extends BaseController
 
         $result['data'] = $formattedData;
         return $this->jsonResponse($result);
+    }
+
+    /**
+     * CR-HOTFIX-03: Generate Secure Public Share Link
+     * POST /temuan/ajax-generate-share/{id}
+     */
+    public function ajaxGenerateShare(int $id): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $session = session();
+        $isLoggedIn = (bool)(
+            $session->get('logged_in')
+            || $session->get('is_logged_in')
+            || $session->get('user_id')
+        );
+        if (!$isLoggedIn) {
+            return $this->response->setStatusCode(401)->setJSON([
+                'status'  => 'ERROR',
+                'message' => 'Autentikasi diperlukan untuk membuat tautan berbagi.',
+            ]);
+        }
+
+        $shareService = new \App\Services\TemuanShareService();
+        $userId = $session->get('user_id') ? (int)$session->get('user_id') : null;
+        $result = $shareService->generateShareLink($id, $userId);
+
+        $statusCode = ($result['status'] === 'SUCCESS') ? 200 : (($result['status'] === 'NOT_FOUND') ? 404 : 400);
+
+        return $this->response
+            ->setStatusCode($statusCode)
+            ->setContentType('application/json')
+            ->setJSON($result);
+    }
+
+    /**
+     * CR-HOTFIX-03: Public Share View for Findings & Network Asset Context
+     * GET /temuan/share/{token}
+     * Guaranteed ZERO database writes (Strict Read-Only).
+     */
+    public function share(string $token)
+    {
+        $shareService = new \App\Services\TemuanShareService();
+        $link = $shareService->resolveShareToken($token);
+
+        if (!$link) {
+            return view('temuan/share_error', [
+                'title'   => 'Tautan Tidak Valid atau Kedaluwarsa',
+                'message' => 'Tautan berbagi temuan ini sudah kedaluwarsa, dinonaktifkan, atau tidak ditemukan.',
+            ]);
+        }
+
+        $detail = $shareService->getShareFindingDetail((int)$link['temuan_id']);
+        if (!$detail || empty($detail['temuan'])) {
+            return view('temuan/share_error', [
+                'title'   => 'Temuan Tidak Ditemukan',
+                'message' => 'Data temuan yang dibagikan tidak ditemukan atau telah dihapus.',
+            ]);
+        }
+
+        $temuan      = $detail['temuan'];
+        $linkedAsset = $detail['asset'];
+        $materials   = $detail['materials'];
+        $accessories = $detail['accessories'];
+
+        $sla = get_sla_status(
+            (string)($temuan['prioritas'] ?? 'MEDIUM'),
+            (string)($temuan['tanggal_temuan'] ?? ''),
+            (string)($temuan['status'] ?? 'BELUM'),
+            $temuan['tanggal_selesai'] ?? null
+        );
+
+        return view('temuan/share', [
+            'temuan'      => $temuan,
+            'linkedAsset' => $linkedAsset,
+            'materials'   => $materials,
+            'accessories' => $accessories,
+            'sla'         => $sla,
+            'shareLink'   => $link,
+            'token'       => $token,
+        ]);
     }
 }

@@ -109,11 +109,12 @@ final class JtmAccessoryPersistenceTest extends CIUnitTestCase
         // 4. Ensure temuan table has test finding linked to asset 201
         if (!$this->db->tableExists('temuan')) {
             $forge->addField([
-                'id'           => ['type' => 'INTEGER', 'auto_increment' => true, 'primary_key' => true],
-                'nomor_temuan' => ['type' => 'VARCHAR', 'constraint' => 50],
-                'asset_id'     => ['type' => 'INTEGER', 'null' => true],
-                'latitude'     => ['type' => 'DECIMAL', 'constraint' => '11,8', 'null' => true],
-                'longitude'    => ['type' => 'DECIMAL', 'constraint' => '11,8', 'null' => true],
+                'id'             => ['type' => 'INTEGER', 'auto_increment' => true, 'primary_key' => true],
+                'nomor_temuan'   => ['type' => 'VARCHAR', 'constraint' => 50],
+                'asset_id'       => ['type' => 'INTEGER', 'null' => true],
+                'latitude'       => ['type' => 'DECIMAL', 'constraint' => '11,8', 'null' => true],
+                'longitude'      => ['type' => 'DECIMAL', 'constraint' => '11,8', 'null' => true],
+                'tanggal_temuan' => ['type' => 'DATE', 'null' => true],
             ]);
             $forge->createTable('temuan', true);
         }

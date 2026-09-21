@@ -31,6 +31,9 @@ $routes->get('api/system/version', 'Api::version');
 // Persistent Photo Streaming Route (Public)
 $routes->get('foto/(:any)', 'PhotoController::show/$1');
 
+// CR-HOTFIX-03: Public Temuan Share Route (Read-Only)
+$routes->get('temuan/share/(:segment)', 'Temuan::share/$1');
+
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Main Dashboard Web Route
@@ -671,6 +674,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('temuan/ajax-material-recap', 'Temuan::ajaxMaterialRecap');
     $routes->get('temuan/ajax-asset-coordinates', 'Temuan::ajaxAssetCoordinates');
     $routes->get('temuan/ajax-jtm-accessories', 'Temuan::ajaxJtmAccessories');
+    $routes->post('temuan/ajax-generate-share/(:num)', 'Temuan::ajaxGenerateShare/$1');
 
     // MNF-01: Shared Master Network Fabric Lookup API (Canonical 4-Level Master Fabric)
     $routes->group('ajax/network', static function ($routes) {

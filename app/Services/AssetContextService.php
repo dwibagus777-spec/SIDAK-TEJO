@@ -260,15 +260,31 @@ class AssetContextService
         }
 
         // 7. Assemble Asset Identity Block
+        $activeFindings = 0;
+        $totalFindings  = 0;
+        if ($this->db->tableExists('temuan')) {
+            $activeFindings = (int)$this->db->table('temuan')
+                ->where('asset_id', (int)$asset['id'])
+                ->where('status !=', 'SELESAI')
+                ->where('deleted_at IS NULL')
+                ->countAllResults();
+            $totalFindings = (int)$this->db->table('temuan')
+                ->where('asset_id', (int)$asset['id'])
+                ->where('deleted_at IS NULL')
+                ->countAllResults();
+        }
+
         $assetBlock = [
-            'id'          => (int)$asset['id'],
-            'kode_asset'  => (string)($asset['kode_asset'] ?? ''),
-            'nama_asset'  => (string)($asset['nama_asset'] ?? ''),
-            'jenis_asset' => (string)($asset['jenis_asset'] ?? ''),
-            'latitude'    => isset($asset['latitude']) && $asset['latitude'] !== null ? (float)$asset['latitude'] : null,
-            'longitude'   => isset($asset['longitude']) && $asset['longitude'] !== null ? (float)$asset['longitude'] : null,
-            'lokasi'      => (string)($asset['lokasi'] ?? ''),
-            'status'      => (string)($asset['status'] ?? 'NORMAL'),
+            'id'                    => (int)$asset['id'],
+            'kode_asset'            => (string)($asset['kode_asset'] ?? ''),
+            'nama_asset'            => (string)($asset['nama_asset'] ?? ''),
+            'jenis_asset'           => (string)($asset['jenis_asset'] ?? ''),
+            'latitude'              => isset($asset['latitude']) && $asset['latitude'] !== null ? (float)$asset['latitude'] : null,
+            'longitude'             => isset($asset['longitude']) && $asset['longitude'] !== null ? (float)$asset['longitude'] : null,
+            'lokasi'                => (string)($asset['lokasi'] ?? ''),
+            'status'                => (string)($asset['status'] ?? 'NORMAL'),
+            'active_findings_count' => $activeFindings,
+            'total_findings_count'  => $totalFindings,
         ];
 
         // 8. Assemble Network Context Block
@@ -318,6 +334,7 @@ class AssetContextService
         }
 
         $createTemuanUrl = site_url('temuan/create') . '?' . http_build_query($navQueryParams);
+        $viewTemuanUrl   = site_url('temuan') . '?asset_id=' . (int)$asset['id'];
 
         // Normalize BOM items to have both standard and canonical keys
         $normalizedBom = [];
@@ -359,6 +376,7 @@ class AssetContextService
             ],
             'navigation'     => [
                 'create_temuan_url' => $createTemuanUrl,
+                'view_temuan_url'   => $viewTemuanUrl,
                 'params'            => $navQueryParams,
             ],
         ];

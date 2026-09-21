@@ -253,14 +253,15 @@
                         <thead>
                             <tr>
                                 <th style="width: 110px; min-width: 110px;">Nomor Temuan</th>
-                                <th style="width: 140px; min-width: 140px;">Penyulang</th>
-                                <th style="width: 180px; min-width: 180px;">Section</th>
-                                <th style="width: 150px; min-width: 150px;">Jenis Temuan</th>
+                                <th style="width: 180px; min-width: 180px;">Asset Jaringan</th>
+                                <th style="width: 130px; min-width: 130px;">Penyulang</th>
+                                <th style="width: 160px; min-width: 160px;">Section</th>
+                                <th style="width: 130px; min-width: 130px;">Jenis Temuan</th>
                                 <th style="width: 70px; min-width: 70px;" class="text-center">Foto</th>
-                                <th style="width: 100px; min-width: 100px;" class="text-center">Prioritas</th>
+                                <th style="width: 90px; min-width: 90px;" class="text-center">Prioritas</th>
                                 <th style="width: 88px; min-width: 88px;" class="text-center">Tanggal</th>
-                                <th style="width: 120px; min-width: 120px;" class="text-center">Status/SLA</th>
-                                <th style="width: 100px; min-width: 100px;" class="text-center">Aksi</th>
+                                <th style="width: 110px; min-width: 110px;" class="text-center">Status/SLA</th>
+                                <th style="width: 90px; min-width: 90px;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -459,6 +460,7 @@
                     d.status = $('#filter_status').val();
                     d.start_date = $('#filter_start_date').val();
                     d.end_date = $('#filter_end_date').val();
+                    d.asset_id = urlParams.get('asset_id') || '';
                     if (urlQ && (!d.search || !d.search.value)) {
                         if (!d.search) d.search = {};
                         d.search.value = urlQ;
@@ -467,16 +469,17 @@
             },
             "columns": [
                 { "data": 0, "className": "font-weight-bold" }, // Nomor
-                { "data": 1 }, // Penyulang
-                { "data": 2 }, // Section
-                { "data": 3, "render": function(data){ return data; } }, // Jenis
-                { "data": 4, "orderable": false, "className": "text-center", "render": function(data){ return data; } }, // Foto
-                { "data": 5, "className": "text-center", "render": function(data){ return data; } }, // Prioritas
-                { "data": 6, "className": "text-center align-middle", "render": function(data){ return data; } }, // Tanggal
-                { "data": 7, "className": "text-center align-middle", "render": function(data){ return data; } }, // Status
-                { "data": 8, "orderable": false, "className": "text-center align-middle", "render": function(data){ return data; } } // Aksi
+                { "data": 1 }, // Asset Jaringan
+                { "data": 2 }, // Penyulang
+                { "data": 3 }, // Section
+                { "data": 4, "render": function(data){ return data; } }, // Jenis
+                { "data": 5, "orderable": false, "className": "text-center", "render": function(data){ return data; } }, // Foto
+                { "data": 6, "className": "text-center", "render": function(data){ return data; } }, // Prioritas
+                { "data": 7, "className": "text-center align-middle", "render": function(data){ return data; } }, // Tanggal
+                { "data": 8, "className": "text-center align-middle", "render": function(data){ return data; } }, // Status
+                { "data": 9, "orderable": false, "className": "text-center align-middle", "render": function(data){ return data; } } // Aksi
             ],
-            "order": [[6, "desc"]], // Default order by Tanggal (column index 6)
+            "order": [[7, "desc"]], // Default order by Tanggal (column index 7)
             "responsive": false,
             "autoWidth": false,
             "language": window.SIDAK_DATATABLES_ID

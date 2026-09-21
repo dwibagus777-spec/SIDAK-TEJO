@@ -473,6 +473,9 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                     Nomor Temuan: <span class="font-monospace text-primary"><?= esc($temuan['nomor_temuan']) ?></span>
                 </h3>
                 <div class="d-flex align-items-center ms-auto gap-2">
+                    <button type="button" class="btn btn-primary btn-sm font-weight-bold shadow-sm d-inline-flex align-items-center btn-open-share-modal" style="border-radius: 8px;">
+                        <i class="fas fa-share-nodes me-1 fs-6"></i> Bagikan Temuan
+                    </button>
                     <a href="<?= $waUrl ?>" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm font-weight-bold shadow-sm d-none d-lg-inline-flex align-items-center" style="background-color: #25D366; border: none; border-radius: 8px;">
                         <i class="fab fa-whatsapp me-1 fs-6"></i> Share WhatsApp
                     </a>
@@ -513,6 +516,63 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                     </div>
                 </div>
 
+                <!-- DEDICATED ASSET JARINGAN CARD (CR-HOTFIX-03) -->
+                <div class="card border-primary border-opacity-50 rounded-3 mb-4 shadow-sm" style="background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);">
+                    <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary p-2 fs-6 rounded-circle"><i class="fas fa-network-wired"></i></span>
+                            <div>
+                                <h6 class="mb-0 fw-bold text-primary">ASSET JARINGAN DISTRIBUSI</h6>
+                                <small class="text-muted">Konteks Otoritatif Jaringan PLN UP3 Sidoarjo</small>
+                            </div>
+                        </div>
+                        <?php if (!empty($linkedAsset)): ?>
+                        <a href="<?= site_url('gis?asset_id=' . $linkedAsset['id']) ?>" target="_blank" class="btn btn-success btn-sm font-weight-bold shadow-sm" style="border-radius: 8px;">
+                            <i class="fas fa-map-location-dot me-1"></i> 📍 Lihat di GIS
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body p-3">
+                        <?php if (!empty($linkedAsset)): ?>
+                        <div class="row g-3">
+                            <div class="col-md-6 col-12">
+                                <div class="p-3 rounded bg-white border h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="text-muted small"><i class="fas fa-barcode me-1"></i> Asset ID:</span>
+                                        <span class="badge bg-dark font-monospace"><?= esc($linkedAsset['kode_asset'] ?? 'AST-' . $linkedAsset['id']) ?></span>
+                                    </div>
+                                    <div class="fw-bold text-dark fs-6"><?= esc($linkedAsset['nama_asset'] ?? 'Aset #' . $linkedAsset['id']) ?></div>
+                                    <div class="d-flex align-items-center gap-2 mt-2">
+                                        <span class="badge bg-info text-dark font-weight-bold"><?= esc($linkedAsset['jenis_asset'] ?? 'TIANG') ?></span>
+                                        <?php if (!empty($linkedAsset['construction_code'])): ?>
+                                            <span class="badge bg-secondary"><?= esc($linkedAsset['construction_code']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <div class="p-3 rounded bg-white border h-100">
+                                    <div class="text-muted small mb-1"><i class="fas fa-sitemap text-primary me-1"></i> Hierarki Jaringan:</div>
+                                    <div class="small text-dark">
+                                        ULP: <strong><?= esc($linkedAsset['nama_ulp'] ?? $temuan['nama_ulp']) ?></strong><br>
+                                        Penyulang: <strong><?= esc($linkedAsset['nama_penyulang'] ?? $temuan['nama_penyulang']) ?></strong><br>
+                                        Section: <strong><?= esc($linkedAsset['nama_section'] ?? $temuan['nama_section']) ?></strong>
+                                    </div>
+                                    <div class="mt-2 pt-2 border-top small text-muted">
+                                        <i class="fas fa-lock text-success me-1"></i> Koordinat Terkunci:
+                                        <code class="fw-bold text-dark"><?= esc($temuan['latitude']) ?>, <?= esc($temuan['longitude']) ?></code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php else: ?>
+                        <div class="p-2 text-center text-muted small">
+                            <i class="fas fa-circle-info me-1"></i> Temuan ini belum terikat secara spesifik ke aset tiang/gardu jaringan (Temuan Terbuka).
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
                 <!-- Info Grid -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-6 col-12">
@@ -522,21 +582,6 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                             <div class="small text-secondary mt-1">
                                 ⚡ Penyulang: <strong><?= esc($temuan['nama_penyulang']) ?></strong> | Section: <strong><?= esc($temuan['nama_section']) ?></strong>
                             </div>
-                            <?php if (!empty($linkedAsset)): ?>
-                            <div class="mt-2 pt-2 border-top">
-                                <span class="badge bg-success text-white px-2 py-1 mb-1">
-                                    <i class="fas fa-lock me-1"></i> ASET TERHUBUNG: <?= esc($linkedAsset['kode_asset'] ?? 'AST-' . $linkedAsset['id']) ?>
-                                </span>
-                                <div class="small text-dark font-weight-bold">
-                                    <?= esc($linkedAsset['nama_asset'] ?? 'Aset #' . $linkedAsset['id']) ?>
-                                    <span class="badge bg-light text-secondary border ms-1"><?= esc($linkedAsset['jenis_asset'] ?? 'TIANG') ?></span>
-                                </div>
-                                <div class="text-muted small mt-1" style="font-size: 11px;">
-                                    <i class="fas fa-location-crosshairs text-success me-1"></i> Koordinat Authoritative:
-                                    <code><?= esc($temuan['latitude']) ?>, <?= esc($temuan['longitude']) ?></code>
-                                </div>
-                            </div>
-                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="col-md-6 col-12">
@@ -986,10 +1031,10 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
     <button type="button" class="btn btn-info text-white flex-fill btn-sm font-weight-bold" id="btnStickyProgress">
         <i class="fas fa-wrench me-1"></i> Progress
     </button>
-    <a href="<?= $waUrl ?>" target="_blank" rel="noopener noreferrer" class="btn btn-success text-white flex-fill btn-sm font-weight-bold" style="background-color: #25D366; border: none;">
-        <i class="fab fa-whatsapp me-1"></i> Share
-    </a>
-    <a href="<?= $sharelokUrl ?>" target="_blank" rel="noopener noreferrer" class="btn btn-primary text-white flex-fill btn-sm font-weight-bold">
+    <button type="button" class="btn btn-primary text-white flex-fill btn-sm font-weight-bold btn-open-share-modal">
+        <i class="fas fa-share-nodes me-1"></i> Share
+    </button>
+    <a href="<?= $sharelokUrl ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary flex-fill btn-sm font-weight-bold">
         <i class="fas fa-map-marker-alt me-1"></i> Maps
     </a>
 </div>
@@ -1009,6 +1054,9 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
             <i class="fas fa-sliders text-primary me-1"></i> Menu Opsi Enterprise PLN
         </h6>
         <div class="list-group list-group-flush">
+            <a href="javascript:void(0)" class="list-group-item list-group-item-action d-flex align-items-center py-2 btn-open-share-modal">
+                <i class="fas fa-share-nodes text-primary me-3 fs-5" style="width: 24px;"></i> Bagikan Temuan (Public Link)
+            </a>
             <a href="javascript:void(0)" class="list-group-item list-group-item-action d-flex align-items-center py-2" onclick="location.reload()">
                 <i class="fas fa-rotate text-primary me-3 fs-5" style="width: 24px;"></i> Refresh Halaman
             </a>
@@ -1032,6 +1080,70 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
             <a href="javascript:void(0)" class="list-group-item list-group-item-action d-flex align-items-center py-2 text-danger font-weight-bold" id="bsActionClose">
                 <i class="fas fa-times me-3 fs-5" style="width: 24px;"></i> Tutup Menu
             </a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Share Temuan (CR-HOTFIX-03) -->
+<div class="modal fade" id="modalShareTemuan" tabindex="-1" aria-labelledby="modalShareTemuanLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold" id="modalShareTemuanLabel">
+                    <i class="fas fa-share-nodes me-2"></i> Bagikan Temuan Jaringan
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-3">
+                    <span class="badge bg-light text-primary border px-3 py-2 fs-6 fw-bold mb-2">
+                        <i class="fas fa-file-invoice me-1"></i> <?= esc($temuan['nomor_temuan']) ?>
+                    </span>
+                    <?php if (!empty($linkedAsset)): ?>
+                        <div class="fw-bold text-dark fs-6 mt-1">
+                            <i class="fas fa-network-wired text-primary me-1"></i> <?= esc($linkedAsset['nama_asset']) ?>
+                        </div>
+                        <div class="small text-muted font-monospace"><?= esc($linkedAsset['kode_asset'] ?? '') ?></div>
+                    <?php endif; ?>
+                </div>
+                
+                <p class="small text-secondary text-center mb-3">
+                    Tautan publik aman ini dapat diakses oleh teknisi lapangan, tim vendor, atau manajemen tanpa perlu login SIDAK TEJO.
+                </p>
+
+                <!-- Share Link Input Box -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Tautan Publik (Read-Only):</label>
+                    <div class="input-group">
+                        <input type="text" id="share-link-input" class="form-control form-control-sm font-monospace" readonly value="Memuat tautan...">
+                        <button class="btn btn-primary btn-sm fw-bold" type="button" id="btn-copy-share-link">
+                            <i class="fas fa-copy me-1"></i> Salin
+                        </button>
+                    </div>
+                    <div id="copy-success-msg" class="text-success small mt-1 fw-bold d-none">
+                        <i class="fas fa-check-circle me-1"></i> Tautan berhasil disalin ke papan klip!
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm fw-bold d-none" id="btn-native-share">
+                        <i class="fas fa-arrow-up-from-bracket me-1"></i> Bagikan Lewat Perangkat (Web Share)
+                    </button>
+                    <a href="#" target="_blank" class="btn btn-success btn-sm fw-bold" id="btn-share-wa-link" style="background-color: #25D366; border-color: #25D366;">
+                        <i class="fab fa-whatsapp me-1 fs-6"></i> Bagikan ke WhatsApp
+                    </a>
+                    <?php if (!empty($linkedAsset)): ?>
+                    <a href="<?= site_url('gis?asset_id=' . $linkedAsset['id']) ?>" target="_blank" class="btn btn-outline-secondary btn-sm fw-bold">
+                        <i class="fas fa-map-location-dot me-1"></i> Lihat Asset di GIS
+                    </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <small class="text-muted"><i class="fas fa-shield-halved me-1"></i> Dilindungi Hash Otoritatif & Bebas Kredensial</small>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1415,6 +1527,87 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
 
     document.addEventListener('DOMContentLoaded', function() {
         SidakDetail.init();
+
+        // CR-HOTFIX-03: Share Temuan Handler
+        let currentShareUrl = '';
+        const temuanId = <?= (int)$temuan['id'] ?>;
+        const temuanNomor = <?= json_encode($temuan['nomor_temuan']) ?>;
+        const assetNama = <?= json_encode($linkedAsset['nama_asset'] ?? '') ?>;
+
+        function fetchAndOpenShareModal() {
+            const modalEl = document.getElementById('modalShareTemuan');
+            if (!modalEl) return;
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bsModal.show();
+
+            const inputEl = document.getElementById('share-link-input');
+            const waLinkEl = document.getElementById('btn-share-wa-link');
+            const nativeShareBtn = document.getElementById('btn-native-share');
+            const copyMsg = document.getElementById('copy-success-msg');
+            if (copyMsg) copyMsg.classList.add('d-none');
+
+            if (currentShareUrl) {
+                inputEl.value = currentShareUrl;
+                return;
+            }
+
+            inputEl.value = 'Membuat tautan berbagi aman...';
+
+            $.ajax({
+                url: '<?= site_url('temuan/ajax-generate-share/' . $temuan['id']) ?>',
+                type: 'POST',
+                dataType: 'json',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                data: { '<?= csrf_token() ?>': '<?= csrf_hash() ?>' },
+                success: function(res) {
+                    if (res && res.status === 'SUCCESS' && res.share_url) {
+                        currentShareUrl = res.share_url;
+                        inputEl.value = currentShareUrl;
+
+                        const shareText = `🚨 *TEMUAN INSPEKSI JARINGAN - SIDAK TEJO* 🚨\n\n📌 *Nomor*: ${temuanNomor}` +
+                            (assetNama ? `\n⚡ *Aset*: ${assetNama}` : '') +
+                            `\n\n🔗 *Buka Rekap Temuan*: ${currentShareUrl}`;
+                        if (waLinkEl) waLinkEl.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(shareText);
+
+                        if (navigator.share && nativeShareBtn) {
+                            nativeShareBtn.classList.remove('d-none');
+                            nativeShareBtn.onclick = function() {
+                                navigator.share({
+                                    title: 'Temuan Inspeksi - ' + temuanNomor,
+                                    text: 'Temuan Inspeksi SIDAK TEJO: ' + temuanNomor + (assetNama ? ' (' + assetNama + ')' : ''),
+                                    url: currentShareUrl
+                                }).catch(() => {});
+                            };
+                        }
+                    } else {
+                        inputEl.value = 'Gagal membuat tautan berbagi.';
+                    }
+                },
+                error: function() {
+                    inputEl.value = 'Kendala jaringan saat membuat tautan.';
+                }
+            });
+        }
+
+        $(document).on('click', '.btn-open-share-modal', function(e) {
+            e.preventDefault();
+            fetchAndOpenShareModal();
+        });
+
+        document.getElementById('btn-copy-share-link')?.addEventListener('click', function() {
+            const input = document.getElementById('share-link-input');
+            if (!input || !input.value || input.value.startsWith('Membuat') || input.value.startsWith('Gagal')) return;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(input.value).then(() => {
+                    document.getElementById('copy-success-msg')?.classList.remove('d-none');
+                });
+            } else {
+                input.select();
+                document.execCommand('copy');
+                document.getElementById('copy-success-msg')?.classList.remove('d-none');
+            }
+        });
     });
 </script>
 <?= $this->endSection() ?>

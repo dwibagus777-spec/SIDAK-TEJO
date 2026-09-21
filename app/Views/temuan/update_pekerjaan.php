@@ -273,14 +273,15 @@
                         <thead>
                             <tr>
                                 <th style="width: 110px; min-width: 110px;">No Temuan</th>
-                                <th style="width: 140px; min-width: 140px;">Penyulang</th>
-                                <th style="width: 180px; min-width: 180px;">Section</th>
-                                <th style="width: 150px; min-width: 150px;">Jenis</th>
+                                <th style="width: 180px; min-width: 180px;">Asset Jaringan</th>
+                                <th style="width: 130px; min-width: 130px;">Penyulang</th>
+                                <th style="width: 160px; min-width: 160px;">Section</th>
+                                <th style="width: 130px; min-width: 130px;">Jenis</th>
                                 <th style="width: 70px; min-width: 70px;" class="text-center">Foto</th>
-                                <th style="width: 100px; min-width: 100px;" class="text-center">Prioritas</th>
+                                <th style="width: 90px; min-width: 90px;" class="text-center">Prioritas</th>
                                 <th style="width: 88px; min-width: 88px;" class="text-center">Tgl Temuan</th>
-                                <th style="width: 120px; min-width: 120px;" class="text-center">Status SLA</th>
-                                <th style="width: 100px; min-width: 100px;" class="text-center">Aksi</th>
+                                <th style="width: 110px; min-width: 110px;" class="text-center">Status SLA</th>
+                                <th style="width: 90px; min-width: 90px;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -456,11 +457,12 @@
                 { data: 1 },
                 { data: 2 },
                 { data: 3 },
-                { data: 4, orderable: false, className: 'text-center' },
-                { data: 5, className: 'text-center' },
-                { data: 6, className: 'text-center align-middle' },
+                { data: 4 },
+                { data: 5, orderable: false, className: 'text-center' },
+                { data: 6, className: 'text-center' },
                 { data: 7, className: 'text-center align-middle' },
-                { data: 8, orderable: false, className: 'text-center align-middle' }
+                { data: 8, className: 'text-center align-middle' },
+                { data: 9, orderable: false, className: 'text-center align-middle' }
             ],
             language: window.SIDAK_DATATABLES_ID
         });

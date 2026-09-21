@@ -388,6 +388,74 @@ class MigrateController extends BaseController
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             $executed[] = 'inspection_photos';
 
+            // CR-HOTFIX-02 Part C: master_jtm_accessories
+            $db->query("CREATE TABLE IF NOT EXISTS `master_jtm_accessories` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `code` VARCHAR(50) NOT NULL UNIQUE,
+                `name` VARCHAR(100) NOT NULL,
+                `category` VARCHAR(50) NOT NULL DEFAULT 'JTM',
+                `description` TEXT NULL,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `sort_order` INT NOT NULL DEFAULT 0,
+                `created_at` DATETIME NULL,
+                `updated_at` DATETIME NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $executed[] = 'master_jtm_accessories';
+
+            // Seed master_jtm_accessories canonical 6 items if empty
+            if ($db->tableExists('master_jtm_accessories')) {
+                $accCount = (int) $db->table('master_jtm_accessories')->countAllResults();
+                if ($accCount < 6) {
+                    $accSeeds = [
+                        ['id' => 1, 'code' => 'GSW',                'name' => 'GSW',                 'category' => 'JTM', 'description' => 'Ground Steel Wire / Kawat Petir JTM',        'is_active' => 1, 'sort_order' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')],
+                        ['id' => 2, 'code' => 'EGLA',               'name' => 'EGLA',                'category' => 'JTM', 'description' => 'Externally Gapped Line Arrester',            'is_active' => 1, 'sort_order' => 2, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')],
+                        ['id' => 3, 'code' => 'CLD',                'name' => 'CLD',                 'category' => 'JTM', 'description' => 'Current Limiting Device',                   'is_active' => 1, 'sort_order' => 3, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')],
+                        ['id' => 4, 'code' => 'MCA',                'name' => 'MCA',                 'category' => 'JTM', 'description' => 'Multi-Chamber Arrester',                    'is_active' => 1, 'sort_order' => 4, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')],
+                        ['id' => 5, 'code' => 'GROUND_GSW',         'name' => 'GROUND GSW',          'category' => 'JTM', 'description' => 'Pembumian Kawat GSW / Grounding Down Lead', 'is_active' => 1, 'sort_order' => 5, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')],
+                        ['id' => 6, 'code' => 'PENGHALANG_BINATANG', 'name' => 'PENGHALANG BINATANG', 'category' => 'JTM', 'description' => 'Animal Guard / Penghalang Panjat Binatang', 'is_active' => 1, 'sort_order' => 6, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')],
+                    ];
+                    foreach ($accSeeds as $s) {
+                        $db->query("INSERT IGNORE INTO `master_jtm_accessories` (`id`, `code`, `name`, `category`, `description`, `is_active`, `sort_order`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+                            $s['id'], $s['code'], $s['name'], $s['category'], $s['description'], $s['is_active'], $s['sort_order'], $s['created_at'], $s['updated_at']
+                        ]);
+                    }
+                }
+            }
+
+            // CR-HOTFIX-02 Part C: temuan_accessories
+            $db->query("CREATE TABLE IF NOT EXISTS `temuan_accessories` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `temuan_id` INT UNSIGNED NOT NULL,
+                `asset_id` INT UNSIGNED NOT NULL,
+                `accessory_type_id` INT UNSIGNED NOT NULL,
+                `accessory_name_snapshot` VARCHAR(100) NOT NULL,
+                `status` VARCHAR(20) NOT NULL DEFAULT 'ADA',
+                `condition` VARCHAR(30) NOT NULL DEFAULT 'BAIK',
+                `note` TEXT NULL,
+                `photo_url` VARCHAR(255) NULL,
+                `created_at` DATETIME NULL,
+                `updated_at` DATETIME NULL,
+                UNIQUE KEY `uk_temuan_accessory` (`temuan_id`, `accessory_type_id`),
+                INDEX `idx_asset_id` (`asset_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $executed[] = 'temuan_accessories';
+
+            // CR-HOTFIX-03: temuan_share_links
+            $db->query("CREATE TABLE IF NOT EXISTS `temuan_share_links` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `temuan_id` INT UNSIGNED NOT NULL,
+                `token_hash` VARCHAR(64) NOT NULL UNIQUE,
+                `created_by` INT UNSIGNED NULL,
+                `created_at` DATETIME NOT NULL,
+                `expires_at` DATETIME NULL,
+                `revoked_at` DATETIME NULL,
+                `is_active` TINYINT(1) DEFAULT 1,
+                INDEX `idx_temuan_id` (`temuan_id`),
+                INDEX `idx_token_hash` (`token_hash`),
+                INDEX `idx_active_expiry` (`is_active`, `expires_at`, `revoked_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $executed[] = 'temuan_share_links';
+
             // Seed Catalogs
             $constructionService = new \App\Services\ConstructionService();
             $constructionService->ensureStandardCatalogsSeeded();

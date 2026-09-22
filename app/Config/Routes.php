@@ -23,6 +23,7 @@ $routes->get('master-assets/auto-migrate', 'MigrateController::autoMigrate');
 $routes->get('master-assets/auto-deploy', 'MigrateController::autoDeploy');
 $routes->get('auto-deploy', 'MigrateController::autoDeploy');
 $routes->get('master-assets/debug-json', 'MigrateController::debugJson');
+$routes->get('master-assets/reconciliation-baseline', 'MigrateController::reconciliationBaselineAudit');
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');

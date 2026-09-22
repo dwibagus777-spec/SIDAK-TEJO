@@ -727,6 +727,279 @@ class MigrateController extends BaseController
     }
 
     /**
+     * Phase 1: Comprehensive Data Reconciliation & Audit Baseline
+     * Audits Assets, Construction Taxonomy, BOM relations, and Transline Topology.
+     * Writes baseline to writable/audits/reconciliation_baseline_report.json.
+     */
+    public function reconciliationBaselineAudit()
+    {
+        $db = Database::connect();
+
+        $nowUtc = gmdate('Y-m-d\TH:i:s\Z');
+        $nowWib = date('Y-m-d H:i:s T');
+
+        // 1. ASSET AUDIT
+        $totalRaw = $db->tableExists('assets') ? $db->table('assets')->countAllResults() : 0;
+        $totalActive = $db->tableExists('assets') ? $db->table('assets')->where('deleted_at IS NULL')->countAllResults() : 0;
+        
+        $validCoords = 0;
+        $missingCoords = 0;
+        $validPenyulang = 0;
+        $missingPenyulang = 0;
+        $validSection = 0;
+        $missingSection = 0;
+        $validConstruction = 0;
+        $missingConstruction = 0;
+        $distinctJenis = [];
+        $distinctConst = [];
+
+        if ($db->tableExists('assets')) {
+            $validCoords = $db->table('assets')
+                ->where('deleted_at IS NULL')
+                ->where('latitude IS NOT NULL')
+                ->where('longitude IS NOT NULL')
+                ->where('latitude !=', 0)
+                ->where('longitude !=', 0)
+                ->where('latitude >=', -8.50)
+                ->where('latitude <=', -6.50)
+                ->where('longitude >=', 111.00)
+                ->where('longitude <=', 114.00)
+                ->countAllResults();
+
+            $missingCoords = $totalActive - $validCoords;
+
+            $validPenyulang = $db->table('assets')
+                ->where('deleted_at IS NULL')
+                ->where('penyulang_id IS NOT NULL')
+                ->where('penyulang_id >', 0)
+                ->countAllResults();
+            $missingPenyulang = $totalActive - $validPenyulang;
+
+            $validSection = $db->table('assets')
+                ->where('deleted_at IS NULL')
+                ->where('section_id IS NOT NULL')
+                ->where('section_id >', 0)
+                ->countAllResults();
+            $missingSection = $totalActive - $validSection;
+
+            $hasConstCol = $db->fieldExists('construction_type_id', 'assets');
+            if ($hasConstCol) {
+                $validConstruction = $db->table('assets')
+                    ->where('deleted_at IS NULL')
+                    ->where('construction_type_id IS NOT NULL')
+                    ->where('construction_type_id >', 0)
+                    ->countAllResults();
+                $missingConstruction = $totalActive - $validConstruction;
+
+                $distinctConst = $db->table('assets a')
+                    ->select('c.construction_code, c.construction_name, count(a.id) as asset_count')
+                    ->join('construction_types c', 'c.id = a.construction_type_id', 'left')
+                    ->where('a.deleted_at IS NULL')
+                    ->groupBy('a.construction_type_id')
+                    ->orderBy('asset_count', 'DESC')
+                    ->limit(25)
+                    ->get()
+                    ->getResultArray();
+            }
+
+            $distinctJenis = $db->table('assets')
+                ->select('jenis_asset, count(*) as count')
+                ->where('deleted_at IS NULL')
+                ->groupBy('jenis_asset')
+                ->get()
+                ->getResultArray();
+        }
+
+        // 2. CONSTRUCTION TYPES & EQUIPMENT STANDARDS AUDIT
+        $totalConstructions = $db->tableExists('construction_types') ? $db->table('construction_types')->countAllResults() : 0;
+        $registeredConstructions = [];
+        $equipmentStandards = [];
+        $targetEquipments = ['PMCB', 'LBS', 'LBSM', 'ASS', 'AVS', 'RECLOSER'];
+
+        if ($db->tableExists('construction_types')) {
+            $cRows = $db->table('construction_types')
+                ->select('id, construction_code, construction_name, construction_family, asset_domain, approval_status')
+                ->orderBy('id', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            foreach ($cRows as $cr) {
+                $cId = (int)$cr['id'];
+                $bomCount = $db->tableExists('construction_bom_items') 
+                    ? $db->table('construction_bom_items')->where('construction_type_id', $cId)->countAllResults() 
+                    : 0;
+                $cr['bom_items_count'] = $bomCount;
+                $registeredConstructions[] = $cr;
+            }
+
+            foreach ($targetEquipments as $eqCode) {
+                $match = $db->table('construction_types')
+                    ->where('construction_code', $eqCode)
+                    ->orWhere('construction_code', strtolower($eqCode))
+                    ->get()
+                    ->getRowArray();
+                $equipmentStandards[$eqCode] = [
+                    'standard_code'     => $eqCode,
+                    'is_registered'     => !empty($match),
+                    'id'                => $match ? (int)$match['id'] : null,
+                    'name'              => $match['construction_name'] ?? null,
+                    'family'            => $match['construction_family'] ?? null,
+                    'approval_status'   => $match['approval_status'] ?? 'NOT_REGISTERED',
+                ];
+            }
+        }
+
+        // 3. MASTER MATERIALS & BOM AUDIT
+        $totalMaterials = $db->tableExists('master_materials') ? $db->table('master_materials')->countAllResults() : 0;
+        $materialUnitsBreakdown = [];
+        $canonicalUnitAudit = [];
+        $keyUnitMaterials = [
+            'MAT-ISO-PIN-20KV'  => 'Pin Post Insulator 20 kV Porcelain/Polymer',
+            'MAT-ISO-HANG-20KV' => 'Strain Insulator 20 kV Lengkap (SIR)',
+            'MAT-PROT-LA-24KV'  => 'Polymer Lightning Arrester 24 kV 10 kA',
+            'MAT-PROT-FCO-24KV' => 'Fuse Cut Out Switch 24 kV 100A',
+            'MAT-IND-FIOHL'     => 'Fault Indicator Overhead Line (FIOHL)',
+        ];
+
+        if ($db->tableExists('master_materials')) {
+            $materialUnitsBreakdown = $db->table('master_materials')
+                ->select('satuan, count(*) as count')
+                ->where('deleted_at IS NULL')
+                ->groupBy('satuan')
+                ->get()
+                ->getResultArray();
+
+            foreach ($keyUnitMaterials as $code => $name) {
+                $mRow = $db->table('master_materials')->where('material_code', $code)->get()->getRowArray();
+                $canonicalUnitAudit[$code] = [
+                    'name'          => $name,
+                    'is_present'    => !empty($mRow),
+                    'current_unit'  => $mRow['satuan'] ?? null,
+                    'target_unit'   => 'buah',
+                    'is_compliant'  => ($mRow && strtolower((string)$mRow['satuan']) === 'buah'),
+                ];
+            }
+        }
+
+        // TM1 Forensic Bottleneck
+        $tm1Forensic = [
+            'construction_code'              => 'TM1',
+            'authoritative_source_count'     => 13,
+            'source_materials'               => [
+                ['material' => 'Cross Arm UNP 2000 mm', 'field' => 'KANAL', 'default_qty' => 1, 'unit' => 'buah'],
+                ['material' => 'Arm Tie Type 750 - 3/4"', 'field' => 'ARM TIE', 'default_qty' => 2, 'unit' => 'buah'],
+                ['material' => 'Bolt & Nut M.16 x 50', 'field' => 'BAUT 50', 'default_qty' => 2, 'unit' => 'buah'],
+                ['material' => 'Bolt & Nut M.16 x 400 (besi as) Double Arm - HDG', 'field' => 'BAUT 400', 'default_qty' => 1, 'unit' => 'buah'],
+                ['material' => 'Ground Wire Clamp Type A', 'field' => 'PLAT GSW', 'default_qty' => 1, 'unit' => 'buah'],
+                ['material' => 'Wire Clip M10 (Ø 35mm)', 'field' => 'GSW', 'default_qty' => 2, 'unit' => 'buah'],
+                ['material' => 'Insulator - Pin Post Insulator 20 Kv;12,5 kN - Porcelain (Tumpu)', 'field' => 'PIN', 'default_qty' => 3, 'unit' => 'buah'],
+                ['material' => 'Isolated All. Binding - 4 mm Ø 6', 'field' => 'BENDING', 'default_qty' => 3, 'unit' => 'buah'],
+                ['material' => 'Preformed Side Tie Double 150mm (Semi Cond/non metalic/Composite)', 'field' => 'TOP TIES SIDE', 'default_qty' => 1, 'unit' => 'buah'],
+                ['material' => 'Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)', 'field' => 'TOP TIES', 'default_qty' => 2, 'unit' => 'buah'],
+                ['material' => 'ORNAMENT CABLE BAND', 'field' => 'BEGEL VERLINK', 'default_qty' => 2, 'unit' => 'buah'],
+                ['material' => 'PIPE GALVANIZED 3" 1500', 'field' => 'VERLINK GSW', 'default_qty' => 1, 'unit' => 'buah'],
+                ['material' => 'Wire Clip M10 (Ø 35mm)', 'field' => 'WIRE CLIP', 'default_qty' => 2, 'unit' => 'buah'],
+            ],
+            'db_bom_count'                   => 0,
+            'db_bom_items'                   => [],
+            'bottleneck_gap'                 => 13,
+            'verdict'                        => 'BOTTLENECK_CONFIRMED',
+        ];
+
+        if ($db->tableExists('construction_types') && $db->tableExists('construction_bom_items')) {
+            $tm1Const = $db->table('construction_types')->where('construction_code', 'TM1')->get()->getRowArray();
+            if ($tm1Const) {
+                $boms = $db->table('construction_bom_items')
+                    ->where('construction_type_id', (int)$tm1Const['id'])
+                    ->get()
+                    ->getResultArray();
+                $tm1Forensic['db_bom_count'] = count($boms);
+                $tm1Forensic['db_bom_items'] = array_map(fn($b) => [
+                    'id'                => (int)$b['id'],
+                    'material_id'       => $b['material_id'],
+                    'raw_material_name' => $b['raw_material_name'],
+                    'material_alias'    => $b['material_alias'] ?? null,
+                    'quantity'          => $b['quantity'],
+                    'unit'              => $b['unit'],
+                ], $boms);
+                $tm1Forensic['bottleneck_gap'] = max(0, 13 - count($boms));
+            }
+        }
+
+        // 4. TRANSLINE TOPOLOGY AUDIT
+        $totalTranslines = $db->tableExists('gis_translines') ? $db->table('gis_translines')->countAllResults() : 0;
+        $totalProposals = $db->tableExists('gis_transline_proposals') ? $db->table('gis_transline_proposals')->countAllResults() : 0;
+        $feedersCovered = [];
+
+        if ($db->tableExists('gis_translines')) {
+            $feedersCovered = $db->table('gis_translines')
+                ->select('penyulang_id, count(*) as edges_count')
+                ->groupBy('penyulang_id')
+                ->orderBy('edges_count', 'DESC')
+                ->get()
+                ->getResultArray();
+        }
+
+        $report = [
+            'audit_metadata' => [
+                'report_name'      => 'SIDAK TEJO v3.1 Data Reconciliation & Baseline Audit',
+                'timestamp_utc'    => $nowUtc,
+                'timestamp_wib'    => $nowWib,
+                'environment'      => CI_ENVIRONMENT,
+                'audit_gate'       => 'PHASE_1_RECONCILIATION_BASELINE',
+                'status'           => 'BASELOAD_CAPTURED',
+            ],
+            'asset_reconciliation' => [
+                'total_raw_assets'            => $totalRaw,
+                'total_active_assets'         => $totalActive,
+                'valid_coordinates_count'     => $validCoords,
+                'missing_coordinates_count'   => $missingCoords,
+                'coordinate_completeness_pct' => $totalActive > 0 ? round(($validCoords / $totalActive) * 100, 2) : 0,
+                'valid_penyulang_count'       => $validPenyulang,
+                'missing_penyulang_count'     => $missingPenyulang,
+                'valid_section_count'         => $validSection,
+                'missing_section_count'       => $missingSection,
+                'valid_construction_count'    => $validConstruction,
+                'missing_construction_count'  => $missingConstruction,
+                'construction_completeness_pct' => $totalActive > 0 ? round(($validConstruction / $totalActive) * 100, 2) : 0,
+                'jenis_asset_distribution'    => $distinctJenis,
+                'construction_distribution'   => $distinctConst,
+            ],
+            'construction_types_baseline' => [
+                'total_registered'            => $totalConstructions,
+                'registered_types'            => $registeredConstructions,
+                'equipment_standards'         => $equipmentStandards,
+            ],
+            'bom_reconciliation_baseline' => [
+                'total_master_materials'      => $totalMaterials,
+                'materials_unit_breakdown'    => $materialUnitsBreakdown,
+                'canonical_individual_units'  => $canonicalUnitAudit,
+                'tm1_bottleneck_forensic'     => $tm1Forensic,
+            ],
+            'transline_topology_baseline' => [
+                'total_transline_edges'       => $totalTranslines,
+                'total_proposals'             => $totalProposals,
+                'feeders_covered_count'       => count($feedersCovered),
+                'feeders_covered_distribution'=> $feedersCovered,
+            ],
+        ];
+
+        // Write audit artifact to writable/audits/reconciliation_baseline_report.json
+        $auditDir = WRITEPATH . 'audits';
+        if (!is_dir($auditDir)) {
+            @mkdir($auditDir, 0777, true);
+        }
+        $outPath = $auditDir . '/reconciliation_baseline_report.json';
+        file_put_contents($outPath, json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'report'    => $report,
+            'saved_to'  => $outPath,
+        ]);
+    }
+
+    /**
      * Automatic Git Deployment Sync for Hostinger
      */
     public function autoDeploy()

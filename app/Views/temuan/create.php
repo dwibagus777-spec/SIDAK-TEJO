@@ -71,6 +71,7 @@
                                 <i class="fas fa-exclamation-triangle me-1"></i> <span id="map03-warning-text"></span>
                             </div>
                         </div>
+                    </div>
                     <!-- CR-HOTFIX-02 Part B: Authoritative Asset Banner / Card -->
                     <input type="hidden" name="authoritative_asset_id" id="authoritative_asset_id" value="<?= esc($preselectedAsset['id'] ?? old('authoritative_asset_id', '')) ?>">
                     <div id="authoritative-asset-card" class="card border-success mb-3 shadow-sm" style="<?= empty($preselectedAsset) ? 'display: none;' : '' ?> background: #f0fdf4; border: 1.5px solid #86efac !important; border-radius: 12px;">
@@ -327,6 +328,7 @@
                         </label>
                         <small class="text-muted d-block mb-2">Keterangan jenis pohon, diameter, atau jarak bebas dahan terhadap kabel/jaringan.</small>
                         <input type="text" name="catatan_row" id="catatan_row" class="form-control form-control-sm" placeholder="Contoh: Pohon Sengon diameter 30cm mendekati konduktor 1.5 meter">
+                    </div>
                     <!-- CR-HOTFIX-02 Part C: Aksesoris JTM / Konduktor (Profil Jaringan Aset) -->
                     <div class="form-group mb-4 p-3 rounded" id="jtm-accessories-section" style="background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px;">
                         <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">

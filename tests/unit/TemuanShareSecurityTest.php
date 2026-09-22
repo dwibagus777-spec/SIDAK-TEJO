@@ -102,13 +102,16 @@ final class TemuanShareSecurityTest extends CIUnitTestCase
 
         // 7. Master JTM accessories table
         $forge->addField([
-            'id'          => ['type' => 'INTEGER', 'auto_increment' => true, 'primary_key' => true],
-            'code'        => ['type' => 'VARCHAR', 'constraint' => 50],
-            'name'        => ['type' => 'VARCHAR', 'constraint' => 100],
-            'category'    => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'JTM'],
-            'description' => ['type' => 'TEXT', 'null' => true],
-            'is_active'   => ['type' => 'BOOLEAN', 'default' => true],
-            'sort_order'  => ['type' => 'INTEGER', 'default' => 0],
+            'id'               => ['type' => 'INTEGER', 'auto_increment' => true, 'primary_key' => true],
+            'code'             => ['type' => 'VARCHAR', 'constraint' => 50],
+            'name'             => ['type' => 'VARCHAR', 'constraint' => 100],
+            'category'         => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'JTM'],
+            'sub_category'     => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'JTM'],
+            'phase_applicable' => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 0],
+            'unit'             => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'buah'],
+            'description'      => ['type' => 'TEXT', 'null' => true],
+            'is_active'        => ['type' => 'BOOLEAN', 'default' => true],
+            'sort_order'       => ['type' => 'INTEGER', 'default' => 0],
         ]);
         $forge->createTable('master_jtm_accessories', true);
 
@@ -142,6 +145,9 @@ final class TemuanShareSecurityTest extends CIUnitTestCase
             'tanggal_temuan' => ['type' => 'DATE', 'null' => true],
             'deskripsi'      => ['type' => 'TEXT', 'null' => true],
             'status'         => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'OPEN'],
+            'judul'          => ['type' => 'VARCHAR', 'constraint' => 200, 'null' => true],
+            'detail_temuan'  => ['type' => 'TEXT', 'null' => true],
+            'status_temuan'  => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'OPEN'],
             'created_by'     => ['type' => 'INTEGER', 'null' => true],
             'updated_by'     => ['type' => 'INTEGER', 'null' => true],
             'deleted_at'     => ['type' => 'DATETIME', 'null' => true],
@@ -181,9 +187,20 @@ final class TemuanShareSecurityTest extends CIUnitTestCase
             'temuan_id'               => ['type' => 'INTEGER'],
             'asset_id'                => ['type' => 'INTEGER'],
             'accessory_type_id'       => ['type' => 'INTEGER'],
+            'accessory_code'          => ['type' => 'VARCHAR', 'constraint' => 50, 'null' => true],
             'accessory_name_snapshot' => ['type' => 'VARCHAR', 'constraint' => 100],
+            'category_snapshot'       => ['type' => 'VARCHAR', 'constraint' => 50, 'null' => true],
+            'qty'                     => ['type' => 'INTEGER', 'default' => 1],
+            'unit'                    => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'buah'],
+            'phase_applicable'        => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 0],
+            'phase_configuration'     => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'NON_PHASE', 'null' => true],
+            'phase_positions'         => ['type' => 'VARCHAR', 'constraint' => 50, 'null' => true],
             'status'                  => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'ADA'],
             'condition'               => ['type' => 'VARCHAR', 'constraint' => 30, 'default' => 'BAIK'],
+            'note'                    => ['type' => 'TEXT', 'null' => true],
+            'photo_url'               => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
+            'created_at'              => ['type' => 'DATETIME', 'null' => true],
+            'updated_at'              => ['type' => 'DATETIME', 'null' => true],
         ]);
         $forge->createTable('temuan_accessories', true);
 

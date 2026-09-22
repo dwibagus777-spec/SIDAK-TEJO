@@ -703,6 +703,7 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                                 <tr>
                                     <th>Aksesoris</th>
                                     <th class="text-center">Status</th>
+                                    <th class="text-center">Kuantitas & Fasa</th>
                                     <th class="text-center">Kondisi</th>
                                     <th>Catatan Lapangan</th>
                                     <th class="text-end">Waktu Inspeksi</th>
@@ -717,12 +718,37 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                                         <?php if (!empty($acc['accessory_code'])): ?>
                                             <code class="ms-1 small">[<?= esc($acc['accessory_code']) ?>]</code>
                                         <?php endif; ?>
+                                        <?php 
+                                        $cat = strtoupper($acc['category'] ?? ($acc['category_snapshot'] ?? ''));
+                                        if ($cat === 'CONDUCTOR_GROUNDING'): ?>
+                                            <span class="badge bg-light text-secondary border ms-1" style="font-size: 10px;">Konduktor</span>
+                                        <?php elseif ($cat === 'MONITORING'): ?>
+                                            <span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Monitoring</span>
+                                        <?php elseif ($cat === 'PROTECTION'): ?>
+                                            <span class="badge bg-warning text-dark ms-1" style="font-size: 10px;">Proteksi</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="text-center">
                                         <?php if (($acc['status'] ?? '') === 'ADA'): ?>
                                             <span class="badge bg-success px-2 py-1"><i class="fas fa-check me-1"></i> ADA</span>
                                         <?php else: ?>
                                             <span class="badge bg-secondary px-2 py-1"><i class="fas fa-times me-1"></i> TIDAK ADA</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php if (($acc['status'] ?? '') === 'ADA'): ?>
+                                            <span class="fw-bold text-dark"><?= (int)($acc['qty'] ?? 1) ?> <?= esc($acc['unit'] ?? 'buah') ?></span>
+                                            <?php if (!empty($acc['display_phase'])): ?>
+                                                <div class="small text-muted mt-0" style="font-size: 11px;">
+                                                    <i class="fas fa-network-wired text-info me-1"></i><?= esc($acc['display_phase']) ?>
+                                                </div>
+                                            <?php elseif (!empty($acc['phase_configuration']) && $acc['phase_configuration'] !== 'NON_PHASE'): ?>
+                                                <div class="small text-muted mt-0" style="font-size: 11px;">
+                                                    <i class="fas fa-network-wired text-info me-1"></i><?= esc(str_replace('_', ' ', $acc['phase_configuration'])) ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-center">

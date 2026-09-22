@@ -38,12 +38,16 @@ class JtmAccessoryService
         if (!$this->db->tableExists('master_jtm_accessories')) {
             // Fallback canonical catalog if table is not yet created
             return [
-                ['id' => 1, 'code' => 'GSW',                'name' => 'GSW',                 'category' => 'JTM', 'sort_order' => 1],
-                ['id' => 2, 'code' => 'EGLA',               'name' => 'EGLA',                'category' => 'JTM', 'sort_order' => 2],
-                ['id' => 3, 'code' => 'CLD',                'name' => 'CLD',                 'category' => 'JTM', 'sort_order' => 3],
-                ['id' => 4, 'code' => 'MCA',                'name' => 'MCA',                 'category' => 'JTM', 'sort_order' => 4],
-                ['id' => 5, 'code' => 'GROUND_GSW',         'name' => 'GROUND GSW',          'category' => 'JTM', 'sort_order' => 5],
-                ['id' => 6, 'code' => 'PENGHALANG_BINATANG', 'name' => 'PENGHALANG BINATANG', 'category' => 'JTM', 'sort_order' => 6],
+                ['id' => 1,  'code' => 'GSW',                'name' => 'GSW',                   'category' => 'CONDUCTOR_GROUNDING', 'sub_category' => 'CONDUCTOR_GROUNDING', 'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 1],
+                ['id' => 2,  'code' => 'GROUND_GSW',         'name' => 'GROUND GSW',            'category' => 'CONDUCTOR_GROUNDING', 'sub_category' => 'CONDUCTOR_GROUNDING', 'phase_applicable' => 0, 'phase_mode' => 'NONE',        'default_qty' => 1, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 2],
+                ['id' => 3,  'code' => 'PENGHALANG_BINATANG', 'name' => 'PENGHALANG BINATANG',   'category' => 'CONDUCTOR_GROUNDING', 'sub_category' => 'CONDUCTOR_GROUNDING', 'phase_applicable' => 0, 'phase_mode' => 'NONE',        'default_qty' => 1, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 3],
+                ['id' => 4,  'code' => 'EGLA',               'name' => 'EGLA',                  'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 4],
+                ['id' => 5,  'code' => 'CLD',                'name' => 'CLD',                   'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 5],
+                ['id' => 6,  'code' => 'MCA',                'name' => 'MCA',                   'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 6],
+                ['id' => 7,  'code' => 'ARRESTER',           'name' => 'Arrester Jaringan',     'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => 'MAT-PROT-LA-24KV',  'sort_order' => 7],
+                ['id' => 8,  'code' => 'FIOHL',              'name' => 'FIOHL',                 'category' => 'MONITORING',          'sub_category' => 'MONITORING',          'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => 'MAT-IND-FIOHL',     'sort_order' => 8],
+                ['id' => 9,  'code' => 'FCO',                'name' => 'FCO',                   'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => 'MAT-PROT-FCO-24KV', 'sort_order' => 9],
+                ['id' => 10, 'code' => 'FCO_BRANCH',         'name' => 'FCO Branch / Lateral',  'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => 'MAT-PROT-FCO-LAT',  'sort_order' => 10],
             ];
         }
 
@@ -106,6 +110,7 @@ class JtmAccessoryService
         $savedCount = 0;
         $processedTypeIds = [];
         $now = date('Y-m-d H:i:s');
+        $tableFields = null;
 
         $this->db->transStart();
 
@@ -141,6 +146,57 @@ class JtmAccessoryService
             $note = isset($item['note']) ? trim((string)$item['note']) : null;
             $photoUrl = isset($item['photo_url']) ? trim((string)$item['photo_url']) : null;
 
+            // Phase and Quantity Context
+            $phaseApplicable = !empty($master['phase_applicable']) ? 1 : 0;
+            $qty = isset($item['qty']) && is_numeric($item['qty']) ? (int)$item['qty'] : ($status === 'ADA' ? (int)($master['default_qty'] ?? 1) : 0);
+            $unit = (string)($item['unit'] ?? ($master['unit'] ?? 'buah'));
+
+            $phaseConfig = 'NON_PHASE';
+            $phasePositionsStr = null;
+            if ($phaseApplicable && $status === 'ADA') {
+                $rawConfig = strtoupper(trim((string)($item['phase_configuration'] ?? '3_PHASE')));
+                if (in_array($rawConfig, ['3_PHASE', '2_PHASE', '1_PHASE', 'NON_PHASE'])) {
+                    $phaseConfig = $rawConfig;
+                } else {
+                    $phaseConfig = '3_PHASE';
+                }
+
+                $rawPositions = $item['phase_positions'] ?? null;
+                if (is_array($rawPositions)) {
+                    $cleanPos = array_values(array_intersect(array_map('strtoupper', array_map('trim', $rawPositions)), ['R', 'S', 'T']));
+                    $phasePositionsStr = !empty($cleanPos) ? implode(',', $cleanPos) : null;
+                } elseif (is_string($rawPositions) && trim($rawPositions) !== '') {
+                    $parts = array_map('trim', explode(',', strtoupper($rawPositions)));
+                    $cleanPos = array_values(array_intersect($parts, ['R', 'S', 'T']));
+                    $phasePositionsStr = !empty($cleanPos) ? implode(',', $cleanPos) : null;
+                }
+            }
+
+            // Snapshot fields
+            $snapshotData = [
+                'asset_id'                => $assetId,
+                'accessory_code'          => $master['code'],
+                'accessory_name_snapshot' => $master['name'],
+                'category_snapshot'       => $master['category'] ?? 'CONDUCTOR_GROUNDING',
+                'status'                  => $status,
+                'qty'                     => $qty,
+                'unit'                    => $unit,
+                'phase_applicable'        => $phaseApplicable,
+                'phase_configuration'     => $phaseConfig,
+                'phase_positions'         => $phasePositionsStr,
+                'condition'               => $condition,
+                'note'                    => $note,
+                'updated_at'              => $now,
+            ];
+
+            // Resilience check: filter to columns present in table to tolerate partial migrations
+            if ($tableFields === null && $this->db->tableExists('temuan_accessories')) {
+                $tableFields = array_flip($this->db->getFieldNames('temuan_accessories'));
+            }
+            if ($tableFields !== null) {
+                $snapshotData = array_intersect_key($snapshotData, $tableFields);
+            }
+
             // Check if existing record already exists for this (temuan_id, accessory_type_id)
             $existing = $this->db->table('temuan_accessories')
                 ->where('temuan_id', $temuanId)
@@ -149,33 +205,25 @@ class JtmAccessoryService
                 ->getRowArray();
 
             if ($existing) {
-                // Update existing record
+                // Update existing record with full snapshot
+                $snapshotData['photo_url'] = $photoUrl ?: $existing['photo_url'];
+                if ($tableFields !== null) {
+                    $snapshotData = array_intersect_key($snapshotData, $tableFields);
+                }
                 $this->db->table('temuan_accessories')
                     ->where('id', $existing['id'])
-                    ->update([
-                        'asset_id'                => $assetId,
-                        'accessory_name_snapshot' => $master['name'],
-                        'status'                  => $status,
-                        'condition'               => $condition,
-                        'note'                    => $note,
-                        'photo_url'               => $photoUrl ?: $existing['photo_url'],
-                        'updated_at'              => $now,
-                    ]);
+                    ->update($snapshotData);
                 $savedCount++;
             } else {
-                // Insert new record with Snapshot Invariant
-                $this->db->table('temuan_accessories')->insert([
-                    'temuan_id'               => $temuanId,
-                    'asset_id'                => $assetId,
-                    'accessory_type_id'       => $typeId,
-                    'accessory_name_snapshot' => $master['name'],
-                    'status'                  => $status,
-                    'condition'               => $condition,
-                    'note'                    => $note,
-                    'photo_url'               => $photoUrl,
-                    'created_at'              => $now,
-                    'updated_at'              => $now,
-                ]);
+                // Insert new record with full snapshot
+                $snapshotData['temuan_id']         = $temuanId;
+                $snapshotData['accessory_type_id'] = $typeId;
+                $snapshotData['photo_url']         = $photoUrl;
+                $snapshotData['created_at']        = $now;
+                if ($tableFields !== null) {
+                    $snapshotData = array_intersect_key($snapshotData, $tableFields);
+                }
+                $this->db->table('temuan_accessories')->insert($snapshotData);
                 $savedCount++;
             }
         }
@@ -183,9 +231,11 @@ class JtmAccessoryService
         $this->db->transComplete();
 
         if ($this->db->transStatus() === false) {
+            $dbErr = $this->db->error();
+            $errMsg = !empty($dbErr['message']) ? $dbErr['message'] : 'Gagal menyimpan data aksesoris JTM.';
             return [
                 'status'  => 'ERROR',
-                'message' => 'Gagal menyimpan data aksesoris JTM.',
+                'message' => $errMsg,
                 'saved'   => 0,
             ];
         }
@@ -198,7 +248,59 @@ class JtmAccessoryService
     }
 
     /**
-     * Get all accessories for a finding
+     * Helper to normalize CSV positions to array: "R,S,T" -> ["R", "S", "T"]
+     */
+    public function normalizePositions($positions): array
+    {
+        if (is_array($positions)) {
+            return array_values(array_intersect(array_map('strtoupper', array_map('trim', $positions)), ['R', 'S', 'T']));
+        }
+        if (is_string($positions) && trim($positions) !== '') {
+            $parts = array_map('trim', explode(',', strtoupper($positions)));
+            return array_values(array_intersect($parts, ['R', 'S', 'T']));
+        }
+        return [];
+    }
+
+    /**
+     * Format a single row into a structured semantic object for AI, GIS, and UI
+     */
+    public function formatSemanticObject(array $row): array
+    {
+        $positions = $this->normalizePositions($row['phase_positions'] ?? null);
+        $phaseConfig = $row['phase_configuration'] ?? null;
+        $phaseApplicable = !empty($row['phase_applicable']);
+
+        return [
+            'id'             => (int)($row['id'] ?? 0),
+            'temuan_id'      => (int)($row['temuan_id'] ?? 0),
+            'asset_id'       => (int)($row['asset_id'] ?? 0),
+            'accessory_id'   => (int)($row['accessory_type_id'] ?? 0),
+            'accessory_code' => (string)($row['accessory_code'] ?? ''),
+            'accessory_name' => (string)($row['accessory_name_snapshot'] ?? ''),
+            'category'       => (string)($row['category_snapshot'] ?? ($row['accessory_category'] ?? 'CONDUCTOR_GROUNDING')),
+            'sub_category'   => (string)($row['accessory_sub_category'] ?? ($row['category_snapshot'] ?? 'CONDUCTOR_GROUNDING')),
+            'configuration'  => [
+                'qty'                 => (int)($row['qty'] ?? 1),
+                'unit'                => (string)($row['unit'] ?? 'buah'),
+                'phase_applicable'    => $phaseApplicable,
+                'phase_configuration' => $phaseConfig,
+                'positions'           => $positions,
+                'display_phase'       => $phaseApplicable && $phaseConfig ? str_replace('_', ' ', $phaseConfig) . (!empty($positions) ? ' (' . implode('-', $positions) . ')' : '') : null,
+            ],
+            'observation'    => [
+                'status'    => (string)($row['status'] ?? 'ADA'),
+                'condition' => (string)($row['condition'] ?? 'BAIK'),
+                'note'      => (string)($row['note'] ?? ''),
+                'photo_url' => $row['photo_url'] ?? null,
+            ],
+            'created_at'     => $row['created_at'] ?? null,
+            'updated_at'     => $row['updated_at'] ?? null,
+        ];
+    }
+
+    /**
+     * Get all accessories for a finding (with normalized semantic objects)
      */
     public function getAccessoriesForTemuan(int $temuanId): array
     {
@@ -206,11 +308,22 @@ class JtmAccessoryService
             return [];
         }
 
-        return $this->accessoryModel->getByTemuanId($temuanId);
+        $rawRows = $this->accessoryModel->getByTemuanId($temuanId);
+        $result = [];
+        foreach ($rawRows as $row) {
+            $formatted = $this->formatSemanticObject($row);
+            // Also merge raw keys for backward compatibility in existing views
+            $merged = array_merge($row, $formatted);
+            $merged['positions'] = $formatted['configuration']['positions'];
+            $merged['display_phase'] = $formatted['configuration']['display_phase'];
+            $result[] = $merged;
+        }
+
+        return $result;
     }
 
     /**
-     * Get all accessories for an asset
+     * Get all accessories for an asset across findings
      */
     public function getAccessoriesForAsset(int $assetId): array
     {
@@ -218,6 +331,16 @@ class JtmAccessoryService
             return [];
         }
 
-        return $this->accessoryModel->getByAssetId($assetId);
+        $rawRows = $this->accessoryModel->getByAssetId($assetId);
+        $result = [];
+        foreach ($rawRows as $row) {
+            $formatted = $this->formatSemanticObject($row);
+            $merged = array_merge($row, $formatted);
+            $merged['positions'] = $formatted['configuration']['positions'];
+            $merged['display_phase'] = $formatted['configuration']['display_phase'];
+            $result[] = $merged;
+        }
+
+        return $result;
     }
 }

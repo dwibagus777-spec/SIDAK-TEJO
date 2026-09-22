@@ -456,6 +456,95 @@ class MigrateController extends BaseController
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             $executed[] = 'temuan_share_links';
 
+            // CR-ACCESSORY-PHASE-01: Enhance master_jtm_accessories (Idempotent DDL & Seeds)
+            if ($db->tableExists('master_jtm_accessories')) {
+                $accCols = [
+                    'sub_category'            => "ALTER TABLE `master_jtm_accessories` ADD COLUMN `sub_category` VARCHAR(50) NOT NULL DEFAULT 'CONDUCTOR_GROUNDING' AFTER `category`",
+                    'phase_applicable'        => "ALTER TABLE `master_jtm_accessories` ADD COLUMN `phase_applicable` TINYINT(1) NOT NULL DEFAULT 1 AFTER `description`",
+                    'phase_mode'              => "ALTER TABLE `master_jtm_accessories` ADD COLUMN `phase_mode` VARCHAR(30) NOT NULL DEFAULT 'MULTI_PHASE' AFTER `phase_applicable`",
+                    'default_qty'             => "ALTER TABLE `master_jtm_accessories` ADD COLUMN `default_qty` INT NOT NULL DEFAULT 3 AFTER `phase_mode`",
+                    'unit'                    => "ALTER TABLE `master_jtm_accessories` ADD COLUMN `unit` VARCHAR(20) NOT NULL DEFAULT 'buah' AFTER `default_qty`",
+                    'canonical_material_code' => "ALTER TABLE `master_jtm_accessories` ADD COLUMN `canonical_material_code` VARCHAR(60) NULL AFTER `unit`",
+                ];
+                foreach ($accCols as $col => $alterSql) {
+                    if (!$db->fieldExists($col, 'master_jtm_accessories')) {
+                        $db->query($alterSql);
+                    }
+                }
+
+                // Seed/Update 10 Canonical Accessories with Correct Semantic Categories
+                $nowStr = date('Y-m-d H:i:s');
+                $canonicalItems = [
+                    ['code' => 'GSW',                'name' => 'GSW',                   'category' => 'CONDUCTOR_GROUNDING', 'sub_category' => 'CONDUCTOR_GROUNDING', 'description' => 'Ground Steel Wire / Kawat Petir JTM',        'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 1],
+                    ['code' => 'GROUND_GSW',         'name' => 'GROUND GSW',            'category' => 'CONDUCTOR_GROUNDING', 'sub_category' => 'CONDUCTOR_GROUNDING', 'description' => 'Pembumian Kawat GSW / Grounding Down Lead', 'phase_applicable' => 0, 'phase_mode' => 'NONE',        'default_qty' => 1, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 2],
+                    ['code' => 'PENGHALANG_BINATANG', 'name' => 'PENGHALANG BINATANG',   'category' => 'CONDUCTOR_GROUNDING', 'sub_category' => 'CONDUCTOR_GROUNDING', 'description' => 'Animal Guard / Penghalang Panjat Binatang', 'phase_applicable' => 0, 'phase_mode' => 'NONE',        'default_qty' => 1, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 3],
+                    ['code' => 'EGLA',               'name' => 'EGLA',                  'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'description' => 'Externally Gapped Line Arrester',            'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 4],
+                    ['code' => 'CLD',                'name' => 'CLD',                   'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'description' => 'Current Limiting Device',                   'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 5],
+                    ['code' => 'MCA',                'name' => 'MCA',                   'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'description' => 'Multi-Chamber Arrester',                    'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => null,                 'sort_order' => 6],
+                    ['code' => 'ARRESTER',           'name' => 'Arrester Jaringan',     'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'description' => 'Polymer Lightning Arrester 24 kV 10 kA',    'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => 'MAT-PROT-LA-24KV',  'sort_order' => 7],
+                    ['code' => 'FIOHL',              'name' => 'FIOHL',                 'category' => 'MONITORING',          'sub_category' => 'MONITORING',          'description' => 'Fault Indicator Overhead Line 20 kV',        'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => 'MAT-IND-FIOHL',     'sort_order' => 8],
+                    ['code' => 'FCO',                'name' => 'FCO',                   'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'description' => 'Fuse Cut Out Switch 24 kV 100A',             'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => 'MAT-PROT-FCO-24KV', 'sort_order' => 9],
+                    ['code' => 'FCO_BRANCH',         'name' => 'FCO Branch / Lateral',  'category' => 'PROTECTION',          'sub_category' => 'PROTECTION',          'description' => 'Fuse Cut Out Percabangan / Lateral 24 kV',   'phase_applicable' => 1, 'phase_mode' => 'MULTI_PHASE', 'default_qty' => 3, 'unit' => 'buah', 'canonical_material_code' => 'MAT-PROT-FCO-LAT',  'sort_order' => 10],
+                ];
+
+                foreach ($canonicalItems as $item) {
+                    $db->query("INSERT INTO `master_jtm_accessories` (`code`, `name`, `category`, `sub_category`, `description`, `phase_applicable`, `phase_mode`, `default_qty`, `unit`, `canonical_material_code`, `is_active`, `sort_order`, `created_at`, `updated_at`)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE
+                        `name` = VALUES(`name`),
+                        `category` = VALUES(`category`),
+                        `sub_category` = VALUES(`sub_category`),
+                        `description` = VALUES(`description`),
+                        `phase_applicable` = VALUES(`phase_applicable`),
+                        `phase_mode` = VALUES(`phase_mode`),
+                        `default_qty` = VALUES(`default_qty`),
+                        `unit` = VALUES(`unit`),
+                        `canonical_material_code` = VALUES(`canonical_material_code`),
+                        `sort_order` = VALUES(`sort_order`),
+                        `is_active` = 1,
+                        `updated_at` = VALUES(`updated_at`)", [
+                        $item['code'], $item['name'], $item['category'], $item['sub_category'], $item['description'],
+                        $item['phase_applicable'], $item['phase_mode'], $item['default_qty'], $item['unit'], $item['canonical_material_code'],
+                        $item['sort_order'], $nowStr, $nowStr
+                    ]);
+                }
+                $executed[] = 'master_jtm_accessories_enhanced';
+            }
+
+            // CR-ACCESSORY-PHASE-01: Enhance temuan_accessories (Idempotent DDL)
+            if ($db->tableExists('temuan_accessories')) {
+                $temuanAccCols = [
+                    'accessory_code'      => "ALTER TABLE `temuan_accessories` ADD COLUMN `accessory_code` VARCHAR(50) NULL AFTER `accessory_type_id`",
+                    'category_snapshot'   => "ALTER TABLE `temuan_accessories` ADD COLUMN `category_snapshot` VARCHAR(50) NULL AFTER `accessory_name_snapshot`",
+                    'qty'                 => "ALTER TABLE `temuan_accessories` ADD COLUMN `qty` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `status`",
+                    'unit'                => "ALTER TABLE `temuan_accessories` ADD COLUMN `unit` VARCHAR(20) NOT NULL DEFAULT 'buah' AFTER `qty`",
+                    'phase_applicable'    => "ALTER TABLE `temuan_accessories` ADD COLUMN `phase_applicable` TINYINT(1) NOT NULL DEFAULT 0 AFTER `unit`",
+                    'phase_configuration' => "ALTER TABLE `temuan_accessories` ADD COLUMN `phase_configuration` VARCHAR(30) NULL AFTER `phase_applicable`",
+                    'phase_positions'     => "ALTER TABLE `temuan_accessories` ADD COLUMN `phase_positions` VARCHAR(50) NULL AFTER `phase_configuration`",
+                ];
+                foreach ($temuanAccCols as $col => $alterSql) {
+                    if (!$db->fieldExists($col, 'temuan_accessories')) {
+                        $db->query($alterSql);
+                    }
+                }
+                $executed[] = 'temuan_accessories_enhanced';
+            }
+
+            // CR-ACCESSORY-PHASE-01: Canonical Material Units ('buah') & Seed FIOHL / FCO Lateral
+            if ($db->tableExists('master_materials')) {
+                $db->query("UPDATE `master_materials` SET `satuan` = 'buah' WHERE `material_code` IN ('MAT-ISO-PIN-20KV', 'MAT-ISO-HANG-20KV', 'MAT-PROT-LA-24KV', 'MAT-PROT-FCO-24KV')");
+
+                // Insert MAT-IND-FIOHL if not exists
+                $db->query("INSERT IGNORE INTO `master_materials` (`material_code`, `nama_material`, `nama_lapangan`, `satuan`, `material_domain`, `material_category`, `specification`, `source_workbook`, `source_sheet`, `status`, `created_at`, `updated_at`)
+                    VALUES ('MAT-IND-FIOHL', 'Fault Indicator Overhead Line (FIOHL)', 'FIOHL', 'buah', 'JTM', 'MONITORING', 'Fault Indicator 20 kV Overhead Lines with Visual Flag / LED', 'CANONICAL_2026.xlsx', 'MONITORING', 'AKTIF', NOW(), NOW())");
+
+                // Insert MAT-PROT-FCO-LAT if not exists
+                $db->query("INSERT IGNORE INTO `master_materials` (`material_code`, `nama_material`, `nama_lapangan`, `satuan`, `material_domain`, `material_category`, `specification`, `source_workbook`, `source_sheet`, `status`, `created_at`, `updated_at`)
+                    VALUES ('MAT-PROT-FCO-LAT', 'Fuse Cut Out Branch / Lateral 24 kV', 'FCO BRANCH', 'buah', 'JTM', 'PROTECTION', '24 kV 100A Branch/Lateral Tap Protection Cut Out Switch', 'CANONICAL_2026.xlsx', 'PROTECTION', 'AKTIF', NOW(), NOW())");
+
+                $executed[] = 'master_materials_canonical_units_buah';
+            }
+
             // Seed Catalogs
             $constructionService = new \App\Services\ConstructionService();
             $constructionService->ensureStandardCatalogsSeeded();

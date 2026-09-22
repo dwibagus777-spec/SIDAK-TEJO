@@ -515,27 +515,31 @@ class MaterialPickerService
 
         // 1. FUSE CUT OUT (FCO)
         if (str_contains($upperName, 'FUSE CUT OUT') || str_contains($upperName, 'CUT OUT') || str_contains($upperCode, 'FCO') || $upperName === 'FCO') {
+            $txUnit = ($upperUnit === 'BUAH') ? 'buah' : 'SET';
+            $caption = ($upperUnit === 'BUAH') ? '3 buah • 1/phasa (R-S-T)' : '1 SET = 3 buah • 1/phasa (R-S-T)';
             return [
                 'is_3phase_assembly' => true,
                 'physical_qty'       => 3,
-                'physical_unit'      => 'BUAH',
-                'transaction_unit'   => 'SET',
+                'physical_unit'      => 'buah',
+                'transaction_unit'   => $txUnit,
                 'phase_distribution' => '1/phasa (R, S, T)',
-                'assembly_rule'      => '1 SET = 3 buah • 1/phasa',
-                'display_caption'    => '1 SET = 3 buah • 1/phasa (R-S-T)',
+                'assembly_rule'      => ($upperUnit === 'BUAH') ? '3 buah • 1/phasa' : '1 SET = 3 buah • 1/phasa',
+                'display_caption'    => $caption,
             ];
         }
 
         // 2. LIGHTNING ARRESTER (LA)
         if (str_contains($upperName, 'ARRESTER') || str_contains($upperCode, 'LA') || str_contains($upperName, 'PENANGKAL PETIR') || $upperName === 'LA') {
+            $txUnit = ($upperUnit === 'BUAH') ? 'buah' : 'SET';
+            $caption = ($upperUnit === 'BUAH') ? '3 buah • 1/phasa (R-S-T)' : '1 SET = 3 buah • 1/phasa (R-S-T)';
             return [
                 'is_3phase_assembly' => true,
                 'physical_qty'       => 3,
-                'physical_unit'      => 'BUAH',
-                'transaction_unit'   => 'SET',
+                'physical_unit'      => 'buah',
+                'transaction_unit'   => $txUnit,
                 'phase_distribution' => '1/phasa (R, S, T)',
-                'assembly_rule'      => '1 SET = 3 buah • 1/phasa',
-                'display_caption'    => '1 SET = 3 buah • 1/phasa (R-S-T)',
+                'assembly_rule'      => ($upperUnit === 'BUAH') ? '3 buah • 1/phasa' : '1 SET = 3 buah • 1/phasa',
+                'display_caption'    => $caption,
             ];
         }
 

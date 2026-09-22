@@ -329,55 +329,240 @@
                         <small class="text-muted d-block mb-2">Keterangan jenis pohon, diameter, atau jarak bebas dahan terhadap kabel/jaringan.</small>
                         <input type="text" name="catatan_row" id="catatan_row" class="form-control form-control-sm" placeholder="Contoh: Pohon Sengon diameter 30cm mendekati konduktor 1.5 meter">
                     </div>
-                    <!-- CR-HOTFIX-02 Part C: Aksesoris JTM / Konduktor (Profil Jaringan Aset) -->
+                    <!-- CR-ACCESSORY-PHASE-01: Aksesoris JTM / Konduktor (Profil Jaringan Aset) -->
                     <div class="form-group mb-4 p-3 rounded" id="jtm-accessories-section" style="background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px;">
-                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
                             <div>
                                 <label class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
                                     <i class="fas fa-shield-halved text-warning me-2"></i> Aksesoris JTM / Konduktor (Profil Aset)
                                 </label>
                                 <small class="text-muted d-block" style="font-size: 11px;">
-                                    Catat keberadaan & kondisi perlengkapan proteksi / aksesoris jaringan pada titik tiang ini.
+                                    Catat keberadaan, kuantitas, konfigurasi fasa, dan kondisi aksesoris jaringan pada titik tiang ini.
                                 </small>
                             </div>
                             <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 11px;">
-                                Standar PLN (6 Aksesoris)
+                                Standar PLN (10 Aksesoris)
                             </span>
                         </div>
 
-                        <!-- Aksesoris Item Grid -->
-                        <div class="row g-3" id="jtm-accessories-grid">
-                            <?php if (!empty($jtmAccessories) && is_array($jtmAccessories)): ?>
-                                <?php foreach ($jtmAccessories as $acc): ?>
+                        <?php
+                        $conductorAccessories = [];
+                        $protectionAccessories = [];
+                        if (!empty($jtmAccessories) && is_array($jtmAccessories)) {
+                            foreach ($jtmAccessories as $acc) {
+                                $subCat = strtoupper((string)($acc['sub_category'] ?? ($acc['category'] ?? 'CONDUCTOR_GROUNDING')));
+                                if ($subCat === 'CONDUCTOR_GROUNDING' || in_array($acc['code'] ?? '', ['GSW', 'GROUND_GSW', 'PENGHALANG_BINATANG'])) {
+                                    $conductorAccessories[] = $acc;
+                                } else {
+                                    $protectionAccessories[] = $acc;
+                                }
+                            }
+                        }
+                        ?>
+
+                        <!-- Subgrup 1: Konduktor & Grounding -->
+                        <div class="fw-bold text-secondary text-uppercase mb-2" style="font-size: 12px; letter-spacing: 0.5px;">
+                            <i class="fas fa-bolt me-1 text-warning"></i> Konduktor & Grounding
+                        </div>
+                        <div class="row g-3 mb-3" id="jtm-conductor-grid">
+                            <?php if (!empty($conductorAccessories)): ?>
+                                <?php foreach ($conductorAccessories as $acc): ?>
                                 <div class="col-md-6 col-12">
-                                    <div class="card h-100 border shadow-xs p-3 jtm-acc-card" id="acc_card_<?= $acc['id'] ?>" style="border-radius: 10px; background: #ffffff; transition: all 0.2s ease;">
+                                    <div class="card h-100 border shadow-xs p-3 jtm-acc-card" id="acc_card_<?= $acc['id'] ?>"
+                                         data-acc-id="<?= $acc['id'] ?>"
+                                         data-code="<?= esc($acc['code'] ?? '') ?>"
+                                         data-name="<?= esc($acc['name'] ?? $acc['nama_aksesoris'] ?? $acc['code']) ?>"
+                                         data-category="<?= esc($acc['category'] ?? 'CONDUCTOR_GROUNDING') ?>"
+                                         data-sub-category="<?= esc($acc['sub_category'] ?? 'CONDUCTOR_GROUNDING') ?>"
+                                         data-phase-applicable="<?= !empty($acc['phase_applicable']) ? '1' : '0' ?>"
+                                         data-default-qty="<?= (int)($acc['default_qty'] ?? 1) ?>"
+                                         data-unit="<?= esc($acc['unit'] ?? 'buah') ?>"
+                                         style="border-radius: 10px; background: #ffffff; transition: all 0.2s ease;">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <div class="form-check form-switch mb-0">
                                                 <input class="form-check-input jtm-acc-toggle" type="checkbox" role="switch" id="acc_toggle_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>">
                                                 <label class="form-check-label fw-bold text-dark ms-1" for="acc_toggle_<?= $acc['id'] ?>" style="cursor: pointer; font-size: 13px;">
-                                                    <?= esc($acc['nama_aksesoris'] ?? $acc['name'] ?? $acc['kode_aksesoris']) ?>
-                                                    <code class="text-primary small">[<?= esc($acc['kode_aksesoris'] ?? $acc['code']) ?>]</code>
+                                                    <?= esc($acc['name'] ?? $acc['nama_aksesoris'] ?? $acc['code']) ?>
+                                                    <code class="text-primary small">[<?= esc($acc['code'] ?? $acc['kode_aksesoris']) ?>]</code>
                                                 </label>
                                             </div>
                                             <span class="badge bg-secondary text-white jtm-acc-status-badge" id="acc_badge_<?= $acc['id'] ?>">TIDAK ADA</span>
                                         </div>
                                         <small class="text-muted mb-2 d-block" style="font-size: 11px; line-height: 1.3;">
-                                            <?= esc($acc['keterangan'] ?? 'Aksesoris jaringan SUTM') ?>
+                                            <?= esc($acc['description'] ?? $acc['keterangan'] ?? 'Aksesoris jaringan SUTM') ?>
                                         </small>
-                                        <div class="jtm-acc-detail-inputs mt-2" id="acc_inputs_<?= $acc['id'] ?>" style="display: none;">
-                                            <div class="row g-2">
-                                                <div class="col-sm-5">
-                                                    <label class="small text-muted mb-1" style="font-size: 11px;">Kondisi</label>
+
+                                        <!-- Expandable Configuration & Observation Inputs -->
+                                        <div class="jtm-acc-detail-inputs mt-2 pt-2 border-top" id="acc_inputs_<?= $acc['id'] ?>" style="display: none;">
+                                            <div class="row g-2 align-items-center mb-2">
+                                                <div class="col-sm-5 col-6">
+                                                    <label class="small text-muted mb-1 d-block" style="font-size: 11px;">Jumlah (Qty)</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" min="1" max="99" class="form-control form-control-sm jtm-acc-qty" id="acc_qty_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>" value="<?= (int)($acc['default_qty'] ?? 1) ?>">
+                                                        <span class="input-group-text bg-light text-secondary"><?= esc($acc['unit'] ?? 'buah') ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-7 col-6">
+                                                    <label class="small text-muted mb-1 d-block" style="font-size: 11px;">Kondisi Fisik</label>
                                                     <select class="form-select form-select-sm jtm-acc-condition" id="acc_cond_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>">
                                                         <option value="BAIK">BAIK</option>
                                                         <option value="RUSAK">RUSAK</option>
                                                         <option value="PERLU_PENGGANTIAN">PERLU PENGGANTIAN</option>
                                                     </select>
                                                 </div>
-                                                <div class="col-sm-7">
-                                                    <label class="small text-muted mb-1" style="font-size: 11px;">Catatan Lapangan</label>
-                                                    <input type="text" class="form-control form-control-sm jtm-acc-note" id="acc_note_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>" placeholder="Catatan kondisi (opsional)">
+                                            </div>
+
+                                            <?php if (!empty($acc['phase_applicable'])): ?>
+                                            <div class="bg-light p-2 rounded mb-2 border">
+                                                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                                                    <span class="small fw-bold text-dark" style="font-size: 11px;">
+                                                        <i class="fas fa-network-wired text-info me-1"></i> Konfigurasi Fasa:
+                                                    </span>
+                                                    <div class="d-flex gap-2 jtm-phase-config-group" data-acc-id="<?= $acc['id'] ?>">
+                                                        <div class="form-check form-check-inline mb-0 me-1" style="font-size: 11px;">
+                                                            <input class="form-check-input jtm-phase-radio" type="radio" name="phase_cfg_<?= $acc['id'] ?>" id="pcfg3_<?= $acc['id'] ?>" value="3_PHASE" checked data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label" for="pcfg3_<?= $acc['id'] ?>">3 Phase</label>
+                                                        </div>
+                                                        <div class="form-check form-check-inline mb-0 me-1" style="font-size: 11px;">
+                                                            <input class="form-check-input jtm-phase-radio" type="radio" name="phase_cfg_<?= $acc['id'] ?>" id="pcfg2_<?= $acc['id'] ?>" value="2_PHASE" data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label" for="pcfg2_<?= $acc['id'] ?>">2 Phase</label>
+                                                        </div>
+                                                        <div class="form-check form-check-inline mb-0" style="font-size: 11px;">
+                                                            <input class="form-check-input jtm-phase-radio" type="radio" name="phase_cfg_<?= $acc['id'] ?>" id="pcfg1_<?= $acc['id'] ?>" value="1_PHASE" data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label" for="pcfg1_<?= $acc['id'] ?>">1 Phase</label>
+                                                        </div>
+                                                    </div>
                                                 </div>
+                                                <div class="d-flex align-items-center gap-2 pt-1 border-top" style="font-size: 11px;">
+                                                    <span class="text-muted">Posisi Fasa:</span>
+                                                    <div class="d-flex gap-2">
+                                                        <div class="form-check form-check-inline mb-0 me-1">
+                                                            <input class="form-check-input jtm-phase-pos" type="checkbox" id="ppos_r_<?= $acc['id'] ?>" value="R" checked data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label fw-bold text-danger" for="ppos_r_<?= $acc['id'] ?>">R</label>
+                                                        </div>
+                                                        <div class="form-check form-check-inline mb-0 me-1">
+                                                            <input class="form-check-input jtm-phase-pos" type="checkbox" id="ppos_s_<?= $acc['id'] ?>" value="S" checked data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label fw-bold text-warning" for="ppos_s_<?= $acc['id'] ?>">S</label>
+                                                        </div>
+                                                        <div class="form-check form-check-inline mb-0">
+                                                            <input class="form-check-input jtm-phase-pos" type="checkbox" id="ppos_t_<?= $acc['id'] ?>" value="T" checked data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label fw-bold text-dark" for="ppos_t_<?= $acc['id'] ?>">T</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php endif; ?>
+
+                                            <div class="form-group mb-0">
+                                                <input type="text" class="form-control form-control-sm jtm-acc-note" id="acc_note_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>" placeholder="Catatan kondisi / spesifikasi (opsional)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Subgrup 2: Proteksi & Monitoring -->
+                        <div class="fw-bold text-secondary text-uppercase mt-2 mb-2" style="font-size: 12px; letter-spacing: 0.5px;">
+                            <i class="fas fa-shield-halved me-1 text-primary"></i> Proteksi & Monitoring
+                        </div>
+                        <div class="row g-3" id="jtm-protection-grid">
+                            <?php if (!empty($protectionAccessories)): ?>
+                                <?php foreach ($protectionAccessories as $acc): ?>
+                                <div class="col-md-6 col-12">
+                                    <div class="card h-100 border shadow-xs p-3 jtm-acc-card" id="acc_card_<?= $acc['id'] ?>"
+                                         data-acc-id="<?= $acc['id'] ?>"
+                                         data-code="<?= esc($acc['code'] ?? '') ?>"
+                                         data-name="<?= esc($acc['name'] ?? $acc['nama_aksesoris'] ?? $acc['code']) ?>"
+                                         data-category="<?= esc($acc['category'] ?? 'PROTECTION') ?>"
+                                         data-sub-category="<?= esc($acc['sub_category'] ?? 'PROTECTION') ?>"
+                                         data-phase-applicable="<?= !empty($acc['phase_applicable']) ? '1' : '0' ?>"
+                                         data-default-qty="<?= (int)($acc['default_qty'] ?? 3) ?>"
+                                         data-unit="<?= esc($acc['unit'] ?? 'buah') ?>"
+                                         style="border-radius: 10px; background: #ffffff; transition: all 0.2s ease;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input jtm-acc-toggle" type="checkbox" role="switch" id="acc_toggle_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>">
+                                                <label class="form-check-label fw-bold text-dark ms-1" for="acc_toggle_<?= $acc['id'] ?>" style="cursor: pointer; font-size: 13px;">
+                                                    <?= esc($acc['name'] ?? $acc['nama_aksesoris'] ?? $acc['code']) ?>
+                                                    <code class="text-primary small">[<?= esc($acc['code'] ?? $acc['kode_aksesoris']) ?>]</code>
+                                                    <?php if (($acc['category'] ?? '') === 'MONITORING'): ?>
+                                                        <span class="badge bg-info text-dark ms-1" style="font-size: 10px;">MONITORING</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 10px;">PROTEKSI</span>
+                                                    <?php endif; ?>
+                                                </label>
+                                            </div>
+                                            <span class="badge bg-secondary text-white jtm-acc-status-badge" id="acc_badge_<?= $acc['id'] ?>">TIDAK ADA</span>
+                                        </div>
+                                        <small class="text-muted mb-2 d-block" style="font-size: 11px; line-height: 1.3;">
+                                            <?= esc($acc['description'] ?? $acc['keterangan'] ?? 'Aksesoris jaringan SUTM') ?>
+                                        </small>
+
+                                        <!-- Expandable Configuration & Observation Inputs -->
+                                        <div class="jtm-acc-detail-inputs mt-2 pt-2 border-top" id="acc_inputs_<?= $acc['id'] ?>" style="display: none;">
+                                            <div class="row g-2 align-items-center mb-2">
+                                                <div class="col-sm-5 col-6">
+                                                    <label class="small text-muted mb-1 d-block" style="font-size: 11px;">Jumlah (Qty)</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" min="1" max="99" class="form-control form-control-sm jtm-acc-qty" id="acc_qty_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>" value="<?= (int)($acc['default_qty'] ?? 3) ?>">
+                                                        <span class="input-group-text bg-light text-secondary"><?= esc($acc['unit'] ?? 'buah') ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-7 col-6">
+                                                    <label class="small text-muted mb-1 d-block" style="font-size: 11px;">Kondisi Fisik</label>
+                                                    <select class="form-select form-select-sm jtm-acc-condition" id="acc_cond_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>">
+                                                        <option value="BAIK">BAIK</option>
+                                                        <option value="RUSAK">RUSAK</option>
+                                                        <option value="PERLU_PENGGANTIAN">PERLU PENGGANTIAN</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <?php if (!empty($acc['phase_applicable'])): ?>
+                                            <div class="bg-light p-2 rounded mb-2 border">
+                                                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                                                    <span class="small fw-bold text-dark" style="font-size: 11px;">
+                                                        <i class="fas fa-network-wired text-info me-1"></i> Konfigurasi Fasa:
+                                                    </span>
+                                                    <div class="d-flex gap-2 jtm-phase-config-group" data-acc-id="<?= $acc['id'] ?>">
+                                                        <div class="form-check form-check-inline mb-0 me-1" style="font-size: 11px;">
+                                                            <input class="form-check-input jtm-phase-radio" type="radio" name="phase_cfg_<?= $acc['id'] ?>" id="pcfg3_<?= $acc['id'] ?>" value="3_PHASE" checked data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label" for="pcfg3_<?= $acc['id'] ?>">3 Phase</label>
+                                                        </div>
+                                                        <div class="form-check form-check-inline mb-0 me-1" style="font-size: 11px;">
+                                                            <input class="form-check-input jtm-phase-radio" type="radio" name="phase_cfg_<?= $acc['id'] ?>" id="pcfg2_<?= $acc['id'] ?>" value="2_PHASE" data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label" for="pcfg2_<?= $acc['id'] ?>">2 Phase</label>
+                                                        </div>
+                                                        <div class="form-check form-check-inline mb-0" style="font-size: 11px;">
+                                                            <input class="form-check-input jtm-phase-radio" type="radio" name="phase_cfg_<?= $acc['id'] ?>" id="pcfg1_<?= $acc['id'] ?>" value="1_PHASE" data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label" for="pcfg1_<?= $acc['id'] ?>">1 Phase</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2 pt-1 border-top" style="font-size: 11px;">
+                                                    <span class="text-muted">Posisi Fasa:</span>
+                                                    <div class="d-flex gap-2">
+                                                        <div class="form-check form-check-inline mb-0 me-1">
+                                                            <input class="form-check-input jtm-phase-pos" type="checkbox" id="ppos_r_<?= $acc['id'] ?>" value="R" checked data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label fw-bold text-danger" for="ppos_r_<?= $acc['id'] ?>">R</label>
+                                                        </div>
+                                                        <div class="form-check form-check-inline mb-0 me-1">
+                                                            <input class="form-check-input jtm-phase-pos" type="checkbox" id="ppos_s_<?= $acc['id'] ?>" value="S" checked data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label fw-bold text-warning" for="ppos_s_<?= $acc['id'] ?>">S</label>
+                                                        </div>
+                                                        <div class="form-check form-check-inline mb-0">
+                                                            <input class="form-check-input jtm-phase-pos" type="checkbox" id="ppos_t_<?= $acc['id'] ?>" value="T" checked data-acc-id="<?= $acc['id'] ?>">
+                                                            <label class="form-check-label fw-bold text-dark" for="ppos_t_<?= $acc['id'] ?>">T</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php endif; ?>
+
+                                            <div class="form-group mb-0">
+                                                <input type="text" class="form-control form-control-sm jtm-acc-note" id="acc_note_<?= $acc['id'] ?>" data-acc-id="<?= $acc['id'] ?>" placeholder="Catatan kondisi / spesifikasi (opsional)">
                                             </div>
                                         </div>
                                     </div>
@@ -974,7 +1159,7 @@
                                             <div class="col-md-4">
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-light text-secondary fw-bold">Qty</span>
-                                                    <input type="number" step="0.01" min="0.01" class="form-control mr01-mat-qty" placeholder="Jumlah (misal: 1.00)" id="mat_qty_${m.id}">
+                                                    <input type="number" step="0.01" min="0.01" class="form-control mr01-mat-qty" placeholder="1.00" id="mat_qty_${m.id}">
                                                     <span class="input-group-text bg-light">${m.unit || 'SET'}</span>
                                                 </div>
                                             </div>
@@ -1584,22 +1769,42 @@
             }
         });
 
-        // --- CR-HOTFIX-02 Part C: AKSESORIS JTM / KONDUKTOR SERIALIZATION ---
+        // --- CR-ACCESSORY-PHASE-01: AKSESORIS JTM / KONDUKTOR SERIALIZATION & INTERACTION ---
         function updateAccessoriesJson() {
             const items = [];
             $('.jtm-acc-card').each(function() {
                 const $card = $(this);
                 const toggle = $card.find('.jtm-acc-toggle');
-                const accId = parseInt(toggle.data('acc-id'));
+                const accId = parseInt(toggle.data('acc-id'), 10);
                 const isAda = toggle.is(':checked');
                 const condition = $card.find('.jtm-acc-condition').val() || 'BAIK';
                 const note = ($card.find('.jtm-acc-note').val() || '').trim();
+                const isPhaseApplicable = ($card.data('phase-applicable') == 1 || $card.data('phase-applicable') === '1');
+                const unit = $card.data('unit') || 'buah';
+                const rawQty = parseInt($card.find('.jtm-acc-qty').val(), 10);
+                const defaultQty = parseInt($card.data('default-qty'), 10) || 1;
+                const qty = (!isNaN(rawQty) && rawQty > 0) ? rawQty : defaultQty;
+
+                let phaseConfig = 'NON_PHASE';
+                let phasePositions = [];
+
+                if (isPhaseApplicable) {
+                    phaseConfig = $card.find(`.jtm-phase-radio[data-acc-id="${accId}"]:checked`).val() || '3_PHASE';
+                    $card.find(`.jtm-phase-pos[data-acc-id="${accId}"]:checked`).each(function() {
+                        phasePositions.push($(this).val());
+                    });
+                }
 
                 items.push({
                     accessory_type_id: accId,
                     status: isAda ? 'ADA' : 'TIDAK_ADA',
                     condition: condition,
-                    note: note ? note : null
+                    note: note ? note : null,
+                    qty: qty,
+                    unit: unit,
+                    phase_applicable: isPhaseApplicable ? 1 : 0,
+                    phase_configuration: phaseConfig,
+                    phase_positions: phasePositions
                 });
             });
             $('#structured_accessories_json').val(JSON.stringify(items));
@@ -1624,7 +1829,58 @@
             updateAccessoriesJson();
         });
 
-        $(document).on('change input', '.jtm-acc-condition, .jtm-acc-note', function() {
+        $(document).on('change input', '.jtm-acc-condition, .jtm-acc-note, .jtm-acc-qty', function() {
+            updateAccessoriesJson();
+        });
+
+        // Phase Radio change handler: sync checkboxes and default qty
+        $(document).on('change', '.jtm-phase-radio', function() {
+            const accId = $(this).data('acc-id');
+            const mode = $(this).val();
+            const $card = $('#acc_card_' + accId);
+            const $qtyInput = $('#acc_qty_' + accId);
+            const rBox = $('#ppos_r_' + accId);
+            const sBox = $('#ppos_s_' + accId);
+            const tBox = $('#ppos_t_' + accId);
+
+            if (mode === '3_PHASE') {
+                rBox.prop('checked', true);
+                sBox.prop('checked', true);
+                tBox.prop('checked', true);
+                if (parseInt($qtyInput.val(), 10) <= 2) {
+                    $qtyInput.val(3);
+                }
+            } else if (mode === '2_PHASE') {
+                rBox.prop('checked', true);
+                sBox.prop('checked', true);
+                tBox.prop('checked', false);
+                if (parseInt($qtyInput.val(), 10) === 1 || parseInt($qtyInput.val(), 10) === 3) {
+                    $qtyInput.val(2);
+                }
+            } else if (mode === '1_PHASE') {
+                rBox.prop('checked', true);
+                sBox.prop('checked', false);
+                tBox.prop('checked', false);
+                if (parseInt($qtyInput.val(), 10) >= 2) {
+                    $qtyInput.val(1);
+                }
+            }
+            updateAccessoriesJson();
+        });
+
+        // Phase Checkbox change handler: dynamically determine matching phase radio
+        $(document).on('change', '.jtm-phase-pos', function() {
+            const accId = $(this).data('acc-id');
+            const $card = $('#acc_card_' + accId);
+            const checkedCount = $card.find(`.jtm-phase-pos[data-acc-id="${accId}"]:checked`).length;
+
+            if (checkedCount === 3) {
+                $card.find(`#pcfg3_${accId}`).prop('checked', true);
+            } else if (checkedCount === 2) {
+                $card.find(`#pcfg2_${accId}`).prop('checked', true);
+            } else if (checkedCount === 1) {
+                $card.find(`#pcfg1_${accId}`).prop('checked', true);
+            }
             updateAccessoriesJson();
         });
 

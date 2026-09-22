@@ -355,6 +355,9 @@ class AssetContextService
             ];
         }
 
+        $accService  = new \App\Services\JtmAccessoryService($this->db);
+        $accessories = $accService->getAccessoriesForAsset($assetId);
+
         return [
             'status'         => $finalStatus,
             'message'        => $finalMessage,
@@ -362,6 +365,7 @@ class AssetContextService
             'network'        => $networkBlock,
             'construction'   => $pickerResult['construction'] ?? null,
             'bom'            => $normalizedBom,
+            'accessories'    => $accessories,
             'context_source' => [
                 'ulp'          => 'SYSTEM',
                 'penyulang'    => 'SYSTEM',

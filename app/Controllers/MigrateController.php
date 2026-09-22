@@ -945,7 +945,7 @@ class MigrateController extends BaseController
                 'report_name'      => 'SIDAK TEJO v3.1 Data Reconciliation & Baseline Audit',
                 'timestamp_utc'    => $nowUtc,
                 'timestamp_wib'    => $nowWib,
-                'environment'      => CI_ENVIRONMENT,
+                'environment'      => defined('ENVIRONMENT') ? ENVIRONMENT : 'production',
                 'audit_gate'       => 'PHASE_1_RECONCILIATION_BASELINE',
                 'status'           => 'BASELOAD_CAPTURED',
             ],

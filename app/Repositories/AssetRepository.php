@@ -418,193 +418,106 @@ class AssetRepository
         try {
             $db = \Config\Database::connect();
             if (!$db->tableExists('assets') || $penyulangId <= 0) {
-                return ['type' => 'MultiLineString', 'coordinates' => [], 'nodes' => []];
+                return [
+                    'type'             => 'MultiLineString',
+                    'coordinates'      => [],
+                    'nodes'            => [],
+                    'edges'            => [],
+                    'translines'       => [],
+                    'preview_segments' => [],
+                    'network_truth'    => [
+                        'status'                        => 'NO_NETWORK',
+                        'authoritative_transline_count' => 0,
+                        'has_authoritative_transline'   => false,
+                        'has_topology_snapshot'         => false,
+                        'topology_snapshot'             => ['exists' => false, 'version' => null, 'segments_count' => 0],
+                        'has_parent_hierarchy'          => false,
+                        'parent_relation_count'         => 0,
+                        'preview_available'             => false,
+                        'has_spatial_preview'           => false,
+                        'preview_segments_count'        => 0,
+                        'topology_ready'                => false,
+                    ],
+                    'version_no'       => null,
+                    'version_status'   => null,
+                ];
             }
 
-            // =========================================================================
-            // PRIORITY 00: Authoritative Individual Segment Storage (gis_translines)
-            // =========================================================================
-            if ($db->tableExists('gis_translines')) {
-                $translineRows = $db->table('gis_translines')
-                    ->where('penyulang_id', $penyulangId)
-                    ->where('is_active', 1)
-                    ->orderBy('id', 'ASC')
-                    ->get()
-                    ->getResultArray();
-
-                if (!empty($translineRows)) {
-                    $multiLineCoords = [];
-                    $allNodes = [];
-                    $edges = [];
-
-                    // Preload asset coordinates for read-time fallback if geometry in DB is empty/damaged
-                    $assetPointMap = [];
-                    $assetCoordsRows = $db->table('assets')
-                        ->select('id, latitude, longitude')
-                        ->where('penyulang_id', $penyulangId)
-                        ->where('deleted_at IS NULL')
-                        ->get()
-                        ->getResultArray();
-                    foreach ($assetCoordsRows as $acr) {
-                        $lat = (float)($acr['latitude'] ?? 0);
-                        $lng = (float)($acr['longitude'] ?? 0);
-                        if ($lat != 0.0 && $lng != 0.0) {
-                            $assetPointMap[(int)$acr['id']] = [$lng, $lat];
-                        }
-                    }
-
-                    foreach ($translineRows as $r) {
-                        $geomStr = $r['geometry'] ?? '';
-                        $segCoords = !empty($geomStr) ? json_decode($geomStr, true) : null;
-                        
-                        // Canonical unwrap: if geometry was stored as GeoJSON object {"type":"LineString","coordinates":[...]}
-                        if (is_array($segCoords) && isset($segCoords['coordinates']) && is_array($segCoords['coordinates'])) {
-                            $segCoords = $segCoords['coordinates'];
-                        }
-
-                        $fromId = (int)$r['source_asset_id'];
-                        $toId   = (int)$r['target_asset_id'];
-
-                        // Read-time coordinate fallback strictly from authoritative Asset points (Zero-Write)
-                        if (empty($segCoords) || !is_array($segCoords) || count($segCoords) < 2 || !isset($segCoords[0][0])) {
-                            if (isset($assetPointMap[$fromId], $assetPointMap[$toId])) {
-                                $segCoords = [$assetPointMap[$fromId], $assetPointMap[$toId]];
-                            }
-                        }
-
-                        if (!empty($segCoords) && is_array($segCoords) && count($segCoords) >= 2) {
-                            $multiLineCoords[] = $segCoords;
-                            foreach ($segCoords as $pt) {
-                                if (is_array($pt) && count($pt) >= 2) {
-                                    $allNodes[] = $pt;
-                                }
-                            }
-                            $edges[] = [
-                                'transline_id'       => (int)$r['id'],
-                                'edge_id'            => (int)$r['id'],
-                                'from_asset_id'      => $fromId,
-                                'to_asset_id'        => $toId,
-                                'conductor_type'     => $r['conductor_type'] ?? 'AAAC',
-                                'conductor_size'     => $r['conductor_size'] ?? '150 mm²',
-                                'conductor_label'    => "{$r['conductor_type']} {$r['conductor_size']}",
-                                'conductor_material' => $r['conductor_material'] ?? 'ALUMINUM_ALLOY',
-                                'installation_type'  => $r['installation_type'] ?? 'OVERHEAD',
-                                'circuit_config'     => $r['circuit_config'] ?? '3_PHASE',
-                                'length_meter'       => (float)($r['distance_meters'] ?? 0),
-                                'coordinates'        => $segCoords,
-                                'status'             => 'ACTIVE',
-                            ];
-                        }
-                    }
-
-                    if (!empty($multiLineCoords)) {
-                        return [
-                            'type'        => 'MultiLineString',
-                            'coordinates' => $multiLineCoords,
-                            'nodes'       => $allNodes,
-                            'edges'       => $edges,
-                            'translines'  => $translineRows,
-                        ];
-                    }
-                }
-            }
-
-            // =========================================================================
-            // PRIORITY 0: Committed Active Network Topology Version
-            // =========================================================================
+            // 1. Audit active topology snapshot (Entity 2: Topology Snapshot)
+            $activeVer = null;
             if ($db->tableExists('network_topology_versions')) {
                 $activeVer = $db->table('network_topology_versions')
-                                ->where('penyulang_id', $penyulangId)
-                                ->where('is_active', 1)
-                                ->orderBy('version_no', 'DESC')
-                                ->get()
-                                ->getRowArray();
-
-                if (!empty($activeVer) && !empty($activeVer['geojson_topology'])) {
-                    $geo = json_decode($activeVer['geojson_topology'], true);
-                    if ($geo && !empty($geo['coordinates']) && is_array($geo['coordinates'])) {
-                        $coords = $geo['coordinates'];
-                        $nodes = [];
-                        if (($geo['type'] ?? '') === 'MultiLineString') {
-                            foreach ($coords as $seg) {
-                                if (is_array($seg)) {
-                                    foreach ($seg as $pt) {
-                                        $nodes[] = $pt;
-                                    }
-                                }
-                            }
-                        } else {
-                            $nodes = $coords;
-                        }
-
-                        return [
-                            'type'           => $geo['type'] ?? 'LineString',
-                            'coordinates'    => $coords,
-                            'nodes'          => $nodes,
-                            'version_no'     => (int)$activeVer['version_no'],
-                            'version_status' => $activeVer['version_status'] ?? 'ACTIVE'
-                        ];
-                    }
-                }
+                    ->where('penyulang_id', $penyulangId)
+                    ->where('is_active', 1)
+                    ->orderBy('version_no', 'DESC')
+                    ->get()
+                    ->getRowArray();
             }
 
-            $hasParentCol = $db->fieldExists('parent_asset_id', 'assets');
-            $hasSeqCol    = $db->fieldExists('sequence_no', 'assets');
+            // 2. Audit parent-child relationships (Entity 3: Asset Hierarchy)
+            $parentRelationCount = 0;
+            if ($db->fieldExists('parent_asset_id', 'assets')) {
+                $parentRelationCount = (int)$db->table('assets')
+                    ->where('penyulang_id', $penyulangId)
+                    ->where('parent_asset_id IS NOT NULL')
+                    ->where('parent_asset_id >', 0)
+                    ->where('deleted_at IS NULL')
+                    ->countAllResults();
+            }
 
+            // 3. Preload all valid JTM asset coordinates for this feeder
             $builder = $db->table('assets');
-            $builder->select('id, parent_asset_id, jenis_asset, latitude, longitude, sequence_no');
+            $selectFields = ['id', 'latitude', 'longitude'];
+            if ($db->fieldExists('jenis_asset', 'assets')) {
+                $selectFields[] = 'jenis_asset';
+            }
+            if ($db->fieldExists('parent_asset_id', 'assets')) {
+                $selectFields[] = 'parent_asset_id';
+            }
+            if ($db->fieldExists('sequence_no', 'assets')) {
+                $selectFields[] = 'sequence_no';
+            }
+            $builder->select(implode(', ', $selectFields));
             $builder->where('penyulang_id', $penyulangId);
             if ($db->fieldExists('deleted_at', 'assets')) {
                 $builder->where('deleted_at IS NULL');
             }
             $builder->where('latitude !=', 0);
             $builder->where('longitude !=', 0);
-
             if (!empty($userUlpId) && $db->fieldExists('ulp_id', 'assets')) {
                 $builder->where('ulp_id', $userUlpId);
             }
-
-            if ($hasSeqCol) {
+            if ($db->fieldExists('sequence_no', 'assets')) {
                 $builder->orderBy('sequence_no', 'ASC');
             } else {
                 $builder->orderBy('id', 'ASC');
             }
 
-            $nodes = $builder->get()->getResultArray();
-            if (empty($nodes)) {
-                return ['type' => 'MultiLineString', 'coordinates' => [], 'nodes' => []];
-            }
-
-            $nodeMap   = [];
+            $rawNodes = $builder->get()->getResultArray();
+            $nodeMap = [];
             $allPoints = [];
             $unvisited = [];
-
-            foreach ($nodes as $n) {
-                $id     = (int)$n['id'];
-                $lng    = (float)$n['longitude'];
-                $lat    = (float)$n['latitude'];
-                $seq    = (int)($n['sequence_no'] ?? 0);
-                $parent = (int)($n['parent_asset_id'] ?? 0);
-                $jenis  = strtoupper((string)($n['jenis_asset'] ?? 'JTM'));
-
-                $nodeMap[$id] = [
-                    'id'       => $id,
-                    'parent'   => $parent,
-                    'seq'      => $seq,
-                    'jenis'    => $jenis,
-                    'lat'      => $lat,
-                    'lng'      => $lng,
-                    'coord'    => [$lng, $lat]
-                ];
-                $allPoints[] = [$lng, $lat];
-                $unvisited[$id] = $nodeMap[$id];
+            foreach ($rawNodes as $n) {
+                $id  = (int)$n['id'];
+                $lng = (float)$n['longitude'];
+                $lat = (float)$n['latitude'];
+                if ($lat != 0.0 && $lng != 0.0) {
+                    $nodeMap[$id] = [
+                        'id'     => $id,
+                        'parent' => (int)($n['parent_asset_id'] ?? 0),
+                        'seq'    => (int)($n['sequence_no'] ?? 0),
+                        'jenis'  => strtoupper((string)($n['jenis_asset'] ?? 'JTM')),
+                        'lat'    => $lat,
+                        'lng'    => $lng,
+                        'coord'  => [$lng, $lat]
+                    ];
+                    $allPoints[] = [$lng, $lat];
+                    $unvisited[$id] = $nodeMap[$id];
+                }
             }
-            $multiLineCoords = [];
-            $hasValidParents = false;
 
-            // =========================================================================
-            // PRIORITY 0: Authoritative gis_translines (Single Source of Truth)
-            // =========================================================================
+            // 4. Check Entity 1: Authoritative gis_translines (Single Source of Truth for Translines)
+            $translineRows = [];
             if ($db->tableExists('gis_translines')) {
                 $tlBuilder = $db->table('gis_translines')
                     ->where('penyulang_id', $penyulangId)
@@ -612,228 +525,239 @@ class AssetRepository
                 if ($db->fieldExists('deleted_at', 'gis_translines')) {
                     $tlBuilder->where('deleted_at IS NULL');
                 }
-                $tlRows = $tlBuilder->get()->getResultArray();
+                $translineRows = $tlBuilder->orderBy('id', 'ASC')->get()->getResultArray();
+            }
 
-                if (!empty($tlRows)) {
-                    $multiLineCoords = [];
-                    $edges = [];
-                    foreach ($tlRows as $tl) {
-                        $u = (int)$tl['source_asset_id'];
-                        $v = (int)$tl['target_asset_id'];
-                        if (isset($nodeMap[$u]) && isset($nodeMap[$v])) {
-                            $coordU = $nodeMap[$u]['coord'];
-                            $coordV = $nodeMap[$v]['coord'];
-                            
-                            $edgeCoords = [$coordU, $coordV];
-                            if (!empty($tl['geometry'])) {
-                                $parsedGeom = is_string($tl['geometry']) ? json_decode($tl['geometry'], true) : $tl['geometry'];
-                                if (isset($parsedGeom['coordinates']) && is_array($parsedGeom['coordinates']) && count($parsedGeom['coordinates']) >= 2) {
-                                    $edgeCoords = $parsedGeom['coordinates'];
-                                }
-                            }
+            // =========================================================================
+            // BRANCH A: AUTHORITATIVE TRANSLINES EXIST IN DATABASE
+            // =========================================================================
+            if (!empty($translineRows)) {
+                $multiLineCoords = [];
+                $edges = [];
 
-                            $multiLineCoords[] = $edgeCoords;
-                            $edges[] = [
-                                'edge_id'            => (int)$tl['id'],
-                                'from_asset_id'      => $u,
-                                'to_asset_id'        => $v,
-                                'conductor_type'     => $tl['conductor_type'] ?? 'AAAC',
-                                'conductor_size'     => $tl['conductor_size'] ?? '150 mm²',
-                                'conductor_label'    => ($tl['conductor_type'] ?? 'AAAC') . ' ' . ($tl['conductor_size'] ?? '150 mm²'),
-                                'conductor_material' => $tl['conductor_material'] ?? 'ALUMINUM_ALLOY',
-                                'installation_type'  => $tl['installation_type'] ?? 'OVERHEAD',
-                                'circuit_config'     => $tl['circuit_config'] ?? '3_PHASE',
-                                'length_meter'       => (float)($tl['distance_meters'] ?? 0),
-                                'coordinates'        => $edgeCoords,
-                                'status'             => 'ACTIVE',
-                            ];
+                foreach ($translineRows as $r) {
+                    $u = (int)$r['source_asset_id'];
+                    $v = (int)$r['target_asset_id'];
+
+                    $geomStr = $r['geometry'] ?? '';
+                    $segCoords = !empty($geomStr) ? json_decode($geomStr, true) : null;
+                    if (is_array($segCoords) && isset($segCoords['coordinates']) && is_array($segCoords['coordinates'])) {
+                        $segCoords = $segCoords['coordinates'];
+                    }
+
+                    if (empty($segCoords) || !is_array($segCoords) || count($segCoords) < 2) {
+                        if (isset($nodeMap[$u], $nodeMap[$v])) {
+                            $segCoords = [$nodeMap[$u]['coord'], $nodeMap[$v]['coord']];
                         }
                     }
 
-                    if (!empty($edges)) {
-                        return [
-                            'type'           => 'MultiLineString',
-                            'coordinates'    => $multiLineCoords,
-                            'nodes'          => $allPoints,
-                            'edges'          => $edges,
-                            'version_no'     => 1,
-                            'version_status' => 'ACTIVE'
-                        ];
-                    }
-                }
-            }
-
-            // =========================================================================
-            // PRIORITY 1: Explicit Topology Tree Edges (parent_asset_id & asset_relationships)
-            // =========================================================================
-            $edges = [];
-            $relMap = [];
-
-            if ($db->tableExists('asset_relationships')) {
-                $feederAssetIds = array_keys($nodeMap);
-                if (!empty($feederAssetIds)) {
-                    $relRows = $db->table('asset_relationships')
-                        ->whereIn('parent_asset_id', $feederAssetIds)
-                        ->where('is_active', 1)
-                        ->get()
-                        ->getResultArray();
-
-                    foreach ($relRows as $r) {
-                        $key = (int)$r['parent_asset_id'] . '_' . (int)$r['child_asset_id'];
-                        $relMap[$key] = $r;
-                    }
-                }
-            }
-
-            foreach ($nodeMap as $id => $n) {
-                $parentId = $n['parent'];
-                if ($parentId > 0 && isset($nodeMap[$parentId])) {
-                    $parentCoord = $nodeMap[$parentId]['coord'];
-                    $childCoord  = $n['coord'];
-                    $multiLineCoords[] = [$parentCoord, $childCoord];
-                    $hasValidParents = true;
-
-                        $relKey = $parentId . '_' . $id;
-                        $rel = $relMap[$relKey] ?? [];
-
-                        $cType = $rel['conductor_type'] ?? 'AAAC';
-                        $cSize = $rel['conductor_size'] ?? '150 mm²';
-                        $dist  = (float)($rel['distance_meters'] ?? $this->haversineDistanceMeters($nodeMap[$parentId]['lat'], $nodeMap[$parentId]['lng'], $n['lat'], $n['lng']));
-
+                    if (!empty($segCoords) && is_array($segCoords) && count($segCoords) >= 2) {
+                        $multiLineCoords[] = $segCoords;
                         $edges[] = [
-                            'edge_id'            => (int)($rel['id'] ?? 0),
-                            'from_asset_id'      => $parentId,
-                            'to_asset_id'        => $id,
-                            'conductor_type'     => $cType,
-                            'conductor_size'     => $cSize,
-                            'conductor_label'    => "$cType $cSize",
-                            'conductor_material' => $rel['conductor_material'] ?? 'ALUMINUM_ALLOY',
-                            'installation_type'  => $rel['installation_type'] ?? 'OVERHEAD',
-                            'circuit_config'     => $rel['circuit_config'] ?? '3_PHASE',
-                            'length_meter'       => round($dist, 1),
-                            'coordinates'        => [$parentCoord, $childCoord],
+                            'transline_id'       => (int)$r['id'],
+                            'edge_id'            => (int)$r['id'],
+                            'from_asset_id'      => $u,
+                            'to_asset_id'        => $v,
+                            'conductor_type'     => $r['conductor_type'] ?? 'AAAC',
+                            'conductor_size'     => $r['conductor_size'] ?? '150 mm²',
+                            'conductor_label'    => ($r['conductor_type'] ?? 'AAAC') . ' ' . ($r['conductor_size'] ?? '150 mm²'),
+                            'conductor_material' => $r['conductor_material'] ?? 'ALUMINUM_ALLOY',
+                            'installation_type'  => $r['installation_type'] ?? 'OVERHEAD',
+                            'circuit_config'     => $r['circuit_config'] ?? '3_PHASE',
+                            'length_meter'       => (float)($r['distance_meters'] ?? 0),
+                            'coordinates'        => $segCoords,
                             'status'             => 'ACTIVE',
+                            'authoritative'      => true,
                         ];
                     }
                 }
 
+                $networkTruth = [
+                    'status'                        => 'AUTHORITATIVE',
+                    'authoritative_transline_count' => count($edges),
+                    'has_authoritative_transline'   => (count($edges) > 0),
+                    'has_topology_snapshot'         => !empty($activeVer),
+                    'topology_snapshot'             => [
+                        'exists'         => !empty($activeVer),
+                        'version'        => !empty($activeVer) ? (int)$activeVer['version_no'] : null,
+                        'segments_count' => !empty($activeVer) ? (int)($activeVer['segments_count'] ?? 0) : 0,
+                    ],
+                    'has_parent_hierarchy'          => ($parentRelationCount > 0),
+                    'parent_relation_count'         => $parentRelationCount,
+                    'preview_available'             => false,
+                    'has_spatial_preview'           => false,
+                    'preview_segments_count'        => 0,
+                    'topology_ready'                => (count($edges) > 0),
+                ];
+
+                return [
+                    'type'             => 'MultiLineString',
+                    'coordinates'      => $multiLineCoords,
+                    'nodes'            => $allPoints,
+                    'edges'            => $edges,
+                    'translines'       => $translineRows,
+                    'preview_segments' => [],
+                    'network_truth'    => $networkTruth,
+                    'version_no'       => !empty($activeVer) ? (int)$activeVer['version_no'] : 1,
+                    'version_status'   => !empty($activeVer) ? ($activeVer['version_status'] ?? 'ACTIVE') : 'ACTIVE'
+                ];
+            }
+
             // =========================================================================
-            // PRIORITY 2 & 3: Sequence / Spatial Nearest-Neighbor Reconstruction
+            // BRANCH B: ZERO DATABASE TRANSLINES (gis_translines = 0)
+            // INVARIANT: Computed spatial preview MUST NEVER be promoted as translines!
             // =========================================================================
-            if (!$hasValidParents) {
-                $hasValidSequence = false;
-                $seqNodes = [];
-                foreach ($nodeMap as $n) {
-                    if ($n['seq'] > 0) {
-                        $seqNodes[] = $n;
+            if (count($nodeMap) > 1) {
+                // Compute spatial nearest-neighbor preview segments strictly in-memory
+                $previewCoords = [];
+                $nodesList = array_values($nodeMap);
+
+                $startId = null;
+                foreach ($unvisited as $id => $n) {
+                    if (in_array($n['jenis'], ['GI', 'GARDU', 'SUBSTATION', 'GH'])) {
+                        $startId = $id;
+                        break;
                     }
                 }
+                if ($startId === null) {
+                    usort($nodesList, fn($a, $b) => $a['lat'] <=> $b['lat']);
+                    $startId = (int)$nodesList[0]['id'];
+                }
 
-                if (count($seqNodes) > 1) {
-                    usort($seqNodes, fn($a, $b) => $a['seq'] <=> $b['seq']);
-                    $seqLine = [];
-                    for ($i = 0; $i < count($seqNodes); $i++) {
-                        if ($i === 0) {
-                            $seqLine[] = $seqNodes[$i]['coord'];
-                            continue;
-                        }
-                        $prev = $seqNodes[$i - 1];
-                        $curr = $seqNodes[$i];
-                        $dist = $this->haversineDistanceMeters($prev['lat'], $prev['lng'], $curr['lat'], $curr['lng']);
+                while (!empty($unvisited)) {
+                    if (!isset($unvisited[$startId])) {
+                        $keys = array_keys($unvisited);
+                        $startId = $keys[0];
+                    }
 
-                        if ($dist <= 500.0) {
-                            $seqLine[] = $curr['coord'];
-                            $edges[] = [
-                                'edge_id'            => 0,
-                                'from_asset_id'      => $prev['id'],
-                                'to_asset_id'        => $curr['id'],
-                                'conductor_type'     => 'AAAC',
-                                'conductor_size'     => '150 mm²',
-                                'conductor_label'    => 'AAAC 150 mm²',
-                                'conductor_material' => 'ALUMINUM_ALLOY',
-                                'installation_type'  => 'OVERHEAD',
-                                'circuit_config'     => '3_PHASE',
-                                'length_meter'       => round($dist, 1),
-                                'coordinates'        => [$prev['coord'], $curr['coord']],
-                                'status'             => 'ACTIVE',
-                            ];
-                        } else {
-                            if (count($seqLine) > 1) {
-                                $multiLineCoords[] = $seqLine;
+                    $current = $unvisited[$startId];
+                    unset($unvisited[$startId]);
+                    $segment = [$current['coord']];
+
+                    while (true) {
+                        $nearestId   = null;
+                        $minDistance = 99999999.0;
+
+                        foreach ($unvisited as $candidateId => $cand) {
+                            $d = $this->haversineDistanceMeters($current['lat'], $current['lng'], $cand['lat'], $cand['lng']);
+                            if ($d < $minDistance && $d <= 350.0) {
+                                $minDistance = $d;
+                                $nearestId   = $candidateId;
                             }
-                            $seqLine = [$curr['coord']];
                         }
-                    }
-                    if (count($seqLine) > 1) {
-                        $multiLineCoords[] = $seqLine;
-                    }
-                    $hasValidSequence = (count($multiLineCoords) > 0);
-                }
 
-                // PRIORITY 3: Spatial Nearest-Neighbor Traversal
-                if (!$hasValidSequence && count($nodes) > 1) {
-                    $startId = null;
-                    foreach ($unvisited as $id => $n) {
-                        if (in_array($n['jenis'], ['GI', 'GARDU', 'SUBSTATION', 'GH'])) {
-                            $startId = $id;
+                        if ($nearestId !== null) {
+                            $current = $unvisited[$nearestId];
+                            unset($unvisited[$nearestId]);
+                            $segment[] = $current['coord'];
+                        } else {
                             break;
                         }
                     }
-                    if ($startId === null) {
-                        usort($nodes, fn($a, $b) => $a['latitude'] <=> $b['latitude']);
-                        $startId = (int)$nodes[0]['id'];
-                    }
 
-                    while (!empty($unvisited)) {
-                        if (!isset($unvisited[$startId])) {
-                            $keys = array_keys($unvisited);
-                            $startId = $keys[0];
-                        }
-
-                        $current = $unvisited[$startId];
-                        unset($unvisited[$startId]);
-
-                        $segment = [$current['coord']];
-
-                        while (true) {
-                            $nearestId   = null;
-                            $minDistance = 99999999.0;
-
-                            foreach ($unvisited as $candidateId => $cand) {
-                                $d = $this->haversineDistanceMeters($current['lat'], $current['lng'], $cand['lat'], $cand['lng']);
-                                if ($d < $minDistance && $d <= 350.0) {
-                                    $minDistance = $d;
-                                    $nearestId   = $candidateId;
-                                }
-                            }
-
-                            if ($nearestId !== null) {
-                                $current = $unvisited[$nearestId];
-                                unset($unvisited[$nearestId]);
-                                $segment[] = $current['coord'];
-                            } else {
-                                break;
-                            }
-                        }
-
-                        if (count($segment) > 1) {
-                            $multiLineCoords[] = $segment;
-                        }
+                    if (count($segment) > 1) {
+                        $previewCoords[] = $segment;
                     }
                 }
+
+                // INVARIANT: NO_FABRICATED_TRANSLINE_ID
+                // Spatial preview segments MUST NOT contain id, transline_id, or is_active!
+                $previewSegments = [];
+                foreach ($previewCoords as $idx => $pSeg) {
+                    $previewSegments[] = [
+                        'type'          => 'SPATIAL_PREVIEW',
+                        'persisted'     => false,
+                        'authoritative' => false,
+                        'topology'      => false,
+                        'preview_id'    => 'preview-seg-' . $idx,
+                        'coordinates'   => $pSeg,
+                    ];
+                }
+
+                $networkTruth = [
+                    'status'                        => 'PREVIEW_ONLY',
+                    'authoritative_transline_count' => 0,
+                    'has_authoritative_transline'   => false,
+                    'has_topology_snapshot'         => !empty($activeVer),
+                    'topology_snapshot'             => [
+                        'exists'         => !empty($activeVer),
+                        'version'        => !empty($activeVer) ? (int)$activeVer['version_no'] : null,
+                        'segments_count' => !empty($activeVer) ? (int)($activeVer['segments_count'] ?? 0) : 0,
+                    ],
+                    'has_parent_hierarchy'          => ($parentRelationCount > 0),
+                    'parent_relation_count'         => $parentRelationCount,
+                    'preview_available'             => (count($previewSegments) > 0),
+                    'has_spatial_preview'           => (count($previewSegments) > 0),
+                    'preview_segments_count'        => count($previewSegments),
+                    'topology_ready'                => false, // Invariant: Preview is NEVER topology ready!
+                ];
+
+                return [
+                    'type'             => 'MultiLineString',
+                    'coordinates'      => $previewCoords,
+                    'nodes'            => $allPoints,
+                    'edges'            => [],
+                    'translines'       => [],
+                    'preview_segments' => $previewSegments,
+                    'network_truth'    => $networkTruth,
+                    'version_no'       => null,
+                    'version_status'   => null
+                ];
             }
 
+            // =========================================================================
+            // BRANCH C: NO ASSETS / SINGLE NODE (NO_NETWORK)
+            // =========================================================================
+            $networkTruth = [
+                'status'                        => 'NO_NETWORK',
+                'authoritative_transline_count' => 0,
+                'has_authoritative_transline'   => false,
+                'has_topology_snapshot'         => false,
+                'topology_snapshot'             => ['exists' => false, 'version' => null, 'segments_count' => 0],
+                'has_parent_hierarchy'          => false,
+                'parent_relation_count'         => 0,
+                'preview_available'             => false,
+                'has_spatial_preview'           => false,
+                'preview_segments_count'        => 0,
+                'topology_ready'                => false,
+            ];
+
             return [
-                'type'           => 'MultiLineString',
-                'coordinates'    => $multiLineCoords,
-                'nodes'          => $allPoints,
-                'edges'          => $edges,
-                'version_no'     => 1,
-                'version_status' => 'ACTIVE'
+                'type'             => 'MultiLineString',
+                'coordinates'      => [],
+                'nodes'            => $allPoints,
+                'edges'            => [],
+                'translines'       => [],
+                'preview_segments' => [],
+                'network_truth'    => $networkTruth,
+                'version_no'       => null,
+                'version_status'   => null
             ];
         } catch (\Throwable $e) {
             log_message('error', '[AssetRepository::getFeederNetworkSegments] Exception: ' . $e->getMessage());
-            return ['type' => 'MultiLineString', 'coordinates' => [], 'nodes' => []];
+            return [
+                'type'             => 'MultiLineString',
+                'coordinates'      => [],
+                'nodes'            => [],
+                'edges'            => [],
+                'translines'       => [],
+                'preview_segments' => [],
+                'network_truth'    => [
+                    'status'                        => 'NO_NETWORK',
+                    'authoritative_transline_count' => 0,
+                    'has_authoritative_transline'   => false,
+                    'has_topology_snapshot'         => false,
+                    'topology_snapshot'             => ['exists' => false, 'version' => null, 'segments_count' => 0],
+                    'has_parent_hierarchy'          => false,
+                    'parent_relation_count'         => 0,
+                    'preview_available'             => false,
+                    'has_spatial_preview'           => false,
+                    'preview_segments_count'        => 0,
+                    'topology_ready'                => false,
+                ],
+                'version_no'       => null,
+                'version_status'   => null,
+            ];
         }
     }
 

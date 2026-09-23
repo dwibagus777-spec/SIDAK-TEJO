@@ -2539,6 +2539,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var map = null;
     var markerCluster = null;
     var translinePolylineLayer = null;
+    var previewPolylineLayer = null;
     var previewConnectionLayer = null;
     var segmentEditLayer = null;
     var proposalsPreviewLayer = null;
@@ -2945,6 +2946,7 @@ document.addEventListener("DOMContentLoaded", function () {
             markerByAssetId.clear();
             if (markerCluster && typeof markerCluster.clearLayers === 'function') markerCluster.clearLayers();
             if (translinePolylineLayer && typeof translinePolylineLayer.clearLayers === 'function') translinePolylineLayer.clearLayers();
+            if (previewPolylineLayer && typeof previewPolylineLayer.clearLayers === 'function') previewPolylineLayer.clearLayers();
             if (findingLayer && typeof findingLayer.clearLayers === 'function') findingLayer.clearLayers();
             if (proposalsPreviewLayer && typeof proposalsPreviewLayer.clearLayers === 'function') proposalsPreviewLayer.clearLayers();
         }
@@ -3019,6 +3021,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         translinePolylineLayer = L.featureGroup().addTo(map);
+        previewPolylineLayer = L.featureGroup().addTo(map);
         previewConnectionLayer = L.featureGroup().addTo(map);
         segmentEditLayer = L.featureGroup().addTo(map);
         proposalsPreviewLayer = L.featureGroup().addTo(map);
@@ -4833,50 +4836,47 @@ document.addEventListener("DOMContentLoaded", function () {
     function renderAllTranslines() {
         if (!translinePolylineLayer) return;
         translinePolylineLayer.clearLayers();
+        if (previewPolylineLayer) previewPolylineLayer.clearLayers();
         window.translineLayers = new Map();
+        window.previewLayers = new Map();
+        window.activeTranslines = [];
 
         if (!currentData) return;
 
-        // 1. Gather all active segment representations
+        var networkTruth = currentData.network_truth || (currentData.meta && currentData.meta.network_truth) || null;
+        var isAuthoritative = networkTruth ? (networkTruth.status === 'AUTHORITATIVE') : (currentData.meta && Boolean(currentData.meta.has_topology));
+
+        // 1. Authoritative Translines: strictly populated ONLY if network is AUTHORITATIVE
         var translinesList = [];
-        if (Array.isArray(currentData.translines) && currentData.translines.length > 0) {
-            translinesList = currentData.translines;
-        } else if (currentData.transline && currentData.transline.properties && Array.isArray(currentData.transline.properties.edges) && currentData.transline.properties.edges.length > 0) {
-            translinesList = currentData.transline.properties.edges;
-        } else if (currentData.transline && currentData.transline.geometry && currentData.transline.geometry.coordinates) {
-            var geom = currentData.transline.geometry;
-            if (geom.type === 'MultiLineString' && Array.isArray(geom.coordinates)) {
-                translinesList = geom.coordinates.map((seg, idx) => ({
-                    id: idx + 1,
-                    transline_id: idx + 1,
-                    coordinates: seg,
-                    conductor_label: 'AAAC 150 mm²',
-                    length_meter: 0,
-                    is_active: 1
-                }));
-            } else if (geom.type === 'LineString' && Array.isArray(geom.coordinates)) {
-                translinesList = [{
-                    id: 1,
-                    transline_id: 1,
-                    coordinates: geom.coordinates,
-                    conductor_label: 'AAAC 150 mm²',
-                    length_meter: 0,
-                    is_active: 1
-                }];
+        if (isAuthoritative) {
+            if (Array.isArray(currentData.translines) && currentData.translines.length > 0) {
+                translinesList = currentData.translines;
+            } else if (currentData.transline && currentData.transline.properties && Array.isArray(currentData.transline.properties.edges) && currentData.transline.properties.edges.length > 0) {
+                translinesList = currentData.transline.properties.edges;
             }
         }
 
-        var activeTranslines = translinesList.filter(t => (t.is_active === undefined || Number(t.is_active) === 1));
+        // STRICT INVARIANT: Filter only real authoritative translines with non-null ID.
+        // Fabricated ID generation (idx + 1) is completely eradicated!
+        var activeTranslines = translinesList.filter(function (t) {
+            var hasRealId = Boolean(t.id || t.transline_id || t.edge_id);
+            var isActive = (t.is_active === undefined || Number(t.is_active) === 1 || t.is_active === true);
+            return hasRealId && isActive;
+        });
+
+        window.activeTranslines = activeTranslines;
 
         console.log(
             '[GIS TRANSLINE]',
-            'feeder=', currentFeederId,
-            'active=', activeTranslines.length,
-            'ids=', activeTranslines.map(t => t.id || t.transline_id || t.edge_id)
+            'feeder=' + currentFeederId,
+            'status=' + (networkTruth ? networkTruth.status : (isAuthoritative ? 'AUTHORITATIVE' : 'NON_AUTHORITATIVE')),
+            'authoritative=' + activeTranslines.length,
+            'ids=' + JSON.stringify(activeTranslines.map(t => t.id || t.transline_id || t.edge_id))
         );
 
-        activeTranslines.forEach(function (tl, idx) {
-            var tId = tl.id || tl.transline_id || tl.edge_id || (idx + 1);
+        activeTranslines.forEach(function (tl) {
+            var tId = tl.id || tl.transline_id || tl.edge_id;
+            if (!tId) return; // Strict: No fabricated IDs
             var fromId = tl.source_asset_id || tl.from_asset_id;
             var toId = tl.target_asset_id || tl.to_asset_id;
 
@@ -5059,10 +5059,100 @@ document.addEventListener("DOMContentLoaded", function () {
             window.translineLayers.set(tId, visiblePoly);
         });
 
+        // 2. Spatial Preview Segments (SPATIAL_PREVIEW)
+        // INVARIANTS:
+        // - NEVER promoted to activeTranslines
+        // - NEVER assigned fake IDs
+        // - Rendered as dashed grey lines (#6c757d) on previewPolylineLayer
+        var previewList = [];
+        if (Array.isArray(currentData.preview_segments) && currentData.preview_segments.length > 0) {
+            previewList = currentData.preview_segments;
+        } else if (!isAuthoritative && currentData.transline && currentData.transline.geometry && currentData.transline.geometry.coordinates) {
+            var geom = currentData.transline.geometry;
+            if (geom.type === 'MultiLineString' && Array.isArray(geom.coordinates)) {
+                previewList = geom.coordinates.map((coords, idx) => ({
+                    type: 'SPATIAL_PREVIEW',
+                    preview_id: 'preview-seg-' + idx,
+                    coordinates: coords
+                }));
+            }
+        }
+
+        if (previewList.length > 0) {
+            console.log(
+                '[GIS SPATIAL PREVIEW]',
+                'feeder=' + currentFeederId,
+                'preview_segments=' + previewList.length,
+                '(NON-AUTHORITATIVE, UNPERSISTED ESTIMATION)'
+            );
+        }
+
+        if (previewPolylineLayer && previewList.length > 0) {
+            previewList.forEach(function (pSeg, pIdx) {
+                var pCoords = pSeg.coordinates;
+                if (!Array.isArray(pCoords) || pCoords.length < 2) return;
+
+                var validLatLngs = [];
+                for (var pi = 0; pi < pCoords.length; pi++) {
+                    var pt = pCoords[pi];
+                    if (Array.isArray(pt) && pt.length >= 2 && isValidLatLng(pt[1], pt[0])) {
+                        validLatLngs.push([pt[1], pt[0]]);
+                    }
+                }
+                if (validLatLngs.length < 2) return;
+
+                var previewPolyOpts = {
+                    color: '#6c757d',
+                    weight: 2.5,
+                    dashArray: '6, 8',
+                    opacity: 0.85,
+                    lineJoin: 'round',
+                    interactive: true
+                };
+                if (gisCanvasRenderer) previewPolyOpts.renderer = gisCanvasRenderer;
+                var previewPoly = L.polyline(validLatLngs, previewPolyOpts);
+
+                previewPoly.bindTooltip('⚠️ <strong>PREVIEW JALUR (BELUM DISIMPAN)</strong><br><span class="small text-muted">Kalkulasi spasial estimasi — Bukan transline resmi database</span>', {
+                    sticky: true,
+                    className: 'font-monospace small'
+                });
+
+                previewPoly.on('click', function (evt) {
+                    L.DomEvent.stopPropagation(evt);
+                    var pContent = `
+                        <div style="min-width: 270px; font-family: system-ui, -apple-system, sans-serif;">
+                            <div class="d-flex align-items-center justify-content-between border-bottom pb-1 mb-2">
+                                <strong style="color: #6c757d; font-size: 13px;"><i class="fas fa-draw-polygon me-1"></i> Preview Jalur Spasial</strong>
+                                <span class="badge bg-warning text-dark" style="font-size: 9px;">BELUM TERSIMPAN</span>
+                            </div>
+                            <div class="small text-secondary mb-2" style="font-size: 11px; line-height: 1.4;">
+                                <div><strong>Penyulang:</strong> <span class="text-dark">${currentFeederName || ('Feeder #' + currentFeederId)}</span></div>
+                                <div><strong>Status:</strong> <span class="badge bg-secondary" style="font-size: 9px;">SPATIAL_PREVIEW</span></div>
+                                <div class="mt-1">Jalur ini dikalkulasi secara spasial (nearest-neighbor) berdasarkan kedekatan koordinat aset.</div>
+                                <div class="mt-1 text-danger fw-bold"><i class="fas fa-circle-exclamation me-1"></i>Belum ada record transline resmi di database (gis_translines = 0).</div>
+                            </div>
+                            <div class="p-1 bg-light rounded text-center border">
+                                <span class="text-muted small" style="font-size: 9px;">
+                                    Gunakan menu Transline Editor / AI Proposal untuk memvalidasi dan menyimpan jalur resmi.
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    L.popup()
+                        .setLatLng(evt.latlng)
+                        .setContent(pContent)
+                        .openOn(map);
+                });
+
+                previewPolylineLayer.addLayer(previewPoly);
+                window.previewLayers.set('preview-' + pIdx, previewPoly);
+            });
+        }
+
         console.log(
             '[GIS TRANSLINE RENDER]',
-            'rendered=', window.translineLayers.size,
-            'ids=', Array.from(window.translineLayers.keys())
+            'authoritative_rendered=' + window.translineLayers.size,
+            'preview_rendered=' + (window.previewLayers ? window.previewLayers.size : 0)
         );
     }
 
@@ -5088,24 +5178,37 @@ document.addEventListener("DOMContentLoaded", function () {
             return {
                 status: GIS_TOPOLOGY_STATE.TOPOLOGY_UNKNOWN,
                 hasTopology: false,
-                edgeCount: 0
+                edgeCount: 0,
+                networkTruthStatus: 'NO_NETWORK'
             };
         }
 
-        var meta = data.meta;
-        if (meta && typeof meta === 'object' && typeof meta.has_topology === 'boolean') {
-            var edgeCount = (typeof meta.topology_count === 'number') ? meta.topology_count : 0;
+        var networkTruth = data.network_truth || (data.meta && data.meta.network_truth) || null;
+        var truthStatus = networkTruth ? networkTruth.status : (data.meta && data.meta.has_topology ? 'AUTHORITATIVE' : 'NO_NETWORK');
+
+        // STRICT INVARIANT: Only status 'AUTHORITATIVE' can ever be TOPOLOGY_READY
+        if (truthStatus === 'AUTHORITATIVE') {
+            var edgeCount = (networkTruth && typeof networkTruth.authoritative_transline_count === 'number')
+                ? networkTruth.authoritative_transline_count
+                : ((data.meta && typeof data.meta.topology_count === 'number') ? data.meta.topology_count : 0);
+            var isReady = (networkTruth && typeof networkTruth.topology_ready === 'boolean')
+                ? networkTruth.topology_ready
+                : (data.meta ? Boolean(data.meta.has_topology) : false);
+
             return {
-                status: meta.has_topology ? GIS_TOPOLOGY_STATE.TOPOLOGY_READY : GIS_TOPOLOGY_STATE.TOPOLOGY_NOT_READY,
-                hasTopology: meta.has_topology,
-                edgeCount: edgeCount
+                status: (isReady && edgeCount > 0) ? GIS_TOPOLOGY_STATE.TOPOLOGY_READY : GIS_TOPOLOGY_STATE.TOPOLOGY_NOT_READY,
+                hasTopology: (isReady && edgeCount > 0),
+                edgeCount: edgeCount,
+                networkTruthStatus: 'AUTHORITATIVE'
             };
         }
 
+        // For PREVIEW_ONLY or NO_NETWORK, topology is NEVER ready, edgeCount is strictly 0
         return {
-            status: GIS_TOPOLOGY_STATE.TOPOLOGY_UNKNOWN,
+            status: GIS_TOPOLOGY_STATE.TOPOLOGY_NOT_READY,
             hasTopology: false,
-            edgeCount: 0
+            edgeCount: 0,
+            networkTruthStatus: truthStatus
         };
     }
 
@@ -5227,9 +5330,16 @@ document.addEventListener("DOMContentLoaded", function () {
         var summaryBar = document.getElementById('gis-summary-bar');
         if (summaryBar) {
             summaryBar.style.display = 'block';
-            var summaryHtml = `<i class="fas fa-network-wired text-primary me-1"></i> Asset Penyulang: <strong>${renderedFeederAssetCount}</strong>`;
+            var summaryHtml = `<i class="fas fa-network-wired text-primary me-1"></i> Asset: <strong>${renderedFeederAssetCount}</strong>`;
             if (renderedUnassignedAssetCount > 0) {
                 summaryHtml += ` | <i class="fas fa-link-slash text-warning ms-2 me-1"></i> Belum Terhubung: <strong>${renderedUnassignedAssetCount}</strong>`;
+            }
+            if (topoContext.hasTopology && topoContext.edgeCount > 0) {
+                summaryHtml += ` | <span class="badge bg-success ms-2"><i class="fas fa-route me-1"></i> TRANSLINE RESMI: ${topoContext.edgeCount}</span>`;
+            } else if (window.previewLayers && window.previewLayers.size > 0) {
+                summaryHtml += ` | <span class="badge bg-secondary ms-2 text-warning" title="Kalkulasi spasial estimasi, belum disimpan di DB"><i class="fas fa-draw-polygon me-1"></i> PREVIEW JALUR: ${window.previewLayers.size} (BELUM DISIMPAN)</span>`;
+            } else {
+                summaryHtml += ` | <span class="badge bg-light text-muted ms-2"><i class="fas fa-route me-1"></i> TRANSLINE: BELUM ADA</span>`;
             }
             if (renderedTemuanCount > 0) {
                 summaryHtml += ` | <i class="fas fa-triangle-exclamation text-danger ms-2 me-1"></i> Temuan: <strong>${renderedTemuanCount}</strong>`;
@@ -5242,6 +5352,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
             } else if (translinePolylineLayer && translinePolylineLayer.getLayers().length > 0) {
                 map.fitBounds(translinePolylineLayer.getBounds(), { padding: [40, 40] });
+            } else if (previewPolylineLayer && previewPolylineLayer.getLayers().length > 0) {
+                map.fitBounds(previewPolylineLayer.getBounds(), { padding: [40, 40] });
             } else if (findingLayer && findingLayer.getLayers().length > 0) {
                 map.fitBounds(findingLayer.getBounds(), { padding: [40, 40] });
             }
@@ -5281,7 +5393,9 @@ document.addEventListener("DOMContentLoaded", function () {
         var translines = Array.isArray(data.translines) ? data.translines : [];
         for (var j = 0; j < translines.length; j++) {
             var tl = translines[j];
-            var tId = String(tl.id || tl.transline_id || tl.edge_id || (j + 1));
+            var rawId = tl.id || tl.transline_id || tl.edge_id;
+            if (!rawId) continue; // Invariant: No fabricated IDs
+            var tId = String(rawId);
             translineById.set(tId, tl);
 
             var sId = String(tl.source_asset_id || tl.from_asset_id || '');

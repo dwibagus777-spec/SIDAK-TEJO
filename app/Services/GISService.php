@@ -345,42 +345,64 @@ class GISService
         $allFeatures = array_merge($assetFeatures, $findingFeatures);
         $hasMasterAssets = ($stats['total_assets'] > 0);
         $hasFeederAssets = ($stats['feeder_asset_count'] > 0);
-        $hasTopology     = !empty($segmentData['coordinates']);
+
+        // 🛡️ CR-HOTFIX-06: Strict Network Truth & Single Source of Truth Enforcement
+        $networkTruth = $segmentData['network_truth'] ?? [
+            'status'                        => 'NO_NETWORK',
+            'authoritative_transline_count' => 0,
+            'has_authoritative_transline'   => false,
+            'has_topology_snapshot'         => false,
+            'topology_snapshot'             => ['exists' => false, 'version' => null, 'segments_count' => 0],
+            'has_parent_hierarchy'          => false,
+            'parent_relation_count'         => 0,
+            'preview_available'             => false,
+            'has_spatial_preview'           => false,
+            'preview_segments_count'        => 0,
+            'topology_ready'                => false,
+        ];
+        $isAuthoritative = (($networkTruth['status'] ?? '') === 'AUTHORITATIVE');
+        $hasTopology     = $isAuthoritative && !empty($segmentData['edges']) && !empty($networkTruth['topology_ready']);
 
         return [
             'summary'   => $stats,
             'zoom'      => $zoom,
             'legend'    => $this->visualRegistry->getLegendItems(),
             'meta'      => [
-                'selected_penyulang_id'      => $penyulangId,
-                'selected_ulp_id'            => $feederUlpId,
-                'feeder_asset_count'         => $stats['feeder_asset_count'],
-                'unassigned_ulp_asset_count' => $stats['unassigned_ulp_asset_count'],
-                'total_assets'               => $stats['total_assets'],
-                'topology_count'             => count($segmentData['edges'] ?? []),
-                'temuan_count'               => $stats['temuan_count'],
-                'has_master_assets'          => $hasMasterAssets,
-                'has_feeder_assets'          => $hasFeederAssets,
-                'has_topology'               => $hasTopology,
-                'message'                    => $hasFeederAssets 
+                'selected_penyulang_id'         => $penyulangId,
+                'selected_ulp_id'               => $feederUlpId,
+                'feeder_asset_count'            => $stats['feeder_asset_count'],
+                'unassigned_ulp_asset_count'    => $stats['unassigned_ulp_asset_count'],
+                'total_assets'                  => $stats['total_assets'],
+                'topology_count'                => $isAuthoritative ? count($segmentData['edges'] ?? []) : 0,
+                'authoritative_transline_count' => $networkTruth['authoritative_transline_count'] ?? 0,
+                'preview_segments_count'        => $networkTruth['preview_segments_count'] ?? 0,
+                'temuan_count'                  => $stats['temuan_count'],
+                'has_master_assets'             => $hasMasterAssets,
+                'has_feeder_assets'             => $hasFeederAssets,
+                'has_topology'                  => $hasTopology,
+                'network_truth'                 => $networkTruth,
+                'message'                       => $hasFeederAssets 
                     ? 'Data master aset feeder berhasil dimuat.' 
                     : (($stats['unassigned_ulp_asset_count'] > 0)
                         ? "Terdapat {$stats['unassigned_ulp_asset_count']} Master Asset ULP yang belum terhubung ke penyulang."
                         : 'Belum terdapat Master Asset terdaftar untuk penyulang ini.'),
             ],
+            'network_truth' => $networkTruth,
             'transline' => [
                 'type' => 'Feature',
                 'geometry' => [
                     'type'        => $segmentData['type'] ?? 'MultiLineString',
-                    'coordinates' => $segmentData['coordinates'] ?? []
+                    'coordinates' => $isAuthoritative ? ($segmentData['coordinates'] ?? []) : []
                 ],
                 'properties' => [
-                    'edges'          => $segmentData['edges'] ?? [],
-                    'version_no'     => $segmentData['version_no'] ?? 1,
-                    'version_status' => $segmentData['version_status'] ?? 'ACTIVE'
+                    'edges'          => $isAuthoritative ? ($segmentData['edges'] ?? []) : [],
+                    'version_no'     => $isAuthoritative ? ($segmentData['version_no'] ?? 1) : null,
+                    'version_status' => $isAuthoritative ? ($segmentData['version_status'] ?? 'ACTIVE') : null,
+                    'network_truth'  => $networkTruth,
                 ]
             ],
-            'translines' => $segmentData['translines'] ?? $segmentData['edges'] ?? [],
+            'translines'       => $isAuthoritative ? ($segmentData['translines'] ?? $segmentData['edges'] ?? []) : [],
+            'preview_segments' => $segmentData['preview_segments'] ?? [],
             'bbox' => $validGisCount > 0 ? [
                 'min_lat' => $minLat,
                 'max_lat' => $maxLat,

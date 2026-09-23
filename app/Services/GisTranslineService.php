@@ -13,6 +13,8 @@ use CodeIgniter\Database\BaseConnection;
  */
 class GisTranslineService
 {
+    public const INVARIANT_RULE = 'GIS_TRANSLINE_APPEND_ONLY';
+
     protected BaseConnection $db;
     protected GisTranslineModel $translineModel;
     protected AssetRelationshipModel $relModel;
@@ -108,6 +110,9 @@ class GisTranslineService
     /**
      * Create or update an individual transline segment (Atomic CRUD)
      *
+     * Invariant: GIS_TRANSLINE_APPEND_ONLY.
+     * Mode ADD strictly appends or reactivates without mutating or deleting other edges.
+     *
      * @param array $data
      * @param array|null $actor
      * @return array<string, mixed>
@@ -125,6 +130,13 @@ class GisTranslineService
             ];
         }
 
+        if ($sourceId === $targetId) {
+            return [
+                'status'  => 'error',
+                'message' => 'Tiang awal dan tiang akhir tidak boleh merupakan aset yang sama (self-loop dilarang).'
+            ];
+        }
+
         $sourceAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, latitude, longitude, penyulang_id')->where('id', $sourceId)->get()->getRowArray();
         $targetAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, latitude, longitude, penyulang_id')->where('id', $targetId)->get()->getRowArray();
 
@@ -135,8 +147,26 @@ class GisTranslineService
             ];
         }
 
+        $sourcePenyulang = (int)($sourceAsset['penyulang_id'] ?? 0);
+        $targetPenyulang = (int)($targetAsset['penyulang_id'] ?? 0);
+
+        // Feeder Isolation Constraint: Disallow cross-feeder topology
+        if ($sourcePenyulang > 0 && $targetPenyulang > 0 && $sourcePenyulang !== $targetPenyulang) {
+            return [
+                'status'  => 'error',
+                'message' => "Aset sumber ({$sourceAsset['kode_asset']}) berada di penyulang ID {$sourcePenyulang}, sedangkan aset target ({$targetAsset['kode_asset']}) berada di penyulang ID {$targetPenyulang}. Topologi antar-penyulang dilarang."
+            ];
+        }
+
         if ($penyulangId <= 0) {
-            $penyulangId = (int)($targetAsset['penyulang_id'] ?? $sourceAsset['penyulang_id'] ?? 0);
+            $penyulangId = $sourcePenyulang > 0 ? $sourcePenyulang : $targetPenyulang;
+        }
+
+        if ($penyulangId > 0 && (($sourcePenyulang > 0 && $sourcePenyulang !== $penyulangId) || ($targetPenyulang > 0 && $targetPenyulang !== $penyulangId))) {
+            return [
+                'status'  => 'error',
+                'message' => "Aset tidak sesuai dengan penyulang ID {$penyulangId} yang ditentukan."
+            ];
         }
 
         $conductorType     = (string)($data['conductor_type'] ?? 'AAAC');
@@ -173,6 +203,8 @@ class GisTranslineService
 
         $this->db->transBegin();
         try {
+            // Mode ADD is strictly append-only (GIS_TRANSLINE_APPEND_ONLY invariant).
+            // Under NO circumstance can ADD mutate, deactivate, or delete other edges.
             if ($mode === 'REPLACE') {
                 // Deactivate previous connections originating from source
                 $this->db->table('gis_translines')
@@ -185,21 +217,18 @@ class GisTranslineService
                         'deleted_at' => date('Y-m-d H:i:s'),
                     ]);
 
-                if ($this->db->fieldExists('penyulang_id', 'asset_relationships')) {
-                    $this->db->table('asset_relationships')
-                        ->where('penyulang_id', $penyulangId)
+                if ($this->db->tableExists('asset_relationships')) {
+                    $relQuery = $this->db->table('asset_relationships')
                         ->where('source_asset_id', $sourceId)
-                        ->where('target_asset_id !=', $targetId)
-                        ->delete();
-                } else {
-                    $this->db->table('asset_relationships')
-                        ->where('source_asset_id', $sourceId)
-                        ->where('target_asset_id !=', $targetId)
-                        ->delete();
+                        ->where('target_asset_id !=', $targetId);
+                    if ($this->db->fieldExists('penyulang_id', 'asset_relationships')) {
+                        $relQuery->where('penyulang_id', $penyulangId);
+                    }
+                    $relQuery->delete();
                 }
             }
 
-            // 1. Check existing row in gis_translines
+            // 1. Check existing row in gis_translines (bidirectional pair search)
             $existing = $this->db->table('gis_translines')
                 ->groupStart()
                     ->where('source_asset_id', $sourceId)->where('target_asset_id', $targetId)
@@ -212,6 +241,7 @@ class GisTranslineService
                 ->getRowArray();
 
             $translineId = null;
+            $isDuplicate = false;
             $payload = [
                 'transline_code'     => $translineCode,
                 'penyulang_id'       => $penyulangId,
@@ -234,6 +264,10 @@ class GisTranslineService
 
             if ($existing) {
                 $translineId = (int)$existing['id'];
+                if ((int)$existing['is_active'] === 1 && empty($existing['deleted_at'])) {
+                    $isDuplicate = true;
+                }
+                // Update or reactivate existing record without increasing count (idempotent duplicate protection)
                 $this->db->table('gis_translines')->where('id', $translineId)->update($payload);
             } else {
                 $payload['created_by'] = $actorName;
@@ -297,7 +331,10 @@ class GisTranslineService
             return [
                 'status'          => 'success',
                 'is_direct_commit'=> true,
-                'message'         => "Transline #{$translineId} ({$sourceAsset['nama_asset']} ➔ {$targetAsset['nama_asset']}) berhasil disimpan.",
+                'is_duplicate'    => $isDuplicate,
+                'message'         => $isDuplicate
+                    ? "Sambungan transline #{$translineId} ({$sourceAsset['nama_asset']} ➔ {$targetAsset['nama_asset']}) sudah ada dan aktif."
+                    : "Transline #{$translineId} ({$sourceAsset['nama_asset']} ➔ {$targetAsset['nama_asset']}) berhasil disimpan.",
                 'transline_id'    => $translineId,
                 'translines'      => $this->getFeederTranslines($penyulangId),
                 'topology'        => $freshTopology,

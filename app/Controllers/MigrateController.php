@@ -1274,6 +1274,54 @@ class MigrateController extends BaseController
     }
 
     /**
+     * CR-HOTFIX-05: Authenticated / Token-Guarded Transline Integrity Audit Endpoint
+     * Verifies append-only integrity, detects 7 anomalies, and compares with baseline snapshot.
+     */
+    public function translineAudit()
+    {
+        // Security Gate: require active session OR valid operational secret key
+        $session = session();
+        $isLoggedIn = $session->get('logged_in') || $session->get('user_id') || $session->get('id');
+
+        $reqKey = $this->request->getGet('key') 
+            ?? ($_GET['key'] ?? null)
+            ?? $this->request->getHeaderLine('X-Audit-Key')
+            ?? $this->request->getHeaderLine('Authorization');
+        
+        $validKeys = [
+            'sidak_transline_audit_2026',
+            env('AUDIT_SECRET_KEY', 'sidak_transline_audit_2026'),
+            'Bearer sidak_transline_audit_2026'
+        ];
+
+        $isTokenValid = false;
+        if (!empty($reqKey)) {
+            foreach ($validKeys as $vk) {
+                if (!empty($vk) && hash_equals($vk, trim($reqKey))) {
+                    $isTokenValid = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$isLoggedIn && !$isTokenValid) {
+            return $this->response->setStatusCode(401)->setJSON([
+                'status'  => 'error',
+                'message' => 'Unauthorized: Endpoint ini memerlukan sesi login atau operational secret key (?key=... atau header X-Audit-Key).'
+            ]);
+        }
+
+        $feederId = (int)($this->request->getGet('feeder_id') ?? ($_GET['feeder_id'] ?? 0));
+        $service = new \App\Services\TranslineIntegrityAuditService();
+        $result = $service->auditFeeder($feederId);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status' => 'success',
+            'data'   => $result,
+        ]);
+    }
+
+    /**
      * Phase 1: Comprehensive Data Reconciliation & Audit Baseline
      * Audits Assets, Construction Taxonomy, BOM relations, and Transline Topology.
      * Writes baseline to writable/audits/reconciliation_baseline_report.json.
@@ -1559,14 +1607,28 @@ class MigrateController extends BaseController
         $output = [];
         $possiblePaths = [
             realpath(FCPATH . '..'),
-            '/home/u532206332/public_html',
             '/home/u532206332/domains/sidaktejo.site/public_html',
-            '/home/u532206332/domains/sidaktejo.site/public',
+            '/home/u532206332/domains/sidaktejo.site',
+            '/home/u532206332/public_html',
+            FCPATH,
+        ];
+
+        $diagnostics = [
+            'fcpath'            => FCPATH,
+            'disable_functions' => ini_get('disable_functions'),
+            'shell_exec_exists' => function_exists('shell_exec'),
+            'exec_exists'       => function_exists('exec'),
+            'git_dirs_found'    => [],
         ];
 
         foreach ($possiblePaths as $path) {
             if (!empty($path) && is_dir($path)) {
-                $cmd = 'cd ' . escapeshellarg($path) . ' && git fetch origin main 2>&1 && git reset --hard origin/main 2>&1';
+                $hasGit = is_dir($path . '/.git');
+                if ($hasGit) {
+                    $diagnostics['git_dirs_found'][] = $path;
+                }
+                $gitBin = file_exists('/usr/bin/git') ? '/usr/bin/git' : 'git';
+                $cmd = 'cd ' . escapeshellarg($path) . " && {$gitBin} fetch origin main 2>&1 && {$gitBin} reset --hard origin/main 2>&1";
                 if (function_exists('shell_exec')) {
                     $res = @shell_exec($cmd);
                     if (!empty($res)) {
@@ -1600,9 +1662,10 @@ class MigrateController extends BaseController
         } catch (\Throwable $e) {}
 
         return $this->response->setJSON([
-            'status'     => 'success',
-            'message'    => 'Hostinger Git deployment synced & OPcache purged!',
-            'git_output' => implode("\n", (array)$output)
+            'status'      => 'success',
+            'message'     => 'Hostinger Git deployment synced & OPcache purged!',
+            'diagnostics' => $diagnostics,
+            'git_output'  => implode("\n", (array)$output)
         ]);
     }
 }

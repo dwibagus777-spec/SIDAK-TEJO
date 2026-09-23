@@ -289,12 +289,24 @@ class NetworkLookup extends BaseController
                     continue;
                 }
 
+                // Filter out empty/uninitialized catalog entries
+                if ($cCode === '' && $cName === '') {
+                    continue;
+                }
+
+                $domain = strtoupper(trim((string)($row['asset_domain'] ?? 'TIANG')));
+
                 $results[] = [
                     'id'                  => (int)$row['id'],
                     'code'                => $cCode,
+                    'standard_code'       => $cCode,
                     'name'                => $cName,
+                    'technical_name'      => $cName,
                     'construction_family' => $cFamily ?: 'JTM',
+                    'family'              => $cFamily ?: 'JTM',
+                    'asset_domain'        => $domain ?: 'TIANG',
                     'voltage_level'       => (string)($row['voltage_level'] ?? '20kV'),
+                    'description'         => (string)($row['description'] ?? ''),
                 ];
             }
 
@@ -438,6 +450,7 @@ class NetworkLookup extends BaseController
             $assetId = (int)($json['asset_id'] ?? $this->request->getPost('asset_id') ?? 0);
             $newConstructionTypeId = (int)($json['construction_type_id'] ?? $json['new_construction_type_id'] ?? $this->request->getPost('construction_type_id') ?? $this->request->getPost('new_construction_type_id') ?? 0);
             $reason = (string)($json['reason'] ?? $this->request->getPost('reason') ?? 'Koreksi Standar Konstruksi Operator via GIS');
+            $newNamaAsset = isset($json['nama_asset']) ? (string)$json['nama_asset'] : (isset($json['new_nama_asset']) ? (string)$json['new_nama_asset'] : ($this->request->getPost('nama_asset') ?? $this->request->getPost('new_nama_asset') ?? null));
 
             $session = session();
             $userId  = (int)($session->get('user_id') ?? 0);
@@ -453,7 +466,7 @@ class NetworkLookup extends BaseController
             }
 
             $service = new \App\Services\AssetContextService();
-            $result = $service->correctConstruction($assetId, $newConstructionTypeId, $userId, $userRole, $userUlpId, $reason);
+            $result = $service->correctConstruction($assetId, $newConstructionTypeId, $userId, $userRole, $userUlpId, $reason, $newNamaAsset);
 
             $statusCode = ($result['status'] === 'success') ? 200 : (
                 in_array($result['code'] ?? '', ['FORBIDDEN_ULP', 'CROSS_ULP_REJECTED']) ? 403 : (

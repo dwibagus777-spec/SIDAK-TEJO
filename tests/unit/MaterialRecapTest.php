@@ -83,7 +83,9 @@ final class MaterialRecapTest extends CIUnitTestCase
             $forge->addField([
                 'id'                  => ['type' => 'INTEGER', 'auto_increment' => true, 'primary_key' => true],
                 'construction_code'   => ['type' => 'VARCHAR', 'constraint' => 50],
+                'code'                => ['type' => 'VARCHAR', 'constraint' => 50, 'null' => true],
                 'construction_name'   => ['type' => 'VARCHAR', 'constraint' => 150],
+                'name'                => ['type' => 'VARCHAR', 'constraint' => 150, 'null' => true],
                 'construction_family' => ['type' => 'VARCHAR', 'constraint' => 50, 'default' => 'JTM'],
             ]);
             $forge->createTable('construction_types', true);

@@ -111,10 +111,12 @@ class MaterialPickerService
     {
         if ($constructionTypeId <= 0) {
             return [
-                'status' => 'NO_CONSTRUCTION',
-                'message' => 'KONSTRUKSI BELUM TERPETAKAN',
-                'construction' => null,
-                'materials' => [],
+                'status'         => 'NO_CONSTRUCTION',
+                'bom_status'     => 'NEEDS_BOM_MAPPING',
+                'bom_item_count' => 0,
+                'message'        => 'KONSTRUKSI BELUM TERPETAKAN',
+                'construction'   => null,
+                'materials'      => [],
             ];
         }
 
@@ -122,10 +124,12 @@ class MaterialPickerService
         $construction = $this->constructionModel->find($constructionTypeId);
         if (!$construction) {
             return [
-                'status' => 'NO_CONSTRUCTION',
-                'message' => 'KONSTRUKSI BELUM TERPETAKAN',
-                'construction' => null,
-                'materials' => [],
+                'status'         => 'NO_CONSTRUCTION',
+                'bom_status'     => 'NEEDS_BOM_MAPPING',
+                'bom_item_count' => 0,
+                'message'        => 'KONSTRUKSI BELUM TERPETAKAN',
+                'construction'   => null,
+                'materials'      => [],
             ];
         }
 
@@ -137,15 +141,17 @@ class MaterialPickerService
         // Provisional Kubikel Firewall: block draft/provisional constructions from picker
         if ($cFamily === 'GARDU_KUBIKEL' || $cStatus === 'DRAFT' || str_contains($cCode, 'KUBIKEL')) {
             return [
-                'status' => 'PROVISIONAL_BLOCKED',
-                'message' => 'KONSTRUKSI MASIH BERSTATUS PROVISIONAL / DRAFT (BELUM FIX)',
-                'construction' => [
-                    'id' => (int)$construction['id'],
-                    'code' => $cCode,
-                    'name' => $cName,
+                'status'         => 'PROVISIONAL_BLOCKED',
+                'bom_status'     => 'NEEDS_BOM_MAPPING',
+                'bom_item_count' => 0,
+                'message'        => 'KONSTRUKSI MASIH BERSTATUS PROVISIONAL / DRAFT (BELUM FIX)',
+                'construction'   => [
+                    'id'     => (int)$construction['id'],
+                    'code'   => $cCode,
+                    'name'   => $cName,
                     'family' => $cFamily,
                 ],
-                'materials' => [],
+                'materials'      => [],
             ];
         }
 
@@ -169,10 +175,12 @@ class MaterialPickerService
 
         if (empty($bomItems)) {
             return [
-                'status' => 'NO_BOM',
-                'message' => 'BOM KONSTRUKSI BELUM TERSEDIA',
-                'construction' => $constructionData,
-                'materials' => [],
+                'status'         => 'NO_BOM',
+                'bom_status'     => 'NEEDS_BOM_MAPPING',
+                'bom_item_count' => 0,
+                'message'        => 'BOM KONSTRUKSI BELUM TERSEDIA',
+                'construction'   => $constructionData,
+                'materials'      => [],
             ];
         }
 
@@ -243,18 +251,25 @@ class MaterialPickerService
 
         if (empty($materials)) {
             return [
-                'status' => 'NO_BOM',
-                'message' => 'BOM KONSTRUKSI BELUM TERSEDIA',
-                'construction' => $constructionData,
-                'materials' => [],
+                'status'         => 'NO_BOM',
+                'bom_status'     => 'NEEDS_BOM_MAPPING',
+                'bom_item_count' => 0,
+                'message'        => 'BOM KONSTRUKSI BELUM TERSEDIA',
+                'construction'   => $constructionData,
+                'materials'      => [],
             ];
         }
 
+        // Completeness rule: COMPLETE if all active materials in BOM items are resolved
+        $bomStatus = (count($materials) >= count($bomItems)) ? 'COMPLETE' : 'PARTIAL';
+
         return [
-            'status' => 'READY',
-            'message' => 'Material sesuai BOM konstruksi',
-            'construction' => $constructionData,
-            'materials' => $materials,
+            'status'         => 'READY',
+            'bom_status'     => $bomStatus,
+            'bom_item_count' => count($materials),
+            'message'        => 'Material sesuai BOM konstruksi',
+            'construction'   => $constructionData,
+            'materials'      => $materials,
         ];
     }
 
@@ -473,6 +488,62 @@ class MaterialPickerService
                 'display_label'    => 'GTT2 — Gardu Distribusi Tiang Portal dengan LA & CO',
                 'topology_meaning' => 'PORTAL',
                 'pole_count'       => 2,
+            ],
+            'LBS' => [
+                'canonical_code'   => 'LBS',
+                'technical_name'   => 'Load Break Switch (LBS) Manual / Gas Insulated',
+                'feature_badge'    => '🎛️ SAKELAR LBS',
+                'display_label'    => 'LBS — Load Break Switch Manual 20 kV',
+                'topology_meaning' => 'SWITCH',
+                'pole_count'       => 1,
+            ],
+            'LBSM' => [
+                'canonical_code'   => 'LBSM',
+                'technical_name'   => 'Load Break Switch Motorized (LBS Motorized / RTU)',
+                'feature_badge'    => '📡 LBS MOTORIZED',
+                'display_label'    => 'LBSM — Load Break Switch Motorized / Remote RTU',
+                'topology_meaning' => 'SWITCH',
+                'pole_count'       => 1,
+            ],
+            'PMCB' => [
+                'canonical_code'   => 'PMCB',
+                'technical_name'   => 'Pole Mounted Circuit Breaker (PMCB 20 kV)',
+                'feature_badge'    => '⚡ PEMUTUS PMCB',
+                'display_label'    => 'PMCB — Pole Mounted Circuit Breaker 20 kV',
+                'topology_meaning' => 'CIRCUIT_BREAKER',
+                'pole_count'       => 1,
+            ],
+            'RECLOSER' => [
+                'canonical_code'   => 'RECLOSER',
+                'technical_name'   => 'Automatic Circuit Recloser (ACR / Recloser 20 kV)',
+                'feature_badge'    => '🔄 RECLOSER OTOMATIS',
+                'display_label'    => 'RECLOSER — Automatic Circuit Recloser 20 kV',
+                'topology_meaning' => 'CIRCUIT_BREAKER',
+                'pole_count'       => 1,
+            ],
+            'REC' => [
+                'canonical_code'   => 'RECLOSER',
+                'technical_name'   => 'Automatic Circuit Recloser (ACR / Recloser 20 kV)',
+                'feature_badge'    => '🔄 RECLOSER OTOMATIS',
+                'display_label'    => 'RECLOSER — Automatic Circuit Recloser 20 kV',
+                'topology_meaning' => 'CIRCUIT_BREAKER',
+                'pole_count'       => 1,
+            ],
+            'ASS' => [
+                'canonical_code'   => 'ASS',
+                'technical_name'   => 'Automatic Sectionalizing Switch (ASS 20 kV)',
+                'feature_badge'    => '✂️ SECTIONALIZER',
+                'display_label'    => 'ASS — Automatic Sectionalizing Switch 20 kV',
+                'topology_meaning' => 'SWITCH',
+                'pole_count'       => 1,
+            ],
+            'AVS' => [
+                'canonical_code'   => 'AVS',
+                'technical_name'   => 'Automatic Voltage Switch / Sectionalizer (AVS 20 kV)',
+                'feature_badge'    => '🔌 DETEKSI TEGANGAN',
+                'display_label'    => 'AVS — Automatic Voltage Switch 20 kV',
+                'topology_meaning' => 'SWITCH',
+                'pole_count'       => 1,
             ],
         ];
 

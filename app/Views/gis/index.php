@@ -1392,7 +1392,8 @@
                     </div>
                     <div class="input-group input-group-sm mb-1">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" id="input-search-const" class="form-control" placeholder="Cari TM-1, TM-2, dsb..." style="font-size: 12px;">
+                        <input type="text" id="input-search-const" class="form-control" placeholder="Cari TM-1, LBS, PMCB, BULOG, dsb..." style="font-size: 12px;">
+                        <button class="btn btn-outline-secondary" type="button" id="btn-clear-const-search" style="display: none;" title="Hapus Pencarian"><i class="fas fa-times"></i></button>
                     </div>
                     <div id="const-options-list" class="list-group list-group-flush border rounded bg-white" style="max-height: 150px; overflow-y: auto;">
                         <!-- Dynamically populated -->
@@ -1406,7 +1407,7 @@
                     <div class="small fw-bold text-secondary text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
                         <i class="fas fa-boxes-stacked text-info me-1"></i> Katalog Material Standar (BOM Preview)
                     </div>
-                    <span class="badge bg-light text-muted border px-2 py-0" style="font-size: 10px;">Read-Only</span>
+                    <span id="ctx-drawer-bom-status-badge" class="badge bg-light text-muted border px-2 py-0" style="font-size: 10px;">Read-Only</span>
                 </div>
                 <p class="text-muted mb-2" style="font-size: 11px;">Daftar material resmi sesuai tipe konstruksi aset. Pratinjau katalog (bukan pemilihan transaksi).</p>
 
@@ -1426,8 +1427,8 @@
                         </table>
                     </div>
                 </div>
-                <div id="ctx-drawer-bom-empty" class="alert alert-secondary py-1 px-2 small mb-0 mt-1 text-center text-muted" style="display: none; font-size: 11px;">
-                    <i class="fas fa-box-open me-1"></i> BOM konstruksi belum tersedia pada katalog resmi.
+                <div id="ctx-drawer-bom-empty" class="alert alert-warning py-2 px-3 small mb-0 mt-1" style="display: none; font-size: 11px;">
+                    <!-- Populated dynamically with honest diagnostic -->
                 </div>
             </div>
         </div>
@@ -3468,6 +3469,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Guaranteed ZERO Master Mutation (Zero DB Writes)
     // ========================================================
     let currentAssetContextId = null;
+    let currentAssetContextName = null;
     let currentAssetAuthoritativePenyulangId = null;
     let currentWorkingSectionId = null;
     let currentWorkingConstructionId = null;
@@ -3481,6 +3483,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         currentAssetContextId = assetId;
+        currentAssetContextName = (fallbackProps && fallbackProps.nama_asset) ? fallbackProps.nama_asset : '';
         currentWorkingSectionId = null;
         currentWorkingConstructionId = null;
         currentAssetAuthoritativePenyulangId = null;
@@ -3549,6 +3552,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // 1. Asset Identity
                 const a = res.asset || {};
+                currentAssetContextName = a.nama_asset || '';
                 document.getElementById('ctx-drawer-title').textContent = a.nama_asset || ('Asset #' + currentAssetContextId);
                 document.getElementById('ctx-drawer-code').textContent = a.kode_asset || ('ID: ' + currentAssetContextId);
                 document.getElementById('ctx-drawer-jenis').textContent = a.jenis_asset || '-';
@@ -3621,9 +3625,32 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 // 4. Governed BOM Catalog Preview (Strict Read-Only)
+                const bomStatus = res.bom_status || ((res.bom && res.bom.length > 0) ? 'COMPLETE' : 'NEEDS_BOM_MAPPING');
+                const $bomBadge = $('#ctx-drawer-bom-status-badge');
+
+                if (bomStatus === 'COMPLETE') {
+                    $bomBadge.attr('class', 'badge bg-success-subtle text-success border border-success-subtle px-2 py-0').html(`✓ COMPLETE • ${res.bom.length} item`);
+                } else if (bomStatus === 'PARTIAL') {
+                    $bomBadge.attr('class', 'badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-0').html(`⚠ PARTIAL • ${res.bom.length} item`);
+                } else {
+                    $bomBadge.attr('class', 'badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-0').html('⚠ NEEDS BOM MAPPING');
+                }
+
                 if (res.status === 'NO_BOM' || !Array.isArray(res.bom) || res.bom.length === 0) {
                     $bomContainer.hide();
-                    $bomEmpty.show();
+                    const cInfo = res.construction || {};
+                    $bomEmpty.html(`
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-warning text-dark font-monospace" style="font-size: 10px;">STATUS: NEEDS_BOM_MAPPING</span>
+                            <span class="small text-muted font-monospace" style="font-size: 10px;">ID: ${cInfo.id || '-'}</span>
+                        </div>
+                        <p class="small text-dark mb-1" style="font-size: 11px;">
+                            Standar konstruksi <strong>${cInfo.code || '-'} (${cInfo.name || '-'})</strong> terdaftar resmi pada katalog PLN, namun rincian item BOM belum dimapping ke master material.
+                        </p>
+                        <span class="text-muted d-block" style="font-size: 10px;">
+                            <i class="fas fa-info-circle me-1 text-info"></i> Gunakan menu Master Material atau jalankan auto-migrate untuk memetakan BOM.
+                        </span>
+                    `).show();
                 } else {
                     $bomEmpty.hide();
                     $bomContainer.show();
@@ -3631,7 +3658,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     res.bom.forEach(function(m) {
                         const code = m.material_code || m.raw_material_code || '-';
                         const name = m.nama_material || m.nama_lapangan || m.raw_material_name || '-';
-                        const unit = m.satuan || m.unit || 'SET';
+                        const unit = m.satuan || m.unit || 'buah';
                         bomHtml += `<tr>
                             <td class="font-monospace text-primary fw-bold">${code}</td>
                             <td class="text-dark">${name}</td>
@@ -3873,51 +3900,177 @@ document.addEventListener("DOMContentLoaded", function () {
         let html = '';
         constructions.forEach(function(c) {
             const isSelected = (currentWorkingConstructionId && currentWorkingConstructionId == c.id);
-            html += `<button type="button" class="list-group-item list-group-item-action py-2 px-3 d-flex justify-content-between align-items-center btn-select-const-item" data-id="${c.id}" data-code="${c.code || ''}" data-name="${c.name || ''}" style="min-height: 44px; font-size: 12px;">
-                <div>
-                    <span class="badge bg-primary font-monospace me-1">${c.code}</span>
-                    <span class="fw-bold text-dark">${c.name}</span>
-                    <span class="text-muted d-block" style="font-size: 10px;">${c.construction_family || 'JTM'} • ${c.voltage_level || '20kV'}</span>
+            const stdCode = c.standard_code || c.code || '';
+            const techName = c.technical_name || c.name || '';
+            const family = c.family || c.construction_family || 'JTM';
+            const domain = c.asset_domain || 'TIANG';
+            const desc = c.description || '';
+            const isEquip = (domain === 'EQUIPMENT' || ['LBS', 'LBSM', 'PMCB', 'RECLOSER', 'REC', 'ASS', 'AVS'].includes(stdCode.toUpperCase()));
+            
+            // Searchable token string (dash normalized also handled in search func)
+            const searchTokens = [c.code, stdCode, c.name, techName, family, domain, desc].filter(Boolean).join(' ').toLowerCase();
+
+            html += `<button type="button" class="list-group-item list-group-item-action py-2 px-3 d-flex justify-content-between align-items-center btn-select-const-item" 
+                data-id="${c.id}" 
+                data-code="${c.code || ''}" 
+                data-standard-code="${stdCode}"
+                data-name="${c.name || ''}" 
+                data-tech-name="${techName}"
+                data-family="${family}"
+                data-domain="${domain}"
+                data-search="${searchTokens}"
+                style="min-height: 44px; font-size: 12px;">
+                <div class="pe-2 text-start">
+                    <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
+                        <span class="badge bg-primary font-monospace">${stdCode}</span>
+                        ${isEquip ? '<span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="fas fa-bolt me-1"></i>EQUIPMENT</span>' : '<span class="badge bg-secondary-subtle text-secondary" style="font-size: 9px;"><i class="fas fa-tower-broadcast me-1"></i>TIANG</span>'}
+                    </div>
+                    <div class="fw-bold text-dark text-break">${techName}</div>
+                    <div class="text-muted text-break" style="font-size: 10px;">${family} • ${domain} • ${c.voltage_level || '20kV'}</div>
                 </div>
-                <span class="badge ${isSelected ? 'bg-primary' : 'bg-light text-muted border'} px-2 py-1">Pilih</span>
+                <span class="badge ${isSelected ? 'bg-primary' : 'bg-light text-muted border'} px-2 py-1 flex-shrink-0">Pilih</span>
             </button>`;
         });
         $list.html(html);
+
+        // Re-apply existing search query if present
+        const currentQ = $('#input-search-const').val();
+        if (currentQ) {
+            performConstructionSearch(currentQ);
+        }
     }
+
+    function performConstructionSearch(query) {
+        const rawQ = (query || '').toLowerCase().trim();
+        const $clearBtn = $('#btn-clear-const-search');
+        if (rawQ.length > 0) {
+            $clearBtn.show();
+        } else {
+            $clearBtn.hide();
+        }
+
+        const normalizedQ = rawQ.replace(/[\s\-_]+/g, '');
+        const tokens = rawQ.split(/\s+/).filter(Boolean);
+        let matchCount = 0;
+
+        $('#const-options-list .btn-select-const-item').each(function() {
+            const $item = $(this);
+            const searchData = ($item.attr('data-search') || '').toLowerCase();
+            const code = ($item.attr('data-code') || '').toLowerCase();
+            const normalizedCode = code.replace(/[\s\-_]+/g, '');
+            const activeAssetName = (currentAssetContextName || '').toLowerCase();
+
+            if (!rawQ) {
+                $item.show();
+                matchCount++;
+                return;
+            }
+
+            // Check normalized match (e.g. "tm-1" vs "tm1", "lbs" vs "lbs")
+            const normalizedMatch = (normalizedQ.length > 0 && normalizedCode.indexOf(normalizedQ) > -1);
+            
+            // Check all tokens match search data
+            const allTokensMatch = (tokens.length > 0 && tokens.every(function(t) { return searchData.indexOf(t) > -1; }));
+
+            // Also support context match: if operator types e.g. "bulog" and active asset is "LBS BULOG",
+            // allow matching equipment items
+            const activeAssetMatch = (activeAssetName && activeAssetName.indexOf(rawQ) > -1 && (searchData.indexOf('equipment') > -1 || ['lbs', 'pmcb', 'recloser'].some(function(k) { return code.indexOf(k) > -1; })));
+
+            if (normalizedMatch || allTokensMatch || activeAssetMatch) {
+                $item.show();
+                matchCount++;
+            } else {
+                $item.hide();
+            }
+        });
+
+        $('#const-search-empty-msg').remove();
+        if (matchCount === 0 && rawQ.length > 0) {
+            $('#const-options-list').append('<div id="const-search-empty-msg" class="p-3 text-center text-muted small"><i class="fas fa-search me-1"></i>Tidak ada standar konstruksi yang cocok dengan "<strong>' + $('<div>').text(rawQ).html() + '</strong>"</div>');
+        }
+    }
+
+    $(document).on('input keyup search change', '#input-search-const', function() {
+        performConstructionSearch($(this).val());
+    });
+
+    $(document).on('click', '#btn-clear-const-search', function() {
+        $('#input-search-const').val('');
+        performConstructionSearch('');
+        $('#input-search-const').focus();
+    });
 
     $(document).on('click', '.btn-select-const-item', function() {
         const constId = $(this).data('id');
         const constCode = $(this).data('code') || '';
-        const constName = $(this).data('name') || '';
+        const constName = $(this).data('tech-name') || $(this).data('name') || '';
+        const domain = $(this).data('domain') || '';
+        const isEquip = (domain === 'EQUIPMENT' || ['LBS', 'LBSM', 'PMCB', 'RECLOSER', 'REC', 'ASS', 'AVS'].includes(constCode.toUpperCase()));
+
+        // Highlight selection
+        $('.btn-select-const-item').removeClass('border-primary bg-primary-subtle');
+        $(this).addClass('border-primary bg-primary-subtle');
+
+        // Current asset name prefilled
+        const currentName = currentAssetContextName || '';
 
         $('#const-confirm-box').remove();
         const confirmHtml = `
             <div id="const-confirm-box" class="p-2 mt-2 bg-white border border-warning rounded-3 shadow-sm">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="small fw-bold text-dark"><i class="fas fa-save text-warning me-1"></i> Konfirmasi Koreksi Konstruksi</span>
+                    <span class="small fw-bold text-dark"><i class="fas fa-tools text-warning me-1"></i> Konfirmasi Koreksi Konstruksi</span>
                     <span class="badge bg-warning-subtle text-dark" style="font-size: 9px;">Menunggu Persetujuan</span>
                 </div>
-                <p class="small text-dark mb-2" style="font-size: 11px;">Simpan standar konstruksi baru ke database: <strong>${constCode} — ${constName}</strong>?</p>
+                
+                <div class="mb-2 p-2 bg-light rounded border">
+                    <div class="d-flex align-items-center gap-1 mb-1">
+                        <span class="badge bg-primary font-monospace">${constCode}</span>
+                        ${isEquip ? '<span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="fas fa-bolt me-1"></i>EQUIPMENT</span>' : ''}
+                        <span class="small fw-bold text-dark text-truncate">${constName}</span>
+                    </div>
+                    <div class="text-muted" style="font-size: 10px;">Standar teknis ini akan menentukan katalog material (BOM).</div>
+                </div>
+
+                <div class="mb-2">
+                    <label for="input-edit-asset-name" class="form-label text-dark fw-bold mb-1" style="font-size: 11px;">
+                        Nama Operasional Asset: <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="input-edit-asset-name" class="form-control form-control-sm" value="${$('<div>').text(currentName).html()}" placeholder="Contoh: LBS BULOG, PMCB ROYAL INDAH...">
+                    <div class="form-text text-muted" style="font-size: 10px;">
+                        ${isEquip ? '💡 <strong>Equipment PLN:</strong> Bedakan standar (contoh: <code>' + constCode + '</code>) dengan nama operasional di lapangan (contoh: <code>' + (currentName || constCode + ' OPERASIONAL') + '</code>).' : 'Nama operasional asset di lapangan.'}
+                    </div>
+                </div>
+
                 <div id="const-save-error" class="alert alert-danger py-1 px-2 small mb-2" style="display: none; font-size: 11px;"></div>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary w-50 py-1" id="btn-cancel-const-confirm" style="font-size: 11px;">Batal</button>
-                    <button type="button" class="btn btn-sm btn-warning text-dark w-50 fw-bold py-1" id="btn-commit-const-correction" data-id="${constId}" style="font-size: 11px;">
+                    <button type="button" class="btn btn-sm btn-warning text-dark w-50 fw-bold py-1" id="btn-commit-const-correction" data-id="${constId}" data-code="${constCode}" style="font-size: 11px;">
                         <i class="fas fa-check me-1"></i> Simpan ke DB
                     </button>
                 </div>
             </div>`;
         $('#const-options-list').after(confirmHtml);
+        $('#input-edit-asset-name').focus();
     });
 
     $(document).on('click', '#btn-cancel-const-confirm', function() {
         $('#const-confirm-box').remove();
+        $('.btn-select-const-item').removeClass('border-primary bg-primary-subtle');
     });
 
     $(document).on('click', '#btn-commit-const-correction', function() {
         const constId = $(this).data('id');
+        const constCode = $(this).data('code') || '';
         const $btn = $(this);
         const $cancelBtn = $('#btn-cancel-const-confirm');
         const $errBox = $('#const-save-error');
+        const newNamaAsset = $('#input-edit-asset-name').val() ? $('#input-edit-asset-name').val().trim() : '';
+
+        if (!newNamaAsset || newNamaAsset.length === 0) {
+            $errBox.text('Nama asset / operasional wajib diisi dan tidak boleh hanya spasi.').show();
+            $('#input-edit-asset-name').focus();
+            return;
+        }
 
         // State C: Saving
         $btn.prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin me-1"></i>Menyimpan...');
@@ -3930,6 +4083,7 @@ document.addEventListener("DOMContentLoaded", function () {
             data: JSON.stringify({
                 asset_id: currentAssetContextId,
                 construction_type_id: parseInt(constId, 10),
+                nama_asset: newNamaAsset,
                 reason: 'Koreksi Konstruksi Operator via GIS Context Drawer'
             }),
             contentType: "application/json",
@@ -3940,6 +4094,15 @@ document.addEventListener("DOMContentLoaded", function () {
             success: function(res) {
                 // State D: Saved / Persisted
                 currentWorkingConstructionId = null;
+                if (res && res.nama_asset) {
+                    currentAssetContextName = res.nama_asset;
+                    $('#ctx-drawer-title').text(res.nama_asset);
+                    if (typeof activeAssetProps !== 'undefined' && activeAssetProps) {
+                        activeAssetProps.nama_asset = res.nama_asset;
+                    }
+                    const qName = document.getElementById('quick-card-name');
+                    if (qName) qName.textContent = res.nama_asset;
+                }
                 $('#ctx-const-selector-container').slideUp(150);
                 $('#const-confirm-box').remove();
                 fetchAssetContextWithWorking();
@@ -3955,14 +4118,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 } catch(e) {}
                 $errBox.text(errMsg).show();
             }
-        });
-    });
-
-    $(document).on('keyup', '#input-search-const', function() {
-        const q = $(this).val().toLowerCase().trim();
-        $('#const-options-list .btn-select-const-item').each(function() {
-            const text = $(this).text().toLowerCase();
-            $(this).toggle(text.indexOf(q) > -1);
         });
     });
 

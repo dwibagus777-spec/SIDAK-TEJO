@@ -262,7 +262,7 @@ class AssetContextService
         // 7. Assemble Asset Identity Block
         $activeFindings = 0;
         $totalFindings  = 0;
-        if ($this->db->tableExists('temuan')) {
+        if ($this->db->tableExists('temuan') && $this->db->fieldExists('asset_id', 'temuan')) {
             $activeFindings = (int)$this->db->table('temuan')
                 ->where('asset_id', (int)$asset['id'])
                 ->where('status !=', 'SELESAI')
@@ -374,6 +374,8 @@ class AssetContextService
             'network'        => $networkBlock,
             'construction'   => $pickerResult['construction'] ?? null,
             'bom'            => $normalizedBom,
+            'bom_status'     => $pickerResult['bom_status'] ?? (count($normalizedBom) > 0 ? 'COMPLETE' : 'NEEDS_BOM_MAPPING'),
+            'bom_item_count' => count($normalizedBom),
             'accessories'    => $accessories,
             'context_source' => [
                 'ulp'          => 'SYSTEM',
@@ -585,13 +587,27 @@ class AssetContextService
         int $userId,
         string $userRole = '',
         ?int $userUlpId = null,
-        string $reason = ''
+        string $reason = '',
+        ?string $newNamaAsset = null
     ): array {
         if ($assetId <= 0) {
             return ['status' => 'error', 'code' => 'INVALID_ASSET', 'message' => 'Asset ID tidak valid.'];
         }
         if ($newConstructionTypeId <= 0) {
             return ['status' => 'error', 'code' => 'INVALID_CONSTRUCTION', 'message' => 'Construction Type ID tidak valid.'];
+        }
+
+        // Validate operational asset name if provided (cannot be empty or whitespace only)
+        $trimmedNama = null;
+        if ($newNamaAsset !== null) {
+            $trimmedNama = trim($newNamaAsset);
+            if ($trimmedNama === '') {
+                return [
+                    'status'  => 'error',
+                    'code'    => 'INVALID_ASSET_NAME',
+                    'message' => 'Nama aset / nama operasional tidak boleh kosong atau hanya berupa spasi.'
+                ];
+            }
         }
 
         $builder = $this->db->table('assets')->where('id', $assetId);
@@ -648,6 +664,8 @@ class AssetContextService
             'ulp_id'               => (int)($asset['ulp_id'] ?? 0),
         ];
 
+        $expectedNama = ($trimmedNama !== null) ? $trimmedNama : $before['nama_asset'];
+
         // Atomic Database Update
         $this->db->transBegin();
         try {
@@ -655,6 +673,9 @@ class AssetContextService
                 'construction_type_id' => $newConstructionTypeId,
                 'updated_at'           => date('Y-m-d H:i:s'),
             ];
+            if ($trimmedNama !== null) {
+                $updatePayload['nama_asset'] = $trimmedNama;
+            }
 
             $this->db->table('assets')->where('id', $assetId)->update($updatePayload);
 
@@ -672,7 +693,7 @@ class AssetContextService
             if ((string)$after['latitude'] !== $before['latitude'] ||
                 (string)$after['longitude'] !== $before['longitude'] ||
                 (string)$after['kode_asset'] !== $before['kode_asset'] ||
-                (string)($after['nama_asset'] ?? '') !== $before['nama_asset'] ||
+                (string)($after['nama_asset'] ?? '') !== $expectedNama ||
                 (int)($after['penyulang_id'] ?? 0) !== $before['penyulang_id'] ||
                 (int)($after['ulp_id'] ?? 0) !== $before['ulp_id'] ||
                 (int)($after['section_id'] ?? 0) !== (int)($before['section_id'] ?? 0)
@@ -690,13 +711,12 @@ class AssetContextService
             ];
         }
 
-        // Audit Trail Logging
+        // Audit Trail & Provenance Logging (Locked: asset_id, old/new construction, old/new nama_asset, changed_by, source)
         $auditReason = $reason ?: 'Koreksi Konstruksi Operator via GIS';
+        $auditDetail = "Asset #{$assetId} ({$before['kode_asset']}) Construction: {$before['construction_type_id']} -> {$newConstructionTypeId}; Nama: '{$before['nama_asset']}' -> '{$expectedNama}'. Source: GIS_DRAWER. User: #{$userId}. Reason: {$auditReason}";
+
         if (function_exists('log_activity')) {
-            log_activity(
-                'OPERATOR_CORRECT_CONSTRUCTION',
-                "Asset #{$assetId} ({$before['kode_asset']}) Construction Type changed: {$before['construction_type_id']} -> {$newConstructionTypeId}. User: #{$userId}. Reason: {$auditReason}"
-            );
+            log_activity('OPERATOR_CORRECT_CONSTRUCTION', $auditDetail);
         }
 
         if ($this->db->tableExists('audit_logs')) {
@@ -706,7 +726,7 @@ class AssetContextService
                     'username'   => 'OPERATOR',
                     'role'       => $userRole ?: 'operator',
                     'aktivitas'  => 'OPERATOR_CORRECT_CONSTRUCTION',
-                    'detail'     => "Asset #{$assetId} ({$before['kode_asset']}) Construction: {$before['construction_type_id']} -> {$newConstructionTypeId}. Reason: {$auditReason}",
+                    'detail'     => $auditDetail,
                     'ip_address' => '127.0.0.1',
                     'created_at' => date('Y-m-d H:i:s'),
                 ]);
@@ -720,10 +740,10 @@ class AssetContextService
                 (new \App\Services\AssetHistoryService())->logEvent(
                     $assetId,
                     \Config\AssetEvent::UPDATED ?? 'UPDATED',
-                    (string)$before['construction_type_id'],
-                    (string)$newConstructionTypeId,
+                    "Const:#{$before['construction_type_id']}|Name:{$before['nama_asset']}",
+                    "Const:#{$newConstructionTypeId}|Name:{$expectedNama}",
                     $before['kode_asset'],
-                    "Koreksi Konstruksi oleh Operator: #{$before['construction_type_id']} -> #{$newConstructionTypeId}. {$auditReason}",
+                    "Koreksi Konstruksi & Nama Operasional oleh Operator via GIS. {$auditReason}",
                     $userId
                 );
             }
@@ -734,11 +754,14 @@ class AssetContextService
         return [
             'status'           => 'success',
             'code'             => 'CONSTRUCTION_CORRECTED',
-            'message'          => "Koreksi Standar Konstruksi berhasil disimpan ke database master (Construction ID: {$newConstructionTypeId}).",
+            'message'          => "Koreksi Standar Konstruksi & Nama Operasional berhasil disimpan ke database master.",
             'asset_id'         => $assetId,
             'field'            => 'construction_type_id',
             'old_value'        => $before['construction_type_id'],
             'new_value'        => $newConstructionTypeId,
+            'old_nama_asset'   => $before['nama_asset'],
+            'new_nama_asset'   => $expectedNama,
+            'source'           => 'GIS_DRAWER',
             'persisted'        => true,
             'updated_context'  => $this->getAssetContext($assetId, $userUlpId, $userRole),
         ];

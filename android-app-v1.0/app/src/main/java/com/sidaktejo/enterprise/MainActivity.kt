@@ -33,16 +33,39 @@ class MainActivity : AppCompatActivity() {
 
     private val TARGET_URL = "https://sidaktejo.site/dashboard"
 
-    // Request Camera, Fine Location, Coarse Location, and Storage permissions on app startup
+    // Request Camera, Fine Location, Coarse Location, Microphone, and Storage permissions on app startup
     private val appPermissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val cameraGranted = permissions[Manifest.permission.CAMERA] ?: false
         val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
         val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        val audioGranted = permissions[Manifest.permission.RECORD_AUDIO] ?: false
 
         if (cameraGranted && (fineLocationGranted || coarseLocationGranted)) {
             Toast.makeText(this, "Izin Kamera & Lokasi Aktif", Toast.LENGTH_SHORT).show()
+        }
+
+        runOnUiThread {
+            webView.evaluateJavascript(
+                "window.onAndroidPermissionResult && window.onAndroidPermissionResult('RECORD_AUDIO', $audioGranted);",
+                null
+            )
+        }
+    }
+
+    // Direct launcher for on-demand audio permission request (e.g. from Web AI Voice Diagnostic)
+    private val audioPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        runOnUiThread {
+            if (isGranted) {
+                Toast.makeText(this, "Izin Mikrofon Aktif", Toast.LENGTH_SHORT).show()
+            }
+            webView.evaluateJavascript(
+                "window.onAndroidPermissionResult && window.onAndroidPermissionResult('RECORD_AUDIO', $isGranted);",
+                null
+            )
         }
     }
 
@@ -70,6 +93,7 @@ class MainActivity : AppCompatActivity() {
     private fun checkAndRequestAppPermissions() {
         val requiredPermissions = mutableListOf(
             Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO,
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
@@ -103,6 +127,9 @@ class MainActivity : AppCompatActivity() {
         // Append custom User-Agent to identify Android Native Shell
         settings.userAgentString = settings.userAgentString + " SIDAKTEJO-Android-AppShell/1.0.0"
 
+        // Javascript Interface for Native Android Bridge
+        webView.addJavascriptInterface(AndroidBridge(), "AndroidBridge")
+
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url?.toString() ?: return false
@@ -135,17 +162,31 @@ class MainActivity : AppCompatActivity() {
                 callback?.invoke(origin, true, false)
             }
 
-            // Auto-grant WebRTC camera permission for HTML5 QR Code Scanner
+            // Auto-grant WebRTC camera & audio permission on UI thread
             override fun onPermissionRequest(request: PermissionRequest?) {
-                request?.let {
-                    val resources = it.resources
-                    for (r in resources) {
-                        if (r == PermissionRequest.RESOURCE_AUDIO_CAPTURE || r == PermissionRequest.RESOURCE_VIDEO_CAPTURE) {
-                            it.grant(arrayOf(r))
-                            return
+                request?.let { req ->
+                    runOnUiThread {
+                        val requestedResources = req.resources
+                        val granted = mutableListOf<String>()
+                        for (r in requestedResources) {
+                            if (r == PermissionRequest.RESOURCE_AUDIO_CAPTURE) {
+                                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                    granted.add(r)
+                                }
+                            } else if (r == PermissionRequest.RESOURCE_VIDEO_CAPTURE) {
+                                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                    granted.add(r)
+                                }
+                            } else {
+                                granted.add(r)
+                            }
+                        }
+                        if (granted.isNotEmpty()) {
+                            req.grant(granted.toTypedArray())
+                        } else {
+                            req.deny()
                         }
                     }
-                    it.grant(it.resources)
                 }
             }
 
@@ -268,5 +309,28 @@ class MainActivity : AppCompatActivity() {
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         webView.restoreState(savedInstanceState)
+    }
+
+    inner class AndroidBridge {
+        @JavascriptInterface
+        fun isAndroidNativeApp(): Boolean = true
+
+        @JavascriptInterface
+        fun getAppVersion(): String = "1.0.1"
+
+        @JavascriptInterface
+        fun checkRecordAudioPermission(): Boolean {
+            return ContextCompat.checkSelfPermission(
+                this@MainActivity,
+                Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+
+        @JavascriptInterface
+        fun requestRecordAudioPermission() {
+            runOnUiThread {
+                audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
     }
 }

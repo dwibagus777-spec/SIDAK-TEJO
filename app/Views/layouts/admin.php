@@ -1626,7 +1626,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         </button>
     </div>
 
-    <!-- Modal Diagnostik Mikrofon AI Voice (VOICE-DIAGNOSTIC) -->
+    <!-- Modal Diagnostik Mikrofon AI Voice (4-Layer Diagnostics) -->
     <div class="modal fade" id="modalVoiceDiagnostic" tabindex="-1" aria-labelledby="modalVoiceDiagnosticLabel" aria-hidden="true" style="z-index: 1099;">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden;">
@@ -1638,20 +1638,36 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                 </div>
                 <div class="modal-body p-4">
                     <p class="small text-muted mb-3">
-                        Asisten suara SIDAK TEJO memerlukan akses mikrofon dan koneksi aman untuk mendeteksi perintah suara di lapangan.
+                        Status kesiapan sistem perintah suara SIDAK TEJO dianalisis melalui 4 layer diagnostik:
                     </p>
                     <ul class="list-group list-group-flush border rounded mb-3" style="font-size: 13px;">
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-https">
-                            <span><i class="fas fa-lock me-2 text-muted"></i> Koneksi Aman (HTTPS)</span>
-                            <span class="badge bg-secondary" id="diag-https-badge">Memeriksa...</span>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-layer-android">
+                            <div>
+                                <span class="fw-bold d-block text-dark"><i class="fab fa-android me-1 text-success"></i> Layer 1: Izin OS Android (RECORD_AUDIO)</span>
+                                <span class="text-muted" style="font-size: 11px;">Manifest & Runtime Permission APK</span>
+                            </div>
+                            <span class="badge bg-secondary" id="diag-android-badge">Memeriksa...</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-support">
-                            <span><i class="fas fa-globe me-2 text-muted"></i> Dukungan Browser (Speech API)</span>
-                            <span class="badge bg-secondary" id="diag-support-badge">Memeriksa...</span>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-layer-webview">
+                            <div>
+                                <span class="fw-bold d-block text-dark"><i class="fas fa-shield-halved me-1 text-primary"></i> Layer 2: WebView Audio Capture</span>
+                                <span class="text-muted" style="font-size: 11px;">WebChromeClient Auto-Grant</span>
+                            </div>
+                            <span class="badge bg-secondary" id="diag-webview-badge">Memeriksa...</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-mic">
-                            <span><i class="fas fa-microphone me-2 text-muted"></i> Izin Akses Mikrofon</span>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-layer-mic">
+                            <div>
+                                <span class="fw-bold d-block text-dark"><i class="fas fa-microphone me-1 text-info"></i> Layer 3: Akses Stream Mikrofon</span>
+                                <span class="text-muted" style="font-size: 11px;">MediaDevices & getUserMedia</span>
+                            </div>
                             <span class="badge bg-secondary" id="diag-mic-badge">Memeriksa...</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-layer-speech">
+                            <div>
+                                <span class="fw-bold d-block text-dark"><i class="fas fa-brain me-1 text-warning"></i> Layer 4: AI Speech Recognition</span>
+                                <span class="text-muted" style="font-size: 11px;">SpeechRecognition Engine (id-ID)</span>
+                            </div>
+                            <span class="badge bg-secondary" id="diag-speech-badge">Memeriksa...</span>
                         </li>
                     </ul>
                     <div id="diag-alert-container"></div>
@@ -1661,6 +1677,9 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3" id="btn-diag-retry">
                             <i class="fas fa-rotate me-1"></i> Coba Lagi
+                        </button>
+                        <button type="button" class="btn btn-warning text-dark btn-sm fw-bold px-3 shadow-sm" id="btn-diag-request-android" style="display: none;">
+                            <i class="fab fa-android me-1"></i> Minta Izin Android
                         </button>
                         <button type="button" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" id="btn-diag-request-mic">
                             <i class="fas fa-microphone me-1"></i> Izinkan Mikrofon
@@ -1680,6 +1699,24 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
 
             // Load Proactive Smart Notifications on page load (FITUR 8)
             fetchSmartNotifications();
+
+            // Listen for Android Native Bridge Permission Callbacks
+            window.onAndroidPermissionResult = function(permission, isGranted) {
+                if (permission === 'RECORD_AUDIO') {
+                    runVoiceDiagnostic(false);
+                    if (isGranted) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top',
+                            icon: 'success',
+                            title: 'Izin Android Diberikan',
+                            text: 'Mikrofon siap digunakan oleh SIDAK TEJO.',
+                            showConfirmButton: false,
+                            timer: 2500
+                        });
+                    }
+                }
+            };
 
             function initSpeechRecognition() {
                 if (!SpeechRecognition) return;
@@ -1743,29 +1780,51 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
 
             initSpeechRecognition();
 
-            // Multi-Tier Voice AI Diagnostic
+            // Multi-Tier Voice AI Diagnostic (4-Layer Diagnostics)
             async function runVoiceDiagnostic(autoPrompt = false) {
+                const isAndroidApp = !!(window.AndroidBridge || navigator.userAgent.indexOf('SIDAKTEJO-Android-AppShell') > -1);
                 const isHttps = !!(window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
                 const hasSpeech = !!SpeechRecognition;
+                let androidAudioGranted = false;
                 let micStatus = 'unknown';
 
-                const $httpsBadge = $('#diag-https-badge');
-                const $supportBadge = $('#diag-support-badge');
+                const $androidBadge = $('#diag-android-badge');
+                const $webviewBadge = $('#diag-webview-badge');
                 const $micBadge = $('#diag-mic-badge');
+                const $speechBadge = $('#diag-speech-badge');
                 const $alertContainer = $('#diag-alert-container');
+                const $btnAndroidReq = $('#btn-diag-request-android');
 
-                if (isHttps) {
-                    $httpsBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Aman (HTTPS)');
+                $btnAndroidReq.hide();
+
+                // Layer 1: Android App Permission
+                if (isAndroidApp) {
+                    if (window.AndroidBridge && typeof window.AndroidBridge.checkRecordAudioPermission === 'function') {
+                        try {
+                            androidAudioGranted = window.AndroidBridge.checkRecordAudioPermission();
+                        } catch (e) {
+                            androidAudioGranted = false;
+                        }
+                    }
+                    if (androidAudioGranted) {
+                        $androidBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Diizinkan (Native)');
+                    } else {
+                        $androidBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Belum Diizinkan');
+                        $btnAndroidReq.show();
+                    }
                 } else {
-                    $httpsBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Tidak Aman (HTTP)');
+                    $androidBadge.attr('class', 'badge bg-light text-muted border').html('Mode Web Browser');
+                    androidAudioGranted = true; // Not applicable on web
                 }
 
-                if (hasSpeech) {
-                    $supportBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Didukung');
+                // Layer 2: WebView Audio Capture
+                if (isAndroidApp) {
+                    $webviewBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Auto-Grant Aktif');
                 } else {
-                    $supportBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Tidak Didukung');
+                    $webviewBadge.attr('class', 'badge bg-light text-muted border').html('Standard Web Engine');
                 }
 
+                // Layer 3: Hardware Microphone Stream (getUserMedia & Permission Query)
                 if (navigator.permissions && navigator.permissions.query) {
                     try {
                         const p = await navigator.permissions.query({ name: 'microphone' });
@@ -1777,23 +1836,61 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
 
                 if (micStatus === 'granted') {
                     $micBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Diizinkan');
-                    $alertContainer.html('<div class="alert alert-success py-2 px-3 small mb-0"><i class="fas fa-check-circle me-1"></i> Semua sistem normal. Mikrofon siap digunakan!</div>');
-                    return { ok: true, isHttps, hasSpeech, micStatus };
                 } else if (micStatus === 'denied') {
                     $micBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Ditolak / Diblokir');
-                    $alertContainer.html('<div class="alert alert-warning py-2 px-3 small mb-0"><i class="fas fa-exclamation-triangle me-1"></i> Akses mikrofon diblokir oleh browser. Klik ikon gembok di bilah URL browser Anda untuk mengizinkan mikrofon.</div>');
-                    return { ok: false, isHttps, hasSpeech, micStatus };
                 } else {
                     $micBadge.attr('class', 'badge bg-warning text-dark').html('<i class="fas fa-question me-1"></i> Perlu Izin');
+                }
+
+                // Layer 4: AI Speech Recognition
+                if (hasSpeech) {
+                    $speechBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Siap (id-ID)');
+                } else {
+                    $speechBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Tidak Didukung');
+                }
+
+                // Synthesis Diagnostics Message
+                if (isAndroidApp && !androidAudioGranted) {
+                    $alertContainer.html(`
+                        <div class="alert alert-warning py-2 px-3 small mb-0">
+                            <div class="fw-bold mb-1"><i class="fab fa-android me-1"></i> Izin Mikrofon Android Belum Diberikan</div>
+                            <p class="mb-1" style="font-size: 11px;">Aplikasi native SIDAK TEJO memerlukan izin Mikrofon di level sistem Android untuk mengenali suara.</p>
+                            <p class="mb-0" style="font-size: 11px;">Tekan tombol <strong>Minta Izin Android</strong> di bawah atau buka <em>Pengaturan HP &gt; Aplikasi &gt; SIDAK TEJO &gt; Izin &gt; Mikrofon</em>.</p>
+                        </div>
+                    `);
+                    return { ok: false, isAndroidApp, androidAudioGranted, hasSpeech, micStatus };
+                } else if (!isHttps) {
+                    $alertContainer.html('<div class="alert alert-danger py-2 px-3 small mb-0"><i class="fas fa-exclamation-circle me-1"></i> Voice AI membutuhkan protokol aman HTTPS.</div>');
+                    return { ok: false, isAndroidApp, androidAudioGranted, hasSpeech, micStatus };
+                } else if (!hasSpeech) {
+                    $alertContainer.html('<div class="alert alert-warning py-2 px-3 small mb-0"><i class="fas fa-info-circle me-1"></i> Speech Recognition belum didukung pada engine webview/browser ini. Gunakan Google Chrome versi terbaru.</div>');
+                    return { ok: false, isAndroidApp, androidAudioGranted, hasSpeech, micStatus };
+                } else if (micStatus === 'denied') {
+                    $alertContainer.html('<div class="alert alert-warning py-2 px-3 small mb-0"><i class="fas fa-exclamation-triangle me-1"></i> Akses mikrofon diblokir oleh browser. Klik ikon gembok di bilah URL browser Anda untuk mengizinkan mikrofon.</div>');
+                    return { ok: false, isAndroidApp, androidAudioGranted, hasSpeech, micStatus };
+                } else if (micStatus !== 'granted') {
                     $alertContainer.html('<div class="alert alert-info py-2 px-3 small mb-0"><i class="fas fa-info-circle me-1"></i> Klik tombol <strong>Izinkan Mikrofon</strong> di bawah untuk mengaktifkan perintah suara.</div>');
                     if (autoPrompt) {
                         requestMicAccess();
                     }
-                    return { ok: false, isHttps, hasSpeech, micStatus };
+                    return { ok: false, isAndroidApp, androidAudioGranted, hasSpeech, micStatus };
+                } else {
+                    $alertContainer.html('<div class="alert alert-success py-2 px-3 small mb-0"><i class="fas fa-check-circle me-1"></i> Semua layer diagnostik normal. Mikrofon siap digunakan!</div>');
+                    return { ok: true, isAndroidApp, androidAudioGranted, hasSpeech, micStatus };
                 }
             }
 
             async function requestMicAccess() {
+                const isAndroidApp = !!(window.AndroidBridge || navigator.userAgent.indexOf('SIDAKTEJO-Android-AppShell') > -1);
+                
+                // If Android app and Android permission not granted, invoke bridge first
+                if (isAndroidApp && window.AndroidBridge && typeof window.AndroidBridge.requestRecordAudioPermission === 'function') {
+                    if (typeof window.AndroidBridge.checkRecordAudioPermission === 'function' && !window.AndroidBridge.checkRecordAudioPermission()) {
+                        window.AndroidBridge.requestRecordAudioPermission();
+                        return;
+                    }
+                }
+
                 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -1813,6 +1910,19 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
 
             $('#btn-diag-retry').on('click', function() {
                 runVoiceDiagnostic(false);
+            });
+
+            $('#btn-diag-request-android').on('click', function() {
+                if (window.AndroidBridge && typeof window.AndroidBridge.requestRecordAudioPermission === 'function') {
+                    window.AndroidBridge.requestRecordAudioPermission();
+                } else {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Pengaturan Izin Android',
+                        text: 'Silakan buka Pengaturan HP > Aplikasi > SIDAK TEJO > Izin > Mikrofon (Izinkan).',
+                        confirmButtonColor: '#005eb8'
+                    });
+                }
             });
 
             $('#btn-diag-request-mic').on('click', function() {

@@ -662,6 +662,126 @@ class MigrateController extends BaseController
                 $executed[] = 'tm1_bom_13_items_overhauled';
             }
 
+            // Phase 3B: Equipment BOM Overhaul (CR-HOTFIX-04: LBS, LBSM, PMCB, RECLOSER, ASS, AVS)
+            $equipmentMaterialsList = [
+                ['code' => 'CANON-SW-LBS-01',  'name' => 'Unit LBS 20 kV 630A SF6 Manual',            'alias' => 'LBS MANUAL',        'unit' => 'buah', 'cat' => 'SWITCH'],
+                ['code' => 'CANON-SW-LBSM-01', 'name' => 'Unit LBS 20 kV 630A SF6 Motorized',         'alias' => 'LBS MOTORIZED',     'unit' => 'buah', 'cat' => 'SWITCH'],
+                ['code' => 'CANON-SW-PMCB-01', 'name' => 'Unit PMCB 20 kV 630A Vacuum Circuit Breaker', 'alias' => 'PMCB 20KV',       'unit' => 'buah', 'cat' => 'SWITCH'],
+                ['code' => 'CANON-SW-REC-01',  'name' => 'Unit Recloser 20 kV 630A Vakum Pole Mounted', 'alias' => 'RECLOSER 20KV',    'unit' => 'buah', 'cat' => 'SWITCH'],
+                ['code' => 'CANON-SW-ASS-01',  'name' => 'Unit ASS 20 kV 400A Pole Mounted',           'alias' => 'ASS 20KV',          'unit' => 'buah', 'cat' => 'SWITCH'],
+                ['code' => 'CANON-SW-AVS-01',  'name' => 'Unit AVS 20 kV 400A Pole Mounted',           'alias' => 'AVS 20KV',          'unit' => 'buah', 'cat' => 'SWITCH'],
+                ['code' => 'CANON-CTL-001',    'name' => 'Control Box RTU & Battery Charger LBSM',     'alias' => 'BOX RTU',           'unit' => 'buah', 'cat' => 'CONTROL'],
+                ['code' => 'CANON-CTL-002',    'name' => 'Control Panel & Relay Proteksi PMCB',        'alias' => 'PANEL KONTROL',     'unit' => 'buah', 'cat' => 'CONTROL'],
+                ['code' => 'CANON-CTL-003',    'name' => 'Mikroprosesor Controller & RTU Recloser',    'alias' => 'CONTROLLER REC',    'unit' => 'buah', 'cat' => 'CONTROL'],
+                ['code' => 'CANON-CTL-004',    'name' => 'Controller Elektronik ASS & Battery',        'alias' => 'CONTROLLER ASS',    'unit' => 'buah', 'cat' => 'CONTROL'],
+                ['code' => 'CANON-CTL-005',    'name' => 'Controller Tegangan AVS',                    'alias' => 'CONTROLLER AVS',    'unit' => 'buah', 'cat' => 'CONTROL'],
+                ['code' => 'CANON-PWR-001',    'name' => 'Solar Panel & Bracket Catu Daya RTU',        'alias' => 'SOLAR CELL',        'unit' => 'buah', 'cat' => 'POWER'],
+                ['code' => 'CANON-TRF-001',    'name' => 'Trafo Catu Daya PT 20 kV / 100V',            'alias' => 'TRAFO PT',          'unit' => 'buah', 'cat' => 'TRANSFORMER'],
+                ['code' => 'CANON-TRF-002',    'name' => 'Trafo Catu Daya Aux PT 20 kV / 220V',        'alias' => 'TRAFO AUX',         'unit' => 'buah', 'cat' => 'TRANSFORMER'],
+                ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',          'alias' => 'SEPATU KABEL',      'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                ['code' => 'CANON-HDW-026',    'name' => 'Pipa Penggerak / Operating Rod Manual & Handle', 'alias' => 'HANDLE PENGGERAK', 'unit' => 'buah', 'cat' => 'AKSESORIS'],
+                ['code' => 'CANON-HDW-028',    'name' => 'Rangka Dudukan Tiang PMCB / Mounting Bracket', 'alias' => 'DUDUKAN PMCB',     'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                ['code' => 'CANON-HDW-029',    'name' => 'Rangka Dudukan Tiang Recloser',              'alias' => 'DUDUKAN RECLOSER',  'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                ['code' => 'CANON-HDW-030',    'name' => 'Dudukan Tiang ASS / Mounting Bracket',       'alias' => 'DUDUKAN ASS',       'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                ['code' => 'CANON-HDW-031',    'name' => 'Dudukan Tiang AVS / Mounting Bracket',       'alias' => 'DUDUKAN AVS',       'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+            ];
+
+            foreach ($equipmentMaterialsList as $em) {
+                $matRow = $db->query("SELECT id FROM master_materials WHERE material_code = ? OR nama_material = ? LIMIT 1", [$em['code'], $em['name']])->getRowArray();
+                if ($matRow) {
+                    $mId = (int)$matRow['id'];
+                    $db->query("UPDATE master_materials SET satuan = 'buah', nama_lapangan = ?, material_category = ?, status = 'AKTIF', updated_at = NOW() WHERE id = ?", [$em['alias'], $em['cat'], $mId]);
+                    $matIdMap[$em['name']] = $mId;
+                    $matIdMap[$em['code']] = $mId;
+                } else {
+                    $db->query("INSERT INTO master_materials (material_code, nama_material, nama_lapangan, satuan, material_domain, material_category, status, created_at, updated_at) VALUES (?, ?, ?, 'buah', 'EQUIPMENT', ?, 'AKTIF', NOW(), NOW())", [
+                        $em['code'], $em['name'], $em['alias'], $em['cat']
+                    ]);
+                    $mId = (int)$db->insertID();
+                    $matIdMap[$em['name']] = $mId;
+                    $matIdMap[$em['code']] = $mId;
+                }
+            }
+
+            $eqBoms = [
+                'LBS' => [
+                    ['code' => 'CANON-SW-LBS-01',  'name' => 'Unit LBS 20 kV 630A SF6 Manual',                 'alias' => 'LBS MANUAL',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 3.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                    ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                    ['code' => 'CANON-HDW-026',    'name' => 'Pipa Penggerak / Operating Rod Manual & Handle', 'alias' => 'HANDLE PENGGERAK', 'qty' => 1.0, 'unit' => 'buah', 'cat' => 'AKSESORIS'],
+                    ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                    ['code' => 'CANON-HDW-013',    'name' => 'STEEL CROSS ARM UNP 2500',                       'alias' => 'DUDUKAN LBS',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                    ['code' => 'CANON-HDW-005',    'name' => 'Bolt & Nut M.16 x 50',                           'alias' => 'BAUT 50',           'qty' => 4.0, 'unit' => 'buah', 'cat' => 'BAUT_DAN_MUR'],
+                ],
+                'LBSM' => [
+                    ['code' => 'CANON-SW-LBSM-01', 'name' => 'Unit LBS 20 kV 630A SF6 Motorized',              'alias' => 'LBS MOTORIZED',     'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-CTL-001',    'name' => 'Control Box RTU & Battery Charger LBSM',          'alias' => 'BOX RTU',           'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-PWR-001',    'name' => 'Solar Panel & Bracket Catu Daya RTU',             'alias' => 'SOLAR CELL',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'POWER'],
+                    ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 3.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                    ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                    ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                    ['code' => 'CANON-HDW-013',    'name' => 'STEEL CROSS ARM UNP 2500',                       'alias' => 'DUDUKAN LBS',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                    ['code' => 'CANON-HDW-005',    'name' => 'Bolt & Nut M.16 x 50',                           'alias' => 'BAUT 50',           'qty' => 6.0, 'unit' => 'buah', 'cat' => 'BAUT_DAN_MUR'],
+                ],
+                'PMCB' => [
+                    ['code' => 'CANON-SW-PMCB-01', 'name' => 'Unit PMCB 20 kV 630A Vacuum Circuit Breaker',    'alias' => 'PMCB 20KV',         'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-CTL-002',    'name' => 'Control Panel & Relay Proteksi PMCB',             'alias' => 'PANEL KONTROL',     'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-TRF-001',    'name' => 'Trafo Catu Daya PT 20 kV / 100V',                 'alias' => 'TRAFO PT',          'qty' => 1.0, 'unit' => 'buah', 'cat' => 'TRANSFORMER'],
+                    ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 6.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                    ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                    ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                    ['code' => 'CANON-HDW-028',    'name' => 'Rangka Dudukan Tiang PMCB / Mounting Bracket',   'alias' => 'DUDUKAN PMCB',      'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                ],
+                'RECLOSER' => [
+                    ['code' => 'CANON-SW-REC-01',  'name' => 'Unit Recloser 20 kV 630A Vakum Pole Mounted',    'alias' => 'RECLOSER 20KV',     'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-CTL-003',    'name' => 'Mikroprosesor Controller & RTU Recloser',        'alias' => 'CONTROLLER REC',    'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-TRF-002',    'name' => 'Trafo Catu Daya Aux PT 20 kV / 220V',             'alias' => 'TRAFO AUX',         'qty' => 1.0, 'unit' => 'buah', 'cat' => 'TRANSFORMER'],
+                    ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 6.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                    ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                    ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                    ['code' => 'CANON-HDW-029',    'name' => 'Rangka Dudukan Tiang Recloser',                   'alias' => 'DUDUKAN RECLOSER',  'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                ],
+                'ASS' => [
+                    ['code' => 'CANON-SW-ASS-01',  'name' => 'Unit ASS 20 kV 400A Pole Mounted',                'alias' => 'ASS 20KV',          'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-CTL-004',    'name' => 'Controller Elektronik ASS & Battery',             'alias' => 'CONTROLLER ASS',    'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 3.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                    ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                    ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                    ['code' => 'CANON-HDW-030',    'name' => 'Dudukan Tiang ASS / Mounting Bracket',            'alias' => 'DUDUKAN ASS',       'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                ],
+                'AVS' => [
+                    ['code' => 'CANON-SW-AVS-01',  'name' => 'Unit AVS 20 kV 400A Pole Mounted',                'alias' => 'AVS 20KV',          'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-CTL-005',    'name' => 'Controller Tegangan AVS',                         'alias' => 'CONTROLLER AVS',    'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 3.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                    ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                    ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                    ['code' => 'CANON-HDW-031',    'name' => 'Dudukan Tiang AVS / Mounting Bracket',            'alias' => 'DUDUKAN AVS',       'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                ],
+            ];
+
+            foreach ($eqBoms as $eqCode => $bItems) {
+                $eqType = $db->query("SELECT id FROM construction_types WHERE construction_code = '{$eqCode}' OR code = '{$eqCode}' LIMIT 1")->getRowArray();
+                if ($eqType) {
+                    $eqId = (int)$eqType['id'];
+                    $db->query("DELETE FROM construction_bom_items WHERE construction_type_id = {$eqId}");
+                    $order = 1;
+                    foreach ($bItems as $bi) {
+                        $mId = $matIdMap[$bi['code']] ?? ($matIdMap[$bi['name']] ?? null);
+                        $db->query("INSERT INTO construction_bom_items (construction_type_id, material_id, raw_material_name, material_alias, component_category, quantity, unit, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())", [
+                            $eqId, $mId, $bi['name'], $bi['alias'], $bi['cat'], $bi['qty'], 'buah', $order
+                        ]);
+                        $order++;
+                    }
+                }
+            }
+            $executed[] = 'equipment_boms_seeded';
+
             // Phase 4: Asset Inspection States Table
             $db->query("CREATE TABLE IF NOT EXISTS `asset_inspection_states` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -679,6 +799,153 @@ class MigrateController extends BaseController
                 UNIQUE KEY `uk_asset_planning` (`asset_id`, `planning_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             $executed[] = 'asset_inspection_states';
+
+            // Phase 3B: Seed Equipment BOM Catalog (CR-HOTFIX-04)
+            if ($db->tableExists('master_materials') && $db->tableExists('construction_bom_items') && $db->tableExists('construction_types')) {
+                $now = date('Y-m-d H:i:s');
+                $equipmentMaterials = [
+                    ['code' => 'CANON-SW-LBS-01',  'name' => 'Unit LBS 20 kV 630A SF6 Manual',            'alias' => 'LBS MANUAL',        'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-SW-LBSM-01', 'name' => 'Unit LBS 20 kV 630A SF6 Motorized',         'alias' => 'LBS MOTORIZED',     'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-SW-PMCB-01', 'name' => 'Unit PMCB 20 kV 630A Vacuum Circuit Breaker', 'alias' => 'PMCB 20KV',       'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-SW-REC-01',  'name' => 'Unit Recloser 20 kV 630A Vakum Pole Mounted', 'alias' => 'RECLOSER 20KV',    'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-SW-ASS-01',  'name' => 'Unit ASS 20 kV 400A Pole Mounted',           'alias' => 'ASS 20KV',          'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-SW-AVS-01',  'name' => 'Unit AVS 20 kV 400A Pole Mounted',           'alias' => 'AVS 20KV',          'unit' => 'buah', 'cat' => 'SWITCH'],
+                    ['code' => 'CANON-CTL-001',    'name' => 'Control Box RTU & Battery Charger LBSM',     'alias' => 'BOX RTU',           'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-CTL-002',    'name' => 'Control Panel & Relay Proteksi PMCB',        'alias' => 'PANEL KONTROL',     'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-CTL-003',    'name' => 'Mikroprosesor Controller & RTU Recloser',    'alias' => 'CONTROLLER REC',    'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-CTL-004',    'name' => 'Controller Elektronik ASS & Battery',        'alias' => 'CONTROLLER ASS',    'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-CTL-005',    'name' => 'Controller Tegangan AVS',                    'alias' => 'CONTROLLER AVS',    'unit' => 'buah', 'cat' => 'CONTROL'],
+                    ['code' => 'CANON-PWR-001',    'name' => 'Solar Panel & Bracket Catu Daya RTU',        'alias' => 'SOLAR CELL',        'unit' => 'buah', 'cat' => 'POWER'],
+                    ['code' => 'CANON-TRF-001',    'name' => 'Trafo Catu Daya PT 20 kV / 100V',            'alias' => 'TRAFO PT',          'unit' => 'buah', 'cat' => 'TRANSFORMER'],
+                    ['code' => 'CANON-TRF-002',    'name' => 'Trafo Catu Daya Aux PT 20 kV / 220V',        'alias' => 'TRAFO AUX',         'unit' => 'buah', 'cat' => 'TRANSFORMER'],
+                    ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',          'alias' => 'SEPATU KABEL',      'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                    ['code' => 'CANON-HDW-026',    'name' => 'Pipa Penggerak / Operating Rod Manual & Handle', 'alias' => 'HANDLE PENGGERAK', 'unit' => 'buah', 'cat' => 'AKSESORIS'],
+                    ['code' => 'CANON-HDW-028',    'name' => 'Rangka Dudukan Tiang PMCB / Mounting Bracket', 'alias' => 'DUDUKAN PMCB',     'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['code' => 'CANON-HDW-029',    'name' => 'Rangka Dudukan Tiang Recloser',              'alias' => 'DUDUKAN RECLOSER',  'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['code' => 'CANON-HDW-030',    'name' => 'Dudukan Tiang ASS / Mounting Bracket',       'alias' => 'DUDUKAN ASS',       'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['code' => 'CANON-HDW-031',    'name' => 'Dudukan Tiang AVS / Mounting Bracket',       'alias' => 'DUDUKAN AVS',       'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                ];
+
+                $matMap = [];
+                foreach ($equipmentMaterials as $em) {
+                    $existing = $db->table('master_materials')->where('material_code', $em['code'])->orWhere('nama_material', $em['name'])->get()->getRowArray();
+                    if ($existing) {
+                        $id = (int)$existing['id'];
+                        $db->table('master_materials')->where('id', $id)->update([
+                            'nama_lapangan'     => $em['alias'],
+                            'satuan'            => 'buah',
+                            'material_category' => $em['cat'],
+                            'status'            => 'AKTIF',
+                            'updated_at'        => $now,
+                        ]);
+                        $matMap[$em['code']] = $id;
+                        $matMap[$em['name']] = $id;
+                    } else {
+                        $db->table('master_materials')->insert([
+                            'material_code'     => $em['code'],
+                            'nama_material'     => $em['name'],
+                            'nama_lapangan'     => $em['alias'],
+                            'satuan'            => 'buah',
+                            'material_domain'   => 'EQUIPMENT',
+                            'material_category' => $em['cat'],
+                            'specification'     => $em['name'] . ' Standar PLN SPLN D3.024/D3.023',
+                            'status'            => 'AKTIF',
+                            'created_at'        => $now,
+                            'updated_at'        => $now,
+                        ]);
+                        $insertId = (int)$db->insertID();
+                        $matMap[$em['code']] = $insertId;
+                        $matMap[$em['name']] = $insertId;
+                    }
+                }
+
+                $equipmentBomMap = [
+                    'LBS' => [
+                        ['code' => 'CANON-SW-LBS-01',  'name' => 'Unit LBS 20 kV 630A SF6 Manual',                 'alias' => 'LBS MANUAL',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                        ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 3.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                        ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                        ['code' => 'CANON-HDW-026',    'name' => 'Pipa Penggerak / Operating Rod Manual & Handle', 'alias' => 'HANDLE PENGGERAK', 'qty' => 1.0, 'unit' => 'buah', 'cat' => 'AKSESORIS'],
+                        ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                        ['code' => 'CANON-HDW-013',    'name' => 'STEEL CROSS ARM UNP 2500',                       'alias' => 'DUDUKAN LBS',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                        ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                        ['code' => 'CANON-HDW-005',    'name' => 'Bolt & Nut M.16 x 50',                           'alias' => 'BAUT 50',           'qty' => 4.0, 'unit' => 'buah', 'cat' => 'BAUT_DAN_MUR'],
+                    ],
+                    'LBSM' => [
+                        ['code' => 'CANON-SW-LBSM-01', 'name' => 'Unit LBS 20 kV 630A SF6 Motorized',              'alias' => 'LBS MOTORIZED',     'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                        ['code' => 'CANON-CTL-001',    'name' => 'Control Box RTU & Battery Charger LBSM',          'alias' => 'BOX RTU',           'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                        ['code' => 'CANON-PWR-001',    'name' => 'Solar Panel & Bracket Catu Daya RTU',             'alias' => 'SOLAR CELL',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'POWER'],
+                        ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 3.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                        ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                        ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                        ['code' => 'CANON-HDW-013',    'name' => 'STEEL CROSS ARM UNP 2500',                       'alias' => 'DUDUKAN LBS',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                        ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                        ['code' => 'CANON-HDW-005',    'name' => 'Bolt & Nut M.16 x 50',                           'alias' => 'BAUT 50',           'qty' => 6.0, 'unit' => 'buah', 'cat' => 'BAUT_DAN_MUR'],
+                    ],
+                    'PMCB' => [
+                        ['code' => 'CANON-SW-PMCB-01', 'name' => 'Unit PMCB 20 kV 630A Vacuum Circuit Breaker',    'alias' => 'PMCB 20KV',         'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                        ['code' => 'CANON-CTL-002',    'name' => 'Control Panel & Relay Proteksi PMCB',             'alias' => 'PANEL KONTROL',     'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                        ['code' => 'CANON-TRF-001',    'name' => 'Trafo Catu Daya PT 20 kV / 100V',                 'alias' => 'TRAFO PT',          'qty' => 1.0, 'unit' => 'buah', 'cat' => 'TRANSFORMER'],
+                        ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 6.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                        ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                        ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                        ['code' => 'CANON-HDW-028',    'name' => 'Rangka Dudukan Tiang PMCB / Mounting Bracket',   'alias' => 'DUDUKAN PMCB',      'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                        ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                    ],
+                    'RECLOSER' => [
+                        ['code' => 'CANON-SW-REC-01',  'name' => 'Unit Recloser 20 kV 630A Vakum Pole Mounted',    'alias' => 'RECLOSER 20KV',     'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                        ['code' => 'CANON-CTL-003',    'name' => 'Mikroprosesor Controller & RTU Recloser',        'alias' => 'CONTROLLER REC',    'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                        ['code' => 'CANON-TRF-002',    'name' => 'Trafo Catu Daya Aux PT 20 kV / 220V',             'alias' => 'TRAFO AUX',         'qty' => 1.0, 'unit' => 'buah', 'cat' => 'TRANSFORMER'],
+                        ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 6.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                        ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                        ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                        ['code' => 'CANON-HDW-029',    'name' => 'Rangka Dudukan Tiang Recloser',                   'alias' => 'DUDUKAN RECLOSER',  'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                        ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                    ],
+                    'ASS' => [
+                        ['code' => 'CANON-SW-ASS-01',  'name' => 'Unit ASS 20 kV 400A Pole Mounted',                'alias' => 'ASS 20KV',          'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                        ['code' => 'CANON-CTL-004',    'name' => 'Controller Elektronik ASS & Battery',             'alias' => 'CONTROLLER ASS',    'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                        ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 3.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                        ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                        ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                        ['code' => 'CANON-HDW-030',    'name' => 'Dudukan Tiang ASS / Mounting Bracket',            'alias' => 'DUDUKAN ASS',       'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                        ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                    ],
+                    'AVS' => [
+                        ['code' => 'CANON-SW-AVS-01',  'name' => 'Unit AVS 20 kV 400A Pole Mounted',                'alias' => 'AVS 20KV',          'qty' => 1.0, 'unit' => 'buah', 'cat' => 'SWITCH'],
+                        ['code' => 'CANON-CTL-005',    'name' => 'Controller Tegangan AVS',                         'alias' => 'CONTROLLER AVS',    'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CONTROL'],
+                        ['code' => 'CANON-MAT-002',    'name' => 'Polymer Arrester 24 kV - 10 kA',                 'alias' => 'LA',                'qty' => 3.0, 'unit' => 'buah', 'cat' => 'PROTECTION'],
+                        ['code' => 'CANON-HDW-025',    'name' => 'Terminal Lug / Bimetal Clamp 20 kV',             'alias' => 'SEPATU KABEL',      'qty' => 6.0, 'unit' => 'buah', 'cat' => 'CONNECTOR'],
+                        ['code' => 'CANON-HDW-022',    'name' => 'GROUNDING ROD COPPER CLAD 5/8" x 2.4M',           'alias' => 'GROUND ROD',        'qty' => 1.0, 'unit' => 'buah', 'cat' => 'GROUNDING'],
+                        ['code' => 'CANON-HDW-031',    'name' => 'Dudukan Tiang AVS / Mounting Bracket',            'alias' => 'DUDUKAN AVS',       'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                        ['code' => 'CANON-HDW-012',    'name' => 'POLE BAND / POLE STRAP DOUBLE',                   'alias' => 'BEGEL GANDA',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                    ],
+                ];
+
+                foreach ($equipmentBomMap as $eqCode => $bItems) {
+                    $ctRow = $db->table('construction_types')->where('construction_code', $eqCode)->orWhere('code', $eqCode)->get()->getRowArray();
+                    if (!$ctRow) continue;
+                    $ctId = (int)$ctRow['id'];
+                    $db->table('construction_bom_items')->where('construction_type_id', $ctId)->delete();
+
+                    $sOrder = 1;
+                    foreach ($bItems as $it) {
+                        $mId = $matMap[$it['code']] ?? ($matMap[$it['name']] ?? null);
+                        $db->table('construction_bom_items')->insert([
+                            'construction_type_id' => $ctId,
+                            'material_id'          => $mId,
+                            'raw_material_name'    => $it['name'],
+                            'material_alias'       => $it['alias'],
+                            'component_category'   => $it['cat'],
+                            'quantity'             => $it['qty'],
+                            'unit'                 => 'buah',
+                            'sort_order'           => $sOrder++,
+                            'created_at'           => $now,
+                            'updated_at'           => $now,
+                        ]);
+                    }
+                }
+                $executed[] = 'Phase 3B: Seed Equipment BOM Catalog';
+            }
 
             // Seed Default Network Baseline if empty
             if ($db->tableExists('network_baselines')) {

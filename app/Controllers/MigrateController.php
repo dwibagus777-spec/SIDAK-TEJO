@@ -587,6 +587,19 @@ class MigrateController extends BaseController
             }
 
             // Phase 3: Material BOM Overhaul (13 Canonical Materials for TM1)
+            if ($db->tableExists('construction_bom_items')) {
+                if (!$db->fieldExists('sort_order', 'construction_bom_items')) {
+                    try {
+                        $db->query("ALTER TABLE `construction_bom_items` ADD COLUMN `sort_order` INT NOT NULL DEFAULT 0 AFTER `unit`");
+                    } catch (\Throwable $e) {}
+                }
+                if (!$db->fieldExists('material_alias', 'construction_bom_items')) {
+                    try {
+                        $db->query("ALTER TABLE `construction_bom_items` ADD COLUMN `material_alias` VARCHAR(100) NULL AFTER `raw_material_name`");
+                    } catch (\Throwable $e) {}
+                }
+            }
+
             $canonicalMaterials = [
                 ['code' => 'CANON-HDW-001', 'name' => 'Cross Arm UNP 2000 mm',                                                'alias' => 'KANAL',         'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
                 ['code' => 'CANON-HDW-003', 'name' => 'Arm Tie Type 750 - 3/4"',                                              'alias' => 'ARM TIE',       'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
@@ -1038,6 +1051,7 @@ class MigrateController extends BaseController
                     'unit'              => $b['unit'],
                 ], $boms);
                 $tm1Forensic['bottleneck_gap'] = max(0, 13 - count($boms));
+                $tm1Forensic['verdict'] = ($tm1Forensic['db_bom_count'] >= 13) ? 'COMPLIANT' : 'BOTTLENECK_CONFIRMED';
             }
         }
 
@@ -1096,6 +1110,10 @@ class MigrateController extends BaseController
                 'total_proposals'             => $totalProposals,
                 'feeders_covered_count'       => count($feedersCovered),
                 'feeders_covered_distribution'=> $feedersCovered,
+            ],
+            'inspection_lifecycle_baseline' => [
+                'table_exists'  => $db->tableExists('asset_inspection_states'),
+                'total_states'  => $db->tableExists('asset_inspection_states') ? $db->table('asset_inspection_states')->countAllResults() : 0,
             ],
         ];
 

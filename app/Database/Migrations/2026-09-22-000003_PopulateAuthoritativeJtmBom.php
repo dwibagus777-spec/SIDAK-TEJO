@@ -22,6 +22,26 @@ class PopulateAuthoritativeJtmBom extends Migration
             return;
         }
 
+        // Ensure columns sort_order and material_alias exist in construction_bom_items
+        if (!$this->db->fieldExists('sort_order', 'construction_bom_items')) {
+            $this->forge->addColumn('construction_bom_items', [
+                'sort_order' => [
+                    'type'       => 'INT',
+                    'constraint' => 11,
+                    'default'    => 0,
+                ],
+            ]);
+        }
+        if (!$this->db->fieldExists('material_alias', 'construction_bom_items')) {
+            $this->forge->addColumn('construction_bom_items', [
+                'material_alias' => [
+                    'type'       => 'VARCHAR',
+                    'constraint' => 100,
+                    'null'       => true,
+                ],
+            ]);
+        }
+
         $now = date('Y-m-d H:i:s');
 
         // 1. Enforce Canonical Units ('buah' for individual pieces)

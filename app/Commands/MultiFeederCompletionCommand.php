@@ -18,19 +18,32 @@ class MultiFeederCompletionCommand extends BaseCommand
     protected $description = 'Runs the TL-MF-02 Controlled Multi-Feeder Network Completion Orchestrator.';
     protected $usage       = 'gis:multi-feeder-completion [--mode=dry-run|live] [--feeder=ID] [--max-feeders=N] [--max-batches=N] [--resume] [--reset-state] [--json] [--report]';
     protected $options     = [
-        '--mode'        => 'Execution mode: dry-run (default, zero writes) or live',
-        '--feeder'      => 'Focus on a single feeder ID',
-        '--max-feeders' => 'Limit maximum number of feeders in queue to process',
-        '--max-batches' => 'Maximum batches per feeder before pausing (PAUSED, not stabilized)',
-        '--resume'      => 'Resume processing from previous checkpoint state',
-        '--reset-state' => 'Safely archive active checkpoint and start a fresh run_id',
-        '--json'        => 'Output result as JSON',
-        '--report'      => 'Save summary markdown report to file',
+        'mode'        => 'Execution mode: dry-run (default, zero writes) or live',
+        'feeder'      => 'Focus on a single feeder ID',
+        'max-feeders' => 'Limit maximum number of feeders in queue to process',
+        'max-batches' => 'Maximum batches per feeder before pausing (PAUSED, not stabilized)',
+        'resume'      => 'Resume processing from previous checkpoint state',
+        'reset-state' => 'Safely archive active checkpoint and start a fresh run_id',
+        'json'        => 'Output result as JSON',
+        'report'      => 'Save summary markdown report to file',
     ];
 
     public function run(array $params)
     {
-        $mode       = strtolower((string)(CLI::getOption('mode') ?? 'dry-run'));
+        $mode = strtolower((string)(CLI::getOption('mode') ?? CLI::getOption('--mode') ?? ''));
+        if (empty($mode)) {
+            foreach ($params as $p) {
+                if (str_starts_with($p, '--mode=')) {
+                    $mode = strtolower(substr($p, 7));
+                } elseif ($p === '--live' || $p === 'live' || $p === '--mode=live') {
+                    $mode = 'live';
+                }
+            }
+        }
+        if ($mode !== 'live') {
+            $mode = 'dry-run';
+        }
+
         $feederId   = CLI::getOption('feeder') ? (int)CLI::getOption('feeder') : null;
         $maxFeeders = CLI::getOption('max-feeders') ? (int)CLI::getOption('max-feeders') : null;
         $maxBatches = CLI::getOption('max-batches') ? (int)CLI::getOption('max-batches') : 50;
@@ -38,10 +51,6 @@ class MultiFeederCompletionCommand extends BaseCommand
         $resetState = CLI::getOption('reset-state') !== null;
         $isJson     = CLI::getOption('json') !== null;
         $doReport   = CLI::getOption('report') !== null;
-
-        if ($mode !== 'live') {
-            $mode = 'dry-run';
-        }
 
         if (!$isJson) {
             CLI::write("=======================================================================", 'yellow');

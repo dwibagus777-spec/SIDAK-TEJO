@@ -92,6 +92,14 @@ class ConstructionService
                 ['code' => 'TMTP', 'name' => 'Konstruksi TM-TP (Tiang Khusus / Tiang Portal 3 Pole)', 'network_type' => 'JTM', 'asset_category' => 'TIANG', 'construction_group' => 'PORTAL', 'voltage_level' => '20kV', 'description' => 'Konstruksi Tiang Khusus / Tiang Portal Tiga Pole (TMTP)', 'standard_reference' => 'Buku Standar Konstruksi PLN 20kV - TMTP/TMTP3', 'sort_order' => 34],
                 ['code' => 'TM16', 'name' => 'Konstruksi TM-16 (Tiang Khusus Percabangan 20kV)', 'network_type' => 'JTM', 'asset_category' => 'TIANG', 'construction_group' => 'PORTAL', 'voltage_level' => '20kV', 'description' => 'Konstruksi Tiang Khusus Percabangan / Portal 20kV', 'standard_reference' => 'Buku Standar Konstruksi PLN 20kV - TM-16', 'sort_order' => 35],
                 ['code' => 'TM16A', 'name' => 'Konstruksi TM-16A (Tiang Khusus Peralatan Switch 20kV)', 'network_type' => 'JTM', 'asset_category' => 'TIANG', 'construction_group' => 'PORTAL', 'voltage_level' => '20kV', 'description' => 'Konstruksi Tiang Khusus Dudukan Peralatan Switch 20kV', 'standard_reference' => 'Buku Standar Konstruksi PLN 20kV - TM-16A', 'sort_order' => 36],
+
+                // Equipment Standards (Phase 2 Canonical Equipment Catalog)
+                ['code' => 'PMCB', 'name' => 'Pole Mounted Circuit Breaker (PMCB)', 'construction_code' => 'PMCB', 'construction_name' => 'Pole Mounted Circuit Breaker (PMCB)', 'construction_family' => 'PROTECTION', 'network_type' => 'JTM', 'asset_category' => 'SWITCH', 'asset_domain' => 'EQUIPMENT', 'approval_status' => 'ACTIVE', 'voltage_level' => '20kV', 'description' => 'Peralatan Pemutus Beban Otomatis Pasangan Luar Tiang (PMCB)', 'standard_reference' => 'SPLN D3.023: 2012 / Buku 5 PLN', 'is_active' => 1, 'sort_order' => 40],
+                ['code' => 'LBS', 'name' => 'Load Break Switch (LBS) Manual / Gas Insulated', 'construction_code' => 'LBS', 'construction_name' => 'Load Break Switch (LBS) Manual / Gas Insulated', 'construction_family' => 'SWITCHING', 'network_type' => 'JTM', 'asset_category' => 'SWITCH', 'asset_domain' => 'EQUIPMENT', 'approval_status' => 'ACTIVE', 'voltage_level' => '20kV', 'description' => 'Sakelar Pemutus Beban Seksi Manual 20 kV (LBS SF6/Gas Insulated)', 'standard_reference' => 'SPLN D3.024: 2012 / Buku 5 PLN', 'is_active' => 1, 'sort_order' => 41],
+                ['code' => 'LBSM', 'name' => 'Load Break Switch Motorized (LBS Motorized)', 'construction_code' => 'LBSM', 'construction_name' => 'Load Break Switch Motorized (LBS Motorized)', 'construction_family' => 'SWITCHING', 'network_type' => 'JTM', 'asset_category' => 'SWITCH', 'asset_domain' => 'EQUIPMENT', 'approval_status' => 'ACTIVE', 'voltage_level' => '20kV', 'description' => 'Sakelar Pemutus Beban Seksi Berpenggerak Motor / Remote RTU (LBS Motorized)', 'standard_reference' => 'SPLN D3.024: 2012 / Buku 5 PLN', 'is_active' => 1, 'sort_order' => 42],
+                ['code' => 'ASS', 'name' => 'Automatic Sectionalizing Switch (ASS)', 'construction_code' => 'ASS', 'construction_name' => 'Automatic Sectionalizing Switch (ASS)', 'construction_family' => 'SWITCHING', 'network_type' => 'JTM', 'asset_category' => 'SWITCH', 'asset_domain' => 'EQUIPMENT', 'approval_status' => 'ACTIVE', 'voltage_level' => '20kV', 'description' => 'Sakelar Pemutus Beban Otomatis Pelanggan Khusus / Sectionalizer (ASS 20kV)', 'standard_reference' => 'SPLN D3.024: 2012 / Buku 5 PLN', 'is_active' => 1, 'sort_order' => 43],
+                ['code' => 'AVS', 'name' => 'Automatic Voltage Switch / Sectionalizer (AVS)', 'construction_code' => 'AVS', 'construction_name' => 'Automatic Voltage Switch / Sectionalizer (AVS)', 'construction_family' => 'PROTECTION', 'network_type' => 'JTM', 'asset_category' => 'SWITCH', 'asset_domain' => 'EQUIPMENT', 'approval_status' => 'ACTIVE', 'voltage_level' => '20kV', 'description' => 'Sakelar Pemutus Otomatis Berbasis Tegangan Hilang (AVS 20kV)', 'standard_reference' => 'SPLN D3.024: 2012 / Buku 5 PLN', 'is_active' => 1, 'sort_order' => 44],
+                ['code' => 'RECLOSER', 'name' => 'Automatic Circuit Recloser (ACR / Recloser 20 kV)', 'construction_code' => 'RECLOSER', 'construction_name' => 'Automatic Circuit Recloser (ACR / Recloser 20 kV)', 'construction_family' => 'PROTECTION', 'network_type' => 'JTM', 'asset_category' => 'SWITCH', 'asset_domain' => 'EQUIPMENT', 'approval_status' => 'ACTIVE', 'voltage_level' => '20kV', 'description' => 'Peralatan Penutup Balik Otomatis JTM 20 kV (Recloser)', 'standard_reference' => 'SPLN D3.023: 2012 / Buku 5 PLN', 'is_active' => 1, 'sort_order' => 45],
             ];
 
             foreach ($constructions as $ct) {
@@ -131,5 +139,23 @@ class ConstructionService
             $builder->where('asset_category', $category);
         }
         return $builder->orderBy('sort_order', 'ASC')->findAll();
+    }
+
+    /**
+     * Resolves the asset domain ('EQUIPMENT' vs 'POLE') deterministically.
+     * Enforces CR-EQUIPMENT-STANDARD-01.
+     */
+    public static function resolveAssetDomain(string $codeOrName): string
+    {
+        $normalized = strtoupper(trim($codeOrName));
+        $equipmentPrefixes = ['PMCB', 'LBS', 'LBSM', 'ASS', 'AVS', 'RECLOSER', 'ACR', 'PMS', 'PMT'];
+
+        foreach ($equipmentPrefixes as $prefix) {
+            if ($normalized === $prefix || str_starts_with($normalized, $prefix . ' ') || str_starts_with($normalized, $prefix . '-') || str_starts_with($normalized, $prefix . '_')) {
+                return 'EQUIPMENT';
+            }
+        }
+
+        return 'POLE';
     }
 }

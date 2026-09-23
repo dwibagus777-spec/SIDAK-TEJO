@@ -1626,17 +1626,63 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         </button>
     </div>
 
+    <!-- Modal Diagnostik Mikrofon AI Voice (VOICE-DIAGNOSTIC) -->
+    <div class="modal fade" id="modalVoiceDiagnostic" tabindex="-1" aria-labelledby="modalVoiceDiagnosticLabel" aria-hidden="true" style="z-index: 1099;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden;">
+                <div class="modal-header bg-primary text-white py-3">
+                    <h5 class="modal-title fs-6 fw-bold" id="modalVoiceDiagnosticLabel">
+                        <i class="fas fa-microphone-lines me-2"></i> Diagnostik Perintah Suara (Voice AI)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Asisten suara SIDAK TEJO memerlukan akses mikrofon dan koneksi aman untuk mendeteksi perintah suara di lapangan.
+                    </p>
+                    <ul class="list-group list-group-flush border rounded mb-3" style="font-size: 13px;">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-https">
+                            <span><i class="fas fa-lock me-2 text-muted"></i> Koneksi Aman (HTTPS)</span>
+                            <span class="badge bg-secondary" id="diag-https-badge">Memeriksa...</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-support">
+                            <span><i class="fas fa-globe me-2 text-muted"></i> Dukungan Browser (Speech API)</span>
+                            <span class="badge bg-secondary" id="diag-support-badge">Memeriksa...</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="diag-mic">
+                            <span><i class="fas fa-microphone me-2 text-muted"></i> Izin Akses Mikrofon</span>
+                            <span class="badge bg-secondary" id="diag-mic-badge">Memeriksa...</span>
+                        </li>
+                    </ul>
+                    <div id="diag-alert-container"></div>
+                </div>
+                <div class="modal-footer bg-light p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary btn-sm fw-bold px-3" data-bs-dismiss="modal">Tutup</button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3" id="btn-diag-retry">
+                            <i class="fas fa-rotate me-1"></i> Coba Lagi
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" id="btn-diag-request-mic">
+                            <i class="fas fa-microphone me-1"></i> Izinkan Mikrofon
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         $(function() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             let recognition = null;
             let isListening = false;
-            let isContinuous = true;
+            let isContinuous = false; // Only continuous when explicitly active
 
             // Load Proactive Smart Notifications on page load (FITUR 8)
             fetchSmartNotifications();
 
-            if (SpeechRecognition) {
+            function initSpeechRecognition() {
+                if (!SpeechRecognition) return;
                 try {
                     recognition = new SpeechRecognition();
                     recognition.lang = 'id-ID';
@@ -1653,12 +1699,9 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                     recognition.onerror = function(event) {
                         isListening = false;
                         $('#btn-global-mic').removeClass('listening');
-                        if (event.error === 'not-allowed') {
-                            const isHttp = !window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
-                            const msg = isHttp 
-                                ? 'Fitur Voice AI membutuhkan koneksi HTTPS. Peramban memblokir akses mikrofon pada koneksi HTTP.' 
-                                : 'Harap izinkan akses mikrofon untuk menggunakan perintah suara SIDAK TEJO.';
-                            Swal.fire({ icon: 'warning', title: 'Akses Mikrofon Ditolak', text: msg, confirmButtonColor: '#005eb8' });
+                        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                            isContinuous = false;
+                            console.warn('[VOICE_AI] Microphone access denied or blocked:', event.error);
                         }
                     };
 
@@ -1698,8 +1741,87 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                 }
             }
 
-            window.triggerGlobalVoiceMic = function() {
-                if (!recognition) {
+            initSpeechRecognition();
+
+            // Multi-Tier Voice AI Diagnostic
+            async function runVoiceDiagnostic(autoPrompt = false) {
+                const isHttps = !!(window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+                const hasSpeech = !!SpeechRecognition;
+                let micStatus = 'unknown';
+
+                const $httpsBadge = $('#diag-https-badge');
+                const $supportBadge = $('#diag-support-badge');
+                const $micBadge = $('#diag-mic-badge');
+                const $alertContainer = $('#diag-alert-container');
+
+                if (isHttps) {
+                    $httpsBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Aman (HTTPS)');
+                } else {
+                    $httpsBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Tidak Aman (HTTP)');
+                }
+
+                if (hasSpeech) {
+                    $supportBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Didukung');
+                } else {
+                    $supportBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Tidak Didukung');
+                }
+
+                if (navigator.permissions && navigator.permissions.query) {
+                    try {
+                        const p = await navigator.permissions.query({ name: 'microphone' });
+                        micStatus = p.state;
+                    } catch (e) {
+                        micStatus = 'unknown';
+                    }
+                }
+
+                if (micStatus === 'granted') {
+                    $micBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Diizinkan');
+                    $alertContainer.html('<div class="alert alert-success py-2 px-3 small mb-0"><i class="fas fa-check-circle me-1"></i> Semua sistem normal. Mikrofon siap digunakan!</div>');
+                    return { ok: true, isHttps, hasSpeech, micStatus };
+                } else if (micStatus === 'denied') {
+                    $micBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Ditolak / Diblokir');
+                    $alertContainer.html('<div class="alert alert-warning py-2 px-3 small mb-0"><i class="fas fa-exclamation-triangle me-1"></i> Akses mikrofon diblokir oleh browser. Klik ikon gembok di bilah URL browser Anda untuk mengizinkan mikrofon.</div>');
+                    return { ok: false, isHttps, hasSpeech, micStatus };
+                } else {
+                    $micBadge.attr('class', 'badge bg-warning text-dark').html('<i class="fas fa-question me-1"></i> Perlu Izin');
+                    $alertContainer.html('<div class="alert alert-info py-2 px-3 small mb-0"><i class="fas fa-info-circle me-1"></i> Klik tombol <strong>Izinkan Mikrofon</strong> di bawah untuk mengaktifkan perintah suara.</div>');
+                    if (autoPrompt) {
+                        requestMicAccess();
+                    }
+                    return { ok: false, isHttps, hasSpeech, micStatus };
+                }
+            }
+
+            async function requestMicAccess() {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        stream.getTracks().forEach(track => track.stop());
+                        $('#modalVoiceDiagnostic').modal('hide');
+                        isContinuous = true;
+                        initSpeechRecognition();
+                        if (recognition) {
+                            try { recognition.start(); } catch(e) {}
+                        }
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Mikrofon Aktif', text: 'Voice AI siap mendengarkan', showConfirmButton: false, timer: 2500 });
+                    } catch (err) {
+                        runVoiceDiagnostic(false);
+                    }
+                }
+            }
+
+            $('#btn-diag-retry').on('click', function() {
+                runVoiceDiagnostic(false);
+            });
+
+            $('#btn-diag-request-mic').on('click', function() {
+                requestMicAccess();
+            });
+
+            window.triggerGlobalVoiceMic = async function() {
+                const diag = await runVoiceDiagnostic(false);
+                if (!diag.hasSpeech) {
                     Swal.fire({
                         icon: 'info',
                         title: 'Fitur Perintah Suara',
@@ -1709,11 +1831,27 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                     return;
                 }
 
+                if (!diag.isHttps) {
+                    $('#modalVoiceDiagnostic').modal('show');
+                    return;
+                }
+
+                if (diag.micStatus !== 'granted') {
+                    $('#modalVoiceDiagnostic').modal('show');
+                    return;
+                }
+
+                if (!recognition) {
+                    initSpeechRecognition();
+                }
+
                 if (!isListening) {
+                    isContinuous = true;
                     try { recognition.start(); } catch(err) {
                         try { recognition.stop(); setTimeout(() => recognition.start(), 150); } catch(ex) {}
                     }
                 } else {
+                    isContinuous = false;
                     try { recognition.stop(); } catch(err) {}
                 }
             };

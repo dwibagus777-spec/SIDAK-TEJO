@@ -234,6 +234,7 @@ class MaterialPickerService
                     'name'               => (string)$material['nama_material'],
                     'field_alias'        => (string)($material['nama_lapangan'] ?? ($item['material_alias'] ?? '')),
                     'unit'               => $matUnit,
+                    'default_qty'        => (float)($item['quantity'] ?? 1.0),
                     'category'           => (string)($material['material_category'] ?? ($item['component_category'] ?? 'HARDWARE')),
                     'assembly_semantics' => $assemblySemantics,
                 ];

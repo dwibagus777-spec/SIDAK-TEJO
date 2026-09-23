@@ -18,6 +18,13 @@
             <!-- enctype="multipart/form-data" is required for file uploads -->
             <form id="form-create-temuan" action="<?= site_url('temuan/store') ?>" method="post" enctype="multipart/form-data" autocomplete="off">
                 <?= csrf_field() ?>
+                <!-- GIS Inspection Workflow Return Context Contract -->
+                <input type="hidden" name="from" value="<?= esc(service('request')->getGet('from') ?? '') ?>">
+                <input type="hidden" name="focus_asset_id" value="<?= esc(service('request')->getGet('focus_asset_id') ?? '') ?>">
+                <input type="hidden" name="context_lat" value="<?= esc(service('request')->getGet('lat') ?? '') ?>">
+                <input type="hidden" name="context_lng" value="<?= esc(service('request')->getGet('lng') ?? '') ?>">
+                <input type="hidden" name="context_zoom" value="<?= esc(service('request')->getGet('zoom') ?? '19') ?>">
+                <input type="hidden" name="planning_id" value="<?= esc(service('request')->getGet('planning_id') ?? '') ?>">
                 <div class="card-body">
                     
                     <?php $validation = isset($validation) ? $validation : null; ?>
@@ -1144,7 +1151,7 @@
                                 <div class="mr01-material-item border-bottom py-2" data-material-id="${m.id}">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="form-check mb-0">
-                                            <input class="form-check-input mr01-mat-check" type="checkbox" id="mat_chk_${m.id}" value="${m.id}" data-name="${m.name}" data-code="${m.code || ''}" data-unit="${m.unit || 'SET'}">
+                                            <input class="form-check-input mr01-mat-check" type="checkbox" id="mat_chk_${m.id}" value="${m.id}" data-name="${m.name}" data-code="${m.code || ''}" data-unit="${m.unit || 'buah'}" data-default-qty="${m.default_qty || 1.0}">
                                             <label class="form-check-label fw-bold text-dark" for="mat_chk_${m.id}" style="font-size: 13px; cursor: pointer;">
                                                 ${m.name}
                                                 ${m.code ? '<code class="ms-1 small text-secondary">[' + m.code + ']</code>' : ''}
@@ -1302,8 +1309,13 @@
         $(document).on('change', '.mr01-mat-check', function() {
             const matId = $(this).val();
             if ($(this).is(':checked')) {
+                const defaultQty = $(this).data('default-qty') || 1.0;
+                const $qtyInput = $('#mat_qty_' + matId);
+                if (!$qtyInput.val()) {
+                    $qtyInput.val(defaultQty);
+                }
                 $('#mat_input_row_' + matId).slideDown(150);
-                $('#mat_qty_' + matId).focus();
+                $qtyInput.focus();
             } else {
                 $('#mat_input_row_' + matId).slideUp(150);
                 $('#mat_qty_' + matId).val('').removeClass('is-invalid');

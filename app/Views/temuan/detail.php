@@ -411,19 +411,89 @@ if (!empty($lat) && !empty($lng)) {
 
 $tglJamFormatted = date('d-m-Y H:i', strtotime(!empty($temuan['created_at']) ? $temuan['created_at'] : $temuan['tanggal_temuan'])) . ' WIB';
 
-$waMsg = "🚨 *TEMUAN INSPEKSI - SIDAK TEJO* 🚨\n\n" .
-         "📌 *Nomor Temuan*: " . $temuan['nomor_temuan'] . "\n" .
-         "📅 *Tanggal & Jam*: " . $tglJamFormatted . "\n" .
-         "📍 *ULP*: " . $temuan['nama_ulp'] . "\n" .
-         "⚡ *Penyulang*: " . $temuan['nama_penyulang'] . "\n" .
-         "📍 *Section*: " . $temuan['nama_section'] . "\n" .
-         "🔴 *Jenis Temuan*: " . $temuan['jenis_temuan'] . "\n" .
-         "⚠️ *Prioritas*: " . $temuan['prioritas'] . "\n" .
-         "🔧 *Pelaksana*: " . $temuan['pelaksana'] . "\n" .
-         "📝 *Detail*: " . $temuan['detail_temuan'] . "\n" .
-         "📍 *Alamat*: " . $temuan['alamat'] . "\n" .
-         "🗺️ *Sharelok*: " . $sharelokUrl . "\n\n" .
-         "🔗 *Detail Link*: " . site_url('temuan/detail/' . $temuan['id']);
+// CR-TEMUAN-SHARE-01: Complete Field Report Context Extraction
+$assetName = $linkedAsset['nama_asset'] ?? ($temuan['nama_asset'] ?? null);
+$assetCode = $linkedAsset['kode_asset'] ?? ($temuan['kode_asset'] ?? null);
+$assetDisplay = $assetName ? ($assetName . ($assetCode ? " ({$assetCode})" : '')) : null;
+
+$constCode = $linkedAsset['construction_code'] ?? ($temuan['construction_code'] ?? null);
+$constName = $linkedAsset['construction_name'] ?? ($temuan['construction_name'] ?? null);
+$constDisplay = $constCode ? ($constCode . ($constName ? " – {$constName}" : '')) : null;
+
+$matLines = [];
+if (!empty($structuredMaterials)) {
+    foreach ($structuredMaterials as $sm) {
+        $qty = (float)($sm['qty'] ?? 1);
+        $unit = $sm['unit'] ?? 'buah';
+        $name = $sm['material_name'] ?? ($sm['nama_material'] ?? 'Material');
+        $alias = !empty($sm['material_alias']) ? " ({$sm['material_alias']})" : '';
+        $matLines[] = "  • {$name}{$alias}: {$qty} {$unit}";
+    }
+} elseif (!empty($temuan['material']) && $temuan['material'] !== 'Tidak ada spesifikasi material') {
+    $matLines[] = "  • " . $temuan['material'];
+}
+$materialSummary = !empty($matLines) ? implode("\n", $matLines) : null;
+
+$accLines = [];
+if (!empty($accessories)) {
+    foreach ($accessories as $ac) {
+        $accName = $ac['accessory_name_snapshot'] ?? ($ac['name'] ?? 'Aksesoris');
+        $accCond = $ac['condition'] ?? 'BAIK';
+        $accQty  = $ac['qty'] ?? 1;
+        $accUnit = $ac['unit'] ?? 'buah';
+        $accLines[] = "  • {$accName}: {$accQty} {$accUnit} ({$accCond})";
+    }
+}
+$accessoriesSummary = !empty($accLines) ? implode("\n", $accLines) : null;
+
+// GIS Return Context Contract
+$fromContext = service('request')->getGet('from');
+$focusAssetId = service('request')->getGet('focus_asset_id') ?: ($temuan['asset_id'] ?? null);
+$contextLat = service('request')->getGet('lat') ?: ($temuan['latitude'] ?? null);
+$contextLng = service('request')->getGet('lng') ?: ($temuan['longitude'] ?? null);
+$contextZoom = service('request')->getGet('zoom') ?: 19;
+$isGisReturn = ($fromContext === 'gis_inspection' || !empty($focusAssetId));
+$gisReturnUrl = site_url('gis') . '?' . http_build_query([
+    'focus_asset_id' => $focusAssetId,
+    'lat'            => $contextLat,
+    'lng'            => $contextLng,
+    'zoom'           => $contextZoom,
+    'updated'        => 1,
+]);
+
+// Build WhatsApp Complete Field Report Message
+$waMsgParts = [
+    "🚨 *LAPORAN HASIL INSPEKSI JARINGAN - SIDAK TEJO* 🚨\n",
+    "📌 *Nomor Temuan*: " . ($temuan['nomor_temuan'] ?? '-'),
+    "📅 *Waktu*: " . $tglJamFormatted,
+];
+if ($assetDisplay) {
+    $waMsgParts[] = "⚡ *Aset Jaringan*: " . $assetDisplay;
+}
+if ($constDisplay) {
+    $waMsgParts[] = "🏗️ *Standar Konstruksi*: " . $constDisplay;
+}
+$waMsgParts[] = "🏢 *ULP*: " . ($temuan['nama_ulp'] ?? '-');
+$waMsgParts[] = "🔌 *Penyulang*: " . ($temuan['nama_penyulang'] ?? '-');
+$waMsgParts[] = "📍 *Section*: " . ($temuan['nama_section'] ?? '-');
+$waMsgParts[] = "🔴 *Kategori Anomali*: " . ($temuan['jenis_temuan'] ?? '-');
+$waMsgParts[] = "⚠️ *Prioritas*: " . ($temuan['prioritas'] ?? '-');
+$waMsgParts[] = "📝 *Deskripsi*: " . ($temuan['detail_temuan'] ?? '-');
+
+if ($materialSummary) {
+    $waMsgParts[] = "\n📦 *Kebutuhan Material (BOM)*:\n" . $materialSummary;
+}
+if ($accessoriesSummary) {
+    $waMsgParts[] = "\n⚙️ *Aksesoris / Kelengkapan*:\n" . $accessoriesSummary;
+}
+
+if (!empty($lat) && !empty($lng)) {
+    $waMsgParts[] = "\n📍 *Koordinat*: {$lat}, {$lng}";
+}
+$waMsgParts[] = "🗺️ *Google Maps*: " . $sharelokUrl;
+$waMsgParts[] = "\n🔗 *Tautan Laporan*: " . site_url('temuan/detail/' . $temuan['id']);
+
+$waMsg = implode("\n", $waMsgParts);
 $waUrl = "https://api.whatsapp.com/send?text=" . urlencode($waMsg);
 
 $prio = strtoupper($temuan['prioritas'] ?? 'MEDIUM');
@@ -461,7 +531,17 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
         <span class="text-muted"><i class="fas fa-bolt text-warning me-1"></i> <?= esc($temuan['nama_penyulang']) ?></span>
         <span><?= $sla['badge_html'] ?></span>
     </div>
+<?php if ($isGisReturn): ?>
+<div class="alert alert-success d-flex align-items-center justify-content-between py-2 px-3 mb-3 shadow-sm rounded-pill border-success flex-wrap gap-2" role="alert" style="background-color: #f0fdf4;">
+    <div class="d-flex align-items-center small fw-bold text-success">
+        <i class="fas fa-check-circle me-2 fs-5"></i>
+        <span>Temuan tercatat! Siap kembali ke aset operasional di GIS Map.</span>
+    </div>
+    <a href="<?= esc($gisReturnUrl) ?>" class="btn btn-success btn-sm font-weight-bold rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
+        <i class="fas fa-map-marked-alt"></i> Kembali ke GIS (Lanjut Inspeksi)
+    </a>
 </div>
+<?php endif; ?>
 
 <div class="row g-4">
     <!-- Main Detail Column -->
@@ -833,9 +913,20 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
             </div>
 
             <div class="card-footer p-3 bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <a href="javascript:smartBack('<?= site_url('temuan') ?>');" class="btn btn-outline-secondary font-weight-bold px-3">
-                    <i class="fas fa-arrow-left me-1"></i> Kembali
-                </a>
+                <div class="d-flex gap-2 flex-wrap">
+                    <?php if ($isGisReturn): ?>
+                    <a href="<?= esc($gisReturnUrl) ?>" class="btn btn-success font-weight-bold px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                        <i class="fas fa-map-marked-alt"></i> Kembali ke GIS (Lanjut Inspeksi)
+                    </a>
+                    <a href="<?= site_url('temuan') ?>" class="btn btn-outline-secondary font-weight-bold px-3">
+                        <i class="fas fa-list me-1"></i> Daftar Temuan
+                    </a>
+                    <?php else: ?>
+                    <a href="javascript:smartBack('<?= site_url('temuan') ?>');" class="btn btn-outline-secondary font-weight-bold px-3">
+                        <i class="fas fa-arrow-left me-1"></i> Kembali
+                    </a>
+                    <?php endif; ?>
+                </div>
                 <div class="d-flex gap-2">
                     <?php if (!empty($temuan['latitude']) && !empty($temuan['longitude'])): ?>
                     <a href="https://www.google.com/maps/search/?api=1&query=<?= $temuan['latitude'] ?>,<?= $temuan['longitude'] ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-danger font-weight-bold">
@@ -1590,17 +1681,16 @@ $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
                         currentShareUrl = res.share_url;
                         inputEl.value = currentShareUrl;
 
-                        const shareText = `🚨 *TEMUAN INSPEKSI JARINGAN - SIDAK TEJO* 🚨\n\n📌 *Nomor*: ${temuanNomor}` +
-                            (assetNama ? `\n⚡ *Aset*: ${assetNama}` : '') +
-                            `\n\n🔗 *Buka Rekap Temuan*: ${currentShareUrl}`;
+                        const baseReportText = <?= json_encode($waMsg) ?>;
+                        const shareText = currentShareUrl ? baseReportText.replace('<?= site_url('temuan/detail/' . $temuan['id']) ?>', currentShareUrl) : baseReportText;
                         if (waLinkEl) waLinkEl.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(shareText);
 
                         if (navigator.share && nativeShareBtn) {
                             nativeShareBtn.classList.remove('d-none');
                             nativeShareBtn.onclick = function() {
                                 navigator.share({
-                                    title: 'Temuan Inspeksi - ' + temuanNomor,
-                                    text: 'Temuan Inspeksi SIDAK TEJO: ' + temuanNomor + (assetNama ? ' (' + assetNama + ')' : ''),
+                                    title: 'Laporan Temuan - ' + temuanNomor,
+                                    text: shareText,
                                     url: currentShareUrl
                                 }).catch(() => {});
                             };

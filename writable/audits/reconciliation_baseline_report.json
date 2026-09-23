@@ -1,0 +1,915 @@
+{
+    "audit_metadata": {
+        "report_name": "SIDAK TEJO v3.1 Data Reconciliation & Baseline Audit",
+        "timestamp_utc": "2026-09-22T09:50:30Z",
+        "timestamp_wib": "2026-09-22 16:50:30 WIB",
+        "environment": "production",
+        "audit_gate": "PHASE_1_RECONCILIATION_BASELINE",
+        "status": "BASELOAD_CAPTURED"
+    },
+    "asset_reconciliation": {
+        "total_raw_assets": 5549,
+        "total_active_assets": 5236,
+        "valid_coordinates_count": 5236,
+        "missing_coordinates_count": 0,
+        "coordinate_completeness_pct": 100,
+        "valid_penyulang_count": 5236,
+        "missing_penyulang_count": 0,
+        "valid_section_count": 23,
+        "missing_section_count": 5213,
+        "valid_construction_count": 5149,
+        "missing_construction_count": 87,
+        "construction_completeness_pct": 98.34,
+        "jenis_asset_distribution": [
+            {
+                "jenis_asset": "JTM",
+                "count": "5236"
+            }
+        ],
+        "construction_distribution": [
+            {
+                "construction_code": "TM1",
+                "construction_name": "Konstruksi Tiang Tumpu Tunggal TM-1",
+                "asset_count": "3999"
+            },
+            {
+                "construction_code": "TM5",
+                "construction_name": "Konstruksi Tiang Penegang / Tension TM-5",
+                "asset_count": "145"
+            },
+            {
+                "construction_code": "TM10",
+                "construction_name": "Konstruksi Tiang Transposisi Fasa TM-10",
+                "asset_count": "143"
+            },
+            {
+                "construction_code": "TM2",
+                "construction_name": "Konstruksi Tiang Tumpu Ganda Sudut Sedang TM-2",
+                "asset_count": "137"
+            },
+            {
+                "construction_code": "TM8",
+                "construction_name": "Konstruksi Tiang Percabangan Sudut TM-8",
+                "asset_count": "134"
+            },
+            {
+                "construction_code": "TM11",
+                "construction_name": "Konstruksi Tiang Penegang Lengkap LA TM-11",
+                "asset_count": "127"
+            },
+            {
+                "construction_code": "GTT2",
+                "construction_name": "Gardu Trafo Tiang 2 Tiang (Portal)",
+                "asset_count": "124"
+            },
+            {
+                "construction_code": null,
+                "construction_name": null,
+                "asset_count": "105"
+            },
+            {
+                "construction_code": null,
+                "construction_name": null,
+                "asset_count": "87"
+            },
+            {
+                "construction_code": null,
+                "construction_name": null,
+                "asset_count": "81"
+            },
+            {
+                "construction_code": null,
+                "construction_name": null,
+                "asset_count": "38"
+            },
+            {
+                "construction_code": null,
+                "construction_name": null,
+                "asset_count": "29"
+            },
+            {
+                "construction_code": "TMTP",
+                "construction_name": "Konstruksi Tiang Tanpa Travers (Vertikal) TM-TP",
+                "asset_count": "29"
+            },
+            {
+                "construction_code": "TM4",
+                "construction_name": "Konstruksi Tiang Tarik Awal / Akhir TM-4",
+                "asset_count": "27"
+            },
+            {
+                "construction_code": "GTT1",
+                "construction_name": "Gardu Trafo Tiang 1 Tiang (Cantol)",
+                "asset_count": "26"
+            },
+            {
+                "construction_code": "GTT-2T",
+                "construction_name": "Gardu Trafo Tiang 2 Portal (GTT-2T)",
+                "asset_count": "5"
+            }
+        ]
+    },
+    "construction_types_baseline": {
+        "total_registered": 62,
+        "registered_types": [
+            {
+                "id": "1",
+                "construction_code": "TM1",
+                "construction_name": "Konstruksi Tiang Tumpu Tunggal TM-1",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 2
+            },
+            {
+                "id": "2",
+                "construction_code": "TM2",
+                "construction_name": "Konstruksi Tiang Tumpu Ganda Sudut Sedang TM-2",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 2
+            },
+            {
+                "id": "3",
+                "construction_code": "TM4",
+                "construction_name": "Konstruksi Tiang Tarik Awal / Akhir TM-4",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 2
+            },
+            {
+                "id": "4",
+                "construction_code": "TM5",
+                "construction_name": "Konstruksi Tiang Penegang / Tension TM-5",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 2
+            },
+            {
+                "id": "5",
+                "construction_code": "TM8",
+                "construction_name": "Konstruksi Tiang Percabangan Sudut TM-8",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 2
+            },
+            {
+                "id": "6",
+                "construction_code": "TM11",
+                "construction_name": "Konstruksi Tiang Penegang Lengkap LA TM-11",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 4
+            },
+            {
+                "id": "7",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "8",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "9",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "10",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "11",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "12",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "13",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "14",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "15",
+                "construction_code": "TM10",
+                "construction_name": "Konstruksi Tiang Transposisi Fasa TM-10",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "16",
+                "construction_code": "TM12",
+                "construction_name": "Konstruksi Tiang Transposisi Tarik TM-12",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "17",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "18",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "19",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "20",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "21",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "22",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "23",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "24",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "25",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "26",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "27",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "28",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "29",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "30",
+                "construction_code": "GTT1",
+                "construction_name": "Gardu Trafo Tiang 1 Tiang (Cantol)",
+                "construction_family": "GTT",
+                "asset_domain": "GARDU",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 3
+            },
+            {
+                "id": "31",
+                "construction_code": "GTT2",
+                "construction_name": "Gardu Trafo Tiang 2 Tiang (Portal)",
+                "construction_family": "GTT",
+                "asset_domain": "GARDU",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 4
+            },
+            {
+                "id": "32",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "33",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "34",
+                "construction_code": "TMTP",
+                "construction_name": "Konstruksi Tiang Tanpa Travers (Vertikal) TM-TP",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "35",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "36",
+                "construction_code": null,
+                "construction_name": null,
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            },
+            {
+                "id": "37",
+                "construction_code": "TM1A",
+                "construction_name": "Konstruksi Tiang Tumpu Sudut Kecil TM-1A",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 2
+            },
+            {
+                "id": "38",
+                "construction_code": "TM1_TYPE_C",
+                "construction_name": "Konstruksi Tiang Tumpu Tipe C TM-1C",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "39",
+                "construction_code": "TM4A",
+                "construction_name": "Konstruksi Tiang Tarik Sudut TM-4A",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 2
+            },
+            {
+                "id": "40",
+                "construction_code": "TM5C",
+                "construction_name": "Konstruksi Tiang Penegang Tipe C TM-5C",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "41",
+                "construction_code": "TM8C",
+                "construction_name": "Konstruksi Tiang Percabangan Tipe C TM-8C",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "42",
+                "construction_code": "TM11_DS",
+                "construction_name": "Konstruksi Tiang TM-11 dengan Disconnecting Switch (DS)",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 2
+            },
+            {
+                "id": "43",
+                "construction_code": "TM11_CO",
+                "construction_name": "Konstruksi Tiang TM-11 dengan Cut Out (CO)",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 3
+            },
+            {
+                "id": "44",
+                "construction_code": "TM13",
+                "construction_name": "Konstruksi Tiang Sudut Besar / Terminal TM-13",
+                "construction_family": "JTM",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 2
+            },
+            {
+                "id": "45",
+                "construction_code": "TMMVTIC1",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-1",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "46",
+                "construction_code": "TMMVTIC2",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-2",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "47",
+                "construction_code": "TMMVTIC3",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-3",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "48",
+                "construction_code": "TMMVTIC4",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-4",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "49",
+                "construction_code": "TMMVTIC4_DS",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-4",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "50",
+                "construction_code": "TMMVTIC4_CO",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-4",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "51",
+                "construction_code": "TMMVTIC5",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-5",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "52",
+                "construction_code": "TMMVTIC5A",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-5",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "53",
+                "construction_code": "TMMVTIC5B",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-5",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "54",
+                "construction_code": "TMMVTIC6",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-6",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "55",
+                "construction_code": "TMMVTIC7",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-7",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "56",
+                "construction_code": "TMMVTIC8",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-8",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "57",
+                "construction_code": "TMMVTIC9",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-9",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "58",
+                "construction_code": "TMMVTIC10",
+                "construction_name": "Konstruksi Kabel Pilin Udara TM MVTIC-10",
+                "construction_family": "MVTIC",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 1
+            },
+            {
+                "id": "59",
+                "construction_code": "KUBIKEL_INCOMING",
+                "construction_name": "Kubikel 20 kV Cell Incoming (DRAFT)",
+                "construction_family": "GARDU_KUBIKEL",
+                "asset_domain": "KUBIKEL",
+                "approval_status": "DRAFT",
+                "bom_items_count": 1
+            },
+            {
+                "id": "60",
+                "construction_code": "KUBIKEL_OUTGOING",
+                "construction_name": "Kubikel 20 kV Cell Outgoing (DRAFT)",
+                "construction_family": "GARDU_KUBIKEL",
+                "asset_domain": "KUBIKEL",
+                "approval_status": "DRAFT",
+                "bom_items_count": 1
+            },
+            {
+                "id": "61",
+                "construction_code": "KUBIKEL_PB",
+                "construction_name": "Kubikel 20 kV Pemutus Beban (DRAFT)",
+                "construction_family": "GARDU_KUBIKEL",
+                "asset_domain": "KUBIKEL",
+                "approval_status": "DRAFT",
+                "bom_items_count": 1
+            },
+            {
+                "id": "62",
+                "construction_code": "GTT-2T",
+                "construction_name": "Gardu Trafo Tiang 2 Portal (GTT-2T)",
+                "construction_family": "GARDU_TRAFO",
+                "asset_domain": "TIANG",
+                "approval_status": "ACTIVE",
+                "bom_items_count": 0
+            }
+        ],
+        "equipment_standards": {
+            "PMCB": {
+                "standard_code": "PMCB",
+                "is_registered": false,
+                "id": null,
+                "name": null,
+                "family": null,
+                "approval_status": "NOT_REGISTERED"
+            },
+            "LBS": {
+                "standard_code": "LBS",
+                "is_registered": false,
+                "id": null,
+                "name": null,
+                "family": null,
+                "approval_status": "NOT_REGISTERED"
+            },
+            "LBSM": {
+                "standard_code": "LBSM",
+                "is_registered": false,
+                "id": null,
+                "name": null,
+                "family": null,
+                "approval_status": "NOT_REGISTERED"
+            },
+            "ASS": {
+                "standard_code": "ASS",
+                "is_registered": false,
+                "id": null,
+                "name": null,
+                "family": null,
+                "approval_status": "NOT_REGISTERED"
+            },
+            "AVS": {
+                "standard_code": "AVS",
+                "is_registered": false,
+                "id": null,
+                "name": null,
+                "family": null,
+                "approval_status": "NOT_REGISTERED"
+            },
+            "RECLOSER": {
+                "standard_code": "RECLOSER",
+                "is_registered": false,
+                "id": null,
+                "name": null,
+                "family": null,
+                "approval_status": "NOT_REGISTERED"
+            }
+        }
+    },
+    "bom_reconciliation_baseline": {
+        "total_master_materials": 21,
+        "materials_unit_breakdown": [
+            {
+                "satuan": "BTG",
+                "count": "2"
+            },
+            {
+                "satuan": "buah",
+                "count": "6"
+            },
+            {
+                "satuan": "METER",
+                "count": "8"
+            },
+            {
+                "satuan": "PCS",
+                "count": "1"
+            },
+            {
+                "satuan": "SET",
+                "count": "4"
+            }
+        ],
+        "canonical_individual_units": {
+            "MAT-ISO-PIN-20KV": {
+                "name": "Pin Post Insulator 20 kV Porcelain/Polymer",
+                "is_present": true,
+                "current_unit": "buah",
+                "target_unit": "buah",
+                "is_compliant": true
+            },
+            "MAT-ISO-HANG-20KV": {
+                "name": "Strain Insulator 20 kV Lengkap (SIR)",
+                "is_present": true,
+                "current_unit": "buah",
+                "target_unit": "buah",
+                "is_compliant": true
+            },
+            "MAT-PROT-LA-24KV": {
+                "name": "Polymer Lightning Arrester 24 kV 10 kA",
+                "is_present": true,
+                "current_unit": "buah",
+                "target_unit": "buah",
+                "is_compliant": true
+            },
+            "MAT-PROT-FCO-24KV": {
+                "name": "Fuse Cut Out Switch 24 kV 100A",
+                "is_present": true,
+                "current_unit": "buah",
+                "target_unit": "buah",
+                "is_compliant": true
+            },
+            "MAT-IND-FIOHL": {
+                "name": "Fault Indicator Overhead Line (FIOHL)",
+                "is_present": true,
+                "current_unit": "buah",
+                "target_unit": "buah",
+                "is_compliant": true
+            }
+        },
+        "tm1_bottleneck_forensic": {
+            "construction_code": "TM1",
+            "authoritative_source_count": 13,
+            "source_materials": [
+                {
+                    "material": "Cross Arm UNP 2000 mm",
+                    "field": "KANAL",
+                    "default_qty": 1,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Arm Tie Type 750 - 3/4\"",
+                    "field": "ARM TIE",
+                    "default_qty": 2,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Bolt & Nut M.16 x 50",
+                    "field": "BAUT 50",
+                    "default_qty": 2,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Bolt & Nut M.16 x 400 (besi as) Double Arm - HDG",
+                    "field": "BAUT 400",
+                    "default_qty": 1,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Ground Wire Clamp Type A",
+                    "field": "PLAT GSW",
+                    "default_qty": 1,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Wire Clip M10 (\u00d8 35mm)",
+                    "field": "GSW",
+                    "default_qty": 2,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Insulator - Pin Post Insulator 20 Kv;12,5 kN - Porcelain (Tumpu)",
+                    "field": "PIN",
+                    "default_qty": 3,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "field": "BENDING",
+                    "default_qty": 3,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Preformed Side Tie Double 150mm (Semi Cond/non metalic/Composite)",
+                    "field": "TOP TIES SIDE",
+                    "default_qty": 1,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "field": "TOP TIES",
+                    "default_qty": 2,
+                    "unit": "buah"
+                },
+                {
+                    "material": "ORNAMENT CABLE BAND",
+                    "field": "BEGEL VERLINK",
+                    "default_qty": 2,
+                    "unit": "buah"
+                },
+                {
+                    "material": "PIPE GALVANIZED 3\" 1500",
+                    "field": "VERLINK GSW",
+                    "default_qty": 1,
+                    "unit": "buah"
+                },
+                {
+                    "material": "Wire Clip M10 (\u00d8 35mm)",
+                    "field": "WIRE CLIP",
+                    "default_qty": 2,
+                    "unit": "buah"
+                }
+            ],
+            "db_bom_count": 2,
+            "db_bom_items": [
+                {
+                    "id": 1,
+                    "material_id": "1",
+                    "raw_material_name": "Pin Post Insulator 20 kV Porcelain/Polymer",
+                    "material_alias": null,
+                    "quantity": "3.00",
+                    "unit": "SET"
+                },
+                {
+                    "id": 2,
+                    "material_id": "6",
+                    "raw_material_name": "Travers Cross Arm UNP 2000mm Galvanized",
+                    "material_alias": null,
+                    "quantity": "1.00",
+                    "unit": "BTG"
+                }
+            ],
+            "bottleneck_gap": 11,
+            "verdict": "BOTTLENECK_CONFIRMED"
+        }
+    },
+    "transline_topology_baseline": {
+        "total_transline_edges": 225,
+        "total_proposals": 56,
+        "feeders_covered_count": 4,
+        "feeders_covered_distribution": [
+            {
+                "penyulang_id": "15",
+                "edges_count": "206"
+            },
+            {
+                "penyulang_id": "56",
+                "edges_count": "9"
+            },
+            {
+                "penyulang_id": "131",
+                "edges_count": "8"
+            },
+            {
+                "penyulang_id": "4",
+                "edges_count": "2"
+            }
+        ]
+    }
+}

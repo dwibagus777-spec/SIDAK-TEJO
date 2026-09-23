@@ -603,6 +603,67 @@ class AssetRepository
             $hasValidParents = false;
 
             // =========================================================================
+            // PRIORITY 0: Authoritative gis_translines (Single Source of Truth)
+            // =========================================================================
+            if ($db->tableExists('gis_translines')) {
+                $tlBuilder = $db->table('gis_translines')
+                    ->where('penyulang_id', $penyulangId)
+                    ->where('is_active', 1);
+                if ($db->fieldExists('deleted_at', 'gis_translines')) {
+                    $tlBuilder->where('deleted_at IS NULL');
+                }
+                $tlRows = $tlBuilder->get()->getResultArray();
+
+                if (!empty($tlRows)) {
+                    $multiLineCoords = [];
+                    $edges = [];
+                    foreach ($tlRows as $tl) {
+                        $u = (int)$tl['source_asset_id'];
+                        $v = (int)$tl['target_asset_id'];
+                        if (isset($nodeMap[$u]) && isset($nodeMap[$v])) {
+                            $coordU = $nodeMap[$u]['coord'];
+                            $coordV = $nodeMap[$v]['coord'];
+                            
+                            $edgeCoords = [$coordU, $coordV];
+                            if (!empty($tl['geometry'])) {
+                                $parsedGeom = is_string($tl['geometry']) ? json_decode($tl['geometry'], true) : $tl['geometry'];
+                                if (isset($parsedGeom['coordinates']) && is_array($parsedGeom['coordinates']) && count($parsedGeom['coordinates']) >= 2) {
+                                    $edgeCoords = $parsedGeom['coordinates'];
+                                }
+                            }
+
+                            $multiLineCoords[] = $edgeCoords;
+                            $edges[] = [
+                                'edge_id'            => (int)$tl['id'],
+                                'from_asset_id'      => $u,
+                                'to_asset_id'        => $v,
+                                'conductor_type'     => $tl['conductor_type'] ?? 'AAAC',
+                                'conductor_size'     => $tl['conductor_size'] ?? '150 mm²',
+                                'conductor_label'    => ($tl['conductor_type'] ?? 'AAAC') . ' ' . ($tl['conductor_size'] ?? '150 mm²'),
+                                'conductor_material' => $tl['conductor_material'] ?? 'ALUMINUM_ALLOY',
+                                'installation_type'  => $tl['installation_type'] ?? 'OVERHEAD',
+                                'circuit_config'     => $tl['circuit_config'] ?? '3_PHASE',
+                                'length_meter'       => (float)($tl['distance_meters'] ?? 0),
+                                'coordinates'        => $edgeCoords,
+                                'status'             => 'ACTIVE',
+                            ];
+                        }
+                    }
+
+                    if (!empty($edges)) {
+                        return [
+                            'type'           => 'MultiLineString',
+                            'coordinates'    => $multiLineCoords,
+                            'nodes'          => $allPoints,
+                            'edges'          => $edges,
+                            'version_no'     => 1,
+                            'version_status' => 'ACTIVE'
+                        ];
+                    }
+                }
+            }
+
+            // =========================================================================
             // PRIORITY 1: Explicit Topology Tree Edges (parent_asset_id & asset_relationships)
             // =========================================================================
             $edges = [];

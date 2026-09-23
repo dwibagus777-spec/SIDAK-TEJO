@@ -1835,6 +1835,28 @@
                     </div>
                     <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
                 </a>
+                <a href="<?= site_url('sld/view/15') ?>" class="cmd-item" data-search="sld single line diagram skema jaringan feeder penyulang banjar kemantren gading siwalan gemurung unifilar diagram satu garis">
+                    <span class="cmd-dot" style="background: #f59e0b;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">Single Line Diagram (SLD)</span>
+                            <span class="cmd-badge">SLD-05T</span>
+                        </div>
+                        <span class="cmd-item-sub">Dynamic CAD engineering blueprint, feeder topology &amp; anomali</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
+                <a href="<?= site_url('sld/validation') ?>" class="cmd-item" data-search="sld validation validasi topologi feeder status readiness kelayakan sld-05t matriks penyulang">
+                    <span class="cmd-dot" style="background: #00b5b8;"></span>
+                    <div class="cmd-item-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="cmd-item-title">SLD Feeder Validation</span>
+                            <span class="cmd-badge">Workbench</span>
+                        </div>
+                        <span class="cmd-item-sub">Matriks status kesiapan topologi &amp; validitas 134 feeder</span>
+                    </div>
+                    <i class="fas fa-chevron-right cmd-chevron ms-2"></i>
+                </a>
                 <a href="<?= site_url('work-orders') ?>" class="cmd-item" data-search="work orders wo spk perintah kerja lapangan overdue perbaikan yantek pemeliharaan">
                     <span class="cmd-dot" style="background: #ef4444;"></span>
                     <div class="cmd-item-info">

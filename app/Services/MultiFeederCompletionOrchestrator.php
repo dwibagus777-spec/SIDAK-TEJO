@@ -199,12 +199,13 @@ class MultiFeederCompletionOrchestrator
     public function buildGlobalFeederQueue(): array
     {
         // Query all feeders
-        $feeders = $this->db->table('penyulang p')
+        $feedersBuilder = $this->db->table('penyulang p')
             ->select('p.id as penyulang_id, p.kode_penyulang, p.nama_penyulang, p.ulp_id, u.nama_ulp')
-            ->join('ulps u', 'u.id = p.ulp_id', 'left')
-            ->where('p.deleted_at IS NULL')
-            ->orderBy('p.id', 'ASC')
-            ->get()->getResultArray();
+            ->join('ulps u', 'u.id = p.ulp_id', 'left');
+        if ($this->db->fieldExists('deleted_at', 'penyulang')) {
+            $feedersBuilder->where('p.deleted_at IS NULL');
+        }
+        $feeders = $feedersBuilder->orderBy('p.id', 'ASC')->get()->getResultArray();
 
         $noAssetQueue     = [];
         $nearCompleteQueue = [];
@@ -713,6 +714,11 @@ class MultiFeederCompletionOrchestrator
                 $provenance = "{$actorName}|ENGINE=TL-MF-02|RUN:{$runId}|BATCH:{$batchNum}|PROP:{$propNum}";
 
                 $coords = $edge['coordinates'];
+                $wktPoints = [];
+                foreach ($coords as $pt) {
+                    $wktPoints[] = $pt[0] . ' ' . $pt[1];
+                }
+                $wkt = 'LINESTRING (' . implode(', ', $wktPoints) . ')';
                 $geoJson = json_encode([
                     'type' => 'LineString',
                     'coordinates' => $coords
@@ -730,7 +736,7 @@ class MultiFeederCompletionOrchestrator
                     'circuit_config'     => '3_PHASE',
                     'distance_meters'    => round((float)$edge['distance_meters'], 2),
                     'length_meters'      => round((float)$edge['distance_meters'], 2),
-                    'geometry'           => $geoJson,
+                    'geometry'           => $wkt,
                     'status'             => 'ACTIVE',
                     'is_active'          => 1,
                     'created_by'         => $provenance,

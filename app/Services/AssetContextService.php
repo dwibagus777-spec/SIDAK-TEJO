@@ -313,8 +313,16 @@ class AssetContextService
 
         // 9. Assemble Navigation Context Handoff (Pure Navigation, No Mutation)
         $navQueryParams = [
-            'asset_id' => (int)$asset['id'],
+            'asset_id'        => (int)$asset['id'],
+            'focus_asset_id'  => (int)$asset['id'],
+            'from'            => 'gis_inspection',
+            'inspection_date' => date('Y-m-d'),
         ];
+        if (!empty($asset['latitude']) && !empty($asset['longitude'])) {
+            $navQueryParams['lat']  = $asset['latitude'];
+            $navQueryParams['lng']  = $asset['longitude'];
+            $navQueryParams['zoom'] = 19;
+        }
         if ($effectiveSection && !empty($effectiveSection['id'])) {
             $navQueryParams['section_id'] = (int)$effectiveSection['id'];
         }
@@ -351,6 +359,7 @@ class AssetContextService
                 'field_alias'   => (string)($m['field_alias'] ?? ($m['nama_lapangan'] ?? '')),
                 'unit'          => $unit,
                 'satuan'        => $unit,
+                'default_qty'   => (float)($m['default_qty'] ?? 1.0),
                 'category'      => (string)($m['category'] ?? ($m['material_category'] ?? '')),
             ];
         }

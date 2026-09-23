@@ -552,6 +552,121 @@ class MigrateController extends BaseController
             $inspectionService = new \App\Services\InspectionCatalogService();
             $inspectionService->ensureCatalogSeeded();
 
+            // Phase 2: Register Equipment Standards & Link Assets
+            $equipmentStandards = [
+                ['code' => 'PMCB',     'name' => 'Pole Mounted Circuit Breaker (PMCB)',                'family' => 'PROTECTION', 'domain' => 'EQUIPMENT', 'cat' => 'SWITCH', 'order' => 40],
+                ['code' => 'LBS',      'name' => 'Load Break Switch (LBS) Manual / Gas Insulated',     'family' => 'SWITCHING',  'domain' => 'EQUIPMENT', 'cat' => 'SWITCH', 'order' => 41],
+                ['code' => 'LBSM',     'name' => 'Load Break Switch Motorized (LBS Motorized)',        'family' => 'SWITCHING',  'domain' => 'EQUIPMENT', 'cat' => 'SWITCH', 'order' => 42],
+                ['code' => 'ASS',      'name' => 'Automatic Sectionalizing Switch (ASS)',             'family' => 'SWITCHING',  'domain' => 'EQUIPMENT', 'cat' => 'SWITCH', 'order' => 43],
+                ['code' => 'AVS',      'name' => 'Automatic Voltage Switch / Sectionalizer (AVS)',     'family' => 'PROTECTION', 'domain' => 'EQUIPMENT', 'cat' => 'SWITCH', 'order' => 44],
+                ['code' => 'RECLOSER', 'name' => 'Automatic Circuit Recloser (ACR / Recloser 20 kV)', 'family' => 'PROTECTION', 'domain' => 'EQUIPMENT', 'cat' => 'SWITCH', 'order' => 45],
+            ];
+            $stdMap = [];
+            foreach ($equipmentStandards as $es) {
+                $chk = $db->query("SELECT id FROM construction_types WHERE construction_code = '{$es['code']}' OR code = '{$es['code']}' LIMIT 1")->getRowArray();
+                if ($chk) {
+                    $cId = (int)$chk['id'];
+                    $db->query("UPDATE construction_types SET code = '{$es['code']}', name = '{$es['name']}', construction_code = '{$es['code']}', construction_name = '{$es['name']}', construction_family = '{$es['family']}', asset_domain = '{$es['domain']}', approval_status = 'ACTIVE', is_active = 1 WHERE id = {$cId}");
+                    $stdMap[$es['code']] = $cId;
+                } else {
+                    $db->query("INSERT INTO construction_types (code, name, construction_code, construction_name, construction_family, network_type, asset_category, asset_domain, approval_status, voltage_level, is_active, sort_order, created_at, updated_at) VALUES ('{$es['code']}', '{$es['name']}', '{$es['code']}', '{$es['name']}', '{$es['family']}', 'JTM', '{$es['cat']}', '{$es['domain']}', 'ACTIVE', '20kV', 1, {$es['order']}, NOW(), NOW())");
+                    $stdMap[$es['code']] = (int)$db->insertID();
+                }
+            }
+            $executed[] = 'equipment_standards_registered';
+
+            // Link existing equipment assets
+            if ($db->tableExists('assets') && $db->fieldExists('construction_type_id', 'assets')) {
+                foreach (['LBSM', 'PMCB', 'LBS', 'ASS', 'AVS', 'RECLOSER'] as $eqCode) {
+                    if (!empty($stdMap[$eqCode])) {
+                        $cId = $stdMap[$eqCode];
+                        $db->query("UPDATE `assets` SET `construction_type_id` = {$cId} WHERE (`nama_asset` LIKE '{$eqCode}%' OR `nama_asset` LIKE '% {$eqCode} %' OR `nama_asset` LIKE '% {$eqCode}' OR `kode_asset` LIKE '{$eqCode}%') AND (`construction_type_id` IS NULL OR `construction_type_id` = 0) AND `deleted_at` IS NULL");
+                    }
+                }
+                $executed[] = 'equipment_assets_linked';
+            }
+
+            // Phase 3: Material BOM Overhaul (13 Canonical Materials for TM1)
+            $canonicalMaterials = [
+                ['code' => 'CANON-HDW-001', 'name' => 'Cross Arm UNP 2000 mm',                                                'alias' => 'KANAL',         'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                ['code' => 'CANON-HDW-003', 'name' => 'Arm Tie Type 750 - 3/4"',                                              'alias' => 'ARM TIE',       'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                ['code' => 'CANON-HDW-005', 'name' => 'Bolt & Nut M.16 x 50',                                                 'alias' => 'BAUT 50',       'unit' => 'buah', 'cat' => 'BAUT_DAN_MUR'],
+                ['code' => 'CANON-HDW-002', 'name' => 'Bolt & Nut M.16 x 400 (besi as) Double Arm - HDG',                     'alias' => 'BAUT 400',      'unit' => 'buah', 'cat' => 'BAUT_DAN_MUR'],
+                ['code' => 'CANON-HDW-015', 'name' => 'Ground Wire Clamp Type A',                                             'alias' => 'PLAT GSW',      'unit' => 'buah', 'cat' => 'CLAMP'],
+                ['code' => 'CANON-HDW-016', 'name' => 'Wire Clip M10 (Ø 35mm)',                                               'alias' => 'GSW',           'unit' => 'buah', 'cat' => 'AKSESORIS'],
+                ['code' => 'CANON-MAT-001', 'name' => 'Insulator - Pin Post Insulator 20 Kv;12,5 kN - Porcelain (Tumpu)',     'alias' => 'PIN',           'unit' => 'buah', 'cat' => 'ISOLATOR'],
+                ['code' => 'CANON-ACC-010', 'name' => 'Isolated All. Binding - 4 mm Ø 6',                                     'alias' => 'BENDING',       'unit' => 'buah', 'cat' => 'PENGIKAT'],
+                ['code' => 'CANON-ACC-011', 'name' => 'Preformed Side Tie Double 150mm (Semi Cond/non metalic/Composite)',    'alias' => 'TOP TIES SIDE', 'unit' => 'buah', 'cat' => 'PENGIKAT'],
+                ['code' => 'CANON-ACC-012', 'name' => 'Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)',            'alias' => 'TOP TIES',      'unit' => 'buah', 'cat' => 'PENGIKAT'],
+                ['code' => 'CANON-HDW-018', 'name' => 'ORNAMENT CABLE BAND',                                                  'alias' => 'BEGEL VERLINK', 'unit' => 'buah', 'cat' => 'BAND'],
+                ['code' => 'CANON-HDW-019', 'name' => 'PIPE GALVANIZED 3" 1500',                                              'alias' => 'VERLINK GSW',   'unit' => 'buah', 'cat' => 'PIPA'],
+                ['code' => 'CANON-HDW-017', 'name' => 'Wire Clip M10 (Ø 35mm) Secondary',                                     'alias' => 'WIRE CLIP',     'unit' => 'buah', 'cat' => 'AKSESORIS'],
+            ];
+            $matIdMap = [];
+            foreach ($canonicalMaterials as $cm) {
+                $matRow = $db->query("SELECT id FROM master_materials WHERE material_code = ? OR nama_material = ? LIMIT 1", [$cm['code'], $cm['name']])->getRowArray();
+                if ($matRow) {
+                    $mId = (int)$matRow['id'];
+                    $db->query("UPDATE master_materials SET satuan = 'buah', nama_lapangan = ?, material_category = ?, status = 'AKTIF', updated_at = NOW() WHERE id = ?", [$cm['alias'], $cm['cat'], $mId]);
+                    $matIdMap[$cm['name']] = $mId;
+                } else {
+                    $db->query("INSERT INTO master_materials (material_code, nama_material, nama_lapangan, satuan, material_domain, material_category, status, created_at, updated_at) VALUES (?, ?, ?, 'buah', 'JTM', ?, 'AKTIF', NOW(), NOW())", [
+                        $cm['code'], $cm['name'], $cm['alias'], $cm['cat']
+                    ]);
+                    $matIdMap[$cm['name']] = (int)$db->insertID();
+                }
+            }
+            $executed[] = 'canonical_materials_upserted';
+
+            // Overhaul TM1 BOM (13 canonical items)
+            $tm1Type = $db->query("SELECT id FROM construction_types WHERE construction_code = 'TM1' OR code = 'TM1' LIMIT 1")->getRowArray();
+            if ($tm1Type) {
+                $tm1Id = (int)$tm1Type['id'];
+                $db->query("DELETE FROM construction_bom_items WHERE construction_type_id = {$tm1Id}");
+                $tm1Items = [
+                    ['mat' => 'Cross Arm UNP 2000 mm',                                                'alias' => 'KANAL',         'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['mat' => 'Arm Tie Type 750 - 3/4"',                                              'alias' => 'ARM TIE',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'CROSS_ARM_TRAVERS'],
+                    ['mat' => 'Bolt & Nut M.16 x 50',                                                 'alias' => 'BAUT 50',       'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAUT_DAN_MUR'],
+                    ['mat' => 'Bolt & Nut M.16 x 400 (besi as) Double Arm - HDG',                     'alias' => 'BAUT 400',      'qty' => 1.0, 'unit' => 'buah', 'cat' => 'BAUT_DAN_MUR'],
+                    ['mat' => 'Ground Wire Clamp Type A',                                             'alias' => 'PLAT GSW',      'qty' => 1.0, 'unit' => 'buah', 'cat' => 'CLAMP'],
+                    ['mat' => 'Wire Clip M10 (Ø 35mm)',                                               'alias' => 'GSW',           'qty' => 2.0, 'unit' => 'buah', 'cat' => 'AKSESORIS'],
+                    ['mat' => 'Insulator - Pin Post Insulator 20 Kv;12,5 kN - Porcelain (Tumpu)',     'alias' => 'PIN',           'qty' => 3.0, 'unit' => 'buah', 'cat' => 'ISOLATOR'],
+                    ['mat' => 'Isolated All. Binding - 4 mm Ø 6',                                     'alias' => 'BENDING',       'qty' => 3.0, 'unit' => 'buah', 'cat' => 'PENGIKAT'],
+                    ['mat' => 'Preformed Side Tie Double 150mm (Semi Cond/non metalic/Composite)',    'alias' => 'TOP TIES SIDE', 'qty' => 1.0, 'unit' => 'buah', 'cat' => 'PENGIKAT'],
+                    ['mat' => 'Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)',            'alias' => 'TOP TIES',      'qty' => 2.0, 'unit' => 'buah', 'cat' => 'PENGIKAT'],
+                    ['mat' => 'ORNAMENT CABLE BAND',                                                  'alias' => 'BEGEL VERLINK', 'qty' => 2.0, 'unit' => 'buah', 'cat' => 'BAND'],
+                    ['mat' => 'PIPE GALVANIZED 3" 1500',                                              'alias' => 'VERLINK GSW',   'qty' => 1.0, 'unit' => 'buah', 'cat' => 'PIPA'],
+                    ['mat' => 'Wire Clip M10 (Ø 35mm) Secondary',                                     'alias' => 'WIRE CLIP',     'qty' => 2.0, 'unit' => 'buah', 'cat' => 'AKSESORIS'],
+                ];
+                $sOrder = 1;
+                foreach ($tm1Items as $ti) {
+                    $mId = $matIdMap[$ti['mat']] ?? null;
+                    $db->query("INSERT INTO construction_bom_items (construction_type_id, material_id, raw_material_name, material_alias, component_category, quantity, unit, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())", [
+                        $tm1Id, $mId, $ti['mat'], $ti['alias'], $ti['cat'], $ti['qty'], $ti['unit'], $sOrder
+                    ]);
+                    $sOrder++;
+                }
+                $executed[] = 'tm1_bom_13_items_overhauled';
+            }
+
+            // Phase 4: Asset Inspection States Table
+            $db->query("CREATE TABLE IF NOT EXISTS `asset_inspection_states` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `planning_id` INT UNSIGNED NULL DEFAULT 0,
+                `asset_id` INT UNSIGNED NOT NULL,
+                `status` VARCHAR(30) NOT NULL DEFAULT 'PLANNED_PENDING',
+                `finding_count` INT UNSIGNED NOT NULL DEFAULT 0,
+                `inspected_by` INT UNSIGNED NULL,
+                `inspected_at` DATETIME NULL,
+                `notes` TEXT NULL,
+                `created_at` DATETIME NULL,
+                `updated_at` DATETIME NULL,
+                INDEX `idx_asset_status` (`asset_id`, `status`),
+                INDEX `idx_planning_status` (`planning_id`, `status`),
+                UNIQUE KEY `uk_asset_planning` (`asset_id`, `planning_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $executed[] = 'asset_inspection_states';
+
             // Seed Default Network Baseline if empty
             if ($db->tableExists('network_baselines')) {
                 $baseCheck = $db->query("SELECT id FROM network_baselines LIMIT 1")->getResultArray();

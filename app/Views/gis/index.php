@@ -439,17 +439,17 @@
         bottom: 0;
         background: #ffffff;
         padding-top: 10px;
-        padding-bottom: calc(var(--gis-mob-bottom-nav, 62px) + env(safe-area-inset-bottom, 0px) + 12px);
+        padding-bottom: calc(var(--gis-mob-bottom-nav, 68px) + env(safe-area-inset-bottom, 0px) + 16px) !important;
         border-top: 1px solid #f1f5f9;
         margin-top: 12px;
         display: flex;
         gap: 8px;
-        z-index: 20;
+        z-index: 1080 !important;
     }
 
     @media (min-width: 769px) {
         .sheet-sticky-footer {
-            padding-bottom: 12px !important;
+            padding-bottom: 14px !important;
         }
     }
 
@@ -1434,7 +1434,7 @@
     </div>
 
     <!-- Pinned Action Footer (Navigation Only, Always Visible) -->
-    <div class="sheet-sticky-footer px-3 pt-2 pb-3 bg-white border-top flex-shrink-0" style="z-index: 1060;">
+    <div class="sheet-sticky-footer px-3 pt-2 bg-white border-top flex-shrink-0" style="z-index: 1080;">
         <div class="d-flex gap-2">
             <a id="btn-context-drawer-create-temuan" href="#" class="btn btn-primary flex-fill fw-bold rounded-pill text-white py-2 shadow-sm d-flex justify-content-center align-items-center gap-1" style="font-size: 13px;">
                 <i class="fas fa-plus-circle"></i> Input Temuan
@@ -6724,13 +6724,42 @@ document.addEventListener("DOMContentLoaded", function () {
         loadGisProposalsOnDemand();
     }, 400);
 
-    // 🎯 CR-HOTFIX-03: Auto-open asset context drawer if asset_id is present in URL query param
+    // 🎯 CR-INSPECTION-MOBILE-01 & CR-HOTFIX-03: Auto-focus & open asset context drawer
     const urlParams = new URLSearchParams(window.location.search);
-    const focusAssetId = urlParams.get('asset_id');
+    const focusAssetId = urlParams.get('focus_asset_id') || urlParams.get('asset_id');
+    const focusLat = parseFloat(urlParams.get('lat'));
+    const focusLng = parseFloat(urlParams.get('lng'));
+    const focusZoom = parseInt(urlParams.get('zoom')) || 19;
+    const isUpdated = urlParams.get('updated');
+
     if (focusAssetId && parseInt(focusAssetId) > 0) {
         setTimeout(function () {
+            if (map && !isNaN(focusLat) && !isNaN(focusLng) && focusLat !== 0 && focusLng !== 0) {
+                map.flyTo([focusLat, focusLng], focusZoom, {
+                    animate: true,
+                    duration: 1.2
+                });
+            }
+
             if (typeof openAssetContextDrawer === 'function') {
                 openAssetContextDrawer(parseInt(focusAssetId));
+            }
+
+            if (isUpdated === '1' && typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Temuan Berhasil Disimpan',
+                    text: 'Kembali ke aset operasional. Status diupdate ke INSPECTED.',
+                    showConfirmButton: false,
+                    timer: 3500,
+                    timerProgressBar: true
+                });
+                if (window.history && window.history.replaceState) {
+                    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                    window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+                }
             }
         }, 500);
     }

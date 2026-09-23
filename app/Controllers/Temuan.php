@@ -483,7 +483,40 @@ class Temuan extends BaseController
                     }
                 }
 
-                return redirect()->to(site_url('temuan/detail/' . $insertedId))->with('success', $res['message'] . ' Berhasil dialihkan ke Detail Temuan.');
+                // Phase 4: Update GIS Inspection Lifecycle State (INSPECTED 🟢)
+                if ($assetId !== null && $assetId > 0) {
+                    try {
+                        $planningIdVal = (int)($this->request->getPost('planning_id') ?: 0);
+                        $userIdVal = $session->get('user_id') ? (int)$session->get('user_id') : null;
+                        $workflowService = new \App\Services\InspectionWorkflowService();
+                        $workflowService->recordFindingInspection($assetId, $planningIdVal, $userIdVal, "Temuan #{$insertedId} dicatat");
+                    } catch (\Throwable $exWorkflow) {
+                        log_message('error', '[INSPECTION_WORKFLOW_ERR] ' . $exWorkflow->getMessage());
+                    }
+                }
+
+                // Phase 5: Mobile Inspection Return Context Handoff
+                $fromGis = ($this->request->getPost('from') === 'gis_inspection');
+                $focusAssetId = $this->request->getPost('focus_asset_id') ?: $assetId;
+                $cLat = $this->request->getPost('context_lat') ?: ($data['latitude'] ?? null);
+                $cLng = $this->request->getPost('context_lng') ?: ($data['longitude'] ?? null);
+                $cZoom = (int)($this->request->getPost('context_zoom') ?: 19);
+                $cPlan = (int)($this->request->getPost('planning_id') ?: 0);
+
+                $redirectUrl = site_url('temuan/detail/' . $insertedId);
+                if ($fromGis && $focusAssetId) {
+                    $redirectUrl .= '?' . http_build_query([
+                        'from'           => 'gis_inspection',
+                        'focus_asset_id' => $focusAssetId,
+                        'lat'            => $cLat,
+                        'lng'            => $cLng,
+                        'zoom'           => $cZoom,
+                        'planning_id'    => $cPlan,
+                        'updated'        => 1,
+                    ]);
+                }
+
+                return redirect()->to($redirectUrl)->with('success', $res['message'] . ' Berhasil dialihkan ke Detail Temuan.');
             }
             return redirect()->to(site_url('temuan'))->with('success', $res['message']);
         }
@@ -586,10 +619,11 @@ class Temuan extends BaseController
         $linkedAsset = null;
         if (!empty($temuan['asset_id']) && $db->tableExists('assets')) {
             $linkedAsset = $db->table('assets a')
-                ->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section')
+                ->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section, ct.construction_code, ct.construction_name')
                 ->join('ulps u', 'u.id = a.ulp_id', 'left')
                 ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
                 ->join('sections s', 's.id = a.section_id', 'left')
+                ->join('construction_types ct', 'ct.id = a.construction_type_id', 'left')
                 ->where('a.id', (int)$temuan['asset_id'])
                 ->get()
                 ->getRowArray();

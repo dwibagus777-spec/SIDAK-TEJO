@@ -1101,142 +1101,176 @@ class MigrateController extends BaseController
 
     public function debugJson()
     {
-        $db = Database::connect();
-        $feederId = (int)($this->request->getGet('feeder_id') ?? 23); // Default to Gedangan (23)
+        try {
+            $db = Database::connect();
+            $feederId = (int)($this->request->getGet('feeder_id') ?? 23); // Default to Gedangan (23)
 
-        // 1. All rows in gis_translines for requested feeder (including inactive/deleted)
-        $translinesAll = [];
-        if ($db->tableExists('gis_translines')) {
-            $translinesAll = $db->table('gis_translines')
-                ->where('penyulang_id', $feederId)
-                ->get()
-                ->getResultArray();
-        }
+            // 1. All rows in gis_translines for requested feeder (including inactive/deleted)
+            $translinesAll = [];
+            if ($db->tableExists('gis_translines')) {
+                $translinesAll = $db->table('gis_translines')
+                    ->where('penyulang_id', $feederId)
+                    ->get()
+                    ->getResultArray();
+            }
 
-        // 2. All versions in network_topology_versions for requested feeder
-        $topologyVersions = [];
-        if ($db->tableExists('network_topology_versions')) {
-            $topologyVersions = $db->table('network_topology_versions')
-                ->where('penyulang_id', $feederId)
-                ->orderBy('version_no', 'DESC')
-                ->get()
-                ->getResultArray();
-            // Truncate large geojson_topology in summary, keep summary info
-            foreach ($topologyVersions as &$tv) {
-                if (!empty($tv['geojson_topology'])) {
-                    $decoded = json_decode($tv['geojson_topology'], true);
-                    $tv['geo_type'] = $decoded['type'] ?? null;
-                    $tv['geo_segments_count'] = count($decoded['coordinates'] ?? []);
-                    $tv['geo_edges_count'] = count($decoded['edges'] ?? []);
-                    $tv['geo_nodes_count'] = count($decoded['nodes'] ?? []);
-                    $tv['geo_edges_sample'] = array_slice($decoded['edges'] ?? [], 0, 5);
-                    unset($tv['geojson_topology']);
+            // 2. All versions in network_topology_versions for requested feeder
+            $topologyVersions = [];
+            if ($db->tableExists('network_topology_versions')) {
+                try {
+                    $topologyVersions = $db->table('network_topology_versions')
+                        ->where('penyulang_id', $feederId)
+                        ->orderBy('version_no', 'DESC')
+                        ->get()
+                        ->getResultArray();
+                    // Truncate large geojson_topology in summary, keep summary info
+                    foreach ($topologyVersions as &$tv) {
+                        if (!empty($tv['geojson_topology'])) {
+                            $decoded = json_decode($tv['geojson_topology'], true);
+                            $tv['geo_type'] = $decoded['type'] ?? null;
+                            $tv['geo_segments_count'] = count($decoded['coordinates'] ?? []);
+                            $tv['geo_edges_count'] = count($decoded['edges'] ?? []);
+                            $tv['geo_nodes_count'] = count($decoded['nodes'] ?? []);
+                            $tv['geo_edges_sample'] = array_slice($decoded['edges'] ?? [], 0, 5);
+                            unset($tv['geojson_topology']);
+                        }
+                    }
+                    unset($tv);
+                } catch (\Throwable $e) {
+                    $topologyVersions = ['error' => $e->getMessage()];
                 }
             }
-            unset($tv);
+
+            // 3. Asset parent_asset_id relationships for requested feeder
+            $assetsWithParent = 0;
+            $sampleParentPairs = [];
+            $totalFeederAssets = 0;
+            if ($db->tableExists('assets')) {
+                $totalFeederAssets = $db->table('assets')
+                    ->where('penyulang_id', $feederId)
+                    ->where('deleted_at IS NULL')
+                    ->countAllResults();
+
+                if ($db->fieldExists('parent_asset_id', 'assets')) {
+                    $assetsWithParent = $db->table('assets')
+                        ->where('penyulang_id', $feederId)
+                        ->where('parent_asset_id IS NOT NULL')
+                        ->where('parent_asset_id >', 0)
+                        ->where('deleted_at IS NULL')
+                        ->countAllResults();
+
+                    $sampleParentPairs = $db->table('assets a')
+                        ->select('a.id, a.kode_asset, a.nama_asset, a.parent_asset_id, p.nama_asset as parent_nama')
+                        ->join('assets p', 'p.id = a.parent_asset_id', 'left')
+                        ->where('a.penyulang_id', $feederId)
+                        ->where('a.parent_asset_id IS NOT NULL')
+                        ->where('a.parent_asset_id >', 0)
+                        ->where('a.deleted_at IS NULL')
+                        ->limit(10)
+                        ->get()
+                        ->getResultArray();
+                }
+            }
+
+            // 4. asset_relationships for requested feeder
+            $assetRelationships = [];
+            if ($db->tableExists('asset_relationships')) {
+                try {
+                    $assetRelationships = $db->table('asset_relationships')
+                        ->where('penyulang_id', $feederId)
+                        ->get()
+                        ->getResultArray();
+                } catch (\Throwable $e) {
+                    $assetRelationships = ['error' => $e->getMessage()];
+                }
+            }
+
+            // 5. gis_transline_proposals for requested feeder
+            $proposalsCount = 0;
+            $proposalsSample = [];
+            if ($db->tableExists('gis_transline_proposals')) {
+                try {
+                    $proposalsCount = $db->table('gis_transline_proposals')
+                        ->where('penyulang_id', $feederId)
+                        ->countAllResults();
+
+                    $proposalsSample = $db->table('gis_transline_proposals')
+                        ->where('penyulang_id', $feederId)
+                        ->limit(5)
+                        ->get()
+                        ->getResultArray();
+                } catch (\Throwable $e) {
+                    $proposalsSample = ['error' => $e->getMessage()];
+                }
+            }
+
+            // 6. Global summary across all feeders
+            $feederTranslineSummary = [];
+            if ($db->tableExists('gis_translines')) {
+                try {
+                    $feederTranslineSummary = $db->table('gis_translines')
+                        ->select('penyulang_id, is_active, count(*) as count')
+                        ->groupBy('penyulang_id, is_active')
+                        ->get()
+                        ->getResultArray();
+                } catch (\Throwable $e) {
+                    $feederTranslineSummary = ['error' => $e->getMessage()];
+                }
+            }
+
+            // 7. Global network_topology_versions summary
+            $globalTopologyVersions = [];
+            if ($db->tableExists('network_topology_versions')) {
+                try {
+                    $globalTopologyVersions = $db->table('network_topology_versions')
+                        ->select('penyulang_id, version_no, is_active, version_status, nodes_count, segments_count, created_at')
+                        ->orderBy('penyulang_id, version_no', 'ASC')
+                        ->get()
+                        ->getResultArray();
+                } catch (\Throwable $e) {
+                    $globalTopologyVersions = ['error' => $e->getMessage()];
+                }
+            }
+
+            // 8. Global parent_asset_id counts per feeder
+            $globalParentCounts = [];
+            if ($db->tableExists('assets') && $db->fieldExists('parent_asset_id', 'assets')) {
+                try {
+                    $globalParentCounts = $db->table('assets')
+                        ->select('penyulang_id, count(*) as total_with_parent')
+                        ->where('parent_asset_id IS NOT NULL')
+                        ->where('parent_asset_id >', 0)
+                        ->where('deleted_at IS NULL')
+                        ->groupBy('penyulang_id')
+                        ->get()
+                        ->getResultArray();
+                } catch (\Throwable $e) {
+                    $globalParentCounts = ['error' => $e->getMessage()];
+                }
+            }
+
+            return $this->response->setJSON([
+                'feeder_id'                   => $feederId,
+                'feeder_name'                 => 'GEDANGAN (23)',
+                'total_assets_in_feeder'      => $totalFeederAssets,
+                'gis_translines_rows'         => $translinesAll,
+                'network_topology_versions'   => $topologyVersions,
+                'assets_with_parent_count'    => $assetsWithParent,
+                'sample_parent_pairs'         => $sampleParentPairs,
+                'asset_relationships'         => $assetRelationships,
+                'proposals_count'             => $proposalsCount,
+                'proposals_sample'            => $proposalsSample,
+                'global_feeder_translines'    => $feederTranslineSummary,
+                'global_topology_versions'    => $globalTopologyVersions,
+                'global_parent_asset_counts'  => $globalParentCounts,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
         }
-
-        // 3. Asset parent_asset_id relationships for requested feeder
-        $assetsWithParent = 0;
-        $sampleParentPairs = [];
-        $totalFeederAssets = 0;
-        if ($db->tableExists('assets')) {
-            $totalFeederAssets = $db->table('assets')
-                ->where('penyulang_id', $feederId)
-                ->where('deleted_at IS NULL')
-                ->countAllResults();
-
-            $assetsWithParent = $db->table('assets')
-                ->where('penyulang_id', $feederId)
-                ->where('parent_asset_id IS NOT NULL')
-                ->where('parent_asset_id >', 0)
-                ->where('deleted_at IS NULL')
-                ->countAllResults();
-
-            $sampleParentPairs = $db->table('assets a')
-                ->select('a.id, a.kode_asset, a.nama_asset, a.parent_asset_id, p.nama_asset as parent_nama')
-                ->join('assets p', 'p.id = a.parent_asset_id', 'left')
-                ->where('a.penyulang_id', $feederId)
-                ->where('a.parent_asset_id IS NOT NULL')
-                ->where('a.parent_asset_id >', 0)
-                ->where('a.deleted_at IS NULL')
-                ->limit(10)
-                ->get()
-                ->getResultArray();
-        }
-
-        // 4. asset_relationships for requested feeder
-        $assetRelationships = [];
-        if ($db->tableExists('asset_relationships')) {
-            $assetRelationships = $db->table('asset_relationships')
-                ->where('penyulang_id', $feederId)
-                ->get()
-                ->getResultArray();
-        }
-
-        // 5. gis_transline_proposals for requested feeder
-        $proposalsCount = 0;
-        $proposalsSample = [];
-        if ($db->tableExists('gis_transline_proposals')) {
-            $proposalsCount = $db->table('gis_transline_proposals')
-                ->where('penyulang_id', $feederId)
-                ->countAllResults();
-
-            $proposalsSample = $db->table('gis_transline_proposals')
-                ->where('penyulang_id', $feederId)
-                ->limit(5)
-                ->get()
-                ->getResultArray();
-        }
-
-        // 6. Global summary across all feeders
-        $feederTranslineSummary = [];
-        if ($db->tableExists('gis_translines')) {
-            $feederTranslineSummary = $db->table('gis_translines')
-                ->select('penyulang_id, is_active, count(*) as count')
-                ->groupBy('penyulang_id, is_active')
-                ->get()
-                ->getResultArray();
-        }
-
-        // 7. Global network_topology_versions summary
-        $globalTopologyVersions = [];
-        if ($db->tableExists('network_topology_versions')) {
-            $globalTopologyVersions = $db->table('network_topology_versions')
-                ->select('penyulang_id, version_no, is_active, version_status, nodes_count, segments_count, created_at, superseded_at')
-                ->orderBy('penyulang_id, version_no', 'ASC')
-                ->get()
-                ->getResultArray();
-        }
-
-        // 8. Global parent_asset_id counts per feeder
-        $globalParentCounts = [];
-        if ($db->tableExists('assets')) {
-            $globalParentCounts = $db->table('assets')
-                ->select('penyulang_id, count(*) as total_with_parent')
-                ->where('parent_asset_id IS NOT NULL')
-                ->where('parent_asset_id >', 0)
-                ->where('deleted_at IS NULL')
-                ->groupBy('penyulang_id')
-                ->get()
-                ->getResultArray();
-        }
-
-        return $this->response->setJSON([
-            'feeder_id'                   => $feederId,
-            'feeder_name'                 => 'GEDANGAN (23)',
-            'total_assets_in_feeder'      => $totalFeederAssets,
-            'gis_translines_rows'         => $translinesAll,
-            'network_topology_versions'   => $topologyVersions,
-            'assets_with_parent_count'    => $assetsWithParent,
-            'sample_parent_pairs'         => $sampleParentPairs,
-            'asset_relationships'         => $assetRelationships,
-            'proposals_count'             => $proposalsCount,
-            'proposals_sample'            => $proposalsSample,
-            'global_feeder_translines'    => $feederTranslineSummary,
-            'global_topology_versions'    => $globalTopologyVersions,
-            'global_parent_asset_counts'  => $globalParentCounts,
-        ]);
     }
 
     /**

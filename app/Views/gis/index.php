@@ -687,6 +687,9 @@
             </div>
 
             <div class="d-flex align-items-center gap-1">
+                <button type="button" id="btn-open-conductor-analytics" class="btn btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-white px-2 px-md-3" style="font-size: 11px; background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border: 1px solid #14b8a6;" title="Analisis Konduktor & Panjang Jaringan">
+                    <i class="fas fa-wave-square me-1"></i> Konduktor
+                </button>
                 <button type="button" id="btn-open-transline-ai" class="btn btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-white px-2 px-md-3" style="font-size: 11px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: 1px solid #0284c7;">
                     <i class="fas fa-bolt text-warning me-1"></i> Auto-Complete AI
                 </button>
@@ -780,9 +783,28 @@
             <span id="summary-text" class="fw-bold font-monospace">Memuat Data Jaringan...</span>
         </div>
 
+        <!-- Conductor Analytics Active Floating Banner on Map -->
+        <div id="gis-conductor-active-banner" class="gis-conductor-active-banner" style="display: none; position: absolute; bottom: 65px; left: 50%; transform: translateX(-50%); z-index: 1025; background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(10px); color: #fff; border-radius: 30px; padding: 7px 18px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); border: 2px solid #0d9488; font-size: 12px; align-items: center; justify-content: space-between; gap: 14px; max-width: 92vw;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="p-1 rounded bg-teal bg-opacity-25" style="color: #2dd4bf;"><i class="fas fa-wave-square"></i></span>
+                <div>
+                    <strong id="conductor-banner-title" class="text-warning">A3C 150 mm²</strong>
+                    <span id="conductor-banner-stats" class="text-light ms-1 font-monospace" style="font-size: 11px;">(0 Transline • 0 km)</span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <button type="button" id="btn-reopen-conductor-drawer" class="btn btn-xs btn-outline-info rounded-pill px-2 py-0" style="font-size: 10px;">Detail</button>
+                <button type="button" id="btn-clear-conductor-highlight" class="btn btn-xs btn-outline-light rounded-pill px-2 py-0" style="font-size: 10px;">Batal</button>
+            </div>
+        </div>
+
         <!-- Floating Action Menu (FAB) -->
         <div class="gis-fab-container">
             <div id="gis-fab-menu" class="gis-fab-menu">
+                <div class="gis-fab-item" id="fab-open-conductor">
+                    <i class="fas fa-wave-square text-warning fs-6"></i>
+                    <span>Analisis Konduktor</span>
+                </div>
                 <div class="gis-fab-item" id="fab-add-asset">
                     <i class="fas fa-plus-circle text-success fs-6"></i>
                     <span>Tambah Aset</span>
@@ -1552,6 +1574,176 @@
         <button type="button" id="btn-apply-drawer-filter" class="btn btn-primary w-100 fw-bold rounded-pill py-2 shadow-sm">
             <i class="fas fa-check-circle me-1"></i> Terapkan Filter & Buka Peta
         </button>
+    </div>
+</div>
+
+<!-- ========================================================
+     DRAWER: ANALISIS JARINGAN & KONDUKTOR (Offcanvas Sheet)
+     Material & Conductor Network Intelligence (Authoritative Only)
+     ======================================================== -->
+<div class="offcanvas offcanvas-bottom offcanvas-compact-sheet" tabindex="-1" id="offcanvas-conductor-analytics" style="max-height: 88vh; border-top-left-radius: 20px; border-top-right-radius: 20px;">
+    <div class="offcanvas-body p-3" style="overflow-y: auto;">
+        <div class="sheet-drag-handle"></div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <span class="p-1 rounded bg-teal bg-opacity-10" style="color: #0d9488;">
+                        <i class="fas fa-wave-square"></i>
+                    </span>
+                    Analisis Jaringan & Konduktor
+                </h6>
+                <small class="text-muted" style="font-size: 11px;">Material & Conductor Network Intelligence • Single Source of Truth</small>
+            </div>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <!-- Scope Selector: Active Feeder vs Global Search -->
+        <div class="mb-3">
+            <div class="btn-group w-100 p-1 bg-light rounded-pill border" role="group">
+                <input type="radio" class="btn-check" name="cond-scope-radio" id="cond-scope-feeder" value="feeder" checked autocomplete="off">
+                <label class="btn btn-sm rounded-pill fw-bold" for="cond-scope-feeder" style="font-size: 11px;">
+                    <i class="fas fa-map-pin me-1"></i> Penyulang Aktif (<span id="cond-scope-feeder-label">Penyulang</span>)
+                </label>
+
+                <input type="radio" class="btn-check" name="cond-scope-radio" id="cond-scope-global" value="global" autocomplete="off">
+                <label class="btn btn-sm rounded-pill fw-bold" for="cond-scope-global" style="font-size: 11px;">
+                    <i class="fas fa-globe me-1"></i> Cari Global (134 Penyulang)
+                </label>
+            </div>
+        </div>
+
+        <!-- Mode "WHERE IS?" Quick Search -->
+        <div class="mb-3">
+            <label class="small text-muted fw-bold d-block mb-1">
+                <i class="fas fa-search text-primary me-1"></i> Mode "WHERE IS?" (Cari Konduktor & Penampang):
+            </label>
+            <div class="input-group input-group-sm">
+                <input type="text" id="cond-quick-search-input" class="form-control fw-bold" placeholder="Ketik misal: A3C 150, AAAC 70, XLPE 240..." style="font-size: 12px;">
+                <button class="btn btn-primary fw-bold px-3" type="button" id="btn-cond-quick-search">
+                    <i class="fas fa-magnifying-glass me-1"></i> Cari
+                </button>
+            </div>
+            <div class="d-flex flex-wrap gap-1 mt-2" id="cond-quick-chips">
+                <span class="small text-secondary me-1 align-self-center" style="font-size: 10px;">Rekomendasi:</span>
+                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0 px-2 cond-chip-btn" data-query="A3C 150" style="font-size: 10px;">A3C 150 mm²</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0 px-2 cond-chip-btn" data-query="AAAC 150" style="font-size: 10px;">AAAC 150 mm²</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0 px-2 cond-chip-btn" data-query="AAAC 70" style="font-size: 10px;">AAAC 70 mm²</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0 px-2 cond-chip-btn" data-query="XLPE 240" style="font-size: 10px;">XLPE 240 mm²</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0 px-2 cond-chip-btn" data-query="A3C 70" style="font-size: 10px;">A3C 70 mm²</button>
+            </div>
+        </div>
+
+        <!-- Filter Detail (Dropdowns) -->
+        <div class="p-2 bg-light rounded-3 border mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-bold text-dark" style="font-size: 11px;"><i class="fas fa-sliders-h text-secondary me-1"></i> Filter Spesifik:</span>
+                <a href="javascript:void(0)" id="btn-toggle-advanced-cond" class="small text-decoration-none" style="font-size: 10px;">Sembunyikan/Tampilkan</a>
+            </div>
+            <div id="cond-advanced-filters-row" class="row g-2">
+                <div class="col-6 col-md-3">
+                    <label class="text-muted small" style="font-size: 10px;">Konduktor:</label>
+                    <select id="cond-filter-type" class="form-select form-select-sm" style="font-size: 11px;">
+                        <option value="">Semua Jenis</option>
+                        <option value="A3C">A3C</option>
+                        <option value="AAAC">AAAC</option>
+                        <option value="XLPE">XLPE</option>
+                        <option value="ACSR">ACSR</option>
+                        <option value="AAC">AAC</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="text-muted small" style="font-size: 10px;">Penampang:</label>
+                    <select id="cond-filter-size" class="form-select form-select-sm" style="font-size: 11px;">
+                        <option value="">Semua Ukuran</option>
+                        <option value="150 mm²">150 mm²</option>
+                        <option value="70 mm²">70 mm²</option>
+                        <option value="240 mm²">240 mm²</option>
+                        <option value="50 mm²">50 mm²</option>
+                        <option value="35 mm²">35 mm²</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="text-muted small" style="font-size: 10px;">Section Jaringan:</label>
+                    <select id="cond-filter-section" class="form-select form-select-sm" style="font-size: 11px;">
+                        <option value="">Semua Section</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="text-muted small" style="font-size: 10px;">ULP:</label>
+                    <select id="cond-filter-ulp" class="form-select form-select-sm" style="font-size: 11px;">
+                        <option value="">Semua ULP</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time KPI Card -->
+        <div class="card border-0 shadow-sm rounded-3 mb-3 p-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-bold text-secondary text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Ringkasan Hasil Analisis</span>
+                <span class="badge" style="background: #10b981; color: #fff; font-size: 9px;"><i class="fas fa-shield-check me-1"></i> OTORITATIF DATABASE</span>
+            </div>
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded-3 border shadow-xs">
+                        <div class="small text-muted fw-bold" style="font-size: 9px;">TRANSLINE RESMI</div>
+                        <strong id="cond-kpi-count" class="fs-5 text-primary">0</strong>
+                        <div class="text-secondary" style="font-size: 9px;">Segmen</div>
+                    </div>
+                </div>
+                <div class="col-8">
+                    <div class="p-2 bg-white rounded-3 border shadow-xs">
+                        <div class="small text-muted fw-bold" style="font-size: 9px;">TOTAL PANJANG</div>
+                        <strong id="cond-kpi-length" class="fs-5 text-success">0.00 km</strong>
+                        <div id="cond-kpi-meters" class="text-secondary font-monospace" style="font-size: 9px;">(0 m)</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded-3 border shadow-xs">
+                        <div class="small text-muted fw-bold" style="font-size: 9px;">PENYULANG</div>
+                        <strong id="cond-kpi-feeders" class="fs-6 text-dark">0</strong>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded-3 border shadow-xs">
+                        <div class="small text-muted fw-bold" style="font-size: 9px;">SECTION</div>
+                        <strong id="cond-kpi-sections" class="fs-6 text-dark">0</strong>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded-3 border shadow-xs">
+                        <div class="small text-muted fw-bold" style="font-size: 9px;">ASET TERKAIT</div>
+                        <strong id="cond-kpi-assets" class="fs-6 text-dark">0</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2 mb-3">
+            <button type="button" id="btn-apply-conductor-map" class="btn btn-primary flex-fill rounded-pill fw-bold py-2 shadow-sm" style="font-size: 11px;">
+                <i class="fas fa-highlighter me-1"></i> Sorot di Peta
+            </button>
+            <button type="button" id="btn-export-conductor-xls" class="btn btn-success rounded-pill fw-bold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                <i class="fas fa-file-excel me-1"></i> Export Excel
+            </button>
+            <button type="button" id="btn-reset-conductor-filters" class="btn btn-outline-secondary rounded-pill px-3 py-2" style="font-size: 11px;" title="Reset Filter">
+                <i class="fas fa-undo"></i>
+            </button>
+        </div>
+
+        <!-- Segment Results List -->
+        <div class="border rounded-3 p-2 bg-white">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
+                <span class="small fw-bold text-dark" style="font-size: 11px;"><i class="fas fa-list-check text-primary me-1"></i> Rincian Segmen Transline (<span id="cond-list-count">0</span>)</span>
+                <span class="small text-muted" style="font-size: 10px;">Klik untuk telusuri aset</span>
+            </div>
+            <div id="cond-results-list" style="max-height: 240px; overflow-y: auto;">
+                <div class="p-3 text-center text-muted small" style="font-size: 11px;">
+                    <i class="fas fa-info-circle me-1"></i> Pilih atau cari jenis konduktor untuk menampilkan data.
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -2707,6 +2899,8 @@ document.addEventListener("DOMContentLoaded", function () {
             'offcanvas-asset-detail',
             'offcanvas-asset-edit-menu',
             'offcanvas-filter-sheet',
+            'offcanvas-conductor-analytics',
+            'gis-conductor-active-banner',
             'gis-mode-banner',
             'gis-segment-toolbar'
         ];
@@ -5032,18 +5226,19 @@ document.addEventListener("DOMContentLoaded", function () {
                             ${originBadge}
                         </div>
                         <div class="small text-muted mb-2" style="font-size: 11px; line-height: 1.4;">
+                            <div><strong>ULP:</strong> <span class="text-dark">${tl.nama_ulp || (currentData.meta ? (currentData.meta.nama_ulp || currentData.meta.ulp_name) : '') || 'PLN UID Jatim'}</span></div>
                             <div><strong>Penyulang:</strong> <span class="text-dark">${feederName}</span></div>
                             <div><strong>Section:</strong> <span class="text-dark">${sectionName}</span></div>
-                            <div><strong>Titik A (Source):</strong> <span class="text-dark">${fromName}</span></div>
-                            <div><strong>Titik B (Target):</strong> <span class="text-dark">${toName}</span></div>
-                            <div class="d-flex align-items-center gap-1"><strong>Konduktor:</strong> <span class="text-dark">${conductorLabel}</span> <img src="${condImgUrl}" alt="Conductor" style="height: 12px; max-width: 45px; object-fit: contain;"></div>
-                            <div><strong>Panjang:</strong> <span class="text-dark">${Number(lengthMeter).toFixed(1)} m</span></div>
-                            <div><strong>Status:</strong> <span class="badge bg-success" style="font-size: 9px;">ACTIVE</span></div>
+                            <div><strong>Titik A (Dari):</strong> <span class="text-dark">${fromName}</span></div>
+                            <div><strong>Titik B (Ke):</strong> <span class="text-dark">${toName}</span></div>
+                            <div class="d-flex align-items-center gap-1"><strong>Konduktor:</strong> <span class="text-dark fw-bold">${conductorLabel}</span> <img src="${condImgUrl}" alt="Conductor" style="height: 12px; max-width: 45px; object-fit: contain;"></div>
+                            <div><strong>Panjang:</strong> <span class="text-dark fw-bold font-monospace">${Number(lengthMeter).toFixed(1)} meter</span></div>
+                            <div><strong>Status:</strong> <span class="badge bg-success" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i>✓ TRANSLINE RESMI</span></div>
                             ${createdBy ? `<div class="mt-1 pt-1 border-top" style="font-size: 9px;"><strong>Provenance:</strong> <span class="font-monospace text-secondary">${createdBy}</span></div>` : ''}
                         </div>
                         <div class="p-1 bg-light rounded text-center border">
-                            <span class="text-secondary fw-bold" style="font-size: 9px;">
-                                🟢 TRANSLINE OTORITATIF JTM
+                            <span class="text-success fw-bold" style="font-size: 9px;">
+                                🟢 TRANSLINE OTORITATIF JTM (PERSISTED)
                             </span>
                         </div>
                     </div>
@@ -5616,6 +5811,406 @@ document.addEventListener("DOMContentLoaded", function () {
     bindPointerSafeTap('btn-close-legend', function () {
         document.getElementById('gis-legend-panel').style.display = 'none';
     }, 'CLOSE_LEGEND');
+
+    // ========================================================
+    // ⚡ GIS NETWORK CONDUCTOR ANALYTICS & LENGTH INTELLIGENCE
+    // ========================================================
+    window.lastConductorAnalyticsData = null;
+    window.activeConductorHighlight = null;
+
+    function openConductorAnalyticsDrawer() {
+        var labelEl = document.getElementById('cond-scope-feeder-label');
+        if (labelEl) labelEl.textContent = currentFeederName || 'Penyulang #' + currentFeederId;
+
+        // Populate ULP options from setup-ulp-select if needed
+        var condUlp = document.getElementById('cond-filter-ulp');
+        var setupUlp = document.getElementById('setup-ulp-select');
+        if (condUlp && setupUlp && condUlp.options.length <= 1) {
+            Array.from(setupUlp.options).forEach(function (opt) {
+                if (opt.value) {
+                    var nOpt = document.createElement('option');
+                    nOpt.value = opt.value;
+                    nOpt.textContent = opt.textContent;
+                    condUlp.appendChild(nOpt);
+                }
+            });
+        }
+
+        // Populate Section options from currentData if needed
+        populateConductorSectionOptions();
+
+        safeShowOffcanvas('offcanvas-conductor-analytics');
+        fetchConductorAnalytics();
+    }
+
+    function populateConductorSectionOptions() {
+        var secSelect = document.getElementById('cond-filter-section');
+        if (!secSelect) return;
+        var existingVal = secSelect.value;
+        secSelect.innerHTML = '<option value="">Semua Section</option>';
+
+        var seenSections = new Map();
+        if (currentData && Array.isArray(currentData.features)) {
+            currentData.features.forEach(function (f) {
+                if (f.properties && f.properties.section_id && f.properties.section_name) {
+                    seenSections.set(String(f.properties.section_id), f.properties.section_name);
+                }
+            });
+        }
+        if (window.lastConductorAnalyticsData && window.lastConductorAnalyticsData.breakdown && Array.isArray(window.lastConductorAnalyticsData.breakdown.sections)) {
+            window.lastConductorAnalyticsData.breakdown.sections.forEach(function (s) {
+                if (s.name && !seenSections.has(s.name)) {
+                    seenSections.set(s.name, s.name);
+                }
+            });
+        }
+
+        seenSections.forEach(function (name, id) {
+            var opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = name;
+            if (id === existingVal) opt.selected = true;
+            secSelect.appendChild(opt);
+        });
+    }
+
+    function getSelectedConductorScope() {
+        var globalRadio = document.getElementById('cond-scope-global');
+        return (globalRadio && globalRadio.checked) ? 'global' : 'feeder';
+    }
+
+    function fetchConductorAnalytics(onComplete) {
+        var scope = getSelectedConductorScope();
+        var q = (document.getElementById('cond-quick-search-input') ? document.getElementById('cond-quick-search-input').value : '').trim();
+        var cType = (document.getElementById('cond-filter-type') ? document.getElementById('cond-filter-type').value : '').trim();
+        var cSize = (document.getElementById('cond-filter-size') ? document.getElementById('cond-filter-size').value : '').trim();
+        var secId = (document.getElementById('cond-filter-section') ? document.getElementById('cond-filter-section').value : '').trim();
+        var ulpId = (document.getElementById('cond-filter-ulp') ? document.getElementById('cond-filter-ulp').value : '').trim();
+
+        var params = new URLSearchParams();
+        params.append('scope', scope);
+        params.append('penyulang_id', currentFeederId || 0);
+        if (q) params.append('q', q);
+        if (cType) params.append('conductor_type', cType);
+        if (cSize) params.append('conductor_size', cSize);
+        if (secId) params.append('section_id', secId);
+        if (ulpId) params.append('ulp_id', ulpId);
+
+        var listContainer = document.getElementById('cond-results-list');
+        if (listContainer) {
+            listContainer.innerHTML = '<div class="text-center py-3 text-muted small"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data analitik konduktor...</div>';
+        }
+
+        var url = '<?= site_url('gis/api-conductor-analytics') ?>?' + params.toString();
+        fetchJson(url)
+            .then(function (res) {
+                if (res && res.status === 'success') {
+                    window.lastConductorAnalyticsData = res;
+                    renderConductorAnalyticsResults(res);
+                } else {
+                    console.error('[CONDUCTOR ANALYTICS ERROR]', res);
+                }
+                if (typeof onComplete === 'function') onComplete(res);
+            })
+            .catch(function (err) {
+                console.error('[CONDUCTOR ANALYTICS FETCH FAILED]', err);
+                if (listContainer) {
+                    listContainer.innerHTML = '<div class="text-danger small p-2">Gagal memuat analitik konduktor: ' + (err.message || 'Error') + '</div>';
+                }
+            });
+    }
+
+    function renderConductorAnalyticsResults(data) {
+        var summary = data.summary || {};
+        var items = data.items || [];
+
+        // KPI Badges
+        var countEl = document.getElementById('cond-kpi-count');
+        var lengthEl = document.getElementById('cond-kpi-length');
+        var metersEl = document.getElementById('cond-kpi-meters');
+        var feedersEl = document.getElementById('cond-kpi-feeders');
+        var sectionsEl = document.getElementById('cond-kpi-sections');
+        var assetsEl = document.getElementById('cond-kpi-assets');
+        var listCountEl = document.getElementById('cond-list-count');
+
+        if (countEl) countEl.textContent = summary.transline_resmi_count || 0;
+        if (lengthEl) lengthEl.textContent = (summary.total_panjang_km || 0).toFixed(2) + ' km';
+        if (metersEl) metersEl.textContent = '(' + (summary.total_panjang_meter || 0).toLocaleString('id-ID') + ' meter)';
+        if (feedersEl) feedersEl.textContent = summary.penyulang_count || 0;
+        if (sectionsEl) sectionsEl.textContent = summary.section_count || 0;
+        if (assetsEl) assetsEl.textContent = summary.distinct_assets_count || 0;
+        if (listCountEl) listCountEl.textContent = items.length;
+
+        // Render List
+        var listContainer = document.getElementById('cond-results-list');
+        if (!listContainer) return;
+
+        if (items.length === 0) {
+            listContainer.innerHTML = `
+                <div class="p-3 text-center text-muted small">
+                    <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                    Tidak ada transline resmi yang cocok dengan kriteria konduktor ini.
+                    <div class="text-secondary" style="font-size: 10px; margin-top: 4px;">
+                        <em>(Integritas Data: Garis preview spasial tidak diikutsertakan).</em>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        var html = '<div class="d-flex flex-column gap-2">';
+        items.forEach(function (tl, idx) {
+            var lengthStr = (tl.length_meter || 0).toFixed(1) + ' m';
+            var provBadge = (tl.length_provenance === 'CALCULATED_HAVERSINE')
+                ? '<span class="badge bg-light text-secondary border" style="font-size: 8px;">Haversine</span>'
+                : '<span class="badge bg-light text-success border" style="font-size: 8px;">Tersimpan</span>';
+
+            html += `
+                <div class="p-2 border rounded-3 bg-light cond-result-item" data-index="${idx}" style="cursor: pointer; transition: all 0.15s ease;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong class="text-primary font-monospace" style="font-size: 11px;">⚡ ${tl.transline_code}</strong>
+                        <div class="d-flex align-items-center gap-1">
+                            ${provBadge}
+                            <span class="badge bg-warning text-dark font-monospace" style="font-size: 9px;">${lengthStr}</span>
+                        </div>
+                    </div>
+                    <div class="small text-secondary" style="font-size: 10px; line-height: 1.3;">
+                        <div><strong>Jalur:</strong> ${tl.source_asset_name} &rarr; ${tl.target_asset_name}</div>
+                        <div><strong>Penyulang:</strong> <span class="text-dark">${tl.nama_penyulang}</span> • <strong>Section:</strong> ${tl.nama_section || '-'}</div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="badge bg-secondary" style="font-size: 9px;">${tl.conductor_label}</span>
+                            <span class="text-primary fw-bold" style="font-size: 9px;"><i class="fas fa-location-arrow me-1"></i>Lihat Titik</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        listContainer.innerHTML = html;
+
+        // Bind click on items to locate on map
+        listContainer.querySelectorAll('.cond-result-item').forEach(function (el) {
+            el.addEventListener('click', function () {
+                var idx = parseInt(this.dataset.index, 10);
+                var targetItem = items[idx];
+                if (targetItem) {
+                    locateConductorSegmentOnMap(targetItem);
+                }
+            });
+        });
+    }
+
+    function locateConductorSegmentOnMap(item) {
+        safeHideOffcanvas('offcanvas-conductor-analytics');
+
+        // Check if item belongs to current feeder
+        if (parseInt(item.penyulang_id, 10) !== parseInt(currentFeederId, 10)) {
+            // Need to load target feeder first
+            currentFeederId = item.penyulang_id;
+            currentFeederName = item.nama_penyulang;
+            var titleEl = document.getElementById('topbar-feeder-title');
+            if (titleEl) titleEl.textContent = currentFeederName;
+            var setupSel = document.getElementById('setup-feeder-select');
+            if (setupSel) setupSel.value = currentFeederId;
+
+            loadNetworkData(true, function () {
+                applyConductorHighlight(window.lastConductorAnalyticsData);
+                focusSingleTransline(item.transline_id, item);
+            });
+            return;
+        }
+
+        // Feeder is already loaded
+        applyConductorHighlight(window.lastConductorAnalyticsData);
+        focusSingleTransline(item.transline_id, item);
+    }
+
+    function focusSingleTransline(tId, item) {
+        if (!map) return;
+        var poly = window.translineLayers ? window.translineLayers.get(tId) : null;
+        if (poly) {
+            map.fitBounds(poly.getBounds(), { maxZoom: 18, padding: [60, 60] });
+            poly.setStyle({ color: '#ef4444', weight: 8, opacity: 1 });
+            setTimeout(function () {
+                poly.setStyle({ color: '#f59e0b', weight: 6, opacity: 1 });
+            }, 1800);
+        } else if (item && Array.isArray(item.coordinates) && item.coordinates.length >= 2) {
+            var b = L.latLngBounds(item.coordinates);
+            map.fitBounds(b, { maxZoom: 18, padding: [60, 60] });
+        }
+    }
+
+    function applyConductorHighlight(data) {
+        if (!data || !data.items || data.items.length === 0) {
+            alert('Tidak ada transline resmi yang cocok dengan kriteria konduktor ini untuk disorot.');
+            return;
+        }
+
+        window.activeConductorHighlight = data;
+        var matchingIds = new Set(data.items.map(i => i.transline_id));
+
+        var bounds = L.latLngBounds();
+        var matchedCount = 0;
+
+        if (window.translineLayers) {
+            window.translineLayers.forEach(function (poly, id) {
+                if (matchingIds.has(id)) {
+                    poly.setStyle({ color: '#f59e0b', weight: 6, opacity: 1.0 });
+                    if (poly.bringToFront) poly.bringToFront();
+                    bounds.extend(poly.getBounds());
+                    matchedCount++;
+                } else {
+                    poly.setStyle({ color: '#94a3b8', weight: 2, opacity: 0.15 });
+                }
+            });
+        }
+
+        if (previewPolylineLayer) {
+            previewPolylineLayer.setStyle({ opacity: 0.08 });
+        }
+
+        // Show floating banner
+        var banner = document.getElementById('gis-conductor-active-banner');
+        var bannerTitle = document.getElementById('conductor-banner-title');
+        var bannerStats = document.getElementById('conductor-banner-stats');
+
+        if (banner) {
+            var summary = data.summary || {};
+            var queryLabel = (summary.query_conductor_type || 'Konduktor') + ' ' + (summary.query_conductor_size || '');
+            if (bannerTitle) bannerTitle.textContent = queryLabel.trim();
+            if (bannerStats) bannerStats.textContent = `(${summary.transline_resmi_count} Transline • ${summary.total_panjang_km} km)`;
+            banner.style.display = 'flex';
+        }
+
+        if (matchedCount > 0 && bounds.isValid() && map) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+    }
+
+    function clearConductorHighlight() {
+        window.activeConductorHighlight = null;
+        var banner = document.getElementById('gis-conductor-active-banner');
+        if (banner) banner.style.display = 'none';
+
+        renderAllTranslines();
+    }
+
+    function resetConductorFilters() {
+        var searchInput = document.getElementById('cond-quick-search-input');
+        if (searchInput) searchInput.value = '';
+
+        var typeSel = document.getElementById('cond-filter-type');
+        if (typeSel) typeSel.value = '';
+
+        var sizeSel = document.getElementById('cond-filter-size');
+        if (sizeSel) sizeSel.value = '';
+
+        var secSel = document.getElementById('cond-filter-section');
+        if (secSel) secSel.value = '';
+
+        var ulpSel = document.getElementById('cond-filter-ulp');
+        if (ulpSel) ulpSel.value = '';
+
+        var feederRadio = document.getElementById('cond-scope-feeder');
+        if (feederRadio) feederRadio.checked = true;
+
+        clearConductorHighlight();
+        fetchConductorAnalytics();
+    }
+
+    function exportConductorExcel() {
+        var scope = getSelectedConductorScope();
+        var q = (document.getElementById('cond-quick-search-input') ? document.getElementById('cond-quick-search-input').value : '').trim();
+        var cType = (document.getElementById('cond-filter-type') ? document.getElementById('cond-filter-type').value : '').trim();
+        var cSize = (document.getElementById('cond-filter-size') ? document.getElementById('cond-filter-size').value : '').trim();
+        var secId = (document.getElementById('cond-filter-section') ? document.getElementById('cond-filter-section').value : '').trim();
+        var ulpId = (document.getElementById('cond-filter-ulp') ? document.getElementById('cond-filter-ulp').value : '').trim();
+
+        var params = new URLSearchParams();
+        params.append('scope', scope);
+        params.append('penyulang_id', currentFeederId || 0);
+        if (q) params.append('q', q);
+        if (cType) params.append('conductor_type', cType);
+        if (cSize) params.append('conductor_size', cSize);
+        if (secId) params.append('section_id', secId);
+        if (ulpId) params.append('ulp_id', ulpId);
+
+        var url = '<?= site_url('gis/export-conductor-analytics') ?>?' + params.toString();
+        window.open(url, '_blank');
+    }
+
+    // Bind Conductor Analytics Controls
+    bindPointerSafeTap('btn-open-conductor-analytics', openConductorAnalyticsDrawer, 'OPEN_CONDUCTOR_DRAWER');
+    bindPointerSafeTap('fab-open-conductor', function () {
+        collapseFab();
+        openConductorAnalyticsDrawer();
+    }, 'FAB_OPEN_CONDUCTOR');
+
+    bindPointerSafeTap('btn-apply-conductor-map', function () {
+        safeHideOffcanvas('offcanvas-conductor-analytics');
+        applyConductorHighlight(window.lastConductorAnalyticsData);
+    }, 'APPLY_CONDUCTOR_MAP');
+
+    bindPointerSafeTap('btn-clear-conductor-highlight', clearConductorHighlight, 'CLEAR_CONDUCTOR_HIGHLIGHT');
+    bindPointerSafeTap('btn-reopen-conductor-drawer', openConductorAnalyticsDrawer, 'REOPEN_CONDUCTOR_DRAWER');
+    bindPointerSafeTap('btn-export-conductor-xls', exportConductorExcel, 'EXPORT_CONDUCTOR_XLS');
+    bindPointerSafeTap('btn-cond-quick-search', function () {
+        fetchConductorAnalytics();
+    }, 'COND_QUICK_SEARCH');
+
+    bindPointerSafeTap('btn-reset-conductor-filters', resetConductorFilters, 'RESET_CONDUCTOR_FILTERS');
+
+    // Quick Chips binding
+    document.querySelectorAll('.cond-chip-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var q = this.dataset.query;
+            var searchInput = document.getElementById('cond-quick-search-input');
+            if (searchInput) searchInput.value = q;
+            fetchConductorAnalytics();
+        });
+    });
+
+    // Enter key on search input
+    var condSearchInput = document.getElementById('cond-quick-search-input');
+    if (condSearchInput) {
+        condSearchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                fetchConductorAnalytics();
+            }
+        });
+    }
+
+    // Toggle advanced filters
+    var btnToggleAdv = document.getElementById('btn-toggle-advanced-cond');
+    if (btnToggleAdv) {
+        btnToggleAdv.addEventListener('click', function () {
+            var row = document.getElementById('cond-advanced-filters-row');
+            if (row) {
+                row.style.display = (row.style.display === 'none') ? 'flex' : 'none';
+            }
+        });
+    }
+
+    // Dropdown change listeners
+    ['cond-filter-type', 'cond-filter-size', 'cond-filter-section', 'cond-filter-ulp'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', function () {
+                fetchConductorAnalytics();
+            });
+        }
+    });
+
+    // Scope Radio listener
+    ['cond-scope-feeder', 'cond-scope-global'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', function () {
+                fetchConductorAnalytics();
+            });
+        }
+    });
 
     // ========================================================
     // FIELD ASSET CORRECTION MODAL HANDLERS

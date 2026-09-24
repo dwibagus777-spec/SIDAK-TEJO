@@ -500,6 +500,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('gis/api-translines', 'GisController::apiGetTranslines');
     $routes->get('gis/api-network-audit', 'GisController::apiNetworkAudit');
     $routes->get('gis/api-conductors', 'GisController::apiConductors');
+    $routes->get('gis/api-conductor-analytics', 'GisController::apiConductorAnalytics');
+    $routes->get('gis/export-conductor-analytics', 'GisController::exportConductorAnalytics');
+    $routes->post('gis/export-conductor-analytics', 'GisController::exportConductorAnalytics');
     $routes->get('gis/api-generate-candidates', 'GisController::apiGenerateCandidates');
     $routes->post('gis/api-connect-topology', 'GisController::apiConnectTopology');
     $routes->post('gis/api-disconnect-topology', 'GisController::apiDisconnectTopology');

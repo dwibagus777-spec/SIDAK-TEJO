@@ -17,6 +17,7 @@ class GisController extends BaseController
     private PenyulangRepository $penyulangRepository;
     private AssetRepository $assetRepository;
     private \App\Services\GisTranslineService $translineService;
+    private \App\Services\GisConductorAnalyticsService $conductorAnalyticsService;
 
     public function __construct()
     {
@@ -26,6 +27,7 @@ class GisController extends BaseController
         $this->penyulangRepository = new PenyulangRepository();
         $this->assetRepository = new AssetRepository();
         $this->translineService = new \App\Services\GisTranslineService();
+        $this->conductorAnalyticsService = new \App\Services\GisConductorAnalyticsService();
     }
 
     /**
@@ -1801,6 +1803,66 @@ class GisController extends BaseController
             'status' => 'success',
             'data'   => $history
         ]);
+    }
+
+    /**
+     * Network Conductor Analytics API
+     * GET /gis/api-conductor-analytics
+     */
+    public function apiConductorAnalytics(): ResponseInterface
+    {
+        $filters = [
+            'penyulang_id'        => (int)($this->request->getGet('penyulang_id') ?? 0),
+            'ulp_id'              => (int)($this->request->getGet('ulp_id') ?? 0),
+            'section_id'          => (int)($this->request->getGet('section_id') ?? 0),
+            'scope'               => (string)($this->request->getGet('scope') ?? 'feeder'),
+            'conductor_type'      => (string)($this->request->getGet('conductor_type') ?? ''),
+            'conductor_size'      => (string)($this->request->getGet('conductor_size') ?? ''),
+            'q'                   => (string)($this->request->getGet('q') ?? $this->request->getGet('query') ?? ''),
+            'force_feeder_filter' => (bool)($this->request->getGet('force_feeder_filter') ?? false),
+        ];
+
+        $data = $this->conductorAnalyticsService->getAnalytics($filters);
+
+        return $this->response->setStatusCode(200)->setJSON($data);
+    }
+
+    /**
+     * Network Conductor Analytics Excel / Spreadsheet Export
+     * GET or POST /gis/export-conductor-analytics
+     */
+    public function exportConductorAnalytics(): ResponseInterface
+    {
+        $filters = [
+            'penyulang_id'        => (int)($this->request->getVar('penyulang_id') ?? 0),
+            'ulp_id'              => (int)($this->request->getVar('ulp_id') ?? 0),
+            'section_id'          => (int)($this->request->getVar('section_id') ?? 0),
+            'scope'               => (string)($this->request->getVar('scope') ?? 'feeder'),
+            'conductor_type'      => (string)($this->request->getVar('conductor_type') ?? ''),
+            'conductor_size'      => (string)($this->request->getVar('conductor_size') ?? ''),
+            'q'                   => (string)($this->request->getVar('q') ?? $this->request->getVar('query') ?? ''),
+            'force_feeder_filter' => (bool)($this->request->getVar('force_feeder_filter') ?? false),
+        ];
+
+        $content = $this->conductorAnalyticsService->generateSpreadsheetContent($filters);
+
+        $feederName = 'Global';
+        if ($filters['penyulang_id'] > 0 && $filters['scope'] !== 'global') {
+            $db = \Config\Database::connect();
+            $fRow = $db->table('penyulang')->select('nama_penyulang')->where('id', $filters['penyulang_id'])->get()->getRowArray();
+            if (!empty($fRow['nama_penyulang'])) {
+                $feederName = preg_replace('/[^A-Za-z0-9_-]/', '_', $fRow['nama_penyulang']);
+            }
+        }
+
+        $condName = !empty($filters['conductor_type']) ? preg_replace('/[^A-Za-z0-9_-]/', '_', $filters['conductor_type']) : 'All';
+        $filename = "Rekap_Konduktor_{$feederName}_{$condName}_" . date('Ymd_His') . ".xls";
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setHeader('Cache-Control', 'max-age=0')
+            ->setBody($content);
     }
 }
 

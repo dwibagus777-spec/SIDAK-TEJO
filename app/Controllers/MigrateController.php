@@ -2376,9 +2376,9 @@ class MigrateController extends BaseController
         // -------------------------------------------------------------
         // CHECK 7: CONDUCTOR ANALYTICS & CANONICAL REGISTRY
         // -------------------------------------------------------------
-        $conductorService = new \App\Services\ConductorAnalyticsService();
-        $globalAnalytics = $conductorService->getNetworkAnalytics(null);
-        $f118Analytics = $conductorService->getNetworkAnalytics(118);
+        $conductorService = new \App\Services\GisConductorAnalyticsService();
+        $globalAnalytics = $conductorService->getAnalytics(['scope' => 'global']);
+        $f118Analytics = $conductorService->getAnalytics(['penyulang_id' => 118, 'scope' => 'feeder']);
 
         $gSummary = $globalAnalytics['summary'] ?? [];
         $gCount = (int)($gSummary['transline_resmi_count'] ?? 0);

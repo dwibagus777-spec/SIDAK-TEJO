@@ -1864,11 +1864,20 @@ class MigrateController extends BaseController
         }
 
         // GUARD 06: CAPTURE PARENT_ASSET_ID & ASSET INTEGRITY BEFORE
-        $assetPreStats = $db->table('assets')
-            ->select('COUNT(*) as total_count, SUM(COALESCE(parent_asset_id, 0)) as parent_sum, COUNT(section_id) as section_count')
+        $hasParentCol = $db->fieldExists('parent_asset_id', 'assets');
+        $hasSectionCol = $db->fieldExists('section_id', 'assets');
+        $parentSumExpr = $hasParentCol ? 'SUM(COALESCE(parent_asset_id, 0))' : '0';
+        $sectionCountExpr = $hasSectionCol ? 'COUNT(section_id)' : '0';
+
+        $assetPreStatsQuery = $db->table('assets')
+            ->select("COUNT(*) as total_count, {$parentSumExpr} as parent_sum, {$sectionCountExpr} as section_count")
             ->where('deleted_at IS NULL')
-            ->get()
-            ->getRowArray();
+            ->get();
+        if (!$assetPreStatsQuery) {
+            $err = $db->error();
+            throw new \RuntimeException("Pre-commit asset audit query failed: " . ($err['message'] ?? 'unknown'));
+        }
+        $assetPreStats = $assetPreStatsQuery->getRowArray();
 
         // -------------------------------------------------------------
         // GUARD 07: MONOLITHIC ATOMIC PRODUCTION TRANSACTION
@@ -1947,20 +1956,33 @@ class MigrateController extends BaseController
             }
 
             // In-Transaction Verification: Total distance directly from DB SUM
-            $dbDistanceRow = $db->table('gis_translines')
-                ->select('SUM(COALESCE(distance_meters, length_meters, 0)) as total_db_distance_m')
+            $hasLengthCol = $db->fieldExists('length_meters', 'gis_translines');
+            $distanceExpr = $hasLengthCol 
+                ? 'SUM(COALESCE(distance_meters, length_meters, 0))' 
+                : 'SUM(COALESCE(distance_meters, 0))';
+
+            $dbDistanceQuery = $db->table('gis_translines')
+                ->select("{$distanceExpr} as total_db_distance_m")
                 ->where('is_active', 1)
                 ->where('deleted_at IS NULL')
-                ->get()
-                ->getRowArray();
+                ->get();
+            if (!$dbDistanceQuery) {
+                $err = $db->error();
+                throw new \RuntimeException("Distance query failed: " . ($err['message'] ?? 'unknown'));
+            }
+            $dbDistanceRow = $dbDistanceQuery->getRowArray();
             $dbTotalDistanceM = (float)($dbDistanceRow['total_db_distance_m'] ?? 0);
 
             // In-Transaction Verification: Guard 06 Asset Integrity
-            $assetPostStats = $db->table('assets')
-                ->select('COUNT(*) as total_count, SUM(COALESCE(parent_asset_id, 0)) as parent_sum, COUNT(section_id) as section_count')
+            $assetPostStatsQuery = $db->table('assets')
+                ->select("COUNT(*) as total_count, {$parentSumExpr} as parent_sum, {$sectionCountExpr} as section_count")
                 ->where('deleted_at IS NULL')
-                ->get()
-                ->getRowArray();
+                ->get();
+            if (!$assetPostStatsQuery) {
+                $err = $db->error();
+                throw new \RuntimeException("Post-commit asset audit query failed: " . ($err['message'] ?? 'unknown'));
+            }
+            $assetPostStats = $assetPostStatsQuery->getRowArray();
 
             if ($assetPreStats['total_count'] !== $assetPostStats['total_count'] ||
                 $assetPreStats['parent_sum'] !== $assetPostStats['parent_sum'] ||
@@ -2032,10 +2054,13 @@ class MigrateController extends BaseController
 
         } catch (\Throwable $e) {
             $db->transRollback();
+            $dbErr = $db->error();
             return $this->response->setStatusCode(500)->setJSON([
-                'status'  => 'error',
-                'reason'  => 'TRANSACTION_ROLLBACK',
-                'message' => 'Zero-Partial-Network-Commit Rollback: ' . $e->getMessage()
+                'status'   => 'error',
+                'reason'   => 'TRANSACTION_ROLLBACK',
+                'message'  => 'Zero-Partial-Network-Commit Rollback: ' . $e->getMessage(),
+                'location' => $e->getFile() . ':' . $e->getLine(),
+                'db_error' => $dbErr,
             ]);
         }
     }

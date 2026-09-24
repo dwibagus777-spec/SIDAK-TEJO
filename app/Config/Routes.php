@@ -25,6 +25,7 @@ $routes->get('auto-deploy', 'MigrateController::autoDeploy');
 $routes->get('master-assets/debug-json', 'MigrateController::debugJson');
 $routes->get('master-assets/reconciliation-baseline', 'MigrateController::reconciliationBaselineAudit');
 $routes->get('master-assets/transline-audit', 'MigrateController::translineAudit');
+$routes->match(['GET', 'POST'], 'master-assets/b2-atomic-commit', 'MigrateController::atomicCommitB2');
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');

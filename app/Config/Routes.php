@@ -48,6 +48,7 @@ $routes->get('fault-intelligence/causes', 'FaultIntelligenceController::causes')
 
 // Phase B.5: Fault Event Ingestion Pipeline & Normalization Layer
 $routes->get('fault-ingestion/audit', 'FaultIngestionController::audit');
+$routes->get('fault-ingestion/forensic-reconciliation', 'FaultIngestionController::forensicReconciliation');
 $routes->match(['GET', 'POST'], 'fault-ingestion/migrate', 'FaultIngestionController::migrate');
 $routes->post('fault-ingestion/events', 'FaultIngestionController::ingest');
 $routes->post('fault-ingestion/event', 'FaultIngestionController::ingest');

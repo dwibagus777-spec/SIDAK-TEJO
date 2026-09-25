@@ -1,0 +1,90 @@
+{
+    "audit_timestamp": "2026-09-25 16:54:12 WIB",
+    "service_version": "B6-CASE-1.0",
+    "phase": "B.6.2",
+    "verdict": "PASS \ud83d\udfe2",
+    "scorecard": {
+        "CASE_CREATION_SNAPSHOT_BINDING": "PASS",
+        "CASE_IDEMPOTENCY_DETERMINISM": "PASS",
+        "CANDIDATE_UNCONFIRMED_INTEGRITY": "PASS",
+        "FSM_SHORTCUT_REJECTION": "PASS",
+        "FSM_VALID_PROGRESSION": "PASS",
+        "TERMINAL_CLOSED_IMMUTABILITY": "PASS",
+        "CANCELLATION_FSM_REASON_GUARD": "PASS",
+        "GUARD_B62_G00_NO_DELETE": "PASS",
+        "EVENT_TELEMETRY_IMMUTABILITY": "PASS",
+        "CASE_TIMELINE_APPEND_ONLY": "PASS",
+        "ZERO_TOPOLOGY_MUTATION": "PASS"
+    },
+    "baselines": {
+        "gis_translines_active": {
+            "before": 1278,
+            "after": 1278,
+            "delta": 0
+        },
+        "gis_translines_physical": {
+            "before": 1278,
+            "after": 1278
+        },
+        "assets_active": {
+            "before": 1476,
+            "after": 1476,
+            "delta": 0
+        },
+        "assets_physical": {
+            "before": 1476,
+            "after": 1476
+        }
+    },
+    "sample_timeline": [
+        {
+            "timestamp": "2026-09-25 16:54:12",
+            "stage": "TELEMETRY_INGESTED",
+            "title": "Operational Telemetry Ingested",
+            "description": "Event #EVT-B62-AUDIT-bd56feef (PMCB_RELAY) received from device #394.",
+            "actor": "B5-INGEST-1.0",
+            "metadata": {
+                "event_number": "EVT-B62-AUDIT-bd56feef",
+                "fault_phase": "RN",
+                "relay_distance_m": "27.82",
+                "fingerprint": null
+            }
+        },
+        {
+            "timestamp": "2026-09-25 16:54:12",
+            "stage": "CASE_OPENED",
+            "title": "Fault Investigation Case Opened",
+            "description": "Case #CASE-20260925-165412-9f6ea4 opened with priority P1_CRITICAL.",
+            "actor": "FLI-Orchestrator",
+            "metadata": {
+                "case_number": "CASE-20260925-165412-9f6ea4",
+                "priority": "P1_CRITICAL",
+                "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+                "analysis_version": "FLI-1.0.0"
+            }
+        },
+        {
+            "timestamp": "2026-09-25 16:54:12",
+            "stage": "CANDIDATES_IDENTIFIED",
+            "title": "FLI Candidate Assets Identified",
+            "description": "FLI engine identified 1 candidate asset(s). Top candidate: #394 (Confidence: 0.75%).",
+            "actor": "FLI-1.0.0",
+            "metadata": {
+                "candidate_count": 1,
+                "top_candidate_asset_id": "394",
+                "top_confidence_score": "0.75"
+            }
+        },
+        {
+            "timestamp": "2026-09-25 16:54:12",
+            "stage": "CURRENT_STATUS",
+            "title": "Case Status: CLOSED",
+            "description": "Case currently in status CLOSED.",
+            "actor": "FSM-Engine",
+            "metadata": {
+                "status": "CLOSED",
+                "closed_at": "2026-09-25 16:54:12"
+            }
+        }
+    ]
+}

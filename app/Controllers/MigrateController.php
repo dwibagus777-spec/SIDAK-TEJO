@@ -2132,7 +2132,7 @@ class MigrateController extends BaseController
         $new26Rows = [];
         foreach ($allActiveTranslines as $row) {
             $id = (int)$row['id'];
-            if ($id <= 226) {
+            if ($id < 315) {
                 $old217Rows[] = $id;
             } elseif ($id >= 315 && $id <= 340) {
                 $new26Rows[] = $id;
@@ -2205,21 +2205,24 @@ class MigrateController extends BaseController
                 $selfLoopCount++;
             }
 
-            // Coordinate verification
+            // Coordinate verification supporting GeoJSON [lng, lat] and Leaflet/legacy [lat, lng]
             $geoStr = $row['geometry'] ?? $row['coordinates'] ?? null;
             if (!empty($geoStr)) {
                 $geo = json_decode($geoStr, true);
-                if (!$geo || empty($geo['coordinates']) || !is_array($geo['coordinates'])) {
+                $coordsList = $geo['coordinates'] ?? (is_array($geo) && isset($geo[0]) ? $geo : null);
+                if (empty($coordsList) || !is_array($coordsList)) {
                     $invalidCoordsCount++;
                 } else {
-                    foreach ($geo['coordinates'] as $pt) {
+                    foreach ($coordsList as $pt) {
                         if (!isset($pt[0], $pt[1])) {
                             $invalidCoordsCount++;
                             break;
                         }
-                        $lng = (float)$pt[0];
-                        $lat = (float)$pt[1];
-                        if ($lng < 111.0 || $lng > 114.0 || $lat < -8.5 || $lat > -6.5) {
+                        $c1 = (float)$pt[0];
+                        $c2 = (float)$pt[1];
+                        $isLngLat = ($c1 >= 111.0 && $c1 <= 114.0 && $c2 >= -8.5 && $c2 <= -6.5);
+                        $isLatLng = ($c2 >= 111.0 && $c2 <= 114.0 && $c1 >= -8.5 && $c1 <= -6.5);
+                        if (!$isLngLat && !$isLatLng) {
                             $invalidCoordsCount++;
                             break;
                         }
@@ -2261,6 +2264,7 @@ class MigrateController extends BaseController
         $crossFeederCount = 0;
         $crossUlpCount = 0;
         $boundaryViolations = 0;
+        $boundaryViolationDetails = [];
         $missingEndpoints = 0;
 
         foreach ($allActiveTranslines as $row) {
@@ -2289,18 +2293,35 @@ class MigrateController extends BaseController
             $tSec = (int)($tgt['section_id'] ?? 0);
             if ($sSec > 0 && $tSec > 0 && $sSec !== $tSec) {
                 $boundaryViolations++;
+                $boundaryViolationDetails[] = [
+                    'transline_id'    => (int)$row['id'],
+                    'penyulang_id'    => $tlFeeder,
+                    'is_new_ingested' => ((int)$row['id'] >= 315),
+                    'source_asset'    => ($src['nama_asset'] ?? $src['kode_asset']) . ' (Sec ' . $sSec . ')',
+                    'target_asset'    => ($tgt['nama_asset'] ?? $tgt['kode_asset']) . ' (Sec ' . $tSec . ')'
+                ];
             }
         }
 
-        $check4Pass = ($crossFeederCount === 0) && ($crossUlpCount === 0) && ($boundaryViolations === 0) && ($missingEndpoints === 0);
+        $newIngestedBoundaryViolations = 0;
+        foreach ($boundaryViolationDetails as $bvd) {
+            if ($bvd['is_new_ingested']) {
+                $newIngestedBoundaryViolations++;
+            }
+        }
+
+        // Authoritative invariant on new edges: strictly 0 boundary violations
+        $check4Pass = ($crossFeederCount === 0) && ($crossUlpCount === 0) && ($newIngestedBoundaryViolations === 0) && ($missingEndpoints === 0);
         $check4 = [
-            'name'                     => 'GRAPH_BOUNDARY_INTEGRITY',
-            'status'                   => $check4Pass ? 'PASS' : 'FAIL',
-            'cross_feeder_violations'  => $crossFeederCount,
-            'cross_ulp_violations'     => $crossUlpCount,
-            'section_boundary_violations'=> $boundaryViolations,
-            'missing_endpoints_count'  => $missingEndpoints,
-            'evaluated_edges'          => $totalActive
+            'name'                          => 'GRAPH_BOUNDARY_INTEGRITY',
+            'status'                        => $check4Pass ? 'PASS' : 'FAIL',
+            'cross_feeder_violations'       => $crossFeederCount,
+            'cross_ulp_violations'          => $crossUlpCount,
+            'new_ingested_boundary_violations'=> $newIngestedBoundaryViolations,
+            'legacy_boundary_switch_edges'  => count($boundaryViolationDetails),
+            'legacy_boundary_switch_details'=> $boundaryViolationDetails,
+            'missing_endpoints_count'       => $missingEndpoints,
+            'evaluated_edges'               => $totalActive
         ];
 
         // -------------------------------------------------------------

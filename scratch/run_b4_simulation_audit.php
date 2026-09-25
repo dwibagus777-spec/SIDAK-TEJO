@@ -8,6 +8,7 @@ function callEndpoint(string $url, string $cookieFile, string $method = 'GET', a
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_RESOLVE, ['sidaktejo.site:443:2.57.91.151', 'sidaktejo.site:80:2.57.91.151']);
     curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieFile);
     curl_setopt($ch, CURLOPT_TIMEOUT, 60);
 

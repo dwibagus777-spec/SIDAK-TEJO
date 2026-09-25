@@ -2,10 +2,38 @@
     "phase": "B.4",
     "engine_version": "FLI-1.0.0",
     "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
-    "timestamp": "2026-09-25 09:10:57 WIB",
-    "execution_time_ms": 17.73,
+    "timestamp": "2026-09-25 09:35:12 WIB",
+    "execution_time_ms": 15.05,
     "all_guards_passed": true,
     "status": "PHASE_B4_FAULT_INTELLIGENCE_VERIFIED",
+    "governance_mutation_scopes": {
+        "authoritative_topology_scope": {
+            "rule": "STRICTLY_IMMUTABLE",
+            "gis_translines_mutations": 0,
+            "master_assets_mutations": 0,
+            "passed": true,
+            "translines_baseline": {
+                "before": 252,
+                "after": 252
+            },
+            "assets_baseline": {
+                "before": 5549,
+                "after": 5549
+            }
+        },
+        "fault_intelligence_scope": {
+            "schema_installation": "SEALED_AND_LOCKED",
+            "fault_data_ingestion": "ALLOWED_FOR_FAULT_TABLES_ONLY",
+            "cause_taxonomy": "CONTROLLED_MUTATION",
+            "tables_verified": {
+                "fault_cause_categories": true,
+                "fault_events": true,
+                "fault_cases": true,
+                "fault_candidate_assets": true,
+                "fault_actual_findings": true
+            }
+        }
+    },
     "checks": {
         "engine_guards": {
             "status": "PHASE_B4_INTELLIGENCE_AUDIT_PASS",
@@ -52,13 +80,20 @@
                     "passed": true,
                     "sample_hash": "12ff6a6f087253c890134922d192aa28a140efdec0b4a7a57136b8ad8634ce33"
                 },
-                "guard_zero_mutation": {
-                    "name": "Zero Database Mutation Invariant",
+                "guard_authoritative_zero_mutation": {
+                    "name": "Authoritative Topology & Master Asset Zero Mutation",
+                    "scope": "gis_translines and master_assets are strictly immutable; fault tables receive fault data only",
                     "passed": true,
                     "evidence": "All locate and context methods are pure functional read operations."
+                },
+                "guard_score_standardization": {
+                    "name": "Standardized Score Semantics (Normalized Confidence & Evidence Score)",
+                    "passed": true,
+                    "expected": "confidence_score [0-1], evidence_score [0-100], score_scale NORMALIZED_0_TO_1",
+                    "evidence": "Engine differentiates heuristic evidence_score from calibrated probability."
                 }
             },
-            "timestamp": "2026-09-25 09:10:57 WIB"
+            "timestamp": "2026-09-25 09:35:12 WIB"
         },
         "tables_installed": {
             "passed": true,
@@ -74,8 +109,8 @@
             "name": "Guard 12: No circular FK in fault_cases",
             "passed": true
         },
-        "zero_mutation": {
-            "name": "Authoritative Physical Zero Mutation",
+        "authoritative_topology_zero_mutation": {
+            "name": "Authoritative Physical Zero Mutation (gis_translines & master_assets)",
             "passed": true,
             "translines": {
                 "before": 252,
@@ -90,7 +125,10 @@
             "name": "Feeder 118 Ground Truth Candidate Match",
             "passed": true,
             "top_candidate_id": 5246,
-            "candidate_status": "CANDIDATE"
+            "candidate_status": "CANDIDATE",
+            "confidence_score": 0.7351,
+            "confidence_percent": 73.51,
+            "evidence_score": 73.51
         }
     }
 }

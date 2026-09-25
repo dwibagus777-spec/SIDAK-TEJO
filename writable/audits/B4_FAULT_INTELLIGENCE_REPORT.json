@@ -1,0 +1,96 @@
+{
+    "phase": "B.4",
+    "engine_version": "FLI-1.0.0",
+    "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+    "timestamp": "2026-09-25 09:10:57 WIB",
+    "execution_time_ms": 17.73,
+    "all_guards_passed": true,
+    "status": "PHASE_B4_FAULT_INTELLIGENCE_VERIFIED",
+    "checks": {
+        "engine_guards": {
+            "status": "PHASE_B4_INTELLIGENCE_AUDIT_PASS",
+            "all_passed": true,
+            "checks": {
+                "guard_version_check": {
+                    "name": "Engine Version FLI-1.0.0",
+                    "passed": true,
+                    "expected": "FLI-1.0.0",
+                    "actual": "FLI-1.0.0"
+                },
+                "guard_snapshot_check": {
+                    "name": "Topology Snapshot Binding",
+                    "passed": true,
+                    "expected": "TOPOLOGY-20260925-243-ad2c9fcb",
+                    "actual": "TOPOLOGY-20260925-243-ad2c9fcb"
+                },
+                "guard_impedance_check": {
+                    "name": "Conductor Impedance Explicit Flag",
+                    "passed": true,
+                    "expected": {
+                        "supported": false,
+                        "reason": "NO_CANONICAL_IMPEDANCE_PROFILE"
+                    },
+                    "actual": {
+                        "supported": false,
+                        "reason": "NO_CANONICAL_IMPEDANCE_PROFILE"
+                    }
+                },
+                "guard_tolerance_check": {
+                    "name": "Dynamic Distance Tolerance Default",
+                    "passed": true,
+                    "expected": 250,
+                    "actual": 250
+                },
+                "guard_terminology_check": {
+                    "name": "Candidate Terminology Strictness",
+                    "passed": true,
+                    "expected": "CANDIDATE",
+                    "actual": "CANDIDATE"
+                },
+                "guard_hash_determinism": {
+                    "name": "Deterministic Input Hash (SHA256)",
+                    "passed": true,
+                    "sample_hash": "12ff6a6f087253c890134922d192aa28a140efdec0b4a7a57136b8ad8634ce33"
+                },
+                "guard_zero_mutation": {
+                    "name": "Zero Database Mutation Invariant",
+                    "passed": true,
+                    "evidence": "All locate and context methods are pure functional read operations."
+                }
+            },
+            "timestamp": "2026-09-25 09:10:57 WIB"
+        },
+        "tables_installed": {
+            "passed": true,
+            "tables": {
+                "fault_cause_categories": true,
+                "fault_events": true,
+                "fault_cases": true,
+                "fault_candidate_assets": true,
+                "fault_actual_findings": true
+            }
+        },
+        "guard_12_no_circular": {
+            "name": "Guard 12: No circular FK in fault_cases",
+            "passed": true
+        },
+        "zero_mutation": {
+            "name": "Authoritative Physical Zero Mutation",
+            "passed": true,
+            "translines": {
+                "before": 252,
+                "after": 252
+            },
+            "assets": {
+                "before": 5549,
+                "after": 5549
+            }
+        },
+        "feeder_118_locator": {
+            "name": "Feeder 118 Ground Truth Candidate Match",
+            "passed": true,
+            "top_candidate_id": 5246,
+            "candidate_status": "CANDIDATE"
+        }
+    }
+}

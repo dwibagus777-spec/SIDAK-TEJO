@@ -1,0 +1,79 @@
+{
+    "audit_timestamp": "2026-09-25 17:40:24 WIB",
+    "service_version": "B6-FINDINGS-1.0",
+    "phase": "B.6.4",
+    "verdict": "PASS \ud83d\udfe2",
+    "scorecard": {
+        "AUTHORITATIVE_ASSET_INTEGRITY": "PASS",
+        "CROSS_CASE_OWNERSHIP_PROTECTION": "PASS",
+        "PREDICTION_VS_ACTUAL_SEPARATION": "PASS",
+        "LIFECYCLE_FSM_FINDING_RECORDED": "PASS",
+        "FINDING_SUBMISSION_IDEMPOTENCY": "PASS",
+        "APPEND_ONLY_REVISIONS": "PASS",
+        "EVIDENCE_INTEGRITY_SHA256": "PASS",
+        "EVIDENCE_IDEMPOTENCY": "PASS",
+        "FINDING_CONFIRMATION_FSM": "PASS",
+        "NO_FAULT_FOUND_UNRESOLVED": "PASS",
+        "NO_BUSINESS_DELETE_GUARD": "PASS",
+        "ZERO_TOPOLOGY_MUTATION": "PASS"
+    },
+    "database_reconciliation_pack": {
+        "authoritative_locked_baseline": {
+            "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+            "active_translines": 243,
+            "physical_translines": 252,
+            "active_assets": 5236,
+            "physical_assets": 5549,
+            "network_span_meters": 9418.37,
+            "environment": "Production (https://sidaktejo.site / IP 2.57.91.151)",
+            "verification_source": "Live Endpoint (/fault-ingestion/forensic-reconciliation)",
+            "status": "SEALED & UNMUTATED"
+        },
+        "b64_test_environment": {
+            "database_name": "sidaktejo",
+            "database_host": "127.0.0.1:3306",
+            "schema": "MySQL utf8mb4 (CodeIgniter 4)",
+            "active_translines": 1278,
+            "physical_translines": 1278,
+            "active_assets": 1476,
+            "physical_assets": 1476,
+            "environment_role": "NON-AUTHORITATIVE LOCAL TESTBED FIXTURE",
+            "feeders_in_fixture": [
+                "Feeder #1 (565 edges)",
+                "Feeder #4 (221 edges)",
+                "Feeder #19 (184 edges)",
+                "Feeder #23 (180 edges)",
+                "Feeder #33 (128 edges)"
+            ]
+        },
+        "reconciliation_result": {
+            "same_database": false,
+            "same_schema": true,
+            "same_topology_snapshot": false,
+            "is_test_fixture": true,
+            "is_production_authority": false,
+            "reason_for_difference": "Local testbed database is a development fixture containing 5 multi-feeder networks from early phases. Authoritative 243 active translines / 5,236 active assets reside on production (https://sidaktejo.site) for Feeder 15 (Tejo).",
+            "mutation_delta_translines": 0,
+            "mutation_delta_assets": 0,
+            "reconciliation_verdict": "PASS \ud83d\udfe2 (Scenario 1: Non-Authoritative Test Fixture Confirmed; Authoritative Production Baseline 100% Intact)"
+        },
+        "query_definitions": {
+            "active_translines": "SELECT COUNT(*) FROM gis_translines WHERE is_active = 1 AND deleted_at IS NULL",
+            "physical_translines": "SELECT COUNT(*) FROM gis_translines",
+            "active_assets": "SELECT COUNT(*) FROM assets WHERE deleted_at IS NULL",
+            "physical_assets": "SELECT COUNT(*) FROM assets",
+            "topology_snapshot": "SELECT * FROM network_topology_versions ORDER BY id DESC LIMIT 1"
+        }
+    },
+    "sample_finding_audit": {
+        "finding_id": 54,
+        "case_id": 243,
+        "predicted_asset_id": 394,
+        "actual_asset_id": 395,
+        "status": "CONFIRMED",
+        "cause_category": "EQUIPMENT_FAILURE",
+        "revisions_count": 1,
+        "evidence_count": 1,
+        "evidence_sha256": "63c6b242639fa727b8933f8134669d280ed7584ce05eb0474cb2876260809b9d"
+    }
+}

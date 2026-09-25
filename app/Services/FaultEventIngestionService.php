@@ -132,13 +132,20 @@ class FaultEventIngestionService
         $phaseCurrents = $this->canonicalizePhaseCurrents($raw);
 
         // 7. Protection Elements
-        $protectionElements = trim((string)($raw['protection_elements'] ?? $raw['relay_element'] ?? $raw['protection'] ?? ''));
-        if ($protectionElements === '' && isset($raw['elements']) && is_array($raw['elements'])) {
-            $protectionElements = implode('+', array_map('strtoupper', $raw['elements']));
+        $rawProt = $raw['protection_elements'] ?? $raw['relay_element'] ?? $raw['protection'] ?? $raw['elements'] ?? '';
+        if (is_array($rawProt)) {
+            $scalarProts = array_filter($rawProt, 'is_scalar');
+            $protectionElements = implode('+', array_map('strtoupper', array_map('trim', array_map('strval', $scalarProts))));
+        } else {
+            $protectionElements = trim((string)$rawProt);
         }
 
         // 8. Trip Sequence
-        $tripSequence = strtoupper(trim((string)($raw['trip_sequence'] ?? $raw['sequence'] ?? '')));
+        $rawSeq = $raw['trip_sequence'] ?? $raw['sequence'] ?? '';
+        if (is_array($rawSeq)) {
+            $rawSeq = reset($rawSeq);
+        }
+        $tripSequence = strtoupper(trim((string)$rawSeq));
         if ($tripSequence === '') {
             $tripSequence = 'TRIP_1';
         }

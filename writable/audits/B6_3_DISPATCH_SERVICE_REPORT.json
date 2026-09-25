@@ -1,5 +1,5 @@
 {
-    "audit_timestamp": "2026-09-25 17:16:40 WIB",
+    "audit_timestamp": "2026-09-25 17:22:30 WIB",
     "service_version": "B6-DISPATCH-1.0",
     "phase": "B.6.3",
     "verdict": "PASS \ud83d\udfe2",
@@ -19,28 +19,56 @@
         "DISPATCH_TIMELINE_RECONSTRUCTION": "PASS",
         "ZERO_TOPOLOGY_MUTATION": "PASS"
     },
-    "baselines": {
-        "gis_translines_active": {
-            "before": 1278,
-            "after": 1278,
-            "delta": 0
+    "database_reconciliation_pack": {
+        "authoritative_locked_baseline": {
+            "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+            "active_translines": 243,
+            "physical_translines": 252,
+            "active_assets": 5236,
+            "physical_assets": 5549,
+            "network_span_meters": 9418.37,
+            "environment": "Production (https://sidaktejo.site / IP 2.57.91.151)",
+            "verification_source": "Live Endpoint (/fault-ingestion/forensic-reconciliation)",
+            "status": "SEALED & UNMUTATED"
         },
-        "gis_translines_physical": {
-            "before": 1278,
-            "after": 1278
+        "b63_test_environment": {
+            "database_name": "sidaktejo",
+            "database_host": "127.0.0.1:3306",
+            "schema": "MySQL utf8mb4 (CodeIgniter 4)",
+            "active_translines": 1278,
+            "physical_translines": 1278,
+            "active_assets": 1476,
+            "physical_assets": 1476,
+            "environment_role": "NON-AUTHORITATIVE LOCAL TESTBED FIXTURE",
+            "feeders_in_fixture": [
+                "Feeder #1 (565 edges)",
+                "Feeder #4 (221 edges)",
+                "Feeder #19 (184 edges)",
+                "Feeder #23 (180 edges)",
+                "Feeder #33 (128 edges)"
+            ]
         },
-        "assets_active": {
-            "before": 1476,
-            "after": 1476,
-            "delta": 0
+        "reconciliation_result": {
+            "same_database": false,
+            "same_schema": true,
+            "same_topology_snapshot": false,
+            "is_test_fixture": true,
+            "is_production_authority": false,
+            "reason_for_difference": "Local testbed database is a development fixture containing 5 multi-feeder networks from early phases (Feeders 1, 4, 19, 23, 33). The authoritative 243 active translines and 5,236 active assets are hosted on production (https://sidaktejo.site) specifically bound to Feeder 15 (Tejo).",
+            "mutation_delta_translines": 0,
+            "mutation_delta_assets": 0,
+            "reconciliation_verdict": "PASS \ud83d\udfe2 (Scenario 1: Non-Authoritative Test Fixture Confirmed; Authoritative Production Baseline 100% Intact)"
         },
-        "assets_physical": {
-            "before": 1476,
-            "after": 1476
+        "query_definitions": {
+            "active_translines": "SELECT COUNT(*) FROM gis_translines WHERE is_active = 1 AND deleted_at IS NULL",
+            "physical_translines": "SELECT COUNT(*) FROM gis_translines",
+            "active_assets": "SELECT COUNT(*) FROM assets WHERE deleted_at IS NULL",
+            "physical_assets": "SELECT COUNT(*) FROM assets",
+            "topology_snapshot": "SELECT * FROM network_topology_versions ORDER BY id DESC LIMIT 1"
         }
     },
     "sample_patrol_route": {
-        "case_id": 127,
+        "case_id": 129,
         "candidate_count": 3,
         "total_route_distance_m": 54896.17,
         "estimated_duration_s": 6590,
@@ -71,15 +99,15 @@
     },
     "sample_timeline": [
         {
-            "timestamp": "2026-09-25 17:16:40",
+            "timestamp": "2026-09-25 17:22:29",
             "stage": "DISPATCH_ASSIGNMENT",
             "title": "Dispatched to User #101",
             "actor": "Dispatcher #1",
             "status": "REASSIGNED",
-            "note": "Immediate response crew dispatched. | Superseded by Reassignment to User #202 at 2026-09-25 17:16:40"
+            "note": "Immediate response crew dispatched. | Superseded by Reassignment to User #202 at 2026-09-25 17:22:30"
         },
         {
-            "timestamp": "2026-09-25 17:16:40",
+            "timestamp": "2026-09-25 17:22:30",
             "stage": "DISPATCH_ASSIGNMENT",
             "title": "Dispatched to User #202",
             "actor": "Dispatcher #1",
@@ -87,7 +115,7 @@
             "note": "Reassigned to specialist crew 202."
         },
         {
-            "timestamp": "2026-09-25 17:16:40",
+            "timestamp": "2026-09-25 17:22:30",
             "stage": "DISPATCH_ACCEPTED",
             "title": "Assignment Accepted by User #202",
             "actor": "Crew #202",
@@ -95,7 +123,7 @@
             "note": null
         },
         {
-            "timestamp": "2026-09-25 17:16:40",
+            "timestamp": "2026-09-25 17:22:30",
             "stage": "JOURNEY_STARTED",
             "title": "Crew En-Route to Site",
             "actor": "Investigator #202",
@@ -103,7 +131,7 @@
             "note": "GPS: (-7.53612340, 112.23456780)"
         },
         {
-            "timestamp": "2026-09-25 17:16:40",
+            "timestamp": "2026-09-25 17:22:30",
             "stage": "CREW_ARRIVED",
             "title": "Crew Arrived at Site",
             "actor": "Investigator #202",

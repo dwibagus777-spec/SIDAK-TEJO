@@ -36,6 +36,15 @@ $routes->get('network-intelligence/sections/(:num)', 'NetworkIntelligenceControl
 $routes->get('network-intelligence/path', 'NetworkIntelligenceController::path');
 $routes->get('network-intelligence/integrity', 'NetworkIntelligenceController::integrity');
 $routes->get('network-intelligence/node/(:any)', 'NetworkIntelligenceController::node/$1');
+
+// Phase B.4: Network Context Engine & Fault Location Intelligence Routes
+$routes->get('fault-intelligence/audit', 'FaultIntelligenceController::b4Audit');
+$routes->match(['GET', 'POST'], 'fault-intelligence/migrate', 'FaultIntelligenceController::migrate');
+$routes->get('fault-intelligence/context/(:any)', 'FaultIntelligenceController::context/$1');
+$routes->get('fault-intelligence/candidates', 'FaultIntelligenceController::candidates');
+$routes->match(['GET', 'POST'], 'fault-intelligence/simulate', 'FaultIntelligenceController::simulate');
+$routes->post('fault-intelligence/cases/(:num)/findings', 'FaultIntelligenceController::recordFinding/$1');
+$routes->get('fault-intelligence/causes', 'FaultIntelligenceController::causes');
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');

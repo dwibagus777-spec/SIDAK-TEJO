@@ -1,0 +1,258 @@
+{
+    "reconciliation_timestamp": "2026-09-25 16:31:31 WIB",
+    "environment": "production",
+    "host": "https://sidaktejo.site",
+    "ip_resolved": "2.57.91.151",
+    "phase": "B.5.5",
+    "verdict": "PASS / RECONCILED \ud83d\udfe2",
+    "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+    "reconciliation_matrix": {
+        "authoritative_active_translines": 243,
+        "physical_table_translines": 252,
+        "inactive_translines_count": 9,
+        "authoritative_active_assets": 5236,
+        "physical_table_assets": 5549,
+        "soft_deleted_assets_count": 313,
+        "legacy_operational_events": 0,
+        "local_testbed_fixtures_count": 3
+    },
+    "forensic_details": {
+        "translines": {
+            "authoritative_active": 243,
+            "physical_total_table": 252,
+            "delta_inactive_rows": 9,
+            "inactive_rows_details": [
+                {
+                    "id": "68",
+                    "penyulang_id": "15",
+                    "transline_code": "TL-15-3250-3339",
+                    "is_active": "0",
+                    "deleted_at": "2026-09-12 13:59:34",
+                    "created_at": "2026-09-11 11:29:46"
+                },
+                {
+                    "id": "71",
+                    "penyulang_id": "15",
+                    "transline_code": "TL-15-3176-3260",
+                    "is_active": "0",
+                    "deleted_at": "2026-09-12 15:00:58",
+                    "created_at": "2026-09-11 11:29:46"
+                },
+                {
+                    "id": "74",
+                    "penyulang_id": "15",
+                    "transline_code": "TL-15-3294-3298",
+                    "is_active": "0",
+                    "deleted_at": "2026-09-12 15:00:40",
+                    "created_at": "2026-09-11 11:29:46"
+                },
+                {
+                    "id": "113",
+                    "penyulang_id": "15",
+                    "transline_code": "TL-15-3267-3268",
+                    "is_active": "0",
+                    "deleted_at": "2026-09-12 14:11:38",
+                    "created_at": "2026-09-11 15:17:55"
+                },
+                {
+                    "id": "117",
+                    "penyulang_id": "15",
+                    "transline_code": "TL-15-3205-3208",
+                    "is_active": "0",
+                    "deleted_at": "2026-09-12 14:06:30",
+                    "created_at": "2026-09-11 15:17:55"
+                },
+                {
+                    "id": "159",
+                    "penyulang_id": "15",
+                    "transline_code": "TL-15-3203-3338",
+                    "is_active": "0",
+                    "deleted_at": "2026-09-12 14:12:38",
+                    "created_at": null
+                },
+                {
+                    "id": "169",
+                    "penyulang_id": "15",
+                    "transline_code": "TL-15-3180-3194",
+                    "is_active": "0",
+                    "deleted_at": "2026-09-12 14:06:42",
+                    "created_at": null
+                },
+                {
+                    "id": "177",
+                    "penyulang_id": "15",
+                    "transline_code": "TL-15-3295-3330",
+                    "is_active": "0",
+                    "deleted_at": "2026-09-12 15:01:44",
+                    "created_at": null
+                },
+                {
+                    "id": "183",
+                    "penyulang_id": "15",
+                    "transline_code": "TL-15-3273-3316",
+                    "is_active": "0",
+                    "deleted_at": "2026-09-12 13:58:22",
+                    "created_at": "2026-09-12 13:57:53"
+                }
+            ],
+            "formula": "243 Active Authoritative + 9 Inactive/Soft-Deleted = 252 Physical Rows",
+            "verdict": "EXACT_MATCH_AUTHORITATIVE_243"
+        },
+        "assets": {
+            "authoritative_active": 5236,
+            "physical_total_table": 5549,
+            "delta_deleted_rows": 313,
+            "formula": "5,236 Active (deleted_at IS NULL) + 313 Soft-Deleted = 5549 Physical Rows",
+            "verdict": "EXACT_MATCH_AUTHORITATIVE_5236"
+        },
+        "legacy_fault_events": {
+            "production_total": 9,
+            "legacy_unfingerprinted": 0,
+            "new_calculated_events": 9,
+            "provenance_explanation": "Tiga legacy event (EVT-LEGACY-001..003) merupakan fixture yang di-seed khusus pada database testbed lokal XAMPP saat pengujian migrasi B.5.1 (scratch/verify_b51_migration.php baris 44-80). Database production Hostinger belum memiliki event operasional historis sebelum B.5.5, sehingga count legacy = 0 adalah valid dan akurat (zero historical data loss)."
+        },
+        "snapshot_validity": {
+            "snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+            "expected_edges": 243,
+            "active_edges_in_db": 243,
+            "expected_active_assets": 5236,
+            "active_assets_in_db": 5236,
+            "is_valid": true
+        },
+        "temporal_invariance": {
+            "all_changes_preceded_b5": true,
+            "explanation": "Data 243 active translines (252 raw) dan 5,236 active assets (5,549 raw) sudah berada dalam kondisi ini sejak Phase B.2.2 (commit bc7b75f) dan Phase B.4 (commit a4a66c5). Selama eksekusi B.5.5, mutasi = 0."
+        }
+    },
+    "b22_lock_evidence": {
+        "check_1_authoritative_invariant": {
+            "name": "AUTHORITATIVE_INVARIANT",
+            "status": "PASS",
+            "total_active_translines": 243,
+            "expected_total": 243,
+            "old_preserved_count": 217,
+            "expected_old_preserved": 217,
+            "new_active_count": 26,
+            "expected_new_active": 26,
+            "new_transline_id_range": "315 - 340",
+            "invariant_formula": "217 (Preserved) + 26 (Ingested) = 243 (Authoritative Network)"
+        },
+        "check_2_fingerprint_uniqueness": {
+            "name": "FINGERPRINT_UNIQUENESS",
+            "status": "PASS",
+            "total_rows_evaluated": 243,
+            "distinct_fingerprints": 243,
+            "collision_count": 0,
+            "collisions": [],
+            "uniqueness_ratio": 1
+        },
+        "check_3_spatial_integrity": {
+            "name": "SPATIAL_INTEGRITY",
+            "status": "PASS",
+            "zero_distance_count": 0,
+            "self_loop_count": 0,
+            "invalid_coords_count": 0,
+            "min_distance_m": 2.36,
+            "max_distance_m": 184.36,
+            "avg_distance_m": 38.76,
+            "total_distance_m": 9418.37,
+            "total_distance_km": 9.418
+        },
+        "check_4_graph_boundary_integrity": {
+            "name": "GRAPH_BOUNDARY_INTEGRITY",
+            "status": "PASS",
+            "cross_feeder_violations": 0,
+            "cross_ulp_violations": 0,
+            "new_ingested_boundary_violations": 0,
+            "legacy_boundary_switch_edges": 2,
+            "legacy_boundary_switch_details": [
+                {
+                    "transline_id": 6,
+                    "penyulang_id": 15,
+                    "is_new_ingested": false,
+                    "source_asset": "BANJARKEMANTRAN_28 (Sec 46)",
+                    "target_asset": "BANJARKEMANTRAN_29 (Sec 47)"
+                },
+                {
+                    "transline_id": 8,
+                    "penyulang_id": 15,
+                    "is_new_ingested": false,
+                    "source_asset": "BANJARKEMANTRAN_28 (Sec 46)",
+                    "target_asset": "BANJARKEMANTRAN_1 (Sec 47)"
+                }
+            ],
+            "missing_endpoints_count": 0,
+            "evaluated_edges": 243
+        },
+        "check_5_asset_immutability": {
+            "name": "ASSET_IMMUTABILITY",
+            "status": "PASS",
+            "total_active_assets": 5236,
+            "expected_active_assets": 5236,
+            "parent_asset_id_touched": false,
+            "section_id_touched": false,
+            "delta_assets_table": 0,
+            "parent_sum": 282802,
+            "section_count": 41,
+            "architecture_verdict": "parent_asset_id remains pure asset hierarchy domain; topology maintained strictly on gis_translines"
+        },
+        "check_6_gis_network_truth_feeder_118": {
+            "name": "GIS_NETWORK_TRUTH_FEEDER_118",
+            "status": "PASS",
+            "feeder_id": 118,
+            "feeder_name": "BAHAGIA STEEL 1",
+            "authoritative_transline_count": 1,
+            "expected_transline_count": 1,
+            "transline_id": 335,
+            "transline_code": "TL-118-5245-5246",
+            "span_length_meters": 27.82,
+            "tiang_33_to_34_status": "AUTHORITATIVE_TRANSLINE (Sec #50 -> Sec #50)",
+            "tiang_20_to_21_status": "BLOCKED_BY_FIREWALL (Sec #46 vs Sec #50 violation)",
+            "tiang_20_to_21_in_db": "SECURELY_BLOCKED",
+            "preview_isolation": "Preview proposals isolated from authoritative active translines"
+        },
+        "check_7_conductor_analytics_canonical": {
+            "name": "CONDUCTOR_ANALYTICS_CANONICAL",
+            "status": "PASS",
+            "global_official_count": 243,
+            "expected_global_count": 243,
+            "global_total_panjang_m": 9418.37,
+            "global_total_panjang_km": 9.418,
+            "feeder_118_official_count": 1,
+            "feeder_118_total_panjang_m": 27.82,
+            "conductor_registry_types": [
+                {
+                    "conductor_type": "A3CS",
+                    "conductor_size": "150 mm\u00b2",
+                    "count": "23"
+                },
+                {
+                    "conductor_type": "AAAC",
+                    "conductor_size": "120 mm\u00b2",
+                    "count": "7"
+                },
+                {
+                    "conductor_type": "AAAC",
+                    "conductor_size": "150 mm\u00b2",
+                    "count": "205"
+                },
+                {
+                    "conductor_type": "AAAC",
+                    "conductor_size": "70 mm\u00b2",
+                    "count": "5"
+                },
+                {
+                    "conductor_type": "MV-TIC",
+                    "conductor_size": "150 mm\u00b2",
+                    "count": "2"
+                },
+                {
+                    "conductor_type": "XLPE",
+                    "conductor_size": "150 mm\u00b2",
+                    "count": "1"
+                }
+            ],
+            "canonical_matching": "Conductor types resolved via canonical registry catalog"
+        }
+    }
+}

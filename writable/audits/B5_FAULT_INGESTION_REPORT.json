@@ -1,5 +1,5 @@
 {
-    "audit_timestamp": "2026-09-25 16:06:20 WIB",
+    "audit_timestamp": "2026-09-25 16:32:36 WIB",
     "environment": "production",
     "host": "https://sidaktejo.site",
     "ip_resolved": "2.57.91.151",
@@ -37,14 +37,38 @@
         "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
         "status": "PHASE_B5_FAULT_INGESTION_VERIFIED",
         "all_guards_passed": true,
-        "execution_time_ms": 10.35,
-        "timestamp": "2026-09-25 16:06:20 WIB",
+        "execution_time_ms": 16.07,
+        "timestamp": "2026-09-25 16:32:36 WIB",
         "governance_mutation_scopes": {
             "authoritative_topology_scope": {
                 "rule": "STRICTLY_IMMUTABLE",
                 "gis_translines_mutations": 0,
                 "master_assets_mutations": 0,
                 "passed": true,
+                "authoritative_active": {
+                    "translines": {
+                        "before": 243,
+                        "after": 243,
+                        "expected": 243
+                    },
+                    "assets": {
+                        "before": 5236,
+                        "after": 5236,
+                        "expected": 5236
+                    }
+                },
+                "physical_storage_rows": {
+                    "translines": {
+                        "before": 252,
+                        "after": 252,
+                        "note": "243 active + 9 inactive/draft = 252 total"
+                    },
+                    "assets": {
+                        "before": 5549,
+                        "after": 5549,
+                        "note": "5,236 active + 313 soft-deleted = 5,549 total"
+                    }
+                },
                 "translines_baseline": {
                     "before": 252,
                     "after": 252
@@ -121,11 +145,19 @@
             },
             "topology_zero_mutation": {
                 "passed": true,
-                "translines": {
+                "active_translines": {
+                    "before": 243,
+                    "after": 243
+                },
+                "active_assets": {
+                    "before": 5236,
+                    "after": 5236
+                },
+                "physical_translines": {
                     "before": 252,
                     "after": 252
                 },
-                "assets": {
+                "physical_assets": {
                     "before": 5549,
                     "after": 5549
                 }

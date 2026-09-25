@@ -108,7 +108,7 @@ echo " - [3c] Authorized Migration Run -> HTTP {$migRun['code']} | Message: " . 
 $migRunPass = ($migRun['code'] === 200 || ($migRun['code'] === 403 && ($migRun['json']['status'] ?? '') === 'MIGRATION_ALREADY_SEALED'));
 
 if ($migUnauthPass && $migNoMasterPass && $migRunPass) {
-    echo " - Verdict: PASS ✅ (Migration Security Enforced & Executed)\n";
+    echo " - Verdict: PASS ✅ (Migration Security Enforced & Migration Already Sealed)\n";
     $scorecard['MIGRATION_EXECUTION_SECURITY'] = 'PASS';
 } else {
     echo " - Verdict: FAIL ❌\n";

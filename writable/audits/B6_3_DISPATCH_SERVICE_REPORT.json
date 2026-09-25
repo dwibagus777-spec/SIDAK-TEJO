@@ -1,0 +1,114 @@
+{
+    "audit_timestamp": "2026-09-25 17:16:40 WIB",
+    "service_version": "B6-DISPATCH-1.0",
+    "phase": "B.6.3",
+    "verdict": "PASS \ud83d\udfe2",
+    "scorecard": {
+        "DISPATCH_CREATION_FSM": "PASS",
+        "ASSIGNMENT_IDEMPOTENCY": "PASS",
+        "ONE_ACTIVE_ASSIGNMENT_POLICY": "PASS",
+        "ASSIGNMENT_HISTORY_IMMUTABLE": "PASS",
+        "ASSIGNMENT_ACCEPTANCE_FSM": "PASS",
+        "FSM_SHORTCUT_REJECTION": "PASS",
+        "PATROL_ROUTE_DECOUPLED": "PASS",
+        "GPS_PROVENANCE_ENFORCED": "PASS",
+        "JOURNEY_STARTED_FSM": "PASS",
+        "ARRIVAL_RECORDING_FSM": "PASS",
+        "INVESTIGATION_ACTIVE_FSM": "PASS",
+        "REJECTION_REASON_GUARD": "PASS",
+        "DISPATCH_TIMELINE_RECONSTRUCTION": "PASS",
+        "ZERO_TOPOLOGY_MUTATION": "PASS"
+    },
+    "baselines": {
+        "gis_translines_active": {
+            "before": 1278,
+            "after": 1278,
+            "delta": 0
+        },
+        "gis_translines_physical": {
+            "before": 1278,
+            "after": 1278
+        },
+        "assets_active": {
+            "before": 1476,
+            "after": 1476,
+            "delta": 0
+        },
+        "assets_physical": {
+            "before": 1476,
+            "after": 1476
+        }
+    },
+    "sample_patrol_route": {
+        "case_id": 127,
+        "candidate_count": 3,
+        "total_route_distance_m": 54896.17,
+        "estimated_duration_s": 6590,
+        "route_payload_hash": "bc18147f8abf63f565c1e125f82e8ece81ceb1dbff8a18d08cce0df7754d6622",
+        "stops": [
+            {
+                "sequence": 1,
+                "asset_id": 394,
+                "kode_asset": "AST-BJK-T001",
+                "leg_dist_m": 54603.77,
+                "cum_dist_m": 54603.77
+            },
+            {
+                "sequence": 2,
+                "asset_id": 395,
+                "kode_asset": "AST-BJK-T002",
+                "leg_dist_m": 109.61,
+                "cum_dist_m": 54713.38
+            },
+            {
+                "sequence": 3,
+                "asset_id": 396,
+                "kode_asset": "AST-BJK-GRD001",
+                "leg_dist_m": 182.79,
+                "cum_dist_m": 54896.17
+            }
+        ]
+    },
+    "sample_timeline": [
+        {
+            "timestamp": "2026-09-25 17:16:40",
+            "stage": "DISPATCH_ASSIGNMENT",
+            "title": "Dispatched to User #101",
+            "actor": "Dispatcher #1",
+            "status": "REASSIGNED",
+            "note": "Immediate response crew dispatched. | Superseded by Reassignment to User #202 at 2026-09-25 17:16:40"
+        },
+        {
+            "timestamp": "2026-09-25 17:16:40",
+            "stage": "DISPATCH_ASSIGNMENT",
+            "title": "Dispatched to User #202",
+            "actor": "Dispatcher #1",
+            "status": "ACCEPTED",
+            "note": "Reassigned to specialist crew 202."
+        },
+        {
+            "timestamp": "2026-09-25 17:16:40",
+            "stage": "DISPATCH_ACCEPTED",
+            "title": "Assignment Accepted by User #202",
+            "actor": "Crew #202",
+            "status": "ACCEPTED",
+            "note": null
+        },
+        {
+            "timestamp": "2026-09-25 17:16:40",
+            "stage": "JOURNEY_STARTED",
+            "title": "Crew En-Route to Site",
+            "actor": "Investigator #202",
+            "status": "EN_ROUTE",
+            "note": "GPS: (-7.53612340, 112.23456780)"
+        },
+        {
+            "timestamp": "2026-09-25 17:16:40",
+            "stage": "CREW_ARRIVED",
+            "title": "Crew Arrived at Site",
+            "actor": "Investigator #202",
+            "status": "ARRIVED",
+            "note": "GPS: (-7.53850000, 112.23650000)"
+        }
+    ]
+}

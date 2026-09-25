@@ -1,0 +1,113 @@
+{
+    "audit_timestamp": "2026-09-25 16:46:13 WIB",
+    "phase": "B.6.1",
+    "verdict": "PASS \ud83d\udfe2",
+    "migration_file": "2026-09-25-000003_CreateFieldDispatchInvestigationSchema.php",
+    "scorecard": {
+        "FAULT_CASES_ENHANCED": "PASS",
+        "DISPATCH_ASSIGNMENTS_SCHEMA": "PASS",
+        "FIELD_INVESTIGATIONS_SCHEMA": "PASS",
+        "FIELD_FINDINGS_SCHEMA": "PASS",
+        "REVISIONS_APPEND_ONLY": "PASS",
+        "FIELD_EVIDENCE_SCHEMA": "PASS",
+        "FAULT_FEEDBACK_SCHEMA": "PASS",
+        "FOREIGN_KEY_INTEGRITY": "PASS",
+        "REVISION_UNIQUE_CONSTRAINT": "PASS",
+        "FUNCTIONAL_ENTITY_INSERTION": "PASS",
+        "MIGRATION_IDEMPOTENCY": "PASS",
+        "ZERO_TOPOLOGY_MUTATION": "PASS",
+        "HISTORICAL_DATA_PRESERVATION": "PASS"
+    },
+    "baselines": {
+        "gis_translines_active": {
+            "before": 1278,
+            "after": 1278,
+            "delta": 0
+        },
+        "gis_translines_physical": {
+            "before": 1278,
+            "after": 1278
+        },
+        "assets_active": {
+            "before": 1476,
+            "after": 1476,
+            "delta": 0
+        },
+        "assets_physical": {
+            "before": 1476,
+            "after": 1476
+        },
+        "fault_events_count": {
+            "before": 16,
+            "after": 16,
+            "delta": 0
+        },
+        "fault_cases_count": {
+            "before": 1,
+            "after": 1,
+            "delta": 0
+        }
+    },
+    "foreign_keys": [
+        {
+            "TABLE_NAME": "dispatch_assignments",
+            "COLUMN_NAME": "fault_case_id",
+            "REFERENCED_TABLE_NAME": "fault_cases",
+            "REFERENCED_COLUMN_NAME": "id"
+        },
+        {
+            "TABLE_NAME": "fault_feedback",
+            "COLUMN_NAME": "candidate_id",
+            "REFERENCED_TABLE_NAME": "fault_candidate_assets",
+            "REFERENCED_COLUMN_NAME": "id"
+        },
+        {
+            "TABLE_NAME": "fault_feedback",
+            "COLUMN_NAME": "fault_case_id",
+            "REFERENCED_TABLE_NAME": "fault_cases",
+            "REFERENCED_COLUMN_NAME": "id"
+        },
+        {
+            "TABLE_NAME": "field_evidence",
+            "COLUMN_NAME": "fault_case_id",
+            "REFERENCED_TABLE_NAME": "fault_cases",
+            "REFERENCED_COLUMN_NAME": "id"
+        },
+        {
+            "TABLE_NAME": "field_evidence",
+            "COLUMN_NAME": "field_finding_id",
+            "REFERENCED_TABLE_NAME": "field_findings",
+            "REFERENCED_COLUMN_NAME": "id"
+        },
+        {
+            "TABLE_NAME": "field_findings",
+            "COLUMN_NAME": "actual_asset_id",
+            "REFERENCED_TABLE_NAME": "assets",
+            "REFERENCED_COLUMN_NAME": "id"
+        },
+        {
+            "TABLE_NAME": "field_findings",
+            "COLUMN_NAME": "fault_case_id",
+            "REFERENCED_TABLE_NAME": "fault_cases",
+            "REFERENCED_COLUMN_NAME": "id"
+        },
+        {
+            "TABLE_NAME": "field_findings",
+            "COLUMN_NAME": "investigation_id",
+            "REFERENCED_TABLE_NAME": "field_investigations",
+            "REFERENCED_COLUMN_NAME": "id"
+        },
+        {
+            "TABLE_NAME": "field_finding_revisions",
+            "COLUMN_NAME": "field_finding_id",
+            "REFERENCED_TABLE_NAME": "field_findings",
+            "REFERENCED_COLUMN_NAME": "id"
+        },
+        {
+            "TABLE_NAME": "field_investigations",
+            "COLUMN_NAME": "fault_case_id",
+            "REFERENCED_TABLE_NAME": "fault_cases",
+            "REFERENCED_COLUMN_NAME": "id"
+        }
+    ]
+}

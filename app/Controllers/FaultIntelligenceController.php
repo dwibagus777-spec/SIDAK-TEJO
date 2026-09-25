@@ -183,6 +183,10 @@ class FaultIntelligenceController extends BaseController
         }
 
         try {
+            $migrationFile = APPPATH . 'Database/Migrations/2026-09-25-000001_CreateFaultIntelligenceTables.php';
+            if (file_exists($migrationFile)) {
+                require_once $migrationFile;
+            }
             $migration = new \App\Database\Migrations\CreateFaultIntelligenceTables();
             $migration->up();
 

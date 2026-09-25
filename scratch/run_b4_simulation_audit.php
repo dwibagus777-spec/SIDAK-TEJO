@@ -41,7 +41,12 @@ echo "[1] Triggering Database Migration (/migrate)...\n";
 $migrateUrl = "{$baseUrl}/migrate?key=" . urlencode($key);
 $migrateRes = callEndpoint($migrateUrl, $cookieFile);
 echo "HTTP Code: {$migrateRes['code']} ({$migrateRes['elapsed']} ms)\n";
-
+if (!empty($migrateRes['json']['error'])) {
+    echo "Migration Error: " . $migrateRes['json']['error'] . "\n";
+}
+if ($migrateRes['code'] !== 200) {
+    echo "Raw response:\n" . substr($migrateRes['body'], 0, 500) . "\n";
+}
 if ($migrateRes['json']) {
     echo "Message: " . ($migrateRes['json']['message'] ?? '') . "\n";
     echo "Causes Seeded: " . ($migrateRes['json']['causes_seeded'] ?? 0) . "\n";
@@ -49,8 +54,6 @@ if ($migrateRes['json']) {
     foreach ($migrateRes['json']['tables'] ?? [] as $t => $status) {
         echo " - {$t}: " . ($status ? 'EXISTS (OK)' : 'MISSING (FAIL)') . "\n";
     }
-} else {
-    echo "Raw response:\n" . substr($migrateRes['body'], 0, 500) . "\n";
 }
 
 // 2. Run Comprehensive Live Audit Scorecard
@@ -90,14 +93,16 @@ if ($ctxRes['json']) {
     $p = $ctxRes['json']['payload'] ?? [];
     $a = $p['asset'] ?? [];
     $up = $p['upstream_lineage'] ?? [];
+    $fh = $up['feeder_head'] ?? [];
+    $tm = $p['topology_metrics'] ?? [];
     echo "Asset: #{$a['id']} - {$a['kode_asset']} ({$a['nama_asset']})\n";
-    echo "Feeder ID: {$a['penyulang_id']}\n";
+    echo "Feeder ID: " . ($a['feeder_id'] ?? 'NULL') . "\n";
     echo "Reachable: " . (!empty($up['reachable']) ? 'TRUE' : 'FALSE') . "\n";
-    echo "Feeder Head: Asset #{$up['feeder_head_asset_id']} ({$up['feeder_head_kode']})\n";
+    echo "Feeder Head: Asset #" . ($fh['asset_id'] ?? '') . " (" . ($fh['kode_asset'] ?? '') . ")\n";
     echo "Distance to Feeder Head: " . ($up['distance_to_feeder_head_m'] ?? 'NULL') . " m\n";
     echo "Hops to Feeder Head: " . ($up['hops_to_feeder_head'] ?? 'NULL') . "\n";
-    echo "Conductor Impedance Supported: " . (!empty($p['conductor_profile']['impedance_supported']) ? 'TRUE' : 'FALSE') . "\n";
-    echo "Impedance Reason: " . ($p['conductor_profile']['reason'] ?? '') . "\n";
+    echo "Conductor Impedance Supported: " . (!empty($tm['impedance_supported']) ? 'TRUE' : 'FALSE') . "\n";
+    echo "Impedance Reason: " . ($tm['impedance_status_reason'] ?? '') . "\n";
 }
 
 // 4. Test Canonical Taxonomy (/causes)

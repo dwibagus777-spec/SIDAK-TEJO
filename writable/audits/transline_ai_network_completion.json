@@ -2,7 +2,7 @@
     "status": "STABILIZED",
     "engine_name": "TRANSLINE_AI_NETWORK_COMPLETION_ENGINE",
     "engine_version": "v1.0",
-    "run_id": "AI-RUN-20260916-211331-46065f",
+    "run_id": "AI-RUN-20260925-153634-ec717c",
     "penyulang_id": 15,
     "mode": "AUTO",
     "halt_reason": "BATCH_TRANSACTION_ERROR: Transaction commit failed for batch 1.",

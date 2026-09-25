@@ -50,6 +50,7 @@ $routes->get('fault-intelligence/causes', 'FaultIntelligenceController::causes')
 $routes->get('fault-ingestion/audit', 'FaultIngestionController::audit');
 $routes->match(['GET', 'POST'], 'fault-ingestion/migrate', 'FaultIngestionController::migrate');
 $routes->post('fault-ingestion/events', 'FaultIngestionController::ingest');
+$routes->post('fault-ingestion/event', 'FaultIngestionController::ingest');
 $routes->post('fault-ingestion/batch', 'FaultIngestionController::ingestBatch');
 $routes->post('fault-ingestion', 'FaultIngestionController::ingest');
 $routes->get('fault-ingestion/events', 'FaultIngestionController::index');
@@ -59,6 +60,12 @@ $routes->get('fault-ingestion/events/(:num)/candidates', 'FaultIngestionControll
 $routes->post('fault-ingestion/events/(:num)/transition', 'FaultIngestionController::transition/$1');
 $routes->post('fault-ingestion/events/(:num)/analyze', 'FaultIngestionController::analyze/$1');
 $routes->post('fault-ingestion/events/(:num)/amend', 'FaultIngestionController::amend/$1');
+$routes->get('fault-ingestion/event/(:num)', 'FaultIngestionController::show/$1');
+$routes->get('fault-ingestion/event/(:num)/revisions', 'FaultIngestionController::revisions/$1');
+$routes->get('fault-ingestion/event/(:num)/candidates', 'FaultIngestionController::candidates/$1');
+$routes->post('fault-ingestion/event/(:num)/transition', 'FaultIngestionController::transition/$1');
+$routes->post('fault-ingestion/event/(:num)/analyze', 'FaultIngestionController::analyze/$1');
+$routes->post('fault-ingestion/event/(:num)/amend', 'FaultIngestionController::amend/$1');
 $routes->get('fault-ingestion/(:num)', 'FaultIngestionController::show/$1');
 $routes->post('fault-ingestion/(:num)/transition', 'FaultIngestionController::transition/$1');
 $routes->post('fault-ingestion/(:num)/analyze', 'FaultIngestionController::analyze/$1');

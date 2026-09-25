@@ -529,6 +529,20 @@ class FaultIngestionController extends BaseController
         // G07: Lifecycle State Transitions
         $guardsAudit['B5.2-G07_lifecycle_engine'] = !empty(FaultEventIngestionService::LIFECYCLE_TRANSITIONS);
 
+        // G06: Legacy Historical Rows Isolation
+        $legacyRows = $db->table('fault_events')
+            ->where('event_fingerprint IS NULL', null, false)
+            ->get()->getResultArray();
+        $legacyCount = count($legacyRows);
+        $legacyStatusCheck = true;
+        foreach ($legacyRows as $lr) {
+            if (($lr['fingerprint_status'] ?? '') !== 'LEGACY_UNFINGERPRINTED') {
+                $legacyStatusCheck = false;
+                break;
+            }
+        }
+        $guardsAudit['B5.2-G06_legacy_isolation'] = $legacyStatusCheck;
+
         // Post-audit Authoritative Invariant Counts
         $tlAfter = $db->tableExists('gis_translines') ? $db->table('gis_translines')->countAllResults() : 0;
         $assetAfter = $db->tableExists('assets') ? $db->table('assets')->countAllResults() : 0;
@@ -565,6 +579,11 @@ class FaultIngestionController extends BaseController
                 'schema_installed'      => ['passed' => $schemaPass, 'tables' => $schemaChecks],
                 'columns_installed'     => ['passed' => $colPass, 'columns' => $colChecks],
                 'guards_audit'          => ['passed' => !in_array(false, $guardsAudit, true), 'guards' => $guardsAudit],
+                'legacy_isolation'      => [
+                    'passed'            => $legacyStatusCheck,
+                    'count'             => $legacyCount,
+                    'null_fingerprints' => $legacyCount,
+                ],
                 'topology_zero_mutation'=> [
                     'passed'     => $zeroMutationPass,
                     'translines' => ['before' => $tlBefore, 'after' => $tlAfter],

@@ -134,7 +134,7 @@ class FaultIngestionController extends BaseController
         }
 
         $payload = $this->getRequestPayload();
-        $records = $payload['records'] ?? (isset($payload[0]) ? $payload : []);
+        $records = $payload['records'] ?? $payload['events'] ?? (isset($payload[0]) ? $payload : []);
         $sourceType = $payload['source_type'] ?? 'SCADA';
         $metadata = $payload['metadata'] ?? [];
 

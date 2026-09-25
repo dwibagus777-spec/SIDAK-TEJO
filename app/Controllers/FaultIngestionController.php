@@ -636,7 +636,7 @@ class FaultIngestionController extends BaseController
         
         $tlInactiveRows = $db->table('gis_translines')
             ->where('is_active != 1 OR deleted_at IS NOT NULL', null, false)
-            ->select('id, penyulang_id, kode_transline, is_active, deleted_at, created_at')
+            ->select('id, penyulang_id, transline_code, is_active, deleted_at, created_at')
             ->get()
             ->getResultArray();
 

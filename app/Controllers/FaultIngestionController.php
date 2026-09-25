@@ -147,6 +147,9 @@ class FaultIngestionController extends BaseController
         }
 
         $result = $this->ingestionService->ingestBatch($records, $sourceType, $metadata);
+        $result['total'] = $result['total_records'];
+        $result['accepted'] = $result['accepted_records'];
+        $result['duplicates'] = $result['duplicate_records'];
         return $this->response->setStatusCode(200)->setJSON($result);
     }
 

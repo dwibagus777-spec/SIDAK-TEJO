@@ -634,11 +634,12 @@ class FaultIngestionController extends BaseController
             ->where('deleted_at IS NULL')
             ->countAllResults();
         
-        $tlInactiveRows = $db->table('gis_translines')
-            ->where('is_active != 1 OR deleted_at IS NOT NULL', null, false)
-            ->select('id, penyulang_id, transline_code, is_active, deleted_at, created_at')
-            ->get()
-            ->getResultArray();
+        $tlInactiveRows = $db->query("
+            SELECT id, penyulang_id, transline_code, is_active, deleted_at, created_at 
+            FROM gis_translines 
+            WHERE is_active != 1 OR deleted_at IS NOT NULL
+            ORDER BY id ASC
+        ")->getResultArray();
 
         // 2. Active Assets vs Physical Rows
         $assetTotal = $db->table('assets')->countAllResults();

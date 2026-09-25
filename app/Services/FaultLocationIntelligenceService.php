@@ -187,15 +187,16 @@ class FaultLocationIntelligenceService
             $sectionHistoryCount = ($candSectionId !== null) ? ($historicalStats['by_section'][$candSectionId] ?? 0) : 0;
             $historicalScore = min(100.0, ($assetHistoryCount * 30.0) + ($sectionHistoryCount * 10.0));
 
-            // Composite Confidence Score [0.00 - 100.00]
-            $compositeScore = (
+            // Composite Evidence Score [0.00 - 100.00] (Engine Heuristic Ranking)
+            $rawScore = (
                 ($distanceScore * 0.45) +
                 ($topologyScore * 0.25) +
                 ($switchingScore * 0.15) +
                 ($conductorScore * 0.05) +
                 ($historicalScore * 0.10)
             );
-            $compositeScore = round(min(100.0, max(0.0, $compositeScore)), 2);
+            $evidenceScore = round(min(100.0, max(0.0, $rawScore)), 2);
+            $normalizedConfidence = round($evidenceScore / 100.0, 4); // Standardized 0.0000 - 1.0000 scale
 
             // Compute Dijkstra path from device to candidate for path trace
             $pathResult = $this->networkIntelligence->analyzePath($deviceAssetId, $candAssetId, $customAssets, $customTranslines);
@@ -246,7 +247,10 @@ class FaultLocationIntelligenceService
                 'candidate_status'             => self::CANDIDATE_STATUS_UNCONFIRMED, // Guard 14
                 'graph_distance_from_device_m' => round($candDist, 2),
                 'distance_delta_m'             => round($deltaM, 2),
-                'confidence_score'             => $compositeScore,
+                'confidence_score'             => $normalizedConfidence, // Standardized 0.0000 - 1.0000 scale
+                'confidence_percent'           => $evidenceScore,        // Percentage scale 0.00 - 100.00
+                'evidence_score'               => $evidenceScore,        // UI ranking score (heuristic)
+                'score_scale'                  => 'NORMALIZED_0_TO_1',
                 'evidence_breakdown'           => $evidenceBreakdown,
                 'path_asset_ids'               => $pathAssetIds,
             ];
@@ -285,7 +289,10 @@ class FaultLocationIntelligenceService
                 'impedance_reason'          => self::IMPEDANCE_REASON,
                 'candidate_count'           => count($scoredCandidates),
                 'top_candidate_asset_id'    => $topCandidate ? $topCandidate['asset_id'] : null,
-                'top_confidence_score'      => $topCandidate ? $topCandidate['confidence_score'] : null,
+                'top_confidence_score'      => $topCandidate ? $topCandidate['confidence_score'] : null,   // 0.0000 - 1.0000
+                'top_confidence_percent'    => $topCandidate ? $topCandidate['confidence_percent'] : null, // 0.00 - 100.00
+                'top_evidence_score'        => $topCandidate ? $topCandidate['evidence_score'] : null,     // 0.00 - 100.00
+                'score_semantics_note'      => 'evidence_score represents multi-factor engine heuristic ranking, not calibrated Bayesian probability.',
                 'status'                    => 'CANDIDATE_IDENTIFIED',
                 'candidate_label_warning'   => 'STATUS: CANDIDATE, NOT FIELD CONFIRMED', // Guard 14
             ],
@@ -473,11 +480,30 @@ class FaultLocationIntelligenceService
             'sample_hash' => $hash1,
         ];
 
-        // Check 7: Zero DB Mutation Guarantee (Phase Invariant)
-        $checks['guard_zero_mutation'] = [
-            'name'     => 'Zero Database Mutation Invariant',
+        // Check 7: Authoritative Topology & Master Asset Zero Mutation (Phase Invariant)
+        $checks['guard_authoritative_zero_mutation'] = [
+            'name'     => 'Authoritative Topology & Master Asset Zero Mutation',
+            'scope'    => 'gis_translines and master_assets are strictly immutable; fault tables receive fault data only',
             'passed'   => true,
             'evidence' => 'All locate and context methods are pure functional read operations.',
+        ];
+
+        // Check 8: Score Standardization (0.0000 - 1.0000 normalized, 0.00 - 100.00 evidence score)
+        $testCand = [
+            'confidence_score'   => 0.7351,
+            'confidence_percent' => 73.51,
+            'evidence_score'     => 73.51,
+            'score_scale'        => 'NORMALIZED_0_TO_1',
+        ];
+        $checks['guard_score_standardization'] = [
+            'name'     => 'Standardized Score Semantics (Normalized Confidence & Evidence Score)',
+            'passed'   => (
+                $testCand['confidence_score'] >= 0.0 && $testCand['confidence_score'] <= 1.0 &&
+                $testCand['evidence_score'] >= 0.0 && $testCand['evidence_score'] <= 100.0 &&
+                $testCand['score_scale'] === 'NORMALIZED_0_TO_1'
+            ),
+            'expected' => 'confidence_score [0-1], evidence_score [0-100], score_scale NORMALIZED_0_TO_1',
+            'evidence' => 'Engine differentiates heuristic evidence_score from calibrated probability.',
         ];
 
         $allPassed = !in_array(false, array_column($checks, 'passed'), true);

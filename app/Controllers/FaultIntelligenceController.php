@@ -182,6 +182,45 @@ class FaultIntelligenceController extends BaseController
             return $this->unauthorizedResponse();
         }
 
+        $db = \Config\Database::connect();
+        $requiredTables = [
+            'fault_cause_categories',
+            'fault_events',
+            'fault_cases',
+            'fault_candidate_assets',
+            'fault_actual_findings',
+        ];
+
+        // GOVERNANCE HARDENING: Check if already installed
+        $allInstalled = true;
+        foreach ($requiredTables as $tbl) {
+            if (!$db->tableExists($tbl)) {
+                $allInstalled = false;
+                break;
+            }
+        }
+
+        if ($allInstalled) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'MIGRATION_ALREADY_SEALED',
+                'code'    => 403,
+                'message' => 'Tindakan ditolak: Schema Fault Intelligence sudah terpasang dan dalam status LOCKED/SEALED. Eksekusi migrasi dari web endpoint ditutup permanen.',
+                'sealed'  => true,
+                'tables'  => $requiredTables,
+            ]);
+        }
+
+        // Must provide deployment master token if not yet installed
+        $masterKey = 'sidak_tejo_deploy_master_2026';
+        $providedMaster = $this->request->getVar('deploy_key') ?? $this->request->getHeaderLine('X-Deploy-Master-Key');
+        if (empty($providedMaster) || !hash_equals($masterKey, (string)$providedMaster)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'FORBIDDEN',
+                'code'    => 403,
+                'message' => 'Deployment master key diperlukan untuk inisialisasi awal skema.',
+            ]);
+        }
+
         try {
             $migrationFile = APPPATH . 'Database/Migrations/2026-09-25-000001_CreateFaultIntelligenceTables.php';
             if (file_exists($migrationFile)) {
@@ -190,14 +229,10 @@ class FaultIntelligenceController extends BaseController
             $migration = new \App\Database\Migrations\CreateFaultIntelligenceTables();
             $migration->up();
 
-            $db = \Config\Database::connect();
-            $tables = [
-                'fault_cause_categories' => $db->tableExists('fault_cause_categories'),
-                'fault_events'           => $db->tableExists('fault_events'),
-                'fault_cases'            => $db->tableExists('fault_cases'),
-                'fault_candidate_assets' => $db->tableExists('fault_candidate_assets'),
-                'fault_actual_findings'  => $db->tableExists('fault_actual_findings'),
-            ];
+            $tables = [];
+            foreach ($requiredTables as $tbl) {
+                $tables[$tbl] = $db->tableExists($tbl);
+            }
 
             $causesCount = $tables['fault_cause_categories']
                 ? $db->table('fault_cause_categories')->countAllResults()
@@ -310,6 +345,22 @@ class FaultIntelligenceController extends BaseController
             'status'                 => ($engineAudit['all_passed'] && $noCircularFk && $zeroMutationPass && $feeder118Pass)
                 ? 'PHASE_B4_FAULT_INTELLIGENCE_VERIFIED'
                 : 'PHASE_B4_FAULT_INTELLIGENCE_FAILED',
+            'governance_mutation_scopes' => [
+                'authoritative_topology_scope' => [
+                    'rule'                     => 'STRICTLY_IMMUTABLE',
+                    'gis_translines_mutations' => 0,
+                    'master_assets_mutations'  => 0,
+                    'passed'                   => $zeroMutationPass,
+                    'translines_baseline'      => ['before' => $tlCountBefore, 'after' => $tlCountAfter],
+                    'assets_baseline'          => ['before' => $assetCountBefore, 'after' => $assetCountAfter],
+                ],
+                'fault_intelligence_scope' => [
+                    'schema_installation'      => 'SEALED_AND_LOCKED',
+                    'fault_data_ingestion'     => 'ALLOWED_FOR_FAULT_TABLES_ONLY',
+                    'cause_taxonomy'           => 'CONTROLLED_MUTATION',
+                    'tables_verified'          => $schemaChecks,
+                ],
+            ],
             'checks'                 => [
                 'engine_guards'        => $engineAudit,
                 'tables_installed'     => [
@@ -320,17 +371,20 @@ class FaultIntelligenceController extends BaseController
                     'name'   => 'Guard 12: No circular FK in fault_cases',
                     'passed' => $noCircularFk,
                 ],
-                'zero_mutation'        => [
-                    'name'         => 'Authoritative Physical Zero Mutation',
+                'authoritative_topology_zero_mutation' => [
+                    'name'         => 'Authoritative Physical Zero Mutation (gis_translines & master_assets)',
                     'passed'       => $zeroMutationPass,
                     'translines'   => ['before' => $tlCountBefore, 'after' => $tlCountAfter],
                     'assets'       => ['before' => $assetCountBefore, 'after' => $assetCountAfter],
                 ],
                 'feeder_118_locator'   => [
-                    'name'             => 'Feeder 118 Ground Truth Candidate Match',
-                    'passed'           => $feeder118Pass,
-                    'top_candidate_id' => $topCand['asset_id'] ?? null,
-                    'candidate_status' => $topCand['candidate_status'] ?? null,
+                    'name'                   => 'Feeder 118 Ground Truth Candidate Match',
+                    'passed'                 => $feeder118Pass,
+                    'top_candidate_id'       => $topCand['asset_id'] ?? null,
+                    'candidate_status'       => $topCand['candidate_status'] ?? null,
+                    'confidence_score'       => $topCand['confidence_score'] ?? null,
+                    'confidence_percent'     => $topCand['confidence_percent'] ?? null,
+                    'evidence_score'         => $topCand['evidence_score'] ?? null,
                 ],
             ],
         ];

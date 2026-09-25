@@ -36,24 +36,20 @@ echo "====================================================================\n";
 echo "  SIDAK TEJO — PHASE B.4 FAULT LOCATION INTELLIGENCE LIVE AUDIT      \n";
 echo "====================================================================\n\n";
 
-// 1. Run Schema Migration on Production
-echo "[1] Triggering Database Migration (/migrate)...\n";
+// 1. Verify Migration Sealed Governance Lock on Production
+echo "[1] Testing Migration Endpoint Seal Lock (/migrate)...\n";
 $migrateUrl = "{$baseUrl}/migrate?key=" . urlencode($key);
 $migrateRes = callEndpoint($migrateUrl, $cookieFile);
 echo "HTTP Code: {$migrateRes['code']} ({$migrateRes['elapsed']} ms)\n";
-if (!empty($migrateRes['json']['error'])) {
-    echo "Migration Error: " . $migrateRes['json']['error'] . "\n";
-}
-if ($migrateRes['code'] !== 200) {
-    echo "Raw response:\n" . substr($migrateRes['body'], 0, 500) . "\n";
-}
-if ($migrateRes['json']) {
+
+if ($migrateRes['code'] === 403 && ($migrateRes['json']['status'] ?? '') === 'MIGRATION_ALREADY_SEALED') {
+    echo "Governance Status: SEALED & LOCKED (OK)\n";
+    echo "Message: " . ($migrateRes['json']['message'] ?? '') . "\n";
+} elseif ($migrateRes['code'] === 200) {
     echo "Message: " . ($migrateRes['json']['message'] ?? '') . "\n";
     echo "Causes Seeded: " . ($migrateRes['json']['causes_seeded'] ?? 0) . "\n";
-    echo "Tables Installed:\n";
-    foreach ($migrateRes['json']['tables'] ?? [] as $t => $status) {
-        echo " - {$t}: " . ($status ? 'EXISTS (OK)' : 'MISSING (FAIL)') . "\n";
-    }
+} else {
+    echo "Raw response:\n" . substr($migrateRes['body'], 0, 500) . "\n";
 }
 
 // 2. Run Comprehensive Live Audit Scorecard
@@ -69,12 +65,19 @@ if ($auditRes['json']) {
     echo "Snapshot ID: " . ($scorecard['topology_snapshot_id'] ?? '') . "\n";
     echo "All Guards Passed: " . (!empty($scorecard['all_guards_passed']) ? 'TRUE' : 'FALSE') . "\n";
 
+    echo "\n--- MUTATION GOVERNANCE SCOPES ---\n";
+    $scopes = $scorecard['governance_mutation_scopes'] ?? [];
+    $topoScope = $scopes['authoritative_topology_scope'] ?? [];
+    $faultScope = $scopes['fault_intelligence_scope'] ?? [];
+    echo " - Authoritative Topology: " . ($topoScope['rule'] ?? 'IMMUTABLE') . " (Mutations: TL = {$topoScope['gis_translines_mutations']}, Assets = {$topoScope['master_assets_mutations']})\n";
+    echo " - Fault Intelligence: " . ($faultScope['schema_installation'] ?? 'SEALED') . " (Ingestion: {$faultScope['fault_data_ingestion']})\n";
+
     echo "\n--- CHECKS SUMMARY ---\n";
     $checks = $scorecard['checks'] ?? [];
     echo " - Engine Guards: " . (!empty($checks['engine_guards']['all_passed']) ? 'PASS' : 'FAIL') . "\n";
     echo " - Tables Installed: " . (!empty($checks['tables_installed']['passed']) ? 'PASS' : 'FAIL') . "\n";
     echo " - Guard 12 (No Circular FK): " . (!empty($checks['guard_12_no_circular']['passed']) ? 'PASS' : 'FAIL') . "\n";
-    echo " - Zero Mutation Guarantee: " . (!empty($checks['zero_mutation']['passed']) ? 'PASS' : 'FAIL') . "\n";
+    echo " - Authoritative Topology Zero Mutation: " . (!empty($checks['authoritative_topology_zero_mutation']['passed']) ? 'PASS' : 'FAIL') . "\n";
     echo " - Feeder 118 Candidate Match: " . (!empty($checks['feeder_118_locator']['passed']) ? 'PASS' : 'FAIL') . "\n";
 
     // Save report to writable/audits
@@ -139,7 +142,9 @@ if ($simRes['json']) {
         echo "Status: {$top['candidate_status']}\n";
         echo "Graph Distance: {$top['graph_distance_from_device_m']} m\n";
         echo "Distance Delta: {$top['distance_delta_m']} m\n";
-        echo "Confidence Score: {$top['confidence_score']}\n";
+        echo "Normalized Confidence: {$top['confidence_score']} (Scale: {$top['score_scale']})\n";
+        echo "Confidence Percent: {$top['confidence_percent']}%\n";
+        echo "Evidence Score (UI Ranking): {$top['evidence_score']}\n";
     }
 }
 

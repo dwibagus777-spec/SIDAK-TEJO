@@ -317,7 +317,9 @@ class B4FaultIntelligenceTest extends TestCase
 
         $this->assertSame(103, $rank1['asset_id'], 'Asset 103 with delta 0 must be rank 1');
         $this->assertEquals(0.0, $rank1['distance_delta_m']);
-        $this->assertGreaterThan(80.0, $rank1['confidence_score']);
+        $this->assertGreaterThan(0.80, $rank1['confidence_score']);
+        $this->assertGreaterThan(80.0, $rank1['evidence_score']);
+        $this->assertSame('NORMALIZED_0_TO_1', $rank1['score_scale']);
     }
 
     /**
@@ -430,7 +432,7 @@ class B4FaultIntelligenceTest extends TestCase
 
         $this->assertTrue($audit['all_passed']);
         $this->assertSame('PHASE_B4_INTELLIGENCE_AUDIT_PASS', $audit['status']);
-        $this->assertCount(7, $audit['checks']);
+        $this->assertCount(8, $audit['checks']);
 
         foreach ($audit['checks'] as $key => $check) {
             $this->assertTrue($check['passed'], "Check {$key} ({$check['name']}) must pass.");

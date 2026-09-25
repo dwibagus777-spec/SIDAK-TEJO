@@ -1,0 +1,144 @@
+{
+    "audit_metadata": {
+        "phase": "B.6.5",
+        "title": "Fault Feedback & Model Calibration Engine Forensic Verification",
+        "audit_timestamp": "2026-09-25 17:54:08",
+        "service_version": "B6-FEEDBACK-1.0",
+        "overall_verdict": "PASS"
+    },
+    "scorecard": {
+        "B6-G11 Prediction != Actual Separation": {
+            "verdict": "PASS \u2705",
+            "details": "Predicted: #394, Actual: #395 (Rank: 2)"
+        },
+        "B6-G12 No Automatic Model Rewrite": {
+            "verdict": "PASS \u2705",
+            "details": "Governance notice enforced; FLI model version invariant: B6-FEEDBACK-1.0; Human approval mandatory"
+        },
+        "B6.5-G02 Feedback Determinism & Idempotency": {
+            "verdict": "PASS \u2705",
+            "details": "Repeat call returned existing feedback #115 without duplicating database rows (Delta = 0)"
+        },
+        "B6.5-G03 Confirmed Finding Prerequisite": {
+            "verdict": "PASS \u2705",
+            "details": "In-flight case correctly rejected: Guard B6.5-G03 Violation: Case #424 is in status 'CANDIDATE_IDENTIFIED'. Feedback requires a CONFIRMED or UNRESOLVED case."
+        },
+        "B6.5-G04 Spatial Metric Precision": {
+            "verdict": "PASS \u2705",
+            "details": "Rank 1 confirmed as MATCH (Error: 5 m, Tier: SPATIAL_LE_10M)"
+        },
+        "B6.5-G05 Explicit Denominator for MAE/RMSE": {
+            "verdict": "PASS \u2705",
+            "details": "NO_FINDING distance_error is null; Total cases: 3, N_dist: 2 (strictly excludes NO_FINDING)"
+        },
+        "B6.5-G06 Ranking Metric Integrity": {
+            "verdict": "PASS \u2705",
+            "details": "Top-1 Hits: 1, Top-3 Hits: 2 (Hit Rate: 50%) derived strictly from prediction_rank"
+        },
+        "B6.5-G07 Feedback Immutability": {
+            "verdict": "PASS \u2705",
+            "details": "Feedback records preserve original analytical snapshot permanently"
+        },
+        "B6.5-G08 Candidate Set Fingerprint Integrity": {
+            "verdict": "PASS \u2705",
+            "details": "Fingerprint: a74508a30bceb970d169891ddbaf7b179cc5cbea5622d1cd8643ed930a21fcb4 (Deterministic 64-char SHA-256)"
+        },
+        "B6.5-G09 Minimum Sample Size & Governance Status": {
+            "verdict": "PASS \u2705",
+            "details": "Sample threshold enforced: < min -> INSUFFICIENT_SAMPLE; >= min -> PENDING_HUMAN_GOVERNANCE_REVIEW"
+        },
+        "B6.5-G10 NO BUSINESS DELETE Guard": {
+            "verdict": "PASS \u2705",
+            "details": "deleteFeedback() threw RuntimeException with Guard B6.5-G10 Violation message"
+        },
+        "B6.5-G01 ZERO_TOPOLOGY_MUTATION": {
+            "verdict": "PASS \u2705",
+            "details": "gis_translines \u0394 = 0 (Phys: 1278), assets \u0394 = 0 (Phys: 1476)"
+        }
+    },
+    "database_reconciliation_pack": {
+        "authoritative_locked_baseline": {
+            "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+            "active_translines": 243,
+            "physical_translines": 252,
+            "active_assets": 5236,
+            "physical_assets": 5549,
+            "network_span_meters": 9418.37,
+            "environment": "Production (https://sidaktejo.site / IP 2.57.91.151)",
+            "verification_source": "Live Endpoint (/fault-ingestion/forensic-reconciliation)",
+            "status": "SEALED & UNMUTATED"
+        },
+        "b65_test_environment": {
+            "database_name": "sidaktejo",
+            "database_host": "127.0.0.1:3306",
+            "schema": "MySQL utf8mb4 (CodeIgniter 4)",
+            "active_translines": 1278,
+            "physical_translines": 1278,
+            "active_assets": 1476,
+            "physical_assets": 1476,
+            "environment_role": "NON-AUTHORITATIVE LOCAL TESTBED FIXTURE",
+            "feeders_in_fixture": [
+                "Feeder #1 (565 edges)",
+                "Feeder #4 (221 edges)",
+                "Feeder #19 (184 edges)",
+                "Feeder #23 (180 edges)",
+                "Feeder #33 (128 edges)"
+            ]
+        },
+        "reconciliation_result": {
+            "same_database": false,
+            "same_schema": true,
+            "same_topology_snapshot": false,
+            "is_test_fixture": true,
+            "is_production_authority": false,
+            "reason_for_difference": "Local testbed database is a development fixture containing 5 multi-feeder networks from early phases. Authoritative 243 active translines / 5,236 active assets reside on production (https://sidaktejo.site) for Feeder 15 (Tejo).",
+            "mutation_delta_translines": 0,
+            "mutation_delta_assets": 0,
+            "reconciliation_verdict": "PASS \ud83d\udfe2 (Scenario 1: Non-Authoritative Test Fixture Confirmed; Authoritative Production Baseline 100% Intact)"
+        },
+        "query_definitions": {
+            "active_translines": "SELECT COUNT(*) FROM gis_translines WHERE is_active = 1 AND deleted_at IS NULL",
+            "physical_translines": "SELECT COUNT(*) FROM gis_translines",
+            "active_assets": "SELECT COUNT(*) FROM assets WHERE deleted_at IS NULL",
+            "physical_assets": "SELECT COUNT(*) FROM assets",
+            "topology_snapshot": "SELECT * FROM network_topology_versions ORDER BY id DESC LIMIT 1"
+        }
+    },
+    "calibration_metrics_sample": {
+        "total_cases_evaluated": 3,
+        "hit_rate_denominator": 2,
+        "distance_denominator_n": 2,
+        "ranking_metrics": {
+            "top_1_hits": 1,
+            "top_3_hits": 2,
+            "top_5_hits": 2,
+            "rank_misses": 1,
+            "top_1_hit_rate_pct": 50,
+            "top_3_hit_rate_pct": 100,
+            "top_5_hit_rate_pct": 100
+        },
+        "spatial_metrics": {
+            "within_10m_count": 1,
+            "within_25m_count": 2,
+            "within_50m_count": 2,
+            "beyond_50m_count": 0,
+            "within_50m_pct": 100
+        },
+        "distance_error_metrics": {
+            "mae_meters": 12.5,
+            "rmse_meters": 14.58,
+            "sum_absolute_error_m": 25,
+            "sum_squared_error": 425
+        },
+        "classification_breakdown": {
+            "MATCH": 1,
+            "NEAR_MATCH": 1,
+            "WRONG_ASSET": 0,
+            "NO_FINDING": 1
+        },
+        "cause_distribution": {
+            "LIGHTNING": 2,
+            "NO_FAULT_FOUND": 1
+        }
+    }
+}

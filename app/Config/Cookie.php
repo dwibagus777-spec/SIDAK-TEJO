@@ -40,7 +40,13 @@ class Cookie extends BaseConfig
     /**
      * Cookie Secure - Enabled for HTTPS
      */
-    public bool $secure = true;
+    public bool $secure = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
+    }
 
     /**
      * --------------------------------------------------------------------------

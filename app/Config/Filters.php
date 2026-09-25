@@ -96,7 +96,10 @@ class Filters extends BaseFilters
                     'ai-copilot/*',
                     'ai/recommendation',
                     'gis/*',
-                    'ajax/network/*'
+                    'ajax/network/*',
+                    'fault-intelligence/*',
+                    'fault-ingestion/*',
+                    'fault-ingestion'
                 ]
             ],
             // 'invalidchars',

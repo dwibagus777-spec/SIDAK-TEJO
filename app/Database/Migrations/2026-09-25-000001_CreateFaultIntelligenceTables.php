@@ -25,7 +25,7 @@ class CreateFaultIntelligenceTables extends Migration
 {
     public function up()
     {
-        $db = \Config\Database::connect();
+        $db = $this->db ?? \Config\Database::connect();
 
         // =====================================================================
         // 1. Table: fault_cause_categories (Guard 10)

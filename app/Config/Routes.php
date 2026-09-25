@@ -45,6 +45,27 @@ $routes->get('fault-intelligence/candidates', 'FaultIntelligenceController::cand
 $routes->match(['GET', 'POST'], 'fault-intelligence/simulate', 'FaultIntelligenceController::simulate');
 $routes->post('fault-intelligence/cases/(:num)/findings', 'FaultIntelligenceController::recordFinding/$1');
 $routes->get('fault-intelligence/causes', 'FaultIntelligenceController::causes');
+
+// Phase B.5: Fault Event Ingestion Pipeline & Normalization Layer
+$routes->get('fault-ingestion/audit', 'FaultIngestionController::audit');
+$routes->match(['GET', 'POST'], 'fault-ingestion/migrate', 'FaultIngestionController::migrate');
+$routes->post('fault-ingestion/events', 'FaultIngestionController::ingest');
+$routes->post('fault-ingestion/batch', 'FaultIngestionController::ingestBatch');
+$routes->post('fault-ingestion', 'FaultIngestionController::ingest');
+$routes->get('fault-ingestion/events', 'FaultIngestionController::index');
+$routes->get('fault-ingestion/events/(:num)', 'FaultIngestionController::show/$1');
+$routes->get('fault-ingestion/events/(:num)/revisions', 'FaultIngestionController::revisions/$1');
+$routes->get('fault-ingestion/events/(:num)/candidates', 'FaultIngestionController::candidates/$1');
+$routes->post('fault-ingestion/events/(:num)/transition', 'FaultIngestionController::transition/$1');
+$routes->post('fault-ingestion/events/(:num)/analyze', 'FaultIngestionController::analyze/$1');
+$routes->post('fault-ingestion/events/(:num)/amend', 'FaultIngestionController::amend/$1');
+$routes->get('fault-ingestion/(:num)', 'FaultIngestionController::show/$1');
+$routes->post('fault-ingestion/(:num)/transition', 'FaultIngestionController::transition/$1');
+$routes->post('fault-ingestion/(:num)/analyze', 'FaultIngestionController::analyze/$1');
+$routes->post('fault-ingestion/(:num)/amend', 'FaultIngestionController::amend/$1');
+$routes->get('fault-ingestion/(:num)/revisions', 'FaultIngestionController::revisions/$1');
+$routes->get('fault-ingestion/(:num)/candidates', 'FaultIngestionController::candidates/$1');
+
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');

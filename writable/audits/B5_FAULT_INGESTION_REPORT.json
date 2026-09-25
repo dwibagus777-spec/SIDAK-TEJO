@@ -1,0 +1,135 @@
+{
+    "audit_timestamp": "2026-09-25 16:06:20 WIB",
+    "environment": "production",
+    "host": "https://sidaktejo.site",
+    "ip_resolved": "2.57.91.151",
+    "phase": "B.5",
+    "gate": "B.5.5",
+    "verdict": "PASS \ud83d\udfe2",
+    "ingestion_version": "B5-INGEST-1.0",
+    "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+    "authoritative_baseline": {
+        "gis_translines": 252,
+        "master_assets": 5549,
+        "gis_translines_delta": 0,
+        "master_assets_delta": 0,
+        "topology_mutation_count": 0
+    },
+    "scorecard": {
+        "PROD_REACHABLE_HTTPS": "PASS",
+        "AUTH_401_REJECT": "PASS",
+        "MIGRATION_EXECUTION_SECURITY": "PASS",
+        "SYSTEM_AUDIT_SCORECARD": "PASS",
+        "LEGACY_EVENT_PRESERVATION": "PASS",
+        "PROVENANCE_400_VALIDATION": "PASS",
+        "SINGLE_EVENT_INGEST_201": "PASS",
+        "REPLAY_IDEMPOTENCY_200": "PASS",
+        "LIFECYCLE_FSM_INVALID_422": "PASS",
+        "LIFECYCLE_FSM_VALID_200": "PASS",
+        "APPEND_ONLY_REVISION_200": "PASS",
+        "REVISIONS_QUERY_200": "PASS",
+        "BATCH_IDEMPOTENCY_200": "PASS",
+        "ZERO_TOPOLOGY_MUTATION": "PASS"
+    },
+    "system_audit_details": {
+        "phase": "B.5",
+        "ingestion_version": "B5-INGEST-1.0",
+        "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+        "status": "PHASE_B5_FAULT_INGESTION_VERIFIED",
+        "all_guards_passed": true,
+        "execution_time_ms": 10.35,
+        "timestamp": "2026-09-25 16:06:20 WIB",
+        "governance_mutation_scopes": {
+            "authoritative_topology_scope": {
+                "rule": "STRICTLY_IMMUTABLE",
+                "gis_translines_mutations": 0,
+                "master_assets_mutations": 0,
+                "passed": true,
+                "translines_baseline": {
+                    "before": 252,
+                    "after": 252
+                },
+                "assets_baseline": {
+                    "before": 5549,
+                    "after": 5549
+                }
+            },
+            "fault_ingestion_scope": {
+                "schema_status": "INSTALLED_AND_VERIFIED",
+                "tables_verified": {
+                    "fault_events": true,
+                    "fault_event_revisions": true,
+                    "fault_ingestion_batches": true,
+                    "fault_cases": true,
+                    "fault_candidate_assets": true,
+                    "fault_actual_findings": true
+                },
+                "columns_verified": {
+                    "event_fingerprint": true,
+                    "fingerprint_status": true,
+                    "fault_phase": true,
+                    "fault_current_a": true,
+                    "phase_currents_json": true,
+                    "protection_elements": true,
+                    "trip_sequence": true,
+                    "relay_distance_m": true,
+                    "lifecycle_status": true
+                }
+            }
+        },
+        "checks": {
+            "schema_installed": {
+                "passed": true,
+                "tables": {
+                    "fault_events": true,
+                    "fault_event_revisions": true,
+                    "fault_ingestion_batches": true,
+                    "fault_cases": true,
+                    "fault_candidate_assets": true,
+                    "fault_actual_findings": true
+                }
+            },
+            "columns_installed": {
+                "passed": true,
+                "columns": {
+                    "event_fingerprint": true,
+                    "fingerprint_status": true,
+                    "fault_phase": true,
+                    "fault_current_a": true,
+                    "phase_currents_json": true,
+                    "protection_elements": true,
+                    "trip_sequence": true,
+                    "relay_distance_m": true,
+                    "lifecycle_status": true
+                }
+            },
+            "guards_audit": {
+                "passed": true,
+                "guards": {
+                    "B5.2-G01_normalization": true,
+                    "B5.2-G03_deterministic_hash": true,
+                    "B5.2-G02_G11_provenance_validation": true,
+                    "B5.2-G05_snapshot_binding": true,
+                    "B5.2-G07_lifecycle_engine": true,
+                    "B5.2-G06_legacy_isolation": true
+                }
+            },
+            "legacy_isolation": {
+                "passed": true,
+                "count": 0,
+                "null_fingerprints": 0
+            },
+            "topology_zero_mutation": {
+                "passed": true,
+                "translines": {
+                    "before": 252,
+                    "after": 252
+                },
+                "assets": {
+                    "before": 5549,
+                    "after": 5549
+                }
+            }
+        }
+    }
+}

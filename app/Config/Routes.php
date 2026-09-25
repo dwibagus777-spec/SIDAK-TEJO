@@ -27,6 +27,15 @@ $routes->get('master-assets/reconciliation-baseline', 'MigrateController::reconc
 $routes->get('master-assets/transline-audit', 'MigrateController::translineAudit');
 $routes->match(['GET', 'POST'], 'master-assets/b2-atomic-commit', 'MigrateController::atomicCommitB2');
 $routes->get('master-assets/b22-production-lock', 'MigrateController::b22ProductionLockAudit');
+
+// Phase B.3: Network Intelligence Platform Routes (Strictly Read-Only)
+$routes->get('network-intelligence/audit', 'NetworkIntelligenceController::b3Audit');
+$routes->get('network-intelligence/graph', 'NetworkIntelligenceController::graph');
+$routes->get('network-intelligence/feeder/(:num)', 'NetworkIntelligenceController::feeder/$1');
+$routes->get('network-intelligence/sections/(:num)', 'NetworkIntelligenceController::sections/$1');
+$routes->get('network-intelligence/path', 'NetworkIntelligenceController::path');
+$routes->get('network-intelligence/integrity', 'NetworkIntelligenceController::integrity');
+$routes->get('network-intelligence/node/(:any)', 'NetworkIntelligenceController::node/$1');
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');

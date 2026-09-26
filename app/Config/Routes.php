@@ -74,6 +74,13 @@ $routes->post('fault-ingestion/(:num)/amend', 'FaultIngestionController::amend/$
 $routes->get('fault-ingestion/(:num)/revisions', 'FaultIngestionController::revisions/$1');
 $routes->get('fault-ingestion/(:num)/candidates', 'FaultIngestionController::candidates/$1');
 
+// SIDAK TEJO — Phase B.6 Field Dispatch, Investigation & Feedback Routes
+$routes->get('fault-dispatch/audit', 'FaultDispatchController::audit');
+$routes->get('fault-dispatch/forensic-reconciliation', 'FaultDispatchController::forensicReconciliation');
+$routes->match(['GET', 'POST'], 'fault-dispatch/migrate', 'FaultDispatchController::migrate');
+$routes->post('fault-dispatch/test/synthetic-e2e', 'FaultDispatchController::runSyntheticE2E');
+$routes->post('fault-dispatch/test/adversarial', 'FaultDispatchController::runAdversarialTests');
+
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');

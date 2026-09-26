@@ -86,6 +86,7 @@ $routes->get('mobile-sync/audit', 'MobileSyncController::audit');
 $routes->get('mobile-sync/forensic-reconciliation', 'MobileSyncController::forensicReconciliation');
 $routes->match(['GET', 'POST'], 'mobile-sync/migrate', 'MobileSyncController::migrate');
 $routes->match(['GET', 'POST'], 'mobile-sync/test/synthetic-e2e', 'MobileSyncController::runSyntheticE2E');
+$routes->match(['GET', 'POST'], 'mobile-sync/test/adversarial', 'MobileSyncController::runAdversarialTests');
 
 // Mobile Field App Sync API v1 Endpoints (Transport Boundary)
 $routes->post('api/v1/sync/push', 'MobileSyncController::push');

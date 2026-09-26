@@ -472,12 +472,12 @@ class FaultDispatchController extends BaseController
         $this->dispatchService->acceptAssignment($assignmentId, 999);
 
         // Step 5: Start Journey & Record Arrival (Syntactic GPS validation)
-        $this->dispatchService->startJourney($caseId, 999, -7.5360, 112.2340, 5.0);
+        $journeyRes = $this->dispatchService->startJourney($caseId, 999, -7.5360, 112.2340, 5.0);
+        $investigationId = (int)($journeyRes['investigation']['id'] ?? 0);
         $this->dispatchService->recordArrival($caseId, 999, -7.5385, 112.2365, 3.0);
 
         // Step 6: Start Investigation
-        $invesRes = $this->dispatchService->startInvestigation($caseId, 999);
-        $investigationId = (int)$invesRes['investigation']['id'];
+        $this->dispatchService->startInvestigation($caseId, 999);
 
         // Step 7: Record Field Finding (Preserve actual != predicted)
         $findingRes = $this->findingsService->recordFinding($caseId, 999, [

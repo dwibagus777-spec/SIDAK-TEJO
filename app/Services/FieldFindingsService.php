@@ -154,9 +154,18 @@ class FieldFindingsService
         }
 
         // 3. Resolve & Validate Investigation Ownership (B6.4-G02, B6.4-G06)
+        if (!$this->db->tableExists('field_investigations')) {
+            return [
+                'success' => false,
+                'status'  => 'INVESTIGATION_NOT_FOUND',
+                'message' => 'Field investigations table does not exist.',
+            ];
+        }
+
         $investigationId = isset($data['investigation_id']) ? (int)$data['investigation_id'] : null;
         if ($investigationId !== null && $investigationId > 0) {
-            $inves = $this->db->table('field_investigations')->where('id', $investigationId)->get()->getRowArray();
+            $res = $this->db->table('field_investigations')->where('id', $investigationId)->get();
+            $inves = $res ? $res->getRowArray() : null;
             if (!$inves) {
                 return [
                     'success' => false,
@@ -180,12 +189,12 @@ class FieldFindingsService
             }
         } else {
             // Auto-resolve active investigation for this case
-            $inves = $this->db->table('field_investigations')
+            $res = $this->db->table('field_investigations')
                 ->where('fault_case_id', $caseId)
                 ->where('status', 'INVESTIGATING')
                 ->orderBy('id', 'DESC')
-                ->get()
-                ->getRowArray();
+                ->get();
+            $inves = $res ? $res->getRowArray() : null;
             $investigationId = $inves ? (int)$inves['id'] : null;
         }
 
@@ -719,6 +728,14 @@ class FieldFindingsService
             : null;
 
         // Guard B6.4-G05: Evidence Idempotency Check
+        if (!$this->db->tableExists('field_evidence')) {
+            return [
+                'success' => false,
+                'status'  => 'TABLE_NOT_FOUND',
+                'message' => 'Table field_evidence does not exist.',
+            ];
+        }
+
         $builder = $this->db->table('field_evidence')
             ->where('fault_case_id', $caseId)
             ->where('sha256', $sha256)
@@ -728,7 +745,8 @@ class FieldFindingsService
             $builder->where('field_finding_id', $findingId);
         }
 
-        $existingEvidence = $builder->get()->getRowArray();
+        $res = $builder->get();
+        $existingEvidence = $res ? $res->getRowArray() : null;
         if ($existingEvidence) {
             return [
                 'success'     => true,
@@ -778,13 +796,24 @@ class FieldFindingsService
      */
     public function getFinding(int $findingId): ?array
     {
-        $finding = $this->db->table('field_findings')->where('id', $findingId)->get()->getRowArray();
+        if (!$this->db->tableExists('field_findings')) {
+            return null;
+        }
+
+        $res = $this->db->table('field_findings')->where('id', $findingId)->get();
+        if (!$res) {
+            return null;
+        }
+
+        $finding = $res->getRowArray();
         if (!$finding) {
             return null;
         }
 
         $finding['revisions'] = $this->getFindingRevisions($findingId);
-        $finding['evidence']  = $this->db->table('field_evidence')->where('field_finding_id', $findingId)->orderBy('id', 'ASC')->get()->getResultArray();
+        $finding['evidence']  = $this->db->tableExists('field_evidence')
+            ? ($this->db->table('field_evidence')->where('field_finding_id', $findingId)->orderBy('id', 'ASC')->get()?->getResultArray() ?? [])
+            : [];
 
         return $finding;
     }

@@ -99,7 +99,9 @@ class Filters extends BaseFilters
                     'ajax/network/*',
                     'fault-intelligence/*',
                     'fault-ingestion/*',
-                    'fault-ingestion'
+                    'fault-ingestion',
+                    'fault-dispatch/*',
+                    'fault-dispatch'
                 ]
             ],
             // 'invalidchars',

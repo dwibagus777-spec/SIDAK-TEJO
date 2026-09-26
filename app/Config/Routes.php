@@ -81,6 +81,17 @@ $routes->match(['GET', 'POST'], 'fault-dispatch/migrate', 'FaultDispatchControll
 $routes->post('fault-dispatch/test/synthetic-e2e', 'FaultDispatchController::runSyntheticE2E');
 $routes->post('fault-dispatch/test/adversarial', 'FaultDispatchController::runAdversarialTests');
 
+// SIDAK TEJO — Phase B.7 Mobile Field App & Offline Inspection Sync Routes
+$routes->get('mobile-sync/audit', 'MobileSyncController::audit');
+$routes->get('mobile-sync/forensic-reconciliation', 'MobileSyncController::forensicReconciliation');
+$routes->match(['GET', 'POST'], 'mobile-sync/migrate', 'MobileSyncController::migrate');
+
+// Mobile Field App Sync API v1 Endpoints (Transport Boundary)
+$routes->post('api/v1/sync/push', 'MobileSyncController::push');
+$routes->post('api/v1/sync/upload-chunk', 'MobileSyncController::uploadChunk');
+$routes->post('api/v1/sync/seal-evidence', 'MobileSyncController::sealEvidence');
+$routes->get('api/v1/sync/pull', 'MobileSyncController::pull');
+
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');

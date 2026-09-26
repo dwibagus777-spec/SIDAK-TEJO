@@ -333,7 +333,13 @@ class FaultDispatchController extends BaseController
             return $this->unauthorizedResponse();
         }
 
+        // Guard A-02: Require deployment master key for migrate endpoint (HTTP 403 Forbidden)
+        if (!$this->authorizeDeploy()) {
+            return $this->forbiddenResponse('Deployment master key diperlukan untuk mengakses operasi migrasi skema B.6.');
+        }
+
         $tablesRequired = [
+            'fault_cases',
             'dispatch_assignments',
             'field_investigations',
             'field_findings',
@@ -355,15 +361,10 @@ class FaultDispatchController extends BaseController
             return $this->response->setJSON([
                 'status'  => 'MIGRATION_ALREADY_SEALED',
                 'code'    => 200,
-                'message' => 'Schema B.6 sudah terpasang dan dalam status SEALED. Endpoint migrasi ditutup.',
+                'message' => 'Schema B.6 (7 tabel) sudah terpasang dan dalam status SEALED. Endpoint migrasi ditutup.',
                 'sealed'  => true,
                 'tables'  => $tablesRequired,
             ]);
-        }
-
-        // If not installed, require deployment master key (Guard A-02: 403 Forbidden)
-        if (!$this->authorizeDeploy()) {
-            return $this->forbiddenResponse('Deployment master key diperlukan untuk instalasi skema B.6.');
         }
 
         try {

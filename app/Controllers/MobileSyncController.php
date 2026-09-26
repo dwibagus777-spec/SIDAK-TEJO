@@ -496,7 +496,10 @@ class MobileSyncController extends BaseController
         $now = date('Y-m-d H:i:s');
         $correlationId = 'B7-PROD-E2E-' . date('YmdHis');
         $deviceId = 'SYNTH-DEV-B7-E2E-001';
-        $userId = 999;
+
+        // Authoritative User Resolution (Ensure FK integrity)
+        $authUser = $this->db->table('users')->orderBy('id', 'ASC')->limit(1)->get()->getRowArray();
+        $userId = (int)($authUser['id'] ?? 1);
 
         // Step 1: Ensure Synthetic Device Registered & Active
         $existingDevice = $this->db->table('mobile_devices')
@@ -506,18 +509,16 @@ class MobileSyncController extends BaseController
 
         if (!$existingDevice) {
             $this->db->table('mobile_devices')->insert([
-                'device_id'       => $deviceId,
-                'user_id'         => $userId,
-                'device_name'     => 'Synthetic E2E Field Unit',
-                'model'           => 'Toughbook Synthetic B7',
-                'os_version'      => 'Android 14 (Synthetic)',
-                'app_version'     => '1.0.0-b7',
-                'status'          => 'ACTIVE',
-                'registered_at'   => $now,
-                'last_seen_at'    => $now,
-                'device_metadata' => json_encode(['synthetic' => true, 'test_mode' => true, 'correlation_id' => $correlationId]),
-                'created_at'      => $now,
-                'updated_at'      => $now,
+                'device_id'                   => $deviceId,
+                'user_id'                     => $userId,
+                'device_identity_fingerprint' => hash('sha256', "FINGERPRINT_{$deviceId}_{$correlationId}"),
+                'device_model'                => 'Toughbook Synthetic B7',
+                'app_version'                 => '1.0.0-b7',
+                'status'                      => 'ACTIVE',
+                'registered_at'               => $now,
+                'last_seen_at'                => $now,
+                'created_at'                  => $now,
+                'updated_at'                  => $now,
             ]);
         } else {
             $this->db->table('mobile_devices')
@@ -653,6 +654,14 @@ class MobileSyncController extends BaseController
         ];
 
         $pushResult = $this->syncService->pushBatch($batchPayload);
+        if (($pushResult['status'] ?? '') !== 'SUCCESS') {
+            return $this->response->setStatusCode(422)->setJSON([
+                'gate'        => 'B7_SYNTHETIC_E2E_PRODUCTION',
+                'status'      => 'FAIL',
+                'message'     => 'Primary pushBatch failed: ' . ($pushResult['message'] ?? 'Unknown error'),
+                'push_result' => $pushResult,
+            ]);
+        }
         $findingId = (int)($pushResult['results'][4]['entity_id'] ?? 0);
         $investigationId = (int)($pushResult['results'][1]['entity_id'] ?? 0);
 
@@ -662,6 +671,14 @@ class MobileSyncController extends BaseController
         $journalCountPreReplay = $this->db->table('mobile_sync_journal')->countAllResults();
 
         $replayResult = $this->syncService->pushBatch($batchPayload);
+        if (($replayResult['status'] ?? '') !== 'SUCCESS') {
+            return $this->response->setStatusCode(422)->setJSON([
+                'gate'          => 'B7_SYNTHETIC_E2E_PRODUCTION',
+                'status'        => 'FAIL',
+                'message'       => 'Replay pushBatch failed: ' . ($replayResult['message'] ?? 'Unknown error'),
+                'replay_result' => $replayResult,
+            ]);
+        }
 
         $findingsCountPostReplay = $this->db->table('field_findings')->countAllResults();
         $casesCountPostReplay = $this->db->table('fault_cases')->countAllResults();

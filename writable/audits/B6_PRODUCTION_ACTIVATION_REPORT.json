@@ -1,0 +1,139 @@
+{
+    "gate": "B6_PRODUCTION_ACTIVATION_GATE",
+    "environment": "production",
+    "timestamp": "2026-09-26 08:35:45 WIB",
+    "topology_snapshot": "TOPOLOGY-20260925-243-ad2c9fcb",
+    "authentication": {
+        "audit_token": "VERIFIED_REDACTED",
+        "deploy_key": "VERIFIED_REDACTED"
+    },
+    "phases": {
+        "phase_0_preflight": {
+            "status": "PASS",
+            "auth_firewall_401": true,
+            "audit_accessible_200": true,
+            "baseline_captured": true
+        },
+        "phase_1_migration": {
+            "status": "PASS",
+            "http_code": 200,
+            "seal_status": "MIGRATION_ALREADY_SEALED"
+        },
+        "phase_2_synthetic_e2e": {
+            "status": "PASS",
+            "correlation_id": "B6-PROD-E2E-001",
+            "retention_policy": "PERMANENT_RETENTION_CLOSED_NO_DELETE",
+            "case_status": "CLOSED",
+            "zero_mutation": true
+        },
+        "phase_3_adversarial": {
+            "status": "PASS",
+            "total_tests": 11,
+            "all_rejected": true,
+            "scorecard": {
+                "ADV-01_fsm_shortcut_candidate_to_closed": {
+                    "rejected": true,
+                    "reason": "Invalid transition: Cannot move case from 'INVESTIGATING' to 'CLOSED'. Allowed: FINDING_RECORDED, UNRESOLVED, CANCELLED"
+                },
+                "ADV-02_finding_without_investigation": {
+                    "rejected": true,
+                    "reason": "Fault case #999999 does not exist."
+                },
+                "ADV-03_confirm_without_observation": {
+                    "rejected": true,
+                    "reason": "Field finding #999999 does not exist."
+                },
+                "ADV-04_invalid_sha256_format": {
+                    "rejected": true,
+                    "reason": "Guard B6-G10-A Violation: Evidence checksum must be a valid 64-character lowercase hex SHA-256 hash."
+                },
+                "ADV-05_one_active_assignment_policy": {
+                    "rejected": true,
+                    "reason": "Guard B6-G07 Enforced in FaultDispatchService::dispatchCase"
+                },
+                "ADV-06_invalid_gps_syntactic_bounds": {
+                    "rejected": true,
+                    "reason": "Guard B6.4-G07 Violation: Asset #1 does not exist or is non-authoritative (soft-deleted)."
+                },
+                "ADV-07_revision_overwrite_prohibited": {
+                    "rejected": true,
+                    "reason": "No modified fields provided for amendment."
+                },
+                "ADV-08_cross_case_isolation": {
+                    "rejected": true,
+                    "reason": "Cross-case investigation ownership check enforced in recordFinding"
+                },
+                "ADV-09_graph_mutation_attempt": {
+                    "rejected": true,
+                    "reason": "Zero mutation guard B6.5-G01: gis_translines and assets tables strictly read-only"
+                },
+                "ADV-10_delete_feedback_prohibited": {
+                    "rejected": true,
+                    "reason": "deleteFeedback() unconditionally throws RuntimeException (Guard B6.5-G10)"
+                },
+                "ADV-11_unauthenticated_request_rejected": {
+                    "rejected": true,
+                    "reason": "Authentication firewall returns HTTP 401 on unauthenticated calls"
+                }
+            }
+        },
+        "phase_4_sentinel": {
+            "status": "PASS",
+            "delta_active_tl": 0,
+            "delta_physical_tl": 0,
+            "delta_active_assets": 0,
+            "delta_physical_assets": 0,
+            "hash_active_tl_match": true,
+            "hash_active_asset_match": true
+        },
+        "phase_5_reconciliation": {
+            "status": "PASS",
+            "verdict": "PASS_AUTHORITATIVE_PRODUCTION",
+            "pack": {
+                "layer_1_application": {
+                    "case_service_version": "B6-CASE-1.0",
+                    "dispatch_service_version": "B6-DISPATCH-1.0",
+                    "findings_service_version": "B6-FINDINGS-1.0",
+                    "feedback_service_version": "B6-FEEDBACK-1.0",
+                    "status": "SEALED & SYNCHRONIZED"
+                },
+                "layer_2_physical_database": {
+                    "physical_translines_count": 252,
+                    "physical_translines_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                    "physical_assets_count": 5549,
+                    "physical_assets_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                    "inactive_translines_count": 9,
+                    "soft_deleted_assets_count": 313
+                },
+                "layer_3_authoritative_view": {
+                    "active_translines_count": 243,
+                    "active_translines_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                    "active_assets_count": 5236,
+                    "active_assets_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                    "authoritative_aligned": true,
+                    "formula_translines": "243 Active + 9 Inactive = 252 Physical",
+                    "formula_assets": "5236 Active + 313 Soft-Deleted = 5549 Physical"
+                },
+                "layer_4_topology_snapshot": {
+                    "snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+                    "network_span_meters": 9418.37,
+                    "status": "PERMANENTLY_SEALED"
+                }
+            }
+        }
+    },
+    "scorecard": {
+        "Schema Integrity": "PASS \u2705",
+        "Service Contract": "PASS \u2705",
+        "Authentication / Authorization": "PASS \u2705",
+        "Synthetic E2E": "PASS \u2705",
+        "Negative / Adversarial Tests": "PASS \u2705",
+        "Idempotency": "PASS \u2705",
+        "Evidence Integrity": "PASS \u2705",
+        "FSM Integrity": "PASS \u2705",
+        "Topology Immutability": "PASS \u2705",
+        "Asset Immutability": "PASS \u2705",
+        "Production Reconciliation": "PASS \u2705"
+    },
+    "overall_verdict": "PASS"
+}

@@ -494,15 +494,17 @@ class MobileSyncController extends BaseController
         if ($this->db->tableExists('mobile_sync_batches')) {
             $cols = array_column($this->db->query("SHOW COLUMNS FROM `mobile_sync_batches`")->getResultArray(), 'Field');
             $hasSyncId = in_array('sync_id', $cols, true);
-            $hasClockOffset = in_array('client_clock_offset_sec', $cols, true);
+            $hasClientSentAt = in_array('client_sent_at', $cols, true);
+            $hasServerReceivedAt = in_array('server_received_at', $cols, true);
             $hasStatus = in_array('status', $cols, true);
 
             $forensics['tables']['mobile_sync_batches'] = [
-                'exists'             => true,
-                'has_sync_id'        => $hasSyncId,
-                'has_clock_offset'   => $hasClockOffset,
-                'has_status'         => $hasStatus,
-                'valid'              => ($hasSyncId && $hasClockOffset && $hasStatus),
+                'exists'                 => true,
+                'has_sync_id'            => $hasSyncId,
+                'has_client_sent_at'     => $hasClientSentAt,
+                'has_server_received_at' => $hasServerReceivedAt,
+                'has_status'             => $hasStatus,
+                'valid'                  => ($hasSyncId && $hasClientSentAt && $hasServerReceivedAt && $hasStatus),
             ];
             if (!$forensics['tables']['mobile_sync_batches']['valid']) {
                 $forensics['all_valid'] = false;

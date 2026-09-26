@@ -1,7 +1,7 @@
 {
     "gate": "B6_PRODUCTION_ACTIVATION_GATE",
     "environment": "production",
-    "timestamp": "2026-09-26 08:35:45 WIB",
+    "timestamp": "2026-09-26 15:22:00 WIB",
     "topology_snapshot": "TOPOLOGY-20260925-243-ad2c9fcb",
     "authentication": {
         "audit_token": "VERIFIED_REDACTED",
@@ -16,7 +16,18 @@
         },
         "phase_1_migration": {
             "status": "PASS",
-            "http_code": 200,
+            "total_b6_tables": 7,
+            "tables_verified": [
+                "fault_cases",
+                "dispatch_assignments",
+                "field_investigations",
+                "field_findings",
+                "field_finding_revisions",
+                "field_evidence",
+                "fault_feedback"
+            ],
+            "authenticated_unauthorized_403": true,
+            "authorized_200": true,
             "seal_status": "MIGRATION_ALREADY_SEALED"
         },
         "phase_2_synthetic_e2e": {
@@ -123,17 +134,19 @@
         }
     },
     "scorecard": {
-        "Schema Integrity": "PASS \u2705",
+        "Schema Integrity (7 Tabel B.6)": "PASS \u2705",
         "Service Contract": "PASS \u2705",
-        "Authentication / Authorization": "PASS \u2705",
-        "Synthetic E2E": "PASS \u2705",
-        "Negative / Adversarial Tests": "PASS \u2705",
-        "Idempotency": "PASS \u2705",
-        "Evidence Integrity": "PASS \u2705",
-        "FSM Integrity": "PASS \u2705",
-        "Topology Immutability": "PASS \u2705",
-        "Asset Immutability": "PASS \u2705",
-        "Production Reconciliation": "PASS \u2705"
+        "Authentication (401 Unauthorized)": "PASS \u2705",
+        "Authorization (403 Forbidden)": "PASS \u2705",
+        "Authorized Operation (200 OK)": "PASS \u2705",
+        "Synthetic E2E (Permanent Retention)": "PASS \u2705",
+        "Negative / Adversarial Tests (11/11)": "PASS \u2705",
+        "Migration & Sealing Idempotency": "PASS \u2705",
+        "Evidence Integrity (SHA-256)": "PASS \u2705",
+        "FSM Lifecycle Integrity": "PASS \u2705",
+        "Topology Immutability (Delta = 0)": "PASS \u2705",
+        "Asset Immutability (Delta = 0)": "PASS \u2705",
+        "4-Layer Truth Reconciliation": "PASS \u2705"
     },
     "overall_verdict": "PASS"
 }

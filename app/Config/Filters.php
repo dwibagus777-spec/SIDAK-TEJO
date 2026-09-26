@@ -101,7 +101,9 @@ class Filters extends BaseFilters
                     'fault-ingestion/*',
                     'fault-ingestion',
                     'fault-dispatch/*',
-                    'fault-dispatch'
+                    'fault-dispatch',
+                    'mobile-sync/*',
+                    'mobile-sync'
                 ]
             ],
             // 'invalidchars',

@@ -495,13 +495,17 @@ class FaultDispatchController extends BaseController
         // Step 8: Attach Evidence (Valid SHA-256)
         $evidenceContent = "SYNTHETIC_E2E_EVIDENCE_PAYLOAD_{$correlationId}";
         $evidenceSha256 = hash('sha256', $evidenceContent);
-        $this->findingsService->attachEvidence($caseId, 999, [
-            'field_finding_id' => $findingId,
-            'evidence_type'    => 'PHOTO',
-            'file_path'        => "/uploads/evidence/synth_{$correlationId}.jpg",
-            'evidence_sha256'  => $evidenceSha256,
-            'caption'          => 'Synthetic E2E test evidence photo.',
-        ]);
+        $this->findingsService->attachEvidence(
+            $caseId,
+            999,
+            "/uploads/evidence/synth_{$correlationId}.jpg",
+            $evidenceSha256,
+            'PHOTO',
+            [
+                'field_finding_id' => $findingId,
+                'metadata'         => ['caption' => 'Synthetic E2E test evidence photo.']
+            ]
+        );
 
         // Step 9: Confirm Finding
         $this->findingsService->confirmFinding($findingId, 1);
@@ -622,10 +626,14 @@ class FaultDispatchController extends BaseController
 
         // ADV-04: Evidence with Invalid / Non-Hex SHA-256 Checksum
         try {
-            $evAdv4 = $this->findingsService->attachEvidence(1, 101, [
-                'field_finding_id' => 1,
-                'evidence_sha256'  => 'INVALID-NOT-HEX-HASH',
-            ]);
+            $evAdv4 = $this->findingsService->attachEvidence(
+                1,
+                101,
+                '/uploads/evidence/invalid.jpg',
+                'INVALID-NOT-HEX-HASH',
+                'PHOTO',
+                ['field_finding_id' => 1]
+            );
             $results['ADV-04_invalid_sha256_format'] = [
                 'rejected' => !$evAdv4['success'],
                 'reason'   => $evAdv4['message'] ?? 'Rejected as expected',

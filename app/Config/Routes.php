@@ -97,9 +97,11 @@ $routes->get('api/v1/sync/pull', 'MobileSyncController::pull');
 // SIDAK TEJO — Phase B.8.1 Remediation Core Routes
 $routes->get('remediation/audit', 'RemediationController::audit');
 $routes->get('remediation/forensic-reconciliation', 'RemediationController::forensicReconciliation');
+$routes->get('remediation/investigate/topology-delta', 'RemediationController::investigateTopologyDelta');
 $routes->match(['GET', 'POST'], 'remediation/migrate', 'RemediationController::migrate');
 $routes->match(['GET', 'POST'], 'remediation/test/synthetic-e2e', 'RemediationController::runSyntheticE2E');
 $routes->match(['GET', 'POST'], 'remediation/test/adversarial', 'RemediationController::runAdversarialTests');
+
 
 // Remediation Work Package Lifecycle API v1
 $routes->post('api/v1/remediation/work-packages', 'RemediationController::createWorkPackage');

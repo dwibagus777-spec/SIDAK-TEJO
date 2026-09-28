@@ -1061,6 +1061,173 @@ class RemediationController extends BaseController
         return hash_final($ctx);
     }
 
+    // =========================================================================
+    // TOPOLOGY DELTA FORENSIC INVESTIGATION — READ-ONLY, ZERO SIDE EFFECTS
+    // Identifies exact rows in gis_translines that exceed Phase 0 baseline.
+    // Baseline: active_TL=243, physical_TL=252 (TOPOLOGY-20260925-243-ad2c9fcb)
+    // Hard Stop context: Option B investigation before Phase 1 GO/NO-GO
+    // =========================================================================
+
+    public function investigateTopologyDelta(): ResponseInterface
+    {
+        if (!$this->authenticate()) {
+            return $this->unauthorizedResponse();
+        }
+
+        $startTime = microtime(true);
+
+        // ── STEP 1: Current full active transline set (id-sorted) ─────────────
+        $activeTLs = $this->db->query(
+            "SELECT
+                id,
+                transline_code,
+                feeder_id,
+                from_asset_id,
+                to_asset_id,
+                ST_AsText(geometry)                              AS geometry_wkt,
+                ROUND(ST_Length(ST_Transform(geometry, 32748)), 4) AS length_meters,
+                is_active,
+                deleted_at,
+                created_at,
+                updated_at,
+                created_by
+             FROM gis_translines
+             WHERE is_active = 1
+               AND deleted_at IS NULL
+             ORDER BY id ASC"
+        )->getResultArray();
+
+        $activeCount   = count($activeTLs);
+        $physicalCount = $this->db->table('gis_translines')->countAllResults();
+
+        // ── STEP 2: Delta classification ──────────────────────────────────────
+        $deltaActive   = $activeCount - 243;
+        $deltaPhysical = $physicalCount - 252;
+
+        // The "new" TLs are likely the highest IDs in the sorted active set
+        $deltaCandidates = [];
+        if ($deltaActive > 0 && $deltaActive <= 20) {
+            $deltaCandidates = array_slice($activeTLs, -$deltaActive);
+        }
+
+        // ── STEP 3: Enrich each delta candidate with full provenance ──────────
+        $deltaCandidatesEnriched = [];
+        foreach ($deltaCandidates as $tl) {
+            $feederRow = null;
+            if (!empty($tl['feeder_id'])) {
+                $feederRow = $this->db->query(
+                    "SELECT id, feeder_code, feeder_name, voltage_level, status
+                     FROM gis_feeders WHERE id = " . (int)$tl['feeder_id']
+                )->getRowArray();
+            }
+
+            $fromAsset = null;
+            if (!empty($tl['from_asset_id'])) {
+                $fromAsset = $this->db->query(
+                    "SELECT id, kode_asset, nama_asset, jenis_asset
+                     FROM assets WHERE id = " . (int)$tl['from_asset_id']
+                )->getRowArray();
+            }
+
+            $toAsset = null;
+            if (!empty($tl['to_asset_id'])) {
+                $toAsset = $this->db->query(
+                    "SELECT id, kode_asset, nama_asset, jenis_asset
+                     FROM assets WHERE id = " . (int)$tl['to_asset_id']
+                )->getRowArray();
+            }
+
+            // Check for audit/activity log tables
+            $auditTablesFound = $this->db->query(
+                "SELECT TABLE_NAME FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME IN ('audit_log','system_logs','activity_logs','change_logs','user_activity_logs')"
+            )->getResultArray();
+            $auditTableNames = array_column($auditTablesFound, 'TABLE_NAME');
+
+            $auditTrail = null;
+            if (in_array('audit_log', $auditTableNames)) {
+                $auditTrail = $this->db->query(
+                    "SELECT * FROM audit_log
+                     WHERE table_name = 'gis_translines' AND record_id = " . (int)$tl['id'] . "
+                     ORDER BY created_at ASC LIMIT 5"
+                )->getResultArray();
+            }
+
+            $deltaCandidatesEnriched[] = [
+                'transline'           => $tl,
+                'feeder'              => $feederRow,
+                'from_asset'          => $fromAsset,
+                'to_asset'            => $toAsset,
+                'audit_trail'         => $auditTrail,
+                'audit_tables_found'  => $auditTableNames,
+            ];
+        }
+
+        // ── STEP 4: All insertions in gis_translines since 2026-09-20 ─────────
+        $recentInsertions = $this->db->query(
+            "SELECT id, transline_code, feeder_id, is_active, deleted_at, created_at, updated_at, created_by
+             FROM gis_translines
+             WHERE created_at >= '2026-09-20 00:00:00'
+             ORDER BY created_at DESC
+             LIMIT 20"
+        )->getResultArray();
+
+        // ── STEP 5: Physical-but-not-active (inactive / soft-deleted) ─────────
+        $inactiveTLs = $this->db->query(
+            "SELECT id, transline_code, feeder_id, is_active, deleted_at, created_at, updated_at, created_by
+             FROM gis_translines
+             WHERE is_active = 0 OR deleted_at IS NOT NULL
+             ORDER BY id ASC"
+        )->getResultArray();
+
+        // ── STEP 6: Hash recomputation ────────────────────────────────────────
+        $currentActiveHash   = $this->computeEntityIdentityHash('gis_translines', 'is_active = 1 AND deleted_at IS NULL');
+        $currentPhysicalHash = $this->computeEntityIdentityHash('gis_translines');
+
+        $baselineActiveHash   = '5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5';
+        $baselinePhysicalHash = '35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6';
+
+        $execMs = round((microtime(true) - $startTime) * 1000, 2);
+
+        return $this->response->setJSON([
+            'gate'              => 'B8_1_TOPOLOGY_DELTA_FORENSIC_INVESTIGATION',
+            'audit_mode'        => 'READ_ONLY_ZERO_SIDE_EFFECT',
+            'investigation'     => 'OPTION_B_FIND_NEW_TRANSLINES',
+            'timestamp'         => date('Y-m-d H:i:s') . ' WIB',
+            'execution_time_ms' => $execMs,
+
+            'baseline' => [
+                'snapshot_id'         => 'TOPOLOGY-20260925-243-ad2c9fcb',
+                'active_translines'   => 243,
+                'physical_translines' => 252,
+                'h_active_tl'         => $baselineActiveHash,
+                'h_physical_tl'       => $baselinePhysicalHash,
+            ],
+
+            'current' => [
+                'active_translines'   => $activeCount,
+                'physical_translines' => $physicalCount,
+                'h_active_tl'         => $currentActiveHash,
+                'h_physical_tl'       => $currentPhysicalHash,
+                'h_active_tl_match'   => ($currentActiveHash   === $baselineActiveHash),
+                'h_physical_tl_match' => ($currentPhysicalHash === $baselinePhysicalHash),
+            ],
+
+            'delta' => [
+                'delta_active_translines'   => $deltaActive,
+                'delta_physical_translines' => $deltaPhysical,
+                'topology_immutable'        => ($deltaActive === 0 && $deltaPhysical === 0),
+                'hard_stop_triggered'       => ($deltaActive !== 0 || $deltaPhysical !== 0),
+            ],
+
+            'delta_candidates'                   => $deltaCandidatesEnriched,
+            'recent_insertions_since_2026_09_20' => $recentInsertions,
+            'inactive_physical_translines'       => $inactiveTLs,
+            'active_id_list'                     => array_column($activeTLs, 'id'),
+        ]);
+    }
+
     protected function captureSentinelState(): array
     {
         $tlActive   = $this->db->table('gis_translines')->where('is_active', 1)->where('deleted_at IS NULL')->countAllResults();

@@ -103,7 +103,9 @@ class Filters extends BaseFilters
                     'fault-dispatch/*',
                     'fault-dispatch',
                     'mobile-sync/*',
-                    'mobile-sync'
+                    'mobile-sync',
+                    'remediation/*',
+                    'remediation'
                 ]
             ],
             // 'invalidchars',

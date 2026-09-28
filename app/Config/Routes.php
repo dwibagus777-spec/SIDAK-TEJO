@@ -94,6 +94,30 @@ $routes->post('api/v1/sync/upload-chunk', 'MobileSyncController::uploadChunk');
 $routes->post('api/v1/sync/seal-evidence', 'MobileSyncController::sealEvidence');
 $routes->get('api/v1/sync/pull', 'MobileSyncController::pull');
 
+// SIDAK TEJO — Phase B.8.1 Remediation Core Routes
+$routes->get('remediation/audit', 'RemediationController::audit');
+$routes->get('remediation/forensic-reconciliation', 'RemediationController::forensicReconciliation');
+$routes->match(['GET', 'POST'], 'remediation/migrate', 'RemediationController::migrate');
+$routes->match(['GET', 'POST'], 'remediation/test/synthetic-e2e', 'RemediationController::runSyntheticE2E');
+$routes->match(['GET', 'POST'], 'remediation/test/adversarial', 'RemediationController::runAdversarialTests');
+
+// Remediation Work Package Lifecycle API v1
+$routes->post('api/v1/remediation/work-packages', 'RemediationController::createWorkPackage');
+$routes->get('api/v1/remediation/work-packages/(:num)', 'RemediationController::getWorkPackage/$1');
+$routes->post('api/v1/remediation/work-packages/(:num)/findings', 'RemediationController::attachFinding/$1');
+$routes->delete('api/v1/remediation/work-packages/(:num)/findings/(:num)', 'RemediationController::removeFinding/$1/$2');
+$routes->post('api/v1/remediation/work-packages/(:num)/submit', 'RemediationController::submitPackage/$1');
+$routes->post('api/v1/remediation/work-packages/(:num)/queue', 'RemediationController::validateAndQueue/$1');
+$routes->post('api/v1/remediation/work-packages/(:num)/approve', 'RemediationController::approvePackage/$1');
+$routes->post('api/v1/remediation/work-packages/(:num)/reject', 'RemediationController::rejectPackage/$1');
+$routes->post('api/v1/remediation/work-packages/(:num)/revise', 'RemediationController::revisePackage/$1');
+$routes->post('api/v1/remediation/work-packages/(:num)/release', 'RemediationController::releasePackage/$1');
+$routes->post('api/v1/remediation/work-packages/(:num)/start', 'RemediationController::startExecution/$1');
+$routes->post('api/v1/remediation/work-packages/(:num)/complete', 'RemediationController::completeExecution/$1');
+$routes->post('api/v1/remediation/work-packages/(:num)/verify', 'RemediationController::verifyRemediation/$1');
+$routes->delete('api/v1/remediation/work-packages/(:num)', 'RemediationController::deleteWorkPackage/$1');
+
+
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');

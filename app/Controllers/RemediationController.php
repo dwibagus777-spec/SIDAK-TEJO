@@ -1076,21 +1076,26 @@ class RemediationController extends BaseController
 
         $startTime = microtime(true);
 
+        // ── STEP 0: Discover actual columns of gis_translines ─────────────────
+        $colRows  = $this->db->query("SHOW COLUMNS FROM gis_translines")->getResultArray();
+        $allCols  = array_column($colRows, 'Field');
+
+        // Determine which "wanted" columns actually exist
+        $wantedCols = ['id','transline_code','feeder_id','from_asset_id','to_asset_id',
+                       'is_active','deleted_at','created_at','updated_at','created_by','updated_by',
+                       'panjang','length','panjang_m','length_m','panjang_meters'];
+        $selectCols = array_values(array_intersect($allCols, $wantedCols));
+        if (empty($selectCols)) {
+            // Fallback: exclude known binary/spatial types
+            $skipTypes = ['geometry', 'geom', 'geom_point', 'the_geom', 'shape'];
+            $selectCols = array_values(array_filter($allCols, fn($c) => !in_array(strtolower($c), $skipTypes)));
+        }
+        $hasGeometry = in_array('geometry', $allCols);
+        $colList = implode(', ', array_map(fn($c) => "`{$c}`", $selectCols));
+
         // ── STEP 1: Current full active transline set (id-sorted) ─────────────
         $activeTLs = $this->db->query(
-            "SELECT
-                id,
-                transline_code,
-                feeder_id,
-                from_asset_id,
-                to_asset_id,
-                ST_AsText(geometry)                              AS geometry_wkt,
-                ROUND(ST_Length(ST_Transform(geometry, 32748)), 4) AS length_meters,
-                is_active,
-                deleted_at,
-                created_at,
-                updated_at,
-                created_by
+            "SELECT {$colList}
              FROM gis_translines
              WHERE is_active = 1
                AND deleted_at IS NULL
@@ -1112,50 +1117,86 @@ class RemediationController extends BaseController
 
         // ── STEP 3: Enrich each delta candidate with full provenance ──────────
         $deltaCandidatesEnriched = [];
+
+        // Discover audit tables once (outside the loop)
+        $auditTablesRes  = $this->db->query(
+            "SELECT TABLE_NAME FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME IN ('audit_log','system_logs','activity_logs','change_logs','user_activity_logs')"
+        );
+        $auditTableNames = $auditTablesRes ? array_column($auditTablesRes->getResultArray(), 'TABLE_NAME') : [];
+
+        // Discover feeder columns
+        $feederColRes  = $this->db->query("SHOW COLUMNS FROM gis_feeders");
+        $feederAllCols = $feederColRes ? array_column($feederColRes->getResultArray(), 'Field') : [];
+        $feederWanted  = ['id','feeder_code','feeder_name','nama_feeder','kode_feeder','voltage_level','status'];
+        $feederSelect  = implode(', ', array_map(fn($c) => "`{$c}`",
+            array_intersect($feederAllCols, $feederWanted) ?: ['id']));
+
+        // Discover asset columns
+        $assetColRes  = $this->db->query("SHOW COLUMNS FROM assets");
+        $assetAllCols = $assetColRes ? array_column($assetColRes->getResultArray(), 'Field') : [];
+        $assetWanted  = ['id','kode_asset','nama_asset','jenis_asset','asset_code','asset_name','type'];
+        $assetSelect  = implode(', ', array_map(fn($c) => "`{$c}`",
+            array_intersect($assetAllCols, $assetWanted) ?: ['id']));
+
         foreach ($deltaCandidates as $tl) {
             $feederRow = null;
             if (!empty($tl['feeder_id'])) {
-                $feederRow = $this->db->query(
-                    "SELECT id, feeder_code, feeder_name, voltage_level, status
-                     FROM gis_feeders WHERE id = " . (int)$tl['feeder_id']
-                )->getRowArray();
+                $feederRes = $this->db->query(
+                    "SELECT {$feederSelect} FROM gis_feeders WHERE id = " . (int)$tl['feeder_id']
+                );
+                $feederRow = $feederRes ? $feederRes->getRowArray() : null;
             }
 
             $fromAsset = null;
             if (!empty($tl['from_asset_id'])) {
-                $fromAsset = $this->db->query(
-                    "SELECT id, kode_asset, nama_asset, jenis_asset
-                     FROM assets WHERE id = " . (int)$tl['from_asset_id']
-                )->getRowArray();
+                $fromRes = $this->db->query(
+                    "SELECT {$assetSelect} FROM assets WHERE id = " . (int)$tl['from_asset_id']
+                );
+                $fromAsset = $fromRes ? $fromRes->getRowArray() : null;
             }
 
             $toAsset = null;
             if (!empty($tl['to_asset_id'])) {
-                $toAsset = $this->db->query(
-                    "SELECT id, kode_asset, nama_asset, jenis_asset
-                     FROM assets WHERE id = " . (int)$tl['to_asset_id']
-                )->getRowArray();
+                $toRes = $this->db->query(
+                    "SELECT {$assetSelect} FROM assets WHERE id = " . (int)$tl['to_asset_id']
+                );
+                $toAsset = $toRes ? $toRes->getRowArray() : null;
             }
 
-            // Check for audit/activity log tables
-            $auditTablesFound = $this->db->query(
-                "SELECT TABLE_NAME FROM information_schema.TABLES
-                 WHERE TABLE_SCHEMA = DATABASE()
-                   AND TABLE_NAME IN ('audit_log','system_logs','activity_logs','change_logs','user_activity_logs')"
-            )->getResultArray();
-            $auditTableNames = array_column($auditTablesFound, 'TABLE_NAME');
+            // Try to get geometry info via ST_ functions (safe attempt)
+            $geometryInfo = ['has_geometry_column' => $hasGeometry];
+            if ($hasGeometry && !empty($tl['id'])) {
+                $geoRes = $this->db->query(
+                    "SELECT ST_AsText(geometry) AS geometry_wkt,
+                            ROUND(ST_Length(ST_Transform(geometry, 32748)), 4) AS length_meters
+                     FROM gis_translines WHERE id = " . (int)$tl['id']
+                );
+                if ($geoRes) {
+                    $geoRow = $geoRes->getRowArray();
+                    $geometryInfo['geometry_wkt']  = $geoRow ? substr($geoRow['geometry_wkt'] ?? '', 0, 120) : null;
+                    $geometryInfo['length_meters'] = $geoRow ? ($geoRow['length_meters'] ?? null) : null;
+                    $geometryInfo['st_available']  = true;
+                } else {
+                    $geometryInfo['st_available'] = false;
+                    $geometryInfo['note'] = 'ST_AsText/ST_Transform not available on this server';
+                }
+            }
 
             $auditTrail = null;
             if (in_array('audit_log', $auditTableNames)) {
-                $auditTrail = $this->db->query(
+                $atRes = $this->db->query(
                     "SELECT * FROM audit_log
                      WHERE table_name = 'gis_translines' AND record_id = " . (int)$tl['id'] . "
                      ORDER BY created_at ASC LIMIT 5"
-                )->getResultArray();
+                );
+                $auditTrail = $atRes ? $atRes->getResultArray() : null;
             }
 
             $deltaCandidatesEnriched[] = [
                 'transline'           => $tl,
+                'geometry_info'       => $geometryInfo,
                 'feeder'              => $feederRow,
                 'from_asset'          => $fromAsset,
                 'to_asset'            => $toAsset,
@@ -1165,21 +1206,26 @@ class RemediationController extends BaseController
         }
 
         // ── STEP 4: All insertions in gis_translines since 2026-09-20 ─────────
-        $recentInsertions = $this->db->query(
-            "SELECT id, transline_code, feeder_id, is_active, deleted_at, created_at, updated_at, created_by
+        $recentWanted  = ['id','transline_code','feeder_id','is_active','deleted_at','created_at','updated_at','created_by'];
+        $recentCols    = implode(', ', array_map(fn($c) => "`{$c}`",
+            array_intersect($allCols, $recentWanted) ?: ['id', 'created_at']));
+        $recentRes = $this->db->query(
+            "SELECT {$recentCols}
              FROM gis_translines
              WHERE created_at >= '2026-09-20 00:00:00'
              ORDER BY created_at DESC
              LIMIT 20"
-        )->getResultArray();
+        );
+        $recentInsertions = $recentRes ? $recentRes->getResultArray() : [];
 
         // ── STEP 5: Physical-but-not-active (inactive / soft-deleted) ─────────
-        $inactiveTLs = $this->db->query(
-            "SELECT id, transline_code, feeder_id, is_active, deleted_at, created_at, updated_at, created_by
+        $inactiveRes = $this->db->query(
+            "SELECT {$recentCols}
              FROM gis_translines
              WHERE is_active = 0 OR deleted_at IS NOT NULL
              ORDER BY id ASC"
-        )->getResultArray();
+        );
+        $inactiveTLs = $inactiveRes ? $inactiveRes->getResultArray() : [];
 
         // ── STEP 6: Hash recomputation ────────────────────────────────────────
         $currentActiveHash   = $this->computeEntityIdentityHash('gis_translines', 'is_active = 1 AND deleted_at IS NULL');
@@ -1196,6 +1242,14 @@ class RemediationController extends BaseController
             'investigation'     => 'OPTION_B_FIND_NEW_TRANSLINES',
             'timestamp'         => date('Y-m-d H:i:s') . ' WIB',
             'execution_time_ms' => $execMs,
+            'schema_discovery'  => [
+                'gis_translines_columns' => $allCols,
+                'has_geometry_col'       => $hasGeometry,
+                'selected_columns'       => $selectCols,
+                'feeder_columns'         => $feederAllCols,
+                'asset_columns'          => $assetAllCols,
+                'audit_tables_found'     => $auditTableNames,
+            ],
 
             'baseline' => [
                 'snapshot_id'         => 'TOPOLOGY-20260925-243-ad2c9fcb',

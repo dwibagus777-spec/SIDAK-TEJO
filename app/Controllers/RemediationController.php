@@ -1081,9 +1081,16 @@ class RemediationController extends BaseController
         $allCols  = array_column($colRows, 'Field');
 
         // Determine which "wanted" columns actually exist
-        $wantedCols = ['id','transline_code','feeder_id','from_asset_id','to_asset_id',
-                       'is_active','deleted_at','created_at','updated_at','created_by','updated_by',
-                       'panjang','length','panjang_m','length_m','panjang_meters'];
+        // NOTE: production column names: penyulang_id, source_asset_id, target_asset_id, distance_meters
+        $wantedCols = [
+            'id','transline_code',
+            'penyulang_id','feeder_id',                          // feeder FK (either name)
+            'source_asset_id','from_asset_id',                   // from-asset FK (either name)
+            'target_asset_id','to_asset_id',                     // to-asset FK (either name)
+            'is_active','deleted_at','created_at','updated_at','created_by','updated_by',
+            'distance_meters','panjang','length','panjang_m','length_m','panjang_meters',
+            'conductor_type','conductor_size','status',
+        ];
         $selectCols = array_values(array_intersect($allCols, $wantedCols));
         if (empty($selectCols)) {
             // Fallback: exclude known binary/spatial types
@@ -1092,6 +1099,11 @@ class RemediationController extends BaseController
         }
         $hasGeometry = in_array('geometry', $allCols);
         $colList = implode(', ', array_map(fn($c) => "`{$c}`", $selectCols));
+
+        // Determine actual feeder-FK and asset-FK column names used in this table
+        $feederFkCol  = in_array('penyulang_id',   $allCols) ? 'penyulang_id'   : (in_array('feeder_id', $allCols) ? 'feeder_id' : null);
+        $fromAssetFkCol = in_array('source_asset_id', $allCols) ? 'source_asset_id' : (in_array('from_asset_id', $allCols) ? 'from_asset_id' : null);
+        $toAssetFkCol   = in_array('target_asset_id', $allCols) ? 'target_asset_id' : (in_array('to_asset_id', $allCols)   ? 'to_asset_id'   : null);
 
         // ── STEP 1: Current full active transline set (id-sorted) ─────────────
         $activeTLs = $this->db->query(
@@ -1126,41 +1138,57 @@ class RemediationController extends BaseController
         );
         $auditTableNames = $auditTablesRes ? array_column($auditTablesRes->getResultArray(), 'TABLE_NAME') : [];
 
-        // Discover feeder columns
-        $feederColRes  = $this->db->query("SHOW COLUMNS FROM gis_feeders");
-        $feederAllCols = $feederColRes ? array_column($feederColRes->getResultArray(), 'Field') : [];
-        $feederWanted  = ['id','feeder_code','feeder_name','nama_feeder','kode_feeder','voltage_level','status'];
-        $feederSelect  = implode(', ', array_map(fn($c) => "`{$c}`",
+        // Discover feeder table (could be penyulang, gis_penyulang, or gis_feeders)
+        $feederTable = null;
+        $feederAllCols = [];
+        foreach (['penyulang', 'gis_penyulang', 'gis_feeders'] as $ft) {
+            $ftRes = $this->db->query("SHOW COLUMNS FROM `{$ft}`");
+            if ($ftRes && count($ftRes->getResultArray()) > 0) {
+                $feederTable   = $ft;
+                $feederAllCols = array_column($ftRes->getResultArray(), 'Field');
+                break;
+            }
+        }
+        $feederWanted = ['id','feeder_code','feeder_name','nama_feeder','kode_feeder',
+                         'nama_penyulang','kode_penyulang','voltage_level','status'];
+        $feederSelect = implode(', ', array_map(fn($c) => "`{$c}`",
             array_intersect($feederAllCols, $feederWanted) ?: ['id']));
 
         // Discover asset columns
         $assetColRes  = $this->db->query("SHOW COLUMNS FROM assets");
         $assetAllCols = $assetColRes ? array_column($assetColRes->getResultArray(), 'Field') : [];
-        $assetWanted  = ['id','kode_asset','nama_asset','jenis_asset','asset_code','asset_name','type'];
+        $assetWanted  = ['id','kode_asset','nama_asset','jenis_asset','asset_code','asset_name','type',
+                         'latitude','longitude','lokasi'];
         $assetSelect  = implode(', ', array_map(fn($c) => "`{$c}`",
             array_intersect($assetAllCols, $assetWanted) ?: ['id']));
 
         foreach ($deltaCandidates as $tl) {
+            // Resolve feeder FK value using the correct column name
+            $feederFkVal = $feederFkCol ? ($tl[$feederFkCol] ?? null) : null;
             $feederRow = null;
-            if (!empty($tl['feeder_id'])) {
+            if (!empty($feederFkVal) && $feederTable) {
                 $feederRes = $this->db->query(
-                    "SELECT {$feederSelect} FROM gis_feeders WHERE id = " . (int)$tl['feeder_id']
+                    "SELECT {$feederSelect} FROM `{$feederTable}` WHERE id = " . (int)$feederFkVal
                 );
                 $feederRow = $feederRes ? $feederRes->getRowArray() : null;
             }
 
+            // Resolve from-asset FK
+            $fromFkVal = $fromAssetFkCol ? ($tl[$fromAssetFkCol] ?? null) : null;
             $fromAsset = null;
-            if (!empty($tl['from_asset_id'])) {
+            if (!empty($fromFkVal)) {
                 $fromRes = $this->db->query(
-                    "SELECT {$assetSelect} FROM assets WHERE id = " . (int)$tl['from_asset_id']
+                    "SELECT {$assetSelect} FROM assets WHERE id = " . (int)$fromFkVal
                 );
                 $fromAsset = $fromRes ? $fromRes->getRowArray() : null;
             }
 
+            // Resolve to-asset FK
+            $toFkVal = $toAssetFkCol ? ($tl[$toAssetFkCol] ?? null) : null;
             $toAsset = null;
-            if (!empty($tl['to_asset_id'])) {
+            if (!empty($toFkVal)) {
                 $toRes = $this->db->query(
-                    "SELECT {$assetSelect} FROM assets WHERE id = " . (int)$tl['to_asset_id']
+                    "SELECT {$assetSelect} FROM assets WHERE id = " . (int)$toFkVal
                 );
                 $toAsset = $toRes ? $toRes->getRowArray() : null;
             }
@@ -1246,6 +1274,10 @@ class RemediationController extends BaseController
                 'gis_translines_columns' => $allCols,
                 'has_geometry_col'       => $hasGeometry,
                 'selected_columns'       => $selectCols,
+                'feeder_table_found'     => $feederTable,
+                'feeder_fk_col'          => $feederFkCol,
+                'from_asset_fk_col'      => $fromAssetFkCol,
+                'to_asset_fk_col'        => $toAssetFkCol,
                 'feeder_columns'         => $feederAllCols,
                 'asset_columns'          => $assetAllCols,
                 'audit_tables_found'     => $auditTableNames,

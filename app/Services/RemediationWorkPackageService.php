@@ -26,7 +26,7 @@ use App\Exceptions\MethodNotAllowedException;
 class RemediationWorkPackageService
 {
     public const SERVICE_VERSION = 'B8.1-REMEDIATION-1.0';
-    public const TOPOLOGY_SNAPSHOT = 'TOPOLOGY-20260925-243-ad2c9fcb';
+    public const TOPOLOGY_SNAPSHOT = 'TOPOLOGY-20260928-245-81c43a7f'; // B1 re-baseline 2026-09-28 (was: TOPOLOGY-20260925-243-ad2c9fcb)
 
     // 9 FSM States
     public const STATUS_DRAFT               = 'DRAFT';

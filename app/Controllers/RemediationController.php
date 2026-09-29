@@ -270,7 +270,7 @@ class RemediationController extends BaseController
                     'formula_assets'            => "{$assetActive} Active + {$softDeletedAssets} Soft-Deleted = {$assetPhysical} Physical",
                 ],
                 'layer_4_topology_snapshot' => [
-                    'snapshot_id'               => 'TOPOLOGY-20260925-243-ad2c9fcb',
+                    'snapshot_id'               => 'TOPOLOGY-20260928-245-81c43a7f', // B1 re-baseline 2026-09-28
                     'network_span_meters'       => 9418.37,
                     'status'                    => 'PERMANENTLY_SEALED',
                 ],
@@ -1064,7 +1064,8 @@ class RemediationController extends BaseController
     // =========================================================================
     // TOPOLOGY DELTA FORENSIC INVESTIGATION — READ-ONLY, ZERO SIDE EFFECTS
     // Identifies exact rows in gis_translines that exceed Phase 0 baseline.
-    // Baseline: active_TL=243, physical_TL=252 (TOPOLOGY-20260925-243-ad2c9fcb)
+    // Baseline: active_TL=245, physical_TL=254 (TOPOLOGY-20260928-245-81c43a7f) — B1 re-baseline 2026-09-28
+    // Historical: active_TL=243, physical_TL=252 (TOPOLOGY-20260925-243-ad2c9fcb) — SEALED/IMMUTABLE
     // Hard Stop context: Option B investigation before Phase 1 GO/NO-GO
     // =========================================================================
 
@@ -1259,8 +1260,11 @@ class RemediationController extends BaseController
         $currentActiveHash   = $this->computeEntityIdentityHash('gis_translines', 'is_active = 1 AND deleted_at IS NULL');
         $currentPhysicalHash = $this->computeEntityIdentityHash('gis_translines');
 
-        $baselineActiveHash   = '5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5';
-        $baselinePhysicalHash = '35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6';
+        $baselineActiveHash   = '3305355a6dddf191a5176934f4de05f4368a21eb0f295660b3790804ac91af3a'; // B1 re-baseline 2026-09-28
+        $baselinePhysicalHash = '90a92779ab1da6d911c7826a6056f168e27014778270764b4e8c42b5535d7462'; // B1 re-baseline 2026-09-28
+        // Historical (TOPOLOGY-20260925-243-ad2c9fcb — SEALED/IMMUTABLE):
+        // $baselineActiveHash   = '5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5';
+        // $baselinePhysicalHash = '35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6';
 
         $execMs = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -1284,9 +1288,9 @@ class RemediationController extends BaseController
             ],
 
             'baseline' => [
-                'snapshot_id'         => 'TOPOLOGY-20260925-243-ad2c9fcb',
-                'active_translines'   => 243,
-                'physical_translines' => 252,
+                'snapshot_id'         => 'TOPOLOGY-20260928-245-81c43a7f', // B1 re-baseline 2026-09-28
+                'active_translines'   => 245,
+                'physical_translines' => 254,
                 'h_active_tl'         => $baselineActiveHash,
                 'h_physical_tl'       => $baselinePhysicalHash,
             ],
@@ -1336,7 +1340,7 @@ class RemediationController extends BaseController
             'physical_transline_hash' => $tlPhysicalHash,
             'physical_asset_hash'     => $assetPhysicalHash,
             'network_span_meters'     => 9418.37,
-            'topology_snapshot_id'    => 'TOPOLOGY-20260925-243-ad2c9fcb',
+            'topology_snapshot_id'    => 'TOPOLOGY-20260928-245-81c43a7f', // B1 re-baseline 2026-09-28
         ];
     }
 }

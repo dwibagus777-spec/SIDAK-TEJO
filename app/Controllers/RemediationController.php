@@ -192,7 +192,7 @@ class RemediationController extends BaseController
         }
 
         $sentinel = $this->captureSentinelState();
-        $isProduction = ($sentinel['active_translines'] === 243 && $sentinel['active_assets'] === 5236);
+        $isProduction = ($sentinel['active_translines'] === 245 && $sentinel['active_assets'] === 5236);
         $elapsedMs = round((microtime(true) - $startTime) * 1000, 2);
 
         return $this->response->setJSON([
@@ -237,7 +237,7 @@ class RemediationController extends BaseController
         $inactiveTL = (int)$this->db->table('gis_translines')->where('is_active != 1 OR deleted_at IS NOT NULL')->countAllResults();
         $softDeletedAssets = (int)$this->db->table('assets')->where('deleted_at IS NOT NULL')->countAllResults();
 
-        $isProduction = ($tlActive === 243 && $assetActive === 5236);
+        $isProduction = ($tlActive === 245 && $assetActive === 5236);
 
         $b8Installed = $this->db->tableExists('remediation_work_packages')
                     && $this->db->tableExists('remediation_package_findings')
@@ -1119,8 +1119,8 @@ class RemediationController extends BaseController
         $physicalCount = $this->db->table('gis_translines')->countAllResults();
 
         // ── STEP 2: Delta classification ──────────────────────────────────────
-        $deltaActive   = $activeCount - 243;
-        $deltaPhysical = $physicalCount - 252;
+        $deltaActive   = $activeCount - 245;
+        $deltaPhysical = $physicalCount - 254;
 
         // The "new" TLs are likely the highest IDs in the sorted active set
         $deltaCandidates = [];

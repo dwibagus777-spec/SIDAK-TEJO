@@ -50,14 +50,14 @@
             <div class="card card-sm">
                 <div class="card-body py-2">
                     <div class="d-flex flex-wrap gap-2 align-items-center">
-                        <span class="text-muted small fw-semibold me-1">Status:</span>
+                        <span class="text-muted small fw-bold me-2 mb-1"><i class="fas fa-filter me-1 text-warning"></i> Status:</span>
                         <?php foreach ($allStatuses as $s): ?>
                             <?php $cnt = $counts[$s] ?? 0; ?>
-                            <span class="badge <?= WPS::statusBadgeClass($s) ?> rounded-pill fs-6 px-2">
-                                <?= esc(WPS::statusLabel($s)) ?> <span class="ms-1 opacity-75">(<?= $cnt ?>)</span>
+                            <span class="badge <?= WPS::statusBadgeClass($s) ?> px-2 py-1 mb-1 fs-6 fw-normal" style="font-size: 0.82rem !important; white-space: nowrap;">
+                                <?= esc(WPS::statusLabel($s)) ?> <span class="ms-1 fw-bold opacity-75">(<?= $cnt ?>)</span>
                             </span>
                         <?php endforeach; ?>
-                        <span class="ms-auto text-muted small">Total: <strong><?= $total ?></strong></span>
+                        <span class="ms-auto text-muted small mb-1">Total: <strong><?= $total ?></strong></span>
                     </div>
                 </div>
             </div>

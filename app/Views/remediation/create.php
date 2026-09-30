@@ -47,24 +47,24 @@
                     <form id="form-create-wp" autocomplete="off">
 
                         <div class="mb-3">
-                            <label class="form-label required">Judul Work Package</label>
-                            <input type="text" class="form-control" name="title"
+                            <label for="wp_title" class="form-label required">Judul Work Package</label>
+                            <input type="text" id="wp_title" class="form-control" name="title"
                                    placeholder="Contoh: Remediasi Gangguan Penyulang Mawar 2026-09"
                                    disabled>
                             <div class="form-hint">Judul singkat dan deskriptif untuk paket remediasi ini.</div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Deskripsi</label>
-                            <textarea class="form-control" name="description" rows="3"
+                            <label for="wp_description" class="form-label">Deskripsi</label>
+                            <textarea id="wp_description" class="form-control" name="description" rows="3"
                                       placeholder="Detail latar belakang, scope, dan tujuan remediasi..."
                                       disabled></textarea>
                         </div>
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label required">Prioritas</label>
-                                <select class="form-select" name="priority" disabled>
+                                <label for="wp_priority" class="form-label required">Prioritas</label>
+                                <select id="wp_priority" class="form-select" name="priority" disabled>
                                     <option value="LOW">LOW — Rendah</option>
                                     <option value="MEDIUM" selected>MEDIUM — Sedang</option>
                                     <option value="HIGH">HIGH — Tinggi</option>
@@ -72,20 +72,20 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Kode Feeder / Penyulang</label>
-                                <input type="text" class="form-control" name="feeder_code"
+                                <label for="wp_feeder_code" class="form-label">Kode Feeder / Penyulang</label>
+                                <input type="text" id="wp_feeder_code" class="form-control" name="feeder_code"
                                        placeholder="Contoh: PNY-MAW-001" disabled>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Target Tanggal Selesai</label>
-                            <input type="date" class="form-control" name="target_completion_date" disabled>
+                            <label for="wp_target_completion_date" class="form-label">Target Tanggal Selesai</label>
+                            <input type="date" id="wp_target_completion_date" class="form-control" name="target_completion_date" disabled>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Client Operation UUID</label>
-                            <input type="text" class="form-control font-monospace" name="client_operation_uuid"
+                            <label for="wp_client_operation_uuid" class="form-label">Client Operation UUID</label>
+                            <input type="text" id="wp_client_operation_uuid" class="form-control font-monospace" name="client_operation_uuid"
                                    placeholder="UUID unik untuk idempotency (auto-generated jika dikosongkan)"
                                    disabled>
                             <div class="form-hint text-muted">

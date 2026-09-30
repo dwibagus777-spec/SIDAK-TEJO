@@ -53,7 +53,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <!-- PWA & Android Native App Shell Integration -->
     <link rel="manifest" href="<?= base_url('manifest.json') ?>">
     <meta name="theme-color" content="#003637">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script>
     if ('serviceWorker' in navigator) {
@@ -2114,30 +2114,50 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             }
         });
 
-        // Global DataTables Accessibility Fix (Fix <label for="..."> and missing id/name)
+        // Global DataTables & DOM Accessibility Hygiene (Fix <label for="..."> and missing id/name)
         $(document).on('init.dt', function (e, settings) {
-            var api = new $.fn.dataTable.Api(settings);
-            var $table = $(api.table().node());
-            var tableId = $table.attr('id') || 'dt_' + Math.random().toString(36).substr(2, 5);
-            var $wrapper = $table.closest('.dataTables_wrapper');
-            
-            var $searchContainer = $wrapper.find('.dataTables_filter');
-            var $searchInput = $searchContainer.find('input');
-            var $searchLabel = $searchContainer.find('label');
-            if ($searchInput.length && $searchLabel.length) {
-                var sId = tableId + '_search_input';
-                $searchInput.attr('id', sId).attr('name', sId);
-                $searchLabel.attr('for', sId);
-            }
-            
-            var $lengthContainer = $wrapper.find('.dataTables_length');
-            var $lengthSelect = $lengthContainer.find('select');
-            var $lengthLabel = $lengthContainer.find('label');
-            if ($lengthSelect.length && $lengthLabel.length) {
-                var lId = tableId + '_length_select';
-                $lengthSelect.attr('id', lId).attr('name', lId);
-                $lengthLabel.attr('for', lId);
-            }
+            try {
+                var api = new $.fn.dataTable.Api(settings);
+                var $table = $(api.table().node());
+                var tableId = $table.attr('id') || 'dt_' + Math.random().toString(36).substr(2, 5);
+                $table.attr('id', tableId);
+                var $wrapper = $table.closest('.dataTables_wrapper');
+                
+                var $searchContainer = $wrapper.find('.dataTables_filter');
+                var $searchInput = $searchContainer.find('input');
+                var $searchLabel = $searchContainer.find('label');
+                if ($searchInput.length) {
+                    var sId = tableId + '_search_input';
+                    if (!$searchInput.attr('id')) $searchInput.attr('id', sId);
+                    if (!$searchInput.attr('name')) $searchInput.attr('name', sId);
+                    if ($searchLabel.length) $searchLabel.attr('for', $searchInput.attr('id'));
+                }
+                
+                var $lengthContainer = $wrapper.find('.dataTables_length');
+                var $lengthSelect = $lengthContainer.find('select');
+                var $lengthLabel = $lengthContainer.find('label');
+                if ($lengthSelect.length) {
+                    var lId = tableId + '_length_select';
+                    if (!$lengthSelect.attr('id')) $lengthSelect.attr('id', lId);
+                    if (!$lengthSelect.attr('name')) $lengthSelect.attr('name', lId);
+                    if ($lengthLabel.length) $lengthLabel.attr('for', $lengthSelect.attr('id'));
+                }
+            } catch (err) {}
+        });
+
+        // Global DOM Cleanup for Orphan Labels
+        $(document).ready(function() {
+            $('label[for]').each(function() {
+                var forId = $(this).attr('for');
+                if (forId && !document.getElementById(forId)) {
+                    $(this).removeAttr('for');
+                }
+            });
+            $('input, select, textarea').each(function() {
+                if (!$(this).attr('id') && $(this).attr('name')) {
+                    $(this).attr('id', $(this).attr('name'));
+                }
+            });
         });
 
         $.ajaxSetup({

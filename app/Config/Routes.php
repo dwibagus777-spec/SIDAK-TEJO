@@ -933,6 +933,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('download-pdf', 'Eviden::downloadPdf');
         $routes->post('download-foto', 'Eviden::downloadFoto');
     });
+
+    // ── B8.1 Remediation Work Package UI (Phase 2A — Read-Only) ──────────────
+    $routes->get('remediation', 'RemediationWorkPackageController::index');
+    $routes->get('remediation/work-packages', 'RemediationWorkPackageController::workPackages');
+    $routes->get('remediation/work-packages/(:num)', 'RemediationWorkPackageController::show/$1');
+    $routes->get('remediation/create', 'RemediationWorkPackageController::create');
+    // ─────────────────────────────────────────────────────────────────────────
 });
 
 // --- Rute REST API v1 (Flutter Mobile App Backend with JWT) ---

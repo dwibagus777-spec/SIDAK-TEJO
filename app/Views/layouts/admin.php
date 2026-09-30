@@ -962,6 +962,26 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                             <?php endif; ?>
                         </div>
 
+                        <!-- CATEGORY B8.1: REMEDIASI -->
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-remediasi" aria-expanded="<?= url_is('remediation*') ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                            <span><i class="fas fa-tools me-1 text-warning"></i> REMEDIASI</span>
+                            <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
+                        </li>
+                        <div class="collapse <?= url_is('remediation*') ? 'show' : '' ?>" id="group-remediasi">
+                            <li class="nav-item <?= url_is('remediation') && !url_is('remediation/*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('remediation') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-briefcase text-warning"></i></span>
+                                    <span class="nav-link-title">Work Package Remediasi</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('remediation/create') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('remediation/create') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-plus-circle text-success"></i></span>
+                                    <span class="nav-link-title">Buat Work Package</span>
+                                </a>
+                            </li>
+                        </div>
+
                         <!-- CATEGORY 3: AI & INTELLIGENCE -->
                         <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-ai" aria-expanded="<?= (url_is('ai*') || url_is('sidak-ai*') || url_is('ranking*')) ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
                             <span><i class="fas fa-brain me-1 text-purple"></i> AI & INTELLIGENCE</span>

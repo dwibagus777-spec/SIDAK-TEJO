@@ -1266,4 +1266,78 @@ class RemediationWorkPackageService
             ->get()
             ->getResultArray();
     }
+
+    /**
+     * Return all work packages ordered newest-first (UI index).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAllWorkPackages(): array
+    {
+        return $this->db
+            ->table('remediation_work_packages')
+            ->orderBy('created_at', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Return counts grouped by FSM status — used for summary badges on index page.
+     *
+     * @return array<string, int>   e.g. ['DRAFT' => 3, 'APPROVED' => 1]
+     */
+    public function getStatusCounts(): array
+    {
+        $rows = $this->db
+            ->table('remediation_work_packages')
+            ->select('status, COUNT(*) as cnt')
+            ->groupBy('status')
+            ->get()
+            ->getResultArray();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[$row['status']] = (int) $row['cnt'];
+        }
+        return $counts;
+    }
+
+    /**
+     * Return Bootstrap badge CSS class for a given FSM status (display helper).
+     */
+    public static function statusBadgeClass(string $status): string
+    {
+        return match ($status) {
+            'DRAFT'               => 'bg-secondary',
+            'ENGINEER_SUBMITTED'  => 'bg-info',
+            'PENDING_APPROVAL'    => 'bg-warning text-dark',
+            'APPROVED'            => 'bg-primary',
+            'REJECTED'            => 'bg-danger',
+            'RELEASED'            => 'bg-success',
+            'IN_PROGRESS'         => 'bg-warning text-dark',
+            'COMPLETED'           => 'bg-success',
+            'VERIFIED'            => 'bg-dark',
+            default               => 'bg-secondary',
+        };
+    }
+
+    /**
+     * Return human-readable label for a given FSM status (display helper).
+     */
+    public static function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'DRAFT'               => 'Draft',
+            'ENGINEER_SUBMITTED'  => 'Diajukan Engineer',
+            'PENDING_APPROVAL'    => 'Menunggu Persetujuan',
+            'APPROVED'            => 'Disetujui',
+            'REJECTED'            => 'Ditolak',
+            'RELEASED'            => 'Dirilis',
+            'IN_PROGRESS'         => 'Sedang Berjalan',
+            'COMPLETED'           => 'Selesai',
+            'VERIFIED'            => 'Terverifikasi',
+            default               => ucfirst(strtolower($status)),
+        };
+    }
 }
+

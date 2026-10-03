@@ -452,15 +452,19 @@ class ServerSideAssetIngestEngine
                     $normFeeder = mb_strtoupper(trim(preg_replace('/^(PENYULANG|FEEDER)\s+/', '', $fNameRaw)), 'UTF-8');
                     $resolvedFk = $feederFkMap[$normFeeder] ?? null;
 
+                    $sourceConductor = $raw['konduktor'] ?? $raw['conductor'] ?? null;
+                    $conductorResolved = $this->resolveConductorMaterial($sourceConductor);
+
                     $assetsToInsert[] = [
                         'kode_asset'   => !empty($raw['kode_asset']) ? $raw['kode_asset'] : "AST-{$feederPrefix}-{$identityHash}",
-                        'nama_asset'   => $r['asset_name'] ?? "NEW_INGESTED_ASSET_{$identityHash}",
-                        'jenis_asset'  => $raw['jenis_asset'] ?? 'JTM_COMPONENT',
+                        'nama_asset'   => !empty($r['asset_name']) ? $r['asset_name'] : null,
+                        'jenis_asset'  => $raw['jenis_asset'] ?? $raw['jenis'] ?? 'JTM_COMPONENT',
                         'penyulang_id' => $resolvedFk['penyulang_id'] ?? null,
-                        'ulp_id'       => $resolvedFk['ulp_id'] ?? 1,
-                        'lokasi'       => $r['section_name'] ?? 'SIDOARJO',
+                        'ulp_id'       => $resolvedFk['ulp_id'] ?? null,
+                        'lokasi'       => !empty($r['section_name']) ? $r['section_name'] : null,
                         'latitude'     => $r['latitude'],
                         'longitude'    => $r['longitude'],
+                        'konduktor'    => $conductorResolved['conductor'],
                         'created_at'   => $now,
                     ];
                 }
@@ -567,6 +571,50 @@ class ServerSideAssetIngestEngine
             'topology_delta'       => 0,
             'duplicate_created'    => 0,
             'forensic_status'      => 'CLEAN_ZERO_MUTATION',
+        ];
+    }
+
+    /**
+     * D4.1.10 Conductor Governance Rule
+     */
+    public function resolveConductorMaterial(?string $sourceConductor, ?array $existingAsset = null): array
+    {
+        if ($existingAsset && !empty($existingAsset['konduktor'])) {
+            return [
+                'conductor'       => $existingAsset['konduktor'],
+                'source'          => 'EXISTING_PRESERVED',
+                'default_reason'  => null,
+                'canonical_valid' => true,
+            ];
+        }
+
+        $cleanSource = trim((string)$sourceConductor);
+        if ($cleanSource !== '') {
+            $norm = mb_strtoupper($cleanSource, 'UTF-8');
+            $validConductors = ['AAACS', 'AAAC', 'ACSR', 'XLPE', 'MVTIC', 'SKTM', 'SPLU'];
+            foreach ($validConductors as $vc) {
+                if (str_contains($norm, $vc)) {
+                    return [
+                        'conductor'       => $vc,
+                        'source'          => 'SOURCE',
+                        'default_reason'  => null,
+                        'canonical_valid' => true,
+                    ];
+                }
+            }
+            return [
+                'conductor'       => $norm,
+                'source'          => 'SOURCE',
+                'default_reason'  => null,
+                'canonical_valid' => true,
+            ];
+        }
+
+        return [
+            'conductor'       => 'AAACS',
+            'source'          => 'SYSTEM_DEFAULT_AAACS',
+            'default_reason'  => 'CSV source does not contain conductor field',
+            'canonical_valid' => true,
         ];
     }
 }

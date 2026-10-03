@@ -1649,11 +1649,10 @@ class MigrateController extends BaseController
                 } elseif (function_exists('exec')) {
                     $outLines = [];
                     @exec($cmd, $outLines);
-                    if (!empty($outLines)) {
-                        $output[] = "Path [{$path}]: " . implode(' | ', $outLines);
-                    }
                 }
             }
+        }
+
         // Pure PHP GitHub Sync Fallback when shell_exec / exec are disabled by Hostinger
         if (empty($output)) {
             try {
@@ -3446,6 +3445,8 @@ class MigrateController extends BaseController
     ),
   ),
 );
+    }
+
     protected function recursiveCopy(string $src, string $dst): void
     {
         if (!is_dir($src)) return;

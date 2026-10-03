@@ -412,6 +412,25 @@
         }
     }
 
+    async function parseJsonResponse(res) {
+        const contentType = res.headers.get('content-type') || '';
+        const text = await res.text();
+        if (contentType.includes('application/json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                // fall through
+            }
+        }
+        return {
+            status: 'FAILED',
+            failure_stage: 'SERVER_GATEWAY',
+            failure_code: 'SERVER_TIMEOUT',
+            failure_message: `Server non-JSON response (HTTP ${res.status}). Timeout or gateway proxy error occurred.`,
+            raw_text: text.substring(0, 300)
+        };
+    }
+
     document.getElementById('formSingleUpload').addEventListener('submit', async function(e) {
         e.preventDefault();
         const formData = new FormData(this);
@@ -422,55 +441,94 @@
 
         const bar = document.getElementById('trackerProgressBar');
         const percent = document.getElementById('trackerPercent');
-
         const stages = ['reading', 'mapping', 'canonical', 'reconcile', 'ingest', 'completion', 'snapshot', 'final'];
-        
-        // Simulate progressive stage animation while API runs
-        let currentStep = 0;
-        const stageInterval = setInterval(() => {
-            if (currentStep < stages.length) {
-                if (currentStep > 0) {
-                    setStage(stages[currentStep - 1], 'completed');
-                }
-                setStage(stages[currentStep], 'active');
-                const pct = Math.round(((currentStep + 1) / stages.length) * 85);
-                bar.style.width = pct + '%';
-                percent.textContent = pct + '%';
-                currentStep++;
-            }
-        }, 1200);
+
+        stages.forEach(s => setStage(s, 'reset'));
+        setStage('reading', 'active');
+        bar.style.width = '10%';
+        percent.textContent = '10%';
 
         try {
+            // Step 0: Upload File & Initialize Queue (HTTP 202)
             const res = await fetch('/api/asset-ingest/upload', {
                 method: 'POST',
                 body: formData
             });
-            const json = await res.json();
-            clearInterval(stageInterval);
+            const uploadJson = await parseJsonResponse(res);
 
-            if (res.status === 201 || json.status === 'COMPLETED' || json.batch_uuid) {
-                // Complete all stages
-                stages.forEach(s => setStage(s, 'completed'));
-                bar.style.width = '100%';
-                percent.textContent = '100%';
-
-                lastBatchResult = json;
-                populateResults(json);
-
-                setTimeout(() => {
-                    document.getElementById('progressTrackerContainer').classList.add('d-none');
-                    document.getElementById('finalResultsCard').classList.remove('d-none');
-                }, 800);
-            } else {
-                const failureMsg = json.failure_message || json.message || json.messages?.error || json.error || 'Error processing payload';
-                const failureCode = json.failure_code ? ` [Code: ${json.failure_code}]` : '';
-                const corrId = json.correlation_id ? ` (Ref: ${json.correlation_id})` : '';
+            if (uploadJson.status !== 'QUEUED' || !uploadJson.batch_uuid) {
+                const failureMsg = uploadJson.failure_message || uploadJson.message || 'File upload failed';
+                const failureCode = uploadJson.failure_code ? ` [Code: ${uploadJson.failure_code}]` : '';
+                const corrId = uploadJson.correlation_id ? ` (Ref: ${uploadJson.correlation_id})` : '';
                 alert(`Upload Failed: ${failureMsg}${failureCode}${corrId}`);
                 resetUploadForm();
+                return;
             }
+
+            setStage('reading', 'completed');
+            setStage('mapping', 'active');
+            bar.style.width = '20%';
+            percent.textContent = '20%';
+
+            const batchUuid = uploadJson.batch_uuid;
+            let currentResult = uploadJson;
+            let isCompleted = false;
+
+            // Step-wise Pipeline Loop (100% 504 Timeout Proof)
+            while (!isCompleted) {
+                const stepRes = await fetch('/api/asset-ingest/process-step', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ batch_uuid: batchUuid })
+                });
+
+                currentResult = await parseJsonResponse(stepRes);
+
+                if (currentResult.status === 'FAILED') {
+                    const failureMsg = currentResult.failure_message || currentResult.message || 'Pipeline step execution failed';
+                    const failureCode = currentResult.failure_code ? ` [Code: ${currentResult.failure_code}]` : '';
+                    const corrId = currentResult.correlation_id ? ` (Ref: ${currentResult.correlation_id})` : '';
+                    alert(`Processing Failed: ${failureMsg}${failureCode}${corrId}`);
+                    resetUploadForm();
+                    return;
+                }
+
+                if (currentResult.status === 'CANONICALIZED') {
+                    setStage('mapping', 'completed');
+                    setStage('canonical', 'completed');
+                    setStage('reconcile', 'active');
+                    bar.style.width = '35%';
+                    percent.textContent = '35%';
+                } else if (currentResult.status === 'PREPARED') {
+                    setStage('reconcile', 'completed');
+                    setStage('ingest', 'active');
+                    bar.style.width = '60%';
+                    percent.textContent = '60%';
+                } else if (currentResult.status === 'COMMITTED') {
+                    setStage('ingest', 'completed');
+                    setStage('completion', 'completed');
+                    setStage('snapshot', 'active');
+                    bar.style.width = '85%';
+                    percent.textContent = '85%';
+                } else if (currentResult.status === 'COMPLETED') {
+                    setStage('snapshot', 'completed');
+                    setStage('final', 'completed');
+                    bar.style.width = '100%';
+                    percent.textContent = '100%';
+                    isCompleted = true;
+                }
+            }
+
+            lastBatchResult = currentResult;
+            populateResults(currentResult);
+
+            setTimeout(() => {
+                document.getElementById('progressTrackerContainer').classList.add('d-none');
+                document.getElementById('finalResultsCard').classList.remove('d-none');
+            }, 600);
+
         } catch (err) {
-            clearInterval(stageInterval);
-            alert('Server Error: ' + err.message);
+            alert('Client Error: ' + err.message);
             resetUploadForm();
         }
     });

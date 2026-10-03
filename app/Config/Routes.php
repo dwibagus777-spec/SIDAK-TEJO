@@ -96,12 +96,14 @@ $routes->get('api/v1/sync/pull', 'MobileSyncController::pull');
 
 // Track D — Server-Side Idempotent Asset Ingestion Engine Routes
 $routes->post('api/asset-ingest/upload', 'Api\AssetIngestController::upload');
+$routes->post('api/asset-ingest/process-step', 'Api\AssetIngestController::processStep');
 $routes->post('api/asset-ingest/map', 'Api\AssetIngestController::map');
 $routes->post('api/asset-ingest/prepare', 'Api\AssetIngestController::prepare');
 $routes->get('api/asset-ingest/batch/(:segment)', 'Api\AssetIngestController::batch/$1');
 $routes->post('api/asset-ingest/commit', 'Api\AssetIngestController::commit');
 $routes->get('api/asset-ingest/reconcile/(:segment)', 'Api\AssetIngestController::reconcile/$1');
 $routes->get('api/asset-ingest/forensic', 'Api\AssetIngestController::forensic');
+$routes->get('api/asset-ingest/historical-audit', 'Api\AssetIngestController::historicalAudit');
 $routes->get('api/asset-ingest/version', 'Api\AssetIngestController::version');
 
 // SIDAK TEJO — Phase B.8.1 Remediation Core Routes

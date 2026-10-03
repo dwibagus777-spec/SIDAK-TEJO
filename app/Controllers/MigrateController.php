@@ -1654,6 +1654,41 @@ class MigrateController extends BaseController
                     }
                 }
             }
+        // Pure PHP GitHub Sync Fallback when shell_exec / exec are disabled by Hostinger
+        if (empty($output)) {
+            try {
+                $zipUrl = 'https://github.com/dwibagus777-spec/SIDAK-TEJO/archive/refs/heads/main.zip';
+                $context = stream_context_create([
+                    'http' => [
+                        'header' => "User-Agent: SIDAK-TEJO-AutoDeploy\r\n",
+                        'timeout' => 30
+                    ]
+                ]);
+                $zipData = @file_get_contents($zipUrl, false, $context);
+                if ($zipData !== false && strlen($zipData) > 1000) {
+                    $tempZip = WRITEPATH . 'deploy_latest.zip';
+                    file_put_contents($tempZip, $zipData);
+                    
+                    if (class_exists('ZipArchive')) {
+                        $zip = new \ZipArchive();
+                        if ($zip->open($tempZip) === true) {
+                            $extractPath = WRITEPATH . 'deploy_extract/';
+                            @mkdir($extractPath, 0755, true);
+                            $zip->extractTo($extractPath);
+                            $zip->close();
+                            @unlink($tempZip);
+
+                            $sourceDir = $extractPath . 'SIDAK-TEJO-main';
+                            if (is_dir($sourceDir)) {
+                                $this->recursiveCopy($sourceDir, ROOTPATH);
+                                $output[] = "Pure PHP GitHub Zip Sync Succeeded!";
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $eZip) {
+                $output[] = "Zip Sync Exception: " . $eZip->getMessage();
+            }
         }
 
         // Purge OPcache & CodeIgniter view cache
@@ -3411,6 +3446,23 @@ class MigrateController extends BaseController
     ),
   ),
 );
+    protected function recursiveCopy(string $src, string $dst): void
+    {
+        if (!is_dir($src)) return;
+        $dir = opendir($src);
+        @mkdir($dst, 0755, true);
+        while (false !== ($file = readdir($dir))) {
+            if (($file != '.') && ($file != '..') && ($file != '.git')) {
+                if (is_dir($src . '/' . $file)) {
+                    if ($file === 'writable' || $file === 'uploads') {
+                        continue;
+                    }
+                    $this->recursiveCopy($src . '/' . $file, $dst . '/' . $file);
+                } else {
+                    @copy($src . '/' . $file, $dst . '/' . $file);
+                }
+            }
+        }
+        closedir($dir);
     }
-
 }

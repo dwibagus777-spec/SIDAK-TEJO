@@ -1345,7 +1345,7 @@ class AssetIngestController extends BaseApiController
                 $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id,
                                r.feeder_name, r.ulp_name, r.section_name, r.source_fingerprint, r.id as staging_row_id
                         FROM assets a
-                        LEFT JOIN asset_ingest_rows r ON (a.nama_asset = r.asset_name AND a.latitude = r.latitude AND a.longitude = r.longitude)
+                        LEFT JOIN asset_ingest_rows r ON a.nama_asset = r.asset_name
                         WHERE a.deleted_at IS NULL AND a.penyulang_id IS NULL";
                 
                 $query = $db->query($sql);

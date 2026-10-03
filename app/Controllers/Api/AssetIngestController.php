@@ -1304,6 +1304,19 @@ class AssetIngestController extends BaseApiController
                 ]];
             }
 
+            // D4.1.11-A Governed Explicit Feeder Aliases (Zero-Fuzzy Matching Rule)
+            $governedAliases = [
+                'SURYA MULTI CEMERLANG' => 'SMC',
+                'WARUBERON'            => 'WARU BERON',
+            ];
+            foreach ($governedAliases as $alias => $target) {
+                $aliasNorm = $this->normalizeFeederName($alias);
+                $targetNorm = $this->normalizeFeederName($target);
+                if (isset($masterFeederMap[$targetNorm]) && !isset($masterFeederMap[$aliasNorm])) {
+                    $masterFeederMap[$aliasNorm] = $masterFeederMap[$targetNorm];
+                }
+            }
+
             // 2. Source Staging Rows Metrics vs Production Assets Metrics
             $totalStagingRows = $db->tableExists('asset_ingest_rows') ? $db->table('asset_ingest_rows')->countAllResults() : 0;
             $insertedStagingRows = $db->tableExists('asset_ingest_rows') ? $db->table('asset_ingest_rows')->where('processing_status', 'INSERTED')->countAllResults() : 0;

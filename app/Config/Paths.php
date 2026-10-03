@@ -88,10 +88,6 @@ class Paths
         }
 
         $this->appDirectory = realpath(dirname(__DIR__)) ?: dirname(__DIR__);
-
-        if (isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL']) || getenv('VERCEL')) {
-            $this->writableDirectory = '/tmp';
-        }
     }
 
     /**

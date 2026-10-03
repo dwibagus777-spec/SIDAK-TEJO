@@ -41,13 +41,17 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
 
+    // Hard Rule: NEVER intercept any API or asset-corpus requests (network only directly to Hostinger)
+    if (url.includes('/api/') || url.includes('/asset-corpus/')) {
+        return;
+    }
+
     // Do NOT intercept navigation, HTML, JSON, or dynamic API/AJAX requests
     // Always fetch fresh data directly from server
     const isDynamicApi =
         event.request.mode === 'navigate' ||
         url.includes('/ajax/') ||
         url.includes('/ajax-') ||
-        url.includes('/api/') ||
         url.includes('/temuan/ajax-') ||
         url.includes('/temuan/api/') ||
         url.endsWith('.json') ||

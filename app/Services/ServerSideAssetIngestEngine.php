@@ -107,6 +107,47 @@ class ServerSideAssetIngestEngine
 
             $this->db->table('asset_ingest_batches')->insert($batchData);
 
+            // Pre-fetch all fingerprints for existing row checks in bulk
+            $fingerprints = array_map(fn($r) => $this->generateSourceFingerprint($r), $sourceRows);
+            $existingRowsMap = [];
+            if ($this->db->tableExists('asset_ingest_rows') && !empty($fingerprints)) {
+                $chunks = array_chunk($fingerprints, 1000);
+                foreach ($chunks as $chunk) {
+                    $q = $this->db->table('asset_ingest_rows')
+                        ->select('source_fingerprint, matched_asset_id')
+                        ->whereIn('source_fingerprint', $chunk)
+                        ->get();
+                    if ($q && !is_bool($q)) {
+                        foreach ($q->getResultArray() as $er) {
+                            $existingRowsMap[$er['source_fingerprint']] = $er['matched_asset_id'];
+                        }
+                    }
+                }
+            }
+
+            // Pre-fetch existing assets by code in bulk
+            $assetCodes = [];
+            foreach ($sourceRows as $r) {
+                $c = trim($r['kode_asset'] ?? $r['asset_code'] ?? '');
+                if ($c !== '') $assetCodes[] = $c;
+            }
+            $existingAssetsMap = [];
+            if ($this->db->tableExists('assets') && !empty($assetCodes)) {
+                $chunks = array_chunk(array_unique($assetCodes), 1000);
+                foreach ($chunks as $chunk) {
+                    $q = $this->db->table('assets')
+                        ->select('id, kode_asset')
+                        ->whereIn('kode_asset', $chunk)
+                        ->where('deleted_at IS NULL', null, false)
+                        ->get();
+                    if ($q && !is_bool($q)) {
+                        foreach ($q->getResultArray() as $ea) {
+                            $existingAssetsMap[$ea['kode_asset']] = (int)$ea['id'];
+                        }
+                    }
+                }
+            }
+
             $seenInBatch = [];
             $counts = [
                 'matched_existing'    => 0,
@@ -118,9 +159,11 @@ class ServerSideAssetIngestEngine
             ];
 
             $rowNum = 0;
+            $rowsToInsert = [];
+
             foreach ($sourceRows as $row) {
                 $rowNum++;
-                $fingerprint = $this->generateSourceFingerprint($row);
+                $fingerprint = $fingerprints[$rowNum - 1];
 
                 $status = 'RECEIVED';
                 $matchedAssetId = null;
@@ -130,32 +173,35 @@ class ServerSideAssetIngestEngine
                     $status = 'SOURCE_DUPLICATE';
                     $classification = 'DUPLICATE_IN_BATCH';
                     $counts['source_duplicate']++;
-                } elseif ($existingRow = $this->rowModel->findByFingerprint($fingerprint)) {
+                } elseif (array_key_exists($fingerprint, $existingRowsMap)) {
                     $status = 'SKIPPED_ALREADY_PROCESSED';
-                    $matchedAssetId = $existingRow['matched_asset_id'];
+                    $matchedAssetId = $existingRowsMap[$fingerprint];
                     $classification = 'ALREADY_PROCESSED';
                     $counts['already_processed']++;
                 } else {
                     $seenInBatch[$fingerprint] = true;
 
-                    // Perform deterministic matching against existing assets
-                    $matchResult = $this->matchExistingAsset($row);
-                    $status = $matchResult['status'];
-                    $matchedAssetId = $matchResult['matched_asset_id'];
-                    $classification = $matchResult['classification'];
+                    $code = trim($row['kode_asset'] ?? $row['asset_code'] ?? '');
+                    $lat  = is_numeric($row['latitude'] ?? null) ? (float)$row['latitude'] : null;
+                    $lng  = is_numeric($row['longitude'] ?? null) ? (float)$row['longitude'] : null;
 
-                    if ($status === 'MATCHED_EXISTING') {
-                        $counts['matched_existing']++;
-                    } elseif ($status === 'CONFLICT_REVIEW') {
-                        $counts['conflict_review']++;
-                    } elseif ($status === 'QUARANTINE') {
+                    if ($lat !== null && $lng !== null && ($lat < -9.0 || $lat > -6.0 || $lng < 110.0 || $lng > 116.0)) {
+                        $status = 'QUARANTINE';
+                        $classification = 'INVALID_GEODETIC_BOUNDS';
                         $counts['quarantine']++;
-                    } elseif ($status === 'CANDIDATE_NEW_ASSET') {
+                    } elseif ($code !== '' && isset($existingAssetsMap[$code])) {
+                        $status = 'MATCHED_EXISTING';
+                        $matchedAssetId = $existingAssetsMap[$code];
+                        $classification = 'EXACT_CANONICAL_CODE';
+                        $counts['matched_existing']++;
+                    } else {
+                        $status = 'CANDIDATE_NEW_ASSET';
+                        $classification = 'CANDIDATE_NEW_ASSET';
                         $counts['candidate_new_asset']++;
                     }
                 }
 
-                $rowData = [
+                $rowsToInsert[] = [
                     'batch_uuid'         => $batchUuid,
                     'source_file'        => $sourceFile,
                     'source_part'        => $sourcePart,
@@ -175,15 +221,12 @@ class ServerSideAssetIngestEngine
                     'matched_asset_id'   => $matchedAssetId,
                     'created_at'         => date('Y-m-d H:i:s'),
                 ];
+            }
 
-                try {
-                    $this->db->table('asset_ingest_rows')->insert($rowData);
-                } catch (\Throwable $ex) {
-                    // Unique fingerprint collision caught at database level
-                    $this->db->table('asset_ingest_rows')
-                        ->where('source_fingerprint', $fingerprint)
-                        ->update(['processing_status' => 'SKIPPED_ALREADY_PROCESSED']);
-                    $counts['already_processed']++;
+            if (!empty($rowsToInsert)) {
+                $chunks = array_chunk($rowsToInsert, 500);
+                foreach ($chunks as $chunk) {
+                    $this->db->table('asset_ingest_rows')->insertBatch($chunk);
                 }
             }
 
@@ -366,44 +409,39 @@ class ServerSideAssetIngestEngine
                 ->where('processing_status', 'CANDIDATE_NEW_ASSET')
                 ->get()->getResultArray();
 
-            $insertedCount = 0;
+            $insertedCount = count($rows);
 
-            foreach ($rows as $r) {
-                // Re-read production state & check source fingerprint idempotency
-                $recheck = $this->rowModel->findByFingerprint($r['source_fingerprint']);
-                if ($recheck && $recheck['processing_status'] === 'INSERTED') {
-                    continue;
-                }
-
-                // Insert into assets table if assets table exists
-                if ($this->db->tableExists('assets')) {
+            if ($insertedCount > 0 && $this->db->tableExists('assets')) {
+                $assetsToInsert = [];
+                $now = date('Y-m-d H:i:s');
+                foreach ($rows as $r) {
                     $raw = json_decode($r['canonical_identity'], true) ?? [];
                     $feederPrefix = !empty($r['feeder_name']) ? preg_replace('/[^A-Z0-9]/', '', strtoupper($r['feeder_name'])) : 'GEN';
                     $identityHash = strtoupper(substr(md5(($r['asset_name'] ?? '') . '-' . ($r['latitude'] ?? '') . '-' . ($r['longitude'] ?? '')), 0, 8));
 
-                    $assetData = [
+                    $assetsToInsert[] = [
                         'kode_asset'  => !empty($raw['kode_asset']) ? $raw['kode_asset'] : "AST-{$feederPrefix}-{$identityHash}",
                         'nama_asset'  => $r['asset_name'] ?? "NEW_INGESTED_ASSET_{$identityHash}",
                         'jenis_asset' => $raw['jenis_asset'] ?? 'JTM_COMPONENT',
                         'lokasi'      => $r['section_name'] ?? 'SIDOARJO',
                         'latitude'    => $r['latitude'],
                         'longitude'   => $r['longitude'],
-                        'created_at'  => date('Y-m-d H:i:s'),
+                        'created_at'  => $now,
                     ];
-
-                    $this->db->table('assets')->insert($assetData);
-                    $newAssetId = $this->db->insertID();
-
-                    $this->db->table('asset_ingest_rows')
-                        ->where('id', $r['id'])
-                        ->update([
-                            'processing_status' => 'INSERTED',
-                            'matched_asset_id'  => $newAssetId,
-                            'processed_at'      => date('Y-m-d H:i:s'),
-                        ]);
-
-                    $insertedCount++;
                 }
+
+                $chunks = array_chunk($assetsToInsert, 500);
+                foreach ($chunks as $chunk) {
+                    $this->db->table('assets')->insertBatch($chunk);
+                }
+
+                $this->db->table('asset_ingest_rows')
+                    ->where('batch_uuid', $batchUuid)
+                    ->where('processing_status', 'CANDIDATE_NEW_ASSET')
+                    ->update([
+                        'processing_status' => 'INSERTED',
+                        'processed_at'      => $now,
+                    ]);
             }
 
             // Update batch record

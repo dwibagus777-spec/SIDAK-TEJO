@@ -10,14 +10,14 @@ class AiDataAdapterService
     protected array $headerDictionary = [
         'kode_asset' => [
             'kode_asset', 'kode asset', 'asset_code', 'asset code', 'no tiang', 'no. tiang', 
-            'nomor tiang', 'id_asset', 'id asset', 'no_asset', 'no asset', 'kode_tiang'
+            'nomor tiang', 'id_asset', 'id asset', 'no_asset', 'no asset', 'kode_tiang', 'kode tiang'
         ],
         'nama_asset' => [
             'nama_asset', 'nama asset', 'asset_name', 'asset name', 'nama tiang', 'nama_tiang',
-            'tiang_name', 'nama kompoen', 'nama peralatan'
+            'tiang_name', 'nama kompoen', 'nama peralatan', 'nama aset', 'nama_aset', 'nama asset jtm', 'nama_asset_jtm'
         ],
         'jenis_asset' => [
-            'jenis_asset', 'jenis asset', 'asset_type', 'jenis', 'tipe asset', 'tipe_asset'
+            'jenis_asset', 'jenis asset', 'asset_type', 'jenis', 'tipe asset', 'tipe_asset', 'jenis_komponen'
         ],
         'feeder_name' => [
             'penyulang', 'nama penyulang', 'nama_penyulang', 'feeder', 'feeder_name', 'feeder name', 'penyulang_id'
@@ -38,13 +38,13 @@ class AiDataAdapterService
             'longitude', 'long', 'lng', 'x', 'lon', 'long_deg', 'long_dd', 'koordinat_x', 'koordinat x'
         ],
         'kode_konstruksi' => [
-            'konstruksi', 'kode_konstruksi', 'kode konstruksi', 'konstruksi tiang', 'construction'
+            'konstruksi', 'kode_konstruksi', 'kode konstruksi', 'konstruksi tiang', 'construction', 'konstruksi e g tm1'
         ],
         'tanggal_operasi' => [
             'tanggal operasi', 'tanggal_operasi', 'tgl_operasi', 'operasi_date'
         ],
         'kapasitas' => [
-            'kapasitas', 'capacity', 'daya'
+            'kapasitas', 'capacity', 'daya', 'kapasitas panjang'
         ],
         'jumlah_pohon' => [
             'jumlah pohon', 'jumlah_pohon', 'pohon'
@@ -60,7 +60,10 @@ class AiDataAdapterService
         $mappedCanonical = [];
 
         foreach ($rawHeader as $colIndex => $rawName) {
-            $normalizedName = strtolower(trim(preg_replace('/[^a-zA-Z0-9_\s]/', '', $rawName)));
+            // Clean UTF-8 BOM and unprintable characters
+            $cleanName = preg_replace('/[\x00-\x1F\x7F\xEF\xBB\xBF]/', '', (string)$rawName);
+            $normalizedName = strtolower(trim(preg_replace('/[^a-zA-Z0-9_\s]/', '', $cleanName)));
+
             $matchedField = null;
             $confidence = 0.0;
 
@@ -79,7 +82,7 @@ class AiDataAdapterService
 
             if ($matchedField) {
                 $mappingEvidence[] = [
-                    'source_column'   => $rawName,
+                    'source_column'   => $cleanName,
                     'column_index'    => $colIndex,
                     'canonical_field' => $matchedField,
                     'mapping_method'  => 'semantic_header_match',
@@ -88,7 +91,7 @@ class AiDataAdapterService
                 $mappedCanonical[$colIndex] = $matchedField;
             } else {
                 $mappingEvidence[] = [
-                    'source_column'   => $rawName,
+                    'source_column'   => $cleanName,
                     'column_index'    => $colIndex,
                     'canonical_field' => null,
                     'mapping_method'  => 'UNMAPPED_COLUMN',
@@ -115,17 +118,39 @@ class AiDataAdapterService
         $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
         $rawRows = [];
 
-        if ($extension === 'csv') {
-            $handle = fopen($filePath, 'r');
-            while (($data = fgetcsv($handle)) !== false) {
-                $rawRows[] = $data;
+        if ($extension === 'csv' || $extension === 'txt') {
+            $content = file_get_contents($filePath);
+            // Remove UTF-8 BOM if present
+            $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
+
+            $lines = explode("\n", str_replace("\r\n", "\n", $content));
+            $lines = array_filter($lines, fn($line) => trim($line) !== '');
+
+            if (empty($lines)) {
+                throw new \RuntimeException("Uploaded CSV file is empty.");
             }
-            fclose($handle);
+
+            // Auto-detect CSV delimiter (comma, semicolon, or tab)
+            $firstLine = reset($lines);
+            $commaCount = substr_count($firstLine, ',');
+            $semicolonCount = substr_count($firstLine, ';');
+            $tabCount = substr_count($firstLine, "\t");
+
+            $delimiter = ',';
+            if ($semicolonCount > $commaCount && $semicolonCount > $tabCount) {
+                $delimiter = ';';
+            } elseif ($tabCount > $commaCount && $tabCount > $semicolonCount) {
+                $delimiter = "\t";
+            }
+
+            foreach ($lines as $line) {
+                $rawRows[] = str_getcsv($line, $delimiter);
+            }
         } else {
-            // For non-csv, fallback to basic line parsing orPhpSpreadsheet
+            // For non-csv/xlsx text fallback
             $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             foreach ($lines as $line) {
-                $rawRows[] = str_getcsv($line);
+                $rawRows[] = str_getcsv($line, ',');
             }
         }
 
@@ -138,11 +163,11 @@ class AiDataAdapterService
         $columnMap = $headerAnalysis['column_map'];
 
         $canonicalRows = [];
-        $rowNumber = 1; // Header was row 1
+        $rowNumber = 1;
 
         foreach ($rawRows as $row) {
             $rowNumber++;
-            if (empty($row) || (count($row) === 1 && trim($row[0]) === '')) {
+            if (empty($row) || (count($row) === 1 && trim((string)$row[0]) === '')) {
                 continue;
             }
 
@@ -172,7 +197,9 @@ class AiDataAdapterService
                 if (isset($columnMap[$colIdx])) {
                     $targetField = $columnMap[$colIdx];
                     if ($targetField === 'latitude' || $targetField === 'longitude') {
-                        $canonical[$targetField] = is_numeric($val) ? (float)$val : null;
+                        // Normalize Indonesian decimal comma to dot
+                        $numStr = str_replace(',', '.', $val);
+                        $canonical[$targetField] = is_numeric($numStr) ? (float)$numStr : null;
                     } else {
                         $canonical[$targetField] = $val;
                     }
@@ -185,6 +212,18 @@ class AiDataAdapterService
             }
             if ($canonical['feeder_name'] !== null) {
                 $canonical['feeder_name'] = mb_strtoupper(trim($canonical['feeder_name']), 'UTF-8');
+            }
+
+            // Canonical Identity Fallback:
+            // 1. If kode_asset is NULL but nama_asset is present, derive deterministic kode_asset
+            if (empty($canonical['kode_asset']) && !empty($canonical['nama_asset'])) {
+                $feederPrefix = !empty($canonical['feeder_name']) ? preg_replace('/[^A-Z0-9]/', '', $canonical['feeder_name']) : 'GEN';
+                $cleanName = preg_replace('/[^A-Z0-9_\-]/', '', strtoupper($canonical['nama_asset']));
+                $canonical['kode_asset'] = "AST-{$feederPrefix}-{$cleanName}";
+            }
+            // 2. If nama_asset is NULL but kode_asset is present, set nama_asset = kode_asset
+            if (empty($canonical['nama_asset']) && !empty($canonical['kode_asset'])) {
+                $canonical['nama_asset'] = $canonical['kode_asset'];
             }
 
             $canonicalRows[] = $canonical;
@@ -209,8 +248,9 @@ class AiDataAdapterService
             mkdir($dir, 0755, true);
         }
 
-        $canonicalFile = $dir . '/canonical.json';
+        $canonicalFile = $dir . '/canonical_rows.json';
         file_put_contents($canonicalFile, json_encode($canonicalRows, JSON_PRETTY_PRINT));
+        file_put_contents($dir . '/canonical.json', json_encode($canonicalRows, JSON_PRETTY_PRINT));
 
         return $canonicalFile;
     }

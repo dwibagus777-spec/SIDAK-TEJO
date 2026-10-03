@@ -420,16 +420,19 @@ class ServerSideAssetIngestEngine
             if ($insertedCount > 0 && $this->db->tableExists('assets')) {
                 // Build deterministic master feeder map for FK resolution
                 $feederFkMap = [];
-                if ($this->db->tableExists('master_penyulang')) {
-                    $qFk = $this->db->table('master_penyulang')->get();
-                    if ($qFk && !is_bool($qFk)) {
-                        foreach ($qFk->getResultArray() as $m) {
-                            $norm = mb_strtoupper(trim(preg_replace('/^(PENYULANG|FEEDER)\s+/', '', $m['nama_penyulang'] ?? $m['nama'] ?? '')), 'UTF-8');
-                            if ($norm !== '') {
-                                $feederFkMap[$norm] = [
-                                    'penyulang_id' => (int)$m['id'],
-                                    'ulp_id'       => (int)($m['ulp_id'] ?? 1),
-                                ];
+                $tableNames = ['penyulang', 'master_penyulang'];
+                foreach ($tableNames as $tbl) {
+                    if ($this->db->tableExists($tbl)) {
+                        $qFk = $this->db->table($tbl)->get();
+                        if ($qFk && !is_bool($qFk)) {
+                            foreach ($qFk->getResultArray() as $m) {
+                                $norm = mb_strtoupper(trim(preg_replace('/^(PENYULANG|FEEDER)\s+/', '', $m['nama_penyulang'] ?? $m['nama'] ?? '')), 'UTF-8');
+                                if ($norm !== '') {
+                                    $feederFkMap[$norm] = [
+                                        'penyulang_id' => (int)$m['id'],
+                                        'ulp_id'       => (int)($m['ulp_id'] ?? 1),
+                                    ];
+                                }
                             }
                         }
                     }

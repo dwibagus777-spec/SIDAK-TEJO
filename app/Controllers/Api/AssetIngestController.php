@@ -1247,20 +1247,24 @@ class AssetIngestController extends BaseApiController
 
             // 1. Build Master Penyulang & Master ULP Lookup Maps
             $masterFeederMap = [];
-            if ($db->tableExists('master_penyulang')) {
-                $qM = $db->table('master_penyulang')->get();
-                if ($qM && !is_bool($qM)) {
-                    foreach ($qM->getResultArray() as $m) {
-                        $rawNames = array_filter([
-                            $m['nama_penyulang'] ?? null,
-                            $m['nama'] ?? null,
-                            $m['kode_penyulang'] ?? null,
-                            $m['penyulang'] ?? null,
-                        ]);
-                        foreach ($rawNames as $rn) {
-                            $normName = $this->normalizeFeederName($rn);
-                            if ($normName !== '') {
-                                $masterFeederMap[$normName][$m['id']] = $m;
+            $tableNames = ['penyulang', 'master_penyulang'];
+            foreach ($tableNames as $tbl) {
+                if ($db->tableExists($tbl)) {
+                    $qM = $db->table($tbl)->get();
+                    if ($qM && !is_bool($qM)) {
+                        foreach ($qM->getResultArray() as $m) {
+                            $rawNames = array_filter([
+                                $m['nama_penyulang'] ?? null,
+                                $m['nama'] ?? null,
+                                $m['kode_penyulang'] ?? null,
+                                $m['id_unik_penyulang'] ?? null,
+                                $m['penyulang'] ?? null,
+                            ]);
+                            foreach ($rawNames as $rn) {
+                                $normName = $this->normalizeFeederName($rn);
+                                if ($normName !== '') {
+                                    $masterFeederMap[$normName][$m['id']] = $m;
+                                }
                             }
                         }
                     }

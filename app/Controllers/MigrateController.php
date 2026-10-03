@@ -37,6 +37,14 @@ class MigrateController extends BaseController
             // Auto-deploy git sync on Hostinger production
             $this->autoDeploy();
 
+            // Run Idempotent Asset Ingest Schema Migration (Track D)
+            if (file_exists(APPPATH . 'Database/Migrations/2026-10-02-000001_CreateIdempotentAssetIngestSchema.php')) {
+                require_once APPPATH . 'Database/Migrations/2026-10-02-000001_CreateIdempotentAssetIngestSchema.php';
+                $ingestMig = new \App\Database\Migrations\CreateIdempotentAssetIngestSchema();
+                $ingestMig->up();
+                $executed[] = 'asset_ingest_schema';
+            }
+
             // Auto-heal orphan asset penyulang_ids by matching kode_asset with penyulang table
             if ($db->tableExists('assets') && $db->tableExists('penyulang')) {
                 $db->query("UPDATE assets a 

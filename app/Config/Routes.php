@@ -106,6 +106,7 @@ $routes->get('api/asset-ingest/forensic', 'Api\AssetIngestController::forensic')
 $routes->get('api/asset-ingest/historical-audit', 'Api\AssetIngestController::historicalAudit');
 $routes->get('api/asset-ingest/d414-audit', 'Api\AssetIngestController::d414Audit');
 $routes->get('api/asset-ingest/d415-audit', 'Api\AssetIngestController::d415Audit');
+$routes->get('api/asset-ingest/d417-audit', 'Api\AssetIngestController::d417Audit');
 $routes->get('api/asset-ingest/version', 'Api\AssetIngestController::version');
 
 // SIDAK TEJO — Phase B.8.1 Remediation Core Routes

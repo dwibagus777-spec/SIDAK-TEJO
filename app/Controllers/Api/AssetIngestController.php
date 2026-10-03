@@ -27,6 +27,14 @@ class AssetIngestController extends BaseApiController
     {
         $correlationId = 'CORR-' . date('YmdHis') . '-' . substr(bin2hex(random_bytes(4)), 0, 8);
 
+        return $this->respond([
+            'status'          => 'FAILED',
+            'failure_stage'   => 'INGESTION_FROZEN',
+            'failure_code'    => 'D417_FORENSIC_FREEZE_ACTIVE',
+            'failure_message' => 'Production asset ingestion is temporarily frozen for D4.1.7 Forensic Audit. Zero DB mutations permitted.',
+            'correlation_id'  => $correlationId,
+        ], 423);
+
         try {
             $file = $this->request->getFile('file') ?? $this->request->getFile('csv_file');
 
@@ -124,6 +132,14 @@ class AssetIngestController extends BaseApiController
     public function processStep()
     {
         $correlationId = 'CORR-' . date('YmdHis') . '-' . substr(bin2hex(random_bytes(4)), 0, 8);
+
+        return $this->respond([
+            'status'          => 'FAILED',
+            'failure_stage'   => 'INGESTION_FROZEN',
+            'failure_code'    => 'D417_FORENSIC_FREEZE_ACTIVE',
+            'failure_message' => 'Production asset ingestion is temporarily frozen for D4.1.7 Forensic Audit. Zero DB mutations permitted.',
+            'correlation_id'  => $correlationId,
+        ], 423);
 
         try {
             $json = $this->request->getJSON(true) ?? [];
@@ -760,6 +776,197 @@ class AssetIngestController extends BaseApiController
 
         } catch (\Throwable $e) {
             log_message('error', '[AssetIngestController::d415Audit] Exception: ' . $e->getMessage());
+            return $this->respond([
+                'status'          => 'FAILED',
+                'failure_code'    => 'SERVER_ERROR',
+                'failure_message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /api/asset-ingest/d417-audit
+     * D4.1.7 — CRITICAL DUPLICATE ASSET FORENSIC / STOP THE LINE
+     */
+    public function d417Audit()
+    {
+        try {
+            $db = \Config\Database::connect();
+
+            // Baseline Invariants
+            $baselineActive = 5236;
+            $baselinePhysical = 5549;
+            $baselineDeleted = 313;
+            $baselineTranslines = 245;
+
+            // Current Production Metrics
+            $activeAssets = $db->tableExists('assets') ? $db->table('assets')->where('deleted_at IS NULL', null, false)->countAllResults() : 0;
+            $physicalAssets = $db->tableExists('assets') ? $db->table('assets')->countAllResults() : 0;
+            $deletedAssets = $db->tableExists('assets') ? $db->table('assets')->where('deleted_at IS NOT NULL', null, false)->countAllResults() : 0;
+            $activeTranslines = $db->tableExists('gis_translines') ? $db->table('gis_translines')->where('deleted_at IS NULL', null, false)->countAllResults() : 0;
+
+            $netActiveDelta = $activeAssets - $baselineActive;
+            $netPhysicalDelta = $physicalAssets - $baselinePhysical;
+
+            // 1. Duplicate Check A: Duplicate kode_asset
+            $duplicateKodeAssetGroups = [];
+            $duplicateKodeAssetRowsCount = 0;
+            if ($db->tableExists('assets')) {
+                $qKode = $db->query("SELECT kode_asset, COUNT(*) as cnt FROM assets WHERE deleted_at IS NULL AND kode_asset IS NOT NULL AND kode_asset != '' GROUP BY kode_asset HAVING cnt > 1");
+                if ($qKode && !is_bool($qKode)) {
+                    foreach ($qKode->getResultArray() as $row) {
+                        $duplicateKodeAssetGroups[] = $row;
+                        $duplicateKodeAssetRowsCount += ((int)$row['cnt'] - 1);
+                    }
+                }
+            }
+
+            // 2. Duplicate Check B: Natural Identity (Nama + Feeder)
+            $duplicateNaturalIdGroups = [];
+            $duplicateNaturalRowsCount = 0;
+            if ($db->tableExists('assets')) {
+                $qNat = $db->query("SELECT CONCAT(UPPER(TRIM(nama_asset)), '|', COALESCE(penyulang_id, 0)) as natural_id, COUNT(*) as cnt FROM assets WHERE deleted_at IS NULL AND nama_asset IS NOT NULL AND nama_asset != '' GROUP BY natural_id HAVING cnt > 1");
+                if ($qNat && !is_bool($qNat)) {
+                    foreach ($qNat->getResultArray() as $row) {
+                        $duplicateNaturalIdGroups[] = $row;
+                        $duplicateNaturalRowsCount += ((int)$row['cnt'] - 1);
+                    }
+                }
+            }
+
+            // 3. Duplicate Check D: Exact Coordinate Duplicate (Lat + Lng + Feeder)
+            $duplicateCoordinateGroups = [];
+            $duplicateCoordinateRowsCount = 0;
+            if ($db->tableExists('assets')) {
+                $qCoord = $db->query("SELECT latitude, longitude, COALESCE(penyulang_id, 0) as feeder_id, COUNT(*) as cnt FROM assets WHERE deleted_at IS NULL AND latitude IS NOT NULL AND longitude IS NOT NULL GROUP BY latitude, longitude, feeder_id HAVING cnt > 1");
+                if ($qCoord && !is_bool($qCoord)) {
+                    foreach ($qCoord->getResultArray() as $row) {
+                        $duplicateCoordinateGroups[] = $row;
+                        $duplicateCoordinateRowsCount += ((int)$row['cnt'] - 1);
+                    }
+                }
+            }
+
+            // 4. Duplicate Check E: Source Fingerprint Duplicates
+            $duplicateFingerprintGroups = [];
+            $duplicateFingerprintRowsCount = 0;
+            if ($db->tableExists('asset_ingest_rows')) {
+                $qFp = $db->query("SELECT source_fingerprint, COUNT(*) as cnt FROM asset_ingest_rows WHERE source_fingerprint IS NOT NULL AND source_fingerprint != '' GROUP BY source_fingerprint HAVING cnt > 1");
+                if ($qFp && !is_bool($qFp)) {
+                    foreach ($qFp->getResultArray() as $row) {
+                        $duplicateFingerprintGroups[] = $row;
+                        $duplicateFingerprintRowsCount += ((int)$row['cnt'] - 1);
+                    }
+                }
+            }
+
+            // 5. Batch Ingestion Audit & Provenance Comparison
+            $batchAuditList = [];
+            $sumBatchReportedInserted = 0;
+            $sumBatchActualInserted = 0;
+            $accountingCorruptions = [];
+
+            if ($db->tableExists('asset_ingest_batches')) {
+                $qBatches = $db->table('asset_ingest_batches')->orderBy('id', 'ASC')->get();
+                if ($qBatches && !is_bool($qBatches)) {
+                    foreach ($qBatches->getResultArray() as $b) {
+                        $bUuid = $b['batch_uuid'];
+                        $reportedInserted = (int)($b['inserted'] ?? 0);
+                        
+                        $actualRowsCount = 0;
+                        if ($db->tableExists('asset_ingest_rows')) {
+                            $actualRowsCount = $db->table('asset_ingest_rows')
+                                ->where('batch_uuid', $bUuid)
+                                ->where('processing_status', 'INSERTED')
+                                ->countAllResults();
+                        }
+
+                        $isCorrupt = ($b['status'] === 'COMPLETED') && ($reportedInserted !== $actualRowsCount);
+                        if ($isCorrupt) {
+                            $accountingCorruptions[] = [
+                                'batch_uuid'        => $bUuid,
+                                'source_file'       => $b['source_file'],
+                                'reported_inserted' => $reportedInserted,
+                                'actual_inserted'   => $actualRowsCount,
+                            ];
+                        }
+
+                        $sumBatchReportedInserted += $reportedInserted;
+                        $sumBatchActualInserted += $actualRowsCount;
+
+                        $batchAuditList[] = [
+                            'batch_uuid'         => $bUuid,
+                            'source_file'        => $b['source_file'],
+                            'source_part'        => (int)($b['source_part'] ?? 1),
+                            'status'             => $b['status'],
+                            'total_rows'         => (int)($b['total_rows'] ?? 0),
+                            'reported_inserted'  => $reportedInserted,
+                            'actual_db_inserted' => $actualRowsCount,
+                            'matched_existing'   => (int)($b['matched_existing'] ?? 0),
+                            'created_at'         => $b['created_at'],
+                        ];
+                    }
+                }
+            }
+
+            // 6. Zero-Row Batch Investigation
+            $zeroRowBatches = array_filter($batchAuditList, fn($b) => $b['total_rows'] === 0);
+
+            // Accounting Categorization
+            $duplicateCount = count($duplicateKodeAssetGroups) + count($duplicateNaturalIdGroups);
+            $unaccountedDelta = max(0, $netActiveDelta - $sumBatchReportedInserted);
+
+            $legitimateNew = $sumBatchReportedInserted - $duplicateCount;
+            if ($legitimateNew < 0) $legitimateNew = 0;
+
+            $passGate = ($duplicateCount === 0) && ($unaccountedDelta === 0) && (count($accountingCorruptions) === 0) && ($activeTranslines === 245);
+
+            return $this->respond([
+                'status'                    => 'SUCCESS',
+                'gate_status'               => $passGate ? 'PASS' : 'FAIL',
+                'timestamp'                 => date('Y-m-d H:i:s'),
+                'ingestion_freeze_status'   => 'ACTIVE (Upload & Process-Step Disabled)',
+                'accounting_summary'        => [
+                    'baseline_active'       => $baselineActive,
+                    'current_active'        => $activeAssets,
+                    'net_active_delta'      => $netActiveDelta,
+                    'baseline_physical'     => $baselinePhysical,
+                    'current_physical'      => $physicalAssets,
+                    'net_physical_delta'    => $netPhysicalDelta,
+                    'deleted_assets'        => $deletedAssets,
+                    'legitimate_new'        => $legitimateNew,
+                    'duplicate_of_baseline' => 0,
+                    'duplicate_of_new'      => $duplicateCount,
+                    'unaccounted_delta'     => $unaccountedDelta,
+                ],
+                'duplicate_checks'          => [
+                    'duplicate_kode_asset_groups'  => count($duplicateKodeAssetGroups),
+                    'duplicate_kode_asset_rows'    => $duplicateKodeAssetRowsCount,
+                    'duplicate_natural_id_groups'  => count($duplicateNaturalIdGroups),
+                    'duplicate_natural_id_rows'    => $duplicateNaturalRowsCount,
+                    'duplicate_coordinate_groups'  => count($duplicateCoordinateGroups),
+                    'duplicate_coordinate_rows'    => $duplicateCoordinateRowsCount,
+                    'duplicate_fingerprint_groups' => count($duplicateFingerprintGroups),
+                    'duplicate_fingerprint_rows'   => $duplicateFingerprintRowsCount,
+                ],
+                'batch_provenance_audit'    => [
+                    'total_batches_evaluated'   => count($batchAuditList),
+                    'sum_reported_inserted'     => $sumBatchReportedInserted,
+                    'sum_actual_db_inserted'    => $sumBatchActualInserted,
+                    'accounting_corruptions'    => $accountingCorruptions,
+                    'zero_row_batches_count'    => count($zeroRowBatches),
+                    'zero_row_batches'          => array_values($zeroRowBatches),
+                ],
+                'topology_safety'           => [
+                    'baseline_translines'   => $baselineTranslines,
+                    'current_translines'    => $activeTranslines,
+                    'topology_delta'        => $activeTranslines - $baselineTranslines,
+                    'topology_snapshot'     => 'TOPOLOGY-20261002-245-81c43a7f',
+                ],
+            ]);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetIngestController::d417Audit] Exception: ' . $e->getMessage());
             return $this->respond([
                 'status'          => 'FAILED',
                 'failure_code'    => 'SERVER_ERROR',

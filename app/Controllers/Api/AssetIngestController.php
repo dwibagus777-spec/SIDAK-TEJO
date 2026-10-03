@@ -1357,21 +1357,29 @@ class AssetIngestController extends BaseApiController
             $aliasResolvedCount = 0;
 
             if ($db->tableExists('assets')) {
-                $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id,
-                               r.feeder_name, r.ulp_name, r.section_name, r.source_fingerprint, r.id as staging_row_id
-                        FROM assets a
-                        LEFT JOIN asset_ingest_rows r ON (a.nama_asset = r.asset_name AND r.processing_status = 'INSERTED')
-                        WHERE a.deleted_at IS NULL AND (a.penyulang_id IS NULL OR a.penyulang_id = 0)";
-                
-                $query = $db->query($sql);
-                if ($query && !is_bool($query)) {
-                    $rows = $query->getResultArray();
+                // Track seen assets to avoid duplicate join counts if duplicate staging rows exist
+                $seenAssetIds = [];
+                $chunkSize = 2500;
+                $lastId = 0;
+
+                while (true) {
+                    $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id,
+                                   r.feeder_name, r.ulp_name, r.section_name, r.source_fingerprint, r.id as staging_row_id
+                            FROM assets a
+                            LEFT JOIN asset_ingest_rows r ON (a.nama_asset = r.asset_name AND r.processing_status = 'INSERTED')
+                            WHERE a.deleted_at IS NULL AND (a.penyulang_id IS NULL OR a.penyulang_id = 0) AND a.id > {$lastId}
+                            ORDER BY a.id ASC
+                            LIMIT {$chunkSize}";
                     
-                    // Track seen assets to avoid duplicate join counts if duplicate staging rows exist
-                    $seenAssetIds = [];
+                    $query = $db->query($sql);
+                    if (!$query || is_bool($query)) break;
+                    
+                    $rows = $query->getResultArray();
+                    if (empty($rows)) break;
 
                     foreach ($rows as $row) {
                         $assetId = (int)$row['id'];
+                        $lastId = max($lastId, $assetId);
                         
                         // Handle duplicate staging matches (Category G)
                         if (isset($seenAssetIds[$assetId])) {
@@ -1559,6 +1567,7 @@ class AssetIngestController extends BaseApiController
                     }
                 }
             }
+        }
 
             // Calculate percentage and verify mathematical equation
             $sumCategorized = 0;

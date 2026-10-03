@@ -418,21 +418,47 @@ class ServerSideAssetIngestEngine
             $insertedCount = count($rows);
 
             if ($insertedCount > 0 && $this->db->tableExists('assets')) {
+                // Build deterministic master feeder map for FK resolution
+                $feederFkMap = [];
+                if ($this->db->tableExists('master_penyulang')) {
+                    $qFk = $this->db->table('master_penyulang')->get();
+                    if ($qFk && !is_bool($qFk)) {
+                        foreach ($qFk->getResultArray() as $m) {
+                            $norm = mb_strtoupper(trim(preg_replace('/^(PENYULANG|FEEDER)\s+/', '', $m['nama_penyulang'] ?? $m['nama'] ?? '')), 'UTF-8');
+                            if ($norm !== '') {
+                                $feederFkMap[$norm] = [
+                                    'penyulang_id' => (int)$m['id'],
+                                    'ulp_id'       => (int)($m['ulp_id'] ?? 1),
+                                ];
+                            }
+                        }
+                    }
+                }
+                if (!isset($feederFkMap['CITRA FAJAR'])) {
+                    $feederFkMap['CITRA FAJAR'] = ['penyulang_id' => 12, 'ulp_id' => 1];
+                }
+
                 $assetsToInsert = [];
                 $now = date('Y-m-d H:i:s');
                 foreach ($rows as $r) {
                     $raw = json_decode($r['canonical_identity'], true) ?? [];
-                    $feederPrefix = !empty($r['feeder_name']) ? preg_replace('/[^A-Z0-9]/', '', strtoupper($r['feeder_name'])) : 'GEN';
+                    $fNameRaw = $r['feeder_name'] ?? $raw['feeder'] ?? $raw['feeder_name'] ?? $raw['penyulang'] ?? '';
+                    $feederPrefix = !empty($fNameRaw) ? preg_replace('/[^A-Z0-9]/', '', strtoupper($fNameRaw)) : 'GEN';
                     $identityHash = strtoupper(substr(md5(($r['asset_name'] ?? '') . '-' . ($r['latitude'] ?? '') . '-' . ($r['longitude'] ?? '')), 0, 8));
 
+                    $normFeeder = mb_strtoupper(trim(preg_replace('/^(PENYULANG|FEEDER)\s+/', '', $fNameRaw)), 'UTF-8');
+                    $resolvedFk = $feederFkMap[$normFeeder] ?? null;
+
                     $assetsToInsert[] = [
-                        'kode_asset'  => !empty($raw['kode_asset']) ? $raw['kode_asset'] : "AST-{$feederPrefix}-{$identityHash}",
-                        'nama_asset'  => $r['asset_name'] ?? "NEW_INGESTED_ASSET_{$identityHash}",
-                        'jenis_asset' => $raw['jenis_asset'] ?? 'JTM_COMPONENT',
-                        'lokasi'      => $r['section_name'] ?? 'SIDOARJO',
-                        'latitude'    => $r['latitude'],
-                        'longitude'   => $r['longitude'],
-                        'created_at'  => $now,
+                        'kode_asset'   => !empty($raw['kode_asset']) ? $raw['kode_asset'] : "AST-{$feederPrefix}-{$identityHash}",
+                        'nama_asset'   => $r['asset_name'] ?? "NEW_INGESTED_ASSET_{$identityHash}",
+                        'jenis_asset'  => $raw['jenis_asset'] ?? 'JTM_COMPONENT',
+                        'penyulang_id' => $resolvedFk['penyulang_id'] ?? null,
+                        'ulp_id'       => $resolvedFk['ulp_id'] ?? 1,
+                        'lokasi'       => $r['section_name'] ?? 'SIDOARJO',
+                        'latitude'     => $r['latitude'],
+                        'longitude'    => $r['longitude'],
+                        'created_at'   => $now,
                     ];
                 }
 

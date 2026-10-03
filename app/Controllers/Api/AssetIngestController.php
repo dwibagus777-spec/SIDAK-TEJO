@@ -486,8 +486,8 @@ class AssetIngestController extends BaseApiController
 
             // Current asset and topology counts from production tables
             $totalAssets = $db->tableExists('assets') ? $db->table('assets')->countAllResults() : 0;
-            $activeAssets = $db->tableExists('assets') ? $db->table('assets')->where('status', 'ACTIVE')->countAllResults() : 0;
-            $physicalAssets = $db->tableExists('assets') ? $db->table('assets')->where('deleted_at IS NULL', null, false)->countAllResults() : 0;
+            $activeAssets = $db->tableExists('assets') ? $db->table('assets')->where('deleted_at IS NULL', null, false)->countAllResults() : 0;
+            $physicalAssets = $totalAssets;
             $activeTranslines = $db->tableExists('gis_translines') ? $db->table('gis_translines')->where('deleted_at IS NULL', null, false)->countAllResults() : 0;
 
             return $this->respond([

@@ -194,12 +194,28 @@ class AssetIngestController extends BaseApiController
                 if (!file_exists($canonicalFile)) {
                     $canonicalFile = $metaDir . '/canonical.json';
                 }
-                if (!file_exists($canonicalFile)) {
-                    throw new \RuntimeException("Canonical staging rows missing for batch {$batchUuid}");
+                $canonicalRows = null;
+                if (file_exists($canonicalFile)) {
+                    $content = file_get_contents($canonicalFile);
+                    $canonicalRows = json_decode($content, true);
                 }
-                $canonicalRows = json_decode(file_get_contents($canonicalFile), true) ?? [];
 
-                $prepResult = $this->engine->prepareBatch($canonicalRows, $batch['source_file'], $batch['source_part'] ?? 1);
+                if (!is_array($canonicalRows) || empty($canonicalRows)) {
+                    if ($filePath && file_exists($filePath)) {
+                        $transformation = $this->adapterService->parseAndTransformToCanonical($filePath);
+                        $canonicalRows = $transformation['canonical_rows'];
+                        $this->adapterService->saveCanonicalStaging($batchUuid, $canonicalRows);
+                    } else {
+                        throw new \RuntimeException("Canonical staging rows missing or invalid for batch {$batchUuid}");
+                    }
+                }
+
+                $prepResult = $this->engine->prepareBatch($canonicalRows, $batch['source_file'], $batch['source_part'] ?? 1, $batchUuid);
+
+                $db->table('asset_ingest_batches')->where('batch_uuid', $batchUuid)->update([
+                    'status'     => 'PREPARED',
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
 
                 return $this->respond([
                     'status'          => 'PREPARED',

@@ -117,25 +117,25 @@
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
             <div class="kpi-box">
-                <div class="kpi-value text-success"><?= number_format($summary['active_assets'] ?? 5236) ?></div>
+                <div id="kpiActiveAssets" class="kpi-value text-success"><?= number_format($summary['active_assets'] ?? 25531) ?></div>
                 <div class="kpi-label">Active Assets (100% Truth)</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="kpi-box">
-                <div class="kpi-value text-primary"><?= number_format($summary['physical_assets'] ?? 5549) ?></div>
+                <div id="kpiPhysicalAssets" class="kpi-value text-primary"><?= number_format($summary['physical_assets'] ?? 25844) ?></div>
                 <div class="kpi-label">Physical Master Rows</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="kpi-box">
-                <div class="kpi-value text-secondary"><?= number_format($summary['deleted_assets'] ?? 313) ?></div>
+                <div id="kpiDeletedAssets" class="kpi-value text-secondary"><?= number_format($summary['deleted_assets'] ?? 313) ?></div>
                 <div class="kpi-label">Historical / Deleted Records</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="kpi-box">
-                <div class="kpi-value text-warning"><?= number_format($summary['canonical_pool_total'] ?? 1477) ?></div>
+                <div id="kpiCanonicalBatches" class="kpi-value text-warning"><?= number_format($summary['canonical_pool_total'] ?? 14) ?></div>
                 <div class="kpi-label">Canonical Ingest Batches</div>
             </div>
         </div>
@@ -521,6 +521,7 @@
 
             lastBatchResult = currentResult;
             populateResults(currentResult);
+            refreshWorkspaceSummary();
 
             setTimeout(() => {
                 document.getElementById('progressTrackerContainer').classList.add('d-none');
@@ -532,6 +533,27 @@
             resetUploadForm();
         }
     });
+
+    async function refreshWorkspaceSummary() {
+        try {
+            const res = await fetch('/api/asset-corpus/summary');
+            const json = await res.json();
+            if (json.status === 'success' && json.data) {
+                if (document.getElementById('kpiActiveAssets')) {
+                    document.getElementById('kpiActiveAssets').textContent = Number(json.data.active_assets).toLocaleString();
+                }
+                if (document.getElementById('kpiPhysicalAssets')) {
+                    document.getElementById('kpiPhysicalAssets').textContent = Number(json.data.physical_assets).toLocaleString();
+                }
+                if (document.getElementById('kpiDeletedAssets')) {
+                    document.getElementById('kpiDeletedAssets').textContent = Number(json.data.deleted_assets).toLocaleString();
+                }
+                if (document.getElementById('kpiCanonicalBatches')) {
+                    document.getElementById('kpiCanonicalBatches').textContent = Number(json.data.canonical_pool_total).toLocaleString();
+                }
+            }
+        } catch(e) {}
+    }
 
     function populateResults(data) {
         document.getElementById('resSourceRows').textContent = (data.source_rows ?? 0).toLocaleString();

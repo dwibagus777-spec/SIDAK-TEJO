@@ -80,9 +80,9 @@ class ServerSideAssetIngestEngine
     /**
      * PHASE 1: READ / VALIDATE / CLASSIFY (Zero-write to production assets)
      */
-    public function prepareBatch(array $sourceRows, string $sourceFile = 'DIRECT_PAYLOAD', int $sourcePart = 1): array
+    public function prepareBatch(array $sourceRows, string $sourceFile = 'DIRECT_PAYLOAD', int $sourcePart = 1, ?string $existingBatchUuid = null): array
     {
-        $batchUuid = 'BATCH-' . date('YmdHis') . '-' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $batchUuid = $existingBatchUuid ?? ('BATCH-' . date('YmdHis') . '-' . substr(bin2hex(random_bytes(4)), 0, 8));
 
         $this->db->transBegin();
 
@@ -102,10 +102,16 @@ class ServerSideAssetIngestEngine
                 'duplicate_created'   => 0,
                 'topology_delta'      => 0,
                 'status'              => 'PREPARED',
-                'created_at'          => date('Y-m-d H:i:s'),
+                'updated_at'          => date('Y-m-d H:i:s'),
             ];
 
-            $this->db->table('asset_ingest_batches')->insert($batchData);
+            $existing = $this->db->table('asset_ingest_batches')->where('batch_uuid', $batchUuid)->get();
+            if ($existing && !is_bool($existing) && $existing->getRowArray()) {
+                $this->db->table('asset_ingest_batches')->where('batch_uuid', $batchUuid)->update($batchData);
+            } else {
+                $batchData['created_at'] = date('Y-m-d H:i:s');
+                $this->db->table('asset_ingest_batches')->insert($batchData);
+            }
 
             // Pre-fetch all fingerprints for existing row checks in bulk
             $fingerprints = array_map(fn($r) => $this->generateSourceFingerprint($r), $sourceRows);

@@ -462,7 +462,10 @@
                     document.getElementById('finalResultsCard').classList.remove('d-none');
                 }, 800);
             } else {
-                alert('Upload Failed: ' + (json.messages?.error || json.message || 'Error processing payload'));
+                const failureMsg = json.failure_message || json.message || json.messages?.error || json.error || 'Error processing payload';
+                const failureCode = json.failure_code ? ` [Code: ${json.failure_code}]` : '';
+                const corrId = json.correlation_id ? ` (Ref: ${json.correlation_id})` : '';
+                alert(`Upload Failed: ${failureMsg}${failureCode}${corrId}`);
                 resetUploadForm();
             }
         } catch (err) {

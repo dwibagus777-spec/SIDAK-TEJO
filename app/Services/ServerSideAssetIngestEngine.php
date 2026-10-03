@@ -234,10 +234,11 @@ class ServerSideAssetIngestEngine
 
         // Rule 1: Canonical Asset Code Match
         if ($code !== '') {
-            $existing = $this->db->table('assets')
+            $query = $this->db->table('assets')
                 ->where('kode_asset', $code)
                 ->where('deleted_at IS NULL', null, false)
-                ->get()->getRowArray();
+                ->get();
+            $existing = ($query && !is_bool($query)) ? $query->getRowArray() : null;
             if ($existing) {
                 return [
                     'status'           => 'MATCHED_EXISTING',
@@ -256,7 +257,8 @@ class ServerSideAssetIngestEngine
             if ($this->db->fieldExists('penyulang_id', 'assets') && is_numeric($feeder)) {
                 $builder->where('penyulang_id', (int)$feeder);
             }
-            $existing = $builder->get()->getRowArray();
+            $query = $builder->get();
+            $existing = ($query && !is_bool($query)) ? $query->getRowArray() : null;
             if ($existing) {
                 return [
                     'status'           => 'MATCHED_EXISTING',
@@ -268,18 +270,24 @@ class ServerSideAssetIngestEngine
 
         // Rule 3: Coordinate Proximity Match (< 1.0 meter)
         if ($lat !== null && $lng !== null) {
-            $existing = $this->db->table('assets')
-                ->select("id, (6371000 * acos(cos(radians({$lat})) * cos(radians(latitude)) * cos(radians(longitude) - radians({$lng})) + sin(radians({$lat})) * sin(radians(latitude)))) AS dist_m")
-                ->where('deleted_at IS NULL', null, false)
-                ->having('dist_m <=', 1.0)
-                ->orderBy('dist_m', 'ASC')
-                ->get()->getRowArray();
-            if ($existing) {
-                return [
-                    'status'           => 'MATCHED_EXISTING',
-                    'matched_asset_id' => (int)$existing['id'],
-                    'classification'   => 'SPATIAL_PROXIMITY_MATCH',
-                ];
+            $sql = "SELECT id, (6371000 * acos(LEAST(1.0, GREATEST(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist_m 
+                    FROM assets 
+                    WHERE deleted_at IS NULL 
+                    HAVING dist_m <= 1.0 
+                    ORDER BY dist_m ASC 
+                    LIMIT 1";
+            try {
+                $query = $this->db->query($sql, [$lat, $lng, $lat]);
+                $existing = ($query && !is_bool($query)) ? $query->getRowArray() : null;
+                if ($existing) {
+                    return [
+                        'status'           => 'MATCHED_EXISTING',
+                        'matched_asset_id' => (int)$existing['id'],
+                        'classification'   => 'SPATIAL_PROXIMITY_MATCH',
+                    ];
+                }
+            } catch (\Throwable $e) {
+                log_message('error', '[ServerSideAssetIngestEngine] Proximity match query error: ' . $e->getMessage());
             }
         }
 
@@ -356,9 +364,12 @@ class ServerSideAssetIngestEngine
                 // Insert into assets table if assets table exists
                 if ($this->db->tableExists('assets')) {
                     $raw = json_decode($r['canonical_identity'], true) ?? [];
+                    $feederPrefix = !empty($r['feeder_name']) ? preg_replace('/[^A-Z0-9]/', '', strtoupper($r['feeder_name'])) : 'GEN';
+                    $identityHash = strtoupper(substr(md5(($r['asset_name'] ?? '') . '-' . ($r['latitude'] ?? '') . '-' . ($r['longitude'] ?? '')), 0, 8));
+
                     $assetData = [
-                        'kode_asset'  => $raw['kode_asset'] ?? ('AST-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8))),
-                        'nama_asset'  => $r['asset_name'] ?? 'NEW_INGESTED_ASSET',
+                        'kode_asset'  => !empty($raw['kode_asset']) ? $raw['kode_asset'] : "AST-{$feederPrefix}-{$identityHash}",
+                        'nama_asset'  => $r['asset_name'] ?? "NEW_INGESTED_ASSET_{$identityHash}",
                         'jenis_asset' => $raw['jenis_asset'] ?? 'JTM_COMPONENT',
                         'lokasi'      => $r['section_name'] ?? 'SIDOARJO',
                         'latitude'    => $r['latitude'],

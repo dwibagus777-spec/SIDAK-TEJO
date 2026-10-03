@@ -1037,10 +1037,11 @@ class TranslineNetworkCompletionEngine
         $rolledBack = [];
 
         foreach ($translineIds as $tId) {
-            $row = $this->db->table('gis_translines')
+            $query = $this->db->table('gis_translines')
                 ->where('id', (int)$tId)
                 ->where('deleted_at IS NULL')
-                ->get()->getRowArray();
+                ->get();
+            $row = ($query && !is_bool($query)) ? $query->getRowArray() : null;
 
             if (!$row) continue;
 

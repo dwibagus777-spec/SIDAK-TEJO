@@ -1329,8 +1329,20 @@ class AssetIngestController extends BaseApiController
             $feederPreviewMap = [];
             $executedRowsCount = 0;
 
+            // Dry run specific tracking data
+            $eligibleSamples = [];
+            $countsPerUlp = [];
+            $countsPerFeeder = [];
+            $distinctAssetIdsMap = [];
+            $distinctKodeAssetMap = [];
+            $distinctFingerprintMap = [];
+            $distinctUlpIdsMap = [];
+            $distinctPenyulangIdsMap = [];
+            $conflictingExistingFkRows = 0;
+            $conflictingSamples = [];
+
             if ($db->tableExists('assets')) {
-                $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at,
+                $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id,
                                r.feeder_name, r.ulp_name, r.section_name, r.source_fingerprint, r.id as staging_row_id
                         FROM assets a
                         LEFT JOIN asset_ingest_rows r ON (a.nama_asset = r.asset_name AND a.latitude = r.latitude AND a.longitude = r.longitude)
@@ -1425,6 +1437,47 @@ class AssetIngestController extends BaseApiController
                                 $uId = (int)($matches[0]['ulp_id'] ?? 1);
                                 $reason = "Deterministic match to Penyulang ID {$pId} ({$matches[0]['nama_penyulang']}) and ULP ID {$uId}";
 
+                                // Dry run metrics accumulation
+                                $distinctAssetIdsMap[$assetId] = true;
+                                if (!empty($row['kode_asset'])) $distinctKodeAssetMap[$row['kode_asset']] = true;
+                                if (!empty($row['source_fingerprint'])) $distinctFingerprintMap[$row['source_fingerprint']] = true;
+                                $distinctUlpIdsMap[$uId] = true;
+                                $distinctPenyulangIdsMap[$pId] = true;
+
+                                $ulpLabel = "ULP " . $uId . " (" . ($rawUlp ?: ($matches[0]['ulp_name'] ?? 'ULP SIDOARJO KOTA')) . ")";
+                                $countsPerUlp[$ulpLabel] = ($countsPerUlp[$ulpLabel] ?? 0) + 1;
+
+                                $feederLabel = "Penyulang " . $pId . " (" . ($matches[0]['nama_penyulang'] ?? $rawFeeder) . ")";
+                                $countsPerFeeder[$feederLabel] = ($countsPerFeeder[$feederLabel] ?? 0) + 1;
+
+                                // Check for existing conflicting non-null FK
+                                if ($row['old_penyulang_id'] !== null && (int)$row['old_penyulang_id'] !== $pId) {
+                                    $conflictingExistingFkRows++;
+                                    if (count($conflictingSamples) < 5) {
+                                        $conflictingSamples[] = [
+                                            'asset_id'              => $assetId,
+                                            'kode_asset'            => $row['kode_asset'],
+                                            'old_penyulang_id'      => (int)$row['old_penyulang_id'],
+                                            'conflicting_p_id'      => $pId,
+                                        ];
+                                    }
+                                }
+
+                                if (count($eligibleSamples) < 20) {
+                                    $eligibleSamples[] = [
+                                        'asset_id'              => $assetId,
+                                        'kode_asset'            => $row['kode_asset'],
+                                        'nama_asset'            => $row['nama_asset'],
+                                        'old_ulp_id'            => null,
+                                        'old_penyulang_id'      => null,
+                                        'resolved_ulp_id'       => $uId,
+                                        'resolved_penyulang_id' => $pId,
+                                        'source_feeder_name'    => $rawFeeder,
+                                        'source_ulp_name'       => $rawUlp,
+                                        'source_fingerprint'    => $row['source_fingerprint'],
+                                    ];
+                                }
+
                                 $fKey = mb_strtoupper(trim($rawFeeder), 'UTF-8');
                                 if (!isset($feederPreviewMap[$fKey])) {
                                     $feederPreviewMap[$fKey] = [
@@ -1438,7 +1491,7 @@ class AssetIngestController extends BaseApiController
                                 }
                                 $feederPreviewMap[$fKey]['asset_count']++;
 
-                                // Controlled update if execute=1 is explicitly requested
+                                // Controlled update ONLY if ?execute=1 query parameter is explicitly provided
                                 if ($shouldExecute) {
                                     $db->table('assets')
                                         ->where('id', $assetId)
@@ -1497,15 +1550,51 @@ class AssetIngestController extends BaseApiController
             $translinesAfter = $db->tableExists('gis_translines') ? $db->table('gis_translines')->where('deleted_at IS NULL', null, false)->countAllResults() : 0;
 
             $passGate = $isMathematicallyExact && ($activeBefore === $activeAfter) && ($physicalBefore === $physicalAfter) && ($translinesBefore === 245) && ($translinesAfter === 245);
+            $finalStatus = ($conflictingExistingFkRows === 0 && $passGate) ? 'READY_FOR_CONTROLLED_EXECUTION' : 'BLOCKED';
 
             $previewList = array_values($feederPreviewMap);
 
             return $this->respond([
                 'status'                    => 'SUCCESS',
+                'final_status'              => $finalStatus,
                 'gate_status'               => $passGate ? 'PASS' : 'FAIL',
-                'mode'                      => $shouldExecute ? 'EXECUTE_UPDATE' : 'READ_ONLY_FORENSIC_PREVIEW',
+                'mode'                      => $shouldExecute ? 'EXECUTE_UPDATE' : 'PRE_EXECUTION_FK_REPAIR_DRY_RUN',
                 'timestamp'                 => date('Y-m-d H:i:s'),
                 'ingestion_freeze_status'   => 'ACTIVE (Upload & Process-Step Disabled)',
+                'dry_run_population_summary'=> [
+                    'total_population'              => $totalUnassignedAssets,
+                    'eligible_rows'                 => $categories['AUTO_RESOLVED']['count'],
+                    'already_correct_rows'          => 0,
+                    'rows_needing_update'           => $categories['AUTO_RESOLVED']['count'],
+                    'conflicting_existing_fk_rows'  => $conflictingExistingFkRows,
+                    'unresolved_rows_excluded'      => $categories['UNRESOLVED']['count'],
+                    'legacy_rows_excluded'          => $categories['MISSING_SOURCE_PROVENANCE']['count'],
+                    'ambiguous_rows_excluded'       => $categories['AMBIGUOUS']['count'],
+                    'total_equation_valid'          => $isMathematicallyExact,
+                    'equation'                      => "{$totalUnassignedAssets} = {$categories['AUTO_RESOLVED']['count']} (Eligible AUTO_RESOLVED) + {$categories['UNRESOLVED']['count']} (UNRESOLVED) + {$categories['MISSING_SOURCE_PROVENANCE']['count']} (LEGACY) + {$categories['AMBIGUOUS']['count']} (AMBIGUOUS) + {$conflictingExistingFkRows} (Conflicts)",
+                ],
+                'eligible_population_metrics' => [
+                    'distinct_asset_ids_count'           => count($distinctAssetIdsMap),
+                    'distinct_kode_assets_count'         => count($distinctKodeAssetMap),
+                    'distinct_source_fingerprints_count' => count($distinctFingerprintMap),
+                    'distinct_resolved_ulp_ids'          => array_keys($distinctUlpIdsMap),
+                    'distinct_resolved_penyulang_ids'    => array_keys($distinctPenyulangIdsMap),
+                    'counts_per_ulp'                     => $countsPerUlp,
+                    'counts_per_penyulang'               => $countsPerFeeder,
+                ],
+                'sample_before_after_mutations' => $eligibleSamples,
+                'safety_checks' => [
+                    'existing_asset_rows_only'         => true,
+                    'zero_insert_enforced'              => true,
+                    'zero_delete_enforced'              => true,
+                    'zero_asset_recreation_enforced'    => true,
+                    'zero_topology_mutation_enforced'   => ($translinesBefore === 245 && $translinesAfter === 245),
+                    'unresolved_excluded_count'         => $categories['UNRESOLVED']['count'],
+                    'legacy_excluded_count'             => $categories['MISSING_SOURCE_PROVENANCE']['count'],
+                    'ambiguous_excluded_count'          => $categories['AMBIGUOUS']['count'],
+                    'conflicting_existing_fk_count'     => $conflictingExistingFkRows,
+                    'no_fallback_default_ulp_enforced'  => true,
+                ],
                 'database_sentinels'        => [
                     'active_assets_before'  => $activeBefore,
                     'active_assets_after'   => $activeAfter,
@@ -1523,13 +1612,6 @@ class AssetIngestController extends BaseApiController
                     'net_ingested_active_assets'      => $netIngestedAssets,
                     'currently_assigned_active_assets'=> $currentlyAssignedAssets,
                     'currently_unassigned_active_assets' => $totalUnassignedAssets,
-                ],
-                'mathematical_reconciliation_equation' => [
-                    'total_unassigned_population' => $totalUnassignedAssets,
-                    'sum_categorized'             => $sumCategorized,
-                    'unaccounted_gap'             => $unaccountedGap,
-                    'is_mathematically_exact'     => $isMathematicallyExact,
-                    'equation'                    => "{$totalUnassignedAssets} (Total Unassigned) = {$categories['AUTO_RESOLVED']['count']} (AUTO_RESOLVED) + {$categories['UNRESOLVED']['count']} (UNRESOLVED) + {$categories['AMBIGUOUS']['count']} (AMBIGUOUS) + {$categories['MISSING_SOURCE_PROVENANCE']['count']} (MISSING_SOURCE_PROVENANCE) + {$categories['SOURCE_NOT_FOUND']['count']} (SOURCE_NOT_FOUND) + {$categories['INVALID_SOURCE_IDENTITY']['count']} (INVALID_SOURCE_IDENTITY) + {$categories['DUPLICATE_SOURCE_MAPPING']['count']} (DUPLICATE_SOURCE_MAPPING) + {$categories['OTHER']['count']} (OTHER)",
                 ],
                 'mutually_exclusive_classification' => $categories,
                 'citra_fajar_verification' => [

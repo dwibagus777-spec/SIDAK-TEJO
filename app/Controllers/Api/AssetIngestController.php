@@ -1350,7 +1350,7 @@ class AssetIngestController extends BaseApiController
                         $reconciliationPreview[] = [
                             'canonical_ulp_name'    => $uName ?: 'ULP SIDOARJO KOTA',
                             'canonical_feeder_name' => $fName,
-                            'resolved_ulp_id'       => $resolvedPenyulangId,
+                            'resolved_ulp_id'       => $resolvedUlpId,
                             'resolved_penyulang_id' => $resolvedPenyulangId,
                             'match_status'          => $status,
                             'asset_count'           => $cnt,

@@ -35,7 +35,11 @@ class MigrateController extends BaseController
 
         try {
             // Auto-deploy git sync on Hostinger production
-            $this->autoDeploy();
+            try {
+                $this->autoDeploy();
+            } catch (\Throwable $exDeploy) {
+                log_message('warning', '[MigrateController] autoDeploy warning: ' . $exDeploy->getMessage());
+            }
 
             // Run Idempotent Asset Ingest Schema Migration (Track D)
             if (file_exists(APPPATH . 'Database/Migrations/2026-10-02-000001_CreateIdempotentAssetIngestSchema.php')) {

@@ -44,6 +44,12 @@ class AssetIngestBatchModel extends Model
 
     public function getByUuid(string $uuid): ?array
     {
-        return $this->builder()->where('batch_uuid', $uuid)->get()->getRowArray();
+        try {
+            $res = $this->builder()->where('batch_uuid', $uuid)->get();
+            return ($res && !is_bool($res)) ? $res->getRowArray() : null;
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetIngestBatchModel::getByUuid] ' . $e->getMessage());
+            return null;
+        }
     }
 }

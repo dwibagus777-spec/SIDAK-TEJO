@@ -16,8 +16,70 @@ class ServerSideAssetIngestEngine
     public function __construct(?BaseConnection $db = null)
     {
         $this->db = $db ?? Database::connect();
+        $this->ensureTablesExist();
         $this->batchModel = new AssetIngestBatchModel();
         $this->rowModel = new AssetIngestRowModel();
+    }
+
+    public function ensureTablesExist(): void
+    {
+        try {
+            if (!$this->db->tableExists('asset_ingest_batches')) {
+                $this->db->query("CREATE TABLE IF NOT EXISTS `asset_ingest_batches` (
+                    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    `batch_uuid` VARCHAR(64) NOT NULL UNIQUE,
+                    `source_file` VARCHAR(255) NOT NULL,
+                    `source_part` INT DEFAULT 1,
+                    `total_rows` INT DEFAULT 0,
+                    `matched_existing` INT DEFAULT 0,
+                    `source_duplicate` INT DEFAULT 0,
+                    `conflict_review` INT DEFAULT 0,
+                    `quarantine` INT DEFAULT 0,
+                    `candidate_new_asset` INT DEFAULT 0,
+                    `inserted` INT DEFAULT 0,
+                    `already_processed` INT DEFAULT 0,
+                    `duplicate_created` INT DEFAULT 0,
+                    `topology_delta` INT DEFAULT 0,
+                    `status` VARCHAR(50) DEFAULT 'PREPARED',
+                    `fingerprint` VARCHAR(64) NULL,
+                    `created_by` BIGINT UNSIGNED NULL,
+                    `created_at` DATETIME NULL,
+                    `updated_at` DATETIME NULL,
+                    `processed_at` DATETIME NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            }
+
+            if (!$this->db->tableExists('asset_ingest_rows')) {
+                $this->db->query("CREATE TABLE IF NOT EXISTS `asset_ingest_rows` (
+                    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    `batch_uuid` VARCHAR(64) NOT NULL,
+                    `source_file` VARCHAR(255) NOT NULL,
+                    `source_part` INT DEFAULT 1,
+                    `source_row_number` INT NOT NULL,
+                    `source_fingerprint` VARCHAR(64) NOT NULL,
+                    `canonical_identity` TEXT NULL,
+                    `unit_name` VARCHAR(100) NULL,
+                    `ulp_name` VARCHAR(100) NULL,
+                    `feeder_name` VARCHAR(100) NULL,
+                    `asset_name` VARCHAR(255) NULL,
+                    `section_name` VARCHAR(100) NULL,
+                    `latitude` DECIMAL(10,8) NULL,
+                    `longitude` DECIMAL(11,8) NULL,
+                    `raw_data` TEXT NULL,
+                    `processing_status` VARCHAR(50) DEFAULT 'RECEIVED',
+                    `classification` VARCHAR(100) DEFAULT 'UNCLASSIFIED',
+                    `matched_asset_id` BIGINT UNSIGNED NULL,
+                    `error_code` VARCHAR(50) NULL,
+                    `error_message` TEXT NULL,
+                    `created_at` DATETIME NULL,
+                    `processed_at` DATETIME NULL,
+                    INDEX `idx_batch_uuid` (`batch_uuid`),
+                    UNIQUE KEY `uniq_source_fp` (`source_fingerprint`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            }
+        } catch (\Throwable $e) {
+            log_message('error', '[ServerSideAssetIngestEngine::ensureTablesExist] ' . $e->getMessage());
+        }
     }
 
     /**
@@ -462,9 +524,11 @@ class ServerSideAssetIngestEngine
             $physicalTranslines = $this->db->table('gis_translines')->countAllResults();
         }
 
-        $pendingBatches = $this->db->table('asset_ingest_batches')
-            ->where('status', 'PREPARED')
-            ->get()->getResultArray();
+        $pendingBatches = [];
+        if ($this->db->tableExists('asset_ingest_batches')) {
+            $query = $this->db->table('asset_ingest_batches')->where('status', 'PREPARED')->get();
+            $pendingBatches = ($query && !is_bool($query)) ? $query->getResultArray() : [];
+        }
 
         return [
             'active_assets'        => $activeAssets,

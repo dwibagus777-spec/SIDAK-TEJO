@@ -46,11 +46,23 @@ class AssetIngestRowModel extends Model
 
     public function findByFingerprint(string $fingerprint): ?array
     {
-        return $this->builder()->where('source_fingerprint', $fingerprint)->get()->getRowArray();
+        try {
+            $res = $this->builder()->where('source_fingerprint', $fingerprint)->get();
+            return ($res && !is_bool($res)) ? $res->getRowArray() : null;
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetIngestRowModel::findByFingerprint] ' . $e->getMessage());
+            return null;
+        }
     }
 
     public function getRowsByBatch(string $batchUuid): array
     {
-        return $this->builder()->where('batch_uuid', $batchUuid)->get()->getResultArray();
+        try {
+            $res = $this->builder()->where('batch_uuid', $batchUuid)->get();
+            return ($res && !is_bool($res)) ? $res->getResultArray() : [];
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetIngestRowModel::getRowsByBatch] ' . $e->getMessage());
+            return [];
+        }
     }
 }

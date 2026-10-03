@@ -102,6 +102,7 @@ $routes->get('api/asset-ingest/batch/(:segment)', 'Api\AssetIngestController::ba
 $routes->post('api/asset-ingest/commit', 'Api\AssetIngestController::commit');
 $routes->get('api/asset-ingest/reconcile/(:segment)', 'Api\AssetIngestController::reconcile/$1');
 $routes->get('api/asset-ingest/forensic', 'Api\AssetIngestController::forensic');
+$routes->get('api/asset-ingest/version', 'Api\AssetIngestController::version');
 
 // SIDAK TEJO — Phase B.8.1 Remediation Core Routes
 $routes->get('remediation/audit', 'RemediationController::audit');

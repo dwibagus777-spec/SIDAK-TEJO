@@ -434,16 +434,17 @@ class AssetIngestController extends BaseApiController
     {
         $engineFile = APPPATH . 'Services/ServerSideAssetIngestEngine.php';
         $engineMTime = file_exists($engineFile) ? date('Y-m-d H:i:s', filemtime($engineFile)) : 'MISSING';
+        $db = \Config\Database::connect();
 
         return $this->respond([
             'status'            => 'ONLINE',
-            'version'           => 'D4.1-HOTFIX-5ce9301',
-            'commit_hash'       => '5ce9301f3823cf66465c27874a229b32f28c1b13',
+            'version'           => 'D4.1.2-ASYNC-535ef92',
+            'commit_hash'       => '535ef92',
             'engine_mtime'      => $engineMTime,
-            'batches_table'     => $this->db->tableExists('asset_ingest_batches'),
-            'rows_table'        => $this->db->tableExists('asset_ingest_rows'),
-            'assets_table'      => $this->db->tableExists('assets'),
-            'translines_table'  => $this->db->tableExists('gis_translines'),
+            'batches_table'     => $db->tableExists('asset_ingest_batches'),
+            'rows_table'        => $db->tableExists('asset_ingest_rows'),
+            'assets_table'      => $db->tableExists('assets'),
+            'translines_table'  => $db->tableExists('gis_translines'),
             'timestamp'         => date('Y-m-d H:i:s'),
         ]);
     }

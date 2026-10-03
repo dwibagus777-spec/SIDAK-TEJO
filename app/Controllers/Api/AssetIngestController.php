@@ -1353,6 +1353,8 @@ class AssetIngestController extends BaseApiController
             $distinctPenyulangIdsMap = [];
             $conflictingExistingFkRows = 0;
             $conflictingSamples = [];
+            $directAutoResolvedCount = 0;
+            $aliasResolvedCount = 0;
 
             if ($db->tableExists('assets')) {
                 $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id,
@@ -1448,7 +1450,17 @@ class AssetIngestController extends BaseApiController
                                 $catKey = 'AUTO_RESOLVED';
                                 $pId = (int)$matches[0]['id'];
                                 $uId = (int)($matches[0]['ulp_id'] ?? 1);
-                                $reason = "Deterministic match to Penyulang ID {$pId} ({$matches[0]['nama_penyulang']}) and ULP ID {$uId}";
+
+                                $isAliasMatch = isset($governedAliases[$normF]);
+                                if ($isAliasMatch) {
+                                    $aliasResolvedCount++;
+                                    $resMethod = 'GOVERNED_ALIAS';
+                                } else {
+                                    $directAutoResolvedCount++;
+                                    $resMethod = 'DIRECT_MASTER';
+                                }
+
+                                $reason = "Deterministic match to Penyulang ID {$pId} ({$matches[0]['nama_penyulang']}) via {$resMethod}";
 
                                 // Dry run metrics accumulation
                                 $distinctAssetIdsMap[$assetId] = true;
@@ -1486,8 +1498,10 @@ class AssetIngestController extends BaseApiController
                                         'resolved_ulp_id'       => $uId,
                                         'resolved_penyulang_id' => $pId,
                                         'source_feeder_name'    => $rawFeeder,
+                                        'master_feeder_name'    => $matches[0]['nama_penyulang'],
                                         'source_ulp_name'       => $rawUlp,
                                         'source_fingerprint'    => $row['source_fingerprint'],
+                                        'resolution_method'     => $resMethod,
                                     ];
                                 }
 
@@ -1498,6 +1512,7 @@ class AssetIngestController extends BaseApiController
                                         'canonical_feeder_name' => $rawFeeder,
                                         'resolved_ulp_id'       => $uId,
                                         'resolved_penyulang_id' => $pId,
+                                        'resolution_method'     => $resMethod,
                                         'match_status'          => 'AUTO_RESOLVED',
                                         'asset_count'           => 0,
                                     ];
@@ -1576,8 +1591,16 @@ class AssetIngestController extends BaseApiController
                 'ingestion_freeze_status'   => 'ACTIVE (Upload & Process-Step Disabled)',
                 'dry_run_population_summary'=> [
                     'total_population'              => $totalActiveAssets,
-                    'eligible_rows'                 => $categories['AUTO_RESOLVED']['count'],
                     'already_correct_rows'          => $currentlyAssignedAssets,
+                    'direct_auto_resolved_count'    => $directAutoResolvedCount,
+                    'alias_resolved_count'          => $aliasResolvedCount,
+                    'combined_eligible_update_count'=> $categories['AUTO_RESOLVED']['count'],
+                    'unresolved_count'              => $categories['UNRESOLVED']['count'],
+                    'ambiguous_count'               => $categories['AMBIGUOUS']['count'],
+                    'conflicting_existing_fk_rows'  => $conflictingExistingFkRows,
+                    'total_equation_valid'          => $isMathematicallyExact,
+                    'equation'                      => "{$totalActiveAssets} = {$currentlyAssignedAssets} (LEGACY ASSIGNED) + {$directAutoResolvedCount} (DIRECT AUTO RESOLVED) + {$aliasResolvedCount} (ALIAS RESOLVED) + {$categories['UNRESOLVED']['count']} (UNRESOLVED) + {$categories['AMBIGUOUS']['count']} (AMBIGUOUS) + {$conflictingExistingFkRows} (Conflicts)",
+                ],
                     'rows_needing_update'           => $categories['AUTO_RESOLVED']['count'],
                     'conflicting_existing_fk_rows'  => $conflictingExistingFkRows,
                     'unresolved_rows_excluded'      => $categories['UNRESOLVED']['count'],

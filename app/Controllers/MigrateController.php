@@ -1650,6 +1650,10 @@ class MigrateController extends BaseController
             $output[] = "OPcache reset successfully!";
         }
 
+        if (!headers_sent()) {
+            @header('X-LiteSpeed-Purge: *');
+        }
+
         try {
             $cacheFiles = glob(WRITEPATH . 'cache/*');
             if (is_array($cacheFiles)) {

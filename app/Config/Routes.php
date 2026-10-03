@@ -94,6 +94,15 @@ $routes->post('api/v1/sync/upload-chunk', 'MobileSyncController::uploadChunk');
 $routes->post('api/v1/sync/seal-evidence', 'MobileSyncController::sealEvidence');
 $routes->get('api/v1/sync/pull', 'MobileSyncController::pull');
 
+// Track D — Server-Side Idempotent Asset Ingestion Engine Routes
+$routes->post('api/asset-ingest/upload', 'Api\AssetIngestController::upload');
+$routes->post('api/asset-ingest/map', 'Api\AssetIngestController::map');
+$routes->post('api/asset-ingest/prepare', 'Api\AssetIngestController::prepare');
+$routes->get('api/asset-ingest/batch/(:segment)', 'Api\AssetIngestController::batch/$1');
+$routes->post('api/asset-ingest/commit', 'Api\AssetIngestController::commit');
+$routes->get('api/asset-ingest/reconcile/(:segment)', 'Api\AssetIngestController::reconcile/$1');
+$routes->get('api/asset-ingest/forensic', 'Api\AssetIngestController::forensic');
+
 // SIDAK TEJO — Phase B.8.1 Remediation Core Routes
 $routes->get('remediation/audit', 'RemediationController::audit');
 $routes->get('remediation/forensic-reconciliation', 'RemediationController::forensicReconciliation');
@@ -101,6 +110,20 @@ $routes->get('remediation/investigate/topology-delta', 'RemediationController::i
 $routes->match(['GET', 'POST'], 'remediation/migrate', 'RemediationController::migrate');
 $routes->match(['GET', 'POST'], 'remediation/test/synthetic-e2e', 'RemediationController::runSyntheticE2E');
 $routes->match(['GET', 'POST'], 'remediation/test/adversarial', 'RemediationController::runAdversarialTests');
+// SIDAK TEJO — Phase B.8.4 GIS / SLD Decision Cockpit Routes
+$routes->get('gis/cockpit', 'GisCockpitController::index');
+$routes->get('gis/cockpit/spatial-geojson', 'GisCockpitController::getSpatialGeoJson');
+$routes->get('gis/cockpit/asset-profile/(:num)', 'GisCockpitController::getAssetProfile/$1');
+$routes->get('sld/cockpit', 'SldCockpitController::index');
+// SIDAK TEJO — Phase B.8.5 Enterprise Forensic Audit Trail & Digital Evidence Packaging Routes
+$routes->get('forensic-audit/control-center', 'EnterpriseForensicAuditController::index');
+$routes->get('forensic-audit/provenance-snapshot', 'EnterpriseForensicAuditController::provenanceSnapshot');
+$routes->get('forensic-audit/forensic-bundle', 'EnterpriseForensicAuditController::forensicBundle');
+// SIDAK TEJO — Phase B.8.6 Planned Maintenance Outage & Shutdown Scope Core Routes
+$routes->get('planning/shutdown-workspace', 'ShutdownWorkPlanningController::index');
+$routes->get('api/planning/summary', 'ShutdownWorkPlanningController::apiPlanningSummary');
+$routes->match(['GET', 'POST'], 'api/planning/compose-scope', 'ShutdownWorkPlanningController::apiComposeScope');
+$routes->get('api/planning/plan/(:segment)', 'ShutdownWorkPlanningController::apiPlanDetail/$1');
 
 
 // Remediation Work Package Lifecycle API v1
@@ -173,9 +196,14 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('my-dashboard/timeline', 'PersonalDashboardController::timeline');
     $routes->get('ranking', 'PersonalDashboardController::ranking');
 
-    // Asset Health Index & Predictive Maintenance Routes (Phase 40)
+    // Asset Health Index & Predictive Maintenance Routes (B8.3 AHI Engine)
     $routes->get('asset-health', 'AssetHealthController::index');
+    $routes->get('asset-health/coverage', 'AssetHealthController::coverageReport');
+    $routes->get('asset-health/recommendations', 'AssetHealthController::recommendations');
+    $routes->post('asset-health/recommendations/(:num)/approve', 'AssetHealthController::approveRecommendation/$1');
+    $routes->post('asset-health/recalculate', 'AssetHealthController::recalculateAll');
     $routes->get('asset-health/explanation/(:num)', 'AssetHealthController::explanation/$1');
+    $routes->get('asset-health/(:num)', 'AssetHealthController::detail/$1');
     $routes->post('field-observation/vegetation', 'FieldObservationController::storeVegetation');
     // Preventive Intelligence & Risk Radar (Phase CC-01, CC-02, CC-03)
     $routes->get('preventive-intelligence', 'PreventiveIntelligenceController::index');
@@ -353,6 +381,42 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('operational-planning/executions/resume/(:num)', 'OperationalFieldExecutionController::resumeHold/$1');
     $routes->post('operational-planning/executions/complete/(:num)', 'OperationalFieldExecutionController::declareCompletion/$1');
     $routes->post('operational-planning/executions/abort/(:num)', 'OperationalFieldExecutionController::abort/$1');
+
+    // B8.7 Field Work Execution & Outage Realization Control Layer
+    $routes->get('field-execution/workspace', 'FieldExecutionControlController::workspace');
+    $routes->get('api/field-execution/summary', 'FieldExecutionControlController::apiSummary');
+    $routes->post('api/field-execution/dispatch', 'FieldExecutionControlController::apiDispatch');
+    $routes->post('api/field-execution/start', 'FieldExecutionControlController::apiStart');
+    $routes->post('api/field-execution/realize', 'FieldExecutionControlController::apiRealize');
+    $routes->post('api/field-execution/reconcile-materials', 'FieldExecutionControlController::apiReconcileMaterials');
+    $routes->post('api/field-execution/safety-hold', 'FieldExecutionControlController::apiSafetyHold');
+    $routes->post('api/field-execution/verify', 'FieldExecutionControlController::apiVerify');
+
+    // B8.8 Post-Execution Work Acceptance, QA & Asset Health Recalibration Loop Core
+    $routes->get('work-acceptance/workspace', 'WorkAcceptanceControlController::workspace');
+    $routes->get('api/work-acceptance/summary', 'WorkAcceptanceControlController::apiSummary');
+    $routes->post('api/work-acceptance/initiate', 'WorkAcceptanceControlController::apiInitiate');
+    $routes->post('api/work-acceptance/evaluate', 'WorkAcceptanceControlController::apiEvaluate');
+    $routes->post('api/work-acceptance/recalibrate-health', 'WorkAcceptanceControlController::apiRecalibrateHealth');
+    $routes->post('api/work-acceptance/close', 'WorkAcceptanceControlController::apiClose');
+
+    // B8.9 Continuous Reliability Intelligence & Closed-Loop Learning Core
+    $routes->get('reliability-learning/workspace', 'ContinuousReliabilityLearningController::workspace');
+    $routes->get('api/reliability-learning/summary', 'ContinuousReliabilityLearningController::apiSummary');
+    $routes->post('api/reliability-learning/recalibrate-lineage', 'ContinuousReliabilityLearningController::apiRecalibrateLineage');
+    $routes->get('api/reliability-learning/effectiveness', 'ContinuousReliabilityLearningController::apiEffectiveness');
+    $routes->get('api/reliability-learning/advisory', 'ContinuousReliabilityLearningController::apiAdvisory');
+
+    // B8.10 Executive Reliability Capital Allocation & Investment Optimization Core
+    $routes->get('capital-investment/workspace', 'ExecutiveCapitalInvestmentController::workspace');
+    $routes->get('api/capital-investment/summary', 'ExecutiveCapitalInvestmentController::apiSummary');
+    $routes->post('api/capital-investment/assemble', 'ExecutiveCapitalInvestmentController::apiAssemble');
+    $routes->post('api/capital-investment/simulate-saidi', 'ExecutiveCapitalInvestmentController::apiSimulateSaidi');
+    $routes->post('api/capital-investment/ratify-executive', 'ExecutiveCapitalInvestmentController::apiRatifyExecutive');
+
+
+
+
 
     // Wave 2 Work Acceptance, Quality Assurance & Closure Governance (Phase OP-07)
     $routes->get('operational-planning/acceptances', 'OperationalWorkAcceptanceController::index');
@@ -939,6 +1003,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('remediation/work-packages', 'RemediationWorkPackageController::workPackages');
     $routes->get('remediation/work-packages/(:num)', 'RemediationWorkPackageController::show/$1');
     $routes->get('remediation/create', 'RemediationWorkPackageController::create');
+
+    // ── B8.2 Material Requisition Core UI (Phase 2A — Read-Only) ─────────────
+    $routes->get('remediation/material-requisitions', 'MaterialRequisitionController::index');
+    $routes->get('remediation/material-requisitions/create', 'MaterialRequisitionController::create');
+    $routes->get('remediation/material-requisitions/(:num)', 'MaterialRequisitionController::show/$1');
     // ─────────────────────────────────────────────────────────────────────────
 });
 
@@ -1079,4 +1148,40 @@ foreach (['v1', 'v2', 'v3'] as $version) {
         $routes->get('documents', 'Api\v1\ApiController::getDocuments');
     });
 }
+
+// Track D — D1: Enterprise Digital Twin & Scenario Simulation Core Routes
+$routes->get('digital-twin/workspace', 'DigitalTwinScenarioController::workspace');
+$routes->get('api/digital-twin/summary', 'DigitalTwinScenarioController::summary');
+$routes->get('api/digital-twin/scenarios', 'DigitalTwinScenarioController::scenarios');
+$routes->post('api/digital-twin/run-simulation', 'DigitalTwinScenarioController::runSimulation');
+$routes->get('api/digital-twin/compare/(:any)', 'DigitalTwinScenarioController::compare/$1');
+$routes->get('api/digital-twin/forensic-bundle/(:any)', 'DigitalTwinScenarioController::forensicBundle/$1');
+$routes->post('api/digital-twin/submit-recommendation', 'DigitalTwinScenarioController::submitRecommendation');
+$routes->post('api/digital-twin/human-approve', 'DigitalTwinScenarioController::humanApprove');
+
+// Track D1: Enterprise Asset Corpus Reconciliation & Completion Core Routes
+$routes->get('asset-corpus/workspace', 'AssetCorpusCompletionController::workspace');
+$routes->get('api/asset-corpus/summary', 'AssetCorpusCompletionController::summary');
+$routes->get('api/asset-corpus/reconcile-audit', 'AssetCorpusCompletionController::reconcileAudit');
+$routes->post('api/asset-corpus/commit-governed', 'AssetCorpusCompletionController::commitGoverned');
+$routes->get('api/asset-corpus/forensic-bundle/(:any)', 'AssetCorpusCompletionController::forensicBundle/$1');
+
+// Track D2: Transline Network Connectivity Completion Core Routes
+$routes->get('transline-completion/workspace', 'TranslineConnectivityCompletionController::workspace');
+$routes->get('api/transline-completion/summary', 'TranslineConnectivityCompletionController::summary');
+$routes->get('api/transline-completion/scan-candidates', 'TranslineConnectivityCompletionController::scanCandidates');
+$routes->post('api/transline-completion/promote-candidate', 'TranslineConnectivityCompletionController::promoteCandidate');
+$routes->get('api/transline-completion/forensic-bundle/(:any)', 'TranslineConnectivityCompletionController::forensicBundle/$1');
+
+// Track D3: Fault Locator Workspace & FLI-1.0.0 Engine Binding Routes
+$routes->get('fault-locator', 'FaultLocatorController::workspace');
+$routes->get('fault-locator/workspace', 'FaultLocatorController::workspace');
+$routes->get('api/fault-locator/summary', 'FaultLocatorController::summary');
+$routes->post('api/fault-locator/locate', 'FaultLocatorController::locateFault');
+$routes->post('api/fault-locator/dispatch', 'FaultLocatorController::dispatch');
+$routes->get('api/fault-locator/forensic-bundle/(:any)', 'FaultLocatorController::forensicBundle/$1');
+
+
+
+
 

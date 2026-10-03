@@ -1009,11 +1009,17 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 4: DATA & MASTER REFERENSI -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-data" aria-expanded="<?= (url_is('master*') || url_is('asset*') || url_is('eviden*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*')) ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-data" aria-expanded="<?= (url_is('asset-corpus*') || url_is('master*') || url_is('asset*') || url_is('eviden*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*')) ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
                             <span><i class="fas fa-database me-1 text-success"></i> DATA & MASTER REFERENSI</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
-                        <div class="collapse <?= (url_is('master*') || url_is('asset*') || url_is('eviden*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*')) ? 'show' : '' ?>" id="group-data">
+                        <div class="collapse <?= (url_is('asset-corpus*') || url_is('master*') || url_is('asset*') || url_is('eviden*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*')) ? 'show' : '' ?>" id="group-data">
+                            <li class="nav-item <?= url_is('asset-corpus*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('asset-corpus/workspace') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-file-csv text-success"></i></span>
+                                    <span class="nav-link-title">Asset Corpus</span>
+                                </a>
+                            </li>
                             <li class="nav-item <?= (url_is('asset-health*') || url_is('penyulang/health-index*')) ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('asset-health') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-heart-pulse text-danger"></i></span>

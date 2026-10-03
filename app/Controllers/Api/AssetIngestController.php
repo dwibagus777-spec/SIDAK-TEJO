@@ -1324,8 +1324,8 @@ class AssetIngestController extends BaseApiController
             $totalActiveAssets = $activeBefore;
             $baselineActiveAssets = 5236;
             $netIngestedAssets = max(0, $totalActiveAssets - $baselineActiveAssets);
-            $currentlyAssignedAssets = $db->tableExists('assets') ? $db->table('assets')->where('deleted_at IS NULL', null, false)->where('penyulang_id IS NOT NULL', null, false)->countAllResults() : 0;
-            $totalUnassignedAssets = $db->tableExists('assets') ? $db->table('assets')->where('deleted_at IS NULL', null, false)->where('penyulang_id IS NULL', null, false)->countAllResults() : 0;
+            $currentlyAssignedAssets = $db->tableExists('assets') ? $db->table('assets')->where('deleted_at IS NULL', null, false)->where('penyulang_id IS NOT NULL', null, false)->where('penyulang_id > 0')->countAllResults() : 0;
+            $totalUnassignedAssets = $db->tableExists('assets') ? $db->table('assets')->where('deleted_at IS NULL', null, false)->groupStart()->where('penyulang_id IS NULL')->orWhere('penyulang_id', 0)->groupEnd()->countAllResults() : 0;
 
             // 3. Exhaustive Population Classification of ALL Unassigned Production Assets
             $categories = [
@@ -1361,7 +1361,7 @@ class AssetIngestController extends BaseApiController
                                r.feeder_name, r.ulp_name, r.section_name, r.source_fingerprint, r.id as staging_row_id
                         FROM assets a
                         LEFT JOIN asset_ingest_rows r ON (a.nama_asset = r.asset_name AND r.processing_status = 'INSERTED')
-                        WHERE a.deleted_at IS NULL AND a.penyulang_id IS NULL";
+                        WHERE a.deleted_at IS NULL AND (a.penyulang_id IS NULL OR a.penyulang_id = 0)";
                 
                 $query = $db->query($sql);
                 if ($query && !is_bool($query)) {

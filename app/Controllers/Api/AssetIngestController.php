@@ -1654,6 +1654,138 @@ class AssetIngestController extends BaseApiController
         }
     }
 
+    /**
+     * D4.1.11-B — GIS Feeder Visibility Forensic Audit (Strict Read-Only)
+     * GET /api/asset-ingest/d4111b-gis-forensic
+     */
+    public function d4111bGisForensic()
+    {
+        try {
+            $db = \Config\Database::connect();
+            $assetRepo = new \App\Repositories\AssetRepository();
+            $gisService = new \App\Services\GISService();
+
+            $feedersToAudit = [
+                12 => 'CITRA FAJAR',
+                37 => 'SUMOKALI',
+            ];
+
+            $results = [];
+
+            foreach ($feedersToAudit as $fId => $fName) {
+                // 1. Database Layer Check
+                $dbAssets = $db->table('assets')
+                    ->select('id, kode_asset, nama_asset, jenis_asset, penyulang_id, ulp_id, latitude, longitude')
+                    ->where('deleted_at IS NULL', null, false)
+                    ->where('penyulang_id', $fId)
+                    ->get()
+                    ->getResultArray();
+
+                $dbCount = count($dbAssets);
+                $sampleIds = array_slice(array_map(fn($a) => (int)$a['id'], $dbAssets), 0, 20);
+                $sampleCodes = array_slice(array_map(fn($a) => (string)$a['kode_asset'], $dbAssets), 0, 20);
+                
+                $distinctJenis = array_unique(array_map(fn($a) => (string)($a['jenis_asset'] ?? 'NULL'), $dbAssets));
+                $distinctUlps  = array_unique(array_map(fn($a) => (int)($a['ulp_id'] ?? 0), $dbAssets));
+
+                // 2. Repository Layer Check
+                $repoAssets = $assetRepo->getGisNetworkAssets([
+                    'penyulang_id' => $fId,
+                    'ulp_id'       => 1,
+                    'zoom'         => 14,
+                    'layers'       => 'JTM,GARDU,TRAFO,SWITCH'
+                ], 1);
+                $repoCount = count($repoAssets);
+
+                // 3. Service Layer Check
+                $serviceData = $gisService->getNetworkData([
+                    'penyulang_id' => $fId,
+                    'ulp_id'       => 1,
+                    'zoom'         => 14,
+                    'layers'       => 'JTM,GARDU,TRAFO,SWITCH'
+                ], 1);
+
+                $features = $serviceData['features'] ?? [];
+                $summary  = $serviceData['summary'] ?? [];
+
+                $feederScopeFeatures = 0;
+                $unassignedScopeFeatures = 0;
+                foreach ($features as $f) {
+                    $scope = $f['properties']['asset_scope'] ?? '';
+                    if ($scope === 'FEEDER') {
+                        $feederScopeFeatures++;
+                    } elseif ($scope === 'ULP_UNASSIGNED') {
+                        $unassignedScopeFeatures++;
+                    }
+                }
+
+                // 4. Topology Check
+                $translineCount = $db->tableExists('gis_translines')
+                    ? $db->table('gis_translines')->where('penyulang_id', $fId)->where('deleted_at IS NULL', null, false)->countAllResults()
+                    : 0;
+
+                // 5. Layer Loss & Root Cause Diagnostics
+                $rootCause = 'UNKNOWN';
+                if ($dbCount === 0) {
+                    $rootCause = 'DATABASE_FK';
+                } elseif ($repoCount === 0) {
+                    $rootCause = 'BACKEND_QUERY'; // getGisNetworkAssets SQL filter (e.g. allowedJenisList missing JTM_COMPONENT)
+                } elseif ($feederScopeFeatures === 0) {
+                    $rootCause = 'API_PAYLOAD'; // ULP mismatch or rejected_cross_ulp in GISService
+                } else {
+                    $rootCause = 'FRONTEND_FILTER_OR_CACHE_OR_TOPOLOGY_COUPLING';
+                }
+
+                $results[$fName] = [
+                    'feeder_id'                   => $fId,
+                    'feeder_name'                 => $fName,
+                    'layer_1_db_active_count'     => $dbCount,
+                    'sample_asset_ids'            => $sampleIds,
+                    'sample_kode_assets'          => $sampleCodes,
+                    'distinct_jenis_asset_in_db'  => array_values($distinctJenis),
+                    'distinct_ulp_ids_in_db'      => array_values($distinctUlps),
+                    'layer_2_repository_count'    => $repoCount,
+                    'layer_3_service_features'    => count($features),
+                    'feeder_scope_features_count' => $feederScopeFeatures,
+                    'unassigned_scope_features'   => $unassignedScopeFeatures,
+                    'rejected_cross_feeder_assets'=> $summary['rejected_cross_feeder'] ?? 0,
+                    'rejected_cross_ulp_assets'   => $summary['rejected_cross_ulp'] ?? 0,
+                    'transline_edges_count'       => $translineCount,
+                    'has_topology'                => ($translineCount > 0),
+                    'diagnostic_root_cause'       => $rootCause,
+                ];
+            }
+
+            // Overall root cause summary
+            $overallCause = 'NONE';
+            foreach ($results as $r) {
+                if ($r['diagnostic_root_cause'] !== 'NONE') {
+                    $overallCause = $r['diagnostic_root_cause'];
+                    break;
+                }
+            }
+
+            return $this->respond([
+                'status'                        => 'SUCCESS',
+                'gate_status'                   => ($overallCause === 'NONE') ? 'GIS_FORENSIC_PASS' : 'GIS_FORENSIC_BLOCKED',
+                'gis_visibility_root_cause'     => $overallCause,
+                'mode'                          => 'READ_ONLY_FORENSIC',
+                'timestamp'                     => date('Y-m-d H:i:s'),
+                'ingestion_freeze_status'       => 'ACTIVE (Upload & Process-Step Disabled, Zero DB Mutation)',
+                'architectural_rule'            => 'ASSET EXISTENCE MUST NOT DEPEND ON OFFICIAL TOPOLOGY (NO_NETWORK must NOT suppress asset visibility)',
+                'feeders_audited'               => $results,
+            ]);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[AssetIngestController::d4111bGisForensic] Exception: ' . $e->getMessage());
+            return $this->respond([
+                'status'          => 'FAILED',
+                'failure_code'    => 'SERVER_ERROR',
+                'failure_message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     private function normalizeFeederName(?string $name): string
     {
         if ($name === null) return '';
@@ -1662,3 +1794,4 @@ class AssetIngestController extends BaseApiController
         return preg_replace('/\s+/', ' ', trim($n));
     }
 }
+

@@ -109,6 +109,7 @@ $routes->get('api/asset-ingest/d415-audit', 'Api\AssetIngestController::d415Audi
 $routes->get('api/asset-ingest/d417-audit', 'Api\AssetIngestController::d417Audit');
 $routes->get('api/asset-ingest/d418-audit', 'Api\AssetIngestController::d418Audit');
 $routes->get('api/asset-ingest/d419-audit', 'Api\AssetIngestController::d419Audit');
+$routes->get('api/asset-ingest/d4111b-gis-forensic', 'Api\AssetIngestController::d4111bGisForensic');
 $routes->get('api/asset-ingest/version', 'Api\AssetIngestController::version');
 
 // SIDAK TEJO — Phase B.8.1 Remediation Core Routes

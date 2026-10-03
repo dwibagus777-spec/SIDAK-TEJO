@@ -1251,23 +1251,53 @@ class AssetIngestController extends BaseApiController
                 $qM = $db->table('master_penyulang')->get();
                 if ($qM && !is_bool($qM)) {
                     foreach ($qM->getResultArray() as $m) {
-                        $rawName = $m['nama_penyulang'] ?? $m['nama'] ?? '';
-                        $normName = $this->normalizeFeederName($rawName);
-                        if ($normName !== '') {
-                            $masterFeederMap[$normName][] = $m;
+                        $rawNames = array_filter([
+                            $m['nama_penyulang'] ?? null,
+                            $m['nama'] ?? null,
+                            $m['kode_penyulang'] ?? null,
+                            $m['penyulang'] ?? null,
+                        ]);
+                        foreach ($rawNames as $rn) {
+                            $normName = $this->normalizeFeederName($rn);
+                            if ($normName !== '') {
+                                $masterFeederMap[$normName][$m['id']] = $m;
+                            }
                         }
                     }
                 }
             }
 
+            if ($db->tableExists('gis_translines')) {
+                $qTlF = $db->query("SELECT DISTINCT penyulang_id, feeder_name, ulp_id, ulp_name FROM gis_translines WHERE penyulang_id IS NOT NULL AND penyulang_id > 0");
+                if ($qTlF && !is_bool($qTlF)) {
+                    foreach ($qTlF->getResultArray() as $tlf) {
+                        $rn = $tlf['feeder_name'] ?? '';
+                        $normName = $this->normalizeFeederName($rn);
+                        if ($normName !== '' && !isset($masterFeederMap[$normName])) {
+                            $masterFeederMap[$normName][$tlf['penyulang_id']] = [
+                                'id'             => (int)$tlf['penyulang_id'],
+                                'nama_penyulang' => $rn,
+                                'ulp_id'         => (int)($tlf['ulp_id'] ?? 1),
+                                'ulp_name'       => $tlf['ulp_name'] ?? 'ULP SIDOARJO KOTA',
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Flatten array values
+            foreach ($masterFeederMap as $k => $v) {
+                $masterFeederMap[$k] = array_values($v);
+            }
+
             // Always ensure CITRA FAJAR resolves to ID 12
             if (!isset($masterFeederMap['CITRA FAJAR'])) {
-                $masterFeederMap['CITRA FAJAR'][] = [
+                $masterFeederMap['CITRA FAJAR'] = [[
                     'id' => 12,
                     'nama_penyulang' => 'CITRA FAJAR',
                     'ulp_id' => 1,
                     'ulp_name' => 'ULP SIDOARJO KOTA',
-                ];
+                ]];
             }
 
             // Inspect assets where penyulang_id IS NULL

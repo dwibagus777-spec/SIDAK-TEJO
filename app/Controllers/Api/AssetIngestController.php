@@ -1374,7 +1374,7 @@ class AssetIngestController extends BaseApiController
                     $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id,
                                    r.feeder_name, r.ulp_name, r.section_name, r.source_fingerprint, r.id as staging_row_id
                             FROM assets a
-                            LEFT JOIN asset_ingest_rows r ON (a.nama_asset = r.asset_name AND r.processing_status = 'INSERTED')
+                            LEFT JOIN asset_ingest_rows r ON (a.nama_asset = r.asset_name COLLATE utf8mb4_general_ci AND r.processing_status = 'INSERTED')
                             WHERE a.deleted_at IS NULL AND (a.penyulang_id IS NULL OR a.penyulang_id = 0)
                             ORDER BY a.id ASC
                             LIMIT {$chunkSize} OFFSET {$offset}";

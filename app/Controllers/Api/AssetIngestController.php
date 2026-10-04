@@ -1362,7 +1362,15 @@ class AssetIngestController extends BaseApiController
                 $chunkSize = 2500;
                 $offset = 0;
 
+                $loopDiagnostics = [
+                    'iterations'        => 0,
+                    'last_error'        => null,
+                    'first_chunk_count' => null,
+                    'last_sql'          => null,
+                ];
+
                 while (true) {
+                    $loopDiagnostics['iterations']++;
                     $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id,
                                    r.feeder_name, r.ulp_name, r.section_name, r.source_fingerprint, r.id as staging_row_id
                             FROM assets a
@@ -1371,10 +1379,17 @@ class AssetIngestController extends BaseApiController
                             ORDER BY a.id ASC
                             LIMIT {$chunkSize} OFFSET {$offset}";
                     
+                    $loopDiagnostics['last_sql'] = $sql;
                     $query = $db->query($sql);
-                    if (!$query || is_bool($query)) break;
+                    if (!$query || is_bool($query)) {
+                        $loopDiagnostics['last_error'] = $db->error();
+                        break;
+                    }
                     
                     $rows = $query->getResultArray();
+                    if ($loopDiagnostics['iterations'] === 1) {
+                        $loopDiagnostics['first_chunk_count'] = count($rows);
+                    }
                     if (empty($rows)) break;
 
                     $offset += count($rows);
@@ -1596,6 +1611,7 @@ class AssetIngestController extends BaseApiController
                 'final_status'              => $finalStatus,
                 'gate_status'               => $passGate ? 'PASS' : 'FAIL',
                 'mode'                      => $shouldExecute ? 'EXECUTE_UPDATE' : 'PRE_EXECUTION_FK_REPAIR_DRY_RUN',
+                'loop_diagnostics'          => $loopDiagnostics ?? null,
                 'timestamp'                 => date('Y-m-d H:i:s'),
                 'ingestion_freeze_status'   => 'ACTIVE (Upload & Process-Step Disabled)',
                 'dry_run_population_summary'=> [

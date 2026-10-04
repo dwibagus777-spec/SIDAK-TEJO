@@ -107,4 +107,31 @@ class EccRepository
             return [];
         }
     }
+
+    public function getPelaksanaDistribution(?int $ulpIdFilter = null): array
+    {
+        try {
+            $builder = $this->db->table('temuan t');
+            $builder->select('t.pelaksana, COUNT(t.id) as total');
+            $builder->where('t.deleted_at IS NULL');
+            $builder->where("t.pelaksana IS NOT NULL AND t.pelaksana != ''");
+            if ($ulpIdFilter) {
+                $builder->where('t.ulp_id', $ulpIdFilter);
+            }
+            $builder->groupBy('t.pelaksana');
+            $builder->orderBy('total', 'DESC');
+
+            $query = $builder->get();
+            if ($query === false || !($query instanceof BaseResult)) {
+                $error = $this->db->error();
+                log_message('error', '[EccRepository::getPelaksanaDistribution] Query gagal | Code: ' . ($error['code'] ?? 'N/A') . ' | Message: ' . ($error['message'] ?? 'Unknown'));
+                return [];
+            }
+
+            return $query->getResultArray();
+        } catch (\Throwable $e) {
+            log_message('error', '[EccRepository::getPelaksanaDistribution] Exception: ' . $e->getMessage());
+            return [];
+        }
+    }
 }

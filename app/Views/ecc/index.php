@@ -164,11 +164,25 @@ $(document).ready(function() {
     var chartSla = new ApexCharts(document.querySelector("#chart-sla"), optionsSla);
     chartSla.render();
 
-    // 2. Chart Tim Pelaksana
+    // 2. Chart Tim Pelaksana (Live Database Aggregation)
+    <?php
+    $pelaksanaCats = [];
+    $pelaksanaVals = [];
+    if (!empty($pelaksanaDistribution)) {
+        foreach ($pelaksanaDistribution as $pRow) {
+            $pelaksanaCats[] = (string)($pRow['pelaksana'] ?? 'Lainnya');
+            $pelaksanaVals[] = (int)($pRow['total'] ?? 0);
+        }
+    }
+    if (empty($pelaksanaCats)) {
+        $pelaksanaCats = ['PDKB', 'HAR ROW', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR CRANE', 'YANTEK'];
+        $pelaksanaVals = [0, 0, 0, 0, 0, 0];
+    }
+    ?>
     var optionsPelaksana = {
-        series: [{ data: [14, 22, 18, 9, 12, 15] }],
+        series: [{ name: 'Total Temuan', data: <?= json_encode($pelaksanaVals) ?> }],
         chart: { type: 'bar', height: 220, foreColor: '#ffffff' },
-        xaxis: { categories: ['PDKB', 'HAR ROW', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR CRANE', 'YANTEK'] },
+        xaxis: { categories: <?= json_encode($pelaksanaCats) ?> },
         colors: ['#eab308']
     };
     var chartPelaksana = new ApexCharts(document.querySelector("#chart-pelaksana"), optionsPelaksana);

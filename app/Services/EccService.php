@@ -39,13 +39,17 @@ class EccService
             ]);
         }
 
+        // Calculate Pelaksana Distribution
+        $pelaksanaDistribution = $this->repository->getPelaksanaDistribution($ulpIdFilter);
+
         return [
-            'metrics'       => $metrics,
-            'emergencyWall' => $emergencyWall,
-            'ulpRankings'   => $ulpScores,
-            'aiSummary'     => $aiSummary,
-            'forecast'      => $forecast,
-            'timestamp'     => date('Y-m-d H:i:s'),
+            'metrics'               => $metrics,
+            'emergencyWall'         => $emergencyWall,
+            'ulpRankings'           => $ulpScores,
+            'pelaksanaDistribution' => $pelaksanaDistribution,
+            'aiSummary'             => $aiSummary,
+            'forecast'              => $forecast,
+            'timestamp'             => date('Y-m-d H:i:s'),
         ];
     }
 

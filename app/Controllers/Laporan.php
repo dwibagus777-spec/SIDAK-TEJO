@@ -22,9 +22,12 @@ class Laporan extends BaseController
         $this->sectionRepository = new SectionRepository();
     }
 
-    private function parseGarduName(string $detail): string
+    private function parseGarduName(?string $detail, ?string $noga = null): string
     {
-        if (preg_match('/Gardu:\s*([^.\n]+)/i', $detail, $matches)) {
+        if (!empty($noga) && trim($noga) !== '') {
+            return trim($noga);
+        }
+        if (!empty($detail) && preg_match('/(?:Gardu|Noga):\s*([^.\n,]+)/i', $detail, $matches)) {
             return trim($matches[1]);
         }
         return 'Gardu';
@@ -631,7 +634,7 @@ class Laporan extends BaseController
             $builder->orderBy('k.tgl_input', 'DESC');
         } elseif ($jenis === 'NAMEPLATE') {
             $builder = $db->table('temuan t');
-            $builder->select('t.id, t.detail_temuan, t.tanggal_temuan as tgl_input, s.nama_section');
+            $builder->select('t.id, t.noga, t.detail_temuan, t.tanggal_temuan as tgl_input, s.nama_section');
             $builder->join('sections s', 't.section_id = s.id', 'left');
             $builder->where('t.pelaksana', 'HAR GARDU');
             $builder->groupStart()
@@ -657,7 +660,7 @@ class Laporan extends BaseController
         
         if ($jenis === 'NAMEPLATE') {
             foreach ($dataList as &$item) {
-                $item['nama_gardu'] = $this->parseGarduName($item['detail_temuan']);
+                $item['nama_gardu'] = $this->parseGarduName($item['detail_temuan'], $item['noga'] ?? null);
             }
         }
         
@@ -695,7 +698,7 @@ class Laporan extends BaseController
             $dataList = $builder->get()->getResultArray();
             
             foreach ($dataList as &$item) {
-                $item['nama_gardu'] = $this->parseGarduName($item['detail_temuan']);
+                $item['nama_gardu'] = $this->parseGarduName($item['detail_temuan'], $item['noga'] ?? null);
                 $item['tgl_input'] = $item['tanggal_temuan'];
                 $item['keterangan'] = $item['detail_temuan'];
                 
@@ -755,7 +758,7 @@ class Laporan extends BaseController
             $builder->whereIn('t.id', $selectedIds);
             $dataList = $builder->get()->getResultArray();
             foreach ($dataList as &$item) {
-                $item['nama_gardu'] = $this->parseGarduName($item['detail_temuan']);
+                $item['nama_gardu'] = $this->parseGarduName($item['detail_temuan'], $item['noga'] ?? null);
                 $item['tgl_input'] = $item['tanggal_temuan'];
                 $item['keterangan'] = $item['detail_temuan'];
             }
@@ -860,7 +863,7 @@ class Laporan extends BaseController
             $dataList = $builder->get()->getResultArray();
             
             foreach ($dataList as &$item) {
-                $item['nama_gardu'] = $this->parseGarduName($item['detail_temuan']);
+                $item['nama_gardu'] = $this->parseGarduName($item['detail_temuan'], $item['noga'] ?? null);
                 $item['tgl_input'] = $item['tanggal_temuan'];
                 $item['keterangan'] = $item['detail_temuan'];
                 

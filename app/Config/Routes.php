@@ -792,6 +792,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('documents/store', 'DocumentCenter::store');
     $routes->get('documents/detail/(:num)', 'DocumentCenter::detail/$1');
     $routes->post('documents/approve/(:num)', 'DocumentCenter::approve/$1');
+    $routes->post('documents/generate-content', 'DocumentCenter::generateContent');
 
     // Modul Backup & Restore Database Hostinger (Admin Saja - Terproteksi Role)
     $routes->group('backup-database', ['filter' => 'role:administrator,admin_pusat'], function ($routes) {

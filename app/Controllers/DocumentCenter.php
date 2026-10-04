@@ -98,4 +98,25 @@ class DocumentCenter extends BaseController
             'checksum' => $checksum,
         ]);
     }
+
+    /**
+     * AJAX: Generate Operational Report Content from Database
+     */
+    public function generateContent()
+    {
+        $params = [
+            'periode'      => $this->request->getPost('periode'),
+            'pekerjaan'    => $this->request->getPost('pekerjaan'),
+            'tahun'        => $this->request->getPost('tahun'),
+            'bulan'        => $this->request->getPost('bulan'),
+            'semester'     => $this->request->getPost('semester'),
+            'tanggal'      => $this->request->getPost('tanggal'),
+            'ulp_id'       => $this->request->getPost('ulp_id'),
+            'penyulang_id' => $this->request->getPost('penyulang_id'),
+        ];
+
+        $result = $this->service->generateOperationalReportContent($params);
+
+        return $this->response->setStatusCode(200)->setJSON($result);
+    }
 }

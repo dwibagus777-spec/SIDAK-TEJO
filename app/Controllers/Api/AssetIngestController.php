@@ -1356,59 +1356,62 @@ class AssetIngestController extends BaseApiController
             $directAutoResolvedCount = 0;
             $aliasResolvedCount = 0;
 
+            // Pre-load staging rows map from asset_ingest_rows (processing_status = 'INSERTED')
+            $stagingMap = [];
+            $stagingDuplicateMap = [];
+            if ($db->tableExists('asset_ingest_rows')) {
+                $qStg = $db->query("SELECT id, asset_name, feeder_name, ulp_name, section_name, source_fingerprint 
+                                    FROM asset_ingest_rows 
+                                    WHERE processing_status = 'INSERTED'");
+                if ($qStg && !is_bool($qStg)) {
+                    foreach ($qStg->getResultArray() as $sr) {
+                        $sName = trim($sr['asset_name'] ?? '');
+                        if ($sName === '') continue;
+                        if (isset($stagingMap[$sName])) {
+                            $stagingDuplicateMap[$sName] = $sr;
+                        } else {
+                            $stagingMap[$sName] = $sr;
+                        }
+                    }
+                }
+            }
+
             if ($db->tableExists('assets')) {
-                // Track seen assets to avoid duplicate join counts if duplicate staging rows exist
-                $seenAssetIds = [];
-                $chunkSize = 2500;
+                $chunkSize = 5000;
                 $offset = 0;
 
-                $loopDiagnostics = [
-                    'iterations'        => 0,
-                    'last_error'        => null,
-                    'first_chunk_count' => null,
-                    'last_sql'          => null,
-                ];
-
                 while (true) {
-                    $loopDiagnostics['iterations']++;
-                    $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id,
-                                   r.feeder_name, r.ulp_name, r.section_name, r.source_fingerprint, r.id as staging_row_id
+                    $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id
                             FROM assets a
-                            LEFT JOIN asset_ingest_rows r ON (a.nama_asset = r.asset_name COLLATE utf8mb4_general_ci AND r.processing_status = 'INSERTED')
                             WHERE a.deleted_at IS NULL AND (a.penyulang_id IS NULL OR a.penyulang_id = 0)
                             ORDER BY a.id ASC
                             LIMIT {$chunkSize} OFFSET {$offset}";
                     
-                    $loopDiagnostics['last_sql'] = $sql;
                     $query = $db->query($sql);
-                    if (!$query || is_bool($query)) {
-                        $loopDiagnostics['last_error'] = $db->error();
-                        break;
-                    }
+                    if (!$query || is_bool($query)) break;
                     
                     $rows = $query->getResultArray();
-                    if ($loopDiagnostics['iterations'] === 1) {
-                        $loopDiagnostics['first_chunk_count'] = count($rows);
-                    }
                     if (empty($rows)) break;
 
                     $offset += count($rows);
 
                     foreach ($rows as $row) {
                         $assetId = (int)$row['id'];
+                        $assetName = trim($row['nama_asset'] ?? '');
                         
                         // Handle duplicate staging matches (Category G)
-                        if (isset($seenAssetIds[$assetId])) {
+                        if (isset($stagingDuplicateMap[$assetName])) {
+                            $dupSr = $stagingDuplicateMap[$assetName];
                             $categories['DUPLICATE_SOURCE_MAPPING']['count']++;
                             if (count($categories['DUPLICATE_SOURCE_MAPPING']['samples']) < 5) {
                                 $categories['DUPLICATE_SOURCE_MAPPING']['samples'][] = [
                                     'id'                    => $assetId,
                                     'kode_asset'            => $row['kode_asset'],
                                     'nama_asset'            => $row['nama_asset'],
-                                    'source_fingerprint'    => $row['source_fingerprint'],
-                                    'source_feeder_name'    => $row['feeder_name'],
-                                    'source_ulp_name'       => $row['ulp_name'],
-                                    'source_section'        => $row['section_name'],
+                                    'source_fingerprint'    => $dupSr['source_fingerprint'] ?? null,
+                                    'source_feeder_name'    => $dupSr['feeder_name'] ?? null,
+                                    'source_ulp_name'       => $dupSr['ulp_name'] ?? null,
+                                    'source_section'        => $dupSr['section_name'] ?? null,
                                     'resolved_ulp_id'       => null,
                                     'resolved_penyulang_id' => null,
                                     'reason_status'         => 'Matched multiple conflicting staging rows',
@@ -1416,11 +1419,13 @@ class AssetIngestController extends BaseApiController
                             }
                             continue;
                         }
-                        $seenAssetIds[$assetId] = true;
 
-                        $stagingId = $row['staging_row_id'];
-                        $rawFeeder = $row['feeder_name'];
-                        $rawUlp    = $row['ulp_name'];
+                        $stg = $stagingMap[$assetName] ?? null;
+                        $stagingId         = $stg['id'] ?? null;
+                        $rawFeeder         = $stg['feeder_name'] ?? null;
+                        $rawUlp            = $stg['ulp_name'] ?? null;
+                        $sourceFingerprint = $stg['source_fingerprint'] ?? null;
+                        $sourceSection     = $stg['section_name'] ?? null;
 
                         if (empty($stagingId)) {
                             // No linked staging row
@@ -1456,10 +1461,10 @@ class AssetIngestController extends BaseApiController
                                     'id'                    => $assetId,
                                     'kode_asset'            => $row['kode_asset'],
                                     'nama_asset'            => $row['nama_asset'],
-                                    'source_fingerprint'    => $row['source_fingerprint'],
+                                    'source_fingerprint'    => $sourceFingerprint,
                                     'source_feeder_name'    => $rawFeeder,
                                     'source_ulp_name'       => $rawUlp,
-                                    'source_section'        => $row['section_name'],
+                                    'source_section'        => $sourceSection,
                                     'resolved_ulp_id'       => null,
                                     'resolved_penyulang_id' => null,
                                     'reason_status'         => 'Staging row feeder_name is empty or null',
@@ -1489,7 +1494,7 @@ class AssetIngestController extends BaseApiController
                                 // Dry run metrics accumulation
                                 $distinctAssetIdsMap[$assetId] = true;
                                 if (!empty($row['kode_asset'])) $distinctKodeAssetMap[$row['kode_asset']] = true;
-                                if (!empty($row['source_fingerprint'])) $distinctFingerprintMap[$row['source_fingerprint']] = true;
+                                if (!empty($sourceFingerprint)) $distinctFingerprintMap[$sourceFingerprint] = true;
                                 $distinctUlpIdsMap[$uId] = true;
                                 $distinctPenyulangIdsMap[$pId] = true;
 
@@ -1524,7 +1529,7 @@ class AssetIngestController extends BaseApiController
                                         'source_feeder_name'    => $rawFeeder,
                                         'master_feeder_name'    => $matches[0]['nama_penyulang'],
                                         'source_ulp_name'       => $rawUlp,
-                                        'source_fingerprint'    => $row['source_fingerprint'],
+                                        'source_fingerprint'    => $sourceFingerprint,
                                         'resolution_method'     => $resMethod,
                                     ];
                                 }
@@ -1570,10 +1575,10 @@ class AssetIngestController extends BaseApiController
                                     'id'                    => $assetId,
                                     'kode_asset'            => $row['kode_asset'],
                                     'nama_asset'            => $row['nama_asset'],
-                                    'source_fingerprint'    => $row['source_fingerprint'],
+                                    'source_fingerprint'    => $sourceFingerprint,
                                     'source_feeder_name'    => $rawFeeder,
                                     'source_ulp_name'       => $rawUlp,
-                                    'source_section'        => $row['section_name'],
+                                    'source_section'        => $sourceSection,
                                     'resolved_ulp_id'       => $uId,
                                     'resolved_penyulang_id' => $pId,
                                     'reason_status'         => $reason,

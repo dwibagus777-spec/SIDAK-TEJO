@@ -1360,16 +1360,16 @@ class AssetIngestController extends BaseApiController
                 // Track seen assets to avoid duplicate join counts if duplicate staging rows exist
                 $seenAssetIds = [];
                 $chunkSize = 2500;
-                $lastId = 0;
+                $offset = 0;
 
                 while (true) {
                     $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id,
                                    r.feeder_name, r.ulp_name, r.section_name, r.source_fingerprint, r.id as staging_row_id
                             FROM assets a
                             LEFT JOIN asset_ingest_rows r ON (a.nama_asset = r.asset_name AND r.processing_status = 'INSERTED')
-                            WHERE a.deleted_at IS NULL AND (a.penyulang_id IS NULL OR a.penyulang_id = 0) AND a.id > {$lastId}
+                            WHERE a.deleted_at IS NULL AND (a.penyulang_id IS NULL OR a.penyulang_id = 0)
                             ORDER BY a.id ASC
-                            LIMIT {$chunkSize}";
+                            LIMIT {$chunkSize} OFFSET {$offset}";
                     
                     $query = $db->query($sql);
                     if (!$query || is_bool($query)) break;
@@ -1377,9 +1377,10 @@ class AssetIngestController extends BaseApiController
                     $rows = $query->getResultArray();
                     if (empty($rows)) break;
 
+                    $offset += count($rows);
+
                     foreach ($rows as $row) {
                         $assetId = (int)$row['id'];
-                        $lastId = max($lastId, $assetId);
                         
                         // Handle duplicate staging matches (Category G)
                         if (isset($seenAssetIds[$assetId])) {
@@ -1567,7 +1568,6 @@ class AssetIngestController extends BaseApiController
                     }
                 }
             }
-        }
 
             // Calculate percentage and verify mathematical equation
             $sumCategorized = 0;
@@ -1608,7 +1608,10 @@ class AssetIngestController extends BaseApiController
                     'ambiguous_count'               => $categories['AMBIGUOUS']['count'],
                     'conflicting_existing_fk_rows'  => $conflictingExistingFkRows,
                     'total_equation_valid'          => $isMathematicallyExact,
-                    'equation'                      => "{$totalActiveAssets} = {$currentlyAssignedAssets} (LEGACY ASSIGNED) + {$directAutoResolvedCount} (DIRECT AUTO RESOLVED) + {$aliasResolvedCount} (ALIAS RESOLVED) + {$categories['UNRESOLVED']['count']} (UNRESOLVED) + {$categories['AMBIGUOUS']['count']} (AMBIGUOUS) + {$conflictingExistingFkRows} (Conflicts)",
+                    'unassigned_categorized_sum'    => $sumCategorized,
+                    'unassigned_total'              => $totalUnassignedAssets,
+                    'unaccounted_gap'               => $unaccountedGap,
+                    'equation'                      => "{$totalActiveAssets} ACTIVE = {$currentlyAssignedAssets} (ALREADY ASSIGNED) + {$categories['AUTO_RESOLVED']['count']} (AUTO_RESOLVED: {$directAutoResolvedCount} direct + {$aliasResolvedCount} alias) + {$categories['UNRESOLVED']['count']} (UNRESOLVED) + {$categories['AMBIGUOUS']['count']} (AMBIGUOUS) + {$categories['MISSING_SOURCE_PROVENANCE']['count']} (LEGACY_NO_PROVENANCE) + {$categories['SOURCE_NOT_FOUND']['count']} (SOURCE_NOT_FOUND) + {$categories['INVALID_SOURCE_IDENTITY']['count']} (INVALID_SOURCE) + {$categories['DUPLICATE_SOURCE_MAPPING']['count']} (DUPLICATE_SOURCE) + {$categories['OTHER']['count']} (OTHER)",
                 ],
                 'eligible_population_metrics' => [
                     'distinct_asset_ids_count'           => count($distinctAssetIdsMap),

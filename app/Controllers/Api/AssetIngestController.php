@@ -1378,14 +1378,14 @@ class AssetIngestController extends BaseApiController
 
             if ($db->tableExists('assets')) {
                 $chunkSize = 5000;
-                $offset = 0;
+                $lastId = 0;
 
                 while (true) {
                     $sql = "SELECT a.id, a.kode_asset, a.nama_asset, a.latitude, a.longitude, a.created_at, a.penyulang_id as old_penyulang_id, a.ulp_id as old_ulp_id
                             FROM assets a
-                            WHERE a.deleted_at IS NULL AND (a.penyulang_id IS NULL OR a.penyulang_id = 0)
+                            WHERE a.deleted_at IS NULL AND (a.penyulang_id IS NULL OR a.penyulang_id = 0) AND a.id > {$lastId}
                             ORDER BY a.id ASC
-                            LIMIT {$chunkSize} OFFSET {$offset}";
+                            LIMIT {$chunkSize}";
                     
                     $query = $db->query($sql);
                     if (!$query || is_bool($query)) break;
@@ -1393,10 +1393,9 @@ class AssetIngestController extends BaseApiController
                     $rows = $query->getResultArray();
                     if (empty($rows)) break;
 
-                    $offset += count($rows);
-
                     foreach ($rows as $row) {
                         $assetId = (int)$row['id'];
+                        $lastId = max($lastId, $assetId);
                         $assetName = trim($row['nama_asset'] ?? '');
                         
                         // Handle duplicate staging matches (Category G)

@@ -163,6 +163,9 @@ $routes->get('foto/(:any)', 'PhotoController::show/$1');
 // CR-HOTFIX-03: Public Temuan Share Route (Read-Only)
 $routes->get('temuan/share/(:segment)', 'Temuan::share/$1');
 
+// D4.1.12: Temporary forensic diagnostic endpoint (read-only, no mutation)
+$routes->get('temuan/d4112-forensic', 'Temuan::d4112Forensic');
+
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Main Dashboard Web Route

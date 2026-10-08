@@ -1492,4 +1492,126 @@ class Temuan extends BaseController
             'token'       => $token,
         ]);
     }
+
+    /**
+     * D4.1.12 — FORENSIC ENDPOINT (READ-ONLY, TEMPORARY)
+     * Test getDetail query dan dependencies untuk temuan ID tertentu
+     * Route: GET /temuan/d4112-forensic?id=649
+     */
+    public function d4112Forensic()
+    {
+        $id = (int)($this->request->getGet('id') ?: 649);
+        $result = [
+            'forensic_id'        => $id,
+            'timestamp'          => date('Y-m-d H:i:s'),
+            'php_version'        => PHP_VERSION,
+        ];
+
+        // Step 1: DB row exists?
+        try {
+            $db  = \Config\Database::connect();
+            $raw = $db->table('temuan')->where('id', $id)->get()->getRowArray();
+            $result['db_raw_exists']     = !empty($raw);
+            $result['db_raw_status']     = $raw['status'] ?? null;
+            $result['db_raw_prioritas']  = $raw['prioritas'] ?? null;
+            $result['db_raw_deleted_at'] = $raw['deleted_at'] ?? 'null';
+        } catch (\Throwable $e) {
+            $result['db_raw_error'] = $e->getMessage();
+        }
+
+        // Step 2: getDetail with ulpIdFilter=null
+        try {
+            $temuan = $this->temuanRepository->getDetail($id, null);
+            $result['get_detail_null_filter'] = !empty($temuan)
+                ? ['found' => true, 'nomor_temuan' => $temuan['nomor_temuan'], 'status' => $temuan['status']]
+                : ['found' => false];
+        } catch (\Throwable $e) {
+            $result['get_detail_null_filter_error'] = $e->getMessage();
+        }
+
+        // Step 3: getDetail with ulpIdFilter=1 (Sidoarjo Kota)
+        try {
+            $temuan1 = $this->temuanRepository->getDetail($id, 1);
+            $result['get_detail_ulp1_filter'] = !empty($temuan1)
+                ? ['found' => true, 'nomor_temuan' => $temuan1['nomor_temuan']]
+                : ['found' => false];
+        } catch (\Throwable $e) {
+            $result['get_detail_ulp1_filter_error'] = $e->getMessage();
+        }
+
+        // Step 4: SLA helper test
+        try {
+            $temuan = $this->temuanRepository->getDetail($id, null);
+            if ($temuan) {
+                $sla = get_sla_status($temuan['prioritas'], $temuan['tanggal_temuan'], $temuan['status'], $temuan['tanggal_selesai'] ?? null);
+                $result['sla_ok'] = true;
+                $result['sla_text'] = $sla['text'] ?? 'N/A';
+            }
+        } catch (\Throwable $e) {
+            $result['sla_error'] = $e->getMessage();
+        }
+
+        // Step 5: PredictiveMaintenanceService instantiation
+        try {
+            $aiSvc = new \App\Services\PredictiveMaintenanceService();
+            $result['ai_service_init'] = 'OK';
+        } catch (\Throwable $e) {
+            $result['ai_service_init_error'] = $e->getMessage();
+        }
+
+        // Step 6: getExplainableRecommendation
+        try {
+            $temuan = $this->temuanRepository->getDetail($id, null);
+            if ($temuan) {
+                $aiSvc = new \App\Services\PredictiveMaintenanceService();
+                $rec = $aiSvc->getExplainableRecommendation($temuan);
+                $result['ai_recommendation_ok'] = true;
+                $result['ai_score'] = $rec['score'] ?? null;
+            }
+        } catch (\Throwable $e) {
+            $result['ai_recommendation_error'] = $e->getMessage();
+            $result['ai_recommendation_file']  = $e->getFile() . ':' . $e->getLine();
+        }
+
+        // Step 7: JtmAccessoryService
+        try {
+            $db2 = \Config\Database::connect();
+            if ($db2->tableExists('temuan_accessories')) {
+                $accSvc = new \App\Services\JtmAccessoryService($db2);
+                $acc    = $accSvc->getAccessoriesForTemuan($id);
+                $result['accessories_ok']    = true;
+                $result['accessories_count'] = count($acc);
+            } else {
+                $result['accessories_table_missing'] = true;
+            }
+        } catch (\Throwable $e) {
+            $result['accessories_error'] = $e->getMessage();
+        }
+
+        // Step 8: TindakLanjutRepository
+        try {
+            $history = $this->tindakLanjutRepository->getHistoryByTemuan($id);
+            $result['history_count'] = count($history ?? []);
+        } catch (\Throwable $e) {
+            $result['history_error'] = $e->getMessage();
+        }
+
+        // Step 9: Check tables existence
+        try {
+            $db3 = \Config\Database::connect();
+            $result['tables'] = [
+                'temuan'              => $db3->tableExists('temuan'),
+                'assets'              => $db3->tableExists('assets'),
+                'temuan_materials'    => $db3->tableExists('temuan_materials'),
+                'temuan_accessories'  => $db3->tableExists('temuan_accessories'),
+                'ai_decision_logs'    => $db3->tableExists('ai_decision_logs'),
+                'construction_types'  => $db3->tableExists('construction_types'),
+            ];
+        } catch (\Throwable $e) {
+            $result['tables_error'] = $e->getMessage();
+        }
+
+        return $this->response->setHeader('Content-Type', 'application/json')
+                              ->setBody(json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
 }

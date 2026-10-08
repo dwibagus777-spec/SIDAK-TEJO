@@ -511,9 +511,21 @@ $statusClass = match($statusStr) {
     default       => 'badge-status-belum'
 };
 
-// AI Decision Support Service Initialization
-$aiService = new \App\Services\PredictiveMaintenanceService();
-$aiRecommendation = $aiService->getExplainableRecommendation($temuan);
+// AI Decision Support Service Initialization — guarded to prevent blank content on production exceptions
+try {
+    $aiService = new \App\Services\PredictiveMaintenanceService();
+    $aiRecommendation = $aiService->getExplainableRecommendation($temuan);
+} catch (\Throwable $aiEx) {
+    log_message('error', '[TEMUAN_DETAIL_AI_FALLBACK] ' . $aiEx->getMessage() . ' | File: ' . $aiEx->getFile() . ':' . $aiEx->getLine());
+    $aiRecommendation = [
+        'score'               => 0,
+        'category'            => 'N/A',
+        'badge_class'         => 'bg-secondary',
+        'recommendation_text' => 'Sistem AI sedang tidak tersedia. Gunakan prosedur manual SOP PLN.',
+        'reasons'             => ['AI service tidak dapat diinisialisasi di environment ini.'],
+        'confidence'          => 0,
+    ];
+}
 ?>
 
 <!-- Mobile Sticky Header (< 992px) -->

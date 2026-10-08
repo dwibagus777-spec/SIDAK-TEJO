@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sidak-tejo-v10-enterprise';
-const MAPS_CACHE_NAME = 'sidak-tejo-maps-v7';
+const CACHE_NAME = 'sidak-tejo-v11-enterprise';
+const MAPS_CACHE_NAME = 'sidak-tejo-maps-v8';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -50,6 +50,11 @@ self.addEventListener('fetch', (event) => {
     // Always fetch fresh data directly from server
     const isDynamicApi =
         event.request.mode === 'navigate' ||
+        url.includes('/temuan/') ||
+        url.includes('/dashboard') ||
+        url.includes('/ecc') ||
+        url.includes('/laporan') ||
+        url.includes('/documents') ||
         url.includes('/ajax/') ||
         url.includes('/ajax-') ||
         url.includes('/temuan/ajax-') ||

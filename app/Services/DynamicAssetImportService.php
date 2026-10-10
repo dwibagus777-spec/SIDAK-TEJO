@@ -527,6 +527,11 @@ class DynamicAssetImportService
 
     /**
      * Resolve Penyulang entity from list by string name.
+     * Approved aliases (per invariant):
+     * - SURYA MULTI CEMERLANG → SMC
+     * - WARUBERON → WARU BERON
+     * Aliases resolve exclusively against existing authoritative master records.
+     * No fuzzy matching, no new master feeders created.
      */
     private function resolvePenyulangByName(?string $rawName, array $penyulangList): ?array
     {
@@ -537,6 +542,22 @@ class DynamicAssetImportService
         $clean = strtoupper(trim($rawName));
         $noPrefix = strtoupper(trim(preg_replace('/^(penyulang|feeder|f\.|fdr)\s+/i', '', $clean)));
         $normAlnum = preg_replace('/[^A-Z0-9]/', '', $noPrefix);
+
+        // Approved aliases - deterministic mapping to canonical feeder names
+        $approvedAliases = [
+            'SMC' => 'SURYA MULTI CEMERLANG',
+            'SURYA MULTI CEMERLANG' => 'SURYA MULTI CEMERLANG',
+            'WARU BERON' => 'WARU BERON',
+            'WARUBERON' => 'WARU BERON',
+        ];
+
+        // Apply alias normalization before matching
+        $normalizedName = $approvedAliases[$normAlnum] ?? $approvedAliases[$noPrefix] ?? $approvedAliases[$clean] ?? null;
+        if ($normalizedName !== null) {
+            $clean = $normalizedName;
+            $noPrefix = $normalizedName;
+            $normAlnum = preg_replace('/[^A-Z0-9]/', '', $normalizedName);
+        }
 
         // Pass 1: Exact match on nama_penyulang
         foreach ($penyulangList as $p) {

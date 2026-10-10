@@ -147,6 +147,8 @@ class AssetRepository
 
     /**
      * Optimized Paginated Query (Server-Side Pagination for Fast Rendering)
+     * NO FALLBACK: Strict filter enforcement per invariant #9.
+     * Zero results must return zero results - never broaden a requested feeder filter.
      */
     public function getFilteredAssetsPaginated(array $filters = [], ?int $userUlpId = null, int $page = 1, int $perPage = 50): array
     {
@@ -162,7 +164,9 @@ class AssetRepository
             $total = $countBuilder->countAllResults();
 
             if ($total === 0) {
-                return ['data' => [], 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'last_page' => 1];
+                // NO FALLBACK: Return empty result with explicit zero count.
+                // A zero-result query must never return assets belonging to another feeder.
+                return ['data' => [], 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'last_page' => 1, 'fallback' => false];
             }
 
             // 2. Separate Clean Data Query
@@ -181,12 +185,13 @@ class AssetRepository
             $query = $dataBuilder->get();
             $data = $query ? $query->getResultArray() : [];
 
-            return [
+return [
                 'data'      => $data,
                 'total'     => $total,
                 'page'      => $page,
                 'per_page'  => $perPage,
-                'last_page' => max(1, ceil($total / $perPage))
+                'last_page' => max(1, ceil($total / $perPage)),
+                'fallback'  => false
             ];
         } catch (\Throwable $e) {
             log_message('error', '[AssetRepository::getFilteredAssetsPaginated] Exception: ' . $e->getMessage());

@@ -370,12 +370,46 @@ class AssetImportController extends BaseController
     private function computeIntegrityHash(\CodeIgniter\Database\BaseConnection $db): array
     {
         $hashes = [];
-        $tables = ['assets', 'penyulang', 'ulps', 'sections', 'gis_translines', 'asset_relationships', 'asset_import_batches', 'network_topology_versions'];
+        $tables = [
+            'assets',
+            'penyulang',
+            'ulps',
+            'sections',
+            'gis_translines',
+            'asset_relationships',
+            'asset_import_batches',
+            'network_topology_versions',
+        ];
         foreach ($tables as $table) {
             if ($db->tableExists($table)) {
                 try {
-                    // Use CHECKSUM or aggregate for deterministic hash
-                    $row = $db->query("SELECT COUNT(*) as cnt, MAX(COALESCE(updated_at, created_at)) as max_ts FROM `$table`")->getRowArray();
+                    // Determine available timestamp columns for this table
+                    $fields = $db->getFieldNames($table);
+                    $hasCreatedAt = in_array('created_at', $fields, true);
+                    $hasUpdatedAt = in_array('updated_at', $fields, true);
+
+                    $tsExpr = $this->getTimestampExpression($hasCreatedAt, $hasUpdatedAt);
+
+                    // Use prefixTable to handle database prefixes (e.g., 'db_' in test environment)
+                    $prefixedTable = $db->prefixTable($table);
+                    $sql = "SELECT COUNT(*) as cnt";
+                    if ($tsExpr !== null) {
+                        $sql .= ", {$tsExpr} as max_ts";
+                    }
+                    $sql .= " FROM `{$prefixedTable}`";
+
+                    $result = $db->query($sql);
+                    if ($result === false) {
+                        $hashes[$table] = ['error' => 'Query returned false'];
+                        continue;
+                    }
+
+                    $row = $result->getRowArray();
+                    if ($row === null) {
+                        $hashes[$table] = ['error' => 'No row returned'];
+                        continue;
+                    }
+
                     $hashes[$table] = [
                         'count'    => (int)($row['cnt'] ?? 0),
                         'max_ts'   => $row['max_ts'] ?? null,
@@ -386,6 +420,22 @@ class AssetImportController extends BaseController
             }
         }
         return $hashes;
+    }
+
+    /**
+     * Get the SQL timestamp expression based on available timestamp columns.
+     * This helper can be tested independently.
+     */
+    private function getTimestampExpression(bool $hasCreatedAt, bool $hasUpdatedAt): ?string
+    {
+        if ($hasCreatedAt && $hasUpdatedAt) {
+            return 'MAX(COALESCE(updated_at, created_at))';
+        } elseif ($hasCreatedAt) {
+            return 'MAX(created_at)';
+        } elseif ($hasUpdatedAt) {
+            return 'MAX(updated_at)';
+        }
+        return null;
     }
 
     /**

@@ -527,6 +527,11 @@ class DynamicAssetImportService
 
     /**
      * Resolve Penyulang entity from list by string name.
+     * Approved aliases (per invariant):
+     * - SURYA MULTI CEMERLANG → SMC (canonical master feeder name)
+     * - WARUBERON → WARU BERON (canonical master feeder name)
+     * Aliases resolve exclusively against existing authoritative master records.
+     * No fuzzy matching, no new master feeders created.
      */
     private function resolvePenyulangByName(?string $rawName, array $penyulangList): ?array
     {
@@ -538,7 +543,24 @@ class DynamicAssetImportService
         $noPrefix = strtoupper(trim(preg_replace('/^(penyulang|feeder|f\.|fdr)\s+/i', '', $clean)));
         $normAlnum = preg_replace('/[^A-Z0-9]/', '', $noPrefix);
 
-        // Pass 1: Exact match on nama_penyulang
+        // Approved aliases - map input aliases TO canonical master feeder names in DB
+        // Canonical master names: SMC, WARU BERON
+        $approvedAliases = [
+            'SURYA MULTI CEMERLANG' => 'SMC',
+            'SMC' => 'SMC',
+            'WARUBERON' => 'WARU BERON',
+            'WARU BERON' => 'WARU BERON',
+        ];
+
+        // Apply alias normalization before matching
+        $normalizedName = $approvedAliases[$normAlnum] ?? $approvedAliases[$noPrefix] ?? $approvedAliases[$clean] ?? null;
+        if ($normalizedName !== null) {
+            $clean = $normalizedName;
+            $noPrefix = $normalizedName;
+            $normAlnum = preg_replace('/[^A-Z0-9]/', '', $normalizedName);
+        }
+
+        // Pass 1: Exact match on nama_penyulang (canonical master name)
         foreach ($penyulangList as $p) {
             if (strcasecmp(trim($p['nama_penyulang']), $clean) === 0 || strcasecmp(trim($p['nama_penyulang']), $noPrefix) === 0) {
                 return [

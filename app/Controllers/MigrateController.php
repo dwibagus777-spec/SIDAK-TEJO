@@ -49,16 +49,10 @@ class MigrateController extends BaseController
                 $executed[] = 'asset_ingest_schema';
             }
 
-            // Auto-heal orphan asset penyulang_ids by matching kode_asset with penyulang table
-            if ($db->tableExists('assets') && $db->tableExists('penyulang')) {
-                $db->query("UPDATE assets a 
-                    JOIN penyulang p ON (
-                        a.kode_asset LIKE CONCAT('%', p.kode_penyulang, '%') 
-                        OR (a.kode_asset LIKE '%BNJRKMNTRN%' AND p.id = 15)
-                    ) 
-                    SET a.penyulang_id = p.id 
-                    WHERE (a.penyulang_id IS NULL OR a.penyulang_id = 0) AND a.deleted_at IS NULL");
-            }
+            // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
+            // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
+            // governed reconciliation with deterministic identity proof, not pattern matching.
+            // See: AssetRepository + DynamicAssetImportService for approved alias resolver.
 
             // 0. Table gardu_induk (Master Gardu Induk)
             $db->query("CREATE TABLE IF NOT EXISTS `gardu_induk` (

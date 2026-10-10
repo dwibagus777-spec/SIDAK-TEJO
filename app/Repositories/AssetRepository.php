@@ -768,7 +768,7 @@ return [
             $includeSwitchEquipment = false;
 
             if (in_array('JTM', $layers)) {
-                $allowedJenisList = array_merge($allowedJenisList, ['JTM', 'TIANG', 'TIANG_BETON', 'TIANG_BESI', 'CONDUCTOR_JTM']);
+                $allowedJenisList = array_merge($allowedJenisList, ['JTM', 'TIANG', 'TIANG_BETON', 'TIANG_BESI', 'CONDUCTOR_JTM', 'jtm_tiang']);
             }
             if (in_array('GARDU', $layers)) {
                 $allowedJenisList = array_merge($allowedJenisList, ['GARDU', 'SUBSTATION', 'GARDU_DISTRIBUSI_PORTAL', 'GARDU_CANTOL', 'GARDU_PORTAL']);

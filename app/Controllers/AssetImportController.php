@@ -167,6 +167,228 @@ class AssetImportController extends BaseController
     }
 
     /**
+     * Read-Only Production Asset Audit Endpoint: /master-assets/audit
+     * Returns comprehensive asset state metrics for reconciliation verification.
+     * STRICTLY READ-ONLY - No database mutations.
+     */
+    public function audit(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $db = \Config\Database::connect();
+        $auditTimestamp = date('Y-m-d H:i:s');
+
+        // Database name
+        $dbName = 'unknown';
+        try {
+            $dbRow = $db->query("SELECT DATABASE() AS db_name")->getRowArray();
+            $dbName = $dbRow['db_name'] ?? 'unknown';
+        } catch (\Throwable $e) {}
+
+        // Asset counts
+        $totalRaw = 0;
+        $totalActive = 0;
+        $totalDeleted = 0;
+        $activeByPenyulang = [];
+        $activeByUlp = [];
+        $assetsWithoutPenyulang = 0;
+        $assetsWithoutUlp = 0;
+        $duplicateKodeAsset = [];
+        $duplicateNaturalIdentity = [];
+        $duplicateCoordinates = [];
+
+        if ($db->tableExists('assets')) {
+            $totalRaw = $db->table('assets')->countAllResults();
+            $totalActive = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
+            $totalDeleted = $db->table('assets')->where('deleted_at IS NOT NULL')->countAllResults();
+
+            // Active assets by penyulang_id
+            $activeByPenyulang = $db->table('assets')
+                ->select('penyulang_id, count(*) as cnt')
+                ->where('deleted_at IS NULL')
+                ->groupBy('penyulang_id')
+                ->get()
+                ->getResultArray();
+
+            // Active assets by ulp_id
+            $activeByUlp = $db->table('assets')
+                ->select('ulp_id, count(*) as cnt')
+                ->where('deleted_at IS NULL')
+                ->groupBy('ulp_id')
+                ->get()
+                ->getResultArray();
+
+            // Assets without penyulang
+            $assetsWithoutPenyulang = $db->table('assets')
+                ->where('(penyulang_id IS NULL OR penyulang_id = 0)')
+                ->where('deleted_at IS NULL')
+                ->countAllResults();
+
+            // Assets without ulp
+            $assetsWithoutUlp = $db->table('assets')
+                ->where('(ulp_id IS NULL OR ulp_id = 0)')
+                ->where('deleted_at IS NULL')
+                ->countAllResults();
+
+            // Duplicate kode_asset
+            $duplicateKodeAsset = $db->table('assets')
+                ->select('kode_asset, count(*) as cnt')
+                ->where('deleted_at IS NULL')
+                ->groupBy('kode_asset')
+                ->having('cnt > 1')
+                ->limit(20)
+                ->get()
+                ->getResultArray();
+
+            // Duplicate natural identity (ULP + Jenis + Nama Asset)
+            $duplicateNaturalIdentity = $db->table('assets')
+                ->select('ulp_id, jenis_asset, nama_asset, count(*) as cnt')
+                ->where('deleted_at IS NULL')
+                ->groupBy('ulp_id, jenis_asset, nama_asset')
+                ->having('cnt > 1')
+                ->limit(20)
+                ->get()
+                ->getResultArray();
+
+            // Duplicate coordinates (lat/lng with distinct IDs)
+            $duplicateCoordinates = $db->table('assets')
+                ->select('latitude, longitude, count(*) as cnt, GROUP_CONCAT(id) as ids')
+                ->where('deleted_at IS NULL')
+                ->where('latitude !=', 0)
+                ->where('longitude !=', 0)
+                ->groupBy('latitude, longitude')
+                ->having('cnt > 1')
+                ->limit(20)
+                ->get()
+                ->getResultArray();
+        }
+
+        // Transline counts
+        $activeTranslines = 0;
+        $translinesByFeeder = [];
+        if ($db->tableExists('gis_translines')) {
+            $activeTranslines = $db->table('gis_translines')->where('is_active', 1)->countAllResults();
+            $translinesByFeeder = $db->table('gis_translines')
+                ->select('penyulang_id, count(*) as cnt')
+                ->where('is_active', 1)
+                ->groupBy('penyulang_id')
+                ->get()
+                ->getResultArray();
+        }
+
+        // Master feeder/ULP counts
+        $masterUlpCount = 0;
+        $masterFeederCount = 0;
+        $masterSectionCount = 0;
+        if ($db->tableExists('ulps')) {
+            $masterUlpCount = $db->table('ulps')->where('status', 'AKTIF')->countAllResults();
+        }
+        if ($db->tableExists('penyulang')) {
+            $masterFeederCount = $db->table('penyulang')->where('status', 'AKTIF')->countAllResults();
+        }
+        if ($db->tableExists('sections')) {
+            $masterSectionCount = $db->table('sections')->countAllResults();
+        }
+
+        // Staging/import batch counts
+        $stagingRows = 0;
+        $importBatches = [];
+        if ($db->tableExists('asset_import_batches')) {
+            $stagingRows = $db->table('asset_import_batches')->countAllResults();
+            $importBatches = $db->table('asset_import_batches')
+                ->select('id, batch_code, ulp_id, penyulang_id, total_rows, success_rows, failed_rows, status, imported_at')
+                ->orderBy('id', 'DESC')
+                ->limit(10)
+                ->get()
+                ->getResultArray();
+        }
+
+        // Topology integrity
+        $topologyVersions = [];
+        if ($db->tableExists('network_topology_versions')) {
+            $topologyVersions = $db->table('network_topology_versions')
+                ->select('penyulang_id, version_no, version_status, is_active, nodes_count, segments_count, created_at')
+                ->where('is_active', 1)
+                ->get()
+                ->getResultArray();
+        }
+
+        // Provenance gaps - assets with import_batch_id but no source tracking
+        $provenanceGaps = [];
+        if ($db->tableExists('assets')) {
+            $provenanceGaps = $db->table('assets')
+                ->select('id, kode_asset, nama_asset, import_batch_id, created_at')
+                ->where('deleted_at IS NULL')
+                ->where('import_batch_id IS NOT NULL')
+                ->limit(20)
+                ->get()
+                ->getResultArray();
+        }
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'audit_timestamp'     => $auditTimestamp,
+            'database'            => $dbName,
+            'asset_counts'        => [
+                'total_raw'               => $totalRaw,
+                'total_active'            => $totalActive,
+                'total_deleted'           => $totalDeleted,
+                'active_by_penyulang'     => $activeByPenyulang,
+                'active_by_ulp'           => $activeByUlp,
+                'without_penyulang'       => $assetsWithoutPenyulang,
+                'without_ulp'             => $assetsWithoutUlp,
+            ],
+            'duplicate_analysis'  => [
+                'duplicate_kode_asset'     => $duplicateKodeAsset,
+                'duplicate_natural_identity' => $duplicateNaturalIdentity,
+                'duplicate_coordinates'    => $duplicateCoordinates,
+            ],
+            'transline_counts'    => [
+                'active_total'        => $activeTranslines,
+                'by_feeder'           => $translinesByFeeder,
+            ],
+            'master_catalogs'     => [
+                'ulp_count'       => $masterUlpCount,
+                'feeder_count'    => $masterFeederCount,
+                'section_count'   => $masterSectionCount,
+            ],
+            'staging'             => [
+                'staging_rows'    => $stagingRows,
+                'import_batches'  => $importBatches,
+            ],
+            'topology'            => [
+                'active_versions' => $topologyVersions,
+            ],
+            'provenance'          => [
+                'assets_with_import_batch' => count($provenanceGaps),
+                'sample'                  => array_slice($provenanceGaps, 0, 10),
+            ],
+            'integrity_hash'      => $this->computeIntegrityHash($db),
+        ]);
+    }
+
+    /**
+     * Compute deterministic integrity hash of key production tables.
+     */
+    private function computeIntegrityHash(\CodeIgniter\Database\BaseConnection $db): array
+    {
+        $hashes = [];
+        $tables = ['assets', 'penyulang', 'ulps', 'sections', 'gis_translines', 'asset_relationships', 'asset_import_batches', 'network_topology_versions'];
+        foreach ($tables as $table) {
+            if ($db->tableExists($table)) {
+                try {
+                    // Use CHECKSUM or aggregate for deterministic hash
+                    $row = $db->query("SELECT COUNT(*) as cnt, MAX(COALESCE(updated_at, created_at)) as max_ts FROM `$table`")->getRowArray();
+                    $hashes[$table] = [
+                        'count'    => (int)($row['cnt'] ?? 0),
+                        'max_ts'   => $row['max_ts'] ?? null,
+                    ];
+                } catch (\Throwable $e) {
+                    $hashes[$table] = ['error' => $e->getMessage()];
+                }
+            }
+        }
+        return $hashes;
+    }
+
+    /**
      * Read-Only Production Diagnostic Endpoint for Photo References
      * GET /master-assets/debug-foto/{id}
      */

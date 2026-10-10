@@ -147,6 +147,8 @@ class AssetRepository
 
     /**
      * Optimized Paginated Query (Server-Side Pagination for Fast Rendering)
+     * NO FALLBACK: Strict filter enforcement per invariant #9.
+     * Zero results must return zero results - never broaden a requested feeder filter.
      */
     public function getFilteredAssetsPaginated(array $filters = [], ?int $userUlpId = null, int $page = 1, int $perPage = 50): array
     {
@@ -162,38 +164,9 @@ class AssetRepository
             $total = $countBuilder->countAllResults();
 
             if ($total === 0) {
-                // Smart Fallback: If strict multi-filter returns 0 rows (e.g. penyulang + jenis mismatch),
-                // relax penyulang constraint to load matching assets for the selected ULP / Jenis Aset so grid is populated!
-                $fallbackFilters = $filters;
-                unset($fallbackFilters['penyulang_id']);
-
-                $countBuilderFB = $db->table('assets a');
-                $this->applyAssetFilters($countBuilderFB, $fallbackFilters, $userUlpId);
-                $totalFB = $countBuilderFB->countAllResults();
-
-                if ($totalFB > 0) {
-                    $offset = max(0, ($page - 1) * $perPage);
-                    $dataBuilderFB = $db->table('assets a');
-                    $dataBuilderFB->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section');
-                    $dataBuilderFB->join('ulps u', 'a.ulp_id = u.id', 'left');
-                    $dataBuilderFB->join('penyulang p', 'a.penyulang_id = p.id', 'left');
-                    $dataBuilderFB->join('sections s', 'a.section_id = s.id', 'left');
-                    $this->applyAssetFilters($dataBuilderFB, $fallbackFilters, $userUlpId);
-                    $dataBuilderFB->orderBy('a.id', 'DESC');
-                    $dataBuilderFB->limit($perPage, $offset);
-
-                    $data = $dataBuilderFB->get()->getResultArray();
-                    return [
-                        'data'      => $data,
-                        'total'     => $totalFB,
-                        'page'      => $page,
-                        'per_page'  => $perPage,
-                        'last_page' => max(1, (int)ceil($totalFB / $perPage)),
-                        'fallback'  => true
-                    ];
-                }
-
-                return ['data' => [], 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'last_page' => 1];
+                // NO FALLBACK: Return empty result with explicit zero count.
+                // A zero-result query must never return assets belonging to another feeder.
+                return ['data' => [], 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'last_page' => 1, 'fallback' => false];
             }
 
             // 2. Separate Clean Data Query
@@ -217,7 +190,8 @@ class AssetRepository
                 'total'     => $total,
                 'page'      => $page,
                 'per_page'  => $perPage,
-                'last_page' => max(1, ceil($total / $perPage))
+                'last_page' => max(1, ceil($total / $perPage)),
+                'fallback'  => false
             ];
         } catch (\Throwable $e) {
             log_message('error', '[AssetRepository::getFilteredAssetsPaginated] Exception: ' . $e->getMessage());

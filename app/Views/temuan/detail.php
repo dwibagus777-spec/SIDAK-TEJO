@@ -543,6 +543,7 @@ try {
         <span class="text-muted"><i class="fas fa-bolt text-warning me-1"></i> <?= esc($temuan['nama_penyulang']) ?></span>
         <span><?= $sla['badge_html'] ?></span>
     </div>
+</div>   
 <?php if ($isGisReturn): ?>
 <div class="alert alert-success d-flex align-items-center justify-content-between py-2 px-3 mb-3 shadow-sm rounded-pill border-success flex-wrap gap-2" role="alert" style="background-color: #f0fdf4;">
     <div class="d-flex align-items-center small fw-bold text-success">

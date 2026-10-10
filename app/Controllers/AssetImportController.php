@@ -374,8 +374,40 @@ class AssetImportController extends BaseController
         foreach ($tables as $table) {
             if ($db->tableExists($table)) {
                 try {
-                    // Use CHECKSUM or aggregate for deterministic hash
-                    $row = $db->query("SELECT COUNT(*) as cnt, MAX(COALESCE(updated_at, created_at)) as max_ts FROM `$table`")->getRowArray();
+                    // Determine available timestamp columns for this table
+                    $fields = $db->getFieldNames($table);
+                    $hasCreatedAt = in_array('created_at', $fields, true);
+                    $hasUpdatedAt = in_array('updated_at', $fields, true);
+
+                    $tsExpr = null;
+                    if ($hasCreatedAt && $hasUpdatedAt) {
+                        $tsExpr = 'MAX(COALESCE(updated_at, created_at))';
+                    } elseif ($hasCreatedAt) {
+                        $tsExpr = 'MAX(created_at)';
+                    } elseif ($hasUpdatedAt) {
+                        $tsExpr = 'MAX(updated_at)';
+                    }
+
+                    // Use prefixTable to handle database prefixes (e.g., 'db_' in test environment)
+                    $prefixedTable = $db->prefixTable($table);
+                    $sql = "SELECT COUNT(*) as cnt";
+                    if ($tsExpr !== null) {
+                        $sql .= ", {$tsExpr} as max_ts";
+                    }
+                    $sql .= " FROM `{$prefixedTable}`";
+
+                    $result = $db->query($sql);
+                    if ($result === false) {
+                        $hashes[$table] = ['error' => 'Query returned false'];
+                        continue;
+                    }
+
+                    $row = $result->getRowArray();
+                    if ($row === null) {
+                        $hashes[$table] = ['error' => 'No row returned'];
+                        continue;
+                    }
+
                     $hashes[$table] = [
                         'count'    => (int)($row['cnt'] ?? 0),
                         'max_ts'   => $row['max_ts'] ?? null,

@@ -309,6 +309,7 @@ if (!function_exists('get_daily_announcement')) {
 if (!function_exists('get_photo_url')) {
     /**
      * Helper tunggal untuk mendapatkan URL foto dengan toleransi berkas hilang & multi-resolution (thumb/medium/full)
+     * Preserves safe subfolders (e.g., management/name.jpg) while rejecting traversal.
      */
     function get_photo_url(?string $photoName, ?string $fotoPath = 'foto/', string $size = 'full'): string
     {
@@ -328,26 +329,36 @@ if (!function_exists('get_photo_url')) {
             return $photoName;
         }
 
-        $cleanName = basename(rawurldecode($photoName));
-        if ($cleanName === '' || $cleanName === '.' || $cleanName === '..') {
+        // Preserve supported subfolders, reject traversal (same logic as resolve_photo_path)
+        $relativeName = str_replace('\\', '/', rawurldecode(trim($photoName)));
+        if ($relativeName === '' || str_contains($relativeName, "\0") || str_starts_with($relativeName, '/') || preg_match('/^[A-Za-z]:\//', $relativeName)) {
             return $placeholder;
         }
 
+        $segments = explode('/', $relativeName);
+        foreach ($segments as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                return $placeholder;
+            }
+        }
+        $relativeName = implode(DIRECTORY_SEPARATOR, $segments);
+
         $persistentDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : WRITEPATH . 'uploads/foto/';
         $candidatePaths = [
-            $persistentDir . $cleanName,
-            WRITEPATH . 'uploads/foto/' . $cleanName,
-            FCPATH . 'foto/' . $cleanName,
+            rtrim($persistentDir, '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(WRITEPATH . 'uploads/foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(FCPATH . 'foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(dirname(FCPATH) . DIRECTORY_SEPARATOR . 'foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
         ];
 
-        foreach ($candidatePaths as $path) {
+        foreach (array_unique($candidatePaths) as $path) {
             if (is_file($path) && is_readable($path)) {
                 $mtime = filemtime($path) ?: time();
-                return base_url('foto/' . rawurlencode($cleanName)) . '?v=' . $mtime;
+                return base_url('foto/' . rawurlencode($relativeName)) . '?v=' . $mtime;
             }
         }
 
-        return base_url('foto/' . rawurlencode($cleanName));
+        return base_url('foto/' . rawurlencode($relativeName));
     }
 }
 

@@ -6,9 +6,15 @@ class StorageDiag extends BaseController
 {
     public function index()
     {
-        // Require authenticated admin session
+        // Use the same session/auth logic as RoleFilter
         $session = session();
-        if (!$session->get('isLoggedIn') || !$session->get('is_admin')) {
+
+        if (!$session->get('logged_in')) {
+            return $this->response->setStatusCode(401)->setBody('Unauthorized: Login required');
+        }
+
+        $role = strtolower((string)$session->get('user_role'));
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat'])) {
             return $this->response->setStatusCode(403)->setBody('Forbidden: Admin access required');
         }
 

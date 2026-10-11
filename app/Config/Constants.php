@@ -116,7 +116,15 @@ if (!defined('SIDAK_STORAGE_PATH')) {
     $env = getenv('CI_ENVIRONMENT') ?: ENVIRONMENT;
     $isStaging = ($env === 'staging');
     
-    if ($explicitPath !== false && $explicitPath !== '' && is_dir($explicitPath) && is_writable($explicitPath)) {
+    if ($explicitPath !== false && $explicitPath !== '') {
+        // Explicit path provided - validate it exists, is writable, and matches environment
+        if (!is_dir($explicitPath)) {
+            throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set but directory does not exist: ' . $explicitPath);
+        }
+        if (!is_writable($explicitPath)) {
+            throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set but directory is not writable: ' . $explicitPath);
+        }
+        
         // Validate explicit path matches current environment
         $explicitPathNormalized = rtrim($explicitPath, '/\\') . DIRECTORY_SEPARATOR;
         if ($isStaging) {
@@ -132,7 +140,7 @@ if (!defined('SIDAK_STORAGE_PATH')) {
         }
         define('SIDAK_STORAGE_PATH', $explicitPathNormalized);
     } else {
-        // 2. Environment-aware prioritization
+        // 2. Environment-aware prioritization (no explicit path set)
 
         // Candidates ordered by environment priority
         if ($isStaging) {

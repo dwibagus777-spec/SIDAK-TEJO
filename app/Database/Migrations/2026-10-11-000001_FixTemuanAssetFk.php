@@ -8,7 +8,7 @@ class FixTemuanAssetFk extends Migration
 {
     public function up()
     {
-        $db = \Config\Database::connect();
+        $db = $this->db;
 
         // ================================================================
         // PRECONDITION CHECKS (Read-Only Verification)
@@ -174,7 +174,7 @@ class FixTemuanAssetFk extends Migration
 
     public function down()
     {
-        $db = \Config\Database::connect();
+        $db = $this->db;
 
         // Rollback: Drop FK first
         $fkExists = $db->query("

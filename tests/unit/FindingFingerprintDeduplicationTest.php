@@ -22,11 +22,18 @@ class FindingFingerprintDeduplicationTest extends CIUnitTestCase
         $this->db = Database::connect('test_mariadb');
         $this->service = new FindingMatchingService(new TemuanModel(), $this->db);
 
+        // Disable foreign key checks for truncate operations
+        $this->db->query('SET FOREIGN_KEY_CHECKS = 0');
+
         // Ensure clean test state for test-specific tables only
-        // Do NOT truncate assets table as it contains baseline data for other tests
         $this->db->table('temuan_observations')->truncate();
         $this->db->table('temuan')->truncate();
+        $this->db->table('riwayat_tindak_lanjut')->truncate();
         $this->db->table('users')->truncate();
+        $this->db->table('assets')->truncate();
+
+        // Re-enable foreign key checks
+        $this->db->query('SET FOREIGN_KEY_CHECKS = 1');
 
         // Create test asset with unique identifier
         $uniqueSuffix = uniqid('testfp_', true);
@@ -35,12 +42,8 @@ class FindingFingerprintDeduplicationTest extends CIUnitTestCase
             'penyulang_id'   => 1,
             'section_id'     => 1,
             'kode_asset'     => 'TEST-FP-ASSET-001-' . $uniqueSuffix,
-            'kode_aset'      => 'TEST-FP-ASSET-001-' . $uniqueSuffix,
             'nama_asset'     => 'Test Asset FP',
-            'nama_aset'      => 'Test Asset FP',
             'jenis_asset'    => 'TIANG',
-            'jenis_aset'     => 'TIANG',
-            'kondisi'        => 'BAIK',
             'latitude'       => -6.2088,
             'longitude'      => 106.8456,
             'created_at'     => Time::now('Asia/Jakarta')->toDateTimeString(),
@@ -51,12 +54,11 @@ class FindingFingerprintDeduplicationTest extends CIUnitTestCase
         $userSuffix = uniqid('testfp_', true);
         $this->testUserId = $this->db->table('users')->insert([
             'username'       => 'test_user_fp_' . $userSuffix,
-            'email'          => 'test_fp_' . $userSuffix . '@example.com',
-            'password_hash'  => password_hash('password', PASSWORD_DEFAULT),
-            'nama_pegawai'   => 'Test User FP',
-            'nip'            => '12345678',
+            'password'       => password_hash('password', PASSWORD_DEFAULT),
+            'nama'           => 'Test User FP',
             'role'           => 'admin',
-            'is_active'      => 1,
+            'ulp_id'         => 1,
+            'status'         => 'AKTIF',
             'created_at'     => Time::now('Asia/Jakarta')->toDateTimeString(),
             'updated_at'     => Time::now('Asia/Jakarta')->toDateTimeString(),
         ], true);
@@ -64,8 +66,11 @@ class FindingFingerprintDeduplicationTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
+        $this->db->query('SET FOREIGN_KEY_CHECKS = 0');
         $this->db->table('temuan_observations')->truncate();
         $this->db->table('temuan')->truncate();
+        $this->db->table('riwayat_tindak_lanjut')->truncate();
+        $this->db->query('SET FOREIGN_KEY_CHECKS = 1');
         // Do NOT truncate assets or users tables to preserve baseline data for other tests
 
         parent::tearDown();
@@ -159,22 +164,20 @@ class FindingFingerprintDeduplicationTest extends CIUnitTestCase
     // ================================================================
     public function testFP03_DifferentAssetCreatesNewMasterCase(): void
     {
-        // Create second asset with unique identifiers using raw query to ensure insert works
+        // Create second asset with unique identifiers
         $uniqueSuffix = uniqid('', true);
-        $sql = "INSERT INTO `assets` (
-            `ulp_id`, `penyulang_id`, `section_id`, 
-            `kode_asset`, `kode_aset`, `nama_asset`, `nama_aset`, 
-            `jenis_asset`, `jenis_aset`, `kondisi`, 
-            `latitude`, `longitude`, `created_at`, `updated_at`
-        ) VALUES (
-            1, 1, 1,
-            'TEST-ASSET-002-{$uniqueSuffix}', 'TEST-ASSET-002-{$uniqueSuffix}', 
-            'Test Asset 2', 'Test Asset 2',
-            'TIANG', 'TIANG', 'BAIK',
-            -6.2088, 106.8456,
-            NOW(), NOW()
-        )";
-        $this->db->query($sql);
+        $this->db->table('assets')->insert([
+            'ulp_id'         => 1,
+            'penyulang_id'   => 1,
+            'section_id'     => 1,
+            'kode_asset'     => 'TEST-ASSET-002-' . $uniqueSuffix,
+            'nama_asset'     => 'Test Asset 2',
+            'jenis_asset'    => 'TIANG',
+            'latitude'       => -6.2088,
+            'longitude'      => 106.8456,
+            'created_at'     => Time::now('Asia/Jakarta')->toDateTimeString(),
+            'updated_at'     => Time::now('Asia/Jakarta')->toDateTimeString(),
+        ]);
         $assetId2 = $this->db->insertID();
 
         $this->assertGreaterThan(0, $assetId2, 'Second asset insert should return valid ID');

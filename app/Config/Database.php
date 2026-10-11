@@ -245,8 +245,17 @@ class Database extends Config
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that
         // we don't overwrite live data on accident.
+        // Allow override via USE_TEST_MARIADB env var for integration tests
         if (ENVIRONMENT === 'testing') {
-            $this->defaultGroup = 'tests';
+            $useTestMariaDB = getenv('USE_TEST_MARIADB') !== false && getenv('USE_TEST_MARIADB') !== '';
+            if ($useTestMariaDB) {
+                $this->defaultGroup = 'test_mariadb';
+                // Also override 'tests' group to use test_mariadb settings
+                // because Database\Config::connect() hardcodes 'tests' in testing env
+                $this->tests = $this->test_mariadb;
+            } else {
+                $this->defaultGroup = 'tests';
+            }
         }
     }
 }

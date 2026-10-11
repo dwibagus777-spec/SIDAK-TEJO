@@ -18,11 +18,18 @@ final class PhotoAccessTest extends CIUnitTestCase
     {
         parent::setUp();
         
-        // Use 'default' database group (MariaDB sidaktejo) instead of 'tests' (SQLite)
-        $this->db = Database::connect('default');
+        // Use 'test_mariadb' database group (MariaDB sidaktejo_test) for isolation
+        $this->db = Database::connect('test_mariadb');
+
+        // Verify we're connected to the test database, not production
+        $actualDb = $this->db->getDatabase();
+        if ($actualDb !== 'sidaktejo_test') {
+            $this->markTestSkipped("Test database isolation failed: connected to '$actualDb' instead of 'sidaktejo_test'. Aborting to prevent data contamination.");
+            return;
+        }
         
         // Verify test database has required tables
-        // Note: tindak_lanjut table doesn't exist in current schema - check_photo_access handles this gracefully
+        // Note: riwayat_tindak_lanjut table doesn't exist in current schema - check_photo_access handles this gracefully
         $requiredTables = [
             'temuan', 'ulps', 'penyulang', 'sections',
             'tb_eviden_kubikel', 'tb_eviden_trafo', 'tb_foto_eviden',
@@ -31,13 +38,27 @@ final class PhotoAccessTest extends CIUnitTestCase
         
         foreach ($requiredTables as $table) {
             if (!$this->db->tableExists($table)) {
-                $this->markTestSkipped("Table '$table' not found in default database. Run migrations first.");
+                $this->markTestSkipped("Table '$table' not found in test database. Run migrations first.");
                 return;
             }
         }
 
         // Load helper functions
         helper('app');
+    }
+
+    /**
+     * Clean up test data after each test
+     */
+    protected function tearDown(): void
+    {
+        // Clean up test temuan records
+        if (isset($this->db) && $this->db->tableExists('temuan')) {
+            $this->db->table('temuan')
+                ->where('nomor_temuan LIKE', 'TEST-%')
+                ->delete();
+        }
+        parent::tearDown();
     }
 
     /**
@@ -66,7 +87,7 @@ final class PhotoAccessTest extends CIUnitTestCase
         $session = Services::session();
         $session->destroy();
         
-        $result = check_photo_access('test.jpg', 'default');
+        $result = check_photo_access('test.jpg', 'test_mariadb');
         $this->assertFalse($result, 'Not logged in user should be denied');
     }
 
@@ -106,7 +127,7 @@ final class PhotoAccessTest extends CIUnitTestCase
             'created_by_name' => 'Test',
         ]);
 
-        $result = check_photo_access($photoName, 'default');
+        $result = check_photo_access($photoName, 'test_mariadb');
         $this->assertTrue($result, 'Photo in user\'s own ULP should be allowed');
     }
 
@@ -136,7 +157,7 @@ final class PhotoAccessTest extends CIUnitTestCase
             'created_by_name' => 'Test',
         ]);
 
-        $result = check_photo_access($photoName, 'default');
+        $result = check_photo_access($photoName, 'test_mariadb');
         $this->assertFalse($result, 'Photo in different ULP should be denied');
     }
 
@@ -166,7 +187,7 @@ final class PhotoAccessTest extends CIUnitTestCase
             'created_by_name' => 'Test',
         ]);
 
-        $result = check_photo_access($photoName, 'default');
+        $result = check_photo_access($photoName, 'test_mariadb');
         $this->assertTrue($result, 'Administrator should have access to photo in any ULP');
     }
 
@@ -214,7 +235,7 @@ final class PhotoAccessTest extends CIUnitTestCase
             'created_by_name' => 'Test',
         ]);
 
-        $result = check_photo_access($photoName, 'default');
+        $result = check_photo_access($photoName, 'test_mariadb');
         $this->assertTrue($result, 'Photo with same name in user\'s ULP should be allowed');
     }
 
@@ -227,7 +248,7 @@ final class PhotoAccessTest extends CIUnitTestCase
         
         // Attempt SQL injection via photo name
         $maliciousName = "test'; DROP TABLE temuan;--.jpg";
-        $result = check_photo_access($maliciousName);
+        $result = check_photo_access($maliciousName, 'test_mariadb');
         $this->assertFalse($result, 'SQL injection attempt should be safely handled (denied as unknown)');
         
         // Verify table still exists
@@ -262,7 +283,7 @@ final class PhotoAccessTest extends CIUnitTestCase
             'created_by_name' => 'Test',
         ]);
         
-        $result = check_photo_access($photoName, 'default');
+        $result = check_photo_access($photoName, 'test_mariadb');
         $this->assertFalse($result, 'Photo in different ULP should be denied for non-cross-ULP user');
     }
 }

@@ -24,12 +24,23 @@ class PhotoController extends BaseController
             return $this->response->setStatusCode(404);
         }
 
-        // Extract clean filename for authorization check
-        $cleanName = basename($relativePath);
-
         // Authorization: check if user has access to this photo
-        if (function_exists('check_photo_access') && !check_photo_access($cleanName)) {
-            log_message('warning', '[PhotoController] Akses ditolak ke foto: ' . $cleanName . ' oleh user: ' . (session()->get('user_id') ?? 'unknown'));
+        // FAIL-CLOSED: deny access if helper unavailable or throws
+        $hasAccess = false;
+        if (function_exists('check_photo_access')) {
+            try {
+                $hasAccess = check_photo_access($relativePath);
+            } catch (\Throwable $e) {
+                log_message('error', '[PhotoController] check_photo_access error: ' . $e->getMessage());
+                $hasAccess = false;
+            }
+        } else {
+            log_message('error', '[PhotoController] check_photo_access helper not available - denying access');
+            $hasAccess = false;
+        }
+
+        if (!$hasAccess) {
+            log_message('warning', '[PhotoController] Akses ditolak ke foto: ' . $relativePath . ' oleh user: ' . (session()->get('user_id') ?? 'unknown'));
             return $this->response->setStatusCode(403)->setBody('Forbidden: Access denied to this photo');
         }
 

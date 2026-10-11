@@ -177,12 +177,21 @@ class FindingMatchingService
                 // Fetch Asset context for hierarchy IDs
                 $assetContext = $this->db->table('assets')->where('id', (int)$assetId)->get()->getRowArray();
 
+                if (!$assetContext) {
+                    throw new InvalidArgumentException("Aset dengan ID {$assetId} tidak ditemukan. Tidak dapat membuat temuan tanpa konteks aset valid.");
+                }
+
+                // Validate required hierarchy IDs from asset context
+                if (empty($assetContext['ulp_id']) || empty($assetContext['penyulang_id']) || empty($assetContext['section_id'])) {
+                    throw new InvalidArgumentException("Aset ID {$assetId} tidak memiliki konteks hierarki lengkap (ulp_id, penyulang_id, section_id wajib diisi).");
+                }
+
                 $this->db->table('temuan')->insert([
                     'nomor_temuan'         => $nomorTemuan,
                     'asset_id'             => (int)$assetId,
-                    'ulp_id'               => $inputData['ulp_id'] ?? ($assetContext['ulp_id'] ?? 1),
-                    'penyulang_id'         => $inputData['penyulang_id'] ?? ($assetContext['penyulang_id'] ?? 1),
-                    'section_id'           => $inputData['section_id'] ?? ($assetContext['section_id'] ?? 1),
+                    'ulp_id'               => $inputData['ulp_id'] ?? $assetContext['ulp_id'],
+                    'penyulang_id'         => $inputData['penyulang_id'] ?? $assetContext['penyulang_id'],
+                    'section_id'           => $inputData['section_id'] ?? $assetContext['section_id'],
                     'jenis_temuan'         => $jenisTemuan,
                     'component_code'       => $compCode,
                     'defect_location_code' => $locCode,

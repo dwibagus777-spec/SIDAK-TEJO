@@ -22,14 +22,15 @@ class StoragePathResolutionTest extends CIUnitTestCase
         // Check for explicit path validation
         $this->assertStringContainsString('sidak_storage_staging', $content, 'Should validate staging path');
         $this->assertStringContainsString('RuntimeException', $content, 'Should throw on mismatch');
+        $this->assertStringContainsString('realpath', $content, 'Should use canonical path resolution');
         
         // Check staging candidates don't include production paths
-        $stagingCandidates = $this->extractCandidates($content, '$isStaging = (');
+        $stagingCandidates = $this->extractCandidates($content, '$isStaging) {');
         $this->assertStringNotContainsString('sidak_storage/foto', $stagingCandidates, 'Staging candidates should not include production paths');
         $this->assertStringContainsString('sidak_storage_staging', $stagingCandidates, 'Staging candidates should include staging paths');
         
         // Check production candidates don't include staging paths
-        $productionCandidates = $this->extractCandidates($content, '// Production: path MUST NOT contain staging identifier', true);
+        $productionCandidates = $this->extractCandidates($content, '// Production: ONLY production paths — NO staging fallback', true);
         $this->assertStringNotContainsString('sidak_storage_staging', $productionCandidates, 'Production candidates should not include staging paths');
         $this->assertStringContainsString('sidak_storage/foto', $productionCandidates, 'Production candidates should include production paths');
     }

@@ -116,8 +116,9 @@ if (!defined('SIDAK_STORAGE_PATH')) {
     $sidakStoragePath = null;
     foreach ($sidakStorageCandidates as $candidate) {
         $candidate = rtrim($candidate, '/\\\\') . DIRECTORY_SEPARATOR;
-        $storageRoot = dirname(rtrim($candidate, '/\\\\'));
-        if (is_dir($storageRoot) || is_dir($candidate)) {
+        // Select only the actual foto directory; an existing parent folder
+        // is not sufficient and could route uploads to a nonexistent location.
+        if (is_dir($candidate) && is_writable($candidate)) {
             $sidakStoragePath = $candidate;
             break;
         }

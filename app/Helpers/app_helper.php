@@ -362,23 +362,35 @@ if (!function_exists('resolve_photo_path')) {
      */
     function resolve_photo_path(string $photoName, bool $forWrite = false): ?string
     {
-        $cleanName = basename(rawurldecode($photoName));
-        if ($cleanName === '' || $cleanName === '.' || $cleanName === '..') {
+        // Preserve supported subfolders such as management/name.jpg, while rejecting traversal.
+        $relativeName = str_replace('\\', '/', rawurldecode(trim($photoName)));
+        if ($relativeName === '' || str_contains($relativeName, "\0") || str_starts_with($relativeName, '/') || preg_match('/^[A-Za-z]:\//', $relativeName)) {
             return null;
         }
 
-        $persistentDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR : WRITEPATH . 'uploads/foto/';
+        $segments = explode('/', $relativeName);
+        foreach ($segments as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                return null;
+            }
+        }
+        $relativeName = implode(DIRECTORY_SEPARATOR, $segments);
+
+        $persistentDir = defined('SIDAK_STORAGE_PATH')
+            ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR
+            : rtrim(WRITEPATH . 'uploads/foto/', '/\\') . DIRECTORY_SEPARATOR;
         $candidatePaths = [
-            $persistentDir . $cleanName,
-            WRITEPATH . 'uploads/foto/' . $cleanName,
-            FCPATH . 'foto/' . $cleanName,
+            $persistentDir . $relativeName,
+            rtrim(WRITEPATH . 'uploads/foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(FCPATH . 'foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(dirname(FCPATH) . DIRECTORY_SEPARATOR . 'foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
         ];
 
         if ($forWrite) {
             return $candidatePaths[0];
         }
 
-        foreach ($candidatePaths as $path) {
+        foreach (array_unique($candidatePaths) as $path) {
             if (is_file($path) && is_readable($path)) {
                 return $path;
             }

@@ -193,11 +193,19 @@ class TemuanService
      */
     private function cleanupOrphanedPhotos(array $photoNames): void
     {
-        $fotoPath = 'foto/';
+        // Newly uploaded files are stored in the persistent directory outside the deploy root.
+        $storageDir = rtrim(SIDAK_STORAGE_PATH, '/\\\\') . DIRECTORY_SEPARATOR;
+
         foreach ($photoNames as $name) {
-            $filePath = FCPATH . $fotoPath . $name;
-            if (is_file($filePath)) {
-                @unlink($filePath);
+            // Only allow a filename, never a user-controlled path.
+            $safeName = basename((string) $name);
+            if ($safeName === '' || $safeName !== (string) $name) {
+                continue;
+            }
+
+            $filePath = $storageDir . $safeName;
+            if (is_file($filePath) && !@unlink($filePath)) {
+                log_message('warning', '[TemuanService] Gagal membersihkan foto yatim: ' . $safeName);
             }
         }
     }

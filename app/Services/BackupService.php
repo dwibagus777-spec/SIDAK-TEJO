@@ -204,21 +204,20 @@ class BackupService
         $tempLegacyFotoDir = $extractPath . 'foto_legacy/';
         $persistentFotoDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR : WRITEPATH . 'uploads/foto/';
 
-        // Prefer persistent storage directory from backup, fall back to legacy
-        $sourceFotoDir = null;
-        if (is_dir($tempFotoDir)) {
-            $sourceFotoDir = $tempFotoDir;
-        } elseif (is_dir($tempLegacyFotoDir)) {
-            $sourceFotoDir = $tempLegacyFotoDir;
-        }
-
-        if ($sourceFotoDir) {
-            if (!is_dir($persistentFotoDir)) {
-                @mkdir($persistentFotoDir, 0755, true);
+        // Merge both archive locations: each can contain unique historical evidence.
+        $photoSources = array_values(array_filter([$tempFotoDir, $tempLegacyFotoDir], 'is_dir'));
+        if (!empty($photoSources)) {
+            if (!is_dir($persistentFotoDir) && !@mkdir($persistentFotoDir, 0755, true) && !is_dir($persistentFotoDir)) {
+                log_message('error', '[BackupService] Tidak dapat membuat direktori foto persisten untuk restore.');
+                $this->deleteDirectory($extractPath);
+                return ['success' => false, 'message' => 'Direktori penyimpanan foto persisten tidak dapat dibuat.'];
             }
-            // Merge: copy new files, preserve existing
-            $this->copyDirectoryMerge($sourceFotoDir, $persistentFotoDir);
-            $restoredItems[] = 'Folder Foto (persistent)';
+
+            foreach ($photoSources as $sourceFotoDir) {
+                // Copy missing files only; preserve existing destination files.
+                $this->copyDirectoryMerge($sourceFotoDir, $persistentFotoDir);
+            }
+            $restoredItems[] = 'Folder Foto (persistent + legacy merge)';
         }
 
         // Bersihkan folder temporer

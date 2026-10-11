@@ -289,10 +289,10 @@ if (!function_exists('get_user_role_scoping')) {
 if (!function_exists('check_photo_access')) {
     /**
      * Check if authenticated user has access to a photo by filename.
-     * Searches temuan, eviden (kubikel/trafo/management) for the photo.
-     * Returns true if user's ULP scope matches the record's ULP, or user is cross-ULP role.
+     * Searches temuan, eviden (kubikel/trafo/management), work orders, assets for the photo.
+     * Returns true if user's ULP scope matches the record's ULP, or user is cross-ULP role AND photo exists in DB.
      *
-     * @param string $photoName Basename or relative path of photo
+     * @param string $photoName Basename or relative path of photo (e.g., "management/name.jpg" or "name.jpg")
      * @return bool True if access allowed, false otherwise
      */
     function check_photo_access(string $photoName): bool
@@ -306,13 +306,8 @@ if (!function_exists('check_photo_access')) {
         $userRole = $scope['role'];
         $userUlpId = $scope['ulp_id'];
 
-        // Cross-ULP roles have access to all photos
-        if (in_array($userRole, ['administrator', 'pdkb', 'har_crane'])) {
-            return true;
-        }
-
         // If no ULP filter (shouldn't happen for non-cross-ULP), deny
-        if ($userUlpId === null) {
+        if ($userUlpId === null && !in_array($userRole, ['administrator', 'pdkb', 'har_crane'])) {
             return false;
         }
 
@@ -323,14 +318,27 @@ if (!function_exists('check_photo_access')) {
 
         $db = \Config\Database::connect();
 
-        // 1. Check temuan table
+        // Helper: check if photo is associated with a ULP record
+        $checkUlpMatch = function (array $record): bool {
+            if (!isset($record['ulp_id']) || $record['ulp_id'] === null) {
+                return false;
+            }
+            // Cross-ULP roles allowed but only if photo actually exists in a record
+            if (in_array($userRole, ['administrator', 'pdkb', 'har_crane'])) {
+                return true;
+            }
+            return (int)$record['ulp_id'] === (int)$userUlpId;
+        };
+
+        // 1. Check temuan table (foto is JSON array)
+        // Use JSON_CONTAINS for exact array element match
         $temuan = $db->table('temuan')
             ->select('ulp_id')
-            ->like('foto', $cleanName)
             ->where('deleted_at IS NULL')
+            ->where("JSON_CONTAINS(`foto`, JSON_QUOTE('$cleanName'))")
             ->get()->getRowArray();
-        if ($temuan && isset($temuan['ulp_id'])) {
-            return (int)$temuan['ulp_id'] === (int)$userUlpId;
+        if ($temuan && $checkUlpMatch($temuan)) {
+            return true;
         }
 
         // 2. Check eviden kubikel
@@ -340,8 +348,8 @@ if (!function_exists('check_photo_access')) {
             ->where('fe.nama_file', $cleanName)
             ->where('fe.kategori', 'KUBIKEL')
             ->get()->getRowArray();
-        if ($foto && isset($foto['ulp_id'])) {
-            return (int)$foto['ulp_id'] === (int)$userUlpId;
+        if ($foto && $checkUlpMatch($foto)) {
+            return true;
         }
 
         // 3. Check eviden trafo
@@ -351,8 +359,8 @@ if (!function_exists('check_photo_access')) {
             ->where('fe.nama_file', $cleanName)
             ->where('fe.kategori', 'TRAFO')
             ->get()->getRowArray();
-        if ($foto && isset($foto['ulp_id'])) {
-            return (int)$foto['ulp_id'] === (int)$userUlpId;
+        if ($foto && $checkUlpMatch($foto)) {
+            return true;
         }
 
         // 4. Check management trafo (nameplates)
@@ -362,12 +370,33 @@ if (!function_exists('check_photo_access')) {
             ->where('m.foto_nameplate_lama', $cleanName)
             ->orWhere('m.foto_nameplate_baru', $cleanName)
             ->get()->getRowArray();
-        if ($mgmt && isset($mgmt['ulp_id'])) {
-            return (int)$mgmt['ulp_id'] === (int)$userUlpId;
+        if ($mgmt && $checkUlpMatch($mgmt)) {
+            return true;
         }
 
-        // 5. Check work order photos (if needed)
-        // Could add more checks here for other photo types
+        // 5. Check work order photos (tindak_lanjut)
+        $wo = $db->table('tindak_lanjut tl')
+            ->join('temuan te', 'te.id = tl.temuan_id')
+            ->select('te.ulp_id')
+            ->where('tl.foto_sebelum', $cleanName)
+            ->orWhere('tl.foto_proses', $cleanName)
+            ->orWhere('tl.foto_sesudah', $cleanName)
+            ->get()->getRowArray();
+        if ($wo && $checkUlpMatch($wo)) {
+            return true;
+        }
+
+        // 6. Check asset photos (if assets table has foto column)
+        // Assets are scoped by penyulang -> section -> ULP
+        $asset = $db->table('assets a')
+            ->join('sections s', 's.id = a.section_id')
+            ->join('penyulang p', 'p.id = s.penyulang_id')
+            ->select('p.ulp_id')
+            ->where('a.foto', $cleanName)
+            ->get()->getRowArray();
+        if ($asset && $checkUlpMatch($asset)) {
+            return true;
+        }
 
         // Photo not found in any known record - deny access by default
         return false;

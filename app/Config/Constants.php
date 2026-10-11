@@ -110,6 +110,7 @@ if (!defined('SIDAK_STORAGE_PATH')) {
         rtrim(dirname(dirname(rtrim(FCPATH, '/\\\\'))), '/\\\\') . '/sidak_storage/foto/',
         rtrim(dirname(rtrim(ROOTPATH, '/\\\\')), '/\\\\') . '/sidak_storage/foto/',
         '/home/u532206332/sidak_storage/foto/',
+        '/home/u532206332/sidak_storage_staging/foto/',
         '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/',
     ];
 

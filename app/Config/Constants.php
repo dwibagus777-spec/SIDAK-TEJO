@@ -111,14 +111,28 @@ defined('EXIT__AUTO_MAX')      || define('EXIT__AUTO_MAX', 125);    // highest a
  * 3. Candidate auto-detection (staging path before production path)
  */
 if (!defined('SIDAK_STORAGE_PATH')) {
-    // 1. Explicit override via environment variable
+    // 1. Explicit override via environment variable — validate matches environment
     $explicitPath = getenv('SIDAK_STORAGE_PATH');
+    $env = getenv('CI_ENVIRONMENT') ?: ENVIRONMENT;
+    $isStaging = ($env === 'staging');
+    
     if ($explicitPath !== false && $explicitPath !== '' && is_dir($explicitPath) && is_writable($explicitPath)) {
-        define('SIDAK_STORAGE_PATH', rtrim($explicitPath, '/\\') . DIRECTORY_SEPARATOR);
+        // Validate explicit path matches current environment
+        $explicitPathNormalized = rtrim($explicitPath, '/\\') . DIRECTORY_SEPARATOR;
+        if ($isStaging) {
+            // Staging: path MUST contain staging identifier
+            if (!str_contains($explicitPathNormalized, 'sidak_storage_staging')) {
+                throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set to production path but CI_ENVIRONMENT=staging. Use staging storage path (sidak_storage_staging) or unset SIDAK_STORAGE_PATH for auto-detection.');
+            }
+        } else {
+            // Production: path MUST NOT contain staging identifier
+            if (str_contains($explicitPathNormalized, 'sidak_storage_staging')) {
+                throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set to staging path but CI_ENVIRONMENT=production. Use production storage path (sidak_storage) or unset SIDAK_STORAGE_PATH for auto-detection.');
+            }
+        }
+        define('SIDAK_STORAGE_PATH', $explicitPathNormalized);
     } else {
         // 2. Environment-aware prioritization
-        $env = getenv('CI_ENVIRONMENT') ?: ENVIRONMENT;
-        $isStaging = ($env === 'staging');
 
         // Candidates ordered by environment priority
         if ($isStaging) {
@@ -129,13 +143,12 @@ if (!defined('SIDAK_STORAGE_PATH')) {
                 rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage_staging/foto/',
             ];
         } else {
-            // Production: production paths first
+            // Production: ONLY production paths — NO staging fallback
             $sidakStorageCandidates = [
                 '/home/u532206332/sidak_storage/foto/',
                 rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage/foto/',
                 rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage/foto/',
                 '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/',
-                '/home/u532206332/sidak_storage_staging/foto/',
             ];
         }
 

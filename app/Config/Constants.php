@@ -135,15 +135,25 @@ if (!defined('SIDAK_STORAGE_PATH')) {
         // Validate explicit path matches current environment using canonical path
         if ($isStaging) {
             // Staging: canonical path MUST be under staging storage directory
-            $allowedStagingBase = realpath('/home/u532206332/sidak_storage_staging') ?: '/home/u532206332/sidak_storage_staging';
-            if ($allowedStagingBase === false || !str_starts_with($canonicalPath, rtrim($allowedStagingBase, '/\\') . DIRECTORY_SEPARATOR)) {
+            $allowedStagingBase = realpath('/home/u532206332/sidak_storage_staging');
+            if ($allowedStagingBase === false) {
+                throw new RuntimeException('Staging storage base directory not found: /home/u532206332/sidak_storage_staging. Cannot validate staging storage path.');
+            }
+            $allowedStagingBase = rtrim($allowedStagingBase, '/\\') . DIRECTORY_SEPARATOR;
+            if (!str_starts_with($canonicalPath, $allowedStagingBase)) {
                 throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set to non-staging path but CI_ENVIRONMENT=staging. Use path under ' . $allowedStagingBase . ' or unset SIDAK_STORAGE_PATH for auto-detection.');
             }
         } else {
             // Production: canonical path MUST NOT be under staging storage directory
-            $stagingBase = realpath('/home/u532206332/sidak_storage_staging') ?: '/home/u532206332/sidak_storage_staging';
-            if ($stagingBase !== false && str_starts_with($canonicalPath, rtrim($stagingBase, '/\\') . DIRECTORY_SEPARATOR)) {
-                throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set to staging path but CI_ENVIRONMENT=production. Use production storage path or unset SIDAK_STORAGE_PATH for auto-detection.');
+            $stagingBase = realpath('/home/u532206332/sidak_storage_staging');
+            if ($stagingBase === false) {
+                // If staging base doesn't exist, we can't validate against it, but that's ok for production
+                // Just skip the staging path check
+            } else {
+                $stagingBase = rtrim($stagingBase, '/\\') . DIRECTORY_SEPARATOR;
+                if (str_starts_with($canonicalPath, $stagingBase)) {
+                    throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set to staging path but CI_ENVIRONMENT=production. Use production storage path or unset SIDAK_STORAGE_PATH for auto-detection.');
+                }
             }
         }
         define('SIDAK_STORAGE_PATH', $canonicalPath);

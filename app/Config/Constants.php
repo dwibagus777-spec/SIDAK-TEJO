@@ -104,28 +104,63 @@ defined('EXIT__AUTO_MAX')      || define('EXIT__AUTO_MAX', 125);    // highest a
  * Hostinger File Manager shows sidak_storage beside public_html, so try
  * paths derived from the runtime root and known account locations first.
  * Never silently fall back to a deploy-managed public/foto directory.
+ * 
+ * Priority:
+ * 1. Explicit SIDAK_STORAGE_PATH env var (manual override)
+ * 2. Environment-aware: staging -> staging path, production -> production path
+ * 3. Candidate auto-detection (staging path before production path)
  */
 if (!defined('SIDAK_STORAGE_PATH')) {
-    $sidakStorageCandidates = [
-        rtrim(dirname(dirname(rtrim(FCPATH, '/\\\\'))), '/\\\\') . '/sidak_storage/foto/',
-        rtrim(dirname(rtrim(ROOTPATH, '/\\\\')), '/\\\\') . '/sidak_storage/foto/',
-        '/home/u532206332/sidak_storage/foto/',
-        '/home/u532206332/sidak_storage_staging/foto/',
-        '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/',
-    ];
+    // 1. Explicit override via environment variable
+    $explicitPath = getenv('SIDAK_STORAGE_PATH');
+    if ($explicitPath !== false && $explicitPath !== '' && is_dir($explicitPath) && is_writable($explicitPath)) {
+        define('SIDAK_STORAGE_PATH', rtrim($explicitPath, '/\\') . DIRECTORY_SEPARATOR);
+    } else {
+        // 2. Environment-aware prioritization
+        $env = getenv('CI_ENVIRONMENT') ?: ENVIRONMENT;
+        $isStaging = ($env === 'staging');
 
-    $sidakStoragePath = null;
-    foreach ($sidakStorageCandidates as $candidate) {
-        $candidate = rtrim($candidate, '/\\\\') . DIRECTORY_SEPARATOR;
-        // Select only the actual foto directory; an existing parent folder
-        // is not sufficient and could route uploads to a nonexistent location.
-        if (is_dir($candidate) && is_writable($candidate)) {
-            $sidakStoragePath = $candidate;
-            break;
+        // Candidates ordered by environment priority
+        if ($isStaging) {
+            // Staging: staging path FIRST, then production paths as fallback (should not happen)
+            $sidakStorageCandidates = [
+                '/home/u532206332/sidak_storage_staging/foto/',
+                rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage_staging/foto/',
+                rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage_staging/foto/',
+                '/home/u532206332/sidak_storage/foto/',
+                rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage/foto/',
+                rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage/foto/',
+                '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/',
+            ];
+        } else {
+            // Production: production paths first
+            $sidakStorageCandidates = [
+                '/home/u532206332/sidak_storage/foto/',
+                rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage/foto/',
+                rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage/foto/',
+                '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/',
+                '/home/u532206332/sidak_storage_staging/foto/',
+            ];
+        }
+
+        $sidakStoragePath = null;
+        foreach ($sidakStorageCandidates as $candidate) {
+            $candidate = rtrim($candidate, '/\\') . DIRECTORY_SEPARATOR;
+            if (is_dir($candidate) && is_writable($candidate)) {
+                $sidakStoragePath = $candidate;
+                break;
+            }
+        }
+
+        // Fail-safe: do not silently write to deploy-managed web root
+        if ($sidakStoragePath === null) {
+            if ($isStaging) {
+                // Staging must have its own storage configured
+                throw new RuntimeException('SIDAK_STORAGE_PATH not resolved for staging. Configure SIDAK_STORAGE_PATH env var or ensure /home/u532206332/sidak_storage_staging/foto/ exists and is writable.');
+            }
+            define('SIDAK_STORAGE_PATH', '/home/u532206332/sidak_storage/foto/');
+        } else {
+            define('SIDAK_STORAGE_PATH', $sidakStoragePath);
         }
     }
-
-    // Keep uploads fail-safe if persistent storage is not provisioned.
-    // Do not silently write new evidence into the deploy-managed web root.
-    define('SIDAK_STORAGE_PATH', $sidakStoragePath ?: '/home/u532206332/sidak_storage/foto/');
 }

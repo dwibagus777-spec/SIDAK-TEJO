@@ -99,6 +99,31 @@ defined('EXIT__AUTO_MAX')      || define('EXIT__AUTO_MAX', 125);    // highest a
  |--------------------------------------------------------------------------
  | Centralized path for user uploaded runtime photos outside deployment root.
  */
-defined('SIDAK_STORAGE_PATH') || define('SIDAK_STORAGE_PATH', is_dir('/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/') 
-    ? '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/' 
-    : WRITEPATH . 'uploads/foto/');
+/*
+ * Resolve persistent storage outside the deployed web root.
+ * Hostinger File Manager shows sidak_storage beside public_html, so try
+ * paths derived from the runtime root and known account locations first.
+ * Never silently fall back to a deploy-managed public/foto directory.
+ */
+if (!defined('SIDAK_STORAGE_PATH')) {
+    $sidakStorageCandidates = [
+        rtrim(dirname(dirname(rtrim(FCPATH, '/\\\\'))), '/\\\\') . '/sidak_storage/foto/',
+        rtrim(dirname(rtrim(ROOTPATH, '/\\\\')), '/\\\\') . '/sidak_storage/foto/',
+        '/home/u532206332/sidak_storage/foto/',
+        '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/',
+    ];
+
+    $sidakStoragePath = null;
+    foreach ($sidakStorageCandidates as $candidate) {
+        $candidate = rtrim($candidate, '/\\\\') . DIRECTORY_SEPARATOR;
+        $storageRoot = dirname(rtrim($candidate, '/\\\\'));
+        if (is_dir($storageRoot) || is_dir($candidate)) {
+            $sidakStoragePath = $candidate;
+            break;
+        }
+    }
+
+    // Keep uploads fail-safe if persistent storage is not provisioned.
+    // Do not silently write new evidence into the deploy-managed web root.
+    define('SIDAK_STORAGE_PATH', $sidakStoragePath ?: '/home/u532206332/sidak_storage/foto/');
+}

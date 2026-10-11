@@ -351,6 +351,43 @@ if (!function_exists('get_photo_url')) {
     }
 }
 
+if (!function_exists('resolve_photo_path')) {
+    /**
+     * Resolve actual filesystem path for a photo using the persistent storage fallback chain.
+     * Returns the first existing readable file path, or the primary persistent path for new uploads.
+     *
+     * @param string $photoName Basename or relative path from DB
+     * @param bool $forWrite If true, returns primary persistent path even if file doesn't exist (for new uploads)
+     * @return string|null Resolved absolute path, or null if invalid name
+     */
+    function resolve_photo_path(string $photoName, bool $forWrite = false): ?string
+    {
+        $cleanName = basename(rawurldecode($photoName));
+        if ($cleanName === '' || $cleanName === '.' || $cleanName === '..') {
+            return null;
+        }
+
+        $persistentDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR : WRITEPATH . 'uploads/foto/';
+        $candidatePaths = [
+            $persistentDir . $cleanName,
+            WRITEPATH . 'uploads/foto/' . $cleanName,
+            FCPATH . 'foto/' . $cleanName,
+        ];
+
+        if ($forWrite) {
+            return $candidatePaths[0];
+        }
+
+        foreach ($candidatePaths as $path) {
+            if (is_file($path) && is_readable($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('render_photo')) {
     /**
      * Render tag <img> foto secara aman dengan logging error jika foto gagal dimuat

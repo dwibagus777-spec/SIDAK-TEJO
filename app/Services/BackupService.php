@@ -114,10 +114,17 @@ class BackupService
         $sqlData = $this->generateSqlDump();
         $zip->addFromString('database.sql', $sqlData);
 
-        // 2. Folder Foto (public/foto/)
-        $fotoDir = FCPATH . 'foto/';
-        if (is_dir($fotoDir)) {
-            $this->addFolderToZip($fotoDir, $zip, 'foto/');
+        // 2. Folder Foto (persistent storage + legacy fallbacks)
+        $persistentFotoDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR : WRITEPATH . 'uploads/foto/';
+        $legacyFotoDir = FCPATH . 'foto/';
+        $fotoDirsToBackup = array_filter(array_unique([
+            $persistentFotoDir,
+            $legacyFotoDir,
+        ]), 'is_dir');
+
+        foreach ($fotoDirsToBackup as $fotoDir) {
+            $subFolder = ($fotoDir === $persistentFotoDir) ? 'foto/' : 'foto_legacy/';
+            $this->addFolderToZip($fotoDir, $zip, $subFolder);
         }
 
         // 3. Folder Config (app/Config/)
@@ -133,8 +140,9 @@ class BackupService
             'created_at'   => date('Y-m-d H:i:s'),
             'timestamp'    => $timestamp,
             'has_database' => true,
-            'has_foto'     => is_dir($fotoDir),
+            'has_foto'     => !empty($fotoDirsToBackup),
             'has_config'   => is_dir($configDir),
+            'foto_source'  => $persistentFotoDir,
         ];
         $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
 
@@ -193,13 +201,24 @@ class BackupService
 
         // 2. Restore Foto jika folder foto/ ada
         $tempFotoDir = $extractPath . 'foto/';
+        $tempLegacyFotoDir = $extractPath . 'foto_legacy/';
+        $persistentFotoDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR : WRITEPATH . 'uploads/foto/';
+
+        // Prefer persistent storage directory from backup, fall back to legacy
+        $sourceFotoDir = null;
         if (is_dir($tempFotoDir)) {
-            $targetFotoDir = FCPATH . 'foto/';
-            if (!is_dir($targetFotoDir)) {
-                @mkdir($targetFotoDir, 0755, true);
+            $sourceFotoDir = $tempFotoDir;
+        } elseif (is_dir($tempLegacyFotoDir)) {
+            $sourceFotoDir = $tempLegacyFotoDir;
+        }
+
+        if ($sourceFotoDir) {
+            if (!is_dir($persistentFotoDir)) {
+                @mkdir($persistentFotoDir, 0755, true);
             }
-            $this->copyDirectory($tempFotoDir, $targetFotoDir);
-            $restoredItems[] = 'Folder Foto';
+            // Merge: copy new files, preserve existing
+            $this->copyDirectoryMerge($sourceFotoDir, $persistentFotoDir);
+            $restoredItems[] = 'Folder Foto (persistent)';
         }
 
         // Bersihkan folder temporer
@@ -259,6 +278,27 @@ class BackupService
                     $this->copyDirectory($src . '/' . $file, $dst . '/' . $file);
                 } else {
                     copy($src . '/' . $file, $dst . '/' . $file);
+                }
+            }
+        }
+        closedir($dir);
+    }
+
+    private function copyDirectoryMerge(string $src, string $dst): void
+    {
+        $dir = opendir($src);
+        @mkdir($dst, 0755, true);
+        while (($file = readdir($dir)) !== false) {
+            if ($file != '.' && $file != '..') {
+                $srcPath = $src . '/' . $file;
+                $dstPath = $dst . '/' . $file;
+                if (is_dir($srcPath)) {
+                    $this->copyDirectoryMerge($srcPath, $dstPath);
+                } else {
+                    // Only copy if destination doesn't exist (preserve existing files)
+                    if (!file_exists($dstPath)) {
+                        copy($srcPath, $dstPath);
+                    }
                 }
             }
         }

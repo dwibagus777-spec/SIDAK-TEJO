@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Repositories\TemuanRepository;
 use App\Repositories\TindakLanjutRepository;
+use App\Services\FindingMatchingService;
 use App\Services\GamificationService;
 use CodeIgniter\HTTP\Files\UploadedFile;
 
@@ -11,11 +12,13 @@ class TemuanService
 {
     private TemuanRepository $temuanRepository;
     private TindakLanjutRepository $tindakLanjutRepository;
+    private FindingMatchingService $findingMatchingService;
 
     public function __construct()
     {
         $this->temuanRepository = new TemuanRepository();
         $this->tindakLanjutRepository = new TindakLanjutRepository();
+        $this->findingMatchingService = new FindingMatchingService();
     }
 
     /**
@@ -187,11 +190,182 @@ class TemuanService
 
     /**
      * Membuat Temuan Baru Beserta Pengunggahan Foto
+     * Menggunakan FindingMatchingService untuk deduplikasi berbasis fingerprint
+     * ketika asset_id, component_code, dan defect_location_code tersedia.
      */
     public function createTemuan(array $data, ?array $files): array
     {
-        $nomorTemuan = $this->temuanRepository->generateNomorTemuan();
         $session = session();
+        $userId = (int)$session->get('user_id');
+
+        // Check if we should use fingerprint-based deduplication
+        $useFingerprintMatching = !empty($data['asset_id'])
+            && !empty($data['component_code'])
+            && !empty($data['defect_location_code']);
+
+        if ($useFingerprintMatching) {
+            return $this->createTemuanWithFingerprintMatching($data, $files, $userId);
+        }
+
+        // Fallback to original behavior for backward compatibility
+        return $this->createTemuanLegacy($data, $files, $session);
+    }
+
+    /**
+     * Create temuan using FindingMatchingService for fingerprint-based deduplication.
+     * Handles RE_OBSERVATION (existing case) and NEW_MASTER_CASE (new case).
+     */
+    private function createTemuanWithFingerprintMatching(array $data, ?array $files, int $userId): array
+    {
+        // Upload photos first (needed for both new case and re-observation)
+        $uploadResult = $this->uploadMultiplePhotos($files, true);
+        if (!$uploadResult['success']) {
+            return [
+                'success' => false,
+                'message' => $uploadResult['message']
+            ];
+        }
+        $photoNames = $uploadResult['names'];
+        $fotoPath = 'foto/';
+
+        // Prepare input for FindingMatchingService
+        $matchingInput = [
+            'asset_id'               => (int)$data['asset_id'],
+            'jenis_temuan'           => $data['jenis_temuan'] ?? 'KONSTRUKSI',
+            'component_code'         => $data['component_code'],
+            'defect_location_code'   => $data['defect_location_code'],
+            'severity'               => $this->mapPrioritasToSeverity($data['prioritas'] ?? 'MEDIUM'),
+            'detail_temuan'          => $data['detail_temuan'] ?? '',
+            'foto_path'              => $fotoPath . ($photoNames[0] ?? ''),
+            'inspection_id'          => $data['inspection_id'] ?? null,
+            'ulp_id'                 => $data['ulp_id'] ?? null,
+            'penyulang_id'           => $data['penyulang_id'] ?? null,
+            'section_id'             => $data['section_id'] ?? null,
+            'prioritas'              => $data['prioritas'] ?? 'MEDIUM',
+            'potensi_gangguan'       => $data['potensi_gangguan'] ?? 'DGR',
+            'pelaksana'              => $data['pelaksana'] ?? 'INSPEKSI',
+            'tanggal_temuan'         => $data['tanggal_temuan'] ?? date('Y-m-d'),
+        ];
+
+        log_message('critical',
+            '[FORENSIC_FINGERPRINT_MATCH] ' .
+            json_encode([
+                'asset_id'     => $matchingInput['asset_id'],
+                'jenis_temuan' => $matchingInput['jenis_temuan'],
+                'component'    => $matchingInput['component_code'],
+                'defect_loc'   => $matchingInput['defect_location_code'],
+                'user_id'      => $userId,
+            ])
+        );
+
+        try {
+            $matchResult = $this->findingMatchingService->processInspectionFinding($matchingInput, $userId);
+        } catch (\Throwable $e) {
+            log_message('error', '[FindingMatchingService] Error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Gagal memproses pencocokan temuan: ' . $e->getMessage()
+            ];
+        }
+
+        $temuanId = $matchResult['temuan_id'];
+        $action = $matchResult['action']; // 'RE_OBSERVATION' or 'NEW_MASTER_CASE'
+
+        // If NEW_MASTER_CASE, the FindingMatchingService already created the temuan record
+        // We need to update it with additional fields from the original form data
+        if ($action === 'NEW_MASTER_CASE') {
+            $additionalData = [
+                'nomor_temuan'       => $this->temuanRepository->generateNomorTemuan(),
+                'status'             => 'BELUM',
+                'created_by'         => $userId,
+                'created_by_name'    => $session->get('nama_pegawai') ?: $session->get('user_name'),
+                'created_by_nip'     => $session->get('nip') ?: '',
+                'ulp_id'             => $data['ulp_id'] ?? null,
+                'penyulang_id'       => $data['penyulang_id'] ?? null,
+                'section_id'         => $data['section_id'] ?? null,
+                'konduktor'          => $data['konduktor'] ?? null,
+                'noga'               => $data['noga'] ?? null,
+                'material'           => $data['material'] ?? null,
+                'alamat'             => $data['alamat'] ?? null,
+                'latitude'           => $data['latitude'] ?? null,
+                'longitude'          => $data['longitude'] ?? null,
+                'tanggal_selesai'    => null,
+                'foto'               => json_encode($photoNames),
+                'foto_path'          => $fotoPath,
+                'pelaksana'          => $data['pelaksana'] ?? 'INSPEKSI',
+                'potensi_gangguan'   => $data['potensi_gangguan'] ?? 'DGR',
+                'prioritas'          => $data['prioritas'] ?? 'MEDIUM',
+            ];
+
+            $this->temuanRepository->update($temuanId, $additionalData);
+        } else {
+            // RE_OBSERVATION: Update foto if new photos uploaded
+            if (!empty($photoNames)) {
+                // Get existing temuan to merge photos
+                $existingTemuan = $this->temuanRepository->find($temuanId);
+                $existingPhotos = [];
+                if (!empty($existingTemuan['foto'])) {
+                    $decoded = json_decode((string)$existingTemuan['foto'], true);
+                    $existingPhotos = is_array($decoded) ? $decoded : [];
+                }
+                $mergedPhotos = array_values(array_unique(array_merge($existingPhotos, $photoNames)));
+                
+                $this->temuanRepository->update($temuanId, [
+                    'foto'      => json_encode($mergedPhotos),
+                    'foto_path' => $fotoPath,
+                    'updated_by'=> $userId,
+                ]);
+            }
+        }
+
+        // Fetch the final temuan record for response
+        $finalTemuan = $this->temuanRepository->find($temuanId);
+
+        log_activity('CREATE_TEMUAN', "Temuan {$action}: {$finalTemuan['nomor_temuan']} (Asset #{$data['asset_id']})");
+
+        // Enterprise Asset Lifecycle Hook
+        try {
+            (new \App\Services\AssetLifecycleService())->triggerTemuanCreated(
+                (int)$data['asset_id'],
+                $finalTemuan['nomor_temuan'],
+                $userId,
+                $data['detail_temuan'] ?? null
+            );
+        } catch (\Throwable $e) {
+            log_message('warning', '[AssetLifecycle] createTemuan hook: ' . $e->getMessage());
+        }
+
+        // Gamification
+        try {
+            if ($userId > 0) {
+                (new GamificationService())->addPoints(
+                    $userId, 'INPUT_TEMUAN',
+                    "Input Temuan: {$finalTemuan['nomor_temuan']}", $temuanId, 'temuan'
+                );
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', '[Gamification] createTemuan hook: ' . $e->getMessage());
+        }
+
+        return [
+            'success'      => true,
+            'message'      => $action === 'RE_OBSERVATION' 
+                ? 'Observasi ulang berhasil dicatat pada kasus existing.' 
+                : 'Temuan baru berhasil disimpan.',
+            'id'           => $temuanId,
+            'action'       => $action,
+            'nomor_temuan' => $finalTemuan['nomor_temuan'],
+            'fingerprint'  => $matchResult['fingerprint'] ?? null,
+        ];
+    }
+
+    /**
+     * Legacy createTemuan behavior (without fingerprint matching).
+     * Used when asset_id or component/defect codes are not provided.
+     */
+    private function createTemuanLegacy(array $data, ?array $files, \CodeIgniter\Session\SessionInterface $session): array
+    {
+        $nomorTemuan = $this->temuanRepository->generateNomorTemuan();
         $data['nomor_temuan'] = $nomorTemuan;
         $data['status'] = 'BELUM';
         $data['created_by'] = $session->get('user_id');
@@ -223,8 +397,8 @@ class TemuanService
 
         if ($insertId) {
             log_activity('CREATE_TEMUAN', 'Menambahkan temuan baru: ' . $nomorTemuan);
-            
-            // Enterprise Asset Lifecycle Hook: Update Asset Status to BERMASALAH & log history
+
+            // Enterprise Asset Lifecycle Hook
             try {
                 if (!empty($data['asset_id'])) {
                     (new \App\Services\AssetLifecycleService())->triggerTemuanCreated(
@@ -238,7 +412,7 @@ class TemuanService
                 log_message('warning', '[AssetLifecycle] createTemuan hook: ' . $e->getMessage());
             }
 
-            // Phase 32 — Gamification: award points for INPUT_TEMUAN
+            // Gamification
             try {
                 $userId = (int)$session->get('user_id');
                 if ($userId > 0) {
@@ -257,11 +431,25 @@ class TemuanService
             ];
         }
 
-        log_message('error', '[createTemuan] Gagal insert ke database.');
+        log_message('error', '[createTemuanLegacy] Gagal insert ke database.');
         return [
             'success' => false,
             'message' => 'Gagal menyimpan temuan ke database.'
         ];
+    }
+
+    /**
+     * Map prioritas (EMERGENCY/HIGH/MEDIUM) to severity (CRITICAL/HIGH/MEDIUM/LOW)
+     * for FindingMatchingService compatibility.
+     */
+    private function mapPrioritasToSeverity(string $prioritas): string
+    {
+        return match (strtoupper($prioritas)) {
+            'EMERGENCY' => 'CRITICAL',
+            'HIGH'      => 'HIGH',
+            'MEDIUM'    => 'MEDIUM',
+            default     => 'MEDIUM',
+        };
     }
 
     /**

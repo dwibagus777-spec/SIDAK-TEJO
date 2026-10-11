@@ -286,6 +286,94 @@ if (!function_exists('get_user_role_scoping')) {
     }
 }
 
+if (!function_exists('check_photo_access')) {
+    /**
+     * Check if authenticated user has access to a photo by filename.
+     * Searches temuan, eviden (kubikel/trafo/management) for the photo.
+     * Returns true if user's ULP scope matches the record's ULP, or user is cross-ULP role.
+     *
+     * @param string $photoName Basename or relative path of photo
+     * @return bool True if access allowed, false otherwise
+     */
+    function check_photo_access(string $photoName): bool
+    {
+        $session = session();
+        if (!$session->get('logged_in')) {
+            return false;
+        }
+
+        $scope = get_user_role_scoping();
+        $userRole = $scope['role'];
+        $userUlpId = $scope['ulp_id'];
+
+        // Cross-ULP roles have access to all photos
+        if (in_array($userRole, ['administrator', 'pdkb', 'har_crane'])) {
+            return true;
+        }
+
+        // If no ULP filter (shouldn't happen for non-cross-ULP), deny
+        if ($userUlpId === null) {
+            return false;
+        }
+
+        $cleanName = basename(rawurldecode($photoName));
+        if ($cleanName === '' || $cleanName === '.' || $cleanName === '..') {
+            return false;
+        }
+
+        $db = \Config\Database::connect();
+
+        // 1. Check temuan table
+        $temuan = $db->table('temuan')
+            ->select('ulp_id')
+            ->like('foto', $cleanName)
+            ->where('deleted_at IS NULL')
+            ->get()->getRowArray();
+        if ($temuan && isset($temuan['ulp_id'])) {
+            return (int)$temuan['ulp_id'] === (int)$userUlpId;
+        }
+
+        // 2. Check eviden kubikel
+        $foto = $db->table('tb_foto_eviden fe')
+            ->join('tb_eviden_kubikel k', 'k.id_kubikel = fe.id_parent')
+            ->select('k.ulp_id')
+            ->where('fe.nama_file', $cleanName)
+            ->where('fe.kategori', 'KUBIKEL')
+            ->get()->getRowArray();
+        if ($foto && isset($foto['ulp_id'])) {
+            return (int)$foto['ulp_id'] === (int)$userUlpId;
+        }
+
+        // 3. Check eviden trafo
+        $foto = $db->table('tb_foto_eviden fe')
+            ->join('tb_eviden_trafo t', 't.id_trafo = fe.id_parent')
+            ->select('t.ulp_id')
+            ->where('fe.nama_file', $cleanName)
+            ->where('fe.kategori', 'TRAFO')
+            ->get()->getRowArray();
+        if ($foto && isset($foto['ulp_id'])) {
+            return (int)$foto['ulp_id'] === (int)$userUlpId;
+        }
+
+        // 4. Check management trafo (nameplates)
+        $mgmt = $db->table('tb_management_trafo m')
+            ->join('tb_eviden_trafo t', 't.id_trafo = m.id_trafo')
+            ->select('t.ulp_id')
+            ->where('m.foto_nameplate_lama', $cleanName)
+            ->orWhere('m.foto_nameplate_baru', $cleanName)
+            ->get()->getRowArray();
+        if ($mgmt && isset($mgmt['ulp_id'])) {
+            return (int)$mgmt['ulp_id'] === (int)$userUlpId;
+        }
+
+        // 5. Check work order photos (if needed)
+        // Could add more checks here for other photo types
+
+        // Photo not found in any known record - deny access by default
+        return false;
+    }
+}
+
 if (!function_exists('get_daily_announcement')) {
     /**
      * Dapatkan kata-kata motivasi harian untuk running ticker (database-driven dengan fallback)

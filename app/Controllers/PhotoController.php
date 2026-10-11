@@ -24,6 +24,15 @@ class PhotoController extends BaseController
             return $this->response->setStatusCode(404);
         }
 
+        // Extract clean filename for authorization check
+        $cleanName = basename($relativePath);
+
+        // Authorization: check if user has access to this photo
+        if (function_exists('check_photo_access') && !check_photo_access($cleanName)) {
+            log_message('warning', '[PhotoController] Akses ditolak ke foto: ' . $cleanName . ' oleh user: ' . (session()->get('user_id') ?? 'unknown'));
+            return $this->response->setStatusCode(403)->setBody('Forbidden: Access denied to this photo');
+        }
+
         $baseStorageDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . '/' : WRITEPATH . 'uploads/foto/';
 
         $candidatePaths = [

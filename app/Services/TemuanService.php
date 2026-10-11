@@ -195,7 +195,7 @@ class TemuanService
     {
         $fotoPath = 'foto/';
         foreach ($photoNames as $name) {
-            $filePath = FCPATH . 'public/' . $fotoPath . $name;
+            $filePath = FCPATH . $fotoPath . $name;
             if (is_file($filePath)) {
                 @unlink($filePath);
             }
@@ -239,6 +239,12 @@ class TemuanService
     {
         // Upload photos first (needed for both new case and re-observation)
         $uploadResult = $this->uploadMultiplePhotos($files, true);
+        if (!$uploadResult['success']) {
+            return [
+                'success' => false,
+                'message' => $uploadResult['message']
+            ];
+        }
         $photoNames = $uploadResult['names'] ?? [];
         $fotoPath = 'foto/';
 

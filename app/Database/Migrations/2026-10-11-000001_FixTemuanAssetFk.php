@@ -6,9 +6,6 @@ use CodeIgniter\Database\Migration;
 
 class FixTemuanAssetFk extends Migration
 {
-    // Store original column type for accurate rollback
-    private string $originalTemuanAssetType = 'INT(11) NULL DEFAULT NULL';
-
     public function up()
     {
         $db = \Config\Database::connect();
@@ -38,9 +35,6 @@ class FixTemuanAssetFk extends Migration
         if (!$temuanAssetCol) {
             throw new \RuntimeException('[FixTemuanAssetFk] Column temuan.asset_id does not exist. Aborting.');
         }
-
-        // Store original type for rollback
-        $this->originalTemuanAssetType = $temuanAssetCol['COLUMN_TYPE'] . ' DEFAULT NULL';
 
         // 3. Check assets.id column type
         $assetsIdCol = $db->query("
@@ -200,12 +194,41 @@ class FixTemuanAssetFk extends Migration
             }
         }
 
-        // Rollback: Revert column type to original pre-migration state
-        try {
-            $db->query("ALTER TABLE `temuan` MODIFY `asset_id` {$this->originalTemuanAssetType}");
-            log_message('info', '[FixTemuanAssetFk] Rollback: Reverted temuan.asset_id to original type (' . $this->originalTemuanAssetType . ').');
-        } catch (\Throwable $e) {
-            log_message('error', '[FixTemuanAssetFk] Rollback failed to revert column type: ' . $e->getMessage());
+        // Rollback: Determine current column type and revert appropriately
+        // Query INFORMATION_SCHEMA to get current state, don't rely on instance property
+        $currentCol = $db->query("
+            SELECT COLUMN_TYPE 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'temuan' 
+              AND COLUMN_NAME = 'asset_id'
+        ")->getRowArray();
+
+        if ($currentCol) {
+            $currentType = $currentCol['COLUMN_TYPE'];
+            $isCurrentlyUnsigned = stripos($currentType, 'unsigned') !== false;
+            
+            // If currently UNSIGNED, revert to signed equivalent
+            // If already signed, keep as-is (idempotent rollback)
+            if ($isCurrentlyUnsigned) {
+                // Extract base type (e.g., "INT(11) UNSIGNED" -> "INT(11)")
+                $baseType = preg_replace('/\s+UNSIGNED/i', '', $currentType);
+                // Ensure NULL DEFAULT NULL is present
+                if (stripos($baseType, 'DEFAULT') === false) {
+                    $baseType .= ' NULL DEFAULT NULL';
+                }
+                
+                try {
+                    $db->query("ALTER TABLE `temuan` MODIFY `asset_id` {$baseType}");
+                    log_message('info', '[FixTemuanAssetFk] Rollback: Reverted temuan.asset_id from UNSIGNED to ' . $baseType);
+                } catch (\Throwable $e) {
+                    log_message('error', '[FixTemuanAssetFk] Rollback failed to revert column type: ' . $e->getMessage());
+                }
+            } else {
+                log_message('info', '[FixTemuanAssetFk] Rollback: temuan.asset_id already signed (' . $currentType . '), no type change needed.');
+            }
+        } else {
+            log_message('warning', '[FixTemuanAssetFk] Rollback: temuan.asset_id column not found, skipping type revert.');
         }
 
         log_message('info', '[FixTemuanAssetFk] Rollback completed.');

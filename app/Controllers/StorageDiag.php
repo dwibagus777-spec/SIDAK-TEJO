@@ -6,10 +6,10 @@ class StorageDiag extends BaseController
 {
     public function index()
     {
-        // Simple token check to prevent public exposure
-        $token = $this->request->getGet('token');
-        if ($token !== 'sidak-diag-2026') {
-            return $this->response->setStatusCode(403)->setBody('Forbidden');
+        // Require authenticated admin session
+        $session = session();
+        if (!$session->get('isLoggedIn') || !$session->get('is_admin')) {
+            return $this->response->setStatusCode(403)->setBody('Forbidden: Admin access required');
         }
 
         $candidates = [
@@ -33,7 +33,7 @@ class StorageDiag extends BaseController
             ];
         }
 
-        // Simulate the selection logic
+        // Simulate the selection logic (matches Constants.php)
         $selected = null;
         foreach ($results as $i => &$r) {
             if ($r['is_dir'] && $r['is_writable']) {
@@ -43,23 +43,13 @@ class StorageDiag extends BaseController
             }
         }
 
-        // Environment info
-        $env = [
-            'FCPATH' => FCPATH,
-            'ROOTPATH' => ROOTPATH,
-            'WRITEPATH' => WRITEPATH,
-            'APPPATH' => APPPATH,
-            'SIDAK_STORAGE_PATH (current)' => defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : 'NOT DEFINED',
-            'PHP_SAPI' => PHP_SAPI,
-            'current_user' => get_current_user(),
-        ];
-
+        // Only expose essential diagnostic info - no server environment details
         return $this->response
             ->setHeader('Content-Type', 'application/json')
             ->setBody(json_encode([
                 'candidates' => $results,
-                'selected' => $selected ? $selected['resolved_path'] : 'NONE (fallback will be used)',
-                'environment' => $env,
+                'selected_path' => $selected ? $selected['resolved_path'] : 'NONE (fallback will be used)',
+                'sidak_storage_path_constant' => defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : 'NOT DEFINED',
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 }

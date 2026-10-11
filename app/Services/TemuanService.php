@@ -189,6 +189,20 @@ class TemuanService
     }
 
     /**
+     * Cleanup orphaned photo files when fingerprint matching fails.
+     */
+    private function cleanupOrphanedPhotos(array $photoNames): void
+    {
+        $fotoPath = 'foto/';
+        foreach ($photoNames as $name) {
+            $filePath = FCPATH . 'public/' . $fotoPath . $name;
+            if (is_file($filePath)) {
+                @unlink($filePath);
+            }
+        }
+    }
+
+    /**
      * Membuat Temuan Baru Beserta Pengunggahan Foto
      * Menggunakan FindingMatchingService untuk deduplikasi berbasis fingerprint
      * ketika asset_id, component_code, dan defect_location_code tersedia.
@@ -197,6 +211,12 @@ class TemuanService
     {
         $session = session();
         $userId = (int)$session->get('user_id');
+        $sessionData = [
+            'user_id'       => $userId,
+            'nama_pegawai'  => $session->get('nama_pegawai'),
+            'user_name'     => $session->get('user_name'),
+            'nip'           => $session->get('nip'),
+        ];
 
         // Check if we should use fingerprint-based deduplication
         $useFingerprintMatching = !empty($data['asset_id'])
@@ -204,7 +224,7 @@ class TemuanService
             && !empty($data['defect_location_code']);
 
         if ($useFingerprintMatching) {
-            return $this->createTemuanWithFingerprintMatching($data, $files, $userId);
+            return $this->createTemuanWithFingerprintMatching($data, $files, $sessionData);
         }
 
         // Fallback to original behavior for backward compatibility
@@ -215,17 +235,11 @@ class TemuanService
      * Create temuan using FindingMatchingService for fingerprint-based deduplication.
      * Handles RE_OBSERVATION (existing case) and NEW_MASTER_CASE (new case).
      */
-    private function createTemuanWithFingerprintMatching(array $data, ?array $files, int $userId): array
+    private function createTemuanWithFingerprintMatching(array $data, ?array $files, array $sessionData): array
     {
         // Upload photos first (needed for both new case and re-observation)
         $uploadResult = $this->uploadMultiplePhotos($files, true);
-        if (!$uploadResult['success']) {
-            return [
-                'success' => false,
-                'message' => $uploadResult['message']
-            ];
-        }
-        $photoNames = $uploadResult['names'];
+        $photoNames = $uploadResult['names'] ?? [];
         $fotoPath = 'foto/';
 
         // Prepare input for FindingMatchingService
@@ -254,14 +268,18 @@ class TemuanService
                 'jenis_temuan' => $matchingInput['jenis_temuan'],
                 'component'    => $matchingInput['component_code'],
                 'defect_loc'   => $matchingInput['defect_location_code'],
-                'user_id'      => $userId,
+                'user_id'      => $sessionData['user_id'],
             ])
         );
 
         try {
-            $matchResult = $this->findingMatchingService->processInspectionFinding($matchingInput, $userId);
+            $matchResult = $this->findingMatchingService->processInspectionFinding($matchingInput, $sessionData['user_id']);
         } catch (\Throwable $e) {
             log_message('error', '[FindingMatchingService] Error: ' . $e->getMessage());
+            // Cleanup uploaded photos on matching failure
+            if (!empty($photoNames)) {
+                $this->cleanupOrphanedPhotos($photoNames);
+            }
             return [
                 'success' => false,
                 'message' => 'Gagal memproses pencocokan temuan: ' . $e->getMessage()
@@ -277,9 +295,9 @@ class TemuanService
             $additionalData = [
                 'nomor_temuan'       => $this->temuanRepository->generateNomorTemuan(),
                 'status'             => 'BELUM',
-                'created_by'         => $userId,
-                'created_by_name'    => $session->get('nama_pegawai') ?: $session->get('user_name'),
-                'created_by_nip'     => $session->get('nip') ?: '',
+                'created_by'         => $sessionData['user_id'],
+                'created_by_name'    => $sessionData['nama_pegawai'] ?: $sessionData['user_name'],
+                'created_by_nip'     => $sessionData['nip'] ?: '',
                 'ulp_id'             => $data['ulp_id'] ?? null,
                 'penyulang_id'       => $data['penyulang_id'] ?? null,
                 'section_id'         => $data['section_id'] ?? null,
@@ -313,7 +331,7 @@ class TemuanService
                 $this->temuanRepository->update($temuanId, [
                     'foto'      => json_encode($mergedPhotos),
                     'foto_path' => $fotoPath,
-                    'updated_by'=> $userId,
+                    'updated_by'=> $sessionData['user_id'],
                 ]);
             }
         }
@@ -328,7 +346,7 @@ class TemuanService
             (new \App\Services\AssetLifecycleService())->triggerTemuanCreated(
                 (int)$data['asset_id'],
                 $finalTemuan['nomor_temuan'],
-                $userId,
+                $sessionData['user_id'],
                 $data['detail_temuan'] ?? null
             );
         } catch (\Throwable $e) {
@@ -337,9 +355,9 @@ class TemuanService
 
         // Gamification
         try {
-            if ($userId > 0) {
+            if ($sessionData['user_id'] > 0) {
                 (new GamificationService())->addPoints(
-                    $userId, 'INPUT_TEMUAN',
+                    $sessionData['user_id'], 'INPUT_TEMUAN',
                     "Input Temuan: {$finalTemuan['nomor_temuan']}", $temuanId, 'temuan'
                 );
             }

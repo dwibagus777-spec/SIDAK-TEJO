@@ -6,6 +6,9 @@ use CodeIgniter\Database\Migration;
 
 class FixTemuanAssetFk extends Migration
 {
+    // Store original column type for accurate rollback
+    private string $originalTemuanAssetType = 'INT(11) NULL DEFAULT NULL';
+
     public function up()
     {
         $db = \Config\Database::connect();
@@ -16,13 +19,11 @@ class FixTemuanAssetFk extends Migration
 
         // 1. Verify tables exist
         if (!$db->tableExists('temuan')) {
-            log_message('error', '[FixTemuanAssetFk] Table temuan does not exist. Aborting.');
-            return;
+            throw new \RuntimeException('[FixTemuanAssetFk] Table temuan does not exist. Aborting.');
         }
 
         if (!$db->tableExists('assets')) {
-            log_message('error', '[FixTemuanAssetFk] Table assets does not exist. Aborting.');
-            return;
+            throw new \RuntimeException('[FixTemuanAssetFk] Table assets does not exist. Aborting.');
         }
 
         // 2. Check current asset_id column type in temuan
@@ -35,9 +36,11 @@ class FixTemuanAssetFk extends Migration
         ")->getRowArray();
 
         if (!$temuanAssetCol) {
-            log_message('error', '[FixTemuanAssetFk] Column temuan.asset_id does not exist. Aborting.');
-            return;
+            throw new \RuntimeException('[FixTemuanAssetFk] Column temuan.asset_id does not exist. Aborting.');
         }
+
+        // Store original type for rollback
+        $this->originalTemuanAssetType = $temuanAssetCol['COLUMN_TYPE'] . ' DEFAULT NULL';
 
         // 3. Check assets.id column type
         $assetsIdCol = $db->query("
@@ -49,8 +52,7 @@ class FixTemuanAssetFk extends Migration
         ")->getRowArray();
 
         if (!$assetsIdCol) {
-            log_message('error', '[FixTemuanAssetFk] Column assets.id does not exist. Aborting.');
-            return;
+            throw new \RuntimeException('[FixTemuanAssetFk] Column assets.id does not exist. Aborting.');
         }
 
         // 4. Check for orphan records (temuan.asset_id referencing non-existent assets.id)
@@ -64,10 +66,7 @@ class FixTemuanAssetFk extends Migration
         $orphanCount = (int)($orphanCount['cnt'] ?? 0);
 
         if ($orphanCount > 0) {
-            log_message('error', "[FixTemuanAssetFk] Found {$orphanCount} orphan records in temuan.asset_id. Cannot create FK. Manual cleanup required first.");
-            // Optionally: auto-fix by setting orphans to NULL
-            // $db->query("UPDATE `temuan` SET `asset_id` = NULL WHERE `asset_id` IS NOT NULL AND `asset_id` NOT IN (SELECT `id` FROM `assets`)");
-            return;
+            throw new \RuntimeException("[FixTemuanAssetFk] Found {$orphanCount} orphan records in temuan.asset_id. Cannot create FK. Manual cleanup required first.");
         }
 
         // 5. Check if FK already exists
@@ -201,10 +200,10 @@ class FixTemuanAssetFk extends Migration
             }
         }
 
-        // Rollback: Revert column type to SIGNED (to match pre-migration state)
+        // Rollback: Revert column type to original pre-migration state
         try {
-            $db->query("ALTER TABLE `temuan` MODIFY `asset_id` INT(11) NULL DEFAULT NULL");
-            log_message('info', '[FixTemuanAssetFk] Rollback: Reverted temuan.asset_id to SIGNED INT(11).');
+            $db->query("ALTER TABLE `temuan` MODIFY `asset_id` {$this->originalTemuanAssetType}");
+            log_message('info', '[FixTemuanAssetFk] Rollback: Reverted temuan.asset_id to original type (' . $this->originalTemuanAssetType . ').');
         } catch (\Throwable $e) {
             log_message('error', '[FixTemuanAssetFk] Rollback failed to revert column type: ' . $e->getMessage());
         }

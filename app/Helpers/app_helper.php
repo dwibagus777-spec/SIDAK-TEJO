@@ -291,6 +291,7 @@ if (!function_exists('check_photo_access')) {
      * Check if authenticated user has access to a photo by filename.
      * Searches temuan, eviden (kubikel/trafo/management), work orders, assets for the photo.
      * Returns true if user's ULP scope matches the record's ULP, or user is cross-ULP role AND photo exists in DB.
+     * Uses parameter binding to prevent SQL injection.
      *
      * @param string $photoName Basename or relative path of photo (e.g., "management/name.jpg" or "name.jpg")
      * @return bool True if access allowed, false otherwise
@@ -306,8 +307,11 @@ if (!function_exists('check_photo_access')) {
         $userRole = $scope['role'];
         $userUlpId = $scope['ulp_id'];
 
-        // If no ULP filter (shouldn't happen for non-cross-ULP), deny
-        if ($userUlpId === null && !in_array($userRole, ['administrator', 'pdkb', 'har_crane'])) {
+        // Cross-ULP roles from get_user_role_scoping(): administrator, pdkb, har_crane
+        $crossUlpRoles = ['administrator', 'pdkb', 'har_crane'];
+
+        // If no ULP filter and not cross-ULP, deny
+        if ($userUlpId === null && !in_array($userRole, $crossUlpRoles, true)) {
             return false;
         }
 
@@ -318,24 +322,24 @@ if (!function_exists('check_photo_access')) {
 
         $db = \Config\Database::connect();
 
-        // Helper: check if photo is associated with a ULP record
+        // Helper: check if photo is associated with a ULP record that matches user scope
+        // Cross-ULP roles allowed only if photo EXISTS in a valid record
         $checkUlpMatch = function (array $record): bool {
             if (!isset($record['ulp_id']) || $record['ulp_id'] === null) {
                 return false;
             }
-            // Cross-ULP roles allowed but only if photo actually exists in a record
-            if (in_array($userRole, ['administrator', 'pdkb', 'har_crane'])) {
+            if (in_array($userRole, $crossUlpRoles, true)) {
                 return true;
             }
             return (int)$record['ulp_id'] === (int)$userUlpId;
         };
 
-        // 1. Check temuan table (foto is JSON array)
-        // Use JSON_CONTAINS for exact array element match
+        // 1. Check temuan table (foto is JSON array) - use parameter binding
+        // JSON_CONTAINS requires JSON_QUOTE; bind parameter to avoid SQL injection
         $temuan = $db->table('temuan')
             ->select('ulp_id')
             ->where('deleted_at IS NULL')
-            ->where("JSON_CONTAINS(`foto`, JSON_QUOTE('$cleanName'))")
+            ->where("JSON_CONTAINS(`foto`, JSON_QUOTE(?))", [$cleanName])
             ->get()->getRowArray();
         if ($temuan && $checkUlpMatch($temuan)) {
             return true;

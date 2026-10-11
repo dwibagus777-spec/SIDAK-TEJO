@@ -122,15 +122,11 @@ if (!defined('SIDAK_STORAGE_PATH')) {
 
         // Candidates ordered by environment priority
         if ($isStaging) {
-            // Staging: staging path FIRST, then production paths as fallback (should not happen)
+            // Staging: ONLY staging paths — NO production fallback
             $sidakStorageCandidates = [
                 '/home/u532206332/sidak_storage_staging/foto/',
                 rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage_staging/foto/',
                 rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage_staging/foto/',
-                '/home/u532206332/sidak_storage/foto/',
-                rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage/foto/',
-                rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage/foto/',
-                '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/',
             ];
         } else {
             // Production: production paths first

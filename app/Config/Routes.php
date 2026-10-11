@@ -166,9 +166,6 @@ $routes->get('temuan/share/(:segment)', 'Temuan::share/$1');
 // D4.1.12: Temporary forensic diagnostic endpoint (read-only, no mutation)
 $routes->get('temuan/d4112-forensic', 'Temuan::d4112Forensic');
 
-// Temporary storage path diagnostic (admin-only, read-only, no mutation)
-$routes->get('storage-diag', 'StorageDiag::index', ['filter' => 'auth']);
-
 // --- Rute Terproteksi Login (Protected Routes) ---
 $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Main Dashboard Web Route

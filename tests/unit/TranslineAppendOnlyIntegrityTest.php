@@ -457,7 +457,9 @@ class TranslineAppendOnlyIntegrityTest extends CIUnitTestCase
         $this->assertStringContainsString('Unauthorized', $bodyUnauth['message']);
 
         // 2. With valid operational token -> 200 OK
-        $_GET['key'] = 'sidak_transline_audit_2026';
+        $previousAuditToken = getenv('SIDAK_AUDIT_TOKEN');
+        putenv('SIDAK_AUDIT_TOKEN=test-only-audit-token');
+        $_GET['key'] = 'test-only-audit-token';
         $_GET['feeder_id'] = $this->testFeederA;
         $controller2 = new \App\Controllers\MigrateController();
         $controller2->initController(
@@ -465,12 +467,20 @@ class TranslineAppendOnlyIntegrityTest extends CIUnitTestCase
             new \CodeIgniter\HTTP\Response(new \Config\App()),
             \Config\Services::logger()
         );
-        $resAuthorized = $controller2->translineAudit();
-        $this->assertEquals(200, $resAuthorized->getStatusCode());
-        $bodyAuth = json_decode($resAuthorized->getBody(), true);
-        $this->assertEquals('success', $bodyAuth['status']);
-        $this->assertArrayHasKey('data', $bodyAuth);
-        $this->assertEquals($this->testFeederA, $bodyAuth['data']['feeder_id']);
-        $this->assertEquals('GIS_TRANSLINE_APPEND_ONLY', $bodyAuth['data']['audit_invariant']);
+        try {
+            $resAuthorized = $controller2->translineAudit();
+            $this->assertEquals(200, $resAuthorized->getStatusCode());
+            $bodyAuth = json_decode($resAuthorized->getBody(), true);
+            $this->assertEquals('success', $bodyAuth['status']);
+            $this->assertArrayHasKey('data', $bodyAuth);
+            $this->assertEquals($this->testFeederA, $bodyAuth['data']['feeder_id']);
+            $this->assertEquals('GIS_TRANSLINE_APPEND_ONLY', $bodyAuth['data']['audit_invariant']);
+        } finally {
+            if ($previousAuditToken === false) {
+                putenv('SIDAK_AUDIT_TOKEN');
+            } else {
+                putenv('SIDAK_AUDIT_TOKEN=' . $previousAuditToken);
+            }
+        }
     }
 }

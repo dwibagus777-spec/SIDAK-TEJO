@@ -1,5 +1,7 @@
 # 🚀 Panduan Deploy SIDAK TEJO ke Hosting
 
+> **Panduan ini sudah usang dan tidak aman untuk diikuti.** Instruksi di bawah pernah menyarankan menaruh source di webroot, mengimpor dump database, dan memakai akun contoh. Jangan jalankan langkah-langkah tersebut. Gunakan [panduan staging yang aman](docs/STAGING_DEPLOYMENT.md); jangan menyalin kredensial, dump, atau data foto ke webroot.
+
 ## 📦 File yang Disiapkan
 
 | File | Lokasi | Keterangan |

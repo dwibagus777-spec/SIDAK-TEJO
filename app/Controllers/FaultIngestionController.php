@@ -38,13 +38,13 @@ class FaultIngestionController extends BaseController
             return true;
         }
 
-        $auditKey = 'sidak_transline_audit_2026';
+        $auditKey = trim((string) getenv('SIDAK_AUDIT_TOKEN'));
         $providedKey = $this->request->getGet('key')
             ?? $this->request->getVar('key')
             ?? $this->request->getHeaderLine('X-Audit-Token')
             ?? $this->request->getHeaderLine('X-API-Key');
 
-        return (!empty($providedKey) && hash_equals($auditKey, (string)$providedKey));
+        return ($auditKey !== '' && !empty($providedKey) && hash_equals($auditKey, (string)$providedKey));
     }
 
     protected function unauthorizedResponse(): ResponseInterface
@@ -743,9 +743,9 @@ class FaultIngestionController extends BaseController
         }
 
         // Must provide deployment master token if not yet installed
-        $masterKey = 'sidak_tejo_deploy_master_2026';
+        $masterKey = trim((string) getenv('SIDAK_DEPLOY_MASTER_KEY'));
         $providedMaster = $this->request->getGet('deploy_key') ?? $this->request->getVar('deploy_key') ?? $this->request->getHeaderLine('X-Deploy-Master-Key');
-        if (empty($providedMaster) || !hash_equals($masterKey, (string)$providedMaster)) {
+        if ($masterKey === '' || empty($providedMaster) || !hash_equals($masterKey, (string)$providedMaster)) {
             return $this->response->setStatusCode(403)->setJSON([
                 'status'  => 'FORBIDDEN',
                 'code'    => 403,

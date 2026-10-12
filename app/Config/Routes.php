@@ -18,18 +18,12 @@ $routes->match(['GET', 'POST'], 'backup/cron', 'Backup::cron');
 // Background Queue Worker Cron (Hostinger cron, token secured)
 $routes->get('queue/run', 'QueueWorker::run');
 
-// Production Database DDL Auto-Migrate & Catalog Seeder Route (Publicly callable for deployment sync)
-$routes->get('master-assets/auto-migrate', 'MigrateController::autoMigrate');
-$routes->get('master-assets/auto-deploy', 'MigrateController::autoDeploy');
-$routes->get('auto-deploy', 'MigrateController::autoDeploy');
-$routes->get('master-assets/debug-json', 'MigrateController::debugJson');
-$routes->get('master-assets/reconciliation-baseline', 'MigrateController::reconciliationBaselineAudit');
-$routes->get('master-assets/transline-audit', 'MigrateController::translineAudit');
-$routes->match(['GET', 'POST'], 'master-assets/b2-atomic-commit', 'MigrateController::atomicCommitB2');
-$routes->get('master-assets/b22-production-lock', 'MigrateController::b22ProductionLockAudit');
+$routes->get('master-assets/reconciliation-baseline', 'MigrateController::reconciliationBaselineAudit', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->get('master-assets/transline-audit', 'MigrateController::translineAudit', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->get('master-assets/b22-production-lock', 'MigrateController::b22ProductionLockAudit', ['filter' => 'role:administrator,admin,admin_pusat']);
 
 // Phase B.3: Network Intelligence Platform Routes (Strictly Read-Only)
-$routes->get('network-intelligence/audit', 'NetworkIntelligenceController::b3Audit');
+$routes->get('network-intelligence/audit', 'NetworkIntelligenceController::b3Audit', ['filter' => 'role:administrator,admin,admin_pusat']);
 $routes->get('network-intelligence/graph', 'NetworkIntelligenceController::graph');
 $routes->get('network-intelligence/feeder/(:num)', 'NetworkIntelligenceController::feeder/$1');
 $routes->get('network-intelligence/sections/(:num)', 'NetworkIntelligenceController::sections/$1');
@@ -38,8 +32,8 @@ $routes->get('network-intelligence/integrity', 'NetworkIntelligenceController::i
 $routes->get('network-intelligence/node/(:any)', 'NetworkIntelligenceController::node/$1');
 
 // Phase B.4: Network Context Engine & Fault Location Intelligence Routes
-$routes->get('fault-intelligence/audit', 'FaultIntelligenceController::b4Audit');
-$routes->match(['GET', 'POST'], 'fault-intelligence/migrate', 'FaultIntelligenceController::migrate');
+$routes->get('fault-intelligence/audit', 'FaultIntelligenceController::b4Audit', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->match(['GET', 'POST'], 'fault-intelligence/migrate', 'FaultIntelligenceController::migrate', ['filter' => 'role:administrator,admin,admin_pusat']);
 $routes->get('fault-intelligence/context/(:any)', 'FaultIntelligenceController::context/$1');
 $routes->get('fault-intelligence/candidates', 'FaultIntelligenceController::candidates');
 $routes->match(['GET', 'POST'], 'fault-intelligence/simulate', 'FaultIntelligenceController::simulate');
@@ -47,9 +41,9 @@ $routes->post('fault-intelligence/cases/(:num)/findings', 'FaultIntelligenceCont
 $routes->get('fault-intelligence/causes', 'FaultIntelligenceController::causes');
 
 // Phase B.5: Fault Event Ingestion Pipeline & Normalization Layer
-$routes->get('fault-ingestion/audit', 'FaultIngestionController::audit');
-$routes->get('fault-ingestion/forensic-reconciliation', 'FaultIngestionController::forensicReconciliation');
-$routes->match(['GET', 'POST'], 'fault-ingestion/migrate', 'FaultIngestionController::migrate');
+$routes->get('fault-ingestion/audit', 'FaultIngestionController::audit', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->get('fault-ingestion/forensic-reconciliation', 'FaultIngestionController::forensicReconciliation', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->match(['GET', 'POST'], 'fault-ingestion/migrate', 'FaultIngestionController::migrate', ['filter' => 'role:administrator,admin,admin_pusat']);
 $routes->post('fault-ingestion/events', 'FaultIngestionController::ingest');
 $routes->post('fault-ingestion/event', 'FaultIngestionController::ingest');
 $routes->post('fault-ingestion/batch', 'FaultIngestionController::ingestBatch');
@@ -75,18 +69,18 @@ $routes->get('fault-ingestion/(:num)/revisions', 'FaultIngestionController::revi
 $routes->get('fault-ingestion/(:num)/candidates', 'FaultIngestionController::candidates/$1');
 
 // SIDAK TEJO — Phase B.6 Field Dispatch, Investigation & Feedback Routes
-$routes->get('fault-dispatch/audit', 'FaultDispatchController::audit');
-$routes->get('fault-dispatch/forensic-reconciliation', 'FaultDispatchController::forensicReconciliation');
-$routes->match(['GET', 'POST'], 'fault-dispatch/migrate', 'FaultDispatchController::migrate');
-$routes->post('fault-dispatch/test/synthetic-e2e', 'FaultDispatchController::runSyntheticE2E');
-$routes->post('fault-dispatch/test/adversarial', 'FaultDispatchController::runAdversarialTests');
+$routes->get('fault-dispatch/audit', 'FaultDispatchController::audit', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->get('fault-dispatch/forensic-reconciliation', 'FaultDispatchController::forensicReconciliation', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->match(['GET', 'POST'], 'fault-dispatch/migrate', 'FaultDispatchController::migrate', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->post('fault-dispatch/test/synthetic-e2e', 'FaultDispatchController::runSyntheticE2E', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->post('fault-dispatch/test/adversarial', 'FaultDispatchController::runAdversarialTests', ['filter' => 'role:administrator,admin,admin_pusat']);
 
 // SIDAK TEJO — Phase B.7 Mobile Field App & Offline Inspection Sync Routes
-$routes->get('mobile-sync/audit', 'MobileSyncController::audit');
-$routes->get('mobile-sync/forensic-reconciliation', 'MobileSyncController::forensicReconciliation');
-$routes->match(['GET', 'POST'], 'mobile-sync/migrate', 'MobileSyncController::migrate');
-$routes->match(['GET', 'POST'], 'mobile-sync/test/synthetic-e2e', 'MobileSyncController::runSyntheticE2E');
-$routes->match(['GET', 'POST'], 'mobile-sync/test/adversarial', 'MobileSyncController::runAdversarialTests');
+$routes->get('mobile-sync/audit', 'MobileSyncController::audit', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->get('mobile-sync/forensic-reconciliation', 'MobileSyncController::forensicReconciliation', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->match(['GET', 'POST'], 'mobile-sync/migrate', 'MobileSyncController::migrate', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->match(['GET', 'POST'], 'mobile-sync/test/synthetic-e2e', 'MobileSyncController::runSyntheticE2E', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->match(['GET', 'POST'], 'mobile-sync/test/adversarial', 'MobileSyncController::runAdversarialTests', ['filter' => 'role:administrator,admin,admin_pusat']);
 
 // Mobile Field App Sync API v1 Endpoints (Transport Boundary)
 $routes->post('api/v1/sync/push', 'MobileSyncController::push');
@@ -113,10 +107,10 @@ $routes->get('api/asset-ingest/d4111b-gis-forensic', 'Api\AssetIngestController:
 $routes->get('api/asset-ingest/version', 'Api\AssetIngestController::version');
 
 // SIDAK TEJO — Phase B.8.1 Remediation Core Routes
-$routes->get('remediation/audit', 'RemediationController::audit');
-$routes->get('remediation/forensic-reconciliation', 'RemediationController::forensicReconciliation');
+$routes->get('remediation/audit', 'RemediationController::audit', ['filter' => 'role:administrator,admin,admin_pusat']);
+$routes->get('remediation/forensic-reconciliation', 'RemediationController::forensicReconciliation', ['filter' => 'role:administrator,admin,admin_pusat']);
 $routes->get('remediation/investigate/topology-delta', 'RemediationController::investigateTopologyDelta');
-$routes->match(['GET', 'POST'], 'remediation/migrate', 'RemediationController::migrate');
+$routes->match(['GET', 'POST'], 'remediation/migrate', 'RemediationController::migrate', ['filter' => 'role:administrator,admin,admin_pusat']);
 $routes->match(['GET', 'POST'], 'remediation/test/synthetic-e2e', 'RemediationController::runSyntheticE2E');
 $routes->match(['GET', 'POST'], 'remediation/test/adversarial', 'RemediationController::runAdversarialTests');
 // SIDAK TEJO — Phase B.8.4 GIS / SLD Decision Cockpit Routes
@@ -1225,7 +1219,6 @@ $routes->get('api/fault-locator/summary', 'FaultLocatorController::summary');
 $routes->post('api/fault-locator/locate', 'FaultLocatorController::locateFault');
 $routes->post('api/fault-locator/dispatch', 'FaultLocatorController::dispatch');
 $routes->get('api/fault-locator/forensic-bundle/(:any)', 'FaultLocatorController::forensicBundle/$1');
-
 
 
 

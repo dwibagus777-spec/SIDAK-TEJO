@@ -1294,11 +1294,10 @@ class MigrateController extends BaseController
             ?? $this->request->getHeaderLine('X-Audit-Key')
             ?? $this->request->getHeaderLine('Authorization');
         
-        $validKeys = [
-            'sidak_transline_audit_2026',
-            env('AUDIT_SECRET_KEY', 'sidak_transline_audit_2026'),
-            'Bearer sidak_transline_audit_2026'
-        ];
+        $validKeys = array_filter([
+            trim((string) env('AUDIT_SECRET_KEY')),
+            trim((string) env('SIDAK_AUDIT_TOKEN')),
+        ], static fn (string $key): bool => $key !== '');
 
         $isTokenValid = false;
         if (!empty($reqKey)) {
@@ -1735,11 +1734,10 @@ class MigrateController extends BaseController
             ?? $this->request->getHeaderLine('X-Audit-Key')
             ?? $this->request->getHeaderLine('Authorization');
         
-        $validKeys = [
-            'sidak_transline_audit_2026',
-            env('AUDIT_SECRET_KEY', 'sidak_transline_audit_2026'),
-            'Bearer sidak_transline_audit_2026'
-        ];
+        $validKeys = array_filter([
+            trim((string) env('AUDIT_SECRET_KEY')),
+            trim((string) env('SIDAK_AUDIT_TOKEN')),
+        ], static fn (string $key): bool => $key !== '');
 
         $isTokenValid = false;
         if (!empty($reqKey)) {
@@ -2132,11 +2130,10 @@ class MigrateController extends BaseController
             ?? $this->request->getHeaderLine('X-Audit-Key')
             ?? $this->request->getHeaderLine('Authorization');
         
-        $validKeys = [
-            'sidak_transline_audit_2026',
-            env('AUDIT_SECRET_KEY', 'sidak_transline_audit_2026'),
-            'Bearer sidak_transline_audit_2026'
-        ];
+        $validKeys = array_filter([
+            trim((string) env('AUDIT_SECRET_KEY')),
+            trim((string) env('SIDAK_AUDIT_TOKEN')),
+        ], static fn (string $key): bool => $key !== '');
 
         $isTokenValid = false;
         if (!empty($reqKey)) {

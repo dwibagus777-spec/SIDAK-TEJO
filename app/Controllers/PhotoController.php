@@ -61,6 +61,7 @@ class PhotoController extends BaseController
                 return $this->response
                     ->setHeader('Content-Type', $mime)
                     ->setHeader('Cache-Control', 'private, no-store, max-age=0')
+                    ->setHeader('Pragma', 'no-cache')
                     ->setHeader('Last-Modified', gmdate('D, d M Y H:i:s', $mtime) . ' GMT')
                     ->setBody(file_get_contents($path));
             }

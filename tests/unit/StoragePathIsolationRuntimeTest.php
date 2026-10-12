@@ -140,6 +140,18 @@ class StoragePathIsolationRuntimeTest extends CIUnitTestCase
         $this->assertNotSame(0, $symlink['exit']);
     }
 
+    public function testParentDirectorySymlinkCannotEscapeEnvironmentStorage(): void
+    {
+        $symlinkParent = $this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage_staging' . DIRECTORY_SEPARATOR . 'linked-parent';
+        $productionStorage = $this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage';
+        if (!@symlink($productionStorage, $symlinkParent)) {
+            $this->markTestSkipped('The current OS/account cannot create directory symlinks.');
+        }
+
+        $result = $this->runResolver('staging', $symlinkParent . DIRECTORY_SEPARATOR . 'foto');
+        $this->assertNotSame(0, $result['exit']);
+    }
+
     public function testExplicitNonWritableDirectoryIsRejectedWhenFilesystemCanRepresentIt(): void
     {
         $path = $this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage' . DIRECTORY_SEPARATOR . 'foto';

@@ -36,11 +36,13 @@ jobs:
           set -euo pipefail
           find app -type f -name '*.php' -print0 | xargs -0 -r -n1 php -l
 
-      - name: Run storage isolation tests
+      - name: Run storage and staging security regressions
         run: >-
           php vendor/bin/phpunit --no-coverage --testdox --fail-on-skipped
           tests/unit/StoragePathResolutionTest.php
           tests/unit/StoragePathIsolationRuntimeTest.php
+          tests/unit/DatabaseEnvironmentConfigurationTest.php
+          tests/unit/PublicExposureHardeningTest.php
 
       - name: Run staging preflight tests
         shell: bash

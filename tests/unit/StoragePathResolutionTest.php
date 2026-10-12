@@ -11,6 +11,7 @@ class StoragePathResolutionTest extends CIUnitTestCase
     private string $constantsPath;
     private string $productionStorage;
     private string $stagingStorage;
+    private string $domainStagingStorage;
 
     protected function setUp(): void
     {
@@ -21,11 +22,13 @@ class StoragePathResolutionTest extends CIUnitTestCase
         $this->constantsPath = $this->sandbox . DIRECTORY_SEPARATOR . 'Constants.php';
         $this->productionStorage = $this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage' . DIRECTORY_SEPARATOR . 'foto';
         $this->stagingStorage = $this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage_staging' . DIRECTORY_SEPARATOR . 'foto';
+        $this->domainStagingStorage = $this->sandbox . DIRECTORY_SEPARATOR . 'domains' . DIRECTORY_SEPARATOR . 'sidaktejo.site' . DIRECTORY_SEPARATOR . 'sidak_storage_staging' . DIRECTORY_SEPARATOR . 'foto';
 
         foreach ([
             $this->productionStorage,
             $this->stagingStorage,
             $this->sandbox . DIRECTORY_SEPARATOR . 'domains' . DIRECTORY_SEPARATOR . 'sidaktejo.site' . DIRECTORY_SEPARATOR . 'sidak_storage' . DIRECTORY_SEPARATOR . 'foto',
+            $this->domainStagingStorage,
             $this->projectRoot . DIRECTORY_SEPARATOR . 'public',
             $this->projectRoot . DIRECTORY_SEPARATOR . 'app',
         ] as $directory) {
@@ -95,6 +98,15 @@ class StoragePathResolutionTest extends CIUnitTestCase
 
         $this->assertNotSame(0, $stagingUsingProduction['exit']);
         $this->assertNotSame(0, $productionUsingStaging['exit']);
+    }
+
+    public function testConfirmedHostingerStagingStoragePathIsAllowed(): void
+    {
+        $staging = $this->runResolver('staging', $this->domainStagingStorage);
+
+        $this->assertSame(0, $staging['exit']);
+        $this->assertSame(realpath($this->domainStagingStorage) . DIRECTORY_SEPARATOR, $staging['path']);
+        $this->assertNotSame(realpath($this->productionStorage) . DIRECTORY_SEPARATOR, $staging['path']);
     }
 
     public function testMissingPathDocumentRootAndTraversalAreRejected(): void

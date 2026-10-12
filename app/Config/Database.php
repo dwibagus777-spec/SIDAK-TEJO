@@ -230,11 +230,11 @@ class Database extends Config
             return null;
         };
 
-        $getHost = $findEnv('DB_HOST', 'MYSQLHOST', 'MYSQL_HOST', 'database_default_hostname');
-        $getUser = $findEnv('DB_USER', 'MYSQLUSER', 'MYSQL_USER', 'database_default_username');
-        $getPass = $findEnv('DB_PASS', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'database_default_password');
-        $getDb   = $findEnv('DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'database_default_database');
-        $getPort = $findEnv('DB_PORT', 'MYSQLPORT', 'MYSQL_PORT', 'database_default_port');
+        $getHost = $findEnv('DB_HOST', 'MYSQLHOST', 'MYSQL_HOST', 'database.default.hostname', 'database_default_hostname');
+        $getUser = $findEnv('DB_USER', 'MYSQLUSER', 'MYSQL_USER', 'database.default.username', 'database_default_username');
+        $getPass = $findEnv('DB_PASS', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'database.default.password', 'database_default_password');
+        $getDb   = $findEnv('DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'database.default.database', 'database_default_database');
+        $getPort = $findEnv('DB_PORT', 'MYSQLPORT', 'MYSQL_PORT', 'database.default.port', 'database_default_port');
 
         if ($getHost) { $this->default['hostname'] = $getHost; }
         if ($getUser) { $this->default['username'] = $getUser; }

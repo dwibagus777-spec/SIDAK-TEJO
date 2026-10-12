@@ -18,7 +18,23 @@ database migrations.
    host, port and name, and point `SIDAK_STORAGE_PATH` to the verified private
    directory. Also verify the runtime environment does not override these
    `.env` values; a CLI preflight cannot inspect PHP-FPM or Hostinger account
-   settings.
+   settings. The CodeIgniter dotted keys below are read by the application's
+   database configuration; supply the actual database values privately in the
+   Hostinger file manager:
+
+   ```text
+   database.default.hostname=<verified staging database host>
+   database.default.database=<dedicated staging database name>
+   database.default.username=<staging database user>
+   database.default.password=<staging-only secret>
+   database.default.port=<verified staging database port>
+   CI_ENVIRONMENT=staging
+   app.baseURL=https://staging.sidaktejo.site/
+   SIDAK_STORAGE_PATH=/home/u532206332/domains/sidaktejo.site/sidak_storage_staging/foto
+   ```
+
+   The storage path is the currently reported staging location; verify its
+   canonical server path and permissions before using it.
 4. Create a staging database dump and storage archive outside the document root.
    Test restoration into a separate, isolated target that is neither production
    nor the active staging database. Keep the database dump, storage archive,

@@ -131,6 +131,7 @@ if (!defined('SIDAK_STORAGE_PATH')) {
         if ($isStaging) {
             $sidakStorageCandidates = [
                 '/home/u532206332/sidak_storage_staging/foto',
+                '/home/u532206332/domains/sidaktejo.site/sidak_storage_staging/foto',
                 rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage_staging/foto',
                 rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage_staging/foto',
             ];

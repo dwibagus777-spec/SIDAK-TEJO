@@ -311,11 +311,6 @@ if (!function_exists('check_photo_access')) {
         // Cross-ULP roles from get_user_role_scoping(): administrator, pdkb, har_crane
         $crossUlpRoles = ['administrator', 'pdkb', 'har_crane'];
 
-        // If no ULP filter and not cross-ULP, deny
-        if ($userUlpId === null && !in_array($userRole, $crossUlpRoles, true)) {
-            return false;
-        }
-
         // Normalize the relative path (decode URL, convert separators, remove traversal attempts)
         $cleanRelativePath = str_replace('\\', '/', rawurldecode(trim($photoRelativePath)));
         if ($cleanRelativePath === '' || $cleanRelativePath === '.' || $cleanRelativePath === '..' || str_contains($cleanRelativePath, "\0")) {
@@ -333,6 +328,47 @@ if (!function_exists('check_photo_access')) {
         $cleanBasename = basename($cleanRelativePath);
 
         $db = \Config\Database::connect($dbGroup ?? 'default');
+
+        if (str_starts_with($cleanRelativePath, 'kubikel_inspeksi/')) {
+            $photos = $db->table('inspeksi_kubikel_foto foto')
+                ->select('foto.checklist_id, inspeksi.id AS inspeksi_id, inspeksi.ulp_id, inspeksi.inspector_user_id')
+                ->join('inspeksi_kubikel inspeksi', 'inspeksi.id = foto.inspeksi_kubikel_id')
+                ->where('foto.path_file', $cleanRelativePath)
+                ->get()->getResultArray();
+
+            foreach ($photos as $photo) {
+                if (in_array($userRole, ['administrator', 'admin', 'admin_pusat'], true)
+                    || ($userRole !== 'beyond_kwh' && (int)$photo['inspector_user_id'] === (int)$session->get('user_id'))) {
+                    return true;
+                }
+
+                if (in_array($userRole, ['ulp', 'har_gtt'], true)
+                    && $userUlpId !== null
+                    && (int)$photo['ulp_id'] === (int)$userUlpId) {
+                    return true;
+                }
+
+                if ($userRole === 'beyond_kwh' && !empty($photo['checklist_id'])) {
+                    $assignedFinding = $db->table('inspeksi_kubikel_temuan temuan')
+                        ->join('inspeksi_kubikel_rekomendasi rekomendasi', 'rekomendasi.temuan_id = temuan.id')
+                        ->where('temuan.inspeksi_kubikel_id', (int)$photo['inspeksi_id'])
+                        ->where('temuan.checklist_id', (int)$photo['checklist_id'])
+                        ->where('rekomendasi.penerima', 'BEYOND_KWH')
+                        ->where('rekomendasi.penerima_user_id', (int)$session->get('user_id'))
+                        ->countAllResults() > 0;
+                    if ($assignedFinding) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        // If no ULP filter and not cross-ULP, deny
+        if ($userUlpId === null && !in_array($userRole, $crossUlpRoles, true)) {
+            return false;
+        }
 
         // Helper: check if photo is associated with a ULP record that matches user scope
         $checkUlpMatch = function (array $record) use ($userRole, $crossUlpRoles, $userUlpId): bool {

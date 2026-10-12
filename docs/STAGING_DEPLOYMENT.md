@@ -78,9 +78,70 @@ database migrations.
    This repository does not verify Hostinger account settings, runtime
    environment overrides, storage ACLs or rotate secrets.
 
+## GitHub Actions deployment for the existing extracted release
+
+Use `.github/workflows/deploy-staging.yml` for the reported Hostinger layout.
+It is manually dispatched only from
+`feature/inspeksi-kubikel-beyond-kwh`, requires the selected SHA to equal the
+branch commit, and checks that all `php-and-storage` runs for that SHA passed.
+It deploys to the existing private `app_release` directory; it does not clone,
+re-extract the original ZIP, change DNS, run migrations, or deploy production.
+
+Before enabling this workflow, create the GitHub Actions environment named
+`staging` and configure the following there:
+
+**Environment secrets**
+
+- `HOSTINGER_SSH_PRIVATE_KEY`: a dedicated deployment key whose public key has
+  been authorized for the Hostinger account. Do not reuse a production key.
+- `HOSTINGER_KNOWN_HOSTS`: the Hostinger SSH host key entry verified through an
+  authenticated Hostinger source, in OpenSSH known-hosts format for
+  `[sg-nme-web603.main-hosting.eu]:65002`. Do not trust an unverified
+  `ssh-keyscan` result.
+
+**Environment variables**
+
+- `HOSTINGER_SSH_HOST=sg-nme-web603.main-hosting.eu`
+- `HOSTINGER_SSH_USER=u532206332`
+- `HOSTINGER_SSH_PORT=65002`
+- `STAGING_WEB_ROOT`: the configured staging document-root path. On the server
+  it must resolve to
+  `/home/u532206332/domains/sidaktejo.site/sidak_staging_app/app_release/public`.
+  The current `public_html/staging` default page does not satisfy this gate.
+- `STAGING_DB_HOST`, `STAGING_DB_PORT`, and `STAGING_DB_NAME`: verified,
+  dedicated staging database identifiers (not credentials).
+- `PRODUCTION_DB_HOST`, `PRODUCTION_DB_PORT`, and `PRODUCTION_DB_NAME`: verified
+  production identifiers used only to reject accidental staging overlap.
+- `STAGING_BACKUP_DIR` and `STAGING_BACKUP_MANIFEST`: protected server paths
+  outside the application, web root, and both photo-storage directories. The
+  manifest must meet the backup and isolated-restore requirements above.
+
+The workflow first performs a server-side, read-only preflight. It stops before
+uploading an artifact unless the exact existing app root, document root,
+staging-only `.env` database target, private staging photo path, and current
+backup/restore evidence all match. It then builds from the pinned commit, omits
+`.env`, `writable`, Git metadata and photo/upload trees, creates a private
+code-only rollback archive, and synchronizes the release while preserving the
+existing `.env`, `writable`, and external photo directories. A failed sync
+attempts to restore the previous code archive. No database migration is run.
+Afterward it checks HTTPS, the application page, and common sensitive URLs.
+
+Dispatch it from the Actions tab after the `staging` environment values and
+server-side document root/SSH authorization are verified. Provide the full
+40-character SHA of the feature branch commit being dispatched. A missing
+secret, failed SSH authentication, incorrect document root, or invalid backup
+evidence stops the workflow without changing application files. Successful
+HTTP smoke checks do not replace authenticated role/GIS/Kubikel/Beyond KWH
+E2E testing or proof that the PHP web handler has no conflicting environment
+overrides.
+
 ## Pinned code deployment
 
-Run in an SSH shell on the host after confirming the existing staging checkout.
+The legacy `deploy_staging.sh` below is for an existing Git checkout and is not
+compatible with the reported extracted `app_release` directory. Do not run it
+against that extracted directory; use the guarded GitHub Actions workflow
+above. For other verified Git-checkout layouts only, run in an SSH shell on the
+host after confirming the existing staging checkout.
 First fetch the branch, then execute the safety script directly from that
 branch. Set the environment variables from verified Hostinger configuration;
 never pass database passwords as script arguments:

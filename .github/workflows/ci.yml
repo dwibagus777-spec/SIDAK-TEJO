@@ -51,5 +51,10 @@ jobs:
           command -v bash
           bash tests/scripts/deploy_staging_preflight_test.sh
 
+      - name: Check staging release deploy script syntax
+        run: |
+          bash -n scripts/deploy_staging_release.sh
+          bash -n tests/scripts/deploy_staging_preflight_test.sh
+
       - name: Check committed diff whitespace
         run: git diff --check origin/main...HEAD

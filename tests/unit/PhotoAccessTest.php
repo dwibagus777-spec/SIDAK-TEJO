@@ -17,7 +17,7 @@ final class PhotoAccessTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Use 'test_mariadb' database group (MariaDB sidaktejo_test) for isolation
         $this->db = Database::connect('test_mariadb');
 
@@ -27,7 +27,7 @@ final class PhotoAccessTest extends CIUnitTestCase
             $this->markTestSkipped("Test database isolation failed: connected to '$actualDb' instead of 'sidaktejo_test'. Aborting to prevent data contamination.");
             return;
         }
-        
+
         // Verify test database has required tables
         // Note: riwayat_tindak_lanjut table doesn't exist in current schema - check_photo_access handles this gracefully
         $requiredTables = [
@@ -35,7 +35,7 @@ final class PhotoAccessTest extends CIUnitTestCase
             'tb_eviden_kubikel', 'tb_eviden_trafo', 'tb_foto_eviden',
             'tb_management_trafo', 'assets'
         ];
-        
+
         foreach ($requiredTables as $table) {
             if (!$this->db->tableExists($table)) {
                 $this->markTestSkipped("Table '$table' not found in test database. Run migrations first.");
@@ -86,7 +86,7 @@ final class PhotoAccessTest extends CIUnitTestCase
     {
         $session = Services::session();
         $session->destroy();
-        
+
         $result = check_photo_access('test.jpg', 'test_mariadb');
         $this->assertFalse($result, 'Not logged in user should be denied');
     }
@@ -107,7 +107,7 @@ final class PhotoAccessTest extends CIUnitTestCase
     public function testPhotoInOwnUlp(): void
     {
         $this->setMockSession('inspeksi', 1);
-        
+
         // Insert a test temuan with known photo in ULP 1
         $photoName = 'test_own_ulp_' . uniqid() . '.jpg';
         $this->db->table('temuan')->insert([
@@ -137,7 +137,7 @@ final class PhotoAccessTest extends CIUnitTestCase
     public function testPhotoInDifferentUlp(): void
     {
         $this->setMockSession('inspeksi', 1);
-        
+
         // Insert a test temuan with known photo in ULP 2
         $photoName = 'test_diff_ulp_' . uniqid() . '.jpg';
         $this->db->table('temuan')->insert([
@@ -167,7 +167,7 @@ final class PhotoAccessTest extends CIUnitTestCase
     public function testCrossUlpRoleAdministrator(): void
     {
         $this->setMockSession('administrator', null);
-        
+
         // Insert a test temuan in ULP 2
         $photoName = 'test_admin_' . uniqid() . '.jpg';
         $this->db->table('temuan')->insert([
@@ -198,7 +198,7 @@ final class PhotoAccessTest extends CIUnitTestCase
     {
         $this->setMockSession('inspeksi', 1);
         $photoName = 'duplicate_name_' . uniqid() . '.jpg';
-        
+
         // Insert in ULP 1 (user's ULP)
         $this->db->table('temuan')->insert([
             'nomor_temuan'   => 'TEST-' . uniqid(),
@@ -216,7 +216,7 @@ final class PhotoAccessTest extends CIUnitTestCase
             'created_by'     => 1,
             'created_by_name' => 'Test',
         ]);
-        
+
         // Insert same photo name in ULP 2
         $this->db->table('temuan')->insert([
             'nomor_temuan'   => 'TEST-' . uniqid(),
@@ -245,12 +245,12 @@ final class PhotoAccessTest extends CIUnitTestCase
     public function testSqlInjectionAttempt(): void
     {
         $this->setMockSession('inspeksi', 1);
-        
+
         // Attempt SQL injection via photo name
         $maliciousName = "test'; DROP TABLE temuan;--.jpg";
         $result = check_photo_access($maliciousName, 'test_mariadb');
         $this->assertFalse($result, 'SQL injection attempt should be safely handled (denied as unknown)');
-        
+
         // Verify table still exists
         $tables = $this->db->listTables();
         $this->assertContains('temuan', $tables, 'temuan table should still exist after injection attempt');
@@ -263,7 +263,7 @@ final class PhotoAccessTest extends CIUnitTestCase
     public function testPhotoInDifferentUlpDuplicate(): void
     {
         $this->setMockSession('inspeksi', 1);
-        
+
         // Insert a test temuan with known photo in ULP 2
         $photoName = 'test_diff_ulp_dup_' . uniqid() . '.jpg';
         $this->db->table('temuan')->insert([
@@ -282,7 +282,7 @@ final class PhotoAccessTest extends CIUnitTestCase
             'created_by'     => 2,
             'created_by_name' => 'Test',
         ]);
-        
+
         $result = check_photo_access($photoName, 'test_mariadb');
         $this->assertFalse($result, 'Photo in different ULP should be denied for non-cross-ULP user');
     }

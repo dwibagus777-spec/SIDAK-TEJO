@@ -105,21 +105,28 @@ defined('EXIT__AUTO_MAX')      || define('EXIT__AUTO_MAX', 125);    // highest a
  */
 if (!defined('SIDAK_STORAGE_PATH')) {
     $explicitPath = getenv('SIDAK_STORAGE_PATH');
-    $env = getenv('CI_ENVIRONMENT') ?: ENVIRONMENT;
+    $configuredEnvironment = getenv('CI_ENVIRONMENT');
+    if ($configuredEnvironment !== false && trim($configuredEnvironment) === '') {
+        throw new RuntimeException('CI_ENVIRONMENT must name a supported application environment.');
+    }
+    $env = $configuredEnvironment === false ? ENVIRONMENT : trim($configuredEnvironment);
+    if (!in_array($env, ['development', 'testing', 'staging', 'production'], true)) {
+        throw new RuntimeException('Unsupported CI_ENVIRONMENT for SIDAK_STORAGE_PATH.');
+    }
     $isStaging = ($env === 'staging');
 
-    if ($env === 'testing') {
-        $testingStoragePath = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'sidak-tejo-testing-storage' . DIRECTORY_SEPARATOR;
-        if (!is_dir($testingStoragePath) && !@mkdir($testingStoragePath, 0770, true) && !is_dir($testingStoragePath)) {
-            throw new RuntimeException('Unable to initialize isolated SIDAK_STORAGE_PATH for testing.');
+    if (in_array($env, ['development', 'testing'], true)) {
+        $localStoragePath = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'sidak-tejo-' . $env . '-storage' . DIRECTORY_SEPARATOR;
+        if (!is_dir($localStoragePath) && !@mkdir($localStoragePath, 0770, true) && !is_dir($localStoragePath)) {
+            throw new RuntimeException('Unable to initialize isolated SIDAK_STORAGE_PATH for ' . $env . '.');
         }
 
-        $canonicalTestingPath = realpath($testingStoragePath);
-        if ($canonicalTestingPath === false || !is_writable($canonicalTestingPath)) {
-            throw new RuntimeException('Isolated SIDAK_STORAGE_PATH for testing is unavailable or not writable.');
+        $canonicalLocalPath = realpath($localStoragePath);
+        if ($canonicalLocalPath === false || !is_writable($canonicalLocalPath)) {
+            throw new RuntimeException('Isolated SIDAK_STORAGE_PATH for ' . $env . ' is unavailable or not writable.');
         }
 
-        define('SIDAK_STORAGE_PATH', rtrim($canonicalTestingPath, '/\\') . DIRECTORY_SEPARATOR);
+        define('SIDAK_STORAGE_PATH', rtrim($canonicalLocalPath, '/\\') . DIRECTORY_SEPARATOR);
     } else {
         if ($isStaging) {
             $sidakStorageCandidates = [

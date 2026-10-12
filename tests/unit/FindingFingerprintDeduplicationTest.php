@@ -94,7 +94,7 @@ class FindingFingerprintDeduplicationTest extends CIUnitTestCase
 
         // First submission - creates NEW_MASTER_CASE
         $result1 = $this->service->processInspectionFinding($input, $this->testUserId);
-        
+
         $this->assertEquals('NEW_MASTER_CASE', $result1['action']);
         $this->assertEquals(1, $result1['obs_count']);
         $this->assertEquals(0, $result1['rec_count']);
@@ -105,9 +105,9 @@ class FindingFingerprintDeduplicationTest extends CIUnitTestCase
         $input['detail_temuan'] = 'Re-inspection observation';
         $input['severity'] = 'HIGH';
         $input['inspection_id'] = 101;
-        
+
         $result2 = $this->service->processInspectionFinding($input, $this->testUserId);
-        
+
         $this->assertEquals('RE_OBSERVATION', $result2['action']);
         $this->assertEquals($temuanId, $result2['temuan_id']);
         $this->assertEquals($fingerprint, $result2['fingerprint']);
@@ -355,7 +355,7 @@ class FindingFingerprintDeduplicationTest extends CIUnitTestCase
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('asset_id wajib tersedia');
-        
+
         $this->service->processInspectionFinding($input, $this->testUserId);
     }
 

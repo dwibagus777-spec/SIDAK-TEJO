@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - feature/inspeksi-kubikel-beyond-kwh
+
+permissions:
+  contents: read
+
+jobs:
+  php-and-storage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: gd, intl, mbstring, mysqli, zip
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Lint application PHP files
+        shell: bash
+        run: |
+          set -euo pipefail
+          find app -type f -name '*.php' -print0 | xargs -0 -r -n1 php -l
+
+      - name: Run storage isolation tests
+        run: >-
+          php vendor/bin/phpunit --no-coverage --testdox --fail-on-skipped
+          tests/unit/StoragePathResolutionTest.php
+          tests/unit/StoragePathIsolationRuntimeTest.php
+
+      - name: Run staging preflight tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v bash
+          bash tests/scripts/deploy_staging_preflight_test.sh
+
+      - name: Check committed diff whitespace
+        run: git diff --check origin/main...HEAD

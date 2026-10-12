@@ -464,7 +464,7 @@ class AssetImportController extends BaseController
             foreach ($photos as $p) {
                 $cleanName = basename(trim((string)$p));
                 $resolvedPath = resolve_photo_path($cleanName);
-                
+
                 $persistentDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : WRITEPATH . 'uploads/foto/';
                 $candidatePaths = [
                     'persistent' => rtrim($persistentDir, '/\\') . DIRECTORY_SEPARATOR . $cleanName,
@@ -505,7 +505,7 @@ class AssetImportController extends BaseController
                     $clean = !empty($ref) ? basename($ref) : null;
                     $resolvedPath = $clean ? resolve_photo_path($clean) : null;
                     $fileSize = ($resolvedPath && is_file($resolvedPath)) ? filesize($resolvedPath) : 0;
-                    
+
                     $photosCheck[$k] = [
                         'db_reference' => $ref,
                         'clean_name'   => $clean,

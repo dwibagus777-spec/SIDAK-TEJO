@@ -341,7 +341,7 @@ class TemuanService
                     $existingPhotos = is_array($decoded) ? $decoded : [];
                 }
                 $mergedPhotos = array_values(array_unique(array_merge($existingPhotos, $photoNames)));
-                
+
                 $this->temuanRepository->update($temuanId, [
                     'foto'      => json_encode($mergedPhotos),
                     'foto_path' => $fotoPath,
@@ -381,8 +381,8 @@ class TemuanService
 
         return [
             'success'      => true,
-            'message'      => $action === 'RE_OBSERVATION' 
-                ? 'Observasi ulang berhasil dicatat pada kasus existing.' 
+            'message'      => $action === 'RE_OBSERVATION'
+                ? 'Observasi ulang berhasil dicatat pada kasus existing.'
                 : 'Temuan baru berhasil disimpan.',
             'id'           => $temuanId,
             'action'       => $action,

@@ -63,12 +63,27 @@ class StoragePathIsolationRuntimeTest extends CIUnitTestCase
     {
         $staging = $this->runResolver('staging');
         $production = $this->runResolver('production');
+        $development = $this->runResolver('development');
 
         $this->assertSame(0, $staging['exit']);
         $this->assertSame(realpath($this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage_staging' . DIRECTORY_SEPARATOR . 'foto') . DIRECTORY_SEPARATOR, $staging['path']);
         $this->assertSame(0, $production['exit']);
         $this->assertSame(realpath($this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage' . DIRECTORY_SEPARATOR . 'foto') . DIRECTORY_SEPARATOR, $production['path']);
+        $this->assertSame(0, $development['exit']);
+        $this->assertStringContainsString('sidak-tejo-development-storage', $development['path']);
         $this->assertNotSame($staging['path'], $production['path']);
+        $this->assertNotSame($development['path'], $production['path']);
+    }
+
+    public function testUnknownAndEmptyEnvironmentValuesFailClosed(): void
+    {
+        foreach (['prodution', ''] as $environment) {
+            $result = $this->runResolver($environment, null, 'production');
+
+            $this->assertNotSame(0, $result['exit']);
+            $this->assertStringContainsString('CI_ENVIRONMENT', $result['output']);
+            $this->assertStringNotContainsString($this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage' . DIRECTORY_SEPARATOR . 'foto', $result['output']);
+        }
     }
 
     public function testExplicitPathCannotCrossEnvironmentBoundaries(): void
@@ -140,7 +155,7 @@ class StoragePathIsolationRuntimeTest extends CIUnitTestCase
         $this->assertStringContainsString('existing writable directory', $result['output']);
     }
 
-    private function runResolver(string $environment, ?string $explicitPath = null): array
+    private function runResolver(string $environment, ?string $explicitPath = null, ?string $frameworkEnvironment = null): array
     {
         $scriptPath = $this->sandbox . DIRECTORY_SEPARATOR . 'run-resolver-' . bin2hex(random_bytes(6)) . '.php';
         $projectRoot = str_replace('\\', '/', $this->projectRoot);
@@ -157,7 +172,7 @@ class StoragePathIsolationRuntimeTest extends CIUnitTestCase
             . "define('ROOTPATH', " . var_export($projectRoot . '/', true) . ");\n"
             . "define('FCPATH', " . var_export($projectRoot . '/public/', true) . ");\n"
             . "define('APPPATH', " . var_export($projectRoot . '/app/', true) . ");\n"
-            . "define('ENVIRONMENT', " . var_export($environment, true) . ");\n"
+            . "define('ENVIRONMENT', " . var_export($frameworkEnvironment ?? $environment, true) . ");\n"
             . "try { require " . var_export($constantsPath, true) . "; echo SIDAK_STORAGE_PATH; }"
             . " catch (Throwable \$exception) { fwrite(STDERR, \$exception->getMessage()); exit(2); }\n";
 

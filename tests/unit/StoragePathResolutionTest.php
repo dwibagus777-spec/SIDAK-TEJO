@@ -1,10 +1,4 @@
 <?php
-/**
- * Storage Path Resolution Tests
- * 
- * Tests SIDAK_STORAGE_PATH resolution logic statically.
- * Full runtime isolation tests should run on staging server with: php vendor/bin/phpunit tests/unit/StoragePathResolutionTest.php
- */
 
 namespace Tests\Unit;
 
@@ -12,110 +6,214 @@ use CodeIgniter\Test\CIUnitTestCase;
 
 class StoragePathResolutionTest extends CIUnitTestCase
 {
-    /**
-     * Verify Constants.php contains required validation logic
-     */
-    public function testConstantsHasEnvironmentValidation(): void
-    {
-        $content = file_get_contents(APPPATH . 'Config/Constants.php');
-        
-        // Check for explicit path validation
-        $this->assertStringContainsString('sidak_storage_staging', $content, 'Should validate staging path');
-        $this->assertStringContainsString('RuntimeException', $content, 'Should throw on mismatch');
-        $this->assertStringContainsString('realpath', $content, 'Should use canonical path resolution');
-        
-        // Check staging candidates don't include production paths
-        $stagingCandidates = $this->extractCandidates($content, '$isStaging) {');
-        $this->assertStringNotContainsString('sidak_storage/foto', $stagingCandidates, 'Staging candidates should not include production paths');
-        $this->assertStringContainsString('sidak_storage_staging', $stagingCandidates, 'Staging candidates should include staging paths');
-        
-        // Check production candidates don't include staging paths
-        $productionCandidates = $this->extractCandidates($content, '// Production: ONLY production paths — NO staging fallback', true);
-        $this->assertStringNotContainsString('sidak_storage_staging', $productionCandidates, 'Production candidates should not include staging paths');
-        $this->assertStringContainsString('sidak_storage/foto', $productionCandidates, 'Production candidates should include production paths');
-    }
+    private string $sandbox;
+    private string $projectRoot;
+    private string $constantsPath;
+    private string $productionStorage;
+    private string $stagingStorage;
 
-    /**
-     * Verify CI_ENVIRONMENT=staging forces staging storage
-     */
-    public function testStagingEnvironmentForcesStagingStorage(): void
+    protected function setUp(): void
     {
-        // This test requires separate PHP process - skip in CI, run on staging server
-        $this->markTestSkipped('Requires separate PHP process with CI_ENVIRONMENT=staging. Run on staging server.');
-    }
+        parent::setUp();
 
-    /**
-     * Verify CI_ENVIRONMENT=production forces production storage
-     */
-    public function testProductionEnvironmentForcesProductionStorage(): void
-    {
-        $this->markTestSkipped('Requires separate PHP process with CI_ENVIRONMENT=production. Run on staging server.');
-    }
+        $this->sandbox = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'sidak_storage_resolution_' . bin2hex(random_bytes(8));
+        $this->projectRoot = $this->sandbox . DIRECTORY_SEPARATOR . 'project';
+        $this->constantsPath = $this->sandbox . DIRECTORY_SEPARATOR . 'Constants.php';
+        $this->productionStorage = $this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage' . DIRECTORY_SEPARATOR . 'foto';
+        $this->stagingStorage = $this->sandbox . DIRECTORY_SEPARATOR . 'sidak_storage_staging' . DIRECTORY_SEPARATOR . 'foto';
 
-    /**
-     * Verify explicit path mismatch throws
-     */
-    public function testExplicitPathMismatchThrows(): void
-    {
-        $this->markTestSkipped('Requires separate PHP process. Run on staging server.');
-    }
-
-    /**
-     * Verify non-existent explicit path throws
-     */
-    public function testNonExistentExplicitPathThrows(): void
-    {
-        $this->markTestSkipped('Requires separate PHP process. Run on staging server.');
-    }
-
-    /**
-     * Verify non-writable explicit path throws
-     */
-    public function testNonWritableExplicitPathThrows(): void
-    {
-        $this->markTestSkipped('Requires separate PHP process. Run on staging server.');
-    }
-
-    /**
-     * Verify staging auto-detect fails without storage
-     */
-    public function testStagingAutoDetectFailsWithoutStorage(): void
-    {
-        $this->markTestSkipped('Requires separate PHP process. Run on staging server.');
-    }
-
-    /**
-     * Helper to extract candidates array for a given environment
-     */
-    private function extractCandidates(string $content, string $marker, bool $isProduction = false): string
-    {
-        $start = strpos($content, $marker);
-        if ($start === false) return '';
-        $arrayStart = strpos($content, '$sidakStorageCandidates = [', $start);
-        if ($arrayStart === false) return '';
-        
-        // For production, we need the SECOND occurrence (first is staging)
-        if ($isProduction) {
-            $secondArrayStart = strpos($content, '$sidakStorageCandidates = [', $arrayStart + 1);
-            if ($secondArrayStart !== false) {
-                $arrayStart = $secondArrayStart;
+        foreach ([
+            $this->productionStorage,
+            $this->stagingStorage,
+            $this->sandbox . DIRECTORY_SEPARATOR . 'domains' . DIRECTORY_SEPARATOR . 'sidaktejo.site' . DIRECTORY_SEPARATOR . 'sidak_storage' . DIRECTORY_SEPARATOR . 'foto',
+            $this->projectRoot . DIRECTORY_SEPARATOR . 'public',
+            $this->projectRoot . DIRECTORY_SEPARATOR . 'app',
+        ] as $directory) {
+            if (!mkdir($directory, 0775, true) && !is_dir($directory)) {
+                $this->fail('Unable to create isolated storage fixture.');
             }
         }
-        
-        // Find the actual '[' character
-        $bracketPos = strpos($content, '[', $arrayStart);
-        if ($bracketPos === false) return '';
-        
-        $bracketCount = 0;
-        $pos = $bracketPos;
-        $len = strlen($content);
-        while ($pos < $len) {
-            if ($content[$pos] === '[') $bracketCount++;
-            elseif ($content[$pos] === ']') $bracketCount--;
-            $pos++;
-            if ($bracketCount === 0) break;
+
+        $source = file_get_contents(APPPATH . 'Config' . DIRECTORY_SEPARATOR . 'Constants.php');
+        if ($source === false) {
+            $this->fail('Unable to read Constants.php for isolated runtime tests.');
         }
-        if ($bracketCount !== 0) return '';
-        return substr($content, $arrayStart, $pos - $arrayStart);
+
+        $sandboxPath = str_replace('\\', '/', $this->sandbox);
+        $source = str_replace(
+            [
+                "'/home/u532206332/domains/sidaktejo.site/sidak_storage",
+                "'/home/u532206332/sidak_storage_staging",
+                "'/home/u532206332/sidak_storage",
+            ],
+            [
+                "'" . $sandboxPath . "/domains/sidaktejo.site/sidak_storage",
+                "'" . $sandboxPath . "/sidak_storage_staging",
+                "'" . $sandboxPath . "/sidak_storage",
+            ],
+            $source
+        );
+
+        if (file_put_contents($this->constantsPath, $source) === false) {
+            $this->fail('Unable to prepare isolated Constants.php fixture.');
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        $this->removeDirectory($this->sandbox);
+        parent::tearDown();
+    }
+
+    public function testAutomaticResolutionUsesOnlyFixturePaths(): void
+    {
+        $staging = $this->runResolver('staging');
+        $production = $this->runResolver('production');
+
+        $this->assertSame(0, $staging['exit']);
+        $this->assertSame(realpath($this->stagingStorage) . DIRECTORY_SEPARATOR, $staging['path']);
+        $this->assertSame(0, $production['exit']);
+        $this->assertSame(realpath($this->productionStorage) . DIRECTORY_SEPARATOR, $production['path']);
+        $this->assertNotSame($staging['path'], $production['path']);
+    }
+
+    public function testUnknownAndEmptyEnvironmentValuesFailClosed(): void
+    {
+        foreach (['stagng', ''] as $environment) {
+            $result = $this->runResolver($environment, null, 'production');
+
+            $this->assertNotSame(0, $result['exit']);
+            $this->assertStringContainsString('CI_ENVIRONMENT', $result['output']);
+            $this->assertStringNotContainsString($this->productionStorage, $result['output']);
+        }
+    }
+
+    public function testExplicitPathsCannotCrossEnvironmentBoundaries(): void
+    {
+        $stagingUsingProduction = $this->runResolver('staging', $this->productionStorage);
+        $productionUsingStaging = $this->runResolver('production', $this->stagingStorage);
+
+        $this->assertNotSame(0, $stagingUsingProduction['exit']);
+        $this->assertNotSame(0, $productionUsingStaging['exit']);
+    }
+
+    public function testMissingPathDocumentRootAndTraversalAreRejected(): void
+    {
+        $missing = $this->runResolver('staging', $this->sandbox . DIRECTORY_SEPARATOR . 'missing');
+        $public = $this->runResolver('staging', $this->projectRoot . DIRECTORY_SEPARATOR . 'public');
+        $traversal = $this->runResolver(
+            'staging',
+            $this->stagingStorage . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'sidak_storage' . DIRECTORY_SEPARATOR . 'foto'
+        );
+
+        $this->assertNotSame(0, $missing['exit']);
+        $this->assertNotSame(0, $public['exit']);
+        $this->assertNotSame(0, $traversal['exit']);
+        $this->assertStringContainsString('outside the application and document roots', $public['output']);
+    }
+
+    public function testMissingProductionStorageDoesNotFallBack(): void
+    {
+        $this->removeDirectory($this->productionStorage);
+        $this->removeDirectory(
+            $this->sandbox . DIRECTORY_SEPARATOR . 'domains' . DIRECTORY_SEPARATOR . 'sidaktejo.site' . DIRECTORY_SEPARATOR . 'sidak_storage' . DIRECTORY_SEPARATOR . 'foto'
+        );
+
+        $result = $this->runResolver('production');
+
+        $this->assertNotSame(0, $result['exit']);
+        $this->assertStringContainsString('not configured to an existing writable private directory', $result['output']);
+        $this->assertStringNotContainsString($this->projectRoot . DIRECTORY_SEPARATOR . 'public', $result['output']);
+    }
+
+    public function testSymlinkCannotCrossEnvironmentBoundary(): void
+    {
+        $symlinkPath = dirname($this->stagingStorage) . DIRECTORY_SEPARATOR . 'foto-link';
+        if (!@symlink($this->productionStorage, $symlinkPath)) {
+            $this->markTestSkipped('The current OS/account cannot create directory symlinks in the temporary fixture.');
+        }
+
+        $result = $this->runResolver('staging', $symlinkPath);
+        $this->assertNotSame(0, $result['exit']);
+    }
+
+    public function testUnknownEnvironmentGuardIsPresent(): void
+    {
+        $source = file_get_contents($this->constantsPath);
+
+        $this->assertIsString($source);
+        $this->assertStringContainsString("['development', 'testing', 'staging', 'production']", $source);
+        $this->assertStringContainsString('Unsupported CI_ENVIRONMENT', $source);
+    }
+
+    private function runResolver(string $environment, ?string $explicitPath = null, ?string $frameworkEnvironment = null): array
+    {
+        $scriptPath = $this->sandbox . DIRECTORY_SEPARATOR . 'run-resolver-' . bin2hex(random_bytes(6)) . '.php';
+        $projectRoot = str_replace('\\', '/', $this->projectRoot);
+        $constantsPath = str_replace('\\', '/', $this->constantsPath);
+        $script = "<?php\n"
+            . "putenv('CI_ENVIRONMENT=" . addslashes($environment) . "');\n"
+            . ($explicitPath === null
+                ? "putenv('SIDAK_STORAGE_PATH');\n"
+                : "putenv('SIDAK_STORAGE_PATH=" . addslashes(str_replace('\\', '/', $explicitPath)) . "');\n")
+            . "define('ROOTPATH', " . var_export($projectRoot . '/', true) . ");\n"
+            . "define('FCPATH', " . var_export($projectRoot . '/public/', true) . ");\n"
+            . "define('APPPATH', " . var_export($projectRoot . '/app/', true) . ");\n"
+            . "define('ENVIRONMENT', " . var_export($frameworkEnvironment ?? $environment, true) . ");\n"
+            . "try { require " . var_export($constantsPath, true) . "; echo SIDAK_STORAGE_PATH; }"
+            . " catch (Throwable \$exception) { fwrite(STDERR, \$exception->getMessage()); exit(2); }\n";
+
+        if (file_put_contents($scriptPath, $script) === false) {
+            $this->fail('Unable to prepare isolated PHP subprocess script.');
+        }
+
+        $pipes = [];
+        $process = proc_open(
+            [PHP_BINARY, $scriptPath],
+            [
+                0 => ['pipe', 'r'],
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ],
+            $pipes,
+            null,
+            null,
+            ['bypass_shell' => true]
+        );
+        if (!is_resource($process)) {
+            $this->fail('Unable to start isolated PHP subprocess.');
+        }
+
+        fclose($pipes[0]);
+        $stdout = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exit = proc_close($process);
+        @unlink($scriptPath);
+
+        return [
+            'exit' => $exit,
+            'output' => trim((string) $stdout . (string) $stderr),
+            'path' => $exit === 0 ? trim((string) $stdout) : null,
+        ];
+    }
+
+    private function removeDirectory(string $directory): void
+    {
+        if (is_link($directory) || is_file($directory)) {
+            @unlink($directory);
+            return;
+        }
+
+        if (!is_dir($directory)) {
+            return;
+        }
+
+        foreach (array_diff(scandir($directory) ?: [], ['.', '..']) as $entry) {
+            $this->removeDirectory($directory . DIRECTORY_SEPARATOR . $entry);
+        }
+
+        @rmdir($directory);
     }
 }

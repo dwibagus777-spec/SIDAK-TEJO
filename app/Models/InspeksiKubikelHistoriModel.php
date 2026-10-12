@@ -24,6 +24,7 @@ class InspeksiKubikelHistoriModel extends Model
 
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
+    protected $updatedField  = '';
 
     protected $validationRules = [
         'inspeksi_kubikel_id' => 'required|integer',

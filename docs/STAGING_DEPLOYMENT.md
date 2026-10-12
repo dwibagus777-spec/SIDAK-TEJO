@@ -17,7 +17,11 @@ database migrations.
    name, and point `SIDAK_STORAGE_PATH` to the verified private directory.
 4. Back up the staging database and storage. Review the Kubikel migration and
    the current migration status before applying any schema changes. Do not use
-   `php spark migrate --all` as part of this deployment.
+   `php spark migrate --all` as part of this deployment. The Kubikel migration
+   rollback drops all seven inspection tables and their data; do not use it as
+   a recovery action without a verified backup and an approved data plan. The
+   Temuan FK rollback removes only the constraint and intentionally does not
+   narrow or re-sign `temuan.asset_id`.
 5. Confirm SSH access and the exact existing staging checkout and storage paths.
    This repository does not verify Hostinger account settings or rotate secrets.
 

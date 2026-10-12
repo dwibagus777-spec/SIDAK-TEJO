@@ -81,14 +81,20 @@ database migrations.
 ## GitHub Actions deployment for the existing extracted release
 
 Use `.github/workflows/deploy-staging.yml` for the reported Hostinger layout.
-It is manually dispatched only from
-`feature/inspeksi-kubikel-beyond-kwh`, requires the selected SHA to equal the
-branch commit, and checks that all `php-and-storage` runs for that SHA passed.
+Before this workflow is added to the default branch, its staging run is
+explicitly requested by adding the `deploy-staging` label to the same-repository
+PR from `feature/inspeksi-kubikel-beyond-kwh`; unrelated labels and branches do
+not deploy. Once the workflow is on the default branch it also supports manual
+dispatch, pinned to the current feature-branch head. Both paths require all
+`php-and-storage` check runs for the exact PR-head/release SHA to pass.
 It deploys to the existing private `app_release` directory; it does not clone,
 re-extract the original ZIP, change DNS, run migrations, or deploy production.
 
 Before enabling this workflow, create the GitHub Actions environment named
-`staging` and configure the following there:
+`staging`, configure at least one required reviewer for that environment, and
+configure the following there. The reviewer gate prevents a PR change to the
+deployment script from using the Hostinger key before a human approves the
+staging run.
 
 **Environment secrets**
 
@@ -126,14 +132,14 @@ existing `.env`, `writable`, and external photo directories. A failed sync
 attempts to restore the previous code archive. No database migration is run.
 Afterward it checks HTTPS, the application page, and common sensitive URLs.
 
-Dispatch it from the Actions tab after the `staging` environment values and
-server-side document root/SSH authorization are verified. Provide the full
-40-character SHA of the feature branch commit being dispatched. A missing
-secret, failed SSH authentication, incorrect document root, or invalid backup
-evidence stops the workflow without changing application files. Successful
-HTTP smoke checks do not replace authenticated role/GIS/Kubikel/Beyond KWH
-E2E testing or proof that the PHP web handler has no conflicting environment
-overrides.
+After the `staging` environment values and server-side document root/SSH
+authorization are verified, add `deploy-staging` to the feature PR to request
+the run. The workflow uses the PR's exact head SHA; do not add the label until
+the PR changes have been reviewed and are ready for staging. A missing secret,
+failed SSH authentication, incorrect document root, or invalid backup evidence
+stops the workflow without changing application files. Successful HTTP smoke
+checks do not replace authenticated role/GIS/Kubikel/Beyond KWH E2E testing or
+proof that the PHP web handler has no conflicting environment overrides.
 
 ## Pinned code deployment
 

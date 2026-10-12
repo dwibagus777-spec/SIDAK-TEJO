@@ -121,20 +121,19 @@ class AssetContextService
 
         // 4. Authorization / Scoping check on Authoritative ULP
         $roleNorm = strtoupper(trim((string)$userRole));
-        if ($roleNorm === 'ADMIN_ULP' && $userUlpId !== null && $userUlpId > 0) {
-            if ($authoritativeUlpId !== null && (int)$authoritativeUlpId !== (int)$userUlpId) {
-                return [
-                    'status'         => 'FORBIDDEN',
-                    'message'        => 'Akses ditolak: Aset berada di luar wilayah wewenang ULP Anda.',
-                    'asset'          => null,
-                    'network'        => null,
-                    'construction'   => null,
-                    'bom'            => [],
-                    'navigation'     => null,
-                    'context_source' => null,
-                    'status_badges'  => null,
-                ];
-            }
+        $accessScope = new NetworkAccessScope((string)$userRole, $userUlpId);
+        if (trim((string)$userRole) !== '' && !$accessScope->allowsUlp($authoritativeUlpId)) {
+            return [
+                'status'         => 'FORBIDDEN',
+                'message'        => 'Akses ditolak: Aset berada di luar wilayah wewenang ULP Anda.',
+                'asset'          => null,
+                'network'        => null,
+                'construction'   => null,
+                'bom'            => [],
+                'navigation'     => null,
+                'context_source' => null,
+                'status_badges'  => null,
+            ];
         }
 
         // 5. Section Resolution: Authoritative vs Operator Working Context
@@ -265,7 +264,10 @@ class AssetContextService
         if ($this->db->tableExists('temuan') && $this->db->fieldExists('asset_id', 'temuan')) {
             $activeFindings = (int)$this->db->table('temuan')
                 ->where('asset_id', (int)$asset['id'])
-                ->where('status !=', 'SELESAI')
+                ->groupStart()
+                    ->where('status !=', 'SELESAI')
+                    ->orWhere('status IS NULL')
+                ->groupEnd()
                 ->where('deleted_at IS NULL')
                 ->countAllResults();
             $totalFindings = (int)$this->db->table('temuan')
@@ -445,18 +447,20 @@ class AssetContextService
             ];
         }
 
-        // 2. ULP Boundary Firewall (for restricted roles)
-        $roleNorm = strtoupper(trim((string)$userRole));
-        if ($roleNorm === 'ADMIN_ULP' && $userUlpId !== null && $userUlpId > 0) {
-            $assetUlpId = (int)($asset['ulp_id'] ?? 0);
-            $secUlpId = (int)($section['ulp_id'] ?? 0);
-            if (($assetUlpId > 0 && $assetUlpId !== $userUlpId) || ($secUlpId > 0 && $secUlpId !== $userUlpId)) {
-                return [
-                    'status'  => 'error',
-                    'code'    => 'CROSS_ULP_REJECTED',
-                    'message' => 'Akses ditolak: Aset atau section berada di luar wilayah wewenang ULP Anda.'
-                ];
-            }
+        // 2. ULP Boundary Firewall
+        $scope = new NetworkAccessScope($userRole, $userUlpId);
+        $assetUlpId = (int)($asset['ulp_id'] ?? 0);
+        $sectionUlpId = (int)($section['ulp_id'] ?? 0);
+        if ($sectionUlpId <= 0 && !empty($section['penyulang_id']) && $this->db->tableExists('penyulang')) {
+            $feeder = $this->db->table('penyulang')->select('ulp_id')->where('id', (int)$section['penyulang_id'])->get()->getRowArray();
+            $sectionUlpId = (int)($feeder['ulp_id'] ?? 0);
+        }
+        if (trim($userRole) !== '' && (!$scope->allowsUlp($assetUlpId) || !$scope->allowsUlp($sectionUlpId))) {
+            return [
+                'status'  => 'error',
+                'code'    => 'CROSS_ULP_REJECTED',
+                'message' => 'Akses ditolak: Aset atau section berada di luar wilayah wewenang ULP Anda.'
+            ];
         }
 
         // 3. Capture Pre-Update Fingerprint (Strict Invariant Protection)
@@ -639,16 +643,13 @@ class AssetContextService
         }
 
         // ULP Boundary Firewall
-        $roleNorm = strtoupper(trim((string)$userRole));
-        if ($roleNorm === 'ADMIN_ULP' && $userUlpId !== null && $userUlpId > 0) {
-            $assetUlpId = (int)($asset['ulp_id'] ?? 0);
-            if ($assetUlpId > 0 && $assetUlpId !== $userUlpId) {
-                return [
-                    'status'  => 'error',
-                    'code'    => 'CROSS_ULP_REJECTED',
-                    'message' => 'Akses ditolak: Aset berada di luar wilayah wewenang ULP Anda.'
-                ];
-            }
+        $scope = new NetworkAccessScope($userRole, $userUlpId);
+        if (trim($userRole) !== '' && !$scope->allowsUlp((int)($asset['ulp_id'] ?? 0))) {
+            return [
+                'status'  => 'error',
+                'code'    => 'CROSS_ULP_REJECTED',
+                'message' => 'Akses ditolak: Aset berada di luar wilayah wewenang ULP Anda.'
+            ];
         }
 
         // Capture Pre-Update Fingerprint (Strict Invariant Protection)

@@ -18,6 +18,7 @@ class GisController extends BaseController
     private AssetRepository $assetRepository;
     private \App\Services\GisTranslineService $translineService;
     private \App\Services\GisConductorAnalyticsService $conductorAnalyticsService;
+    private \App\Services\NetworkAccessScope $accessScope;
 
     public function __construct()
     {
@@ -28,6 +29,11 @@ class GisController extends BaseController
         $this->assetRepository = new AssetRepository();
         $this->translineService = new \App\Services\GisTranslineService();
         $this->conductorAnalyticsService = new \App\Services\GisConductorAnalyticsService();
+        $session = session();
+        $this->accessScope = new \App\Services\NetworkAccessScope(
+            (string)($session->get('user_role') ?? ''),
+            is_numeric($session->get('user_ulp_id')) ? (int)$session->get('user_ulp_id') : null
+        );
     }
 
     /**
@@ -41,16 +47,63 @@ class GisController extends BaseController
         $ulps = [];
 
         if ($db->tableExists('ulps')) {
-            $ulps = $db->table('ulps')
+            $ulpBuilder = $db->table('ulps')
                 ->select('id, kode_ulp, nama_ulp')
                 ->where('status', 'AKTIF')
-                ->orderBy('nama_ulp', 'ASC')
-                ->get()
-                ->getResultArray();
+                ->orderBy('nama_ulp', 'ASC');
+            if (!$this->accessScope->isCrossUlp()) {
+                if ($this->accessScope->getUlpId() === null) {
+                    return $this->response->setStatusCode(403)->setBody('Akun belum memiliki cakupan ULP untuk membuka GIS.');
+                }
+                $ulpBuilder->where('id', $this->accessScope->getUlpId());
+            }
+            $ulps = $ulpBuilder->get()->getResultArray();
         }
 
         $selectedPenyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
         $selectedPlanningId  = (int)($this->request->getGet('planning_id') ?? 0);
+        $selectedUlpId = $this->accessScope->isCrossUlp() ? 0 : (int)($this->accessScope->getUlpId() ?? 0);
+        $focusAssetId = (int)($this->request->getGet('focus_asset_id') ?: $this->request->getGet('asset_id') ?: 0);
+        $focusAsset = null;
+        if ($focusAssetId > 0 && $db->tableExists('assets')) {
+            $assetBuilder = $db->table('assets')->where('id', $focusAssetId);
+            if ($db->fieldExists('deleted_at', 'assets')) {
+                $assetBuilder->where('deleted_at IS NULL');
+            }
+            $focusAsset = $assetBuilder->get()->getRowArray();
+            if (!$focusAsset) {
+                return $this->response->setStatusCode(404)->setBody('Aset GIS tidak ditemukan.');
+            }
+            $assetUlpId = (int)($focusAsset['ulp_id'] ?? 0);
+            if ($assetUlpId > 0 && !$this->accessScope->allowsUlp($assetUlpId)) {
+                return $this->response->setStatusCode(403)->setBody('Akses ditolak: aset berada di luar cakupan akun.');
+            }
+            if ($selectedPenyulangId <= 0) {
+                $selectedPenyulangId = (int)($focusAsset['penyulang_id'] ?? 0);
+            } elseif ((int)($focusAsset['penyulang_id'] ?? 0) !== $selectedPenyulangId) {
+                return $this->response->setStatusCode(403)->setBody('Akses ditolak: aset tidak berada pada penyulang yang dipilih.');
+            }
+            if ($selectedPenyulangId <= 0 && !$this->accessScope->allowsUlp($assetUlpId)) {
+                return $this->response->setStatusCode(403)->setBody('Akses ditolak: aset tidak berada pada cakupan ULP akun.');
+            }
+        }
+        if ($selectedPenyulangId > 0 && $db->tableExists('penyulang')) {
+            $feeder = $db->table('penyulang')->select('ulp_id')->where('id', $selectedPenyulangId)->get()->getRowArray();
+            $feederUlpId = (int)($feeder['ulp_id'] ?? 0);
+            if (!$feeder || !$this->accessScope->allowsUlp($feederUlpId)) {
+                return $this->response->setStatusCode(403)->setBody('Akses ditolak: penyulang berada di luar cakupan akun.');
+            }
+            $selectedUlpId = $feederUlpId;
+            if ($focusAsset) {
+                $assetUlpId = (int)($focusAsset['ulp_id'] ?? 0);
+                if ($assetUlpId <= 0) {
+                    $assetUlpId = $feederUlpId;
+                }
+                if (!$this->accessScope->allowsUlp($assetUlpId)) {
+                    return $this->response->setStatusCode(403)->setBody('Akses ditolak: aset berada di luar cakupan akun.');
+                }
+            }
+        }
 
         $session = session();
         $rawRole = (string)($session->get('user_role') ?? $session->get('role') ?? $session->get('level') ?? 'PETUGAS_LAPANGAN');
@@ -71,6 +124,7 @@ class GisController extends BaseController
             'ulps'                => $ulps,
             'penyulangs'          => [], // Initial load: EMPTY array for Penyulangs!
             'selectedPenyulangId' => $selectedPenyulangId,
+            'selectedUlpId'       => $selectedUlpId,
             'selectedPlanningId'  => $selectedPlanningId,
             'legendItems'         => $legendItems,
             'userRole'            => $userRole,
@@ -95,6 +149,13 @@ class GisController extends BaseController
                     'status'     => 'error',
                     'message'    => 'ULP wajib dipilih.',
                     'penyulangs' => []
+                ]);
+            }
+            if (!$this->accessScope->allowsUlp($ulpId)) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Akses ditolak: ULP berada di luar cakupan akun.',
+                    'penyulangs' => [],
                 ]);
             }
 
@@ -153,6 +214,15 @@ class GisController extends BaseController
             ]);
         }
 
+        $db = \Config\Database::connect();
+        $feeder = $db->table('penyulang')->select('ulp_id')->where('id', $penyulangId)->get()->getRowArray();
+        if (!$feeder || !$this->accessScope->allowsUlp((int)($feeder['ulp_id'] ?? 0))) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'error',
+                'message' => 'Akses ditolak: penyulang berada di luar cakupan akun.',
+            ]);
+        }
+
         $zoom = (int)(
             (method_exists($this->request, 'getGet') ? $this->request->getGet('zoom') : null)
             ?? ($_GET['zoom'] ?? 14)
@@ -169,7 +239,7 @@ class GisController extends BaseController
             'layers'       => $layers
         ];
 
-        $userUlpId = session()->get('ulp_id');
+        $userUlpId = $this->accessScope->isCrossUlp() ? null : $this->accessScope->getUlpId();
         $result = $this->gisService->getNetworkData($filters, $userUlpId);
 
         return $this->response->setStatusCode(200)->setJSON([
@@ -1179,7 +1249,13 @@ class GisController extends BaseController
 
         $db = \Config\Database::connect();
         $feederRow = $db->table('penyulang')->where('id', $penyulangId)->get()->getRowArray();
-        $feederUlpId = (int)($feederRow['ulp_id'] ?? 1);
+        if (!$feederRow || !$this->accessScope->allowsUlp((int)($feederRow['ulp_id'] ?? 0))) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'error',
+                'message' => 'Akses ditolak: penyulang berada di luar cakupan akun.',
+            ]);
+        }
+        $feederUlpId = (int)($feederRow['ulp_id'] ?? 0);
 
         $totalDbFeederAssets = $db->table('assets')
             ->where('penyulang_id', $penyulangId)
@@ -1197,7 +1273,7 @@ class GisController extends BaseController
             ->where('deleted_at IS NULL')
             ->countAllResults() : 0;
 
-        $userUlpId = session()->get('ulp_id');
+        $userUlpId = $this->accessScope->isCrossUlp() ? null : $this->accessScope->getUlpId();
         $networkData = $this->gisService->getNetworkData([
             'penyulang_id' => $penyulangId,
             'ulp_id'       => $feederUlpId,
@@ -1865,5 +1941,3 @@ class GisController extends BaseController
             ->setBody($content);
     }
 }
-
-

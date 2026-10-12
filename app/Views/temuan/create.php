@@ -9,6 +9,7 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+<?php $formPost = service('request')->getPost() ?? []; ?>
 <div class="row">
     <div class="col-lg-8 col-12">
         <div class="card">
@@ -19,12 +20,15 @@
             <form id="form-create-temuan" action="<?= site_url('temuan/store') ?>" method="post" enctype="multipart/form-data" autocomplete="off">
                 <?= csrf_field() ?>
                 <!-- GIS Inspection Workflow Return Context Contract -->
-                <input type="hidden" name="from" value="<?= esc(service('request')->getGet('from') ?? '') ?>">
-                <input type="hidden" name="focus_asset_id" value="<?= esc(service('request')->getGet('focus_asset_id') ?? '') ?>">
-                <input type="hidden" name="context_lat" value="<?= esc(service('request')->getGet('lat') ?? '') ?>">
-                <input type="hidden" name="context_lng" value="<?= esc(service('request')->getGet('lng') ?? '') ?>">
-                <input type="hidden" name="context_zoom" value="<?= esc(service('request')->getGet('zoom') ?? '19') ?>">
-                <input type="hidden" name="planning_id" value="<?= esc(service('request')->getGet('planning_id') ?? '') ?>">
+                <input type="hidden" name="from" value="<?= esc(old('from', $formPost['from'] ?? (service('request')->getGet('from') ?? ''))) ?>">
+                <input type="hidden" name="focus_asset_id" value="<?= esc(old('focus_asset_id', $formPost['focus_asset_id'] ?? (service('request')->getGet('focus_asset_id') ?? ''))) ?>">
+                <input type="hidden" name="context_lat" value="<?= esc(old('context_lat', $formPost['context_lat'] ?? (service('request')->getGet('lat') ?? ''))) ?>">
+                <input type="hidden" name="context_lng" value="<?= esc(old('context_lng', $formPost['context_lng'] ?? (service('request')->getGet('lng') ?? ''))) ?>">
+                <input type="hidden" name="context_zoom" value="<?= esc(old('context_zoom', $formPost['context_zoom'] ?? (service('request')->getGet('zoom') ?? '19'))) ?>">
+                <input type="hidden" name="context_ulp_id" value="<?= esc(old('context_ulp_id', $formPost['context_ulp_id'] ?? (service('request')->getGet('ulp_id') ?? ''))) ?>">
+                <input type="hidden" name="context_penyulang_id" value="<?= esc(old('context_penyulang_id', $formPost['context_penyulang_id'] ?? (service('request')->getGet('penyulang_id') ?? ''))) ?>">
+                <input type="hidden" name="context_section_id" value="<?= esc(old('context_section_id', $formPost['context_section_id'] ?? (service('request')->getGet('section_id') ?? ''))) ?>">
+                <input type="hidden" name="planning_id" value="<?= esc(old('planning_id', $formPost['planning_id'] ?? (service('request')->getGet('planning_id') ?? ''))) ?>">
                 <div class="card-body">
                     
                     <?php $validation = isset($validation) ? $validation : null; ?>
@@ -788,10 +792,10 @@
             // --- 1. CASCADING DROPDOWNS WITH REQUEST TOKEN GUARD ---
             const preselectedAsset = <?= !empty($preselectedAsset) ? json_encode($preselectedAsset) : 'null' ?>;
             const urlParams = new URLSearchParams(window.location.search);
-            const oldPenyulangId = "<?= old('penyulang_id') ?>" || (preselectedAsset ? preselectedAsset.penyulang_id : '') || urlParams.get('penyulang_id') || "";
-            const oldSectionId = "<?= old('section_id') ?>" || (preselectedAsset ? preselectedAsset.section_id : '') || urlParams.get('section_id') || "";
-            const oldAssetId = "<?= old('asset_id') ?>" || (preselectedAsset ? preselectedAsset.id : '') || urlParams.get('asset_id') || "";
-            const urlUlpId = (preselectedAsset ? preselectedAsset.ulp_id : '') || urlParams.get('ulp_id') || "";
+            const oldPenyulangId = <?= json_encode((string)old('penyulang_id', $formPost['penyulang_id'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?> || (preselectedAsset ? preselectedAsset.penyulang_id : '') || urlParams.get('penyulang_id') || <?= json_encode((string)old('context_penyulang_id', $formPost['context_penyulang_id'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+            const oldSectionId = <?= json_encode((string)old('section_id', $formPost['section_id'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?> || (preselectedAsset ? preselectedAsset.section_id : '') || urlParams.get('section_id') || <?= json_encode((string)old('context_section_id', $formPost['context_section_id'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+            const oldAssetId = <?= json_encode((string)old('asset_id', $formPost['asset_id'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?> || (preselectedAsset ? preselectedAsset.id : '') || urlParams.get('asset_id') || "";
+            const urlUlpId = (preselectedAsset ? preselectedAsset.ulp_id : '') || urlParams.get('ulp_id') || <?= json_encode((string)old('ulp_id', $formPost['ulp_id'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?> || <?= json_encode((string)old('context_ulp_id', $formPost['context_ulp_id'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
             let penyulangRequestToken = 0;
             let sectionRequestToken = 0;
 

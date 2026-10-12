@@ -59,7 +59,7 @@ class NetworkLookupService
     /**
      * Level 4: Get Assets with filter by section, penyulang, ulp, type, or status
      */
-    public function getAssets(array $filters = []): array
+    public function getAssets(array $filters = [], ?int $userUlpId = null): array
     {
         $cleanFilters = [];
 
@@ -82,7 +82,7 @@ class NetworkLookupService
             $cleanFilters['search'] = (string)$filters['search'];
         }
 
-        return $this->assetRepository->getFilteredAssets($cleanFilters);
+        return $this->assetRepository->getFilteredAssets($cleanFilters, $userUlpId);
     }
 
     /**

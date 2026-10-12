@@ -17,10 +17,36 @@ use CodeIgniter\HTTP\ResponseInterface;
 class NetworkLookup extends BaseController
 {
     protected NetworkLookupService $service;
+    private \App\Services\NetworkAccessScope $accessScope;
 
     public function __construct()
     {
         $this->service = new NetworkLookupService();
+        $session = session();
+        $this->accessScope = new \App\Services\NetworkAccessScope(
+            (string)($session->get('user_role') ?? ''),
+            is_numeric($session->get('user_ulp_id')) ? (int)$session->get('user_ulp_id') : null
+        );
+    }
+
+    private function isPenyulangAllowed(int $penyulangId): bool
+    {
+        $db = \Config\Database::connect();
+        $feeder = $db->table('penyulang')->select('ulp_id')->where('id', $penyulangId)->get()->getRowArray();
+        return $feeder !== null && $this->accessScope->allowsUlp((int)($feeder['ulp_id'] ?? 0));
+    }
+
+    private function isSectionAllowed(int $sectionId): bool
+    {
+        $db = \Config\Database::connect();
+        $section = $db->table('sections')->where('id', $sectionId)->get()->getRowArray();
+        if (!$section) {
+            return false;
+        }
+        if (!empty($section['penyulang_id'])) {
+            return $this->isPenyulangAllowed((int)$section['penyulang_id']);
+        }
+        return $this->accessScope->allowsUlp((int)($section['ulp_id'] ?? 0));
     }
 
     /**
@@ -31,6 +57,11 @@ class NetworkLookup extends BaseController
     {
         try {
             $data = $this->service->getUlps();
+            if (!$this->accessScope->isCrossUlp()) {
+                $data = $this->accessScope->getUlpId() === null
+                    ? []
+                    : array_values(array_filter($data, fn(array $ulp): bool => (int)$ulp['id'] === $this->accessScope->getUlpId()));
+            }
 
             return $this->response
                 ->setStatusCode(200)
@@ -64,6 +95,12 @@ class NetworkLookup extends BaseController
                     ->setStatusCode(200)
                     ->setContentType('application/json')
                     ->setJSON([]);
+            }
+            if (!$this->accessScope->allowsUlp($id)) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'success' => false,
+                    'message' => 'Akses ditolak: ULP berada di luar cakupan akun.',
+                ]);
             }
 
             $data = $this->service->getPenyulangsByUlp($id);
@@ -101,6 +138,12 @@ class NetworkLookup extends BaseController
                     ->setContentType('application/json')
                     ->setJSON([]);
             }
+            if (!$this->isPenyulangAllowed($id)) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'success' => false,
+                    'message' => 'Akses ditolak: penyulang berada di luar cakupan akun.',
+                ]);
+            }
 
             $data = $this->service->getSectionsByPenyulang($id);
 
@@ -134,9 +177,22 @@ class NetworkLookup extends BaseController
             $filters = $this->request->getGet() ?? [];
             if ($id > 0) {
                 $filters['section_id'] = $id;
+                if (!$this->isSectionAllowed($id)) {
+                    return $this->response->setStatusCode(403)->setJSON([
+                        'success' => false,
+                        'message' => 'Akses ditolak: section berada di luar cakupan akun.',
+                    ]);
+                }
             }
 
-            $data = $this->service->getAssets($filters);
+            $userUlpId = $this->accessScope->isCrossUlp() ? null : $this->accessScope->getUlpId();
+            if (!$this->accessScope->isCrossUlp() && $userUlpId === null) {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Akun belum memiliki cakupan ULP.']);
+            }
+            if (!$this->accessScope->isCrossUlp()) {
+                $filters['ulp_id'] = $userUlpId;
+            }
+            $data = $this->service->getAssets($filters, $userUlpId);
 
             return $this->response
                 ->setStatusCode(200)
@@ -164,7 +220,23 @@ class NetworkLookup extends BaseController
     {
         try {
             $filters = $this->request->getGet() ?? [];
-            $data = $this->service->getAssets($filters);
+            $userUlpId = $this->accessScope->isCrossUlp() ? null : $this->accessScope->getUlpId();
+            if (!$this->accessScope->isCrossUlp() && $userUlpId === null) {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Akun belum memiliki cakupan ULP.']);
+            }
+            if (!empty($filters['section_id']) && !$this->isSectionAllowed((int)$filters['section_id'])) {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Akses ditolak: section berada di luar cakupan akun.']);
+            }
+            if (!empty($filters['penyulang_id']) && !$this->isPenyulangAllowed((int)$filters['penyulang_id'])) {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Akses ditolak: penyulang berada di luar cakupan akun.']);
+            }
+            if (!$this->accessScope->isCrossUlp()) {
+                if (!empty($filters['ulp_id']) && (int)$filters['ulp_id'] !== $userUlpId) {
+                    return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Akses ditolak: ULP berada di luar cakupan akun.']);
+                }
+                $filters['ulp_id'] = $userUlpId;
+            }
+            $data = $this->service->getAssets($filters, $userUlpId);
 
             return $this->response
                 ->setStatusCode(200)

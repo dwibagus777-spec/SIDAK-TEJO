@@ -1,0 +1,292 @@
+name: Deploy SIDAK TEJO staging
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full commit SHA to deploy from the selected feature branch
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: sidak-tejo-staging-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/feature/inspeksi-kubikel-beyond-kwh') ||
+      (github.event_name == 'pull_request' &&
+      github.event.label.name == 'deploy-staging' &&
+      github.event.pull_request.head.ref == 'feature/inspeksi-kubikel-beyond-kwh' &&
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://staging.sidaktejo.site
+    env:
+      HOSTINGER_SSH_HOST: ${{ vars.HOSTINGER_SSH_HOST }}
+      HOSTINGER_SSH_USER: ${{ vars.HOSTINGER_SSH_USER }}
+      HOSTINGER_SSH_PORT: ${{ vars.HOSTINGER_SSH_PORT }}
+      STAGING_APP_ROOT: /home/u532206332/domains/sidaktejo.site/sidak_staging_app/app_release
+      STAGING_WEB_ROOT: ${{ vars.STAGING_WEB_ROOT }}
+      STAGING_STORAGE: /home/u532206332/domains/sidaktejo.site/sidak_storage_staging/foto
+      PRODUCTION_STORAGE: /home/u532206332/domains/sidaktejo.site/sidak_storage/foto
+      STAGING_BASE_URL: https://staging.sidaktejo.site
+      STAGING_DB_HOST: ${{ vars.STAGING_DB_HOST }}
+      STAGING_DB_PORT: ${{ vars.STAGING_DB_PORT }}
+      STAGING_DB_NAME: ${{ vars.STAGING_DB_NAME }}
+      PRODUCTION_DB_HOST: ${{ vars.PRODUCTION_DB_HOST }}
+      PRODUCTION_DB_PORT: ${{ vars.PRODUCTION_DB_PORT }}
+      PRODUCTION_DB_NAME: ${{ vars.PRODUCTION_DB_NAME }}
+      STAGING_BACKUP_DIR: ${{ vars.STAGING_BACKUP_DIR }}
+      STAGING_BACKUP_MANIFEST: ${{ vars.STAGING_BACKUP_MANIFEST }}
+      RELEASE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.event.pull_request.head.sha }}
+    steps:
+      - name: Check out deployment helper from the default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: _deploy_ops
+
+      - name: Check out selected feature release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Validate dispatch and required deployment settings
+        shell: bash
+        env:
+          REQUESTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.event.pull_request.head.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_LABEL_NAME: ${{ github.event.label.name }}
+        run: |
+          set -euo pipefail
+          [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            [[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]]
+            [[ "$GITHUB_REF" == "refs/heads/feature/inspeksi-kubikel-beyond-kwh" ]]
+          else
+            [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]
+            [[ "$PR_LABEL_NAME" == "deploy-staging" ]]
+            [[ "$PR_HEAD_REF" == "feature/inspeksi-kubikel-beyond-kwh" ]]
+            [[ "$PR_HEAD_REPOSITORY" == "$GITHUB_REPOSITORY" ]]
+            [[ "$REQUESTED_SHA" == "$GITHUB_SHA" || "$REQUESTED_SHA" == "$PR_HEAD_SHA" ]]
+          fi
+          for name in \
+            HOSTINGER_SSH_HOST HOSTINGER_SSH_USER HOSTINGER_SSH_PORT \
+            STAGING_WEB_ROOT STAGING_DB_HOST STAGING_DB_PORT STAGING_DB_NAME \
+            PRODUCTION_DB_HOST PRODUCTION_DB_PORT PRODUCTION_DB_NAME \
+            STAGING_BACKUP_DIR STAGING_BACKUP_MANIFEST; do
+            if [[ -z "${!name:-}" ]]; then
+              printf '::error::Required GitHub staging environment setting is missing: %s\n' "$name"
+              exit 1
+            fi
+          done
+          [[ "$HOSTINGER_SSH_HOST" == "sg-nme-web603.main-hosting.eu" ]]
+          [[ "$HOSTINGER_SSH_USER" == "u532206332" ]]
+          [[ "$HOSTINGER_SSH_PORT" == "65002" ]]
+          [[ "$STAGING_WEB_ROOT" =~ ^/[A-Za-z0-9_./-]+$ ]]
+          [[ "$STAGING_DB_HOST" =~ ^[A-Za-z0-9_.-]+$ ]]
+          [[ "$STAGING_DB_NAME" =~ ^[A-Za-z0-9_]+$ ]]
+          [[ "$PRODUCTION_DB_HOST" =~ ^[A-Za-z0-9_.-]+$ ]]
+          [[ "$PRODUCTION_DB_NAME" =~ ^[A-Za-z0-9_]+$ ]]
+          [[ "$STAGING_DB_PORT" =~ ^[0-9]+$ && "$PRODUCTION_DB_PORT" =~ ^[0-9]+$ ]]
+          [[ "$STAGING_BACKUP_DIR" =~ ^/[A-Za-z0-9_./-]+$ ]]
+          [[ "$STAGING_BACKUP_MANIFEST" =~ ^/[A-Za-z0-9_./-]+$ ]]
+
+      - name: Require successful CI for the exact release commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" |
+            python3 -c '
+          import json, sys
+          checks = json.load(sys.stdin).get("check_runs", [])
+          required = [c for c in checks if c.get("name") == "php-and-storage"]
+          if not required or any(c.get("status") != "completed" or c.get("conclusion") != "success" for c in required):
+              print("::error::The exact commit does not have successful required CI checks.")
+              raise SystemExit(1)
+          print("Required CI checks passed for the selected commit.")
+          '
+
+      - name: Set up PHP for release dependencies
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: gd, intl, mbstring, mysqli, zip
+          coverage: none
+
+      - name: Build pinned production release archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+          archive="$RUNNER_TEMP/.release-$RELEASE_SHA.tar.gz"
+          tar -czf "$archive" \
+            --exclude='./.git' \
+            --exclude='./_deploy_ops' \
+            --exclude='./.env' \
+            --exclude='./writable' \
+            --exclude='./tests' \
+            --exclude='./build' \
+            --exclude='./public/foto' \
+            --exclude='./public/uploads' \
+            -C "$GITHUB_WORKSPACE" .
+          tar -tzf "$archive" | grep -Fxq './public/index.php'
+          tar -tzf "$archive" | grep -Fxq './vendor/autoload.php'
+          if tar -tzf "$archive" | grep -Eq '(^|/)(\.env|writable)(/|$)|(^|/)\.git(/|$)|^\./public/(foto|uploads)(/|$)'; then
+            printf '::error::Release archive contains private configuration, runtime, or uploaded files.\n'
+            exit 1
+          fi
+          printf 'RELEASE_ARCHIVE=%s\n' "$archive" >> "$GITHUB_ENV"
+
+      - name: Install pinned Hostinger SSH identity
+        shell: bash
+        env:
+          HOSTINGER_KNOWN_HOSTS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+          HOSTINGER_SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ -n "$HOSTINGER_SSH_PRIVATE_KEY" && -n "$HOSTINGER_KNOWN_HOSTS" ]]
+          printf '%s\n' "$HOSTINGER_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/hostinger_staging_key"
+          printf '%s\n' "$HOSTINGER_KNOWN_HOSTS" > "$RUNNER_TEMP/hostinger_known_hosts"
+          chmod 600 "$RUNNER_TEMP/hostinger_staging_key" "$RUNNER_TEMP/hostinger_known_hosts"
+          ssh-keygen -y -f "$RUNNER_TEMP/hostinger_staging_key" >/dev/null
+          ssh-keygen -F "[$HOSTINGER_SSH_HOST]:$HOSTINGER_SSH_PORT" -f "$RUNNER_TEMP/hostinger_known_hosts" >/dev/null
+          printf 'STAGING_SSH_TARGET=%s@%s\n' "$HOSTINGER_SSH_USER" "$HOSTINGER_SSH_HOST" >> "$GITHUB_ENV"
+
+      - name: Verify server, document root, database, storage, and restore evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_command=(env)
+          for name in \
+            STAGING_APP_ROOT STAGING_WEB_ROOT STAGING_STORAGE PRODUCTION_STORAGE \
+            STAGING_BASE_URL STAGING_DB_HOST STAGING_DB_PORT STAGING_DB_NAME \
+            PRODUCTION_DB_HOST PRODUCTION_DB_PORT PRODUCTION_DB_NAME \
+            STAGING_BACKUP_DIR STAGING_BACKUP_MANIFEST; do
+            value="${!name}"
+            [[ "$value" != *[[:space:]]* ]]
+            remote_command+=("$name=$value")
+          done
+          remote_command+=(bash -s -- preflight "$RELEASE_SHA")
+          printf -v remote_command_text '%q ' "${remote_command[@]}"
+          ssh -i "$RUNNER_TEMP/hostinger_staging_key" \
+            -p "$HOSTINGER_SSH_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/hostinger_known_hosts" \
+            -o ConnectTimeout=10 \
+            "$STAGING_SSH_TARGET" "$remote_command_text" < _deploy_ops/scripts/deploy_staging_release.sh
+
+      - name: Confirm staging hostname already serves the configured public root
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/staging-before-deploy.html"
+          curl --fail --location --silent --show-error --max-time 30 \
+            --output "$body" "$STAGING_BASE_URL/"
+          ! grep -Fqi 'Semuanya Sudah Siap' "$body"
+          grep -Fqi 'SIDAK TEJO' "$body"
+
+      - name: Upload pinned release into protected staging backup area
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="$STAGING_BACKUP_DIR/.release-$RELEASE_SHA.tar.gz"
+          printf -v artifact_q '%q' "$artifact"
+          remote_command="umask 077; test ! -e $artifact_q; : > $artifact_q; chmod 600 $artifact_q"
+          cleanup_remote_artifact() {
+            ssh -i "$RUNNER_TEMP/hostinger_staging_key" \
+              -p "$HOSTINGER_SSH_PORT" \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes \
+              -o UserKnownHostsFile="$RUNNER_TEMP/hostinger_known_hosts" \
+              "$STAGING_SSH_TARGET" "rm -f $artifact_q" >/dev/null 2>&1 || true
+          }
+          trap cleanup_remote_artifact EXIT
+          ssh -i "$RUNNER_TEMP/hostinger_staging_key" \
+            -p "$HOSTINGER_SSH_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/hostinger_known_hosts" \
+            -o ConnectTimeout=10 \
+            "$STAGING_SSH_TARGET" "$remote_command"
+          scp -i "$RUNNER_TEMP/hostinger_staging_key" \
+            -P "$HOSTINGER_SSH_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/hostinger_known_hosts" \
+            "$RELEASE_ARCHIVE" "$STAGING_SSH_TARGET:$artifact"
+          trap - EXIT
+
+      - name: Deploy with private code rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_command=(env)
+          for name in \
+            STAGING_APP_ROOT STAGING_WEB_ROOT STAGING_STORAGE PRODUCTION_STORAGE \
+            STAGING_BASE_URL STAGING_DB_HOST STAGING_DB_PORT STAGING_DB_NAME \
+            PRODUCTION_DB_HOST PRODUCTION_DB_PORT PRODUCTION_DB_NAME \
+            STAGING_BACKUP_DIR STAGING_BACKUP_MANIFEST; do
+            value="${!name}"
+            [[ "$value" != *[[:space:]]* ]]
+            remote_command+=("$name=$value")
+          done
+          remote_command+=(bash -s -- deploy "$RELEASE_SHA" "$STAGING_BACKUP_DIR/.release-$RELEASE_SHA.tar.gz")
+          printf -v remote_command_text '%q ' "${remote_command[@]}"
+          ssh -i "$RUNNER_TEMP/hostinger_staging_key" \
+            -p "$HOSTINGER_SSH_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/hostinger_known_hosts" \
+            -o ConnectTimeout=10 \
+            "$STAGING_SSH_TARGET" "$remote_command_text" < _deploy_ops/scripts/deploy_staging_release.sh
+
+      - name: Smoke-test staging and public file protections
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/staging-smoke.html"
+          curl --fail --location --silent --show-error --max-time 30 \
+            --output "$body" "$STAGING_BASE_URL/"
+          ! grep -Fqi 'Semuanya Sudah Siap' "$body"
+          grep -Fqi 'SIDAK TEJO' "$body"
+          for path in \
+            /.env \
+            /app/Config/Database.php \
+            /vendor/autoload.php \
+            /spark \
+            /composer.json \
+            /sidaktejo.sql \
+            /foto.zip \
+            /check.php \
+            /db_auth_audit.php; do
+            status="$(curl --silent --show-error --output /dev/null --max-time 20 \
+              --write-out '%{http_code}' "$STAGING_BASE_URL$path")"
+            if [[ "$status" =~ ^2[0-9]{2}$ ]]; then
+              printf '::error::Sensitive staging path is publicly accessible: %s\n' "$path"
+              exit 1
+            fi
+          done
+          printf 'Staging HTTPS smoke test passed for release %s.\n' "$RELEASE_SHA"

@@ -1114,16 +1114,65 @@ class KubikelInspectionController extends BaseController
                 ->with('error', 'Halaman ini hanya untuk role Beyond KWH atau Administrator.');
         }
 
-        if ($isAdmin) {
-            $rekomendasi = $this->rekomendasiModel->getAllBeyondRekomendasi();
-        } else {
-            $rekomendasi = $this->rekomendasiModel->getByPenerimaUser($userId);
+        // Strict role scoping: Beyond KWH role is STRICTLY scoped to their own user ID
+        $scopeUserId = $isAdmin ? null : $userId;
+
+        // Parse and sanitize incoming filters
+        $filters = [
+            'status'       => $this->request->getGet('status'),
+            'urgensi'      => $this->request->getGet('urgensi'),
+            'ulp_id'       => $this->request->getGet('ulp_id'),
+            'penyulang_id' => $this->request->getGet('penyulang_id'),
+            'petugas_id'   => $isAdmin ? $this->request->getGet('petugas_id') : null,
+            'start_date'   => $this->request->getGet('start_date'),
+            'end_date'     => $this->request->getGet('end_date'),
+        ];
+
+        // Fetch aggregates & metrics safely from model
+        $tableReady    = $this->rekomendasiModel->db->tableExists('inspeksi_kubikel_rekomendasi');
+        $kpiStats      = $this->rekomendasiModel->getDashboardStats($scopeUserId, $filters);
+        $monthlyTrend  = $this->rekomendasiModel->getMonthlyTrend($scopeUserId, $filters);
+        $statusDist    = $this->rekomendasiModel->getStatusDistribution($scopeUserId, $filters);
+        $priorityDist  = $this->rekomendasiModel->getPriorityDistribution($scopeUserId, $filters);
+        $ulpRanking    = $isAdmin ? $this->rekomendasiModel->getUlpRanking($scopeUserId, $filters) : [];
+        $rekomendasi   = $this->rekomendasiModel->getFilteredRekomendasi($scopeUserId, $filters, 100);
+
+        // Fetch auxiliary master data for interactive filter dropdowns
+        $ulpRepo = new UlpRepository();
+        $penyulangRepo = new PenyulangRepository();
+        $ulps = $ulpRepo->findAll();
+        $penyulangs = !empty($filters['ulp_id']) ? $penyulangRepo->getByUlp((int)$filters['ulp_id']) : $penyulangRepo->findAll();
+        $officers = $isAdmin ? $this->rekomendasiModel->getBeyondOfficers() : [];
+
+        // AJAX JSON endpoint support for realtime filter without page reload
+        if ($this->request->isAJAX() || $this->request->getGet('format') === 'json') {
+            return $this->response->setJSON([
+                'success'       => true,
+                'tableReady'    => $tableReady,
+                'kpi'           => $kpiStats,
+                'monthlyTrend'  => $monthlyTrend,
+                'statusDist'    => $statusDist,
+                'priorityDist'  => $priorityDist,
+                'ulpRanking'    => $ulpRanking,
+                'rekomendasi'   => $rekomendasi,
+                'total_rows'    => count($rekomendasi),
+            ]);
         }
 
         return view('kubikel_inspeksi/beyond_kwh/index', [
-            'rekomendasi' => $rekomendasi,
-            'role'        => $role,
-            'isAdmin'     => $isAdmin,
+            'rekomendasi'   => $rekomendasi,
+            'kpi'           => $kpiStats,
+            'monthlyTrend'  => $monthlyTrend,
+            'statusDist'    => $statusDist,
+            'priorityDist'  => $priorityDist,
+            'ulpRanking'    => $ulpRanking,
+            'ulps'          => $ulps,
+            'penyulangs'    => $penyulangs,
+            'officers'      => $officers,
+            'filters'       => $filters,
+            'tableReady'    => $tableReady,
+            'role'          => $role,
+            'isAdmin'       => $isAdmin,
         ]);
     }
 

@@ -39,6 +39,30 @@ final class KubikelInspectionBeyondAccessTest extends CIUnitTestCase
         $this->assertSame([2], array_map('intval', array_column($assignedToSecondUser, 'id')));
     }
 
+    public function testExecutiveDashboardStatsIsolationAndAggregates(): void
+    {
+        $model = new InspeksiKubikelRekomendasiModel();
+
+        // 1. Admin aggregate (userId = null) counts both Beyond KWH recommendations
+        $adminStats = $model->getDashboardStats(null);
+        $this->assertSame(2, $adminStats['total']);
+        $this->assertSame(2, $adminStats['belum']); // status TERKIRIM
+        $this->assertSame(0, $adminStats['selesai']);
+
+        // 2. User 41 isolated stats
+        $user41Stats = $model->getDashboardStats(41);
+        $this->assertSame(1, $user41Stats['total']);
+        $this->assertSame(1, $user41Stats['belum']);
+
+        // 3. User 42 isolated stats
+        $user42Stats = $model->getDashboardStats(42);
+        $this->assertSame(1, $user42Stats['total']);
+
+        // 4. Status filter test
+        $filtered = $model->getFilteredRekomendasi(null, ['status' => 'TERKIRIM']);
+        $this->assertCount(2, $filtered);
+    }
+
     public function testBeyondPhotoAccessIsLimitedToTheAssignedUser(): void
     {
         $session = session();
@@ -63,6 +87,7 @@ final class KubikelInspectionBeyondAccessTest extends CIUnitTestCase
             'ulp_id' => ['type' => 'INTEGER', 'null' => true],
             'inspector_user_id' => ['type' => 'INTEGER'],
             'nomor_inspeksi' => ['type' => 'VARCHAR', 'constraint' => 50],
+            'id_pel' => ['type' => 'VARCHAR', 'constraint' => 100, 'null' => true],
             'tgl_inspeksi' => ['type' => 'DATETIME', 'null' => true],
             'deleted_at' => ['type' => 'DATETIME', 'null' => true],
         ]);

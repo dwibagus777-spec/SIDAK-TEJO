@@ -853,7 +853,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                             <li class="nav-item <?= url_is('kubikel-inspeksi/beyond-kwh*') ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('kubikel-inspeksi/beyond-kwh') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-bolt text-warning"></i></span>
-                                    <span class="nav-link-title">Tindak Lanjut Beyond KWH</span>
+                                    <span class="nav-link-title">Monitoring Beyond KWH</span>
                                 </a>
                             </li>
                             <li class="nav-item">

@@ -20,6 +20,12 @@ class Dashboard extends BaseController
     {
         $session = session();
         $role = strtolower((string)$session->get('user_role'));
+
+        // Dedicated Executive Dashboard for Beyond KWH
+        if ($role === 'beyond_kwh') {
+            return redirect()->to(site_url('kubikel-inspeksi/beyond-kwh'));
+        }
+
         $ulpId = $session->get('user_ulp_id');
 
         // Check if user forced a specific view mode ('mobile' or 'desktop')

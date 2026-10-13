@@ -24,6 +24,26 @@ class PhotoController extends BaseController
             return $this->response->setStatusCode(404);
         }
 
+        // Authorization: check if user has access to this photo
+        // FAIL-CLOSED: deny access if helper unavailable or throws
+        $hasAccess = false;
+        if (function_exists('check_photo_access')) {
+            try {
+                $hasAccess = check_photo_access($relativePath);
+            } catch (\Throwable $e) {
+                log_message('error', '[PhotoController] check_photo_access error: ' . $e->getMessage());
+                $hasAccess = false;
+            }
+        } else {
+            log_message('error', '[PhotoController] check_photo_access helper not available - denying access');
+            $hasAccess = false;
+        }
+
+        if (!$hasAccess) {
+            log_message('warning', '[PhotoController] Akses ditolak ke foto: ' . $relativePath . ' oleh user: ' . (session()->get('user_id') ?? 'unknown'));
+            return $this->response->setStatusCode(403)->setBody('Forbidden: Access denied to this photo');
+        }
+
         $baseStorageDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . '/' : WRITEPATH . 'uploads/foto/';
 
         $candidatePaths = [
@@ -40,7 +60,7 @@ class PhotoController extends BaseController
 
                 return $this->response
                     ->setHeader('Content-Type', $mime)
-                    ->setHeader('Cache-Control', 'public, max-age=86400')
+                    ->setHeader('Cache-Control', 'private, no-store, max-age=0')
                     ->setHeader('Last-Modified', gmdate('D, d M Y H:i:s', $mtime) . ' GMT')
                     ->setBody(file_get_contents($path));
             }

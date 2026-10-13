@@ -158,7 +158,7 @@ $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');
 $routes->get('api/system/version', 'Api::version');
 
 // Persistent Photo Streaming Route (Public)
-$routes->get('foto/(:any)', 'PhotoController::show/$1');
+$routes->get('foto/(:any)', 'PhotoController::show/$1', ['filter' => 'auth']);
 
 // CR-HOTFIX-03: Public Temuan Share Route (Read-Only)
 $routes->get('temuan/share/(:segment)', 'Temuan::share/$1');

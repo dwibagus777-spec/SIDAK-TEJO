@@ -1,0 +1,236 @@
+<?php
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+
+class FixTemuanAssetFk extends Migration
+{
+    public function up()
+    {
+        $db = $this->db;
+
+        // ================================================================
+        // PRECONDITION CHECKS (Read-Only Verification)
+        // ================================================================
+
+        // 1. Verify tables exist
+        if (!$db->tableExists('temuan')) {
+            throw new \RuntimeException('[FixTemuanAssetFk] Table temuan does not exist. Aborting.');
+        }
+
+        if (!$db->tableExists('assets')) {
+            throw new \RuntimeException('[FixTemuanAssetFk] Table assets does not exist. Aborting.');
+        }
+
+        // 2. Check current asset_id column type in temuan
+        $temuanAssetCol = $db->query("
+            SELECT COLUMN_TYPE, IS_NULLABLE 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'temuan' 
+              AND COLUMN_NAME = 'asset_id'
+        ")->getRowArray();
+
+        if (!$temuanAssetCol) {
+            throw new \RuntimeException('[FixTemuanAssetFk] Column temuan.asset_id does not exist. Aborting.');
+        }
+
+        // 3. Check assets.id column type
+        $assetsIdCol = $db->query("
+            SELECT COLUMN_TYPE 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'assets' 
+              AND COLUMN_NAME = 'id'
+        ")->getRowArray();
+
+        if (!$assetsIdCol) {
+            throw new \RuntimeException('[FixTemuanAssetFk] Column assets.id does not exist. Aborting.');
+        }
+
+        // 4. Check for orphan records (temuan.asset_id referencing non-existent assets.id)
+        $orphanCount = $db->query("
+            SELECT COUNT(*) as cnt
+            FROM `temuan` t
+            LEFT JOIN `assets` a ON t.asset_id = a.id
+            WHERE t.asset_id IS NOT NULL AND a.id IS NULL
+        ")->getRowArray();
+
+        $orphanCount = (int)($orphanCount['cnt'] ?? 0);
+
+        if ($orphanCount > 0) {
+            throw new \RuntimeException("[FixTemuanAssetFk] Found {$orphanCount} orphan records in temuan.asset_id. Cannot create FK. Manual cleanup required first.");
+        }
+
+        // 5. Check if FK already exists
+        $fkExists = $db->query("
+            SELECT CONSTRAINT_NAME 
+            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'temuan' 
+              AND CONSTRAINT_NAME = 'fk_temuan_asset'
+        ")->getRowArray();
+
+        if ($fkExists) {
+            log_message('info', '[FixTemuanAssetFk] FK fk_temuan_asset already exists. Skipping creation.');
+            // Still verify column type matches
+            $isUnsigned = stripos($temuanAssetCol['COLUMN_TYPE'], 'unsigned') !== false;
+            if (!$isUnsigned) {
+                log_message('warning', '[FixTemuanAssetFk] FK exists but temuan.asset_id is SIGNED. Consider manual type fix.');
+            }
+            return;
+        }
+
+        // ================================================================
+        // MIGRATION STEPS
+        // ================================================================
+
+        $forge = \Config\Database::forge();
+
+        // Step 1: Ensure temuan.asset_id is UNSIGNED INT(11) NULL to match assets.id
+        $isUnsigned = stripos($temuanAssetCol['COLUMN_TYPE'], 'unsigned') !== false;
+        
+        if (!$isUnsigned) {
+            log_message('info', '[FixTemuanAssetFk] Converting temuan.asset_id from SIGNED to UNSIGNED...');
+            
+            // Use MODIFY COLUMN to change type
+            try {
+                $db->query("ALTER TABLE `temuan` MODIFY `asset_id` INT(11) UNSIGNED NULL DEFAULT NULL");
+                log_message('info', '[FixTemuanAssetFk] Successfully modified temuan.asset_id to UNSIGNED.');
+            } catch (\Throwable $e) {
+                log_message('error', '[FixTemuanAssetFk] Failed to modify temuan.asset_id type: ' . $e->getMessage());
+                throw $e;
+            }
+        } else {
+            log_message('info', '[FixTemuanAssetFk] temuan.asset_id is already UNSIGNED.');
+        }
+
+        // Step 2: Create the foreign key constraint
+        try {
+            $db->query("
+                ALTER TABLE `temuan` 
+                ADD CONSTRAINT `fk_temuan_asset` 
+                FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) 
+                ON DELETE SET NULL ON UPDATE CASCADE
+            ");
+            log_message('info', '[FixTemuanAssetFk] Successfully created FK fk_temuan_asset.');
+        } catch (\Throwable $e) {
+            log_message('error', '[FixTemuanAssetFk] Failed to create FK fk_temuan_asset: ' . $e->getMessage());
+            throw $e;
+        }
+
+        // ================================================================
+        // POST-MIGRATION VALIDATION
+        // ================================================================
+
+        // Verify FK exists
+        $fkVerify = $db->query("
+            SELECT CONSTRAINT_NAME 
+            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'temuan' 
+              AND CONSTRAINT_NAME = 'fk_temuan_asset'
+        ")->getRowArray();
+
+        if (!$fkVerify) {
+            log_message('error', '[FixTemuanAssetFk] POST-VERIFICATION FAILED: FK fk_temuan_asset not found after creation.');
+            throw new \RuntimeException('FK creation verification failed');
+        }
+
+        // Verify no new orphans introduced
+        $orphanVerify = $db->query("
+            SELECT COUNT(*) as cnt
+            FROM `temuan` t
+            LEFT JOIN `assets` a ON t.asset_id = a.id
+            WHERE t.asset_id IS NOT NULL AND a.id IS NULL
+        ")->getRowArray();
+
+        $orphanVerify = (int)($orphanVerify['cnt'] ?? 0);
+
+        if ($orphanVerify > 0) {
+            log_message('error', "[FixTemuanAssetFk] POST-VERIFICATION FAILED: {$orphanVerify} new orphan records detected after FK creation.");
+            throw new \RuntimeException('Orphan records detected after FK creation');
+        }
+
+        // Verify column type
+        $typeVerify = $db->query("
+            SELECT COLUMN_TYPE 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'temuan' 
+              AND COLUMN_NAME = 'asset_id'
+        ")->getRowArray();
+
+        $isUnsignedVerify = stripos($typeVerify['COLUMN_TYPE'] ?? '', 'unsigned') !== false;
+        
+        if (!$isUnsignedVerify) {
+            log_message('error', '[FixTemuanAssetFk] POST-VERIFICATION FAILED: temuan.asset_id is not UNSIGNED after migration.');
+            throw new \RuntimeException('Column type verification failed');
+        }
+
+        log_message('info', '[FixTemuanAssetFk] Migration completed successfully. FK fk_temuan_asset active, column type UNSIGNED, zero orphans.');
+    }
+
+    public function down()
+    {
+        $db = $this->db;
+
+        // Rollback: Drop FK first
+        $fkExists = $db->query("
+            SELECT CONSTRAINT_NAME 
+            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'temuan' 
+              AND CONSTRAINT_NAME = 'fk_temuan_asset'
+        ")->getRowArray();
+
+        if ($fkExists) {
+            try {
+                $db->query("ALTER TABLE `temuan` DROP FOREIGN KEY `fk_temuan_asset`");
+                log_message('info', '[FixTemuanAssetFk] Rollback: Dropped FK fk_temuan_asset.');
+            } catch (\Throwable $e) {
+                log_message('error', '[FixTemuanAssetFk] Rollback failed to drop FK: ' . $e->getMessage());
+            }
+        }
+
+        // Rollback: Determine current column type and revert appropriately
+        // Query INFORMATION_SCHEMA to get current state, don't rely on instance property
+        $currentCol = $db->query("
+            SELECT COLUMN_TYPE 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'temuan' 
+              AND COLUMN_NAME = 'asset_id'
+        ")->getRowArray();
+
+        if ($currentCol) {
+            $currentType = $currentCol['COLUMN_TYPE'];
+            $isCurrentlyUnsigned = stripos($currentType, 'unsigned') !== false;
+            
+            // If currently UNSIGNED, revert to signed equivalent
+            // If already signed, keep as-is (idempotent rollback)
+            if ($isCurrentlyUnsigned) {
+                // Extract base type (e.g., "INT(11) UNSIGNED" -> "INT(11)")
+                $baseType = preg_replace('/\s+UNSIGNED/i', '', $currentType);
+                // Ensure NULL DEFAULT NULL is present
+                if (stripos($baseType, 'DEFAULT') === false) {
+                    $baseType .= ' NULL DEFAULT NULL';
+                }
+                
+                try {
+                    $db->query("ALTER TABLE `temuan` MODIFY `asset_id` {$baseType}");
+                    log_message('info', '[FixTemuanAssetFk] Rollback: Reverted temuan.asset_id from UNSIGNED to ' . $baseType);
+                } catch (\Throwable $e) {
+                    log_message('error', '[FixTemuanAssetFk] Rollback failed to revert column type: ' . $e->getMessage());
+                }
+            } else {
+                log_message('info', '[FixTemuanAssetFk] Rollback: temuan.asset_id already signed (' . $currentType . '), no type change needed.');
+            }
+        } else {
+            log_message('warning', '[FixTemuanAssetFk] Rollback: temuan.asset_id column not found, skipping type revert.');
+        }
+
+        log_message('info', '[FixTemuanAssetFk] Rollback completed.');
+    }
+}

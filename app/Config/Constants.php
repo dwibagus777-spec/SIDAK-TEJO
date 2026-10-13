@@ -99,6 +99,103 @@ defined('EXIT__AUTO_MAX')      || define('EXIT__AUTO_MAX', 125);    // highest a
  |--------------------------------------------------------------------------
  | Centralized path for user uploaded runtime photos outside deployment root.
  */
-defined('SIDAK_STORAGE_PATH') || define('SIDAK_STORAGE_PATH', is_dir('/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/') 
-    ? '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/' 
-    : WRITEPATH . 'uploads/foto/');
+/*
+ * Resolve persistent storage outside the deployed web root.
+ * Hostinger File Manager shows sidak_storage beside public_html, so try
+ * paths derived from the runtime root and known account locations first.
+ * Never silently fall back to a deploy-managed public/foto directory.
+ * 
+ * Priority:
+ * 1. Explicit SIDAK_STORAGE_PATH env var (manual override)
+ * 2. Environment-aware: staging -> staging path, production -> production path
+ * 3. Candidate auto-detection (staging path before production path)
+ */
+if (!defined('SIDAK_STORAGE_PATH')) {
+    // 1. Explicit override via environment variable — validate matches environment
+    $explicitPath = getenv('SIDAK_STORAGE_PATH');
+    $env = getenv('CI_ENVIRONMENT') ?: ENVIRONMENT;
+    $isStaging = ($env === 'staging');
+    
+    if ($explicitPath !== false && $explicitPath !== '') {
+        // Explicit path provided - validate it exists, is writable, and matches environment
+        if (!is_dir($explicitPath)) {
+            throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set but directory does not exist: ' . $explicitPath);
+        }
+        if (!is_writable($explicitPath)) {
+            throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set but directory is not writable: ' . $explicitPath);
+        }
+        
+        // Resolve canonical path to prevent symlink/relative path bypass
+        $canonicalPath = realpath($explicitPath);
+        if ($canonicalPath === false) {
+            throw new RuntimeException('SIDAK_STORAGE_PATH cannot be resolved to canonical path: ' . $explicitPath);
+        }
+        $canonicalPath = rtrim($canonicalPath, '/\\') . DIRECTORY_SEPARATOR;
+        
+        // Validate explicit path matches current environment using canonical path
+        if ($isStaging) {
+            // Staging: canonical path MUST be under staging storage directory
+            $allowedStagingBase = realpath('/home/u532206332/sidak_storage_staging');
+            if ($allowedStagingBase === false) {
+                throw new RuntimeException('Staging storage base directory not found: /home/u532206332/sidak_storage_staging. Cannot validate staging storage path.');
+            }
+            $allowedStagingBase = rtrim($allowedStagingBase, '/\\') . DIRECTORY_SEPARATOR;
+            if (!str_starts_with($canonicalPath, $allowedStagingBase)) {
+                throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set to non-staging path but CI_ENVIRONMENT=staging. Use path under ' . $allowedStagingBase . ' or unset SIDAK_STORAGE_PATH for auto-detection.');
+            }
+        } else {
+            // Production: canonical path MUST NOT be under staging storage directory
+            $stagingBase = realpath('/home/u532206332/sidak_storage_staging');
+            if ($stagingBase === false) {
+                // If staging base doesn't exist, we can't validate against it, but that's ok for production
+                // Just skip the staging path check
+            } else {
+                $stagingBase = rtrim($stagingBase, '/\\') . DIRECTORY_SEPARATOR;
+                if (str_starts_with($canonicalPath, $stagingBase)) {
+                    throw new RuntimeException('SIDAK_STORAGE_PATH explicitly set to staging path but CI_ENVIRONMENT=production. Use production storage path or unset SIDAK_STORAGE_PATH for auto-detection.');
+                }
+            }
+        }
+        define('SIDAK_STORAGE_PATH', $canonicalPath);
+    } else {
+        // 2. Environment-aware prioritization (no explicit path set)
+
+        // Candidates ordered by environment priority
+        if ($isStaging) {
+            // Staging: ONLY staging paths — NO production fallback
+            $sidakStorageCandidates = [
+                '/home/u532206332/sidak_storage_staging/foto/',
+                rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage_staging/foto/',
+                rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage_staging/foto/',
+            ];
+        } else {
+            // Production: ONLY production paths — NO staging fallback
+            $sidakStorageCandidates = [
+                '/home/u532206332/sidak_storage/foto/',
+                rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage/foto/',
+                rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage/foto/',
+                '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/',
+            ];
+        }
+
+        $sidakStoragePath = null;
+        foreach ($sidakStorageCandidates as $candidate) {
+            $candidate = rtrim($candidate, '/\\') . DIRECTORY_SEPARATOR;
+            if (is_dir($candidate) && is_writable($candidate)) {
+                $sidakStoragePath = $candidate;
+                break;
+            }
+        }
+
+        // Fail-safe: do not silently write to deploy-managed web root
+        if ($sidakStoragePath === null) {
+            if ($isStaging) {
+                // Staging must have its own storage configured
+                throw new RuntimeException('SIDAK_STORAGE_PATH not resolved for staging. Configure SIDAK_STORAGE_PATH env var or ensure /home/u532206332/sidak_storage_staging/foto/ exists and is writable.');
+            }
+            define('SIDAK_STORAGE_PATH', '/home/u532206332/sidak_storage/foto/');
+        } else {
+            define('SIDAK_STORAGE_PATH', $sidakStoragePath);
+        }
+    }
+}

@@ -150,8 +150,93 @@ class KubikelInspectionController extends BaseController
             'Pembuatan inspeksi baru'
         );
 
-        return redirect()->to(site_url('kubikel-inspeksi/edit/' . $inspeksiId))
-            ->with('success', 'Inspeksi berhasil dibuat. Nomor: ' . $nomorInspeksi);
+        // Handle upload foto inspeksi (multiple)
+        $files = $this->request->getFiles();
+        $uploadedCount = 0;
+        $uploadErrors = [];
+
+        if (isset($files['fotos']) && is_array($files['fotos'])) {
+            $allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+            $maxSize = 10 * 1024 * 1024; // 10MB per file
+
+            $storageRootPath = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') : WRITEPATH . 'uploads' . DIRECTORY_SEPARATOR . 'foto';
+            if (!is_dir($storageRootPath)) {
+                @mkdir($storageRootPath, 0775, true);
+            }
+            $storageRoot = realpath($storageRootPath) ?: $storageRootPath;
+
+            $relativeDirectory = 'kubikel_inspeksi' . DIRECTORY_SEPARATOR . $inspeksiId;
+            $targetDirectory = $storageRoot . DIRECTORY_SEPARATOR . $relativeDirectory;
+
+            foreach ($files['fotos'] as $file) {
+                if (!$file || !$file->isValid() || $file->hasMoved()) {
+                    continue;
+                }
+
+                $mimeType = $file->getMimeType();
+                $fileSize = $file->getSize();
+
+                if (!in_array($mimeType, $allowedMimes, true)) {
+                    $uploadErrors[] = "File '{$file->getClientName()}' diabaikan: format harus JPEG, PNG, atau WebP.";
+                    continue;
+                }
+
+                if ($fileSize > $maxSize) {
+                    $uploadErrors[] = "File '{$file->getClientName()}' diabaikan: ukuran melebihi 10MB.";
+                    continue;
+                }
+
+                try {
+                    if (!is_dir($targetDirectory) && !@mkdir($targetDirectory, 0775, true) && !is_dir($targetDirectory)) {
+                        throw new \RuntimeException('Direktori storage foto tidak dapat dibuat.');
+                    }
+                    $fileName = $file->getRandomName();
+                    $file->move($targetDirectory, $fileName);
+
+                    $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', $relativeDirectory . DIRECTORY_SEPARATOR . $fileName);
+
+                    $fotoData = [
+                        'inspeksi_kubikel_id' => $inspeksiId,
+                        'checklist_id'        => null,
+                        'kategori'            => 'TEMUAN',
+                        'nama_file'           => $fileName,
+                        'path_file'           => $relativePath,
+                        'mime_type'           => $mimeType,
+                        'ukuran'              => $fileSize,
+                        'deskripsi'           => 'Foto kondisi inspeksi lapangan',
+                        'uploaded_by'         => $userId,
+                    ];
+
+                    $this->fotoModel->insert($fotoData);
+                    $uploadedCount++;
+                } catch (\Throwable $e) {
+                    log_message('error', '[KUBIKEL_FOTO_STORE] ' . $e->getMessage());
+                    $uploadErrors[] = "Gagal mengunggah '{$file->getClientName()}': " . $e->getMessage();
+                }
+            }
+
+            if ($uploadedCount > 0) {
+                $this->historiModel->logPerubahan(
+                    $inspeksiId,
+                    'TEMUAN',
+                    null,
+                    "{$uploadedCount} foto diunggah saat pembuatan inspeksi",
+                    $userId,
+                    'Upload foto inspeksi'
+                );
+            }
+        }
+
+        $successMsg = 'Inspeksi berhasil dibuat. Nomor: ' . $nomorInspeksi;
+        if ($uploadedCount > 0) {
+            $successMsg .= ' (' . $uploadedCount . ' foto kondisi lapangan berhasil disimpan).';
+        }
+        if (!empty($uploadErrors)) {
+            session()->setFlashdata('warning', implode(' ', $uploadErrors));
+        }
+
+        return redirect()->to(site_url('kubikel-inspeksi/detail/' . $inspeksiId))
+            ->with('success', $successMsg);
     }
 
     public function edit(int $id)

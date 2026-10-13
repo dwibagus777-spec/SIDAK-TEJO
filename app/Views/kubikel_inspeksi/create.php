@@ -36,7 +36,7 @@
             <h5 class="mb-0">Informasi Inspeksi</h5>
         </div>
         <div class="card-body">
-            <form action="<?= site_url('kubikel-inspeksi/store') ?>" method="post">
+            <form action="<?= site_url('kubikel-inspeksi/store') ?>" method="post" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <div class="row g-3">
                     <div class="col-md-4">
@@ -134,6 +134,23 @@
                         <label for="catatan_umum" class="form-label fw-medium">Detail Temuan</label>
                         <textarea name="catatan_umum" id="catatan_umum" class="form-control" rows="3" placeholder="Detail temuan untuk inspeksi gardu ini..."><?= esc(old('catatan_umum', '')) ?></textarea>
                     </div>
+
+                    <!-- Bagian Foto Inspeksi -->
+                    <div class="col-12 mt-3">
+                        <label class="form-label fw-medium d-flex justify-content-between align-items-center mb-1">
+                            <span><i class="bi bi-camera me-1 text-primary"></i>Foto Inspeksi</span>
+                            <span class="badge bg-light text-secondary border">Maks. 10 MB per foto (JPEG, PNG, WebP)</span>
+                        </label>
+                        <div class="border rounded p-3 bg-light text-center position-relative" id="foto-drop-zone">
+                            <input type="file" name="fotos[]" id="foto_inspeksi" class="form-control d-none" multiple accept="image/jpeg,image/png,image/webp">
+                            <div class="py-3" id="foto-upload-prompt" style="cursor: pointer;" onclick="document.getElementById('foto_inspeksi').click();">
+                                <i class="bi bi-cloud-arrow-up text-primary fs-1 mb-2 d-block"></i>
+                                <div class="fw-semibold text-dark">Klik untuk memilih foto dari galeri / perangkat</div>
+                                <div class="small text-muted">Dapat memilih beberapa foto kondisi gardu / temuan sekaligus</div>
+                            </div>
+                            <div id="foto-preview-grid" class="row g-2 mt-2 text-start d-none"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <hr class="my-4">
@@ -181,6 +198,103 @@
 
         // Initial filter
         filterPenyulang();
+
+        // Photo preview & removal management
+        const fotoInput = document.getElementById('foto_inspeksi');
+        const previewGrid = document.getElementById('foto-preview-grid');
+        let selectedFiles = new DataTransfer();
+
+        fotoInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            const maxSize = 10 * 1024 * 1024; // 10MB
+
+            files.forEach(file => {
+                if (!allowedTypes.includes(file.type)) {
+                    alert('File "' + file.name + '" bukan format gambar yang didukung (JPEG, PNG, WebP).');
+                    return;
+                }
+                if (file.size > maxSize) {
+                    alert('Ukuran file "' + file.name + '" melebihi 10MB.');
+                    return;
+                }
+                // Hindari duplikasi file dengan nama dan ukuran yang sama
+                let isDuplicate = false;
+                for (let i = 0; i < selectedFiles.files.length; i++) {
+                    if (selectedFiles.files[i].name === file.name && selectedFiles.files[i].size === file.size) {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+                if (!isDuplicate) {
+                    selectedFiles.items.add(file);
+                }
+            });
+
+            fotoInput.files = selectedFiles.files;
+            renderPreviews();
+        });
+
+        function renderPreviews() {
+            previewGrid.innerHTML = '';
+            if (selectedFiles.files.length === 0) {
+                previewGrid.classList.add('d-none');
+                return;
+            }
+            previewGrid.classList.remove('d-none');
+
+            Array.from(selectedFiles.files).forEach((file, index) => {
+                const col = document.createElement('div');
+                col.className = 'col-6 col-sm-4 col-md-3 col-xl-2';
+
+                const card = document.createElement('div');
+                card.className = 'card h-100 shadow-sm border position-relative overflow-hidden';
+
+                const img = document.createElement('img');
+                img.className = 'card-img-top';
+                img.style.height = '110px';
+                img.style.objectFit = 'cover';
+                img.src = URL.createObjectURL(file);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-0 rounded-circle d-flex align-items-center justify-content-center';
+                removeBtn.style.width = '24px';
+                removeBtn.style.height = '24px';
+                removeBtn.title = 'Hapus foto ini';
+                removeBtn.innerHTML = '<i class="bi bi-x fs-6"></i>';
+                removeBtn.onclick = function(ev) {
+                    ev.stopPropagation();
+                    removeFile(index);
+                };
+
+                const body = document.createElement('div');
+                body.className = 'p-1 text-center bg-white';
+                const nameSpan = document.createElement('div');
+                nameSpan.className = 'small text-truncate text-muted';
+                nameSpan.style.fontSize = '0.75rem';
+                nameSpan.textContent = file.name;
+                body.appendChild(nameSpan);
+
+                card.appendChild(img);
+                card.appendChild(removeBtn);
+                card.appendChild(body);
+                col.appendChild(card);
+                previewGrid.appendChild(col);
+            });
+        }
+
+        function removeFile(indexToRemove) {
+            const newTransfer = new DataTransfer();
+            Array.from(selectedFiles.files).forEach((file, idx) => {
+                if (idx !== indexToRemove) {
+                    newTransfer.items.add(file);
+                }
+            });
+            selectedFiles = newTransfer;
+            fotoInput.files = selectedFiles.files;
+            renderPreviews();
+        }
     });
 </script>
 <?= $this->endSection() ?>

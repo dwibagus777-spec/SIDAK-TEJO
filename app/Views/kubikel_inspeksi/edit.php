@@ -135,24 +135,16 @@ $success = session()->getFlashdata('success');
                             <label for="id_pel" class="form-label fw-medium">ID Pelanggan (Opsional)</label>
                             <input type="text" name="id_pel" id="id_pel" class="form-control" maxlength="100" value="<?= esc(old('id_pel', $inspeksi['id_pel'] ?? '')) ?>">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
+                            <label for="nama_pelanggan" class="form-label fw-medium">Nama Pelanggan (Opsional)</label>
+                            <input type="text" name="nama_pelanggan" id="nama_pelanggan" class="form-control" maxlength="255" value="<?= esc(old('nama_pelanggan', $inspeksi['nama_pelanggan'] ?? '')) ?>">
+                        </div>
+                        <div class="col-md-4">
                             <label for="tgl_inspeksi" class="form-label fw-medium">Tanggal Inspeksi <span class="text-danger">*</span></label>
                             <input type="date" name="tgl_inspeksi" id="tgl_inspeksi" class="form-control" required value="<?= esc(old('tgl_inspeksi', $inspeksi['tgl_inspeksi'] ?? '')) ?>">
                         </div>
-                        <div class="col-md-3">
-                            <label for="waktu_mulai" class="form-label fw-medium">Waktu Mulai</label>
-                            <input type="time" name="waktu_mulai" id="waktu_mulai" class="form-control" value="<?= esc(old('waktu_mulai', $inspeksi['waktu_mulai'] ?? '')) ?>">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="waktu_selesai" class="form-label fw-medium">Waktu Selesai</label>
-                            <input type="time" name="waktu_selesai" id="waktu_selesai" class="form-control" value="<?= esc(old('waktu_selesai', $inspeksi['waktu_selesai'] ?? '')) ?>">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-medium">Petugas</label>
-                            <input type="text" class="form-control" value="<?= esc($inspeksi['inspector_user_id'] ?? '') ?>" readonly>
-                        </div>
                         <div class="col-12">
-                            <label for="catatan_umum" class="form-label fw-medium">Catatan Umum</label>
+                            <label for="catatan_umum" class="form-label fw-medium">Detail Temuan</label>
                             <textarea name="catatan_umum" id="catatan_umum" class="form-control" rows="3"><?= esc(old('catatan_umum', $inspeksi['catatan_umum'] ?? '')) ?></textarea>
                         </div>
                     </div>

@@ -36,9 +36,12 @@
             'Gardu Induk' => $inspeksi['gardu_induk_id'] ?? '-',
             'Aset' => $inspeksi['asset_id'] ?? '-',
             'ID Pelanggan' => $inspeksi['id_pel'] ?? '-',
+            'Nama Pelanggan' => $inspeksi['nama_pelanggan'] ?? '-',
+            'Kepemilikan Gardu' => $inspeksi['kepemilikan_gardu'] ?? '-',
+            'Jenis Gardu' => $inspeksi['jenis_gardu'] ?? '-',
             'Petugas' => $inspeksi['inspector_user_id'] ?? '-',
+            'Tanggal Inspeksi' => $inspeksi['tgl_inspeksi'] ?? '-',
             'Status Temuan' => $inspeksi['status_temuan'] ?? '-',
-            'Waktu' => trim(($inspeksi['waktu_mulai'] ?? '') . ' - ' . ($inspeksi['waktu_selesai'] ?? ''), ' -') ?: '-',
         ] as $label => $value): ?>
             <div class="col-sm-6 col-lg-4">
                 <div class="card shadow-sm h-100"><div class="card-body">
@@ -49,7 +52,7 @@
         <?php endforeach; ?>
         <div class="col-12">
             <div class="card shadow-sm"><div class="card-body">
-                <div class="small text-muted">Catatan Umum</div>
+                <div class="small text-muted">Detail Temuan</div>
                 <div><?= nl2br(esc($inspeksi['catatan_umum'] ?? '-')) ?></div>
             </div></div>
         </div>

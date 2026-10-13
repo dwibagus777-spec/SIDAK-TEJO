@@ -95,16 +95,22 @@
 
                     <div class="col-md-4">
                         <label for="id_pel" class="form-label fw-medium">ID Pelanggan (Opsional)</label>
-                        <input type="text" name="id_pel" id="id_pel" class="form-control" placeholder="ID Pelanggan / IDPEL" maxlength="100">
+                        <input type="text" name="id_pel" id="id_pel" class="form-control" placeholder="ID Pelanggan / IDPEL" maxlength="100" value="<?= esc(old('id_pel', '')) ?>">
                         <div class="form-text">Untuk inspeksi aset pelanggan / Beyond KWH</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="nama_pelanggan" class="form-label fw-medium">Nama Pelanggan (Opsional)</label>
+                        <input type="text" name="nama_pelanggan" id="nama_pelanggan" class="form-control" placeholder="Nama Pelanggan" maxlength="255" value="<?= esc(old('nama_pelanggan', '')) ?>">
+                        <div class="form-text">Nama pemilik gardu / instalasi pelanggan</div>
                     </div>
 
                     <!-- CR-GIS-FIX-07: Kepemilikan & Jenis Gardu -->
                     <div class="col-md-4">
                         <label for="kepemilikan_gardu" class="form-label fw-medium">Kepemilikan Gardu <span class="text-danger">*</span></label>
                         <select name="kepemilikan_gardu" id="kepemilikan_gardu" class="form-select" required>
-                            <option value="PLN">PLN</option>
-                            <option value="PELANGGAN">PELANGGAN (Kubikel Pelanggan)</option>
+                            <option value="PLN" <?= old('kepemilikan_gardu') === 'PLN' ? 'selected' : '' ?>>PLN</option>
+                            <option value="PELANGGAN" <?= old('kepemilikan_gardu') === 'PELANGGAN' ? 'selected' : '' ?>>PELANGGAN (Kubikel Pelanggan)</option>
                         </select>
                         <div class="form-text">PLN = gardu sendiri; PELANGGAN = kubikel pelanggan</div>
                     </div>
@@ -112,38 +118,21 @@
                     <div class="col-md-4" id="field-jenis-gardu">
                         <label for="jenis_gardu" class="form-label fw-medium">Jenis Gardu <span class="text-danger">*</span></label>
                         <select name="jenis_gardu" id="jenis_gardu" class="form-select" required>
-                            <option value="KUBIKEL">KUBIKEL</option>
-                            <option value="GARDU_KONVENSIONAL">GARDU KONVENSIONAL</option>
+                            <option value="KUBIKEL" <?= old('jenis_gardu') === 'KUBIKEL' ? 'selected' : '' ?>>KUBIKEL</option>
+                            <option value="GARDU_KONVENSIONAL" <?= old('jenis_gardu') === 'GARDU_KONVENSIONAL' ? 'selected' : '' ?>>GARDU KONVENSIONAL</option>
                         </select>
                         <div class="form-text">Kubikel = Metal Clad; Konvensional = terbuka/pasangan batu</div>
                     </div>
                     <!-- END CR-GIS-FIX-07 -->
 
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label for="tgl_inspeksi" class="form-label fw-medium">Tanggal Inspeksi <span class="text-danger">*</span></label>
-                        <input type="date" name="tgl_inspeksi" id="tgl_inspeksi" class="form-control" required value="<?= date('Y-m-d') ?>">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="waktu_mulai" class="form-label fw-medium">Waktu Mulai</label>
-                        <input type="time" name="waktu_mulai" id="waktu_mulai" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="waktu_selesai" class="form-label fw-medium">Waktu Selesai</label>
-                        <input type="time" name="waktu_selesai" id="waktu_selesai" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="inspector_id" class="form-label fw-medium">Petugas</label>
-                        <input type="text" id="inspector_id" class="form-control" value="<?= esc($inspectorId ?? '') ?>" readonly>
-                        <input type="hidden" name="inspector_user_id" value="<?= esc($inspectorId ?? '') ?>">
-                        <div class="form-text">Otomatis diisi dengan user yang login</div>
+                        <input type="date" name="tgl_inspeksi" id="tgl_inspeksi" class="form-control" required value="<?= esc(old('tgl_inspeksi', date('Y-m-d'))) ?>">
                     </div>
 
                     <div class="col-12">
-                        <label for="catatan_umum" class="form-label fw-medium">Catatan Umum</label>
-                        <textarea name="catatan_umum" id="catatan_umum" class="form-control" rows="3" placeholder="Catatan tambahan untuk inspeksi ini..."></textarea>
+                        <label for="catatan_umum" class="form-label fw-medium">Detail Temuan</label>
+                        <textarea name="catatan_umum" id="catatan_umum" class="form-control" rows="3" placeholder="Detail temuan untuk inspeksi gardu ini..."><?= esc(old('catatan_umum', '')) ?></textarea>
                     </div>
                 </div>
 

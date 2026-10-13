@@ -21,6 +21,7 @@ class InspeksiKubikelModel extends Model
         'gardu_induk_id',
         'asset_id',
         'id_pel',
+        'nama_pelanggan',
         'kepemilikan_gardu',
         'jenis_gardu',
         'inspector_user_id',

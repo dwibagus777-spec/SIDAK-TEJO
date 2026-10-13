@@ -86,6 +86,14 @@ class MigrateController extends BaseController
                 }
             }
 
+            // Run AddNamaPelangganToInspeksiKubikel Migration
+            if (file_exists(APPPATH . 'Database/Migrations/2026-10-14-000001_AddNamaPelangganToInspeksiKubikel.php')) {
+                require_once APPPATH . 'Database/Migrations/2026-10-14-000001_AddNamaPelangganToInspeksiKubikel.php';
+                $npMig = new \App\Database\Migrations\AddNamaPelangganToInspeksiKubikel();
+                $npMig->up();
+                $executed[] = 'nama_pelanggan_kubikel';
+            }
+
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
             // governed reconciliation with deterministic identity proof, not pattern matching.

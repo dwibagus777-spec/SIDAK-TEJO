@@ -205,10 +205,11 @@ $success = session()->getFlashdata('success');
             <?php if ($temuan): ?>
                 <div class="table-responsive">
                     <table class="table table-striped align-middle mb-0">
-                        <thead><tr><th>Komponen</th><th>Fasa</th><th>Posisi</th><th>Deskripsi</th><th>Urgensi</th><th>Penerima Rekomendasi</th><th>Status Temuan</th></tr></thead>
+                        <thead><tr><th>Tanggal</th><th>Komponen</th><th>Fasa</th><th>Posisi</th><th>Deskripsi</th><th>Urgensi</th><th>Penerima Rekomendasi</th><th>Status Temuan</th></tr></thead>
                         <tbody>
                             <?php foreach ($temuan as $item): ?>
                                 <tr>
+                                    <td><span class="badge text-bg-light border font-monospace"><?= esc(!empty($item['tanggal_temuan']) ? date('d/m/Y', strtotime($item['tanggal_temuan'])) : (!empty($inspeksi['tgl_inspeksi']) ? date('d/m/Y', strtotime($inspeksi['tgl_inspeksi'])) : '-')) ?></span></td>
                                     <td><?= esc($item['komponen'] ?? '-') ?></td>
                                     <td><?= esc($item['fasa'] ?? '-') ?></td>
                                     <td><?= esc($item['posisi'] ?? '-') ?></td>

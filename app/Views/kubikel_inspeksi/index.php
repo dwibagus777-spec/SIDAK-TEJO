@@ -85,7 +85,7 @@
                             <tr>
                                 <td colspan="8" class="text-center py-4 text-muted">
                                     <i class="bi bi-inbox display-6 d-block mb-2"></i>
-                                    Belum ada data inspeksi kubikel
+                                    Belum ada data inspeksi gardu
                                 </td>
                             </tr>
                         <?php else: ?>

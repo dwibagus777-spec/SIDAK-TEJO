@@ -162,8 +162,9 @@
         <div class="card-header bg-white"><h2 class="h5 mb-0">Temuan dan Rekomendasi</h2></div>
         <?php if ($temuan): ?>
             <div class="table-responsive"><table class="table table-striped align-middle mb-0">
-                <thead><tr><th>Komponen</th><th>Deskripsi / Rekomendasi</th><th>Urgensi</th><th>Penerima</th><th>Status</th><?php if ($canEdit && $inspeksi['status'] !== 'DITUTUP'): ?><th>Aksi</th><?php endif; ?></tr></thead>
+                <thead><tr><th>Tanggal</th><th>Komponen</th><th>Deskripsi / Rekomendasi</th><th>Urgensi</th><th>Penerima</th><th>Status</th><?php if ($canEdit && $inspeksi['status'] !== 'DITUTUP'): ?><th>Aksi</th><?php endif; ?></tr></thead>
                 <tbody><?php foreach ($temuan as $item): ?><tr>
+                    <td><span class="badge text-bg-light border font-monospace"><?= esc(!empty($item['tanggal_temuan']) ? date('d/m/Y', strtotime($item['tanggal_temuan'])) : (!empty($inspeksi['tgl_inspeksi']) ? date('d/m/Y', strtotime($inspeksi['tgl_inspeksi'])) : '-')) ?></span></td>
                     <td><?= esc($item['komponen'] ?? '-') ?><br><span class="text-muted"><?= esc($item['fasa'] ?? '-') ?> · <?= esc($item['posisi'] ?? '-') ?></span></td>
                     <td><?= nl2br(esc($item['deskripsi_temuan'] ?? '-')) ?><br><span class="text-muted"><?= nl2br(esc($item['rekomendasi'] ?? '')) ?></span></td>
                     <td><?= esc($item['urgensi'] ?? '-') ?></td><td><?= esc($item['penerima_rekomendasi'] ?? '-') ?></td><td><?= esc($item['status_temuan'] ?? '-') ?></td>
@@ -171,6 +172,8 @@
                         <td><details><summary class="btn btn-sm btn-outline-secondary">Ubah</summary>
                             <form action="<?= site_url('kubikel-inspeksi/temuan/update/' . (int)$inspeksi['id'] . '/' . (int)$item['id']) ?>" method="post" data-ajax-form class="mt-2" style="min-width:260px">
                                 <?= csrf_field() ?>
+                                <label class="form-label small text-muted mb-0">Tanggal Temuan</label>
+                                <input type="date" name="tanggal_temuan" class="form-control form-control-sm mb-1" value="<?= esc($item['tanggal_temuan'] ?? $inspeksi['tgl_inspeksi'] ?? date('Y-m-d')) ?>">
                                 <input name="komponen" class="form-control form-control-sm mb-1" value="<?= esc($item['komponen'] ?? '') ?>" maxlength="100" required>
                                 <select name="fasa" class="form-select form-select-sm mb-1"><?php foreach (['R','S','T','N','TIDAK_BERFASA'] as $value): ?><option value="<?= $value ?>" <?= ($item['fasa'] ?? '') === $value ? 'selected' : '' ?>><?= $value ?></option><?php endforeach; ?></select>
                                 <input name="posisi" class="form-control form-control-sm mb-1" value="<?= esc($item['posisi'] ?? '') ?>" maxlength="100">
@@ -189,10 +192,11 @@
                 <h3 class="h6">Catat Temuan Baru</h3>
                 <form action="<?= site_url('kubikel-inspeksi/temuan/store/' . (int)$inspeksi['id']) ?>" method="post" data-ajax-form class="row g-2">
                     <?= csrf_field() ?>
-                    <div class="col-md-3"><input name="komponen" class="form-control" placeholder="Komponen" maxlength="100" required></div>
-                    <div class="col-md-2"><select name="fasa" class="form-select"><?php foreach (['R','S','T','N','TIDAK_BERFASA'] as $value): ?><option value="<?= $value ?>"><?= $value ?></option><?php endforeach; ?></select></div>
-                    <div class="col-md-2"><input name="posisi" class="form-control" placeholder="Posisi" maxlength="100"></div>
-                    <div class="col-md-5"><select name="checklist_id" class="form-select"><option value="">Tanpa item checklist</option><?php foreach ($checklist as $check): ?><option value="<?= (int)$check['id'] ?>"><?= esc($check['komponen'] . ' — ' . $check['item_pemeriksaan']) ?></option><?php endforeach; ?></select></div>
+                    <div class="col-md-2"><label class="form-label small text-muted mb-0">Tanggal Temuan</label><input type="date" name="tanggal_temuan" class="form-control" value="<?= esc($inspeksi['tgl_inspeksi'] ?? date('Y-m-d')) ?>" required></div>
+                    <div class="col-md-3"><label class="form-label small text-muted mb-0">Komponen</label><input name="komponen" class="form-control" placeholder="Komponen" maxlength="100" required></div>
+                    <div class="col-md-2"><label class="form-label small text-muted mb-0">Fasa</label><select name="fasa" class="form-select"><?php foreach (['R','S','T','N','TIDAK_BERFASA'] as $value): ?><option value="<?= $value ?>"><?= $value ?></option><?php endforeach; ?></select></div>
+                    <div class="col-md-2"><label class="form-label small text-muted mb-0">Posisi</label><input name="posisi" class="form-control" placeholder="Posisi" maxlength="100"></div>
+                    <div class="col-md-3"><label class="form-label small text-muted mb-0">Item Checklist</label><select name="checklist_id" class="form-select"><option value="">Tanpa item checklist</option><?php foreach ($checklist as $check): ?><option value="<?= (int)$check['id'] ?>"><?= esc($check['komponen'] . ' — ' . $check['item_pemeriksaan']) ?></option><?php endforeach; ?></select></div>
                     <div class="col-md-6"><textarea name="deskripsi_temuan" class="form-control" placeholder="Deskripsi temuan" required></textarea></div>
                     <div class="col-md-3"><select name="urgensi" class="form-select"><?php foreach (['RENDAH','SEDANG','TINGGI','KRITIS'] as $value): ?><option value="<?= $value ?>"><?= $value ?></option><?php endforeach; ?></select></div>
                     <div class="col-md-3"><select name="penerima_rekomendasi" class="form-select" required><option value="ULP">ULP</option><option value="HAR_GTT">HAR GTT</option><option value="BEYOND_KWH">Beyond KWH</option><option value="ADMINISTRATOR">Administrator</option><option value="LAINNYA">Lainnya</option></select></div>

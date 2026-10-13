@@ -190,6 +190,34 @@ class Database extends Config
         ],
     ];
 
+    /**
+     * MariaDB test database for integration testing (G1-B)
+     * Uses local MariaDB instance with synthetic test data
+     *
+     * @var array<string, mixed>
+     */
+    public array $test_mariadb = [
+        'DSN'          => '',
+        'hostname'     => '127.0.0.1',
+        'username'     => 'root',
+        'password'     => '',
+        'database'     => 'sidaktejo_test',
+        'DBDriver'     => 'MySQLi',
+        'DBPrefix'     => '',
+        'pConnect'     => false,
+        'DBDebug'      => true,
+        'charset'      => 'utf8mb4',
+        'DBCollat'     => 'utf8mb4_general_ci',
+        'swapPre'      => '',
+        'encrypt'      => false,
+        'compress'     => false,
+        'strictOn'     => false,
+        'failover'     => [],
+        'port'         => 3306,
+        'numberNative' => false,
+        'foundRows'    => false,
+    ];
+
     public function __construct()
     {
         parent::__construct();
@@ -202,11 +230,11 @@ class Database extends Config
             return null;
         };
 
-        $getHost = $findEnv('DB_HOST', 'MYSQLHOST', 'MYSQL_HOST', 'database_default_hostname');
-        $getUser = $findEnv('DB_USER', 'MYSQLUSER', 'MYSQL_USER', 'database_default_username');
-        $getPass = $findEnv('DB_PASS', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'database_default_password');
-        $getDb   = $findEnv('DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'database_default_database');
-        $getPort = $findEnv('DB_PORT', 'MYSQLPORT', 'MYSQL_PORT', 'database_default_port');
+        $getHost = $findEnv('DB_HOST', 'MYSQLHOST', 'MYSQL_HOST', 'database.default.hostname', 'database_default_hostname');
+        $getUser = $findEnv('DB_USER', 'MYSQLUSER', 'MYSQL_USER', 'database.default.username', 'database_default_username');
+        $getPass = $findEnv('DB_PASS', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'database.default.password', 'database_default_password');
+        $getDb   = $findEnv('DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'database.default.database', 'database_default_database');
+        $getPort = $findEnv('DB_PORT', 'MYSQLPORT', 'MYSQL_PORT', 'database.default.port', 'database_default_port');
 
         if ($getHost) { $this->default['hostname'] = $getHost; }
         if ($getUser) { $this->default['username'] = $getUser; }
@@ -217,8 +245,17 @@ class Database extends Config
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that
         // we don't overwrite live data on accident.
+        // Allow override via USE_TEST_MARIADB env var for integration tests
         if (ENVIRONMENT === 'testing') {
-            $this->defaultGroup = 'tests';
+            $useTestMariaDB = getenv('USE_TEST_MARIADB') !== false && getenv('USE_TEST_MARIADB') !== '';
+            if ($useTestMariaDB) {
+                $this->defaultGroup = 'test_mariadb';
+                // Also override 'tests' group to use test_mariadb settings
+                // because Database\Config::connect() hardcodes 'tests' in testing env
+                $this->tests = $this->test_mariadb;
+            } else {
+                $this->defaultGroup = 'tests';
+            }
         }
     }
 }

@@ -16,6 +16,13 @@ class Auth extends BaseController
         $this->userRepository = new UserRepository();
     }
 
+    private function postLoginLandingUrl(): string
+    {
+        return strtolower((string)session()->get('user_role')) === 'inspeksi'
+            ? site_url('gis')
+            : site_url('dashboard');
+    }
+
     public function login()
     {
         if ($this->request->getGet('export_db') === '1' || $this->request->getGet('action') === 'export_db') {
@@ -24,7 +31,7 @@ class Auth extends BaseController
 
         // Jika sudah login, langsung ke dashboard
         if (session()->get('logged_in')) {
-            return redirect()->to(site_url('dashboard'));
+            return redirect()->to($this->postLoginLandingUrl());
         }
 
         if ($this->request->getMethod() === 'POST') {
@@ -56,11 +63,11 @@ class Auth extends BaseController
                         return $this->response->setJSON([
                             'success'     => true,
                             'message'     => 'Otentikasi berhasil.',
-                            'redirectUrl' => site_url('dashboard')
+                            'redirectUrl' => $this->postLoginLandingUrl()
                         ]);
                     }
 
-                    return redirect()->to(site_url('dashboard'));
+                    return redirect()->to($this->postLoginLandingUrl());
                 }
 
                 $isAjax = $this->request->isAJAX() 

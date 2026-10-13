@@ -99,6 +99,115 @@ defined('EXIT__AUTO_MAX')      || define('EXIT__AUTO_MAX', 125);    // highest a
  |--------------------------------------------------------------------------
  | Centralized path for user uploaded runtime photos outside deployment root.
  */
-defined('SIDAK_STORAGE_PATH') || define('SIDAK_STORAGE_PATH', is_dir('/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/') 
-    ? '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto/' 
-    : WRITEPATH . 'uploads/foto/');
+/*
+ * Resolve persistent storage outside the application/document roots. Never
+ * silently fall back to a deploy-managed or environment-incompatible path.
+ */
+if (!defined('SIDAK_STORAGE_PATH')) {
+    $explicitPath = getenv('SIDAK_STORAGE_PATH');
+    $configuredEnvironment = getenv('CI_ENVIRONMENT');
+    if ($configuredEnvironment !== false && trim($configuredEnvironment) === '') {
+        throw new RuntimeException('CI_ENVIRONMENT must name a supported application environment.');
+    }
+    $env = $configuredEnvironment === false ? ENVIRONMENT : trim($configuredEnvironment);
+    if (!in_array($env, ['development', 'testing', 'staging', 'production'], true)) {
+        throw new RuntimeException('Unsupported CI_ENVIRONMENT for SIDAK_STORAGE_PATH.');
+    }
+    $isStaging = ($env === 'staging');
+
+    if (in_array($env, ['development', 'testing'], true)) {
+        $localStoragePath = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'sidak-tejo-' . $env . '-storage' . DIRECTORY_SEPARATOR;
+        if (!is_dir($localStoragePath) && !@mkdir($localStoragePath, 0770, true) && !is_dir($localStoragePath)) {
+            throw new RuntimeException('Unable to initialize isolated SIDAK_STORAGE_PATH for ' . $env . '.');
+        }
+
+        $canonicalLocalPath = realpath($localStoragePath);
+        if ($canonicalLocalPath === false || !is_writable($canonicalLocalPath)) {
+            throw new RuntimeException('Isolated SIDAK_STORAGE_PATH for ' . $env . ' is unavailable or not writable.');
+        }
+
+        define('SIDAK_STORAGE_PATH', rtrim($canonicalLocalPath, '/\\') . DIRECTORY_SEPARATOR);
+    } else {
+        if ($isStaging) {
+            $sidakStorageCandidates = [
+                '/home/u532206332/sidak_storage_staging/foto',
+                '/home/u532206332/domains/sidaktejo.site/sidak_storage_staging/foto',
+                rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage_staging/foto',
+                rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage_staging/foto',
+            ];
+        } else {
+            // Production: ONLY production paths — NO staging fallback
+            $sidakStorageCandidates = [
+                '/home/u532206332/sidak_storage/foto',
+                rtrim(dirname(dirname(rtrim(FCPATH, '/\\'))), '/\\') . '/sidak_storage/foto',
+                rtrim(dirname(rtrim(ROOTPATH, '/\\')), '/\\') . '/sidak_storage/foto',
+                '/home/u532206332/domains/sidaktejo.site/sidak_storage/foto',
+            ];
+        }
+        $storageBaseCandidates = $sidakStorageCandidates;
+
+        $allowedStorageBases = [];
+        foreach ($storageBaseCandidates as $baseCandidate) {
+            $canonicalBase = realpath($baseCandidate);
+            if ($canonicalBase !== false && is_dir($canonicalBase)) {
+                $allowedStorageBases[] = rtrim($canonicalBase, '/\\');
+            }
+        }
+
+        $documentRoots = [];
+        foreach ([FCPATH, ROOTPATH] as $documentRootCandidate) {
+            $canonicalDocumentRoot = realpath($documentRootCandidate);
+            if ($canonicalDocumentRoot !== false && is_dir($canonicalDocumentRoot)) {
+                $documentRoots[] = rtrim($canonicalDocumentRoot, '/\\');
+            }
+        }
+
+        $isWithinDirectory = static function (string $path, string $directory): bool {
+            return $path === $directory || str_starts_with($path, $directory . DIRECTORY_SEPARATOR);
+        };
+
+        $canonicalStoragePath = static function (string $path) use ($allowedStorageBases, $documentRoots, $isWithinDirectory, $env): string {
+            if (!is_dir($path) || !is_writable($path)) {
+                throw new RuntimeException('SIDAK_STORAGE_PATH must be an existing writable directory for ' . $env . '.');
+            }
+
+            $canonicalPath = realpath($path);
+            if ($canonicalPath === false) {
+                throw new RuntimeException('SIDAK_STORAGE_PATH cannot be resolved for ' . $env . '.');
+            }
+            $canonicalPath = rtrim($canonicalPath, '/\\');
+
+            foreach ($documentRoots as $documentRoot) {
+                if ($isWithinDirectory($canonicalPath, $documentRoot)) {
+                    throw new RuntimeException('SIDAK_STORAGE_PATH must be outside the application and document roots.');
+                }
+            }
+
+            foreach ($allowedStorageBases as $allowedBase) {
+                if ($isWithinDirectory($canonicalPath, $allowedBase)) {
+                    return $canonicalPath . DIRECTORY_SEPARATOR;
+                }
+            }
+
+            throw new RuntimeException('SIDAK_STORAGE_PATH is outside the configured storage area for ' . $env . '.');
+        };
+
+        if ($explicitPath !== false && trim($explicitPath) !== '') {
+            define('SIDAK_STORAGE_PATH', $canonicalStoragePath(trim($explicitPath)));
+        } else {
+            $sidakStoragePath = null;
+            foreach ($allowedStorageBases as $allowedBase) {
+                if (is_dir($allowedBase) && is_writable($allowedBase)) {
+                    $sidakStoragePath = $canonicalStoragePath($allowedBase);
+                    break;
+                }
+            }
+
+            if ($sidakStoragePath === null) {
+                throw new RuntimeException('SIDAK_STORAGE_PATH is not configured to an existing writable private directory for ' . $env . '.');
+            }
+
+            define('SIDAK_STORAGE_PATH', $sidakStoragePath);
+        }
+    }
+}

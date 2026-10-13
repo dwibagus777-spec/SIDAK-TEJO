@@ -286,6 +286,204 @@ if (!function_exists('get_user_role_scoping')) {
     }
 }
 
+if (!function_exists('check_photo_access')) {
+    /**
+     * Check if authenticated user has access to a photo by relative path.
+     * Searches temuan, eviden (kubikel/trafo/management), work orders, assets for the photo.
+     * Returns true if user's ULP scope matches the record's ULP, or user is cross-ULP role AND photo exists in DB.
+     * Uses parameter binding to prevent SQL injection. Checks ALL matching records across ULPs.
+     *
+     * @param string $photoRelativePath Relative path of photo (e.g., "management/name.jpg" or "name.jpg")
+     * @param string|null $dbGroup Optional database group to use (defaults to default group)
+     * @return bool True if access allowed, false otherwise
+     */
+    function check_photo_access(string $photoRelativePath, ?string $dbGroup = null): bool
+    {
+        $session = session();
+        if (!$session->get('logged_in')) {
+            return false;
+        }
+
+        $scope = get_user_role_scoping();
+        $userRole = $scope['role'];
+        $userUlpId = $scope['ulp_id'];
+
+        // Cross-ULP roles from get_user_role_scoping(): administrator, pdkb, har_crane
+        $crossUlpRoles = ['administrator', 'pdkb', 'har_crane'];
+
+        // Normalize the relative path (decode URL, convert separators, remove traversal attempts)
+        $cleanRelativePath = str_replace('\\', '/', rawurldecode(trim($photoRelativePath)));
+        if ($cleanRelativePath === '' || $cleanRelativePath === '.' || $cleanRelativePath === '..' || str_contains($cleanRelativePath, "\0")) {
+            return false;
+        }
+        $segments = explode('/', $cleanRelativePath);
+        foreach ($segments as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                return false;
+            }
+        }
+        $cleanRelativePath = implode('/', $segments);
+
+        // Extract basename for tables that only store filename
+        $cleanBasename = basename($cleanRelativePath);
+
+        $db = \Config\Database::connect($dbGroup ?? 'default');
+
+        if (str_starts_with($cleanRelativePath, 'kubikel_inspeksi/')) {
+            $photos = $db->table('inspeksi_kubikel_foto foto')
+                ->select('foto.checklist_id, inspeksi.id AS inspeksi_id, inspeksi.ulp_id, inspeksi.inspector_user_id')
+                ->join('inspeksi_kubikel inspeksi', 'inspeksi.id = foto.inspeksi_kubikel_id')
+                ->where('foto.path_file', $cleanRelativePath)
+                ->get()->getResultArray();
+
+            foreach ($photos as $photo) {
+                if (in_array($userRole, ['administrator', 'admin', 'admin_pusat'], true)
+                    || ($userRole !== 'beyond_kwh' && (int)$photo['inspector_user_id'] === (int)$session->get('user_id'))) {
+                    return true;
+                }
+
+                if (in_array($userRole, ['ulp', 'har_gtt'], true)
+                    && $userUlpId !== null
+                    && (int)$photo['ulp_id'] === (int)$userUlpId) {
+                    return true;
+                }
+
+                if ($userRole === 'beyond_kwh' && !empty($photo['checklist_id'])) {
+                    $assignedFinding = $db->table('inspeksi_kubikel_temuan temuan')
+                        ->join('inspeksi_kubikel_rekomendasi rekomendasi', 'rekomendasi.temuan_id = temuan.id')
+                        ->where('temuan.inspeksi_kubikel_id', (int)$photo['inspeksi_id'])
+                        ->where('temuan.checklist_id', (int)$photo['checklist_id'])
+                        ->where('rekomendasi.penerima', 'BEYOND_KWH')
+                        ->where('rekomendasi.penerima_user_id', (int)$session->get('user_id'))
+                        ->countAllResults() > 0;
+                    if ($assignedFinding) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        // If no ULP filter and not cross-ULP, deny
+        if ($userUlpId === null && !in_array($userRole, $crossUlpRoles, true)) {
+            return false;
+        }
+
+        // Helper: check if photo is associated with a ULP record that matches user scope
+        $checkUlpMatch = function (array $record) use ($userRole, $crossUlpRoles, $userUlpId): bool {
+            if (!isset($record['ulp_id']) || $record['ulp_id'] === null) {
+                return false;
+            }
+            if (in_array($userRole, $crossUlpRoles, true)) {
+                return true;
+            }
+            return (int)$record['ulp_id'] === (int)$userUlpId;
+        };
+
+        // 1. Check temuan table - match FULL relative path against foto_path + foto JSON array
+        // Get records where foto JSON contains the basename, then verify foto_path matches the subfolder
+        $escapedBasename = $db->escape($cleanBasename);
+        $temuanResults = $db->table('temuan')
+            ->select('ulp_id, foto_path')
+            ->where('deleted_at IS NULL')
+            ->where("JSON_CONTAINS(`foto`, JSON_QUOTE({$escapedBasename}))")
+            ->get()->getResultArray();
+        foreach ($temuanResults as $record) {
+            // Construct full path from foto_path + basename
+            $recordFotoPath = rtrim($record['foto_path'] ?? 'foto/', '/') . '/';
+            $recordFullPath = $recordFotoPath . $cleanBasename;
+
+            // Match the full relative path
+            if ($recordFullPath === $cleanRelativePath && $checkUlpMatch($record)) {
+                return true;
+            }
+            // Also allow match if no subfolder in request but basename matches (backward compat)
+            if ($cleanRelativePath === $cleanBasename && $checkUlpMatch($record)) {
+                return true;
+            }
+        }
+
+        // 2. Check eviden kubikel - match basename (no subfolder support in this table)
+        $fotoResults = $db->table('tb_foto_eviden fe')
+            ->join('tb_eviden_kubikel k', 'k.id_kubikel = fe.id_parent')
+            ->join('penyulang p', 'p.id = k.id_penyulang')
+            ->select('p.ulp_id')
+            ->where('fe.nama_file', $cleanBasename)
+            ->where('fe.kategori', 'KUBIKEL')
+            ->get()->getResultArray();
+        foreach ($fotoResults as $record) {
+            if ($checkUlpMatch($record)) {
+                return true;
+            }
+        }
+
+        // 3. Check eviden trafo - match basename
+        $fotoResults = $db->table('tb_foto_eviden fe')
+            ->join('tb_eviden_trafo t', 't.id_trafo = fe.id_parent')
+            ->join('penyulang p', 'p.id = t.id_penyulang')
+            ->select('p.ulp_id')
+            ->where('fe.nama_file', $cleanBasename)
+            ->where('fe.kategori', 'TRAFO')
+            ->get()->getResultArray();
+        foreach ($fotoResults as $record) {
+            if ($checkUlpMatch($record)) {
+                return true;
+            }
+        }
+
+        // 4. Check management trafo (nameplates) - these are in management/ subfolder
+        $mgmtResults = $db->table('tb_management_trafo m')
+            ->join('penyulang p', 'p.id = m.id_penyulang')
+            ->select('p.ulp_id')
+            ->where('m.foto_nameplate_lama', $cleanBasename)
+            ->orWhere('m.foto_nameplate_baru', $cleanBasename)
+            ->get()->getResultArray();
+        foreach ($mgmtResults as $record) {
+            // For management trafo, the expected path is "management/{basename}"
+            $expectedPath = 'management/' . $cleanBasename;
+            if (($cleanRelativePath === $expectedPath || $cleanRelativePath === $cleanBasename) && $checkUlpMatch($record)) {
+                return true;
+            }
+        }
+
+        // 5. Check work order photos (riwayat_tindak_lanjut) - only if table exists
+        if ($db->tableExists('riwayat_tindak_lanjut')) {
+            $woResults = $db->table('riwayat_tindak_lanjut rtl')
+                ->join('temuan te', 'te.id = rtl.temuan_id')
+                ->select('te.ulp_id')
+                ->groupStart()
+                    ->where('rtl.foto_sebelum', $cleanBasename)
+                    ->orWhere('rtl.foto_proses', $cleanBasename)
+                    ->orWhere('rtl.foto_sesudah', $cleanBasename)
+                ->groupEnd()
+                ->get()->getResultArray();
+            foreach ($woResults as $record) {
+                if ($checkUlpMatch($record)) {
+                    return true;
+                }
+            }
+        }
+
+        // 6. Check asset photos (if assets table has foto column)
+        // Assets are scoped by penyulang -> section -> ULP
+        $assetResults = $db->table('assets a')
+            ->join('sections s', 's.id = a.section_id')
+            ->join('penyulang p', 'p.id = s.penyulang_id')
+            ->select('p.ulp_id')
+            ->where('a.foto', $cleanBasename)
+            ->get()->getResultArray();
+        foreach ($assetResults as $record) {
+            if ($checkUlpMatch($record)) {
+                return true;
+            }
+        }
+
+        // Photo not found in any known record - deny access by default
+        return false;
+    }
+}
+
 if (!function_exists('get_daily_announcement')) {
     /**
      * Dapatkan kata-kata motivasi harian untuk running ticker (database-driven dengan fallback)
@@ -309,6 +507,7 @@ if (!function_exists('get_daily_announcement')) {
 if (!function_exists('get_photo_url')) {
     /**
      * Helper tunggal untuk mendapatkan URL foto dengan toleransi berkas hilang & multi-resolution (thumb/medium/full)
+     * Preserves safe subfolders (e.g., management/name.jpg) while rejecting traversal.
      */
     function get_photo_url(?string $photoName, ?string $fotoPath = 'foto/', string $size = 'full'): string
     {
@@ -328,26 +527,85 @@ if (!function_exists('get_photo_url')) {
             return $photoName;
         }
 
-        $cleanName = basename(rawurldecode($photoName));
-        if ($cleanName === '' || $cleanName === '.' || $cleanName === '..') {
+        // Preserve supported subfolders, reject traversal (same logic as resolve_photo_path)
+        $relativeName = str_replace('\\', '/', rawurldecode(trim($photoName)));
+        if ($relativeName === '' || str_contains($relativeName, "\0") || str_starts_with($relativeName, '/') || preg_match('/^[A-Za-z]:\//', $relativeName)) {
             return $placeholder;
         }
 
+        $segments = explode('/', $relativeName);
+        foreach ($segments as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                return $placeholder;
+            }
+        }
+        $relativeName = implode(DIRECTORY_SEPARATOR, $segments);
+
         $persistentDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : WRITEPATH . 'uploads/foto/';
         $candidatePaths = [
-            $persistentDir . $cleanName,
-            WRITEPATH . 'uploads/foto/' . $cleanName,
-            FCPATH . 'foto/' . $cleanName,
+            rtrim($persistentDir, '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(WRITEPATH . 'uploads/foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(FCPATH . 'foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(dirname(FCPATH) . DIRECTORY_SEPARATOR . 'foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
         ];
 
-        foreach ($candidatePaths as $path) {
+        foreach (array_unique($candidatePaths) as $path) {
             if (is_file($path) && is_readable($path)) {
                 $mtime = filemtime($path) ?: time();
-                return base_url('foto/' . rawurlencode($cleanName)) . '?v=' . $mtime;
+                return base_url('foto/' . rawurlencode($relativeName)) . '?v=' . $mtime;
             }
         }
 
-        return base_url('foto/' . rawurlencode($cleanName));
+        return base_url('foto/' . rawurlencode($relativeName));
+    }
+}
+
+if (!function_exists('resolve_photo_path')) {
+    /**
+     * Resolve actual filesystem path for a photo using the persistent storage fallback chain.
+     * Returns the first existing readable file path, or the primary persistent path for new uploads.
+     *
+     * @param string $photoName Basename or relative path from DB
+     * @param bool $forWrite If true, returns primary persistent path even if file doesn't exist (for new uploads)
+     * @return string|null Resolved absolute path, or null if invalid name
+     */
+    function resolve_photo_path(string $photoName, bool $forWrite = false): ?string
+    {
+        // Preserve supported subfolders such as management/name.jpg, while rejecting traversal.
+        $relativeName = str_replace('\\', '/', rawurldecode(trim($photoName)));
+        if ($relativeName === '' || str_contains($relativeName, "\0") || str_starts_with($relativeName, '/') || preg_match('/^[A-Za-z]:\//', $relativeName)) {
+            return null;
+        }
+
+        $segments = explode('/', $relativeName);
+        foreach ($segments as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                return null;
+            }
+        }
+        $relativeName = implode(DIRECTORY_SEPARATOR, $segments);
+
+        $persistentDir = defined('SIDAK_STORAGE_PATH')
+            ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR
+            : rtrim(WRITEPATH . 'uploads/foto/', '/\\') . DIRECTORY_SEPARATOR;
+        $candidatePaths = [
+            $persistentDir . $relativeName,
+            rtrim(WRITEPATH . 'uploads/foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(FCPATH . 'foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+            rtrim(dirname(FCPATH) . DIRECTORY_SEPARATOR . 'foto/', '/\\') . DIRECTORY_SEPARATOR . $relativeName,
+        ];
+
+        if ($forWrite) {
+            return $candidatePaths[0];
+        }
+
+        foreach (array_unique($candidatePaths) as $path) {
+            if (is_file($path) && is_readable($path)) {
+                return $path;
+            }
+        }
+
+        return null;
     }
 }
 

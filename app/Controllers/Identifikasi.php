@@ -324,11 +324,11 @@ class Identifikasi extends BaseController
             // Right Column: Image
             $photos = json_decode((string)($row['foto'] ?? ''), true) ?: [];
             if (!empty($photos)) {
-                $imagePath = FCPATH . $row['foto_path'] . $photos[0];
-                if (file_exists($imagePath)) {
+                $resolvedPath = resolve_photo_path($photos[0]);
+                if ($resolvedPath && is_file($resolvedPath)) {
                     $shape = $slide->createDrawingShape();
                     $shape->setName('Foto Temuan')
-                          ->setPath($imagePath)
+                          ->setPath($resolvedPath)
                           ->setHeight(300)
                           ->setOffsetX(510)
                           ->setOffsetY(90);

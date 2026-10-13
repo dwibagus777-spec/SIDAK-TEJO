@@ -56,23 +56,23 @@ class RemediationController extends BaseController
             return true;
         }
 
-        $auditKey = getenv('SIDAK_AUDIT_TOKEN') ?: 'sidak_transline_audit_2026';
+        $auditKey = trim((string) getenv('SIDAK_AUDIT_TOKEN'));
         $providedKey = $this->request->getGet('key')
             ?? $this->request->getVar('key')
             ?? $this->request->getHeaderLine('X-Audit-Token')
             ?? $this->request->getHeaderLine('X-API-Key');
 
-        return (!empty($providedKey) && hash_equals($auditKey, (string)$providedKey));
+        return ($auditKey !== '' && !empty($providedKey) && hash_equals($auditKey, (string)$providedKey));
     }
 
     protected function authorizeDeploy(): bool
     {
-        $deployMasterKey = getenv('SIDAK_DEPLOY_MASTER_KEY') ?: 'sidak_tejo_deploy_master_2026';
+        $deployMasterKey = trim((string) getenv('SIDAK_DEPLOY_MASTER_KEY'));
         $providedDeployKey = $this->request->getGet('deploy_key')
             ?? $this->request->getVar('deploy_key')
             ?? $this->request->getHeaderLine('X-Deploy-Master-Key');
 
-        return (!empty($providedDeployKey) && hash_equals($deployMasterKey, (string)$providedDeployKey));
+        return ($deployMasterKey !== '' && !empty($providedDeployKey) && hash_equals($deployMasterKey, (string)$providedDeployKey));
     }
 
     protected function unauthorizedResponse(string $message = 'Unauthorized: Endpoint ini memerlukan autentikasi login atau audit token yang sah.'): ResponseInterface

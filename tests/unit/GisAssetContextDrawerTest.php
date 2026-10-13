@@ -572,4 +572,47 @@ class GisAssetContextDrawerTest extends CIUnitTestCase
         $this->assertSame(0, $temuanMatCountBefore);
         $this->assertSame(0, $temuanMatCountAfter);
     }
+
+    public function testAssetFindingCountsComeFromPersistedRowsAndRemainStableOnReload(): void
+    {
+        $this->db->table('ulps')->insert(['id' => 1, 'kode_ulp' => 'ULP-COUNT', 'nama_ulp' => 'ULP Count']);
+        $this->db->table('penyulang')->insert(['id' => 10, 'ulp_id' => 1, 'kode_penyulang' => 'COUNT', 'nama_penyulang' => 'Penyulang Count']);
+        $this->db->table('sections')->insert(['id' => 100, 'penyulang_id' => 10, 'nama_section' => 'Section Count']);
+        $this->db->table('assets')->insert([
+            'id' => 510, 'kode_asset' => 'COUNT-510', 'nama_asset' => 'Aset Penghitung',
+            'section_id' => 100, 'penyulang_id' => 10, 'ulp_id' => 1,
+            'latitude' => -7.1, 'longitude' => 112.6,
+        ]);
+
+        $baseFinding = [
+            'ulp_id' => 1, 'penyulang_id' => 10, 'section_id' => 100,
+            'jenis_temuan' => 'HOTSPOT', 'pelaksana' => 'HAR GARDU',
+            'prioritas' => 'MEDIUM', 'potensi_gangguan' => 'OCR',
+            'tanggal_temuan' => '2026-01-01',
+        ];
+        $this->db->table('temuan')->insert(array_merge($baseFinding, [
+            'nomor_temuan' => 'COUNT-ACTIVE', 'asset_id' => 510, 'status' => 'BELUM',
+        ]));
+        $this->db->table('temuan')->insert(array_merge($baseFinding, [
+            'nomor_temuan' => 'COUNT-IN-PROGRESS', 'asset_id' => 510, 'status' => 'PROSES',
+        ]));
+        $this->db->table('temuan')->insert(array_merge($baseFinding, [
+            'nomor_temuan' => 'COUNT-COMPLETE', 'asset_id' => 510, 'status' => 'SELESAI',
+        ]));
+        $this->db->table('temuan')->insert(array_merge($baseFinding, [
+            'nomor_temuan' => 'COUNT-OTHER-ASSET', 'asset_id' => 999, 'status' => 'BELUM',
+        ]));
+        $this->db->table('temuan')->insert(array_merge($baseFinding, [
+            'nomor_temuan' => 'COUNT-DELETED', 'asset_id' => 510, 'status' => 'BELUM',
+            'deleted_at' => '2026-01-02 00:00:00',
+        ]));
+
+        $firstLoad = $this->contextService->getAssetContext(510, 1, 'admin_ulp');
+        $reload = $this->contextService->getAssetContext(510, 1, 'admin_ulp');
+
+        $this->assertSame(2, $firstLoad['asset']['active_findings_count']);
+        $this->assertSame(3, $firstLoad['asset']['total_findings_count']);
+        $this->assertSame($firstLoad['asset']['active_findings_count'], $reload['asset']['active_findings_count']);
+        $this->assertSame($firstLoad['asset']['total_findings_count'], $reload['asset']['total_findings_count']);
+    }
 }

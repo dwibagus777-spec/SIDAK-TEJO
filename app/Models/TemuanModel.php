@@ -22,7 +22,11 @@ class TemuanModel extends Model
         'latitude', 'longitude', 'tanggal_temuan', 'tanggal_selesai', 
         'foto', 'status', 'created_by', 'created_by_name', 'created_by_nip',
         'updated_by', 'updated_by_name', 'updated_by_nip',
-        'foto_path', 'tindak_lanjut', 'catatan_tindak_lanjut'
+        'foto_path', 'tindak_lanjut', 'catatan_tindak_lanjut',
+        'asset_id', 'component_code', 'defect_location_code', 'finding_fingerprint',
+        'first_detected_at', 'last_observed_at', 'observation_count', 'recurrence_count',
+        'is_recurring', 'is_overdue', 'current_severity', 'peak_severity', 'case_status',
+        'created_at', 'updated_at', 'deleted_at'
     ];
 
     // Timestamps

@@ -279,9 +279,13 @@ class GISService
         if (in_array('TEMUAN', $layerFilter) && $penyulangId > 0) {
             $db = \Config\Database::connect();
             if ($db->tableExists('temuan')) {
-                $temuanRows = $db->table('temuan')
+                $findingBuilder = $db->table('temuan')
                     ->where('penyulang_id', $penyulangId)
-                    ->where('deleted_at IS NULL')
+                    ->where('deleted_at IS NULL');
+                if ($userUlpId !== null && $userUlpId > 0) {
+                    $findingBuilder->where('ulp_id', $userUlpId);
+                }
+                $temuanRows = $findingBuilder
                     ->where('latitude !=', 0)
                     ->where('longitude !=', 0)
                     ->where('latitude IS NOT NULL')

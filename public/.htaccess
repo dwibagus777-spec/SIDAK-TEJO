@@ -4,6 +4,11 @@
 <IfModule mod_rewrite.c>
 	RewriteEngine On
 
+	# Obsolete session files and stored media must never bypass application access checks.
+	RewriteRule ^ci_sessions(?:/|$) - [F,NC,L]
+	RewriteRule ^(?:foto|uploads)/?$ index.php/foto [L,NC,QSA]
+	RewriteRule ^(?:foto|uploads)/(.+)$ index.php/foto/$1 [L,NC,QSA]
+
 	# Redirect Trailing Slashes...
 	RewriteCond %{REQUEST_FILENAME} !-d
 	RewriteCond %{REQUEST_URI} (.+)/$
@@ -18,6 +23,14 @@
 	RewriteCond %{HTTP:Authorization} .
 	RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 </IfModule>
+
+<FilesMatch "^(agent_compare|check|compare_agent_response|compare_live|db_auth_audit|full_audit|get_dashboard_html|test-cloudinary|test_ajax2|test_autoload|test_cache|test_login_submit)\.php$">
+	Require all denied
+</FilesMatch>
+
+<FilesMatch "(?i)^(?:\..*|.*\.(?:sql|zip|dump|bak|backup|old|orig|log)(?:\..*)?)$">
+	Require all denied
+</FilesMatch>
 
 <IfModule !mod_rewrite.c>
 	ErrorDocument 404 index.php

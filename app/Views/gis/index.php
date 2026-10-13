@@ -594,7 +594,7 @@
                     <option value="">-- Pilih ULP --</option>
                     <?php if (!empty($ulps)): ?>
                         <?php foreach ($ulps as $u): ?>
-                            <option value="<?= $u['id'] ?>" <?= ($selectedPenyulangId === 0 && $u['id'] == 1) ? 'selected' : '' ?>>
+                            <option value="<?= $u['id'] ?>" <?= ((int)$u['id'] === (int)($selectedUlpId ?? 0)) ? 'selected' : '' ?>>
                                 <?= esc($u['nama_ulp']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -3089,7 +3089,28 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
 
                     if (autoSelectFirst) {
-                        setupFeederSelect.value = res.penyulangs[0].id;
+                        var requestedFeederId = <?= json_encode((int)($selectedPenyulangId ?? 0)) ?>;
+                        var requestedOption = requestedFeederId > 0
+                            ? Array.from(setupFeederSelect.options).find(function (option) {
+                                return Number(option.value) === requestedFeederId;
+                            })
+                            : null;
+                        setupFeederSelect.value = requestedOption ? String(requestedFeederId) : res.penyulangs[0].id;
+                    }
+
+                    if (<?= ((int)($selectedPenyulangId ?? 0) > 0) ? 'true' : 'false' ?>) {
+                        var returnFeederId = <?= json_encode((int)($selectedPenyulangId ?? 0)) ?>;
+                        if (Array.from(setupFeederSelect.options).some(function (option) {
+                            return Number(option.value) === returnFeederId;
+                        })) {
+                            setupFeederSelect.value = String(returnFeederId);
+                            var findingsLayer = document.getElementById('setup-layer-temuan');
+                            if (findingsLayer) findingsLayer.checked = true;
+                            setTimeout(function () {
+                                var openMapButton = document.getElementById('btn-setup-open-map');
+                                if (openMapButton) openMapButton.click();
+                            }, 0);
+                        }
                     }
                 }
             })
@@ -3108,8 +3129,9 @@ document.addEventListener("DOMContentLoaded", function () {
         loadPenyulangsForUlp(ulpId, true);
     });
 
+    var isInspectionRole = <?= strtolower((string)($userRole ?? '')) === 'inspeksi' ? 'true' : 'false' ?>;
     if (setupUlpSelect.value) {
-        loadPenyulangsForUlp(setupUlpSelect.value, true);
+        loadPenyulangsForUlp(setupUlpSelect.value, !isInspectionRole);
     }
 
     // ========================================================
@@ -5798,7 +5820,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 }).addTo(map);
 
                 map.setView([uLat, uLng], 16);
-            });
+            }, function (error) {
+                var messages = {
+                    1: 'Izin lokasi ditolak. Izinkan akses lokasi untuk menampilkan posisi GPS Anda.',
+                    2: 'Posisi GPS belum tersedia. Periksa GPS perangkat lalu coba lagi.',
+                    3: 'Permintaan GPS melewati batas waktu. Coba lagi di area terbuka.'
+                };
+                alert(messages[error.code] || 'Gagal mendapatkan posisi GPS perangkat.');
+            }, { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 });
+        } else {
+            alert('Perangkat atau browser ini tidak mendukung GPS.');
         }
     }, 'FAB_LOCATE_ME');
 

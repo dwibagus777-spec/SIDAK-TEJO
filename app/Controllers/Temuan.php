@@ -11,6 +11,17 @@ use App\Repositories\TindakLanjutRepository;
 
 class Temuan extends BaseController
 {
+    private function getFindingUlpFilter(): ?int
+    {
+        $session = session();
+        $scope = new \App\Services\NetworkAccessScope(
+            (string)($session->get('user_role') ?? ''),
+            is_numeric($session->get('user_ulp_id')) ? (int)$session->get('user_ulp_id') : null
+        );
+
+        return $scope->isCrossUlp() ? null : ($scope->getUlpId() ?? 0);
+    }
+
     private TemuanService $temuanService;
     private TemuanRepository $temuanRepository;
     private UlpRepository $ulpRepository;
@@ -38,13 +49,16 @@ class Temuan extends BaseController
     private function getScopedUlpsAndPenyulangs(): array
     {
         $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
-        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'har_crane', 'pdkb', 'inspeksi']));
+        $scope = new \App\Services\NetworkAccessScope(
+            (string)($session->get('user_role') ?? ''),
+            is_numeric($session->get('user_ulp_id')) ? (int)$session->get('user_ulp_id') : null
+        );
+        $isRestricted = !$scope->isCrossUlp();
 
         if ($isRestricted) {
-            $ulps = [$this->ulpRepository->find($userUlpId)];
-            $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($userUlpId);
+            $userUlpId = $scope->getUlpId();
+            $ulps = $userUlpId !== null ? [$this->ulpRepository->find($userUlpId)] : [];
+            $penyulangs = $userUlpId !== null ? $this->penyulangRepository->getActivePenyulangsByUlp($userUlpId) : [];
         } else {
             $ulps = $this->ulpRepository->getActiveUlps();
             $penyulangs = $this->penyulangRepository->getActivePenyulangs();
@@ -220,9 +234,8 @@ class Temuan extends BaseController
         try {
             $scoping = get_user_role_scoping();
             $role = (string)session()->get('user_role');
-
             $postData = $req->getPost() ?: $req->getGet() ?: [];
-            $result = $this->temuanRepository->getDataTables($postData, $scoping['ulp_id'], $scoping['jenis_temuan']);
+            $result = $this->temuanRepository->getDataTables($postData, $this->getFindingUlpFilter(), $scoping['jenis_temuan']);
 
             $formattedData = [];
             if (!empty($result['data']) && is_iterable($result['data'])) {
@@ -248,12 +261,15 @@ class Temuan extends BaseController
     public function create()
     {
         $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
+        $scope = new \App\Services\NetworkAccessScope(
+            (string)($session->get('user_role') ?? ''),
+            is_numeric($session->get('user_ulp_id')) ? (int)$session->get('user_ulp_id') : null
+        );
+        $userUlpId = $scope->getUlpId();
 
-        $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-            ? [$this->ulpRepository->find($userUlpId)]
-            : $this->ulpRepository->getActiveUlps();
+        $ulps = $scope->isCrossUlp()
+            ? $this->ulpRepository->getActiveUlps()
+            : ($userUlpId !== null ? [$this->ulpRepository->find($userUlpId)] : []);
 
         $serverToday = date('Y-m-d');
 
@@ -276,7 +292,7 @@ class Temuan extends BaseController
                 ->where('a.id', $queryAssetId)
                 ->get()
                 ->getRowArray();
-            if ($assetRow) {
+            if ($assetRow && $scope->allowsUlp((int)($assetRow['ulp_id'] ?? 0))) {
                 $hasCoords = ($assetRow['latitude'] !== null && $assetRow['longitude'] !== null && (float)$assetRow['latitude'] != 0.0 && (float)$assetRow['longitude'] != 0.0);
                 $preselectedAsset = [
                     'id'              => (int)$assetRow['id'],
@@ -314,11 +330,15 @@ class Temuan extends BaseController
     {
         $session = session();
         $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
+        $scope = new \App\Services\NetworkAccessScope(
+            (string)($role ?? ''),
+            is_numeric($session->get('user_ulp_id')) ? (int)$session->get('user_ulp_id') : null
+        );
+        $userUlpId = $scope->getUlpId();
 
-        $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-            ? [$this->ulpRepository->find($userUlpId)]
-            : $this->ulpRepository->getActiveUlps();
+        $ulps = $scope->isCrossUlp()
+            ? $this->ulpRepository->getActiveUlps()
+            : ($userUlpId !== null ? [$this->ulpRepository->find($userUlpId)] : []);
 
         $serverToday = date('Y-m-d');
 
@@ -354,12 +374,22 @@ class Temuan extends BaseController
         }
 
         $ulpIdInput = (int)$this->request->getPost('ulp_id');
-        if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== $ulpIdInput) {
-            return redirect()->to(site_url('temuan/create'))->with('error', 'Anda hanya diizinkan menginput temuan untuk ULP Anda.');
+        if (!$scope->allowsUlp($ulpIdInput)) {
+            return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Anda hanya diizinkan menginput temuan untuk ULP dalam cakupan akun Anda.');
+        }
+
+        $db = \Config\Database::connect();
+        $feederRow = $db->table('penyulang')->where('id', (int)$this->request->getPost('penyulang_id'))->get()->getRowArray();
+        $sectionRow = $db->table('sections')->where('id', (int)$this->request->getPost('section_id'))->get()->getRowArray();
+        $feederUlpId = (int)($feederRow['ulp_id'] ?? 0);
+        if (!$feederRow || !$sectionRow || $feederUlpId !== $ulpIdInput
+            || (int)($sectionRow['penyulang_id'] ?? 0) !== (int)$feederRow['id']
+            || !$scope->allowsUlp($feederUlpId)) {
+            return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'ULP, penyulang, dan section tidak sesuai atau berada di luar cakupan akun.');
         }
 
         $data = [
-            'ulp_id'           => $ulpIdInput,
+            'ulp_id'           => $feederUlpId,
             'penyulang_id'     => (int)$this->request->getPost('penyulang_id'),
             'section_id'       => (int)$this->request->getPost('section_id'),
             'jenis_temuan'     => $this->request->getPost('jenis_temuan'),
@@ -410,7 +440,6 @@ class Temuan extends BaseController
 
         // INVARIANT 2: If asset_id is provided, conditionally validate existence and topological compatibility
         if ($assetId !== null && $assetId > 0) {
-            $db = \Config\Database::connect();
             if ($db->tableExists('assets')) {
                 $assetRow = $db->table('assets')->where('id', $assetId)->get()->getRowArray();
                 if (!$assetRow) {
@@ -421,6 +450,9 @@ class Temuan extends BaseController
                 }
                 if (isset($assetRow['penyulang_id']) && (int)$assetRow['penyulang_id'] !== (int)$data['penyulang_id']) {
                     return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam penyulang yang sesuai.');
+                }
+                if (!$scope->allowsUlp((int)($assetRow['ulp_id'] ?? 0)) || (int)($assetRow['ulp_id'] ?? 0) !== $feederUlpId) {
+                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih berada di luar cakupan ULP akun.');
                 }
 
                 // CR-HOTFIX-02 PART B: COORDINATE INVARIANT ENFORCEMENT
@@ -497,17 +529,23 @@ class Temuan extends BaseController
 
                 // Phase 5: Mobile Inspection Return Context Handoff
                 $fromGis = ($this->request->getPost('from') === 'gis_inspection');
-                $focusAssetId = $this->request->getPost('focus_asset_id') ?: $assetId;
-                $cLat = $this->request->getPost('context_lat') ?: ($data['latitude'] ?? null);
-                $cLng = $this->request->getPost('context_lng') ?: ($data['longitude'] ?? null);
-                $cZoom = (int)($this->request->getPost('context_zoom') ?: 19);
+                $focusAssetId = $assetId;
                 $cPlan = (int)($this->request->getPost('planning_id') ?: 0);
+                $contextLat = $this->request->getPost('context_lat');
+                $contextLng = $this->request->getPost('context_lng');
+                $cLat = is_numeric($contextLat) && abs((float)$contextLat) <= 90 ? (float)$contextLat : ($data['latitude'] ?? null);
+                $cLng = is_numeric($contextLng) && abs((float)$contextLng) <= 180 ? (float)$contextLng : ($data['longitude'] ?? null);
+                $cZoom = max(5, min(20, $cZoom));
 
                 $redirectUrl = site_url('temuan/detail/' . $insertedId);
                 if ($fromGis && $focusAssetId) {
                     $redirectUrl .= '?' . http_build_query([
                         'from'           => 'gis_inspection',
                         'focus_asset_id' => $focusAssetId,
+                        'asset_id'       => $assetId,
+                        'ulp_id'         => $data['ulp_id'],
+                        'penyulang_id'   => $data['penyulang_id'],
+                        'section_id'     => $data['section_id'],
                         'lat'            => $cLat,
                         'lng'            => $cLng,
                         'zoom'           => $cZoom,
@@ -538,9 +576,9 @@ class Temuan extends BaseController
         $role = (string)$session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
 
-        $ulpIdFilter = null;
-        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'har_crane', 'inspeksi']) && $userUlpId !== null) {
-            $ulpIdFilter = (int)$userUlpId;
+        $ulpIdFilter = $this->getFindingUlpFilter();
+        if ($ulpIdFilter === 0) {
+            return redirect()->to(site_url('temuan'))->with('error', 'Akun belum memiliki cakupan ULP untuk mencari temuan.');
         }
 
         // 1. If numeric ID passed directly
@@ -581,9 +619,9 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
 
-        $ulpIdFilter = null;
-        if ($role !== 'administrator' && $role !== 'har_crane' && $role !== 'inspeksi' && $userUlpId !== null) {
-            $ulpIdFilter = (int)$userUlpId;
+        $ulpIdFilter = $this->getFindingUlpFilter();
+        if ($ulpIdFilter === 0) {
+            return redirect()->to(site_url('temuan'))->with('error', 'Akun belum memiliki cakupan ULP untuk membuka temuan.');
         }
 
         $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter);
@@ -625,6 +663,8 @@ class Temuan extends BaseController
                 ->join('sections s', 's.id = a.section_id', 'left')
                 ->join('construction_types ct', 'ct.id = a.construction_type_id', 'left')
                 ->where('a.id', (int)$temuan['asset_id'])
+                ->where('a.ulp_id', (int)$temuan['ulp_id'])
+                ->where('a.deleted_at IS NULL')
                 ->get()
                 ->getRowArray();
         }
@@ -661,7 +701,7 @@ class Temuan extends BaseController
             $session = session();
             $role = strtolower((string)$session->get('user_role'));
 
-            $temuan = $this->temuanRepository->getDetail($id, null);
+            $temuan = $this->temuanRepository->getDetail($id, $this->getFindingUlpFilter());
             if (!$temuan) {
                 return $this->jsonResponse(['success' => false, 'error' => 'Data temuan tidak ditemukan.'], 404);
             }
@@ -694,10 +734,7 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
 
-        $ulpIdFilter = null;
-        if ($role !== 'administrator' && $role !== 'har_crane' && $role !== 'inspeksi' && $userUlpId !== null) {
-            $ulpIdFilter = (int)$userUlpId;
-        }
+        $ulpIdFilter = $this->getFindingUlpFilter();
 
         $isAjax = $this->request->isAJAX();
 
@@ -747,20 +784,21 @@ class Temuan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
+        $scope = new \App\Services\NetworkAccessScope(
+            (string)($role ?? ''),
+            is_numeric($userUlpId) ? (int)$userUlpId : null
+        );
 
-        $ulpIdFilter = null;
-        if ($role === 'admin_ulp' && $userUlpId !== null) {
-            $ulpIdFilter = (int)$userUlpId;
-        }
+        $ulpIdFilter = $this->getFindingUlpFilter();
 
         $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter);
         if (!$temuan) {
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses.');
         }
 
-        $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-            ? [$this->ulpRepository->find($userUlpId)]
-            : $this->ulpRepository->getActiveUlps();
+        $ulps = $scope->isCrossUlp()
+            ? $this->ulpRepository->getActiveUlps()
+            : ($scope->getUlpId() !== null ? [$this->ulpRepository->find($scope->getUlpId())] : []);
 
         $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
         $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
@@ -778,11 +816,12 @@ class Temuan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
+        $scope = new \App\Services\NetworkAccessScope(
+            (string)($role ?? ''),
+            is_numeric($userUlpId) ? (int)$userUlpId : null
+        );
 
-        $ulpIdFilter = null;
-        if ($role === 'admin_ulp' && $userUlpId !== null) {
-            $ulpIdFilter = (int)$userUlpId;
-        }
+        $ulpIdFilter = $this->getFindingUlpFilter();
 
         $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter);
         if (!$temuan) {
@@ -790,9 +829,9 @@ class Temuan extends BaseController
         }
 
         if (!$this->validate($this->getTemuanFormRules())) {
-            $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-                ? [$this->ulpRepository->find($userUlpId)]
-                : $this->ulpRepository->getActiveUlps();
+            $ulps = $scope->isCrossUlp()
+                ? $this->ulpRepository->getActiveUlps()
+                : ($scope->getUlpId() !== null ? [$this->ulpRepository->find($scope->getUlpId())] : []);
 
             $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
             $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
@@ -810,9 +849,9 @@ class Temuan extends BaseController
         $tanggalTemuan = (string)$this->request->getPost('tanggal_temuan');
         $serverToday   = date('Y-m-d');
         if ($tanggalTemuan > $serverToday) {
-            $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-                ? [$this->ulpRepository->find($userUlpId)]
-                : $this->ulpRepository->getActiveUlps();
+            $ulps = $scope->isCrossUlp()
+                ? $this->ulpRepository->getActiveUlps()
+                : ($scope->getUlpId() !== null ? [$this->ulpRepository->find($scope->getUlpId())] : []);
 
             $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
             $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
@@ -833,12 +872,18 @@ class Temuan extends BaseController
         }
 
         $ulpIdInput = (int)$this->request->getPost('ulp_id');
-        if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== $ulpIdInput) {
-            return redirect()->to(site_url("temuan/edit/{$id}"))->with('error', 'Anda hanya diizinkan memilih ULP Anda.');
+        $db = \Config\Database::connect();
+        $feederRow = $db->table('penyulang')->where('id', (int)$this->request->getPost('penyulang_id'))->get()->getRowArray();
+        $sectionRow = $db->table('sections')->where('id', (int)$this->request->getPost('section_id'))->get()->getRowArray();
+        $feederUlpId = (int)($feederRow['ulp_id'] ?? 0);
+        if (!$scope->allowsUlp($ulpIdInput) || !$feederRow || !$sectionRow
+            || $feederUlpId !== $ulpIdInput
+            || (int)($sectionRow['penyulang_id'] ?? 0) !== (int)$feederRow['id']) {
+            return redirect()->to(site_url("temuan/edit/{$id}"))->withInput()->with('error', 'ULP, penyulang, dan section tidak sesuai atau berada di luar cakupan akun.');
         }
 
         $data = [
-            'ulp_id'           => $ulpIdInput,
+            'ulp_id'           => $feederUlpId,
             'penyulang_id'     => (int)$this->request->getPost('penyulang_id'),
             'section_id'       => (int)$this->request->getPost('section_id'),
             'jenis_temuan'     => $this->request->getPost('jenis_temuan'),
@@ -903,12 +948,9 @@ class Temuan extends BaseController
                 return redirect()->to(site_url('temuan'))->with('error', 'Data temuan tidak ditemukan.');
             }
 
-            $session = session();
-            $role = strtolower((string)$session->get('user_role'));
-            $userUlpId = $session->get('user_ulp_id');
-
-            if ($role === 'admin_ulp' && $userUlpId !== null && (int)$temuan['ulp_id'] !== (int)$userUlpId) {
-                log_message('warning', "[DELETE_TEMUAN] Akses ditolak untuk role admin_ulp | User ULP: {$userUlpId} | Temuan ULP: {$temuan['ulp_id']}");
+            $ulpFilter = $this->getFindingUlpFilter();
+            if ($ulpFilter !== null && (int)$temuan['ulp_id'] !== $ulpFilter) {
+                log_message('warning', "[DELETE_TEMUAN] Akses ditolak | User scope ULP: {$ulpFilter} | Temuan ULP: {$temuan['ulp_id']}");
                 if ($isAjax) {
                     return $this->jsonResponse(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan ULP lain.']);
                 }
@@ -958,6 +1000,16 @@ class Temuan extends BaseController
                     ->setContentType('application/json')
                     ->setJSON([]);
             }
+            $scope = new \App\Services\NetworkAccessScope(
+                (string)(session()->get('user_role') ?? ''),
+                is_numeric(session()->get('user_ulp_id')) ? (int)session()->get('user_ulp_id') : null
+            );
+            if (!$scope->allowsUlp($id)) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'success' => false,
+                    'message' => 'Akses ditolak: ULP berada di luar cakupan akun.',
+                ]);
+            }
 
             if (!isset($this->penyulangRepository)) {
                 $this->penyulangRepository = new \App\Repositories\PenyulangRepository();
@@ -994,6 +1046,19 @@ class Temuan extends BaseController
 
             if (!isset($this->sectionRepository)) {
                 $this->sectionRepository = new \App\Repositories\SectionRepository();
+            }
+
+            $scope = new \App\Services\NetworkAccessScope(
+                (string)(session()->get('user_role') ?? ''),
+                is_numeric(session()->get('user_ulp_id')) ? (int)session()->get('user_ulp_id') : null
+            );
+            $db = \Config\Database::connect();
+            $feeder = $db->table('penyulang')->select('ulp_id')->where('id', $id)->get()->getRowArray();
+            if (!$feeder || !$scope->allowsUlp((int)($feeder['ulp_id'] ?? 0))) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'success' => false,
+                    'message' => 'Akses ditolak: penyulang berada di luar cakupan akun.',
+                ]);
             }
 
             $sections = $this->sectionRepository->getActiveSectionsByPenyulang($id);
@@ -1033,6 +1098,19 @@ class Temuan extends BaseController
 
         $assetId   = (int)($this->request->getGet('asset_id') ?? 0);
         $sectionId = (int)($this->request->getGet('section_id') ?? 0);
+        $accessScope = new \App\Services\NetworkAccessScope(
+            (string)($session->get('user_role') ?? ''),
+            is_numeric($session->get('user_ulp_id')) ? (int)$session->get('user_ulp_id') : null
+        );
+        $assetRow = $assetId > 0
+            ? \Config\Database::connect()->table('assets')->select('ulp_id')->where('id', $assetId)->where('deleted_at IS NULL')->get()->getRowArray()
+            : null;
+        if (!$assetRow || !$accessScope->allowsUlp((int)($assetRow['ulp_id'] ?? 0))) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'FORBIDDEN',
+                'message' => 'Akses ditolak: aset berada di luar cakupan akun.',
+            ]);
+        }
 
         $service = new \App\Services\MaterialPickerService();
         $result  = $service->resolvePicker($assetId, $sectionId);
@@ -1133,12 +1211,7 @@ class Temuan extends BaseController
             ]);
         }
 
-        $role = (string)$session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
-        $ulpIdFilter = null;
-        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'har_crane', 'inspeksi']) && $userUlpId !== null) {
-            $ulpIdFilter = (int)$userUlpId;
-        }
+        $ulpIdFilter = $this->getFindingUlpFilter();
 
         $filters = [
             'ulp_id'       => $this->request->getGet('ulp_id'),
@@ -1381,13 +1454,7 @@ class Temuan extends BaseController
     {
         $session = session();
         $role = (string)$session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
-
-        $ulpIdFilter = null;
-        $unrestrictedRoles = ['administrator', 'har_crane', 'pdkb', 'inspeksi'];
-        if (!in_array($role, $unrestrictedRoles) && $userUlpId !== null) {
-            $ulpIdFilter = (int)$userUlpId;
-        }
+        $ulpIdFilter = $this->getFindingUlpFilter();
 
         $postData = $this->request->getPost();
 

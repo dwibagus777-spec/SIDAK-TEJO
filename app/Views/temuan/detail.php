@@ -448,13 +448,26 @@ $accessoriesSummary = !empty($accLines) ? implode("\n", $accLines) : null;
 
 // GIS Return Context Contract
 $fromContext = service('request')->getGet('from');
-$focusAssetId = service('request')->getGet('focus_asset_id') ?: ($temuan['asset_id'] ?? null);
-$contextLat = service('request')->getGet('lat') ?: ($temuan['latitude'] ?? null);
-$contextLng = service('request')->getGet('lng') ?: ($temuan['longitude'] ?? null);
-$contextZoom = service('request')->getGet('zoom') ?: 19;
+$assetId = !empty($temuan['asset_id']) ? (int)$temuan['asset_id'] : null;
+$requestedAssetId = (int)(service('request')->getGet('focus_asset_id') ?: service('request')->getGet('asset_id') ?: 0);
+$focusAssetId = $assetId !== null && ($requestedAssetId === 0 || $requestedAssetId === $assetId) ? $assetId : null;
+$requestedLat = service('request')->getGet('lat');
+$requestedLng = service('request')->getGet('lng');
+$contextLat = is_numeric($requestedLat) && abs((float)$requestedLat) <= 90
+    ? (float)$requestedLat
+    : ($linkedAsset['latitude'] ?? ($temuan['latitude'] ?? null));
+$contextLng = is_numeric($requestedLng) && abs((float)$requestedLng) <= 180
+    ? (float)$requestedLng
+    : ($linkedAsset['longitude'] ?? ($temuan['longitude'] ?? null));
+$requestedZoom = service('request')->getGet('zoom');
+$contextZoom = is_numeric($requestedZoom) ? max(5, min(20, (int)$requestedZoom)) : 19;
 $isGisReturn = ($fromContext === 'gis_inspection' || !empty($focusAssetId));
 $gisReturnUrl = site_url('gis') . '?' . http_build_query([
     'focus_asset_id' => $focusAssetId,
+    'asset_id'       => $focusAssetId,
+    'ulp_id'         => (int)($linkedAsset['ulp_id'] ?? ($temuan['ulp_id'] ?? 0)),
+    'penyulang_id'   => (int)($linkedAsset['penyulang_id'] ?? ($temuan['penyulang_id'] ?? 0)),
+    'section_id'     => (int)($linkedAsset['section_id'] ?? ($temuan['section_id'] ?? 0)),
     'lat'            => $contextLat,
     'lng'            => $contextLng,
     'zoom'           => $contextZoom,

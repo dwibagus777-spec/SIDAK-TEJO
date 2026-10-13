@@ -31,10 +31,10 @@ class NetworkIntelligenceController extends BaseController
         }
 
         // 2. Deployment verification secret key / header (Temporary Deployment Credential)
-        $auditKey = 'sidak_transline_audit_2026';
+        $auditKey = trim((string) getenv('SIDAK_AUDIT_TOKEN'));
         $providedKey = $this->request->getGet('key') ?? $this->request->getHeaderLine('X-Audit-Token');
 
-        return (!empty($providedKey) && hash_equals($auditKey, (string)$providedKey));
+        return ($auditKey !== '' && !empty($providedKey) && hash_equals($auditKey, (string)$providedKey));
     }
 
     /**

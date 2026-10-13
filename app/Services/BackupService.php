@@ -114,10 +114,17 @@ class BackupService
         $sqlData = $this->generateSqlDump();
         $zip->addFromString('database.sql', $sqlData);
 
-        // 2. Folder Foto (public/foto/)
-        $fotoDir = FCPATH . 'foto/';
-        if (is_dir($fotoDir)) {
-            $this->addFolderToZip($fotoDir, $zip, 'foto/');
+        // 2. Folder Foto (persistent storage + legacy fallbacks)
+        $persistentFotoDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR : WRITEPATH . 'uploads/foto/';
+        $legacyFotoDir = FCPATH . 'foto/';
+        $fotoDirsToBackup = array_filter(array_unique([
+            $persistentFotoDir,
+            $legacyFotoDir,
+        ]), 'is_dir');
+
+        foreach ($fotoDirsToBackup as $fotoDir) {
+            $subFolder = ($fotoDir === $persistentFotoDir) ? 'foto/' : 'foto_legacy/';
+            $this->addFolderToZip($fotoDir, $zip, $subFolder);
         }
 
         // 3. Folder Config (app/Config/)
@@ -133,8 +140,9 @@ class BackupService
             'created_at'   => date('Y-m-d H:i:s'),
             'timestamp'    => $timestamp,
             'has_database' => true,
-            'has_foto'     => is_dir($fotoDir),
+            'has_foto'     => !empty($fotoDirsToBackup),
             'has_config'   => is_dir($configDir),
+            'foto_source'  => $persistentFotoDir,
         ];
         $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
 
@@ -193,13 +201,23 @@ class BackupService
 
         // 2. Restore Foto jika folder foto/ ada
         $tempFotoDir = $extractPath . 'foto/';
-        if (is_dir($tempFotoDir)) {
-            $targetFotoDir = FCPATH . 'foto/';
-            if (!is_dir($targetFotoDir)) {
-                @mkdir($targetFotoDir, 0755, true);
+        $tempLegacyFotoDir = $extractPath . 'foto_legacy/';
+        $persistentFotoDir = defined('SIDAK_STORAGE_PATH') ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR : WRITEPATH . 'uploads/foto/';
+
+        // Merge both archive locations: each can contain unique historical evidence.
+        $photoSources = array_values(array_filter([$tempFotoDir, $tempLegacyFotoDir], 'is_dir'));
+        if (!empty($photoSources)) {
+            if (!is_dir($persistentFotoDir) && !@mkdir($persistentFotoDir, 0755, true) && !is_dir($persistentFotoDir)) {
+                log_message('error', '[BackupService] Tidak dapat membuat direktori foto persisten untuk restore.');
+                $this->deleteDirectory($extractPath);
+                return ['success' => false, 'message' => 'Direktori penyimpanan foto persisten tidak dapat dibuat.'];
             }
-            $this->copyDirectory($tempFotoDir, $targetFotoDir);
-            $restoredItems[] = 'Folder Foto';
+
+            foreach ($photoSources as $sourceFotoDir) {
+                // Copy missing files only; preserve existing destination files.
+                $this->copyDirectoryMerge($sourceFotoDir, $persistentFotoDir);
+            }
+            $restoredItems[] = 'Folder Foto (persistent + legacy merge)';
         }
 
         // Bersihkan folder temporer
@@ -259,6 +277,27 @@ class BackupService
                     $this->copyDirectory($src . '/' . $file, $dst . '/' . $file);
                 } else {
                     copy($src . '/' . $file, $dst . '/' . $file);
+                }
+            }
+        }
+        closedir($dir);
+    }
+
+    private function copyDirectoryMerge(string $src, string $dst): void
+    {
+        $dir = opendir($src);
+        @mkdir($dst, 0755, true);
+        while (($file = readdir($dir)) !== false) {
+            if ($file != '.' && $file != '..') {
+                $srcPath = $src . '/' . $file;
+                $dstPath = $dst . '/' . $file;
+                if (is_dir($srcPath)) {
+                    $this->copyDirectoryMerge($srcPath, $dstPath);
+                } else {
+                    // Only copy if destination doesn't exist (preserve existing files)
+                    if (!file_exists($dstPath)) {
+                        copy($srcPath, $dstPath);
+                    }
                 }
             }
         }

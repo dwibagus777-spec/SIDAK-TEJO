@@ -463,17 +463,33 @@ class AssetImportController extends BaseController
 
             foreach ($photos as $p) {
                 $cleanName = basename(trim((string)$p));
-                $fcPathFile = FCPATH . 'foto/' . $cleanName;
-                $parentPathFile = rtrim(dirname(FCPATH), '/\\') . '/foto/' . $cleanName;
+                $resolvedPath = resolve_photo_path($cleanName);
+
+                $persistentDir = defined('SIDAK_STORAGE_PATH') ? SIDAK_STORAGE_PATH : WRITEPATH . 'uploads/foto/';
+                $candidatePaths = [
+                    'persistent' => rtrim($persistentDir, '/\\') . DIRECTORY_SEPARATOR . $cleanName,
+                    'writable_uploads' => WRITEPATH . 'uploads/foto/' . $cleanName,
+                    'fcpath' => FCPATH . 'foto/' . $cleanName,
+                    'parent_fcpath' => rtrim(dirname(FCPATH), '/\\') . '/foto/' . $cleanName,
+                ];
+
+                $foundAt = null;
+                $fileSize = 0;
+                foreach ($candidatePaths as $key => $path) {
+                    if (is_file($path)) {
+                        $foundAt = $key;
+                        $fileSize = filesize($path);
+                        break;
+                    }
+                }
 
                 $photoForensic[] = [
                     'db_reference'     => $p,
                     'clean_name'       => $cleanName,
-                    'fcpath_target'    => $fcPathFile,
-                    'fcpath_exists'    => file_exists($fcPathFile),
-                    'parent_target'    => $parentPathFile,
-                    'parent_exists'    => file_exists($parentPathFile),
-                    'filesize_bytes'   => file_exists($fcPathFile) ? filesize($fcPathFile) : (file_exists($parentPathFile) ? filesize($parentPathFile) : 0),
+                    'resolved_path'    => $resolvedPath,
+                    'found_at'         => $foundAt,
+                    'filesize_bytes'   => $fileSize,
+                    'candidate_paths'  => $candidatePaths,
                     'resolved_url'     => get_photo_url($p, $temuan['foto_path'] ?? 'foto/', 'full'),
                 ];
             }
@@ -487,12 +503,15 @@ class AssetImportController extends BaseController
                 foreach (['foto_sebelum', 'foto_proses', 'foto_sesudah'] as $k) {
                     $ref = $h[$k] ?? null;
                     $clean = !empty($ref) ? basename($ref) : null;
-                    $fcExist = !empty($clean) ? file_exists(FCPATH . 'foto/' . $clean) : false;
+                    $resolvedPath = $clean ? resolve_photo_path($clean) : null;
+                    $fileSize = ($resolvedPath && is_file($resolvedPath)) ? filesize($resolvedPath) : 0;
+
                     $photosCheck[$k] = [
                         'db_reference' => $ref,
                         'clean_name'   => $clean,
-                        'file_exists'  => $fcExist,
-                        'filesize'     => $fcExist ? filesize(FCPATH . 'foto/' . $clean) : 0,
+                        'resolved_path' => $resolvedPath,
+                        'file_exists'  => $resolvedPath && is_file($resolvedPath),
+                        'filesize'     => $fileSize,
                         'url'          => !empty($ref) ? get_photo_url($ref) : null,
                     ];
                 }

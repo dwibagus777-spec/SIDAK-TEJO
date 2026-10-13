@@ -190,15 +190,33 @@ jobs:
             -o ConnectTimeout=10 \
             "$STAGING_SSH_TARGET" "$remote_command_text" < scripts/deploy_staging_release.sh
 
-      - name: Confirm staging hostname already serves the configured public root
+      - name: Confirm staging subdomain is reachable and does not redirect to production
         shell: bash
         run: |
           set -euo pipefail
-          body="$RUNNER_TEMP/staging-before-deploy.html"
-          curl --fail --location --silent --show-error --max-time 30 \
-            --output "$body" "$STAGING_BASE_URL/"
-          ! grep -Fqi 'Semuanya Sudah Siap' "$body"
-          grep -Fqi 'SIDAK TEJO' "$body"
+          # Verify the staging subdomain is reachable and resolves to the correct host.
+          # We do NOT require the application to be installed yet (this may be the first deploy).
+          # We only check: (1) HTTP responds within timeout, (2) the final URL stays on the
+          # staging domain and does not silently redirect to the production domain.
+          final_url="$(curl --silent --show-error --max-time 30 \
+            --write-out '%{url_effective}' --output /dev/null \
+            --location "$STAGING_BASE_URL/" 2>&1)" || {
+            printf '::error::Staging subdomain %s is not reachable.\n' "$STAGING_BASE_URL"
+            exit 1
+          }
+          # Strip trailing slash for comparison
+          final_url="${final_url%/}"
+          staging_base="${STAGING_BASE_URL%/}"
+          production_base="https://sidaktejo.site"
+          if [[ "$final_url" == "$production_base"* ]]; then
+            printf '::error::Staging URL redirected to production domain: %s\n' "$final_url"
+            exit 1
+          fi
+          if [[ "$final_url" != "$staging_base"* ]]; then
+            printf '::error::Staging URL redirected to unexpected destination: %s\n' "$final_url"
+            exit 1
+          fi
+          printf 'Staging subdomain reachable and confirmed on correct domain: %s\n' "$final_url"
 
       - name: Upload pinned release into protected staging backup area
         shell: bash

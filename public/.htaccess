@@ -1,8 +1,24 @@
 # ----------------------------------------------------------------------
 # Rewrite Engine for Hostinger LiteSpeed / Apache
 # ----------------------------------------------------------------------
+<FilesMatch "^(agent_compare|check|compare_agent_response|compare_live|db_auth_audit|full_audit|get_dashboard_html|test-cloudinary|test_ajax2|test_autoload|test_cache|test_login_submit)\.php$">
+	Require all denied
+</FilesMatch>
+
+<FilesMatch "(?i)^(?:\..*|.*\.(?:sql|zip|dump|bak|backup|old|orig|log)(?:\..*)?)$">
+	Require all denied
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
 	RewriteEngine On
+
+	# Deny obsolete session files that may remain from older deployments.
+	RewriteRule ^ci_sessions(?:/|$) - [F,NC,L]
+
+	RewriteRule ^(?:foto|uploads)/?$ index.php/foto [L,NC,QSA]
+
+	# Route stored media through the authenticated photo controller, even when a file exists.
+	RewriteRule ^(?:foto|uploads)/(.+)$ index.php/foto/$1 [L,NC,QSA]
 
 	# Redirect Trailing Slashes...
 	RewriteCond %{REQUEST_FILENAME} !-d

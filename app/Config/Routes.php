@@ -171,6 +171,37 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // Main Dashboard Web Route
     $routes->get('dashboard', 'Dashboard::index');
     $routes->match(['GET', 'POST'], 'dashboard', 'Dashboard::index');
+
+    // Inspeksi Kubikel Routes
+    $routes->get('kubikel-inspeksi', 'KubikelInspectionController::index');
+    $routes->get('kubikel-inspeksi/create', 'KubikelInspectionController::create');
+    $routes->post('kubikel-inspeksi/store', 'KubikelInspectionController::store');
+    $routes->get('kubikel-inspeksi/edit/(:num)', 'KubikelInspectionController::edit/$1');
+    $routes->post('kubikel-inspeksi/update/(:num)', 'KubikelInspectionController::update/$1');
+    $routes->get('kubikel-inspeksi/detail/(:num)', 'KubikelInspectionController::detail/$1');
+
+    // Checklist management
+    $routes->post('kubikel-inspeksi/checklist/store/(:num)', 'KubikelInspectionController::storeChecklist/$1');
+    $routes->post('kubikel-inspeksi/checklist/update/(:num)/(:num)', 'KubikelInspectionController::updateChecklist/$1/$2');
+    $routes->post('kubikel-inspeksi/checklist/delete/(:num)/(:num)', 'KubikelInspectionController::deleteChecklist/$1/$2');
+    $routes->post('kubikel-inspeksi/checklist/reorder/(:num)', 'KubikelInspectionController::reorderChecklist/$1');
+
+    // Temuan management
+    $routes->post('kubikel-inspeksi/temuan/store/(:num)', 'KubikelInspectionController::storeTemuan/$1');
+    $routes->post('kubikel-inspeksi/temuan/update/(:num)/(:num)', 'KubikelInspectionController::updateTemuan/$1/$2');
+
+    // Foto management
+    $routes->post('kubikel-inspeksi/foto/upload/(:num)', 'KubikelInspectionController::uploadFoto/$1');
+    $routes->post('kubikel-inspeksi/foto/delete/(:num)/(:num)', 'KubikelInspectionController::deleteFoto/$1/$2');
+
+    // Status management
+    $routes->post('kubikel-inspeksi/status/update/(:num)', 'KubikelInspectionController::updateStatus/$1');
+    $routes->post('kubikel-inspeksi/reopen/(:num)', 'KubikelInspectionController::reopen/$1');
+
+    // Beyond KWH
+    $routes->get('kubikel-inspeksi/beyond-kwh', 'KubikelInspectionController::myRekomendasi');
+    $routes->get('kubikel-inspeksi/beyond-kwh/detail/(:num)', 'KubikelInspectionController::detailRekomendasi/$1');
+    $routes->post('kubikel-inspeksi/beyond-kwh/update-status/(:num)', 'KubikelInspectionController::updateRekomendasiStatus/$1');
     
     // AI Predictive Maintenance & AI Center Routes
     $routes->get('ai-center', 'AiPredictiveController::index');

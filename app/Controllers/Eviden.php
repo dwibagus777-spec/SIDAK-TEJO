@@ -284,8 +284,9 @@ class Eviden extends BaseController
 
             $fotos = $this->fotoModel->where('id_parent', $id)->where('kategori', 'KUBIKEL')->findAll();
             foreach ($fotos as $f) {
-                if (file_exists(FCPATH . 'foto/' . $f['nama_file'])) {
-                    @unlink(FCPATH . 'foto/' . $f['nama_file']);
+                $resolvedPath = resolve_photo_path($f['nama_file']);
+                if ($resolvedPath && is_file($resolvedPath)) {
+                    @unlink($resolvedPath);
                 }
                 $this->fotoModel->delete($f['id_foto']);
             }
@@ -548,8 +549,9 @@ class Eviden extends BaseController
 
         $fotos = $this->fotoModel->where('id_parent', $id)->where('kategori', 'TRAFO')->findAll();
         foreach ($fotos as $f) {
-            if (file_exists(FCPATH . 'foto/' . $f['nama_file'])) {
-                @unlink(FCPATH . 'foto/' . $f['nama_file']);
+            $resolvedPath = resolve_photo_path($f['nama_file']);
+            if ($resolvedPath && is_file($resolvedPath)) {
+                @unlink($resolvedPath);
             }
             $this->fotoModel->delete($f['id_foto']);
         }
@@ -777,11 +779,17 @@ class Eviden extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Data tidak ditemukan.']);
         }
 
-        if (!empty($management['foto_nameplate_lama']) && file_exists(FCPATH . 'foto/management/' . $management['foto_nameplate_lama'])) {
-            @unlink(FCPATH . 'foto/management/' . $management['foto_nameplate_lama']);
+        if (!empty($management['foto_nameplate_lama'])) {
+            $resolvedPath = resolve_photo_path('management/' . $management['foto_nameplate_lama']);
+            if ($resolvedPath && is_file($resolvedPath)) {
+                @unlink($resolvedPath);
+            }
         }
-        if (!empty($management['foto_nameplate_baru']) && file_exists(FCPATH . 'foto/management/' . $management['foto_nameplate_baru'])) {
-            @unlink(FCPATH . 'foto/management/' . $management['foto_nameplate_baru']);
+        if (!empty($management['foto_nameplate_baru'])) {
+            $resolvedPath = resolve_photo_path('management/' . $management['foto_nameplate_baru']);
+            if ($resolvedPath && is_file($resolvedPath)) {
+                @unlink($resolvedPath);
+            }
         }
 
         if ($this->managementModel->delete($id)) {
@@ -800,9 +808,9 @@ class Eviden extends BaseController
     {
         $foto = $this->fotoModel->find($id);
         if ($foto) {
-            $filePath = FCPATH . 'foto/' . $foto['nama_file'];
-            if (file_exists($filePath)) {
-                @unlink($filePath);
+            $resolvedPath = resolve_photo_path($foto['nama_file']);
+            if ($resolvedPath && is_file($resolvedPath)) {
+                @unlink($resolvedPath);
             }
             $this->fotoModel->delete($id);
             return redirect()->back()->with('success', 'Foto berhasil dihapus.');
@@ -1043,13 +1051,13 @@ class Eviden extends BaseController
                 $garduClean = preg_replace('/[^A-Za-z0-9_\-]/', '_', $item['nama_gardu']);
                 $fotos = $this->fotoModel->where('id_parent', $item['id_kubikel'])->where('kategori', 'KUBIKEL')->findAll();
                 foreach ($fotos as $f) {
-                    $filePath = FCPATH . 'foto/' . $f['nama_file'];
-                    if (file_exists($filePath)) {
-                        $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+                    $resolvedPath = resolve_photo_path($f['nama_file']);
+                    if ($resolvedPath && is_file($resolvedPath)) {
+                        $ext = pathinfo($resolvedPath, PATHINFO_EXTENSION);
                         $jenisClean = preg_replace('/[^A-Za-z0-9_\-]/', '_', $f['jenis_foto']);
                         $localName = $garduClean . '/' . $jenisClean . '_' . $f['id_foto'] . '.' . $ext;
                         $filesToZip[] = [
-                            'path' => $filePath,
+                            'path' => $resolvedPath,
                             'name' => $localName
                         ];
                     }
@@ -1065,13 +1073,13 @@ class Eviden extends BaseController
                 $garduClean = preg_replace('/[^A-Za-z0-9_\-]/', '_', $item['nama_gardu']);
                 $fotos = $this->fotoModel->where('id_parent', $item['id_trafo'])->where('kategori', 'TRAFO')->findAll();
                 foreach ($fotos as $f) {
-                    $filePath = FCPATH . 'foto/' . $f['nama_file'];
-                    if (file_exists($filePath)) {
-                        $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+                    $resolvedPath = resolve_photo_path($f['nama_file']);
+                    if ($resolvedPath && is_file($resolvedPath)) {
+                        $ext = pathinfo($resolvedPath, PATHINFO_EXTENSION);
                         $jenisClean = preg_replace('/[^A-Za-z0-9_\-]/', '_', $f['jenis_foto']);
                         $localName = $garduClean . '/' . $jenisClean . '_' . $f['id_foto'] . '.' . $ext;
                         $filesToZip[] = [
-                            'path' => $filePath,
+                            'path' => $resolvedPath,
                             'name' => $localName
                         ];
                     }
@@ -1086,23 +1094,23 @@ class Eviden extends BaseController
             foreach ($dataList as $item) {
                 $garduClean = preg_replace('/[^A-Za-z0-9_\-]/', '_', $item['nama_gardu']);
                 if (!empty($item['foto_nameplate_lama'])) {
-                    $filePath = FCPATH . 'foto/management/' . $item['foto_nameplate_lama'];
-                    if (file_exists($filePath)) {
-                        $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+                    $resolvedPath = resolve_photo_path('management/' . $item['foto_nameplate_lama']);
+                    if ($resolvedPath && is_file($resolvedPath)) {
+                        $ext = pathinfo($resolvedPath, PATHINFO_EXTENSION);
                         $localName = $garduClean . '/NAMEPLATE_LAMA.' . $ext;
                         $filesToZip[] = [
-                            'path' => $filePath,
+                            'path' => $resolvedPath,
                             'name' => $localName
                         ];
                     }
                 }
                 if (!empty($item['foto_nameplate_baru'])) {
-                    $filePath = FCPATH . 'foto/management/' . $item['foto_nameplate_baru'];
-                    if (file_exists($filePath)) {
-                        $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+                    $resolvedPath = resolve_photo_path('management/' . $item['foto_nameplate_baru']);
+                    if ($resolvedPath && is_file($resolvedPath)) {
+                        $ext = pathinfo($resolvedPath, PATHINFO_EXTENSION);
                         $localName = $garduClean . '/NAMEPLATE_BARU.' . $ext;
                         $filesToZip[] = [
-                            'path' => $filePath,
+                            'path' => $resolvedPath,
                             'name' => $localName
                         ];
                     }

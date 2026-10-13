@@ -1,0 +1,933 @@
+{
+    "success": true,
+    "status": "success",
+    "scope": {
+        "ulp_id": 2,
+        "penyulang_id": 56,
+        "section_id": null
+    },
+    "total": 9,
+    "data": [
+        {
+            "id": 227,
+            "transline_id": 227,
+            "code": "TL-56-5512-5513",
+            "transline_code": "TL-56-5512-5513",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5512,
+            "target_asset_id": 5513,
+            "from_asset_id": 5512,
+            "to_asset_id": 5513,
+            "source_asset": {
+                "id": 5512,
+                "code": "AST-KRN-BANJARAN-JTM-004",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-004",
+                "name": "BANJARAN BARU_06",
+                "nama_asset": "BANJARAN BARU_06",
+                "latitude": -7.357666707,
+                "longitude": 112.5677777
+            },
+            "target_asset": {
+                "id": 5513,
+                "code": "AST-KRN-BANJARAN-JTM-005",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-005",
+                "name": "BANJARAN BARU_04",
+                "nama_asset": "BANJARAN BARU_04",
+                "latitude": -7.358138859,
+                "longitude": 112.5678056
+            },
+            "coordinates": [
+                [
+                    112.5677777,
+                    -7.357666707
+                ],
+                [
+                    112.5678056,
+                    -7.358138859
+                ]
+            ],
+            "length_m": 52.59,
+            "length_meter": 52.59,
+            "distance_meters": 52.59,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:1"
+        },
+        {
+            "id": 228,
+            "transline_id": 228,
+            "code": "TL-56-5513-5514",
+            "transline_code": "TL-56-5513-5514",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5513,
+            "target_asset_id": 5514,
+            "from_asset_id": 5513,
+            "to_asset_id": 5514,
+            "source_asset": {
+                "id": 5513,
+                "code": "AST-KRN-BANJARAN-JTM-005",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-005",
+                "name": "BANJARAN BARU_04",
+                "nama_asset": "BANJARAN BARU_04",
+                "latitude": -7.358138859,
+                "longitude": 112.5678056
+            },
+            "target_asset": {
+                "id": 5514,
+                "code": "AST-KRN-BANJARAN-JTM-006",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-006",
+                "name": "BANJARAN BARU_09",
+                "nama_asset": "BANJARAN BARU_09",
+                "latitude": -7.358472208,
+                "longitude": 112.5678056
+            },
+            "coordinates": [
+                [
+                    112.5678056,
+                    -7.358138859
+                ],
+                [
+                    112.5678056,
+                    -7.358472208
+                ]
+            ],
+            "length_m": 37.07,
+            "length_meter": 37.07,
+            "distance_meters": 37.07,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:2"
+        },
+        {
+            "id": 229,
+            "transline_id": 229,
+            "code": "TL-56-5903-5904",
+            "transline_code": "TL-56-5903-5904",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5903,
+            "target_asset_id": 5904,
+            "from_asset_id": 5903,
+            "to_asset_id": 5904,
+            "source_asset": {
+                "id": 5903,
+                "code": "AST-KRN-BANJARAN-JTM-395",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-395",
+                "name": "BANJARAN_0220",
+                "nama_asset": "BANJARAN_0220",
+                "latitude": -7.34997,
+                "longitude": 112.51342
+            },
+            "target_asset": {
+                "id": 5904,
+                "code": "AST-KRN-BANJARAN-JTM-396",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-396",
+                "name": "BANJARAN_0219",
+                "nama_asset": "BANJARAN_0219",
+                "latitude": -7.34999,
+                "longitude": 112.5139
+            },
+            "coordinates": [
+                [
+                    112.51342,
+                    -7.34997
+                ],
+                [
+                    112.5139,
+                    -7.34999
+                ]
+            ],
+            "length_m": 52.98,
+            "length_meter": 52.98,
+            "distance_meters": 52.98,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:3"
+        },
+        {
+            "id": 230,
+            "transline_id": 230,
+            "code": "TL-56-5611-5613",
+            "transline_code": "TL-56-5611-5613",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5611,
+            "target_asset_id": 5613,
+            "from_asset_id": 5611,
+            "to_asset_id": 5613,
+            "source_asset": {
+                "id": 5611,
+                "code": "AST-KRN-BANJARAN-JTM-103",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-103",
+                "name": "BANJARAN_0714",
+                "nama_asset": "BANJARAN_0714",
+                "latitude": -7.354643019,
+                "longitude": 112.534623
+            },
+            "target_asset": {
+                "id": 5613,
+                "code": "AST-KRN-BANJARAN-JTM-105",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-105",
+                "name": "BANJARAN_0713",
+                "nama_asset": "BANJARAN_0713",
+                "latitude": -7.35452299,
+                "longitude": 112.534635
+            },
+            "coordinates": [
+                [
+                    112.534623,
+                    -7.354643019
+                ],
+                [
+                    112.534635,
+                    -7.35452299
+                ]
+            ],
+            "length_m": 13.41,
+            "length_meter": 13.41,
+            "distance_meters": 13.41,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:4"
+        },
+        {
+            "id": 231,
+            "transline_id": 231,
+            "code": "TL-56-5541-5543",
+            "transline_code": "TL-56-5541-5543",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5541,
+            "target_asset_id": 5543,
+            "from_asset_id": 5541,
+            "to_asset_id": 5543,
+            "source_asset": {
+                "id": 5541,
+                "code": "AST-KRN-BANJARAN-JTM-033",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-033",
+                "name": "BANJARAN_0168",
+                "nama_asset": "BANJARAN_0168",
+                "latitude": -7.3496,
+                "longitude": 112.52611
+            },
+            "target_asset": {
+                "id": 5543,
+                "code": "AST-KRN-BANJARAN-JTM-035",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-035",
+                "name": "BANJARAN_0169",
+                "nama_asset": "BANJARAN_0169",
+                "latitude": -7.34965,
+                "longitude": 112.52562
+            },
+            "coordinates": [
+                [
+                    112.52611,
+                    -7.3496
+                ],
+                [
+                    112.52562,
+                    -7.34965
+                ]
+            ],
+            "length_m": 54.32,
+            "length_meter": 54.32,
+            "distance_meters": 54.32,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:5"
+        },
+        {
+            "id": 232,
+            "transline_id": 232,
+            "code": "TL-56-5509-5744",
+            "transline_code": "TL-56-5509-5744",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5509,
+            "target_asset_id": 5744,
+            "from_asset_id": 5509,
+            "to_asset_id": 5744,
+            "source_asset": {
+                "id": 5509,
+                "code": "AST-KRN-BANJARAN-JTM-001",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-001",
+                "name": "BANJARAN BARU_05",
+                "nama_asset": "BANJARAN BARU_05",
+                "latitude": -7.356333314,
+                "longitude": 112.5679722
+            },
+            "target_asset": {
+                "id": 5744,
+                "code": "AST-KRN-BANJARAN-JTM-236",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-236",
+                "name": "BANJARAN_0072",
+                "nama_asset": "BANJARAN_0072",
+                "latitude": -7.35623,
+                "longitude": 112.56787
+            },
+            "coordinates": [
+                [
+                    112.5679722,
+                    -7.356333314
+                ],
+                [
+                    112.56787,
+                    -7.35623
+                ]
+            ],
+            "length_m": 16.09,
+            "length_meter": 16.09,
+            "distance_meters": 16.09,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:6"
+        },
+        {
+            "id": 233,
+            "transline_id": 233,
+            "code": "TL-56-5511-5516",
+            "transline_code": "TL-56-5511-5516",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5511,
+            "target_asset_id": 5516,
+            "from_asset_id": 5511,
+            "to_asset_id": 5516,
+            "source_asset": {
+                "id": 5511,
+                "code": "AST-KRN-BANJARAN-JTM-003",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-003",
+                "name": "BANJARAN BARU_02",
+                "nama_asset": "BANJARAN BARU_02",
+                "latitude": -7.356888866,
+                "longitude": 112.5678889
+            },
+            "target_asset": {
+                "id": 5516,
+                "code": "AST-KRN-BANJARAN-JTM-008",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-008",
+                "name": "BANJARAN BARU_08",
+                "nama_asset": "BANJARAN BARU_08",
+                "latitude": -7.356638918,
+                "longitude": 112.5679166
+            },
+            "coordinates": [
+                [
+                    112.5678889,
+                    -7.356888866
+                ],
+                [
+                    112.5679166,
+                    -7.356638918
+                ]
+            ],
+            "length_m": 27.96,
+            "length_meter": 27.96,
+            "distance_meters": 27.96,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:7"
+        },
+        {
+            "id": 234,
+            "transline_id": 234,
+            "code": "TL-56-5528-5717",
+            "transline_code": "TL-56-5528-5717",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5528,
+            "target_asset_id": 5717,
+            "from_asset_id": 5528,
+            "to_asset_id": 5717,
+            "source_asset": {
+                "id": 5528,
+                "code": "AST-KRN-BANJARAN-JTM-020",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-020",
+                "name": "BANJARAN_0229",
+                "nama_asset": "BANJARAN_0229",
+                "latitude": -7.34961,
+                "longitude": 112.50885
+            },
+            "target_asset": {
+                "id": 5717,
+                "code": "AST-KRN-BANJARAN-JTM-209",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-209",
+                "name": "BANJARAN_0424",
+                "nama_asset": "BANJARAN_0424",
+                "latitude": -7.34982,
+                "longitude": 112.50879
+            },
+            "coordinates": [
+                [
+                    112.50885,
+                    -7.34961
+                ],
+                [
+                    112.50879,
+                    -7.34982
+                ]
+            ],
+            "length_m": 24.27,
+            "length_meter": 24.27,
+            "distance_meters": 24.27,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:8"
+        },
+        {
+            "id": 235,
+            "transline_id": 235,
+            "code": "TL-56-5529-5610",
+            "transline_code": "TL-56-5529-5610",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5529,
+            "target_asset_id": 5610,
+            "from_asset_id": 5529,
+            "to_asset_id": 5610,
+            "source_asset": {
+                "id": 5529,
+                "code": "AST-KRN-BANJARAN-JTM-021",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-021",
+                "name": "BANJARAN_0634",
+                "nama_asset": "BANJARAN_0634",
+                "latitude": -7.35363,
+                "longitude": 112.57047
+            },
+            "target_asset": {
+                "id": 5610,
+                "code": "AST-KRN-BANJARAN-JTM-102",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-102",
+                "name": "BANJARAN_0001",
+                "nama_asset": "BANJARAN_0001",
+                "latitude": -7.35348,
+                "longitude": 112.57035
+            },
+            "coordinates": [
+                [
+                    112.57047,
+                    -7.35363
+                ],
+                [
+                    112.57035,
+                    -7.35348
+                ]
+            ],
+            "length_m": 21.29,
+            "length_meter": 21.29,
+            "distance_meters": 21.29,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:9"
+        }
+    ],
+    "translines": [
+        {
+            "id": 227,
+            "transline_id": 227,
+            "code": "TL-56-5512-5513",
+            "transline_code": "TL-56-5512-5513",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5512,
+            "target_asset_id": 5513,
+            "from_asset_id": 5512,
+            "to_asset_id": 5513,
+            "source_asset": {
+                "id": 5512,
+                "code": "AST-KRN-BANJARAN-JTM-004",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-004",
+                "name": "BANJARAN BARU_06",
+                "nama_asset": "BANJARAN BARU_06",
+                "latitude": -7.357666707,
+                "longitude": 112.5677777
+            },
+            "target_asset": {
+                "id": 5513,
+                "code": "AST-KRN-BANJARAN-JTM-005",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-005",
+                "name": "BANJARAN BARU_04",
+                "nama_asset": "BANJARAN BARU_04",
+                "latitude": -7.358138859,
+                "longitude": 112.5678056
+            },
+            "coordinates": [
+                [
+                    112.5677777,
+                    -7.357666707
+                ],
+                [
+                    112.5678056,
+                    -7.358138859
+                ]
+            ],
+            "length_m": 52.59,
+            "length_meter": 52.59,
+            "distance_meters": 52.59,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:1"
+        },
+        {
+            "id": 228,
+            "transline_id": 228,
+            "code": "TL-56-5513-5514",
+            "transline_code": "TL-56-5513-5514",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5513,
+            "target_asset_id": 5514,
+            "from_asset_id": 5513,
+            "to_asset_id": 5514,
+            "source_asset": {
+                "id": 5513,
+                "code": "AST-KRN-BANJARAN-JTM-005",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-005",
+                "name": "BANJARAN BARU_04",
+                "nama_asset": "BANJARAN BARU_04",
+                "latitude": -7.358138859,
+                "longitude": 112.5678056
+            },
+            "target_asset": {
+                "id": 5514,
+                "code": "AST-KRN-BANJARAN-JTM-006",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-006",
+                "name": "BANJARAN BARU_09",
+                "nama_asset": "BANJARAN BARU_09",
+                "latitude": -7.358472208,
+                "longitude": 112.5678056
+            },
+            "coordinates": [
+                [
+                    112.5678056,
+                    -7.358138859
+                ],
+                [
+                    112.5678056,
+                    -7.358472208
+                ]
+            ],
+            "length_m": 37.07,
+            "length_meter": 37.07,
+            "distance_meters": 37.07,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:2"
+        },
+        {
+            "id": 229,
+            "transline_id": 229,
+            "code": "TL-56-5903-5904",
+            "transline_code": "TL-56-5903-5904",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5903,
+            "target_asset_id": 5904,
+            "from_asset_id": 5903,
+            "to_asset_id": 5904,
+            "source_asset": {
+                "id": 5903,
+                "code": "AST-KRN-BANJARAN-JTM-395",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-395",
+                "name": "BANJARAN_0220",
+                "nama_asset": "BANJARAN_0220",
+                "latitude": -7.34997,
+                "longitude": 112.51342
+            },
+            "target_asset": {
+                "id": 5904,
+                "code": "AST-KRN-BANJARAN-JTM-396",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-396",
+                "name": "BANJARAN_0219",
+                "nama_asset": "BANJARAN_0219",
+                "latitude": -7.34999,
+                "longitude": 112.5139
+            },
+            "coordinates": [
+                [
+                    112.51342,
+                    -7.34997
+                ],
+                [
+                    112.5139,
+                    -7.34999
+                ]
+            ],
+            "length_m": 52.98,
+            "length_meter": 52.98,
+            "distance_meters": 52.98,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:3"
+        },
+        {
+            "id": 230,
+            "transline_id": 230,
+            "code": "TL-56-5611-5613",
+            "transline_code": "TL-56-5611-5613",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5611,
+            "target_asset_id": 5613,
+            "from_asset_id": 5611,
+            "to_asset_id": 5613,
+            "source_asset": {
+                "id": 5611,
+                "code": "AST-KRN-BANJARAN-JTM-103",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-103",
+                "name": "BANJARAN_0714",
+                "nama_asset": "BANJARAN_0714",
+                "latitude": -7.354643019,
+                "longitude": 112.534623
+            },
+            "target_asset": {
+                "id": 5613,
+                "code": "AST-KRN-BANJARAN-JTM-105",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-105",
+                "name": "BANJARAN_0713",
+                "nama_asset": "BANJARAN_0713",
+                "latitude": -7.35452299,
+                "longitude": 112.534635
+            },
+            "coordinates": [
+                [
+                    112.534623,
+                    -7.354643019
+                ],
+                [
+                    112.534635,
+                    -7.35452299
+                ]
+            ],
+            "length_m": 13.41,
+            "length_meter": 13.41,
+            "distance_meters": 13.41,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:4"
+        },
+        {
+            "id": 231,
+            "transline_id": 231,
+            "code": "TL-56-5541-5543",
+            "transline_code": "TL-56-5541-5543",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5541,
+            "target_asset_id": 5543,
+            "from_asset_id": 5541,
+            "to_asset_id": 5543,
+            "source_asset": {
+                "id": 5541,
+                "code": "AST-KRN-BANJARAN-JTM-033",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-033",
+                "name": "BANJARAN_0168",
+                "nama_asset": "BANJARAN_0168",
+                "latitude": -7.3496,
+                "longitude": 112.52611
+            },
+            "target_asset": {
+                "id": 5543,
+                "code": "AST-KRN-BANJARAN-JTM-035",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-035",
+                "name": "BANJARAN_0169",
+                "nama_asset": "BANJARAN_0169",
+                "latitude": -7.34965,
+                "longitude": 112.52562
+            },
+            "coordinates": [
+                [
+                    112.52611,
+                    -7.3496
+                ],
+                [
+                    112.52562,
+                    -7.34965
+                ]
+            ],
+            "length_m": 54.32,
+            "length_meter": 54.32,
+            "distance_meters": 54.32,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:5"
+        },
+        {
+            "id": 232,
+            "transline_id": 232,
+            "code": "TL-56-5509-5744",
+            "transline_code": "TL-56-5509-5744",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5509,
+            "target_asset_id": 5744,
+            "from_asset_id": 5509,
+            "to_asset_id": 5744,
+            "source_asset": {
+                "id": 5509,
+                "code": "AST-KRN-BANJARAN-JTM-001",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-001",
+                "name": "BANJARAN BARU_05",
+                "nama_asset": "BANJARAN BARU_05",
+                "latitude": -7.356333314,
+                "longitude": 112.5679722
+            },
+            "target_asset": {
+                "id": 5744,
+                "code": "AST-KRN-BANJARAN-JTM-236",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-236",
+                "name": "BANJARAN_0072",
+                "nama_asset": "BANJARAN_0072",
+                "latitude": -7.35623,
+                "longitude": 112.56787
+            },
+            "coordinates": [
+                [
+                    112.5679722,
+                    -7.356333314
+                ],
+                [
+                    112.56787,
+                    -7.35623
+                ]
+            ],
+            "length_m": 16.09,
+            "length_meter": 16.09,
+            "distance_meters": 16.09,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:6"
+        },
+        {
+            "id": 233,
+            "transline_id": 233,
+            "code": "TL-56-5511-5516",
+            "transline_code": "TL-56-5511-5516",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5511,
+            "target_asset_id": 5516,
+            "from_asset_id": 5511,
+            "to_asset_id": 5516,
+            "source_asset": {
+                "id": 5511,
+                "code": "AST-KRN-BANJARAN-JTM-003",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-003",
+                "name": "BANJARAN BARU_02",
+                "nama_asset": "BANJARAN BARU_02",
+                "latitude": -7.356888866,
+                "longitude": 112.5678889
+            },
+            "target_asset": {
+                "id": 5516,
+                "code": "AST-KRN-BANJARAN-JTM-008",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-008",
+                "name": "BANJARAN BARU_08",
+                "nama_asset": "BANJARAN BARU_08",
+                "latitude": -7.356638918,
+                "longitude": 112.5679166
+            },
+            "coordinates": [
+                [
+                    112.5678889,
+                    -7.356888866
+                ],
+                [
+                    112.5679166,
+                    -7.356638918
+                ]
+            ],
+            "length_m": 27.96,
+            "length_meter": 27.96,
+            "distance_meters": 27.96,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:7"
+        },
+        {
+            "id": 234,
+            "transline_id": 234,
+            "code": "TL-56-5528-5717",
+            "transline_code": "TL-56-5528-5717",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5528,
+            "target_asset_id": 5717,
+            "from_asset_id": 5528,
+            "to_asset_id": 5717,
+            "source_asset": {
+                "id": 5528,
+                "code": "AST-KRN-BANJARAN-JTM-020",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-020",
+                "name": "BANJARAN_0229",
+                "nama_asset": "BANJARAN_0229",
+                "latitude": -7.34961,
+                "longitude": 112.50885
+            },
+            "target_asset": {
+                "id": 5717,
+                "code": "AST-KRN-BANJARAN-JTM-209",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-209",
+                "name": "BANJARAN_0424",
+                "nama_asset": "BANJARAN_0424",
+                "latitude": -7.34982,
+                "longitude": 112.50879
+            },
+            "coordinates": [
+                [
+                    112.50885,
+                    -7.34961
+                ],
+                [
+                    112.50879,
+                    -7.34982
+                ]
+            ],
+            "length_m": 24.27,
+            "length_meter": 24.27,
+            "distance_meters": 24.27,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:8"
+        },
+        {
+            "id": 235,
+            "transline_id": 235,
+            "code": "TL-56-5529-5610",
+            "transline_code": "TL-56-5529-5610",
+            "penyulang_id": 56,
+            "section_id": null,
+            "source_asset_id": 5529,
+            "target_asset_id": 5610,
+            "from_asset_id": 5529,
+            "to_asset_id": 5610,
+            "source_asset": {
+                "id": 5529,
+                "code": "AST-KRN-BANJARAN-JTM-021",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-021",
+                "name": "BANJARAN_0634",
+                "nama_asset": "BANJARAN_0634",
+                "latitude": -7.35363,
+                "longitude": 112.57047
+            },
+            "target_asset": {
+                "id": 5610,
+                "code": "AST-KRN-BANJARAN-JTM-102",
+                "kode_asset": "AST-KRN-BANJARAN-JTM-102",
+                "name": "BANJARAN_0001",
+                "nama_asset": "BANJARAN_0001",
+                "latitude": -7.35348,
+                "longitude": 112.57035
+            },
+            "coordinates": [
+                [
+                    112.57047,
+                    -7.35363
+                ],
+                [
+                    112.57035,
+                    -7.35348
+                ]
+            ],
+            "length_m": 21.29,
+            "length_meter": 21.29,
+            "distance_meters": 21.29,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:9"
+        }
+    ],
+    "diagnostics": []
+}

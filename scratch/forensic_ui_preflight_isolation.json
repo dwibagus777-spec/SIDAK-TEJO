@@ -1,0 +1,22 @@
+{
+    "timestamp": "2026-09-24T16:42:35+07:00",
+    "isolation_pass": true,
+    "feeder_118_net": {
+        "network_status": "UNKNOWN",
+        "edges_count": 0,
+        "translines_count": 0,
+        "preview_count": 4,
+        "preview_unpersisted": true
+    },
+    "feeder_118_analytics": {
+        "transline_resmi_count": 0,
+        "total_panjang_meter": 0,
+        "preview_included": false,
+        "is_authoritative_only": true
+    },
+    "feeder_23_positive_control": {
+        "transline_resmi_count": 1,
+        "total_panjang_meter": 79.69,
+        "items_count": 1
+    }
+}

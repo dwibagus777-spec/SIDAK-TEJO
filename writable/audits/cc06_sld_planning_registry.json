@@ -1,0 +1,414 @@
+{
+    "registry_id": "CC06_SLD_PLANNING_REGISTRY_v1.0",
+    "created_at": "2026-08-25 08:05:21 WIB",
+    "created_at_utc": "2026-08-25T01:05:21Z",
+    "sld_topologies": {
+        "PLAN-CC06-20260825-080521-5e32": {
+            "feeder_id": 15,
+            "feeder_name": "BANJAR KEMANTREN",
+            "total_nodes": 6,
+            "shutdown_nodes_count": 2,
+            "sld_nodes": [
+                {
+                    "id": "GI_OUTGOING",
+                    "label": "GI OUTGOING CB (BANJAR KEMANTREN)",
+                    "type": "CIRCUIT_BREAKER",
+                    "status": "ENERGIZED",
+                    "level": 0
+                },
+                {
+                    "id": "SEC_46",
+                    "section_id": 46,
+                    "label": "Section #46",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 1,
+                    "work_items_cnt": 0
+                },
+                {
+                    "id": "SEC_47",
+                    "section_id": 47,
+                    "label": "Section #47",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 2,
+                    "work_items_cnt": 0
+                },
+                {
+                    "id": "SEC_48",
+                    "section_id": 48,
+                    "label": "Section #48",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 3,
+                    "work_items_cnt": 19
+                },
+                {
+                    "id": "SEC_49",
+                    "section_id": 49,
+                    "label": "Section #49",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 4,
+                    "work_items_cnt": 4
+                },
+                {
+                    "id": "SEC_50",
+                    "section_id": 50,
+                    "label": "Section #50",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 5,
+                    "work_items_cnt": 0
+                }
+            ],
+            "topology_structure": "RADIAL_OVERHEAD_UNDERGROUND_HYBRID",
+            "lineage": "CC-06 Dynamic SLD Topology Generator"
+        },
+        "PLAN-CC06-20260825-154233-a2bb": {
+            "feeder_id": 15,
+            "feeder_name": "BANJAR KEMANTREN",
+            "total_nodes": 6,
+            "shutdown_nodes_count": 2,
+            "sld_nodes": [
+                {
+                    "id": "GI_OUTGOING",
+                    "label": "GI OUTGOING CB (BANJAR KEMANTREN)",
+                    "type": "CIRCUIT_BREAKER",
+                    "status": "ENERGIZED",
+                    "level": 0
+                },
+                {
+                    "id": "SEC_46",
+                    "section_id": 46,
+                    "label": "Section #46",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 1,
+                    "work_items_cnt": 0
+                },
+                {
+                    "id": "SEC_47",
+                    "section_id": 47,
+                    "label": "Section #47",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 2,
+                    "work_items_cnt": 0
+                },
+                {
+                    "id": "SEC_48",
+                    "section_id": 48,
+                    "label": "Section #48",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 3,
+                    "work_items_cnt": 19
+                },
+                {
+                    "id": "SEC_49",
+                    "section_id": 49,
+                    "label": "Section #49",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 4,
+                    "work_items_cnt": 4
+                },
+                {
+                    "id": "SEC_50",
+                    "section_id": 50,
+                    "label": "Section #50",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 5,
+                    "work_items_cnt": 0
+                }
+            ],
+            "topology_structure": "RADIAL_OVERHEAD_UNDERGROUND_HYBRID",
+            "lineage": "CC-06 Dynamic SLD Topology Generator"
+        },
+        "WP-CC06-20260825-154733-2faf": {
+            "feeder_id": 15,
+            "feeder_name": "BANJAR KEMANTREN",
+            "total_nodes": 6,
+            "shutdown_nodes_count": 2,
+            "sld_nodes": [
+                {
+                    "id": "GI_OUTGOING",
+                    "label": "GI OUTGOING CB (BANJAR KEMANTREN)",
+                    "type": "CIRCUIT_BREAKER",
+                    "status": "ENERGIZED",
+                    "level": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                },
+                {
+                    "id": "SEC_46",
+                    "section_id": 46,
+                    "label": "Section #46",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 1,
+                    "work_items_cnt": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                },
+                {
+                    "id": "SEC_47",
+                    "section_id": 47,
+                    "label": "Section #47",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 2,
+                    "work_items_cnt": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                },
+                {
+                    "id": "SEC_48",
+                    "section_id": 48,
+                    "label": "Section #48",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 3,
+                    "work_items_cnt": 19,
+                    "assets": [
+                        "AST-BJK-T001"
+                    ],
+                    "gardus": [],
+                    "findings": 19
+                },
+                {
+                    "id": "SEC_49",
+                    "section_id": 49,
+                    "label": "Section #49",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 4,
+                    "work_items_cnt": 4,
+                    "assets": [
+                        "AST-BJK-REC001"
+                    ],
+                    "gardus": [],
+                    "findings": 4
+                },
+                {
+                    "id": "SEC_50",
+                    "section_id": 50,
+                    "label": "Section #50",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 5,
+                    "work_items_cnt": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                }
+            ],
+            "topology_structure": "RADIAL_OVERHEAD_UNDERGROUND_HYBRID",
+            "planning_aid_only": true,
+            "switching_controller": false,
+            "lineage": "CC-06 Dynamic SLD Topology Generator"
+        },
+        "WP-CC06-20260825-154755-329d": {
+            "feeder_id": 15,
+            "feeder_name": "BANJAR KEMANTREN",
+            "total_nodes": 6,
+            "shutdown_nodes_count": 2,
+            "sld_nodes": [
+                {
+                    "id": "GI_OUTGOING",
+                    "label": "GI OUTGOING CB (BANJAR KEMANTREN)",
+                    "type": "CIRCUIT_BREAKER",
+                    "status": "ENERGIZED",
+                    "level": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                },
+                {
+                    "id": "SEC_46",
+                    "section_id": 46,
+                    "label": "Section #46",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 1,
+                    "work_items_cnt": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                },
+                {
+                    "id": "SEC_47",
+                    "section_id": 47,
+                    "label": "Section #47",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 2,
+                    "work_items_cnt": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                },
+                {
+                    "id": "SEC_48",
+                    "section_id": 48,
+                    "label": "Section #48",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 3,
+                    "work_items_cnt": 19,
+                    "assets": [
+                        "AST-BJK-T001"
+                    ],
+                    "gardus": [],
+                    "findings": 19
+                },
+                {
+                    "id": "SEC_49",
+                    "section_id": 49,
+                    "label": "Section #49",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 4,
+                    "work_items_cnt": 4,
+                    "assets": [
+                        "AST-BJK-REC001"
+                    ],
+                    "gardus": [],
+                    "findings": 4
+                },
+                {
+                    "id": "SEC_50",
+                    "section_id": 50,
+                    "label": "Section #50",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 5,
+                    "work_items_cnt": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                }
+            ],
+            "topology_structure": "RADIAL_OVERHEAD_UNDERGROUND_HYBRID",
+            "planning_aid_only": true,
+            "switching_controller": false,
+            "lineage": "CC-06 Dynamic SLD Topology Generator"
+        },
+        "WP-CC06-20260825-155725-5712": {
+            "feeder_id": 15,
+            "feeder_name": "BANJAR KEMANTREN",
+            "total_nodes": 6,
+            "shutdown_nodes_count": 2,
+            "sld_nodes": [
+                {
+                    "id": "GI_OUTGOING",
+                    "label": "GI OUTGOING CB (BANJAR KEMANTREN)",
+                    "type": "CIRCUIT_BREAKER",
+                    "status": "ENERGIZED",
+                    "level": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                },
+                {
+                    "id": "SEC_46",
+                    "section_id": 46,
+                    "label": "Section #46",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 1,
+                    "work_items_cnt": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                },
+                {
+                    "id": "SEC_47",
+                    "section_id": 47,
+                    "label": "Section #47",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 2,
+                    "work_items_cnt": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                },
+                {
+                    "id": "SEC_48",
+                    "section_id": 48,
+                    "label": "Section #48",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 3,
+                    "work_items_cnt": 19,
+                    "assets": [
+                        "AST-BJK-T001"
+                    ],
+                    "gardus": [],
+                    "findings": 19
+                },
+                {
+                    "id": "SEC_49",
+                    "section_id": 49,
+                    "label": "Section #49",
+                    "type": "NETWORK_SECTION",
+                    "status": "SHUTDOWN_SCOPE_ISOLATED",
+                    "is_shutdown": true,
+                    "level": 4,
+                    "work_items_cnt": 4,
+                    "assets": [
+                        "AST-BJK-REC001"
+                    ],
+                    "gardus": [],
+                    "findings": 4
+                },
+                {
+                    "id": "SEC_50",
+                    "section_id": 50,
+                    "label": "Section #50",
+                    "type": "NETWORK_SECTION",
+                    "status": "NORMAL_ENERGIZED",
+                    "is_shutdown": false,
+                    "level": 5,
+                    "work_items_cnt": 0,
+                    "assets": [],
+                    "gardus": [],
+                    "findings": 0
+                }
+            ],
+            "topology_structure": "RADIAL_OVERHEAD_UNDERGROUND_HYBRID",
+            "planning_aid_only": true,
+            "switching_controller": false,
+            "lineage": "CC-06 Dynamic SLD Topology Generator"
+        }
+    }
+}

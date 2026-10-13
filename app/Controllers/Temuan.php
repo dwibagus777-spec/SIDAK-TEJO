@@ -398,8 +398,20 @@ class Temuan extends BaseController
             }
         }
 
-        $assetIdInput = $this->request->getPost('asset_id') ?: $this->request->getPost('authoritative_asset_id');
-        $assetId = (!empty($assetIdInput) && is_numeric($assetIdInput)) ? (int)$assetIdInput : null;
+        // CR-GIS-FIX-01: Prioritize authoritative_asset_id (locked GIS asset) over dropdown.
+        // The asset dropdown (#mr01_asset_id) submits empty string when user hasn't interacted with it,
+        // but authoritative_asset_id is always set when coming from GIS asset context drawer.
+        $rawAssetId       = trim((string)($this->request->getPost('asset_id') ?? ''));
+        $rawAuthoritativeId = trim((string)($this->request->getPost('authoritative_asset_id') ?? ''));
+        // Use authoritative if dropdown is empty (e.g. GIS AJAX modal or pre-selected asset URL param)
+        if ($rawAuthoritativeId !== '' && $rawAuthoritativeId !== '0') {
+            $assetIdInput = $rawAuthoritativeId;
+        } elseif ($rawAssetId !== '' && $rawAssetId !== '0') {
+            $assetIdInput = $rawAssetId;
+        } else {
+            $assetIdInput = '';
+        }
+        $assetId = ($assetIdInput !== '' && is_numeric($assetIdInput)) ? (int)$assetIdInput : null;
 
         // INVARIANT 1: If material is requested, asset_id is strictly MANDATORY
         if ($hasMaterialRequest) {
@@ -497,16 +509,29 @@ class Temuan extends BaseController
 
                 // Phase 5: Mobile Inspection Return Context Handoff
                 $fromGis = ($this->request->getPost('from') === 'gis_inspection');
+                $isAjaxRequest = ($this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest')
+                    || ($this->request->getPost('ajax') === '1');
                 $focusAssetId = $this->request->getPost('focus_asset_id') ?: $assetId;
                 $cLat = $this->request->getPost('context_lat') ?: ($data['latitude'] ?? null);
                 $cLng = $this->request->getPost('context_lng') ?: ($data['longitude'] ?? null);
                 $cZoom = (int)($this->request->getPost('context_zoom') ?: 19);
                 $cPlan = (int)($this->request->getPost('planning_id') ?: 0);
 
-                $redirectUrl = site_url('temuan/detail/' . $insertedId);
+                // CR-GIS-FIX-02: Support AJAX submission from GIS modal (no page reload)
+                if ($isAjaxRequest) {
+                    return $this->response->setJSON([
+                        'success'         => true,
+                        'id'              => $insertedId,
+                        'message'         => $res['message'],
+                        'redirect_url'    => site_url('temuan/detail/' . $insertedId),
+                        'focus_asset_id'  => $focusAssetId,
+                    ]);
+                }
+
+                // CR-GIS-FIX-03: From GIS inspection, redirect BACK to GIS map (not to temuan/detail)
+                // so the operator stays on the map and can continue inspecting other assets.
                 if ($fromGis && $focusAssetId) {
-                    $redirectUrl .= '?' . http_build_query([
-                        'from'           => 'gis_inspection',
+                    $gisRedirectUrl = site_url('gis') . '?' . http_build_query([
                         'focus_asset_id' => $focusAssetId,
                         'lat'            => $cLat,
                         'lng'            => $cLng,
@@ -514,9 +539,10 @@ class Temuan extends BaseController
                         'planning_id'    => $cPlan,
                         'updated'        => 1,
                     ]);
+                    return redirect()->to($gisRedirectUrl)->with('success', 'Temuan berhasil dicatat. Kembali ke peta inspeksi.');
                 }
 
-                return redirect()->to($redirectUrl)->with('success', $res['message'] . ' Berhasil dialihkan ke Detail Temuan.');
+                return redirect()->to(site_url('temuan/detail/' . $insertedId))->with('success', $res['message']);
             }
             return redirect()->to(site_url('temuan'))->with('success', $res['message']);
         }

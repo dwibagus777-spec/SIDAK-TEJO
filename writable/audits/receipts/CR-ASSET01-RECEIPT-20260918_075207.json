@@ -1,0 +1,16 @@
+{
+    "receipt_id": "CR-ASSET01-RECEIPT-20260918_075207",
+    "plan_id": "CR-ASSET01-PLAN-20260918_075158",
+    "plan_file": "E:\\XAMPP\\htdocs\\SIDAK TEJO\\writable\\audits/plans/CR-ASSET01-PLAN-20260918_075158_88d95200.json",
+    "executed_at": "2026-09-18 07:52:07",
+    "status": "COMMITTED",
+    "mutations": {
+        "assets_inserted": 0,
+        "assets_enriched": 0,
+        "assets_skipped": 1446,
+        "translines_inserted": 0,
+        "quarantine_count": 1,
+        "auto_review_count": 0,
+        "isolated_nodes_count": 256
+    }
+}

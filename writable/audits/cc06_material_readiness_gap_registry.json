@@ -1,0 +1,32 @@
+{
+    "registry_id": "CC06_MATERIAL_READINESS_GAP_REGISTRY_v1.0",
+    "created_at": "2026-08-24 20:21:05 WIB",
+    "created_at_utc": "2026-08-24T13:21:05Z",
+    "total_materials": 3,
+    "readiness_items": [
+        {
+            "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+            "total_required": 203,
+            "unit": "PCS",
+            "estimated_stock": 250,
+            "gap": 0,
+            "fulfillment_rate": 100
+        },
+        {
+            "canonical_material_code": "MAT-TRV-UNP-2000",
+            "total_required": 236,
+            "unit": "BATANG",
+            "estimated_stock": 200,
+            "gap": 36,
+            "fulfillment_rate": 84.7
+        },
+        {
+            "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+            "total_required": 2,
+            "unit": "SET",
+            "estimated_stock": 30,
+            "gap": 0,
+            "fulfillment_rate": 100
+        }
+    ]
+}

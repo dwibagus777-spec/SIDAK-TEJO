@@ -1,0 +1,125 @@
+{
+    "audit_timestamp": "2026-09-04T11:09:00+07:00",
+    "gate": "TL-01 Sub-Gate D3",
+    "title": "Proposal Lifecycle Integrity & Operational Hardening",
+    "verdict": "PASS",
+    "production_write_gate": "LOCKED",
+    "mutations_executed": {
+        "insert": 0,
+        "update": 0,
+        "delete": 0,
+        "ddl": 0
+    },
+    "master_asset_mutation": 0,
+    "baseline_tables_proof": {
+        "gis_translines": {
+            "expected": 42,
+            "before_count": 42,
+            "after_count": 42,
+            "delta": 0,
+            "before_sha256": "b7435af3fece8bc70713f80a6c8af0051070bb95ba60396be286c10de9d647e3",
+            "after_sha256": "b7435af3fece8bc70713f80a6c8af0051070bb95ba60396be286c10de9d647e3",
+            "identical": true
+        },
+        "gis_transline_proposals": {
+            "expected": 5,
+            "before_count": 5,
+            "after_count": 5,
+            "delta": 0,
+            "before_sha256": "f74bdd945360ab3381c875cb1e4c77d69fb0f60971717a5db1943529bb638bbd",
+            "after_sha256": "f74bdd945360ab3381c875cb1e4c77d69fb0f60971717a5db1943529bb638bbd",
+            "identical": true
+        },
+        "assets": {
+            "expected": 2660,
+            "before_count": 2660,
+            "after_count": 2660,
+            "delta": 0,
+            "before_sha256": "0af43141c9b4dbc7b79fc1eb5ec40217971d2330b78bda7baa89cd4d058ec32c",
+            "after_sha256": "0af43141c9b4dbc7b79fc1eb5ec40217971d2330b78bda7baa89cd4d058ec32c",
+            "identical": true
+        },
+        "sections": {
+            "expected": 134,
+            "before_count": 134,
+            "after_count": 134,
+            "delta": 0,
+            "before_sha256": "02dc708e979386e4b2d0c3f6ca0f70b44e612b06a45dda47fc3c6c75cd2d99e0",
+            "after_sha256": "02dc708e979386e4b2d0c3f6ca0f70b44e612b06a45dda47fc3c6c75cd2d99e0",
+            "identical": true
+        },
+        "penyulang": {
+            "expected": 28,
+            "before_count": 28,
+            "after_count": 28,
+            "delta": 0,
+            "before_sha256": "638b30375be3dd55eeedce9bfcb01fb0af5befe2de9fcae744857fc705b5f59c",
+            "after_sha256": "638b30375be3dd55eeedce9bfcb01fb0af5befe2de9fcae744857fc705b5f59c",
+            "identical": true
+        },
+        "temuan": {
+            "expected": 623,
+            "before_count": 623,
+            "after_count": 623,
+            "delta": 0,
+            "before_sha256": "daa6dfc2d8ffa368abb409247f56244cd740aab35cbadca132046f4b66f0df97",
+            "after_sha256": "daa6dfc2d8ffa368abb409247f56244cd740aab35cbadca132046f4b66f0df97",
+            "identical": true
+        },
+        "temuan_materials": {
+            "expected": 1842,
+            "before_count": 1842,
+            "after_count": 1842,
+            "delta": 0,
+            "before_sha256": "3615d1ff6f97cd53fd362e8f6dc911c38a3da4cd46a7637083faba43a6d68bd5",
+            "after_sha256": "3615d1ff6f97cd53fd362e8f6dc911c38a3da4cd46a7637083faba43a6d68bd5",
+            "identical": true
+        }
+    },
+    "asset_invariants": {
+        "section_id_delta": 0,
+        "construction_type_id_delta": 0
+    },
+    "integrity_scan": {
+        "status": "success",
+        "penyulang_id": null,
+        "scan_timestamp": "2026-09-04T11:09:00+07:00",
+        "total_proposals_scanned": 5,
+        "anomalies_found": 0,
+        "anomalies": [],
+        "diagnostic_stale_coordinates": {
+            "classification": "DIAGNOSTIC",
+            "mutation": "NONE",
+            "total_checked": 5,
+            "stale_count": 0,
+            "items": []
+        },
+        "summary": {
+            "governance_anomalies": 0,
+            "orphan_confirmation_refs": 0,
+            "broken_transline_fks": 0,
+            "provenance_mismatches": 0,
+            "duplicate_natural_keys": 0,
+            "unlinked_active_translines": 0,
+            "legacy_translines_protected": 42,
+            "diagnostic_stale_coordinates": 0
+        },
+        "integrity_status": "PASSED",
+        "fingerprint": "33ca7916678e1a2fc87c5ee1411c7b0a055be58e562ee3ee59e0f3afb6e56175"
+    },
+    "dashboard_summary": {
+        "total": 5,
+        "ready": 3,
+        "human_review": 1,
+        "blocked": 1,
+        "active": 0,
+        "governance_anomaly": 0,
+        "auto_match": 3,
+        "needs_review": 1,
+        "invalid": 1,
+        "missing": 0,
+        "confirmed": 0,
+        "pending_review": 5
+    },
+    "batch_receipt_fingerprint": "2c5f32227f50bd917d7fba4c8008c8fcce4d12c6a53c7a4698285aea12d42664"
+}

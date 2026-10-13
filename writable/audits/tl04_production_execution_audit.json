@@ -1,0 +1,547 @@
+{
+    "timestamp": "2026-09-11 15:17:56",
+    "penyulang_id": 15,
+    "engine_version": "TL-04.0",
+    "pre_inventory": {
+        "total_master_assets": 205,
+        "authoritative_translines": 100,
+        "connected_assets_count": 107,
+        "isolated_assets_count": 98,
+        "terminal_anchors_count": 19,
+        "saturated_nodes_count": 0
+    },
+    "post_inventory": {
+        "total_master_assets": 205,
+        "authoritative_translines": 127,
+        "connected_assets_count": 137,
+        "isolated_assets_count": 68,
+        "terminal_anchors_count": 25,
+        "saturated_nodes_count": 0
+    },
+    "execution_data": {
+        "status": "success",
+        "action": "PROGRESSIVE_LOOP_COMPLETED",
+        "iterations_run": 7,
+        "total_created_count": 27,
+        "total_created_ids": [
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139
+        ],
+        "batches": [
+            {
+                "batch_number": 1,
+                "run_id": "TL04-RUN-20260911151755-5b68ab",
+                "created_count": 7,
+                "created_ids": [
+                    113,
+                    114,
+                    115,
+                    116,
+                    117,
+                    118,
+                    119
+                ],
+                "translines": [
+                    {
+                        "id": 113,
+                        "transline_code": "TL-15-3267-3268",
+                        "natural_key": "TL-NAT:15:3267-3268",
+                        "source_asset_id": 3267,
+                        "target_asset_id": 3268,
+                        "distance_meters": 68.63,
+                        "total_score": 87,
+                        "network_score": 30,
+                        "promoted": true,
+                        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-5b68ab|PROP:1"
+                    },
+                    {
+                        "id": 114,
+                        "transline_code": "TL-15-3344-3345",
+                        "natural_key": "TL-NAT:15:3344-3345",
+                        "source_asset_id": 3344,
+                        "target_asset_id": 3345,
+                        "distance_meters": 83.19,
+                        "total_score": 80,
+                        "network_score": 30,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-5b68ab|PROP:2"
+                    },
+                    {
+                        "id": 115,
+                        "transline_code": "TL-15-3244-3246",
+                        "natural_key": "TL-NAT:15:3244-3246",
+                        "source_asset_id": 3244,
+                        "target_asset_id": 3246,
+                        "distance_meters": 53.84,
+                        "total_score": 90,
+                        "network_score": 20,
+                        "promoted": false,
+                        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-5b68ab|PROP:3"
+                    },
+                    {
+                        "id": 116,
+                        "transline_code": "TL-15-3229-3291",
+                        "natural_key": "TL-NAT:15:3229-3291",
+                        "source_asset_id": 3229,
+                        "target_asset_id": 3291,
+                        "distance_meters": 19.13,
+                        "total_score": 87,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-5b68ab|PROP:4"
+                    },
+                    {
+                        "id": 117,
+                        "transline_code": "TL-15-3205-3208",
+                        "natural_key": "TL-NAT:15:3205-3208",
+                        "source_asset_id": 3205,
+                        "target_asset_id": 3208,
+                        "distance_meters": 42.74,
+                        "total_score": 86,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-5b68ab|PROP:5"
+                    },
+                    {
+                        "id": 118,
+                        "transline_code": "TL-15-3221-3253",
+                        "natural_key": "TL-NAT:15:3221-3253",
+                        "source_asset_id": 3221,
+                        "target_asset_id": 3253,
+                        "distance_meters": 49.4,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-5b68ab|PROP:6"
+                    },
+                    {
+                        "id": 119,
+                        "transline_code": "TL-15-3211-3359",
+                        "natural_key": "TL-NAT:15:3211-3359",
+                        "source_asset_id": 3211,
+                        "target_asset_id": 3359,
+                        "distance_meters": 41.11,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-5b68ab|PROP:7"
+                    }
+                ]
+            },
+            {
+                "batch_number": 2,
+                "run_id": "TL04-RUN-20260911151755-3ad913",
+                "created_count": 8,
+                "created_ids": [
+                    120,
+                    121,
+                    122,
+                    123,
+                    124,
+                    125,
+                    126,
+                    127
+                ],
+                "translines": [
+                    {
+                        "id": 120,
+                        "transline_code": "TL-15-3208-3236",
+                        "natural_key": "TL-NAT:15:3208-3236",
+                        "source_asset_id": 3208,
+                        "target_asset_id": 3236,
+                        "distance_meters": 23.15,
+                        "total_score": 87,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-3ad913|PROP:1"
+                    },
+                    {
+                        "id": 121,
+                        "transline_code": "TL-15-3246-3346",
+                        "natural_key": "TL-NAT:15:3246-3346",
+                        "source_asset_id": 3246,
+                        "target_asset_id": 3346,
+                        "distance_meters": 19.32,
+                        "total_score": 87,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-3ad913|PROP:2"
+                    },
+                    {
+                        "id": 122,
+                        "transline_code": "TL-15-3211-3314",
+                        "natural_key": "TL-NAT:15:3211-3314",
+                        "source_asset_id": 3211,
+                        "target_asset_id": 3314,
+                        "distance_meters": 48.03,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-3ad913|PROP:3"
+                    },
+                    {
+                        "id": 123,
+                        "transline_code": "TL-15-3229-3248",
+                        "natural_key": "TL-NAT:15:3229-3248",
+                        "source_asset_id": 3229,
+                        "target_asset_id": 3248,
+                        "distance_meters": 54.75,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-3ad913|PROP:4"
+                    },
+                    {
+                        "id": 124,
+                        "transline_code": "TL-15-3244-3303",
+                        "natural_key": "TL-NAT:15:3244-3303",
+                        "source_asset_id": 3244,
+                        "target_asset_id": 3303,
+                        "distance_meters": 50.78,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-3ad913|PROP:5"
+                    },
+                    {
+                        "id": 125,
+                        "transline_code": "TL-15-3253-3262",
+                        "natural_key": "TL-NAT:15:3253-3262",
+                        "source_asset_id": 3253,
+                        "target_asset_id": 3262,
+                        "distance_meters": 50.22,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-3ad913|PROP:6"
+                    },
+                    {
+                        "id": 126,
+                        "transline_code": "TL-15-3268-3360",
+                        "natural_key": "TL-NAT:15:3268-3360",
+                        "source_asset_id": 3268,
+                        "target_asset_id": 3360,
+                        "distance_meters": 46.94,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-3ad913|PROP:7"
+                    },
+                    {
+                        "id": 127,
+                        "transline_code": "TL-15-3227-3345",
+                        "natural_key": "TL-NAT:15:3227-3345",
+                        "source_asset_id": 3227,
+                        "target_asset_id": 3345,
+                        "distance_meters": 46.5,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-3ad913|PROP:8"
+                    }
+                ]
+            },
+            {
+                "batch_number": 3,
+                "run_id": "TL04-RUN-20260911151755-d02871",
+                "created_count": 4,
+                "created_ids": [
+                    128,
+                    129,
+                    130,
+                    131
+                ],
+                "translines": [
+                    {
+                        "id": 128,
+                        "transline_code": "TL-15-3227-3343",
+                        "natural_key": "TL-NAT:15:3227-3343",
+                        "source_asset_id": 3227,
+                        "target_asset_id": 3343,
+                        "distance_meters": 42.7,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-d02871|PROP:1"
+                    },
+                    {
+                        "id": 129,
+                        "transline_code": "TL-15-3262-3363",
+                        "natural_key": "TL-NAT:15:3262-3363",
+                        "source_asset_id": 3262,
+                        "target_asset_id": 3363,
+                        "distance_meters": 46.53,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-d02871|PROP:2"
+                    },
+                    {
+                        "id": 130,
+                        "transline_code": "TL-15-3228-3314",
+                        "natural_key": "TL-NAT:15:3228-3314",
+                        "source_asset_id": 3228,
+                        "target_asset_id": 3314,
+                        "distance_meters": 49.73,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-d02871|PROP:3"
+                    },
+                    {
+                        "id": 131,
+                        "transline_code": "TL-15-3210-3346",
+                        "natural_key": "TL-NAT:15:3210-3346",
+                        "source_asset_id": 3210,
+                        "target_asset_id": 3346,
+                        "distance_meters": 39.7,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-d02871|PROP:4"
+                    }
+                ]
+            },
+            {
+                "batch_number": 4,
+                "run_id": "TL04-RUN-20260911151755-e77916",
+                "created_count": 3,
+                "created_ids": [
+                    132,
+                    133,
+                    134
+                ],
+                "translines": [
+                    {
+                        "id": 132,
+                        "transline_code": "TL-15-3228-3259",
+                        "natural_key": "TL-NAT:15:3228-3259",
+                        "source_asset_id": 3228,
+                        "target_asset_id": 3259,
+                        "distance_meters": 38.8,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-e77916|PROP:1"
+                    },
+                    {
+                        "id": 133,
+                        "transline_code": "TL-15-3321-3343",
+                        "natural_key": "TL-NAT:15:3321-3343",
+                        "source_asset_id": 3321,
+                        "target_asset_id": 3343,
+                        "distance_meters": 40.94,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-e77916|PROP:2"
+                    },
+                    {
+                        "id": 134,
+                        "transline_code": "TL-15-3353-3363",
+                        "natural_key": "TL-NAT:15:3353-3363",
+                        "source_asset_id": 3353,
+                        "target_asset_id": 3363,
+                        "distance_meters": 54.1,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-e77916|PROP:3"
+                    }
+                ]
+            },
+            {
+                "batch_number": 5,
+                "run_id": "TL04-RUN-20260911151755-83b55d",
+                "created_count": 3,
+                "created_ids": [
+                    135,
+                    136,
+                    137
+                ],
+                "translines": [
+                    {
+                        "id": 135,
+                        "transline_code": "TL-15-3259-3264",
+                        "natural_key": "TL-NAT:15:3259-3264",
+                        "source_asset_id": 3259,
+                        "target_asset_id": 3264,
+                        "distance_meters": 36.66,
+                        "total_score": 91,
+                        "network_score": 20,
+                        "promoted": false,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-83b55d|PROP:1"
+                    },
+                    {
+                        "id": 136,
+                        "transline_code": "TL-15-3348-3353",
+                        "natural_key": "TL-NAT:15:3348-3353",
+                        "source_asset_id": 3348,
+                        "target_asset_id": 3353,
+                        "distance_meters": 45.42,
+                        "total_score": 91,
+                        "network_score": 20,
+                        "promoted": false,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-83b55d|PROP:2"
+                    },
+                    {
+                        "id": 137,
+                        "transline_code": "TL-15-3164-3321",
+                        "natural_key": "TL-NAT:15:3164-3321",
+                        "source_asset_id": 3164,
+                        "target_asset_id": 3321,
+                        "distance_meters": 33.86,
+                        "total_score": 80,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-83b55d|PROP:3"
+                    }
+                ]
+            },
+            {
+                "batch_number": 6,
+                "run_id": "TL04-RUN-20260911151755-c3e76d",
+                "created_count": 1,
+                "created_ids": [
+                    138
+                ],
+                "translines": [
+                    {
+                        "id": 138,
+                        "transline_code": "TL-15-3242-3348",
+                        "natural_key": "TL-NAT:15:3242-3348",
+                        "source_asset_id": 3242,
+                        "target_asset_id": 3348,
+                        "distance_meters": 51.79,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-c3e76d|PROP:1"
+                    }
+                ]
+            },
+            {
+                "batch_number": 7,
+                "run_id": "TL04-RUN-20260911151755-a4490e",
+                "created_count": 1,
+                "created_ids": [
+                    139
+                ],
+                "translines": [
+                    {
+                        "id": 139,
+                        "transline_code": "TL-15-3178-3242",
+                        "natural_key": "TL-NAT:15:3178-3242",
+                        "source_asset_id": 3178,
+                        "target_asset_id": 3242,
+                        "distance_meters": 54.52,
+                        "total_score": 85,
+                        "network_score": 20,
+                        "promoted": true,
+                        "candidate_type": "ANCHOR_MAINLINE_EXTENSION",
+                        "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260911151755-a4490e|PROP:1"
+                    }
+                ]
+            }
+        ],
+        "final_inventory": {
+            "total_master_assets": 205,
+            "authoritative_translines": 127,
+            "connected_assets_count": 137,
+            "isolated_assets_count": 68,
+            "terminal_anchors_count": 25,
+            "saturated_nodes_count": 0
+        },
+        "final_summary": {
+            "total_candidates_analyzed": 349,
+            "defensible_count": 0,
+            "defensible_candidates_count": 0,
+            "promoted_candidates_count": 0,
+            "batch_capacity": 0,
+            "high_confidence_review": 5,
+            "review_required": 29,
+            "ambiguous_blocked": 315,
+            "isolated_chains_detected": 1
+        },
+        "remaining_isolated_count": 68
+    },
+    "post_audit": {
+        "status": "success",
+        "penyulang_id": 15,
+        "feeder_ulp_id": 1,
+        "total_db_feeder_assets": 205,
+        "total_db_unassigned_ulp_assets": 0,
+        "total_db_temuan": 36,
+        "total_response_features": 241,
+        "feeder_features_count": 205,
+        "unassigned_features_count": 0,
+        "finding_features_count": 36,
+        "jtm_count": 178,
+        "gardu_count": 23,
+        "trafo_count": 0,
+        "switch_count": 4,
+        "temuan_count": 36,
+        "rejected_cross_feeder_assets": 0,
+        "rejected_cross_ulp_assets": 4239,
+        "layer_separation_verified": true,
+        "data_provenance_summary": {
+            "feeder_source_table": "assets",
+            "unassigned_source_table": "assets",
+            "finding_source_table": "temuan",
+            "enforced_feeder_id": 15,
+            "enforced_ulp_id": 1,
+            "no_synthetic_assets": true
+        }
+    }
+}

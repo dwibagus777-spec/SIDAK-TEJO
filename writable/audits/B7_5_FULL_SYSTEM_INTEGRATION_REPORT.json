@@ -1,0 +1,191 @@
+{
+  "audit_metadata": {
+    "report_id": "B7_5_FULL_SYSTEM_INTEGRATION_VERIFICATION",
+    "gate": "GATE_B7_5_FULL_SYSTEM_INTEGRATION_AND_ADVERSARIAL_SUITE",
+    "service_suite": [
+      "FaultCaseService",
+      "FaultDispatchService",
+      "FieldFindingsService",
+      "FaultFeedbackService",
+      "MobileSyncService",
+      "MobileEvidenceUploadService",
+      "MobileSyncPullService"
+    ],
+    "specification_version": "vB7-SPEC-1.1",
+    "predecessor_gates": [
+      "GATE_B7_1_LOCAL_SCHEMA_MIGRATION",
+      "GATE_B7_2_SYNC_INGESTION_AND_IDEMPOTENCY",
+      "GATE_B7_3_CHUNKED_EVIDENCE_UPLOAD_AND_CHECKSUM_SEAL",
+      "GATE_B7_4_DOWNSTREAM_DELTA_PULL_ENGINE"
+    ],
+    "generated_at": "2026-09-26T16:58:00+07:00",
+    "execution_target": "LOCAL_TESTBED_ONLY",
+    "production_database_status": "STRICTLY_UNTOUCHED_LOCKED",
+    "verdict": "PASS_LOCAL_TESTBED_VERIFIED"
+  },
+  "e2e_correlation_id_chain": {
+    "invariant": "E2E_CORRELATION_ID_UNBROKEN",
+    "description": "Deterministic end-to-end forensic traceability linking every step of the offline inspection pipeline",
+    "pipeline_trace": [
+      {
+        "stage": "SYNC",
+        "identifier": "sync_id",
+        "description": "Batch envelope tracking the mobile device synchronization session"
+      },
+      {
+        "stage": "OPERATION",
+        "identifier": "client_submission_uuid",
+        "description": "Unique client-generated UUID per field action enforcing per-operation atomicity"
+      },
+      {
+        "stage": "DOMAIN_ENTITY",
+        "identifier": "entity_type + entity_id",
+        "description": "Authoritative B.6 records (fault_cases, field_investigations, field_findings, field_evidence)"
+      },
+      {
+        "stage": "EVIDENCE",
+        "identifier": "evidence_id + correlation_id + sha256",
+        "description": "Chunked upload staging bound to domain finding and embedded in metadata_json"
+      },
+      {
+        "stage": "JOURNAL",
+        "identifier": "journal_seq",
+        "description": "Monotonic sequence cursor recording authoritative execution receipt and payload hash"
+      },
+      {
+        "stage": "PULL_DELTA",
+        "identifier": "cursor_in -> next_cursor",
+        "description": "Downstream replication stream delivering hydrated domain entities matched by correlation UUID"
+      }
+    ],
+    "forensic_audit_integrity": "PROVEN_100_PERCENT_TRACEABLE"
+  },
+  "adversarial_test_matrix": [
+    {
+      "test_method": "testE2EOfflineCompleteLifecycleAndCorrelationChain",
+      "scenario": "Offline complete lifecycle: Dispatch -> In-flight -> Arrival -> Investigation -> Finding -> Multi-chunk evidence -> Reconnect -> Push batch -> Domain execution -> Sealed evidence -> Delta pull -> Mobile reconstruction",
+      "result": "Domain state 100% consistent across all 7 layers; E2E Correlation ID validated end-to-end",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testPushBatchPartialSuccessIsolation",
+      "scenario": "Push batch containing 1 valid operation and 1 invalid operation (mock location)",
+      "result": "HTTP 207 Multi-Status: Valid op ACCEPTED; Invalid op REJECTED; Rejection persisted via independent journal TX",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testBatchReplayAndPerUuidIdempotency",
+      "scenario": "Replay of identical batch and individual client_submission_uuid",
+      "result": "HTTP 200 DUPLICATE: Resolved idempotently from cached receipt with zero duplicate domain rows",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testEvidenceChunkOutOrderDuplicateAndConflict",
+      "scenario": "Out-of-order chunk arrival, duplicate chunk deduplication, and hash conflict rejection",
+      "result": "Chunk 1 before Chunk 0 accepted; duplicate chunk deduplicated; conflicting hash rejected (HTTP 409); sealing succeeds",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testDisconnectMidUploadAndResumeReconnect",
+      "scenario": "Mid-upload connection loss (chunks incomplete), premature seal rejection, and resume upon reconnect",
+      "result": "Premature seal rejected (HTTP 422 CHUNKS_INCOMPLETE); missing chunk uploaded upon reconnect; assembly sealed",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testEvidenceSha256MismatchAbortsSealing",
+      "scenario": "Assembled binary SHA-256 does not match pre-declared target hash",
+      "result": "HTTP 422 ASSEMBLED_SHA256_MISMATCH: Staging files purged, zero domain rows created in field_evidence",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testDeviceRevocationPriorToReconnect",
+      "scenario": "Device revoked by administrator prior to reconnect attempting push, upload, and pull",
+      "result": "Push (HTTP 403), Upload (HTTP 403), and Pull (HTTP 403) all blocked; historical journal preserved (B7-G19)",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testFsmTransitionConflictRejection",
+      "scenario": "Mobile attempts illegal FSM state transition (direct jump to CLOSED without findings)",
+      "result": "HTTP 422: Domain FSM rejects transition; rejection recorded in mobile_sync_journal via independent TX",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testFindingDifferentFromFliPrediction",
+      "scenario": "Ground truth separation: Field crew discovers fault on adjacent asset (#395) differing from FLI prediction (#394)",
+      "result": "HTTP 200: predicted_asset_id preserved alongside actual_asset_id (B7-G09)",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testPullAfterPushAndConcurrentAppend",
+      "scenario": "Delta pull after push, followed by concurrent journal append during client idle",
+      "result": "Subsequent pull with next_cursor receives newly appended operations with zero skipped records",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testUserScopingIsolation",
+      "scenario": "User A pulling with user_scope_only = true when operations from User B exist",
+      "result": "User A receives only User A's records; User B records remain strictly invisible",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testRejectedOperationsExcludedFromDelta",
+      "scenario": "Operations rejected during ingestion exist in journal",
+      "result": "REJECTED records remain server-only audit artifacts and are never streamed downstream to mobile",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testZeroTopologyMutationThroughoutE2E",
+      "scenario": "Topology metrics measured before and after comprehensive E2E lifecycle",
+      "result": "Delta active translines = 0, Delta total translines = 0, Delta active assets = 0, Delta total assets = 0",
+      "status": "PASS"
+    },
+    {
+      "test_method": "testDeterministicFullReplay",
+      "scenario": "Replay of identical operations across independent executions",
+      "result": "Execution receipts, entity IDs, and journal sequences reproduce deterministically",
+      "status": "PASS"
+    }
+  ],
+  "test_execution_summary": {
+    "b7_5_dedicated_suite": {
+      "file": "tests/Unit/B7FullSystemIntegrationTest.php",
+      "tests": 14,
+      "assertions": 93,
+      "failures": 0,
+      "errors": 0,
+      "status": "ALL_GREEN"
+    },
+    "b7_all_suites": {
+      "tests": 61,
+      "assertions": 370,
+      "failures": 0,
+      "errors": 0,
+      "status": "ALL_GREEN"
+    },
+    "full_phase_b_regression": {
+      "tests": 216,
+      "assertions": 1123,
+      "failures": 0,
+      "errors": 0,
+      "status": "ALL_GREEN"
+    }
+  },
+  "topology_sentinel": {
+    "baseline_fingerprint": "TOPOLOGY-20260925-243-ad2c9fcb",
+    "active_translines": 243,
+    "physical_translines": 252,
+    "active_assets": 5236,
+    "physical_assets": 5549,
+    "network_span_meters": 9418.37,
+    "gis_translines_delta": 0,
+    "assets_delta": 0,
+    "reconciliation_status": "100_PERCENT_RECONCILED_IMMUTABLE"
+  },
+  "production_governance": {
+    "target_host": "sidaktejo.site (2.57.91.151)",
+    "target_database": "u282839912_sidak",
+    "production_actions": "STRICTLY_NONE",
+    "production_delta": 0,
+    "lock_state": "SEALED_AND_UNTOUCHED"
+  }
+}

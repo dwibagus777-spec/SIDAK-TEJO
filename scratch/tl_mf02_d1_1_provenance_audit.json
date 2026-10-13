@@ -1,0 +1,354 @@
+{
+    "audit_timestamp": "2026-09-12T17:31:12+07:00",
+    "phase": "TL-MF-02 PHASE D1.1 PROVENANCE RECONCILIATION",
+    "feeder_id": 56,
+    "feeder_name": "BANJARAN",
+    "status": "D1.1_PROVENANCE_PASS",
+    "total_pks_audited": 9,
+    "pass_count": 9,
+    "anomaly_count": 0,
+    "protected_domains_pass": true,
+    "stop_gate_enforced": true,
+    "current_table_fingerprints": {
+        "assets": {
+            "count": 5549,
+            "sha256": "d774be4f9d338fcdcdac5f6eac9f4a06f74300e1a293e10a8968c133df799ee9"
+        },
+        "gis_translines": {
+            "count": 225,
+            "sha256": "d6f4627aa24c9e0215572b0c698166ea851f72bd30d5992530f2781ddc66b530"
+        },
+        "gis_transline_proposals": {
+            "count": 56,
+            "sha256": "74974b866f483ea7fc624c5ffe5f506e85a7a66da4a1e9eb64ee401c8a6d8ca5"
+        },
+        "temuan": {
+            "count": 638,
+            "sha256": "48ae4d223e842a85ae509eeee49203ee2240cb4517b66a0e11bd3db05bb94a3a"
+        },
+        "temuan_materials": {
+            "count": 0,
+            "sha256": "55f43e2fefa3f34c5c82129161873375891626eb56f668b9da5a6414a3585aae"
+        },
+        "sections": {
+            "count": 510,
+            "sha256": "9e36669b061f9879a82825e0cb288f5d24cbdafbabdd85cd7075feceef4b621e"
+        },
+        "penyulang": {
+            "count": 134,
+            "sha256": "cb3ae4e4a8b891cf789fb4505aad2e4d8ae22bf94c9eaacec9fe98777628bb67"
+        },
+        "ulps": {
+            "count": 3,
+            "sha256": "1c3a2ccc852e80040f88b0a8df52ba4dabd1b36cd56e0ed45b5c9cf6edd3a531"
+        }
+    },
+    "pk_reconciliations": {
+        "227": {
+            "pk": 227,
+            "transline_code": "TL-56-5512-5513",
+            "natural_key": "TL-NAT:56:5512-5513",
+            "source_asset_id": 5512,
+            "source_asset_code": "AST-KRN-BANJARAN-JTM-004",
+            "source_asset_name": "BANJARAN BARU_06",
+            "source_penyulang_id": 56,
+            "source_latitude": -7.357666707,
+            "source_longitude": 112.5677777,
+            "target_asset_id": 5513,
+            "target_asset_code": "AST-KRN-BANJARAN-JTM-005",
+            "target_asset_name": "BANJARAN BARU_04",
+            "target_penyulang_id": 56,
+            "target_latitude": -7.358138859,
+            "target_longitude": 112.5678056,
+            "geometry_endpoint_a": [
+                112.5677777,
+                -7.357666707
+            ],
+            "geometry_endpoint_b": [
+                112.5678056,
+                -7.358138859
+            ],
+            "coord_delta_source_m": 0,
+            "coord_delta_target_m": 0,
+            "db_span_m": 52.59,
+            "calculated_span_m": 52.59,
+            "span_abs_diff_m": 0.001,
+            "span_pct_diff": 0.0019,
+            "temuan_collision": false,
+            "anomalies": [],
+            "verdict": "PASS"
+        },
+        "228": {
+            "pk": 228,
+            "transline_code": "TL-56-5513-5514",
+            "natural_key": "TL-NAT:56:5513-5514",
+            "source_asset_id": 5513,
+            "source_asset_code": "AST-KRN-BANJARAN-JTM-005",
+            "source_asset_name": "BANJARAN BARU_04",
+            "source_penyulang_id": 56,
+            "source_latitude": -7.358138859,
+            "source_longitude": 112.5678056,
+            "target_asset_id": 5514,
+            "target_asset_code": "AST-KRN-BANJARAN-JTM-006",
+            "target_asset_name": "BANJARAN BARU_09",
+            "target_penyulang_id": 56,
+            "target_latitude": -7.358472208,
+            "target_longitude": 112.5678056,
+            "geometry_endpoint_a": [
+                112.5678056,
+                -7.358138859
+            ],
+            "geometry_endpoint_b": [
+                112.5678056,
+                -7.358472208
+            ],
+            "coord_delta_source_m": 0,
+            "coord_delta_target_m": 0,
+            "db_span_m": 37.07,
+            "calculated_span_m": 37.07,
+            "span_abs_diff_m": 0.0033,
+            "span_pct_diff": 0.0089,
+            "temuan_collision": false,
+            "anomalies": [],
+            "verdict": "PASS"
+        },
+        "229": {
+            "pk": 229,
+            "transline_code": "TL-56-5903-5904",
+            "natural_key": "TL-NAT:56:5903-5904",
+            "source_asset_id": 5903,
+            "source_asset_code": "AST-KRN-BANJARAN-JTM-395",
+            "source_asset_name": "BANJARAN_0220",
+            "source_penyulang_id": 56,
+            "source_latitude": -7.34997,
+            "source_longitude": 112.51342,
+            "target_asset_id": 5904,
+            "target_asset_code": "AST-KRN-BANJARAN-JTM-396",
+            "target_asset_name": "BANJARAN_0219",
+            "target_penyulang_id": 56,
+            "target_latitude": -7.34999,
+            "target_longitude": 112.5139,
+            "geometry_endpoint_a": [
+                112.51342,
+                -7.34997
+            ],
+            "geometry_endpoint_b": [
+                112.5139,
+                -7.34999
+            ],
+            "coord_delta_source_m": 0,
+            "coord_delta_target_m": 0,
+            "db_span_m": 52.98,
+            "calculated_span_m": 52.98,
+            "span_abs_diff_m": 0.0017,
+            "span_pct_diff": 0.0032,
+            "temuan_collision": false,
+            "anomalies": [],
+            "verdict": "PASS"
+        },
+        "230": {
+            "pk": 230,
+            "transline_code": "TL-56-5611-5613",
+            "natural_key": "TL-NAT:56:5611-5613",
+            "source_asset_id": 5611,
+            "source_asset_code": "AST-KRN-BANJARAN-JTM-103",
+            "source_asset_name": "BANJARAN_0714",
+            "source_penyulang_id": 56,
+            "source_latitude": -7.354643019,
+            "source_longitude": 112.534623,
+            "target_asset_id": 5613,
+            "target_asset_code": "AST-KRN-BANJARAN-JTM-105",
+            "target_asset_name": "BANJARAN_0713",
+            "target_penyulang_id": 56,
+            "target_latitude": -7.35452299,
+            "target_longitude": 112.534635,
+            "geometry_endpoint_a": [
+                112.534623,
+                -7.354643019
+            ],
+            "geometry_endpoint_b": [
+                112.534635,
+                -7.35452299
+            ],
+            "coord_delta_source_m": 0,
+            "coord_delta_target_m": 0,
+            "db_span_m": 13.41,
+            "calculated_span_m": 13.41,
+            "span_abs_diff_m": 0.0021,
+            "span_pct_diff": 0.0154,
+            "temuan_collision": false,
+            "anomalies": [],
+            "verdict": "PASS"
+        },
+        "231": {
+            "pk": 231,
+            "transline_code": "TL-56-5541-5543",
+            "natural_key": "TL-NAT:56:5541-5543",
+            "source_asset_id": 5541,
+            "source_asset_code": "AST-KRN-BANJARAN-JTM-033",
+            "source_asset_name": "BANJARAN_0168",
+            "source_penyulang_id": 56,
+            "source_latitude": -7.3496,
+            "source_longitude": 112.52611,
+            "target_asset_id": 5543,
+            "target_asset_code": "AST-KRN-BANJARAN-JTM-035",
+            "target_asset_name": "BANJARAN_0169",
+            "target_penyulang_id": 56,
+            "target_latitude": -7.34965,
+            "target_longitude": 112.52562,
+            "geometry_endpoint_a": [
+                112.52611,
+                -7.3496
+            ],
+            "geometry_endpoint_b": [
+                112.52562,
+                -7.34965
+            ],
+            "coord_delta_source_m": 0,
+            "coord_delta_target_m": 0,
+            "db_span_m": 54.32,
+            "calculated_span_m": 54.32,
+            "span_abs_diff_m": 0.0031,
+            "span_pct_diff": 0.0057,
+            "temuan_collision": false,
+            "anomalies": [],
+            "verdict": "PASS"
+        },
+        "232": {
+            "pk": 232,
+            "transline_code": "TL-56-5509-5744",
+            "natural_key": "TL-NAT:56:5509-5744",
+            "source_asset_id": 5509,
+            "source_asset_code": "AST-KRN-BANJARAN-JTM-001",
+            "source_asset_name": "BANJARAN BARU_05",
+            "source_penyulang_id": 56,
+            "source_latitude": -7.356333314,
+            "source_longitude": 112.5679722,
+            "target_asset_id": 5744,
+            "target_asset_code": "AST-KRN-BANJARAN-JTM-236",
+            "target_asset_name": "BANJARAN_0072",
+            "target_penyulang_id": 56,
+            "target_latitude": -7.35623,
+            "target_longitude": 112.56787,
+            "geometry_endpoint_a": [
+                112.5679722,
+                -7.356333314
+            ],
+            "geometry_endpoint_b": [
+                112.56787,
+                -7.35623
+            ],
+            "coord_delta_source_m": 0,
+            "coord_delta_target_m": 0,
+            "db_span_m": 16.09,
+            "calculated_span_m": 16.09,
+            "span_abs_diff_m": 0.0035,
+            "span_pct_diff": 0.0216,
+            "temuan_collision": false,
+            "anomalies": [],
+            "verdict": "PASS"
+        },
+        "233": {
+            "pk": 233,
+            "transline_code": "TL-56-5511-5516",
+            "natural_key": "TL-NAT:56:5511-5516",
+            "source_asset_id": 5511,
+            "source_asset_code": "AST-KRN-BANJARAN-JTM-003",
+            "source_asset_name": "BANJARAN BARU_02",
+            "source_penyulang_id": 56,
+            "source_latitude": -7.356888866,
+            "source_longitude": 112.5678889,
+            "target_asset_id": 5516,
+            "target_asset_code": "AST-KRN-BANJARAN-JTM-008",
+            "target_asset_name": "BANJARAN BARU_08",
+            "target_penyulang_id": 56,
+            "target_latitude": -7.356638918,
+            "target_longitude": 112.5679166,
+            "geometry_endpoint_a": [
+                112.5678889,
+                -7.356888866
+            ],
+            "geometry_endpoint_b": [
+                112.5679166,
+                -7.356638918
+            ],
+            "coord_delta_source_m": 0,
+            "coord_delta_target_m": 0,
+            "db_span_m": 27.96,
+            "calculated_span_m": 27.96,
+            "span_abs_diff_m": 0.0003,
+            "span_pct_diff": 0.0011,
+            "temuan_collision": false,
+            "anomalies": [],
+            "verdict": "PASS"
+        },
+        "234": {
+            "pk": 234,
+            "transline_code": "TL-56-5528-5717",
+            "natural_key": "TL-NAT:56:5528-5717",
+            "source_asset_id": 5528,
+            "source_asset_code": "AST-KRN-BANJARAN-JTM-020",
+            "source_asset_name": "BANJARAN_0229",
+            "source_penyulang_id": 56,
+            "source_latitude": -7.34961,
+            "source_longitude": 112.50885,
+            "target_asset_id": 5717,
+            "target_asset_code": "AST-KRN-BANJARAN-JTM-209",
+            "target_asset_name": "BANJARAN_0424",
+            "target_penyulang_id": 56,
+            "target_latitude": -7.34982,
+            "target_longitude": 112.50879,
+            "geometry_endpoint_a": [
+                112.50885,
+                -7.34961
+            ],
+            "geometry_endpoint_b": [
+                112.50879,
+                -7.34982
+            ],
+            "coord_delta_source_m": 0,
+            "coord_delta_target_m": 0,
+            "db_span_m": 24.27,
+            "calculated_span_m": 24.27,
+            "span_abs_diff_m": 0.0003,
+            "span_pct_diff": 0.0014,
+            "temuan_collision": false,
+            "anomalies": [],
+            "verdict": "PASS"
+        },
+        "235": {
+            "pk": 235,
+            "transline_code": "TL-56-5529-5610",
+            "natural_key": "TL-NAT:56:5529-5610",
+            "source_asset_id": 5529,
+            "source_asset_code": "AST-KRN-BANJARAN-JTM-021",
+            "source_asset_name": "BANJARAN_0634",
+            "source_penyulang_id": 56,
+            "source_latitude": -7.35363,
+            "source_longitude": 112.57047,
+            "target_asset_id": 5610,
+            "target_asset_code": "AST-KRN-BANJARAN-JTM-102",
+            "target_asset_name": "BANJARAN_0001",
+            "target_penyulang_id": 56,
+            "target_latitude": -7.35348,
+            "target_longitude": 112.57035,
+            "geometry_endpoint_a": [
+                112.57047,
+                -7.35363
+            ],
+            "geometry_endpoint_b": [
+                112.57035,
+                -7.35348
+            ],
+            "coord_delta_source_m": 0,
+            "coord_delta_target_m": 0,
+            "db_span_m": 21.29,
+            "calculated_span_m": 21.29,
+            "span_abs_diff_m": 0.0015,
+            "span_pct_diff": 0.0069,
+            "temuan_collision": false,
+            "anomalies": [],
+            "verdict": "PASS"
+        }
+    }
+}

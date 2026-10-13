@@ -1,0 +1,41 @@
+{
+    "plan_id": "CR-ASSET01-PLAN-20260925_153618",
+    "created_at": "2026-09-25 15:36:18",
+    "generator": "MassAssetCommitService (CR-ASSET-01)",
+    "files_included": [
+        "unit_test_sample.csv"
+    ],
+    "summary": {
+        "total_rows_scanned": 2,
+        "auto_accept_assets": 1,
+        "auto_review_assets": 0,
+        "quarantine_assets": 0,
+        "candidate_translines": 0,
+        "isolated_nodes": 1,
+        "topology_review_held": 0
+    },
+    "auto_accept_assets": [
+        {
+            "tier": "AUTO_ACCEPT",
+            "action": "INSERT",
+            "payload": {
+                "kode_asset": "PLAN_TEST_1",
+                "nama_asset": "PLAN_TEST_1",
+                "penyulang_id": 1,
+                "latitude": -7.42,
+                "longitude": 112.72
+            }
+        }
+    ],
+    "auto_review_assets": [],
+    "quarantine_assets": [],
+    "candidate_translines": [],
+    "isolated_nodes": [
+        {
+            "asset_code": "PLAN_TEST_1",
+            "status": "ISOLATED_NODE"
+        }
+    ],
+    "topology_review": [],
+    "fingerprint": "23c6627d10f67c76582720ecbb22184167748dc3bb780c2a680c66e550b6f030"
+}

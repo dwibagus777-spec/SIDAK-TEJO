@@ -1,0 +1,208 @@
+{
+  "milestone": "SLD-05R",
+  "title": "Engineering Drawing Readability Remediation",
+  "audit_date": "2026-09-16T21:16:00+07:00",
+  "status": "HOLD_AWAITING_HUMAN_VISUAL_AUDIT",
+  "sealed": false,
+  "target_feeder": {
+    "id": 15,
+    "code": "PYL-015",
+    "name": "BANJAR KEMANTREN",
+    "gi_name": "GI BUDURAN",
+    "source_asset_id": 3231,
+    "source_construction": "TM11"
+  },
+  "deployment": {
+    "target_host": "https://sidaktejo.site",
+    "git_remote": "origin/main",
+    "commits": [
+      {
+        "hash": "f0cbee0",
+        "message": "feat(sld): implement SLD-05R engineering drawing readability remediation"
+      },
+      {
+        "hash": "d00b81d",
+        "message": "fix(sld): add cache buster to sld-renderer-engine.js script tag"
+      }
+    ],
+    "opcache_reset": true,
+    "auto_deploy_hook_status": 200
+  },
+  "amendments": {
+    "amendment_1": {
+      "title": "Authoritative Main Trunk Derivation",
+      "rule": "Derived strictly from edge.component_id === 'C15-01', never guessed from grid_y === 0",
+      "visual_style": {
+        "stroke": "#0f172a",
+        "stroke_width": 3.2,
+        "fragment_stroke": "#64748b",
+        "fragment_width": 2.0,
+        "fragment_dash": "5,3"
+      },
+      "status": "VERIFIED"
+    },
+    "amendment_2": {
+      "title": "Active Translines Reconciliation",
+      "raw_db_rows": 206,
+      "inactive_soft_deleted_rows": 9,
+      "reconciled_active_edges": 197,
+      "query_filter": "is_active = 1 AND status = 'ACTIVE'",
+      "status": "VERIFIED"
+    },
+    "amendment_3": {
+      "title": "Light Engineering Drawing Canvas",
+      "canvas_background": "#ffffff",
+      "grid_color": "#e2e8f0",
+      "ink_color": "#0f172a",
+      "contrast_ratio": ">14:1",
+      "status": "VERIFIED"
+    },
+    "amendment_4": {
+      "title": "GI Buduran Substation Anchor",
+      "substation_header": true,
+      "busbar_label": "GARDU INDUK BUDURAN (20 kV FEEDER BAY)",
+      "source_glyph": "▲",
+      "takeoff_cable": {
+        "type": "RED_STEPPED_ROUTE",
+        "stroke": "#dc2626",
+        "stroke_width": 3.5,
+        "target_node": 3231
+      },
+      "status": "VERIFIED"
+    },
+    "amendment_5": {
+      "title": "Standardized PLN/IEC Schematic Glyphs",
+      "glyphs": {
+        "lbs": "quartered_circle_alternating_quadrants",
+        "recloser": "enclosed_bowtie",
+        "pms": "amber_diamond_with_question_mark_contact_unknown",
+        "gtt_1t_cantol": "solid_single_blue_triangle_downward",
+        "gtt_2t_portal": "solid_dual_blue_triangles_with_capacity_badge"
+      },
+      "status": "VERIFIED"
+    }
+  },
+  "zoom_density_architecture": {
+    "low_zoom": {
+      "threshold": "< 75%",
+      "mode": "ROUTE_OVERVIEW",
+      "pole_labels": "SUPPRESSED",
+      "span_pills": "SUPPRESSED"
+    },
+    "medium_zoom": {
+      "threshold": "75% - 130%",
+      "mode": "STANDARD_ENGINEERING",
+      "pole_labels": "COLLISION_RESOLVED",
+      "span_pills": "COLLISION_RESOLVED"
+    },
+    "high_zoom": {
+      "threshold": "> 130%",
+      "mode": "FORENSIC_INSPECTION",
+      "pole_labels": "EXPOSED",
+      "asset_names": "EXPOSED",
+      "construction_codes": "EXPOSED"
+    }
+  },
+  "test_execution": {
+    "runtime": "PHP 8.2.12",
+    "phpunit_version": "10.5.64",
+    "total_tests": 109,
+    "total_assertions": 8582,
+    "passed": 109,
+    "failed": 0,
+    "errors": 0,
+    "duration_seconds": 4.64,
+    "memory_mb": 22.0,
+    "status": "PASS_100_PERCENT"
+  },
+  "zero_write_audit": {
+    "delta_database": 0,
+    "schema_mutations": 0,
+    "data_mutations": 0,
+    "tables_mutated": [],
+    "status": "VERIFIED"
+  },
+  "production_api_verification": {
+    "endpoint": "https://sidaktejo.site/api/sld/feeder/15/layout",
+    "http_status": 200,
+    "response_status": "success",
+    "nodes_count": 205,
+    "edges_count": 197,
+    "diagnostics_total_edges": 197,
+    "source_demarcation": {
+      "name": "GI BUDURAN",
+      "asset_id": 3231,
+      "construction": "TM11"
+    },
+    "status": "VERIFIED"
+  },
+  "cdp_visual_audit": {
+    "endpoint": "https://sidaktejo.site/sld/view/15",
+    "resolution": "1920x1080",
+    "views_captured": 7,
+    "screenshots_directory": "writable/audits/screenshots/",
+    "views": [
+      {
+        "id": "view1",
+        "file": "sld05r_view1_panoramic_engineering.png",
+        "title": "Panoramic Engineering Drawing Initial Viewport",
+        "description": "Crisp white canvas, faint grid, GI Buduran anchor, horizontal backbone flow"
+      },
+      {
+        "id": "view2",
+        "file": "sld05r_view2_fit_main_network.png",
+        "title": "Fit Main Network (Zone 1 / C15-01)",
+        "description": "Full continuous backbone, heavy 3.2px dark ink, orthogonal branch routing"
+      },
+      {
+        "id": "view3",
+        "file": "sld05r_view3_closeup_incomer_takeoff.png",
+        "title": "Close-up Incomer Takeoff (156% Zoom)",
+        "description": "Clean pole pills (#3231, etc.), stepped red takeoff line, offset span length badges"
+      },
+      {
+        "id": "view4",
+        "file": "sld05r_view4_branching_route.png",
+        "title": "Branching Route & Lateral Taps",
+        "description": "Branch hierarchy, GTT and PMS symbols, zero label collision along spans"
+      },
+      {
+        "id": "view5",
+        "file": "sld05r_view5_full_network_all_zones.png",
+        "title": "Full Network Overview (All 3 Zones)",
+        "description": "All 3 zones, progressive clutter suppression (<75% zoom), high-level route tracing"
+      },
+      {
+        "id": "view6",
+        "file": "sld05r_view6_detail_drawer_node.png",
+        "title": "Read-Only Detail Drawer Inspection",
+        "description": "Slide-out panel for node #3231, read-only delta=0 warning, comprehensive asset attributes"
+      },
+      {
+        "id": "view7",
+        "file": "sld05r_view7_simplified_mode.png",
+        "title": "Simplified Line Sections Mode",
+        "description": "Consolidated section corridors between switching keypoints for dispatch"
+      }
+    ],
+    "dom_metrics": {
+      "nodes": 205,
+      "edges": 197,
+      "pole_labels": 153,
+      "span_pills": 191,
+      "has_gi_anchor": true,
+      "gi_nodes": 1
+    },
+    "status": "VERIFIED"
+  },
+  "downstream_milestones_lock": {
+    "sld_06": {
+      "title": "Export, Vector Print & PDF Engine",
+      "status": "LOCKED"
+    },
+    "sld_07": {
+      "title": "Operational Dynamic Switching & Simulation",
+      "status": "LOCKED"
+    }
+  }
+}

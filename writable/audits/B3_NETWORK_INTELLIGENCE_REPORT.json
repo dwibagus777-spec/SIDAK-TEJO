@@ -1,0 +1,74 @@
+{
+    "audit_metadata": {
+        "report_title": "SIDAK TEJO Phase B.3 - Network Intelligence Live Production Audit",
+        "phase": "PHASE_B3_NETWORK_INTELLIGENCE",
+        "timestamp_wib": "2026-09-25 08:45:11 WIB",
+        "snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+        "overall_verdict": "PHASE_B3_NETWORK_INTELLIGENCE_VERIFIED",
+        "read_only_verified": true,
+        "database_mutations": 0,
+        "duration_ms": 218.15
+    },
+    "forensic_scorecard": {
+        "check_1_authoritative_baseline": {
+            "name": "AUTHORITATIVE_BASELINE_243_EDGES",
+            "status": "PASS",
+            "total_active_edges": 243,
+            "expected_edges": 243,
+            "total_network_km": 9.418,
+            "component_count": 4993
+        },
+        "check_2_feeder_118_anchor": {
+            "name": "FEEDER_118_ANCHOR_VERIFICATION",
+            "status": "PASS",
+            "feeder_118_edge_count": 1,
+            "expected_edge_count": 1,
+            "authoritative_transline": "TL-118-5245-5246",
+            "root_resolution": "CONNECTED_NODE_FALLBACK",
+            "root_confidence": 0.5,
+            "tiang_20_21_blocked": true
+        },
+        "check_3_section_boundary_switches": {
+            "name": "SECTION_BOUNDARY_SWITCH_CLASSIFICATION",
+            "status": "PASS",
+            "feeder_15_switch_edges": 2,
+            "legacy_switches": [
+                "TL #6 (BANJARKEMANTRAN_28 -> 29)",
+                "TL #8 (BANJARKEMANTRAN_28 -> 1)"
+            ]
+        },
+        "check_4_path_telemetry_dijkstra": {
+            "name": "DIJKSTRA_SHORTEST_PATH_TELEMETRY",
+            "status": "PASS",
+            "algorithm": "DIJKSTRA",
+            "reachable": true,
+            "distance_meters": 27.82,
+            "expected_distance": 27.82
+        },
+        "check_5_graph_adjacency_symmetry": {
+            "name": "UNDIRECTED_ADJACENCY_SYMMETRY",
+            "status": "PASS",
+            "asymmetry_errors": 0
+        },
+        "check_6_network_integrity": {
+            "name": "NETWORK_INTEGRITY_FIREWALL",
+            "status": "PASS",
+            "cross_feeder_edges": 0,
+            "cross_ulp_edges": 0,
+            "multi_edge_violations": 0,
+            "verdict": "HEALTHY_WITH_ISOLATED_OBSERVATIONS"
+        },
+        "check_7_zero_database_mutation": {
+            "name": "ZERO_DATABASE_MUTATION_INVARIANT",
+            "status": "PASS",
+            "translines_delta": 0,
+            "assets_delta": 0
+        }
+    },
+    "governance_queues_retained": {
+        "warning_review_queue": 2289,
+        "review_required_queue": 1730,
+        "rejected_edges_queue": 1158,
+        "policy": "RETAINED_IMMUTABLY_FOR_EVIDENCE_NOT_AUTO_COMMITTED"
+    }
+}

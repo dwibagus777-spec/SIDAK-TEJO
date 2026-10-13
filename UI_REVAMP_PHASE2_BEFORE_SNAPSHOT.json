@@ -1,0 +1,52 @@
+{
+    "timestamp": "2026-09-12T19:34:35+07:00",
+    "route": "dashboard",
+    "http_status": 200,
+    "captured_live_kpi": {
+        "total_temuan": "596",
+        "emergency": "137",
+        "high": "411",
+        "medium": "48",
+        "belum": "495",
+        "wo_aktif": "1",
+        "selesai": "89",
+        "target_harian": "18 / 25",
+        "target_harian_pct": "72%"
+    },
+    "map_pins_count": 582,
+    "quick_actions": [
+        {
+            "url": "https://sidaktejo.site/temuan/create",
+            "label": "Input Temuan"
+        },
+        {
+            "url": "https://sidaktejo.site/temuan",
+            "label": "Data Temuan"
+        },
+        {
+            "url": "https://sidaktejo.site/temuan/update-pekerjaan",
+            "label": "Update Pekerjaan"
+        },
+        {
+            "url": "https://sidaktejo.site/ai-copilot",
+            "label": "Voice AI"
+        },
+        {
+            "url": "https://sidaktejo.site/temuan/terdekat",
+            "label": "Lokasi Terdekat"
+        }
+    ],
+    "sla_cards": {
+        "EMERGENCY (SLA 3 Hari)": "137",
+        "HIGH (SLA 7 Hari)": "411",
+        "MEDIUM (SLA 31 Hari)": "48",
+        "SLA MELEWATI (OVERDUE)": "1 Pekerjaan"
+    },
+    "dom_elements_present": {
+        "emc_clock": true,
+        "permanent_motivation_text": true,
+        "emc_mini_map": true,
+        "sidak_mobile_dock": false,
+        "global_search_wrapper": true
+    }
+}

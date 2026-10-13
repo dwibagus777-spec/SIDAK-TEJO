@@ -1,0 +1,334 @@
+{
+    "snapshot_id": "MR01_POST_SNAPSHOT",
+    "change_component": "MR-01 (Material Request Governance & Technical Approval Workflow)",
+    "phase": "PHASE_3_FINAL_FORENSIC_SEAL",
+    "captured_at": "2026-08-25 16:27:04 WIB",
+    "captured_at_utc": "2026-08-25T09:27:04Z",
+    "execution_mode": "OCTA_TIER_FINAL_FORENSIC_SEAL",
+    "parent_lineage": {
+        "snapshot_id": "MR01_PRE_SNAPSHOT",
+        "snapshot_hash": "37dcbffa13047fd63b0b376a09307376efa5186073eab9714718c4fae60b5ac0",
+        "cc06_parent_lineage": "CC06_POST_SNAPSHOT",
+        "cr08_parent_lineage": "CR08_POST_SNAPSHOT"
+    },
+    "governance_classification": {
+        "group_a_protected_immutable": {
+            "total_tables": 10,
+            "mutations": 0,
+            "rule": "STRICTLY 0 MUTATIONS PERMITTED",
+            "status": "100% INTACT & IDENTICAL",
+            "tables": {
+                "temuan": {
+                    "table_name": "temuan",
+                    "exists": true,
+                    "row_count": 441,
+                    "pk_min": 1,
+                    "pk_max": 443,
+                    "sample_checksum": "837cdbc44331a1b728fa73b9934acbf1d41c14300e987a081f65e73ee26707ee",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                },
+                "penyulang": {
+                    "table_name": "penyulang",
+                    "exists": true,
+                    "row_count": 134,
+                    "pk_min": 1,
+                    "pk_max": 134,
+                    "sample_checksum": "837cdbc44331a1b728fa73b9934acbf1d41c14300e987a081f65e73ee26707ee",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                },
+                "sections": {
+                    "table_name": "sections",
+                    "exists": true,
+                    "row_count": 508,
+                    "pk_min": 1,
+                    "pk_max": 508,
+                    "sample_checksum": "837cdbc44331a1b728fa73b9934acbf1d41c14300e987a081f65e73ee26707ee",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                },
+                "ulps": {
+                    "table_name": "ulps",
+                    "exists": true,
+                    "row_count": 4,
+                    "pk_min": 1,
+                    "pk_max": 4,
+                    "sample_checksum": "df3165d3b47fa7dd8a44853faef93ca15f5cddbcfd4aa1d17923b3ceacae9fe4",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                },
+                "historical_feeder_interruptions": {
+                    "table_name": "historical_feeder_interruptions",
+                    "exists": true,
+                    "row_count": 841,
+                    "pk_min": 13,
+                    "pk_max": 853,
+                    "sample_checksum": "67fb301d228fccaed4637b3f9da19a058caae31af20b55098f52701fc57fab08",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                },
+                "preventive_risk_advisory_snapshots": {
+                    "table_name": "preventive_risk_advisory_snapshots",
+                    "exists": true,
+                    "row_count": 45,
+                    "pk_min": 1,
+                    "pk_max": 45,
+                    "sample_checksum": "a4435d57ff91e7416d7c9769197e8b262f62264237b9854675758c4df62f77af",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                },
+                "operational_planning_candidates": {
+                    "table_name": "operational_planning_candidates",
+                    "exists": true,
+                    "row_count": 37,
+                    "pk_min": 1,
+                    "pk_max": 37,
+                    "sample_checksum": "1dc38fef3af8df4f63eee371c98f83fdaac9cf2073c11f8a4986124c22b0b6ac",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                },
+                "observation_action_cases": {
+                    "table_name": "observation_action_cases",
+                    "exists": true,
+                    "row_count": 1,
+                    "pk_min": 124,
+                    "pk_max": 124,
+                    "sample_checksum": "743fcd3788a476d3b09ae420a9898244744613e09b01f768191ad049a20674d6",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                },
+                "users": {
+                    "table_name": "users",
+                    "exists": true,
+                    "row_count": 8,
+                    "pk_min": 1,
+                    "pk_max": 18,
+                    "sample_checksum": "26719e0822460f78ab146e925256ffb3ee44e12f36a79e9ebda7b2ebb64f3465",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                },
+                "migrations": {
+                    "table_name": "migrations",
+                    "exists": true,
+                    "row_count": 53,
+                    "pk_min": 17,
+                    "pk_max": 71,
+                    "sample_checksum": "d83d757bc2c513dcb015847d25254e4c0e46cd2635c0f9383defa7d698f39193",
+                    "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+                    "status": "VERIFIED_ACTIVE"
+                }
+            }
+        },
+        "group_b_preserved_physical_assets": {
+            "table": "assets",
+            "pre_count": 30,
+            "post_count": 30,
+            "mutation_status": "PRESERVED_IMMUTABLE_IN_MR01",
+            "assets_universe_hash": "932a16df5ef63acc97c8b9a59d889c153e3acf9893588aaee0511faead4cd7a6"
+        },
+        "group_c_existing_operational_registries": {
+            "inspection_sessions": "Preserved active",
+            "material_usage": "Preserved active"
+        },
+        "group_d_existing_bom_registries": {
+            "jtm_construction_master": "Preserved 8 canonical constructions",
+            "material_master": "Preserved 22 canonical materials",
+            "material_field_aliases": "Preserved 45 field aliases",
+            "jtm_construction_bom": "Preserved 3 standard BOMs",
+            "work_material_requirement": "Preserved work order material requirements"
+        },
+        "group_e_existing_spatial_bridge_registries": {
+            "asset_construction_bridge": "Preserved 30 asset-construction mappings",
+            "asset_conductor_bridge": "Preserved 30 asset-conductor mappings",
+            "spatial_bom_views": "Preserved 30 spatial BOM views",
+            "finding_material_bridge": "Preserved 441 finding bridge records",
+            "material_recommendations": "Preserved feeder material recommendations"
+        },
+        "group_f_executive_analytics_fabric": {
+            "giri_feeder_index": "Preserved 134 feeder GIRI index",
+            "asset_degradation_radar": "Preserved 30 assets radar",
+            "material_readiness_gap": "Preserved material readiness gap",
+            "predictive_opex_capex": "Preserved FROZEN / NON-OPERATIONAL",
+            "executive_kpi_snapshots": "Preserved executive KPI snapshot"
+        },
+        "group_g_work_planning_material_evidence_fabric": {
+            "inspection_work_catalog": "Preserved 17 canonical inspection tasks",
+            "work_scope_planning": "Preserved multi-section scope plans",
+            "sld_work_planning": "Preserved dynamic SLD topology models",
+            "work_finding_table": "Preserved work items identification",
+            "material_allocation_tree": "Preserved hierarchical evidence tree"
+        },
+        "group_h_material_request_governance_fabric": {
+            "material_request_packages": {
+                "path": "writable/audits/mr01_material_request_package_registry.json",
+                "total_packages": 1,
+                "registry_hash": "901c50e795b7dbc49e421a80a88fac3c2cc9d042173c2833e34ed79b7d0e270e",
+                "status": "ACTIVATED_MATERIAL_PACKAGES_REGISTERED"
+            },
+            "technical_reviews": {
+                "path": "writable/audits/mr01_technical_review_registry.json",
+                "total_reviews": 1,
+                "registry_hash": "eb45fffcc9146b96f93d059f1ac8ae9995a3112f0ed9b230617ac179d1bc1450",
+                "status": "ACTIVATED_SUPERVISOR_REVIEWS_REGISTERED"
+            },
+            "management_approvals": {
+                "path": "writable/audits/mr01_management_approval_registry.json",
+                "total_approvals": 1,
+                "registry_hash": "9bd610d6c0d71c6652e424f39040e63f87210ec71150cffc6ae0d0e7b4acb06b",
+                "status": "ACTIVATED_OFFICIAL_APPROVALS_REGISTERED"
+            },
+            "warehouse_vouchers": {
+                "path": "writable/audits/mr01_warehouse_voucher_registry.json",
+                "total_vouchers": 1,
+                "registry_hash": "5e0ad39015d6695429b9c4982daeca1848622571b487f79f46612ab11778bd3f",
+                "status": "ACTIVATED_SPM_VOUCHERS_ISSUED"
+            },
+            "governance_mode": "QUANTITY_AND_EVIDENCE_FIRST (Zero Price, Zero Auto-Deduction)"
+        }
+    },
+    "tables": {
+        "temuan": {
+            "table_name": "temuan",
+            "exists": true,
+            "row_count": 441,
+            "pk_min": 1,
+            "pk_max": 443,
+            "sample_checksum": "837cdbc44331a1b728fa73b9934acbf1d41c14300e987a081f65e73ee26707ee",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "penyulang": {
+            "table_name": "penyulang",
+            "exists": true,
+            "row_count": 134,
+            "pk_min": 1,
+            "pk_max": 134,
+            "sample_checksum": "837cdbc44331a1b728fa73b9934acbf1d41c14300e987a081f65e73ee26707ee",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "sections": {
+            "table_name": "sections",
+            "exists": true,
+            "row_count": 508,
+            "pk_min": 1,
+            "pk_max": 508,
+            "sample_checksum": "837cdbc44331a1b728fa73b9934acbf1d41c14300e987a081f65e73ee26707ee",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "ulps": {
+            "table_name": "ulps",
+            "exists": true,
+            "row_count": 4,
+            "pk_min": 1,
+            "pk_max": 4,
+            "sample_checksum": "df3165d3b47fa7dd8a44853faef93ca15f5cddbcfd4aa1d17923b3ceacae9fe4",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "historical_feeder_interruptions": {
+            "table_name": "historical_feeder_interruptions",
+            "exists": true,
+            "row_count": 841,
+            "pk_min": 13,
+            "pk_max": 853,
+            "sample_checksum": "67fb301d228fccaed4637b3f9da19a058caae31af20b55098f52701fc57fab08",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "preventive_risk_advisory_snapshots": {
+            "table_name": "preventive_risk_advisory_snapshots",
+            "exists": true,
+            "row_count": 45,
+            "pk_min": 1,
+            "pk_max": 45,
+            "sample_checksum": "a4435d57ff91e7416d7c9769197e8b262f62264237b9854675758c4df62f77af",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "operational_planning_candidates": {
+            "table_name": "operational_planning_candidates",
+            "exists": true,
+            "row_count": 37,
+            "pk_min": 1,
+            "pk_max": 37,
+            "sample_checksum": "1dc38fef3af8df4f63eee371c98f83fdaac9cf2073c11f8a4986124c22b0b6ac",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "observation_action_cases": {
+            "table_name": "observation_action_cases",
+            "exists": true,
+            "row_count": 1,
+            "pk_min": 124,
+            "pk_max": 124,
+            "sample_checksum": "743fcd3788a476d3b09ae420a9898244744613e09b01f768191ad049a20674d6",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "users": {
+            "table_name": "users",
+            "exists": true,
+            "row_count": 8,
+            "pk_min": 1,
+            "pk_max": 18,
+            "sample_checksum": "26719e0822460f78ab146e925256ffb3ee44e12f36a79e9ebda7b2ebb64f3465",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "migrations": {
+            "table_name": "migrations",
+            "exists": true,
+            "row_count": 53,
+            "pk_min": 17,
+            "pk_max": 71,
+            "sample_checksum": "d83d757bc2c513dcb015847d25254e4c0e46cd2635c0f9383defa7d698f39193",
+            "classification": "GROUP_A_PROTECTED_IMMUTABLE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "assets": {
+            "table_name": "assets",
+            "exists": true,
+            "row_count": 30,
+            "pk_min": 394,
+            "pk_max": 441,
+            "sample_checksum": "50f96338b24ef5a104c266689a7c3eafe88789e4ab1240bf27f7b308e43c3139",
+            "classification": "GROUP_B_PRESERVED_PHYSICAL_ASSETS",
+            "status": "VERIFIED_ACTIVE"
+        }
+    },
+    "disturbance_baseline": {
+        "table": "historical_feeder_interruptions",
+        "row_count": 841,
+        "state": "ACTIVATED_EXPANDED_PRODUCTION_BASELINE",
+        "distinct_feeder_count": 95,
+        "min_event_date": "2025-01-01",
+        "max_event_date": "2026-08-09",
+        "held_records_outside_db": 20,
+        "disturbance_universe_hash": "205713c9a02a7897e6d3132d244e643b5791d1117ad8e4e86bf74ce94b07d5ad"
+    },
+    "sealed_baselines": {
+        "m04_baseline": "SEALED (CBR & Disturbance Knowledge Core)",
+        "m05_baseline": "SEALED (Preventive Risk Advisory Engine)",
+        "cc06_baseline": "SEALED (6 Integrated Workspaces & Evidence Suite)",
+        "mr01_baseline": "SEALED (Material Request Governance & SPM Voucher Suite)",
+        "logistics_evolution_stage": "STAGE_B_MATERIAL_REQUEST_GOVERNANCE_SEALED",
+        "strategy_directive": "QUANTITY_AND_EVIDENCE_FIRST",
+        "financial_layer_status": "STAGE_C_FROZEN_DEFERRED",
+        "scoring_version": "PREVENTIVE_SCORING_v1.0",
+        "pattern_intelligence_model": "HISTORICAL_PATTERN_MODEL_v1.0",
+        "operational_dispatch_model": "OPERATIONAL_DISPATCH_MODEL_v1.0",
+        "asset_foundation_model": "PHYSICAL_ASSET_TRUTH_MODEL_v1.0",
+        "field_inspection_model": "FIELD_INSPECTION_MODEL_v1.0",
+        "jtm_bom_model": "JTM_CONSTRUCTION_BOM_MODEL_v1.0",
+        "spatial_material_model": "SPATIAL_PREVENTIVE_MATERIAL_MODEL_v1.0",
+        "executive_reliability_model": "EXECUTIVE_INFRASTRUCTURE_RELIABILITY_MODEL_v1.0",
+        "evidence_planning_model": "EVIDENCE_BASED_WORK_PLANNING_MODEL_v2.0",
+        "material_request_model": "MATERIAL_REQUEST_GOVERNANCE_MODEL_v1.0",
+        "master_penyulang_immutable": "134 MASTER FEEDERS IMMUTABLE",
+        "master_sections_immutable": "508 MASTER SECTIONS IMMUTABLE",
+        "auto_action_rule": "FORBIDDEN (HUMAN_TECHNICAL_AND_MANAGEMENT_AUTHORITY_FINAL)"
+    }
+}

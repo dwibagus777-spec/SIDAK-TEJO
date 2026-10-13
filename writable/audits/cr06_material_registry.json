@@ -1,0 +1,61 @@
+{
+    "registry_id": "CR06_MATERIAL_REGISTRY_v1.0",
+    "created_at": "2026-08-24 18:55:22 WIB",
+    "lineage_parent": "CR06_PRE_SNAPSHOT",
+    "catalog": [
+        {
+            "code": "MAT-ISO-01",
+            "name": "Pin Post Insulator 20kV 120kN",
+            "unit": "PCS",
+            "stock": 150
+        },
+        {
+            "code": "MAT-ISO-02",
+            "name": "Suspension Insulator 20kV",
+            "unit": "PCS",
+            "stock": 80
+        },
+        {
+            "code": "MAT-FCO-01",
+            "name": "Fuse Cutout 24kV 100A Polymer",
+            "unit": "SET",
+            "stock": 45
+        },
+        {
+            "code": "MAT-ARR-01",
+            "name": "Lightning Arrester 24kV 10kA",
+            "unit": "SET",
+            "stock": 60
+        },
+        {
+            "code": "MAT-CND-01",
+            "name": "Conductor AAAC 70 mm2",
+            "unit": "METER",
+            "stock": 2500
+        },
+        {
+            "code": "MAT-OIL-01",
+            "name": "Trafo Mineral Insulating Oil",
+            "unit": "LITER",
+            "stock": 400
+        }
+    ],
+    "usages": {
+        "MATUSE-CR06-20260824-185522-e973": {
+            "usage_id": "MATUSE-CR06-20260824-185522-e973",
+            "material_code": "MAT-ISO-01",
+            "quantity": 2,
+            "work_order_ref": "WO-HAR-2026-08-001",
+            "penyulang_id": 15,
+            "target_asset_id": 394,
+            "recorded_by": {
+                "actor_id": 2,
+                "actor_name": "PETUGAS_INSPEKSI_LAPANGAN_1",
+                "actor_nip": "199304192019021004",
+                "actor_role": "FIELD_INSPECTOR"
+            },
+            "recorded_at": "2026-08-24 18:55:22",
+            "action_hash": "c5fa941c22966bb73db82ca2e6188aa725dfb666b446d6e7d6288c6904d3a456"
+        }
+    }
+}

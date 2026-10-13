@@ -1,0 +1,730 @@
+[
+    {
+        "natural_key": "TL-NAT:73:903-904",
+        "transline_code": "TL-73-903-904",
+        "penyulang_id": 73,
+        "source_asset_id": 903,
+        "target_asset_id": 904,
+        "source_asset_name": "GERY FOOD_045",
+        "target_asset_name": "GERY FOOD_046",
+        "source_section_id": 251,
+        "target_section_id": 251,
+        "distance_meters": 16.12,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.588866,
+                    -7.369591976
+                ],
+                [
+                    112.58872,
+                    -7.369599016
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:78:218-219",
+        "transline_code": "TL-78-218-219",
+        "penyulang_id": 78,
+        "source_asset_id": 218,
+        "target_asset_id": 219,
+        "source_asset_name": "JAVA PACIFIK 3_041",
+        "target_asset_name": "JAVA PACIFIK 3_042",
+        "source_section_id": 264,
+        "target_section_id": 264,
+        "distance_meters": 22.75,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.603544,
+                    -7.369243959
+                ],
+                [
+                    112.603582,
+                    -7.369445041
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:78:134-135",
+        "transline_code": "TL-78-134-135",
+        "penyulang_id": 78,
+        "source_asset_id": 134,
+        "target_asset_id": 135,
+        "source_asset_name": "JAVA PACIFIK 3_086",
+        "target_asset_name": "JAVA PACIFIK 3_087",
+        "source_section_id": 264,
+        "target_section_id": 264,
+        "distance_meters": 35.63,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.607757,
+                    -7.388210027
+                ],
+                [
+                    112.607988,
+                    -7.387985978
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:79:61-62",
+        "transline_code": "TL-79-61-62",
+        "penyulang_id": 79,
+        "source_asset_id": 61,
+        "target_asset_id": 62,
+        "source_asset_name": "JP4_31",
+        "target_asset_name": "JP4_32",
+        "source_section_id": 265,
+        "target_section_id": 265,
+        "distance_meters": 10.68,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.608464,
+                    -7.387756985
+                ],
+                [
+                    112.60839,
+                    -7.387819011
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:79:93-94",
+        "transline_code": "TL-79-93-94",
+        "penyulang_id": 79,
+        "source_asset_id": 93,
+        "target_asset_id": 94,
+        "source_asset_name": "JP4_50",
+        "target_asset_name": "JP4_51",
+        "source_section_id": 265,
+        "target_section_id": 265,
+        "distance_meters": 25.32,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.60655,
+                    -7.385839038
+                ],
+                [
+                    112.606567,
+                    -7.385611972
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:80:1291-1292",
+        "transline_code": "TL-80-1291-1292",
+        "penyulang_id": 80,
+        "source_asset_id": 1291,
+        "target_asset_id": 1292,
+        "source_asset_name": "EMDEKI 1_041",
+        "target_asset_name": "EMDEKI 1_042",
+        "source_section_id": 266,
+        "target_section_id": 266,
+        "distance_meters": 37.91,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.58946,
+                    -7.35457
+                ],
+                [
+                    112.58912,
+                    -7.35462
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:81:1136-1137",
+        "transline_code": "TL-81-1136-1137",
+        "penyulang_id": 81,
+        "source_asset_id": 1136,
+        "target_asset_id": 1137,
+        "source_asset_name": "EMDEKI 2_022",
+        "target_asset_name": "EMDEKI 2_023",
+        "source_section_id": 267,
+        "target_section_id": 267,
+        "distance_meters": 42.14,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.59692,
+                    -7.35413
+                ],
+                [
+                    112.59654,
+                    -7.35409
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:81:1133-1134",
+        "transline_code": "TL-81-1133-1134",
+        "penyulang_id": 81,
+        "source_asset_id": 1133,
+        "target_asset_id": 1134,
+        "source_asset_name": "EMDEKI 2_105",
+        "target_asset_name": "EMDEKI 2_106",
+        "source_section_id": 267,
+        "target_section_id": 267,
+        "distance_meters": 15.98,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.602981,
+                    -7.350970991
+                ],
+                [
+                    112.602868,
+                    -7.351061013
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:107:3532-3533",
+        "transline_code": "TL-107-3532-3533",
+        "penyulang_id": 107,
+        "source_asset_id": 3532,
+        "target_asset_id": 3533,
+        "source_asset_name": "ASIA 1_13",
+        "target_asset_name": "ASIA 1_14",
+        "source_section_id": 422,
+        "target_section_id": 422,
+        "distance_meters": 27.41,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.57433,
+                    -7.38614
+                ],
+                [
+                    112.57415,
+                    -7.38631
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:107:3399-3400",
+        "transline_code": "TL-107-3399-3400",
+        "penyulang_id": 107,
+        "source_asset_id": 3399,
+        "target_asset_id": 3400,
+        "source_asset_name": "ASIA 1_120",
+        "target_asset_name": "ASIA 1_121",
+        "source_section_id": 422,
+        "target_section_id": 422,
+        "distance_meters": 16.87,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.55334,
+                    -7.39129
+                ],
+                [
+                    112.55319,
+                    -7.39132
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:107:3465-3466",
+        "transline_code": "TL-107-3465-3466",
+        "penyulang_id": 107,
+        "source_asset_id": 3465,
+        "target_asset_id": 3466,
+        "source_asset_name": "ASIA 1_133",
+        "target_asset_name": "ASIA 1_134",
+        "source_section_id": 422,
+        "target_section_id": 422,
+        "distance_meters": 24.89,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.55074,
+                    -7.39194
+                ],
+                [
+                    112.55052,
+                    -7.39199
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:108:3283-3284",
+        "transline_code": "TL-108-3283-3284",
+        "penyulang_id": 108,
+        "source_asset_id": 3283,
+        "target_asset_id": 3284,
+        "source_asset_name": "ASIA 2_114",
+        "target_asset_name": "ASIA 2_115",
+        "source_section_id": 423,
+        "target_section_id": 423,
+        "distance_meters": 18.87,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.554443,
+                    -7.391000027
+                ],
+                [
+                    112.554278,
+                    -7.391045038
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:108:3298-3299",
+        "transline_code": "TL-108-3298-3299",
+        "penyulang_id": 108,
+        "source_asset_id": 3298,
+        "target_asset_id": 3299,
+        "source_asset_name": "ASIA 2_168",
+        "target_asset_name": "ASIA 2_169",
+        "source_section_id": 423,
+        "target_section_id": 423,
+        "distance_meters": 42.86,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.542181,
+                    -7.393678967
+                ],
+                [
+                    112.541801,
+                    -7.39376002
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:113:765-766",
+        "transline_code": "TL-113-765-766",
+        "penyulang_id": 113,
+        "source_asset_id": 765,
+        "target_asset_id": 766,
+        "source_asset_name": "HASIL KARYA 1_013",
+        "target_asset_name": "HASIL KARYA 1_014",
+        "source_section_id": 433,
+        "target_section_id": 433,
+        "distance_meters": 48.23,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.9529,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.548053,
+                    -7.409243993
+                ],
+                [
+                    112.548427,
+                    -7.409019023
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:113:795-796",
+        "transline_code": "TL-113-795-796",
+        "penyulang_id": 113,
+        "source_asset_id": 795,
+        "target_asset_id": 796,
+        "source_asset_name": "HASIL KARYA 1_033",
+        "target_asset_name": "HASIL KARYA 1_034",
+        "source_section_id": 433,
+        "target_section_id": 433,
+        "distance_meters": 12.79,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.555327,
+                    -7.40707702
+                ],
+                [
+                    112.555439,
+                    -7.407047013
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:113:783-784",
+        "transline_code": "TL-113-783-784",
+        "penyulang_id": 113,
+        "source_asset_id": 783,
+        "target_asset_id": 784,
+        "source_asset_name": "HASIL KARYA 1_052",
+        "target_asset_name": "HASIL KARYA 1_053",
+        "source_section_id": 433,
+        "target_section_id": 433,
+        "distance_meters": 49.41,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.9504,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.560898,
+                    -7.406236986
+                ],
+                [
+                    112.561342,
+                    -7.406176971
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:113:762-763",
+        "transline_code": "TL-113-762-763",
+        "penyulang_id": 113,
+        "source_asset_id": 762,
+        "target_asset_id": 763,
+        "source_asset_name": "HASIL KARYA 1_072",
+        "target_asset_name": "HASIL KARYA 1_073",
+        "source_section_id": 433,
+        "target_section_id": 433,
+        "distance_meters": 42.93,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.568501,
+                    -7.40363298
+                ],
+                [
+                    112.568841,
+                    -7.403444974
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:116:448-449",
+        "transline_code": "TL-116-448-449",
+        "penyulang_id": 116,
+        "source_asset_id": 448,
+        "target_asset_id": 449,
+        "source_asset_name": "HASIL_KARYA 4_0118",
+        "target_asset_name": "HASIL_KARYA 4_0119",
+        "source_section_id": 437,
+        "target_section_id": 437,
+        "distance_meters": 27.72,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.576083,
+                    -7.399569014
+                ],
+                [
+                    112.576319,
+                    -7.399483016
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:117:400-401",
+        "transline_code": "TL-117-400-401",
+        "penyulang_id": 117,
+        "source_asset_id": 400,
+        "target_asset_id": 401,
+        "source_asset_name": "HASIL KARYA 5_01",
+        "target_asset_name": "HASIL KARYA 5_02",
+        "source_section_id": 438,
+        "target_section_id": 438,
+        "distance_meters": 22.01,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.561087,
+                    -7.406415017
+                ],
+                [
+                    112.561279,
+                    -7.406361038
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:117:421-422",
+        "transline_code": "TL-117-421-422",
+        "penyulang_id": 117,
+        "source_asset_id": 421,
+        "target_asset_id": 422,
+        "source_asset_name": "HASIL KARYA 5_11",
+        "target_asset_name": "HASIL KARYA 5_12",
+        "source_section_id": 438,
+        "target_section_id": 438,
+        "distance_meters": 23.44,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.563653,
+                    -7.40600598
+                ],
+                [
+                    112.563863,
+                    -7.40597304
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:118:3152-3153",
+        "transline_code": "TL-118-3152-3153",
+        "penyulang_id": 118,
+        "source_asset_id": 3152,
+        "target_asset_id": 3153,
+        "source_asset_name": "BAHAGIA STEEL 1_033",
+        "target_asset_name": "BAHAGIA STEEL 1_034",
+        "source_section_id": 50,
+        "target_section_id": 50,
+        "distance_meters": 27.82,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.55722,
+                    -7.39099
+                ],
+                [
+                    112.55723,
+                    -7.39074
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:121:2966-2967",
+        "transline_code": "TL-121-2966-2967",
+        "penyulang_id": 121,
+        "source_asset_id": 2966,
+        "target_asset_id": 2967,
+        "source_asset_name": "BAHAGIA STEEL 4_048",
+        "target_asset_name": "BAHAGIA STEEL 4_049",
+        "source_section_id": 445,
+        "target_section_id": 445,
+        "distance_meters": 36.81,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.54568,
+                    -7.41138
+                ],
+                [
+                    112.54535,
+                    -7.41133
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:121:2907-2908",
+        "transline_code": "TL-121-2907-2908",
+        "penyulang_id": 121,
+        "source_asset_id": 2907,
+        "target_asset_id": 2908,
+        "source_asset_name": "BAHAGIA STEEL 4_081",
+        "target_asset_name": "BAHAGIA STEEL 4_082",
+        "source_section_id": 445,
+        "target_section_id": 445,
+        "distance_meters": 38.92,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.54396,
+                    -7.40319
+                ],
+                [
+                    112.54396,
+                    -7.40284
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:121:2992-2993",
+        "transline_code": "TL-121-2992-2993",
+        "penyulang_id": 121,
+        "source_asset_id": 2992,
+        "target_asset_id": 2993,
+        "source_asset_name": "BAHAGIA STEEL 4_103",
+        "target_asset_name": "BAHAGIA STEEL 4_104",
+        "source_section_id": 445,
+        "target_section_id": 445,
+        "distance_meters": 22.3,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.54735,
+                    -7.39261
+                ],
+                [
+                    112.54755,
+                    -7.39258
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:121:2978-2979",
+        "transline_code": "TL-121-2978-2979",
+        "penyulang_id": 121,
+        "source_asset_id": 2978,
+        "target_asset_id": 2979,
+        "source_asset_name": "BAHAGIA STEEL 4_112",
+        "target_asset_name": "BAHAGIA STEEL 4_113",
+        "source_section_id": 445,
+        "target_section_id": 445,
+        "distance_meters": 21.22,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.54932,
+                    -7.39221
+                ],
+                [
+                    112.54951,
+                    -7.39218
+                ]
+            ]
+        }
+    },
+    {
+        "natural_key": "TL-NAT:121:2926-2927",
+        "transline_code": "TL-121-2926-2927",
+        "penyulang_id": 121,
+        "source_asset_id": 2926,
+        "target_asset_id": 2927,
+        "source_asset_name": "BAHAGIA STEEL 4_137",
+        "target_asset_name": "BAHAGIA STEEL 4_138",
+        "source_section_id": 445,
+        "target_section_id": 445,
+        "distance_meters": 21.68,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "confidence": 0.96,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    112.55436,
+                    -7.39097
+                ],
+                [
+                    112.55455,
+                    -7.39092
+                ]
+            ]
+        }
+    }
+]

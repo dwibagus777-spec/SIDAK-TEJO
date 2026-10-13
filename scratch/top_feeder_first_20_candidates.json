@@ -1,0 +1,1124 @@
+[
+    {
+        "natural_key": "TL-NAT:131:6378-6379",
+        "source_asset_id": 6378,
+        "target_asset_id": 6379,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-253",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-254",
+        "source_asset_name": "PSNN248",
+        "target_asset_name": "PSNN247",
+        "distance_meters": 27.82,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_PAIR",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 94,
+        "network_score": 30,
+        "confidence_score": 0.94,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 5,
+            "total_score": 94,
+            "bearing_degrees": 357.7,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 1
+        },
+        "network_evidence": {
+            "network_score": 30,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "CONSECUTIVE_POLE_SEQUENCE",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, CONSECUTIVE_POLE_SEQUENCE, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.57526,
+                -7.40393
+            ],
+            [
+                112.57525,
+                -7.40368
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6387-6388",
+        "source_asset_id": 6387,
+        "target_asset_id": 6388,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-262",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-263",
+        "source_asset_name": "PSNN191",
+        "target_asset_name": "PSNN193",
+        "distance_meters": 48.97,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 30,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 18,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 5,
+            "total_score": 92,
+            "bearing_degrees": 255.5,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 1
+        },
+        "network_evidence": {
+            "network_score": 30,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "CONSECUTIVE_POLE_SEQUENCE",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, CONSECUTIVE_POLE_SEQUENCE, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.5782,
+                -7.39745
+            ],
+            [
+                112.57777,
+                -7.39756
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6210-6212",
+        "source_asset_id": 6210,
+        "target_asset_id": 6212,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-085",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-087",
+        "source_asset_name": "BYPASS_180",
+        "target_asset_name": "BYPASS_181",
+        "distance_meters": 6.58,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 93,
+        "network_score": 20,
+        "confidence_score": 0.93,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 4,
+            "total_score": 93,
+            "bearing_degrees": 67.2,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 2
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.579094,
+                -7.398402002
+            ],
+            [
+                112.579149,
+                -7.398379035
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6126-6221",
+        "source_asset_id": 6126,
+        "target_asset_id": 6221,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-001",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-096",
+        "source_asset_name": "BYPASS_107",
+        "target_asset_name": "BYPASS_106",
+        "distance_meters": 23.96,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 356,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 95
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.563878,
+                -7.406188035
+            ],
+            [
+                112.563863,
+                -7.40597304
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6128-6410",
+        "source_asset_id": 6128,
+        "target_asset_id": 6410,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-003",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-285",
+        "source_asset_name": "BYPASS_178",
+        "target_asset_name": "PSNN209",
+        "distance_meters": 1.89,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 159.6,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 282
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.578284,
+                -7.398754042
+            ],
+            [
+                112.57829,
+                -7.39877
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6129-6261",
+        "source_asset_id": 6129,
+        "target_asset_id": 6261,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-004",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-136",
+        "source_asset_name": "PSNN226",
+        "target_asset_name": "PSNN225",
+        "distance_meters": 3.49,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 71.4,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 132
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.57453,
+                -7.4001
+            ],
+            [
+                112.57456,
+                -7.40009
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6129-6414",
+        "source_asset_id": 6129,
+        "target_asset_id": 6414,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-004",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-289",
+        "source_asset_name": "PSNN226",
+        "target_asset_name": "BYPASS_165",
+        "distance_meters": 24.38,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_PAIR",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 149.6,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 285
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.57453,
+                -7.4001
+            ],
+            [
+                112.574642,
+                -7.40028902
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6132-6146",
+        "source_asset_id": 6132,
+        "target_asset_id": 6146,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-007",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-021",
+        "source_asset_name": "PSNN186",
+        "target_asset_name": "PSNN185",
+        "distance_meters": 19.55,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_PAIR",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 106.5,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 14
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.57753,
+                -7.39598
+            ],
+            [
+                112.5777,
+                -7.39603
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6132-6279",
+        "source_asset_id": 6132,
+        "target_asset_id": 6279,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-007",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-154",
+        "source_asset_name": "PSNN186",
+        "target_asset_name": "PSNN184",
+        "distance_meters": 14.38,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_PAIR",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 94.4,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 147
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.57753,
+                -7.39598
+            ],
+            [
+                112.57766,
+                -7.39599
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6132-6453",
+        "source_asset_id": 6132,
+        "target_asset_id": 6453,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-007",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-328",
+        "source_asset_name": "PSNN186",
+        "target_asset_name": "PSNN187",
+        "distance_meters": 3.49,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 251.4,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 321
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.57753,
+                -7.39598
+            ],
+            [
+                112.5775,
+                -7.39599
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6135-6158",
+        "source_asset_id": 6135,
+        "target_asset_id": 6158,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-010",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-033",
+        "source_asset_name": "PSNN222",
+        "target_asset_name": "PSNN221",
+        "distance_meters": 1.1,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 90,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 23
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.57516,
+                -7.39949
+            ],
+            [
+                112.57517,
+                -7.39949
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6135-6298",
+        "source_asset_id": 6135,
+        "target_asset_id": 6298,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-010",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-173",
+        "source_asset_name": "PSNN222",
+        "target_asset_name": "PSNN220",
+        "distance_meters": 23.83,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_PAIR",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 152.4,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 163
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.57516,
+                -7.39949
+            ],
+            [
+                112.57526,
+                -7.39968
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6137-6331",
+        "source_asset_id": 6137,
+        "target_asset_id": 6331,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-012",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-206",
+        "source_asset_name": "BYPASS_89",
+        "target_asset_name": "BYPASS_90",
+        "distance_meters": 9.64,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 126.8,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 194
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.559415,
+                -7.406655997
+            ],
+            [
+                112.559485,
+                -7.406707965
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6137-6488",
+        "source_asset_id": 6137,
+        "target_asset_id": 6488,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-012",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-363",
+        "source_asset_name": "BYPASS_89",
+        "target_asset_name": "BYPASS_88",
+        "distance_meters": 11.76,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 244.2,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 351
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.559415,
+                -7.406655997
+            ],
+            [
+                112.559319,
+                -7.406702014
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6139-6430",
+        "source_asset_id": 6139,
+        "target_asset_id": 6430,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-014",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-305",
+        "source_asset_name": "PSNN218",
+        "target_asset_name": "PSNN217",
+        "distance_meters": 13.39,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 184.7,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 291
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.57591,
+                -7.39918
+            ],
+            [
+                112.5759,
+                -7.3993
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6141-6147",
+        "source_asset_id": 6141,
+        "target_asset_id": 6147,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-016",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-022",
+        "source_asset_name": "BYPASS_185",
+        "target_asset_name": "BYPASS_186",
+        "distance_meters": 11.08,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 77.3,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 6
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.5807,
+                -7.397821974
+            ],
+            [
+                112.580798,
+                -7.397800013
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6141-6224",
+        "source_asset_id": 6141,
+        "target_asset_id": 6224,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-016",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-099",
+        "source_asset_name": "BYPASS_185",
+        "target_asset_name": "BYPASS_196",
+        "distance_meters": 9.85,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 218.8,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 83
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.5807,
+                -7.397821974
+            ],
+            [
+                112.580644,
+                -7.397891041
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6146-6279",
+        "source_asset_id": 6146,
+        "target_asset_id": 6279,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-021",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-154",
+        "source_asset_name": "PSNN185",
+        "target_asset_name": "PSNN184",
+        "distance_meters": 6.26,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 315.2,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 133
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.5777,
+                -7.39603
+            ],
+            [
+                112.57766,
+                -7.39599
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6146-6453",
+        "source_asset_id": 6146,
+        "target_asset_id": 6453,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-021",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-328",
+        "source_asset_name": "PSNN185",
+        "target_asset_name": "PSNN187",
+        "distance_meters": 22.5,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_PAIR",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 281.4,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 307
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.5777,
+                -7.39603
+            ],
+            [
+                112.5775,
+                -7.39599
+            ]
+        ]
+    },
+    {
+        "natural_key": "TL-NAT:131:6147-6224",
+        "source_asset_id": 6147,
+        "target_asset_id": 6224,
+        "source_asset_code": "AST-KRN-BYPASS-JTM-022",
+        "target_asset_code": "AST-KRN-BYPASS-JTM-099",
+        "source_asset_name": "BYPASS_186",
+        "target_asset_name": "BYPASS_196",
+        "distance_meters": 19.77,
+        "source_degree": 0,
+        "target_degree": 0,
+        "candidate_type": "ISOLATED_PAIR",
+        "section_id": null,
+        "conductor_type": "AAAC",
+        "conductor_size": "150 mm\u00b2",
+        "total_score": 92,
+        "network_score": 20,
+        "confidence_score": 0.92,
+        "score_breakdown": {
+            "distance_score": 20,
+            "bearing_score": 16,
+            "graph_continuity": 13,
+            "chain_coherence": 15,
+            "section_continuity": 10,
+            "feeder_continuity": 10,
+            "construction_compatibility": 5,
+            "sequence_evidence": 3,
+            "total_score": 92,
+            "bearing_degrees": 239.2,
+            "bearing_delta_degrees": 0,
+            "sequence_delta": 77
+        },
+        "network_evidence": {
+            "network_score": 20,
+            "is_network_coherent": true,
+            "coherence_evidence": [
+                "ISOLATED_LINEAR_CHAIN_MEMBER",
+                "COHERENT_SECTION_ENVIRONMENT"
+            ],
+            "coherence_summary": "ISOLATED_LINEAR_CHAIN_MEMBER, COHERENT_SECTION_ENVIRONMENT"
+        },
+        "classification": "AUTO_COMPLETE",
+        "gate_valid": true,
+        "gate_reasons": [],
+        "is_auto_complete": true,
+        "coordinates": [
+            [
+                112.580798,
+                -7.397800013
+            ],
+            [
+                112.580644,
+                -7.397891041
+            ]
+        ]
+    }
+]

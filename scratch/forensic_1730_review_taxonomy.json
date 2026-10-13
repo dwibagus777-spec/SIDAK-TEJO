@@ -1,0 +1,635 @@
+{
+    "total_review_candidates": 1730,
+    "taxonomy": {
+        "REVIEW_SECTION_UNKNOWN": 1702,
+        "REVIEW_SEQUENCE_JUMP": 27,
+        "REVIEW_DISTANCE_LONG": 1,
+        "REVIEW_DEGREE_HIGH": 0,
+        "REVIEW_STATUS_PENALTY": 0,
+        "REVIEW_MULTI_FACTOR_LOW": 0
+    },
+    "feeder_distribution": {
+        "BANJARAN": 342,
+        "DUA PERMATA": 194,
+        "BARENG KRAJAN": 180,
+        "CAHAYA METAL": 154,
+        "BY PASS": 140,
+        "DAWAR": 121,
+        "HASIL KARYA 2": 109,
+        "EXCELLENT": 102,
+        "ALAM PESONA": 74,
+        "JAVA PASIFIK 1": 74,
+        "JAVA PASIFIK 2": 74,
+        "BANJAR KEMANTREN": 39,
+        "BAHAGIA STEEL 3": 33,
+        "ADI PRIMA 1": 19,
+        "ADI PRIMA 2": 17,
+        "GEDANGAN": 9,
+        "BAHAGIA STEEL 1": 9,
+        "EMDEKI 1": 8,
+        "EMDEKI 2": 8,
+        "GADING KIRANA": 6,
+        "ECCO": 5,
+        "GEMURUNG": 4,
+        "HASIL KARYA 1": 3,
+        "BAHAGIA STEEL 4": 2,
+        "GERRY FOOD": 1,
+        "JAVA PASIFIK 3": 1,
+        "JAVA PASIFIK 4": 1,
+        "BAHAGIA STEEL 2": 1
+    },
+    "samples_per_category": {
+        "REVIEW_SECTION_UNKNOWN": [
+            {
+                "natural_key": "TL-NAT:4:4479-4539",
+                "penyulang_id": 4,
+                "nama_penyulang": "GEMURUNG",
+                "ulp_id": 1,
+                "source_asset_id": 4479,
+                "source_asset_name": "GEMURUNG_51",
+                "source_section_id": 0,
+                "source_section_name": "UNRESOLVED",
+                "target_asset_id": 4539,
+                "target_asset_name": "GEMURUNG_52",
+                "target_section_id": 0,
+                "target_section_name": "UNRESOLVED",
+                "distance_meters": 106.24,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.7442,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.3769,
+                    "bearing_score": 1,
+                    "sequence_score": 1,
+                    "section_score": 0.7,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 0.7,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 106.24,
+                    "calculated_bearing_deg": 298.1,
+                    "sequence_delta": 1,
+                    "composite_confidence": 0.7442
+                },
+                "evidence_json": "{\"distance_score\":0.3769,\"bearing_score\":1,\"sequence_score\":1,\"section_score\":0.7,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":0.7,\"construction_compatibility\":1,\"calculated_distance_m\":106.24,\"calculated_bearing_deg\":298.1,\"sequence_delta\":1,\"composite_confidence\":0.7442}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.7375,
+                            -7.42479
+                        ],
+                        [
+                            112.73665,
+                            -7.42434
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            },
+            {
+                "natural_key": "TL-NAT:4:4495-4645",
+                "penyulang_id": 4,
+                "nama_penyulang": "GEMURUNG",
+                "ulp_id": 1,
+                "source_asset_id": 4645,
+                "source_asset_name": "GEMURUNG_87",
+                "source_section_id": 0,
+                "source_section_name": "UNRESOLVED",
+                "target_asset_id": 4495,
+                "target_asset_name": "GEMURUNG_89",
+                "target_section_id": 0,
+                "target_section_name": "UNRESOLVED",
+                "distance_meters": 91.72,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.7609,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.5636,
+                    "bearing_score": 1,
+                    "sequence_score": 0.85,
+                    "section_score": 0.7,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 0.7,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 91.72,
+                    "calculated_bearing_deg": 6.21,
+                    "sequence_delta": 2,
+                    "composite_confidence": 0.7609
+                },
+                "evidence_json": "{\"distance_score\":0.5636,\"bearing_score\":1,\"sequence_score\":0.85,\"section_score\":0.7,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":0.7,\"construction_compatibility\":1,\"calculated_distance_m\":91.72,\"calculated_bearing_deg\":6.21,\"sequence_delta\":2,\"composite_confidence\":0.7609}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.74034,
+                            -7.41455
+                        ],
+                        [
+                            112.74043,
+                            -7.41373
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            },
+            {
+                "natural_key": "TL-NAT:4:4507-4566",
+                "penyulang_id": 4,
+                "nama_penyulang": "GEMURUNG",
+                "ulp_id": 1,
+                "source_asset_id": 4566,
+                "source_asset_name": "GEMURUNG_95",
+                "source_section_id": 0,
+                "source_section_name": "UNRESOLVED",
+                "target_asset_id": 4507,
+                "target_asset_name": "GEMURUNG_105",
+                "target_section_id": 0,
+                "target_section_name": "UNRESOLVED",
+                "distance_meters": 48.27,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.7628,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.9714,
+                    "bearing_score": 1,
+                    "sequence_score": 0.35,
+                    "section_score": 0.7,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 0.7,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 48.27,
+                    "calculated_bearing_deg": 22.85,
+                    "sequence_delta": 10,
+                    "composite_confidence": 0.7628
+                },
+                "evidence_json": "{\"distance_score\":0.9714,\"bearing_score\":1,\"sequence_score\":0.35,\"section_score\":0.7,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":0.7,\"construction_compatibility\":1,\"calculated_distance_m\":48.27,\"calculated_bearing_deg\":22.85,\"sequence_delta\":10,\"composite_confidence\":0.7628}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.74177,
+                            -7.41347
+                        ],
+                        [
+                            112.74194,
+                            -7.41307
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            },
+            {
+                "natural_key": "TL-NAT:4:4558-4619",
+                "penyulang_id": 4,
+                "nama_penyulang": "GEMURUNG",
+                "ulp_id": 1,
+                "source_asset_id": 4558,
+                "source_asset_name": "GEMURUNG_124",
+                "source_section_id": 0,
+                "source_section_name": "UNRESOLVED",
+                "target_asset_id": 4619,
+                "target_asset_name": "GEMURUNG_126",
+                "target_section_id": 0,
+                "target_section_name": "UNRESOLVED",
+                "distance_meters": 87.49,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.7745,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.618,
+                    "bearing_score": 1,
+                    "sequence_score": 0.85,
+                    "section_score": 0.7,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 0.7,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 87.49,
+                    "calculated_bearing_deg": 17.61,
+                    "sequence_delta": 2,
+                    "composite_confidence": 0.7745
+                },
+                "evidence_json": "{\"distance_score\":0.618,\"bearing_score\":1,\"sequence_score\":0.85,\"section_score\":0.7,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":0.7,\"construction_compatibility\":1,\"calculated_distance_m\":87.49,\"calculated_bearing_deg\":17.61,\"sequence_delta\":2,\"composite_confidence\":0.7745}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.74606,
+                            -7.41125
+                        ],
+                        [
+                            112.7463,
+                            -7.4105
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            },
+            {
+                "natural_key": "TL-NAT:15:5087-5099",
+                "penyulang_id": 15,
+                "nama_penyulang": "BANJAR KEMANTREN",
+                "ulp_id": 1,
+                "source_asset_id": 5099,
+                "source_asset_name": "KEBOAN ANOM_4",
+                "source_section_id": 0,
+                "source_section_name": "UNRESOLVED",
+                "target_asset_id": 5087,
+                "target_asset_name": "KEBOAN ANOM_5",
+                "target_section_id": 0,
+                "target_section_name": "UNRESOLVED",
+                "distance_meters": 50.03,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.774,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.956,
+                    "bearing_score": 1,
+                    "sequence_score": 0.35,
+                    "section_score": 0.7,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 1,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 50.03,
+                    "calculated_bearing_deg": 80.14,
+                    "sequence_delta": 12,
+                    "composite_confidence": 0.774
+                },
+                "evidence_json": "{\"distance_score\":0.956,\"bearing_score\":1,\"sequence_score\":0.35,\"section_score\":0.7,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":1,\"construction_compatibility\":1,\"calculated_distance_m\":50.03,\"calculated_bearing_deg\":80.14,\"sequence_delta\":12,\"composite_confidence\":0.774}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.70469,
+                            -7.405734994
+                        ],
+                        [
+                            112.705137,
+                            -7.405657964
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            }
+        ],
+        "REVIEW_SEQUENCE_JUMP": [
+            {
+                "natural_key": "TL-NAT:15:5068-5213",
+                "penyulang_id": 15,
+                "nama_penyulang": "BANJAR KEMANTREN",
+                "ulp_id": 1,
+                "source_asset_id": 5213,
+                "source_asset_name": "BANJARKEMANTRAN_92",
+                "source_section_id": 49,
+                "source_section_name": "LBSM BERNOFARM - LBS KARANGBONG TENGAH",
+                "target_asset_id": 5068,
+                "target_asset_name": "KEBOAN ANOM_92",
+                "target_section_id": 49,
+                "target_section_name": "LBSM BERNOFARM - LBS KARANGBONG TENGAH",
+                "distance_meters": 101.84,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.6884,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.4335,
+                    "bearing_score": 1,
+                    "sequence_score": 0.35,
+                    "section_score": 1,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 1,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 101.84,
+                    "calculated_bearing_deg": 280.19,
+                    "sequence_delta": 145,
+                    "composite_confidence": 0.6884
+                },
+                "evidence_json": "{\"distance_score\":0.4335,\"bearing_score\":1,\"sequence_score\":0.35,\"section_score\":1,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":1,\"construction_compatibility\":1,\"calculated_distance_m\":101.84,\"calculated_bearing_deg\":280.19,\"sequence_delta\":145,\"composite_confidence\":0.6884}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.723818,
+                            -7.409752021
+                        ],
+                        [
+                            112.722909,
+                            -7.409589998
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            },
+            {
+                "natural_key": "TL-NAT:15:5123-5142",
+                "penyulang_id": 15,
+                "nama_penyulang": "BANJAR KEMANTREN",
+                "ulp_id": 1,
+                "source_asset_id": 5142,
+                "source_asset_name": "BANJARKEMANTRAN_107",
+                "source_section_id": 50,
+                "source_section_name": "LBS KARANGBONG TENGAH - LBSM KARANGBONG BARAT",
+                "target_asset_id": 5123,
+                "target_asset_name": "BANJARKEMANTRAN_108",
+                "target_section_id": 50,
+                "target_section_name": "LBS KARANGBONG TENGAH - LBSM KARANGBONG BARAT",
+                "distance_meters": 66.86,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.7822,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.8087,
+                    "bearing_score": 1,
+                    "sequence_score": 0.35,
+                    "section_score": 1,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 1,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 66.86,
+                    "calculated_bearing_deg": 195.3,
+                    "sequence_delta": 19,
+                    "composite_confidence": 0.7822
+                },
+                "evidence_json": "{\"distance_score\":0.8087,\"bearing_score\":1,\"sequence_score\":0.35,\"section_score\":1,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":1,\"construction_compatibility\":1,\"calculated_distance_m\":66.86,\"calculated_bearing_deg\":195.3,\"sequence_delta\":19,\"composite_confidence\":0.7822}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.71841,
+                            -7.41171
+                        ],
+                        [
+                            112.71825,
+                            -7.41229
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            },
+            {
+                "natural_key": "TL-NAT:73:878-949",
+                "penyulang_id": 73,
+                "nama_penyulang": "GERRY FOOD",
+                "ulp_id": 2,
+                "source_asset_id": 878,
+                "source_asset_name": "GERY FOOD_001",
+                "source_section_id": 251,
+                "source_section_name": "GI - PT. GERRY",
+                "target_asset_id": 949,
+                "target_asset_name": "GERY FOOD_002",
+                "target_section_id": 251,
+                "target_section_name": "GI - PT. GERRY",
+                "distance_meters": 74.63,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.7652,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.7407,
+                    "bearing_score": 1,
+                    "sequence_score": 0.35,
+                    "section_score": 1,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 1,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 74.63,
+                    "calculated_bearing_deg": 257.61,
+                    "sequence_delta": 71,
+                    "composite_confidence": 0.7652
+                },
+                "evidence_json": "{\"distance_score\":0.7407,\"bearing_score\":1,\"sequence_score\":0.35,\"section_score\":1,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":1,\"construction_compatibility\":1,\"calculated_distance_m\":74.63,\"calculated_bearing_deg\":257.61,\"sequence_delta\":71,\"composite_confidence\":0.7652}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.598654,
+                            -7.36944898
+                        ],
+                        [
+                            112.597993,
+                            -7.369592981
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            },
+            {
+                "natural_key": "TL-NAT:78:131-184",
+                "penyulang_id": 78,
+                "nama_penyulang": "JAVA PASIFIK 3",
+                "ulp_id": 2,
+                "source_asset_id": 131,
+                "source_asset_name": "JAVA PACIFIK 3_048",
+                "source_section_id": 264,
+                "source_section_name": "GI - PT. JAVA PASIFIK",
+                "target_asset_id": 184,
+                "target_asset_name": "JAVA PACIFIK 3_049",
+                "target_section_id": 264,
+                "target_section_name": "GI - PT. JAVA PASIFIK",
+                "distance_meters": 74.52,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.7654,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.7417,
+                    "bearing_score": 1,
+                    "sequence_score": 0.35,
+                    "section_score": 1,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 1,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 74.52,
+                    "calculated_bearing_deg": 176.61,
+                    "sequence_delta": 53,
+                    "composite_confidence": 0.7654
+                },
+                "evidence_json": "{\"distance_score\":0.7417,\"bearing_score\":1,\"sequence_score\":0.35,\"section_score\":1,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":1,\"construction_compatibility\":1,\"calculated_distance_m\":74.52,\"calculated_bearing_deg\":176.61,\"sequence_delta\":53,\"composite_confidence\":0.7654}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.603729,
+                            -7.370700985
+                        ],
+                        [
+                            112.603769,
+                            -7.371370029
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            },
+            {
+                "natural_key": "TL-NAT:79:3-53",
+                "penyulang_id": 79,
+                "nama_penyulang": "JAVA PASIFIK 4",
+                "ulp_id": 2,
+                "source_asset_id": 53,
+                "source_asset_name": "JP4_39",
+                "source_section_id": 265,
+                "source_section_name": "GI - PT. JAVA PASIFIC",
+                "target_asset_id": 3,
+                "target_asset_name": "JP4_40",
+                "target_section_id": 265,
+                "target_section_name": "GI - PT. JAVA PASIFIC",
+                "distance_meters": 68.85,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.7778,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.7913,
+                    "bearing_score": 1,
+                    "sequence_score": 0.35,
+                    "section_score": 1,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 1,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 68.85,
+                    "calculated_bearing_deg": 273.8,
+                    "sequence_delta": 50,
+                    "composite_confidence": 0.7778
+                },
+                "evidence_json": "{\"distance_score\":0.7913,\"bearing_score\":1,\"sequence_score\":0.35,\"section_score\":1,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":1,\"construction_compatibility\":1,\"calculated_distance_m\":68.85,\"calculated_bearing_deg\":273.8,\"sequence_delta\":50,\"composite_confidence\":0.7778}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.607204,
+                            -7.388986023
+                        ],
+                        [
+                            112.606581,
+                            -7.388945036
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            }
+        ],
+        "REVIEW_DISTANCE_LONG": [
+            {
+                "natural_key": "TL-NAT:23:4283-4343",
+                "penyulang_id": 23,
+                "nama_penyulang": "GEDANGAN",
+                "ulp_id": 1,
+                "source_asset_id": 4343,
+                "source_asset_name": "GEDANGAN_252",
+                "source_section_id": 77,
+                "source_section_name": "PMCB BECIRO - LBS KOPEL KARANGBONG BARAT - LBS WONOKOYO - LBSM WONOKOYO",
+                "target_asset_id": 4283,
+                "target_asset_name": "GEDANGAN_254",
+                "target_section_id": 77,
+                "target_section_name": "PMCB BECIRO - LBS KOPEL KARANGBONG BARAT - LBS WONOKOYO - LBSM WONOKOYO",
+                "distance_meters": 100.95,
+                "conductor_type": "AAAC",
+                "conductor_size": "150 mm\u00b2",
+                "confidence": 0.7762,
+                "classification": "REVIEW_REQUIRED",
+                "evidence": {
+                    "distance_score": 0.4449,
+                    "bearing_score": 1,
+                    "sequence_score": 0.85,
+                    "section_score": 1,
+                    "feeder_score": 1,
+                    "ulp_score": 1,
+                    "degree_score": 1,
+                    "existing_parent_relation_score": 0.6,
+                    "coordinate_quality": 1,
+                    "asset_status_score": 0.7,
+                    "construction_compatibility": 1,
+                    "calculated_distance_m": 100.95,
+                    "calculated_bearing_deg": 289.69,
+                    "sequence_delta": 2,
+                    "composite_confidence": 0.7762
+                },
+                "evidence_json": "{\"distance_score\":0.4449,\"bearing_score\":1,\"sequence_score\":0.85,\"section_score\":1,\"feeder_score\":1,\"ulp_score\":1,\"degree_score\":1,\"existing_parent_relation_score\":0.6,\"coordinate_quality\":1,\"asset_status_score\":0.7,\"construction_compatibility\":1,\"calculated_distance_m\":100.95,\"calculated_bearing_deg\":289.69,\"sequence_delta\":2,\"composite_confidence\":0.7762}",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            112.703733,
+                            -7.417061962
+                        ],
+                        [
+                            112.702871,
+                            -7.416756023
+                        ]
+                    ]
+                },
+                "write_allowed": false,
+                "algorithm": "BOUNDARY_AWARE_NEAREST_SEQUENCE_MST_v1.7",
+                "generated_at": "2026-09-24 16:41:03"
+            }
+        ],
+        "REVIEW_DEGREE_HIGH": [],
+        "REVIEW_STATUS_PENALTY": [],
+        "REVIEW_MULTI_FACTOR_LOW": []
+    }
+}

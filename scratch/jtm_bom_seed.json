@@ -1,0 +1,3396 @@
+{
+    "materials": [
+        {
+            "material_code": "MAT-JTM-6e8dbbdb",
+            "nama_material": "STRAIN ROD INSULATOR",
+            "nama_lapangan": "HANG ISOLATOR",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-001",
+            "nama_material": "CROSS ARM UNP 2000",
+            "nama_lapangan": "KANAL",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-002",
+            "nama_material": "DOUBLE ARM BOLT AND NULT M16X400",
+            "nama_lapangan": "BAUT 400",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "BAUT_DAN_MUR",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-003",
+            "nama_material": "ARM TIE TYPE 750 3/4",
+            "nama_lapangan": "ARM TIE",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-004",
+            "nama_material": "DOUBLE ARM BAND",
+            "nama_lapangan": "BEGEL ARM TIE",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-005",
+            "nama_material": "BOLT & NUT M16X50",
+            "nama_lapangan": "BAUT 50",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "BAUT_DAN_MUR",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-006",
+            "nama_material": "ARM CLEVIS",
+            "nama_lapangan": "ARM CLEVIS/BAND STRAP",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-007",
+            "nama_material": "STRAIN CLAMP 3 NUT",
+            "nama_lapangan": "DEAD END",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "KLEM_DAN_FITTINGS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-008",
+            "nama_material": "BOLT & NUT M16X120",
+            "nama_lapangan": "BAUT 120",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "BAUT_DAN_MUR",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "MAT-JTM-794bf33d",
+            "nama_material": "LIGHTNING ARRESTER 20KV",
+            "nama_lapangan": "LA",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-009",
+            "nama_material": "MOUNTING BRACKET LA",
+            "nama_lapangan": "MOUNTING LA",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-010",
+            "nama_material": "TERMINAL LUG AL/CU",
+            "nama_lapangan": "SKUN AL/CU",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "TERMINAL_LUG_SKUN",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-011",
+            "nama_material": "TERMINAL LUG 35mm",
+            "nama_lapangan": "SKUN LA",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "TERMINAL_LUG_SKUN",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-012",
+            "nama_material": "COOPER TUBE 35mm",
+            "nama_lapangan": "OUT LA",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-013",
+            "nama_material": "BC 50mm BARE CONDUCTOR",
+            "nama_lapangan": "KABEL GROUND",
+            "satuan": "MTR",
+            "material_domain": "JTM",
+            "material_category": "PENGHANTAR_KABEL",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-014",
+            "nama_material": "GROUND WIRE CLAMP",
+            "nama_lapangan": "BEGEL GSW",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "PENTANAHAN_GROUNDING",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-015",
+            "nama_material": "TERMINAL LUG 50mm",
+            "nama_lapangan": "SKUN 50mm",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "TERMINAL_LUG_SKUN",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-016",
+            "nama_material": "GROUND ROD 16mm",
+            "nama_lapangan": "GROUND ROD",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "PENTANAHAN_GROUNDING",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-017",
+            "nama_material": "GUY WIRE",
+            "nama_lapangan": "SKUR",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-018",
+            "nama_material": "HORIZONTAL GROUND WIRE",
+            "nama_lapangan": "KONTRA MAS",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "PENTANAHAN_GROUNDING",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-019",
+            "nama_material": "STRUT POLE TM",
+            "nama_lapangan": "DRUG",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-020",
+            "nama_material": "PIPA GALVANIZED 3/4\" 4 METER",
+            "nama_lapangan": "PIPA GROUND",
+            "satuan": "MTR",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-021",
+            "nama_material": "Stainless Steel Strip non magnetic",
+            "nama_lapangan": "STAINLEES STRAP",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-022",
+            "nama_material": "Stoping Buckle non magnetic",
+            "nama_lapangan": "YUKE",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-023",
+            "nama_material": "ORNAMENT CABLE BAND",
+            "nama_lapangan": "BEGEL VERLINK",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-024",
+            "nama_material": "PIPE GALVANIZED 3\" 1500",
+            "nama_lapangan": "VERLINK GSW",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-025",
+            "nama_material": "Wire Clip M10 (\u00d8 35mm)",
+            "nama_lapangan": "WIRE CLIP",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "KLEM_DAN_FITTINGS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-026",
+            "nama_material": "GUY WIRE INSULATOR",
+            "nama_lapangan": "ISOLATOR SKUR",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-027",
+            "nama_material": "ANCHOR BLOCK",
+            "nama_lapangan": "BETON BLOK",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "MAT-JTM-cfc261f1",
+            "nama_material": "ANCHOR ROD CLAP",
+            "nama_lapangan": "ANGKUR SKUR",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-028",
+            "nama_material": "GUY WIRE CLAMP",
+            "nama_lapangan": "BEGEL SKUR",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "KLEM_DAN_FITTINGS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-029",
+            "nama_material": "TERMINASI",
+            "nama_lapangan": "TERMINASI",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-030",
+            "nama_material": "DISCONECCTING SWITCH 24 KV - 630A - 16KA",
+            "nama_lapangan": "DS",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-031",
+            "nama_material": "ANCHOR ROD CLAMP",
+            "nama_lapangan": "ANGKUR SKUR",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "KLEM_DAN_FITTINGS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-032",
+            "nama_material": "COVER LA",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-033",
+            "nama_material": "COVER TERMINAL LUG",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "TERMINAL_LUG_SKUN",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-034",
+            "nama_material": "PERISAI DS",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-035",
+            "nama_material": "FUSE CUT OUT 20KV-100A",
+            "nama_lapangan": "DS",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-036",
+            "nama_material": "MOUNTING BRACKET FCO",
+            "nama_lapangan": "MOUNTING FCO",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-037",
+            "nama_material": "COVER FCO",
+            "nama_lapangan": "COVER",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-038",
+            "nama_material": "Cross Arm UNP 2000 mm",
+            "nama_lapangan": "KANAL",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-039",
+            "nama_material": "Arm Tie Type 750 - 3/4\"",
+            "nama_lapangan": "ARM TIE",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-040",
+            "nama_material": "Bolt & Nut M.16 x 50",
+            "nama_lapangan": "BAUT 50",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "BAUT_DAN_MUR",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-041",
+            "nama_material": "Bolt & Nut M.16 x 400  (besi as) Double Arm  - HDG",
+            "nama_lapangan": "BAUT 400",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "BAUT_DAN_MUR",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-042",
+            "nama_material": "Ground Wire Clamp Type A",
+            "nama_lapangan": "PLAT GSW",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "PENTANAHAN_GROUNDING",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-MAT-001",
+            "nama_material": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+            "nama_lapangan": "PIN",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "PERALATAN_UTAMA",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-043",
+            "nama_material": "Isolated All. Binding - 4 mm \u00d8 6",
+            "nama_lapangan": "BENDING",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-044",
+            "nama_material": "Preformed Side Tie Double 150mm (Semi Cond/non metalic/Composite)",
+            "nama_lapangan": "TOP TIES SIDE",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-045",
+            "nama_material": "Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)",
+            "nama_lapangan": "TOP TIES",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-046",
+            "nama_material": "NYA 35mm",
+            "nama_lapangan": "KABEL JUMPERAN LA",
+            "satuan": "MTR",
+            "material_domain": "JTM",
+            "material_category": "PENGHANTAR_KABEL",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-047",
+            "nama_material": "LINE TAP 150/35",
+            "nama_lapangan": "JUMPERAN LA",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-048",
+            "nama_material": "TERMINAL LUG CU 35mm",
+            "nama_lapangan": "SKUN LA CU",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "TERMINAL_LUG_SKUN",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-049",
+            "nama_material": "NYA 70mm",
+            "nama_lapangan": "KABEL GROUND",
+            "satuan": "MTR",
+            "material_domain": "JTM",
+            "material_category": "PENGHANTAR_KABEL",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-050",
+            "nama_material": "Cross Arm UNP 2500 mm",
+            "nama_lapangan": "KANAL",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-051",
+            "nama_material": "Arm Tie Type 1000 - 3/4\"",
+            "nama_lapangan": "ARM TIE",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-052",
+            "nama_material": "STRUT TIE 1000-1500",
+            "nama_lapangan": "ARM TIE BAJONG",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-053",
+            "nama_material": "Cross Arm UNP 100 - 2000 mm",
+            "nama_lapangan": "KANAL",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-054",
+            "nama_material": "Arm Tie Band 8\"( TM )",
+            "nama_lapangan": "BEGEL ARM TIE",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-055",
+            "nama_material": "Bolt & Nut M.16 x 400  (besi as) Double Arm",
+            "nama_lapangan": "BAUT 400",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "BAUT_DAN_MUR",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-056",
+            "nama_material": "Ground Wire Clamp Type B",
+            "nama_lapangan": "BEGEL GSW",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "PENTANAHAN_GROUNDING",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-057",
+            "nama_material": "Preformed Termination 35 mm  (542/U/2009)",
+            "nama_lapangan": "FORMED GSW",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-058",
+            "nama_material": "Bolt & Nut M.16 x 400  (besi as) Double Arm - HDG",
+            "nama_lapangan": "BAUT 400",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "BAUT_DAN_MUR",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-059",
+            "nama_material": "Ground Wire Clamp Type B - TM - (l=50mm, t=6mm, p=300mm)",
+            "nama_lapangan": "BEGEL GSW",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "PENTANAHAN_GROUNDING",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-MAT-004",
+            "nama_material": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+            "nama_lapangan": "HANG ISOLATOR",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "PERALATAN_UTAMA",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-060",
+            "nama_material": "Strain Clamp 150 - 240 mm - 3 nut",
+            "nama_lapangan": "DEAD END",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "KLEM_DAN_FITTINGS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-061",
+            "nama_material": "Bolt & Nut M.16 x 120  - HDG",
+            "nama_lapangan": "BAUT 120",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "BAUT_DAN_MUR",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-062",
+            "nama_material": "Cross Arm Clevis  - TM - (l=42mm, t=6mm, p=35mm) - HDG",
+            "nama_lapangan": "ARM CLEVIS",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-063",
+            "nama_material": "Cross Arm UNP 100 - 2000 mm - (l=50mm, t=5mm, tgg=100mm)-Tarik",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-064",
+            "nama_material": "Arm Tie Type 750 - 3/4\" - (t=2,3 mm)",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-065",
+            "nama_material": "U - Strap - TM - (l=42mm, t=6mm)",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-066",
+            "nama_material": "Compresion Joint Sleeve Non Tension 150  mm - Al",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-067",
+            "nama_material": "Preformed Side Tie 150mm (Semi Cond/non metalic/Composite)",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-068",
+            "nama_material": "TERMINAL LUG AL/CU 70mm",
+            "nama_lapangan": "SKUN FCO",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "TERMINAL_LUG_SKUN",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-069",
+            "nama_material": "COVER FUSE CUT OUT",
+            "nama_lapangan": "COVER FCO",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-070",
+            "nama_material": "FUSE CUT OUT",
+            "nama_lapangan": "FCO",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-071",
+            "nama_material": "Ground Wire Clamp Type C",
+            "nama_lapangan": "CLAMP GSW",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "PENTANAHAN_GROUNDING",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-072",
+            "nama_material": "Preformed Termination 35 mm",
+            "nama_lapangan": "FORMED GSW",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-073",
+            "nama_material": "Cross Arm Clevis  - TM",
+            "nama_lapangan": "ARM CLEVIS",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-074",
+            "nama_material": "Bolt & Nut M.16 x 120",
+            "nama_lapangan": "BAUT 120",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "BAUT_DAN_MUR",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-075",
+            "nama_material": "Line Tap Connector Type 150 - 150 mm - Al",
+            "nama_lapangan": "LINE TAP",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-076",
+            "nama_material": "HORIZONTAL GUY WIRE",
+            "nama_lapangan": "KONTRAMAS",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "MAT-JTM-2b114a24",
+            "nama_material": "STRUT POOLE",
+            "nama_lapangan": "DRUG",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-077",
+            "nama_material": "STRUT POLE",
+            "nama_lapangan": "DRUG",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-078",
+            "nama_material": "Cross Arm UNP 100 - 3000 mm - (l=50mm, t=5mm, tgg=100mm)",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-079",
+            "nama_material": "Besi Siku L 50x50x4,5 mm - 2500 mm",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-080",
+            "nama_material": "Arm Tie Type 900 - 3/4\" - (t=2,3 mm)",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-081",
+            "nama_material": "Single Arm Band   8\" (t =  6 mm x 42 mm) HDG TM",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "CROSS_ARM_TRAVERS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-082",
+            "nama_material": "Square Washer - (l=50mm, p=50mm, t=2,5mm)",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-083",
+            "nama_material": "Pole Block Band 12\" - TM (557/U/2009)",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        },
+        {
+            "material_code": "CANON-HDW-084",
+            "nama_material": "Pole Block  (504/U/2009)",
+            "nama_lapangan": "N/A",
+            "satuan": "buah",
+            "material_domain": "JTM",
+            "material_category": "HARDWARE_AKSESORIS",
+            "status": "AKTIF"
+        }
+    ],
+    "constructions": {
+        "TM11": {
+            "code": "TM11",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "STRAIN ROD INSULATOR",
+                    "material_alias": "HANG ISOLATOR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "CROSS ARM UNP 2000",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "DOUBLE ARM BOLT AND NULT M16X400",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM TIE TYPE 750 3/4",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "DOUBLE ARM BAND",
+                    "material_alias": "BEGEL ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BOLT & NUT M16X50",
+                    "material_alias": "BAUT 50",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM CLEVIS",
+                    "material_alias": "ARM CLEVIS/BAND STRAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRAIN CLAMP 3 NUT",
+                    "material_alias": "DEAD END",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BOLT & NUT M16X120",
+                    "material_alias": "BAUT 120",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "LIGHTNING ARRESTER 20KV",
+                    "material_alias": "LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "MOUNTING BRACKET LA",
+                    "material_alias": "MOUNTING LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG AL/CU",
+                    "material_alias": "SKUN AL/CU",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG 35mm",
+                    "material_alias": "SKUN LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COOPER TUBE 35mm",
+                    "material_alias": "OUT LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BC 50mm BARE CONDUCTOR",
+                    "material_alias": "KABEL GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "GROUND WIRE CLAMP",
+                    "material_alias": "BEGEL GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG 50mm",
+                    "material_alias": "SKUN 50mm",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GROUND ROD 16mm",
+                    "material_alias": "GROUND ROD",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE",
+                    "material_alias": "SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GROUND WIRE",
+                    "material_alias": "KONTRA MAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT POLE TM",
+                    "material_alias": "DRUG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPA GALVANIZED 3/4\" 4 METER",
+                    "material_alias": "PIPA GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "Stainless Steel Strip non magnetic",
+                    "material_alias": "STAINLEES STRAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Stoping Buckle non magnetic",
+                    "material_alias": "YUKE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINASI",
+                    "material_alias": "TERMINASI",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM11 - DS": {
+            "code": "TM11 - DS",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "STRAIN ROD INSULATOR",
+                    "material_alias": "HANG ISOLATOR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "CROSS ARM UNP 2000",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "DOUBLE ARM BOLT AND NULT M16X400",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM TIE TYPE 750 3/4",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "DOUBLE ARM BAND",
+                    "material_alias": "BEGEL ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BOLT & NUT M16X50",
+                    "material_alias": "BAUT 50",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM CLEVIS",
+                    "material_alias": "ARM CLEVIS/BAND STRAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRAIN CLAMP 3 NUT",
+                    "material_alias": "DEAD END",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BOLT & NUT M16X120",
+                    "material_alias": "BAUT 120",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "LIGHTNING ARRESTER 20KV",
+                    "material_alias": "LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "MOUNTING BRACKET LA",
+                    "material_alias": "MOUNTING LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG AL/CU",
+                    "material_alias": "SKUN AL/CU",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG 35mm",
+                    "material_alias": "SKUN LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COOPER TUBE 35mm",
+                    "material_alias": "OUT LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BC 50mm BARE CONDUCTOR",
+                    "material_alias": "KABEL GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "GROUND WIRE CLAMP",
+                    "material_alias": "BEGEL GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG 50mm",
+                    "material_alias": "SKUN 50mm",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GROUND ROD 16mm",
+                    "material_alias": "GROUND ROD",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE",
+                    "material_alias": "SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GROUND WIRE",
+                    "material_alias": "KONTRA MAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT POLE TM",
+                    "material_alias": "DRUG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPA GALVANIZED 3/4\" 4 METER",
+                    "material_alias": "PIPA GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "Stainless Steel Strip non magnetic",
+                    "material_alias": "STAINLEES STRAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Stoping Buckle non magnetic",
+                    "material_alias": "YUKE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "DISCONECCTING SWITCH 24 KV - 630A - 16KA",
+                    "material_alias": "DS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "CROSS ARM UNP 2000",
+                    "material_alias": "DUDUKAN DS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM TIE TYPE 750 3/4",
+                    "material_alias": "ARM TIE DUDUKAN DS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAMP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINASI",
+                    "material_alias": "TERMINASI",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER LA",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER TERMINAL LUG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PERISAI DS",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM11 - CO": {
+            "code": "TM11 - CO",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "STRAIN ROD INSULATOR",
+                    "material_alias": "HANG ISOLATOR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "CROSS ARM UNP 2000",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "DOUBLE ARM BOLT AND NULT M16X400",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM TIE TYPE 750 3/4",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "DOUBLE ARM BAND",
+                    "material_alias": "BEGEL ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BOLT & NUT M16X50",
+                    "material_alias": "BAUT 50",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM CLEVIS",
+                    "material_alias": "ARM CLEVIS/BAND STRAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRAIN CLAMP 3 NUT",
+                    "material_alias": "DEAD END",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BOLT & NUT M16X120",
+                    "material_alias": "BAUT 120",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "LIGHTNING ARRESTER 20KV",
+                    "material_alias": "LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "MOUNTING BRACKET LA",
+                    "material_alias": "MOUNTING LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG AL/CU",
+                    "material_alias": "SKUN AL/CU",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG 35mm",
+                    "material_alias": "SKUN LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COOPER TUBE 35mm",
+                    "material_alias": "OUT LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BC 50mm BARE CONDUCTOR",
+                    "material_alias": "KABEL GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "GROUND WIRE CLAMP",
+                    "material_alias": "BEGEL GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG 50mm",
+                    "material_alias": "SKUN 50mm",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GROUND ROD 16mm",
+                    "material_alias": "GROUND ROD",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE",
+                    "material_alias": "SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GROUND WIRE",
+                    "material_alias": "KONTRA MAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT POLE TM",
+                    "material_alias": "DRUG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPA GALVANIZED 3/4\" 4 METER",
+                    "material_alias": "PIPA GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "Stainless Steel Strip non magnetic",
+                    "material_alias": "STAINLEES STRAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Stoping Buckle non magnetic",
+                    "material_alias": "YUKE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "FUSE CUT OUT 20KV-100A",
+                    "material_alias": "DS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "MOUNTING BRACKET FCO",
+                    "material_alias": "MOUNTING FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "CROSS ARM UNP 2000",
+                    "material_alias": "DUDUKAN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM TIE TYPE 750 3/4",
+                    "material_alias": "DUDUKAN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINASI",
+                    "material_alias": "TERMINASI",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER FCO",
+                    "material_alias": "COVER",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER LA",
+                    "material_alias": "COVER",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM1": {
+            "code": "TM1",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 2000 mm",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\"",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 50",
+                    "material_alias": "BAUT 50",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm  - HDG",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Ground Wire Clamp Type A",
+                    "material_alias": "PLAT GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "PIN",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "BENDING",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie Double 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "TOP TIES SIDE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "TOP TIES",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM1 A": {
+            "code": "TM1 A",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 2000 mm",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\"",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 50",
+                    "material_alias": "BAUT 50",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm  - HDG",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Ground Wire Clamp Type A",
+                    "material_alias": "PLAT GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "PIN",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "BENDING",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie Double 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "TOP TIES SIDE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "TOP TIES",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "NYA 35mm",
+                    "material_alias": "KABEL JUMPERAN LA",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "LINE TAP 150/35",
+                    "material_alias": "JUMPERAN LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG CU 35mm",
+                    "material_alias": "SKUN LA CU",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "NYA 70mm",
+                    "material_alias": "KABEL GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "GROUND ROD 16mm",
+                    "material_alias": "GROUND ROD",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPA GALVANIZED 3/4\" 4 METER",
+                    "material_alias": "PIPA GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "Stainless Steel Strip non magnetic",
+                    "material_alias": "STAINLEES STRAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Stoping Buckle non magnetic",
+                    "material_alias": "YUKE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER LA",
+                    "material_alias": "COVER",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM1 TYPE C": {
+            "code": "TM1 TYPE C",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 2500 mm",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 1000 - 3/4\"",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 50",
+                    "material_alias": "BAUT 50",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm  - HDG",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Ground Wire Clamp Type A",
+                    "material_alias": "PLAT GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "PIN",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "BENDING",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie Double 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "TOP TIES SIDE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "TOP TIES",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE",
+                    "material_alias": "SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GROUND WIRE",
+                    "material_alias": "KONTRA MAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT TIE 1000-1500",
+                    "material_alias": "ARM TIE BAJONG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM2": {
+            "code": "TM2",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\"",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Band 8\"( TM )",
+                    "material_alias": "BEGEL ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Ground Wire Clamp Type B",
+                    "material_alias": "BEGEL GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Termination 35 mm  (542/U/2009)",
+                    "material_alias": "FORMED GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "PIN",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "BENDING",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie Double 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "SIDE TIES",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE",
+                    "material_alias": "SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GROUND WIRE",
+                    "material_alias": "KONTRA MAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT TIE 1000-1500",
+                    "material_alias": "ARM TIE BAJONG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM4": {
+            "code": "TM4",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\"",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm - HDG",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Ground Wire Clamp Type B - TM - (l=50mm, t=6mm, p=300mm)",
+                    "material_alias": "BEGEL GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Termination 35 mm  (542/U/2009)",
+                    "material_alias": "FORMED GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+                    "material_alias": "HANG ISOLATOR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Strain Clamp 150 - 240 mm - 3 nut",
+                    "material_alias": "DEAD END",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 120  - HDG",
+                    "material_alias": "BAUT 120",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm Clevis  - TM - (l=42mm, t=6mm, p=35mm) - HDG",
+                    "material_alias": "ARM CLEVIS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE",
+                    "material_alias": "SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GROUND WIRE",
+                    "material_alias": "KONTRA MAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT TIE 1000-1500",
+                    "material_alias": "ARM TIE BAJONG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM4 A": {
+            "code": "TM4 A",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "STRAIN ROD INSULATOR",
+                    "material_alias": "HANG ISOLATOR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "CROSS ARM UNP 2000",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "DOUBLE ARM BOLT AND NULT M16X400",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM TIE TYPE 750 3/4",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "DOUBLE ARM BAND",
+                    "material_alias": "BEGEL ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BOLT & NUT M16X50",
+                    "material_alias": "BAUT 50",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ARM CLEVIS",
+                    "material_alias": "ARM CLEVIS/BAND STRAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRAIN CLAMP 3 NUT",
+                    "material_alias": "DEAD END",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "BOLT & NUT M16X120",
+                    "material_alias": "BAUT 120",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "LIGHTNING ARRESTER 20KV",
+                    "material_alias": "LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "MOUNTING BRACKET LA",
+                    "material_alias": "MOUNTING LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG 35mm",
+                    "material_alias": "SKUN LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COOPER TUBE 35mm",
+                    "material_alias": "OUT LA",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "NYA 70mm",
+                    "material_alias": "KABEL GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "GROUND WIRE CLAMP",
+                    "material_alias": "BEGEL GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG 50mm",
+                    "material_alias": "SKUN 50mm",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GROUND ROD 16mm",
+                    "material_alias": "GROUND ROD",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE",
+                    "material_alias": "SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GROUND WIRE",
+                    "material_alias": "KONTRA MAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT POLE TM",
+                    "material_alias": "DRUG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPA GALVANIZED 3/4\" 4 METER",
+                    "material_alias": "PIPA GROUND",
+                    "quantity": 1,
+                    "unit": "MTR"
+                },
+                {
+                    "raw_material_name": "Stainless Steel Strip non magnetic",
+                    "material_alias": "STAINLEES STRAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Stoping Buckle non magnetic",
+                    "material_alias": "YUKE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAMP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER LA",
+                    "material_alias": "COVER",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM5": {
+            "code": "TM5",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm - (l=50mm, t=5mm, tgg=100mm)-Tarik",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\" - (t=2,3 mm)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "U - Strap - TM - (l=42mm, t=6mm)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Ground Wire Clamp Type B - TM - (l=50mm, t=6mm, p=300mm)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Termination 35 mm  (542/U/2009)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Strain Clamp 150 - 240 mm - 3 nut",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm Clevis  - TM - (l=42mm, t=6mm, p=35mm) - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Compresion Joint Sleeve Non Tension 150  mm - Al",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 120  - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAMP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM5C": {
+            "code": "TM5C",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm - (l=50mm, t=5mm, tgg=100mm)-Tarik",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\" - (t=2,3 mm)",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm - HDG",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Ground Wire Clamp Type B - TM - (l=50mm, t=6mm, p=300mm)",
+                    "material_alias": "BEGEL GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Termination 35 mm  (542/U/2009)",
+                    "material_alias": "FORMED",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "PIN",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "BENDING",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+                    "material_alias": "HANG ISOLATOR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Strain Clamp 150 - 240 mm - 3 nut",
+                    "material_alias": "DEAD END",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm Clevis  - TM - (l=42mm, t=6mm, p=35mm) - HDG",
+                    "material_alias": "ARM CLEVIS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Compresion Joint Sleeve Non Tension 150  mm - Al",
+                    "material_alias": "JOINT",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 120  - HDG",
+                    "material_alias": "BAUT 120",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "TOP TIES TYPE SIDE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAMP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm",
+                    "material_alias": "DUDUKAN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG AL/CU 70mm",
+                    "material_alias": "SKUN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER FUSE CUT OUT",
+                    "material_alias": "COVER FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "FUSE CUT OUT",
+                    "material_alias": "FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM8": {
+            "code": "TM8",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\"",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Band 8\"( TM )",
+                    "material_alias": "BEGEL ARM TIE BAND",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Ground Wire Clamp Type C",
+                    "material_alias": "CLAMP GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Termination 35 mm",
+                    "material_alias": "FORMED GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "PIN",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "BENDING",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+                    "material_alias": "HANG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Strain Clamp 150 - 240 mm - 3 nut",
+                    "material_alias": "DEAD END",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm Clevis  - TM",
+                    "material_alias": "ARM CLEVIS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 120",
+                    "material_alias": "BAUT 120",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Line Tap Connector Type 150 - 150 mm - Al",
+                    "material_alias": "LINE TAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "SIDE TIES SINGLE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "TOP TIES",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAMP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM8C": {
+            "code": "TM8C",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\"",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Band 8\"( TM )",
+                    "material_alias": "BEGEL ARM TIE BAND",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Ground Wire Clamp Type C",
+                    "material_alias": "CLAMP GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Termination 35 mm",
+                    "material_alias": "FORMED GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "PIN",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "BENDING",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+                    "material_alias": "HANG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Strain Clamp 150 - 240 mm - 3 nut",
+                    "material_alias": "DEAD END",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm Clevis  - TM",
+                    "material_alias": "ARM CLEVIS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 120",
+                    "material_alias": "BAUT 120",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Line Tap Connector Type 150 - 150 mm - Al",
+                    "material_alias": "LINE TAP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "SIDE TIES SINGLE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "TOP TIES",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAMP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm",
+                    "material_alias": "DUDUKAN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG AL/CU 70mm",
+                    "material_alias": "SKUN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER FUSE CUT OUT",
+                    "material_alias": "COVER FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "FUSE CUT OUT",
+                    "material_alias": "FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GUY WIRE",
+                    "material_alias": "KONTRAMAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT POOLE",
+                    "material_alias": "DRUG",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM10": {
+            "code": "TM10",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm",
+                    "material_alias": "KANAL",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\"",
+                    "material_alias": "ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Band 8\"( TM )",
+                    "material_alias": "BEGEL ARM TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm - HDG",
+                    "material_alias": "BAUT 400",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "PIN",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "BENDING",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+                    "material_alias": "HANG",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Strain Clamp 150 - 240 mm - 3 nut",
+                    "material_alias": "DEAD END",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm Clevis  - TM - (l=42mm, t=6mm, p=35mm) - HDG",
+                    "material_alias": "ARM CLEVIS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Compresion Joint Sleeve Non Tension 150  mm - Al",
+                    "material_alias": "JOINT",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 120  - HDG",
+                    "material_alias": "BAUT 120",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "SIDE TIE",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAMP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GUY WIRE",
+                    "material_alias": "KONTRAMAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT POOLE",
+                    "material_alias": "DRUG",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM12 (TRAFO PORTAL AKHIR) SEJAJAR ARAH JARINGAN": {
+            "code": "TM12 (TRAFO PORTAL AKHIR) SEJAJAR ARAH JARINGAN",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm - (l=50mm, t=5mm, tgg=100mm)-Tarik",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 750 - 3/4\" - (t=2,3 mm)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Strain Clamp 150 - 240 mm - 3 nut",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm Clevis  - TM - (l=42mm, t=6mm, p=35mm) - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 120  - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAMP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm",
+                    "material_alias": "DUDUKAN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG AL/CU 70mm",
+                    "material_alias": "SKUN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER FUSE CUT OUT",
+                    "material_alias": "COVER FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "FUSE CUT OUT",
+                    "material_alias": "FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GUY WIRE",
+                    "material_alias": "KONTRAMAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT POLE",
+                    "material_alias": "DRUG",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TM13 (TRAFO PORTAL AKHIR)": {
+            "code": "TM13 (TRAFO PORTAL AKHIR)",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 3000 mm - (l=50mm, t=5mm, tgg=100mm)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Besi Siku L 50x50x4,5 mm - 2500 mm",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Strain Clamp 150 - 240 mm - 3 nut",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm Clevis  - TM - (l=42mm, t=6mm, p=35mm) - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 120  - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ORNAMENT CABLE BAND",
+                    "material_alias": "BEGEL VERLINK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "PIPE GALVANIZED 3\" 1500",
+                    "material_alias": "VERLINK GSW",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Wire Clip M10 (\u00d8 35mm)",
+                    "material_alias": "WIRE CLIP",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR BLOCK",
+                    "material_alias": "BETON BLOK",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "ANCHOR ROD CLAMP",
+                    "material_alias": "ANGKUR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 2000 mm",
+                    "material_alias": "DUDUKAN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "TERMINAL LUG AL/CU 70mm",
+                    "material_alias": "SKUN FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "COVER FUSE CUT OUT",
+                    "material_alias": "COVER FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "FUSE CUT OUT",
+                    "material_alias": "FCO",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GUY WIRE",
+                    "material_alias": "KONTRAMAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT POLE",
+                    "material_alias": "DRUG",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        },
+        "TMTP (HT POLE)": {
+            "code": "TMTP (HT POLE)",
+            "name": "JTM",
+            "items": [
+                {
+                    "raw_material_name": "Cross Arm UNP 100 - 3000 mm - (l=50mm, t=5mm, tgg=100mm)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Arm Tie Type 900 - 3/4\" - (t=2,3 mm)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Besi Siku L 50x50x4,5 mm - 2500 mm",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "U - Strap - TM - (l=42mm, t=6mm)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Single Arm Band   8\" (t =  6 mm x 42 mm) HDG TM",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 400  (besi as) Double Arm - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Square Washer - (l=50mm, p=50mm, t=2,5mm)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Pin Post Insulator 20 Kv;12,5 kN  - Porcelain (Tumpu)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Isolated All. Binding - 4 mm \u00d8 6",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Insulator - Strain Insulator 20 kV lengkap (SIR) Porcelain (Tarik)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Strain Clamp 150 - 240 mm - 3 nut",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Cross Arm Clevis  - TM - (l=42mm, t=6mm, p=35mm) - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Bolt & Nut M.16 x 120  - HDG",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Compresion Joint Sleeve Non Tension 150  mm - Al",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Pole Block Band 12\" - TM (557/U/2009)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Pole Block  (504/U/2009)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "Preformed Side Tie 150mm (Semi Cond/non metalic/Composite)",
+                    "material_alias": "",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE INSULATOR",
+                    "material_alias": "ISOLATOR SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "GUY WIRE CLAMP",
+                    "material_alias": "BEGEL SKUR",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "HORIZONTAL GUY WIRE",
+                    "material_alias": "KONTRAMAS",
+                    "quantity": 1,
+                    "unit": "buah"
+                },
+                {
+                    "raw_material_name": "STRUT POLE",
+                    "material_alias": "DRUG",
+                    "quantity": 1,
+                    "unit": "buah"
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,150 @@
+{
+    "registry_id": "CC06_INSPECTION_WORK_CATALOG_REGISTRY_v1.0",
+    "created_at": "2026-08-25 15:37:37 WIB",
+    "created_at_utc": "2026-08-25T08:37:37Z",
+    "total_items": 17,
+    "domains": [
+        "JTM",
+        "Gardu",
+        "Trafo",
+        "JTR"
+    ],
+    "inspection_tasks": [
+        {
+            "domain": "JTM",
+            "code": "INSP-JTM-VL1",
+            "name": "Inspeksi Visual Level 1 JTM",
+            "method": "VISUAL_LEVEL_1",
+            "target": "Material & ROW",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "JTM",
+            "code": "INSP-JTM-THERMO",
+            "name": "Inspeksi Thermovision JTM",
+            "method": "THERMOVISION",
+            "target": "Titik Sambung SUTM",
+            "outage_mode": "NON_OUTAGE_ONLINE"
+        },
+        {
+            "domain": "JTM",
+            "code": "INSP-JTM-GROUND",
+            "name": "Inspeksi Pentanahan JTM",
+            "method": "GROUNDING_TEST",
+            "target": "GSW, LA, CLD",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "JTM",
+            "code": "INSP-JTM-LEAKAGE",
+            "name": "Inspeksi Arus Bocor JTM",
+            "method": "LEAKAGE_CURRENT",
+            "target": "Arrester & CLD",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "JTM",
+            "code": "INSP-JTM-PD",
+            "name": "Inspeksi Partial Discharge JTM",
+            "method": "PARTIAL_DISCHARGE",
+            "target": "Material SUTM",
+            "outage_mode": "NON_OUTAGE_ONLINE"
+        },
+        {
+            "domain": "Gardu",
+            "code": "INSP-GRD-VL1",
+            "name": "Inspeksi Visual Level 1 Gardu",
+            "method": "VISUAL_LEVEL_1",
+            "target": "Relay, kebersihan, sumber 220V",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "Gardu",
+            "code": "INSP-GRD-PD",
+            "name": "Inspeksi Partial Discharge Gardu",
+            "method": "PARTIAL_DISCHARGE",
+            "target": "Seluruh aset kubikel",
+            "outage_mode": "NON_OUTAGE_ONLINE"
+        },
+        {
+            "domain": "Trafo",
+            "code": "INSP-TRF-VL1",
+            "name": "Inspeksi Visual Level 1 Trafo",
+            "method": "VISUAL_LEVEL_1",
+            "target": "Seluruh material aset",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "Trafo",
+            "code": "INSP-TRF-THERMO",
+            "name": "Inspeksi Thermovision Trafo",
+            "method": "THERMOVISION",
+            "target": "Titik sambung",
+            "outage_mode": "NON_OUTAGE_ONLINE"
+        },
+        {
+            "domain": "Trafo",
+            "code": "INSP-TRF-GROUND",
+            "name": "Inspeksi Pentanahan Trafo",
+            "method": "GROUNDING_TEST",
+            "target": "Trafo, LA, Netral",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "Trafo",
+            "code": "INSP-TRF-LEAKAGE",
+            "name": "Inspeksi Arus Bocor Trafo",
+            "method": "LEAKAGE_CURRENT",
+            "target": "Trafo & LA",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "Trafo",
+            "code": "INSP-TRF-PD",
+            "name": "Inspeksi Partial Discharge Trafo",
+            "method": "PARTIAL_DISCHARGE",
+            "target": "Material Trafo",
+            "outage_mode": "NON_OUTAGE_ONLINE"
+        },
+        {
+            "domain": "JTR",
+            "code": "INSP-JTR-VL1",
+            "name": "Inspeksi Visual Level 1 JTR",
+            "method": "VISUAL_LEVEL_1",
+            "target": "Seluruh aset",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "JTR",
+            "code": "INSP-JTR-THERMO",
+            "name": "Inspeksi Thermovision JTR",
+            "method": "THERMOVISION",
+            "target": "Titik sambung",
+            "outage_mode": "NON_OUTAGE_ONLINE"
+        },
+        {
+            "domain": "JTR",
+            "code": "INSP-JTR-GROUND",
+            "name": "Inspeksi Pentanahan JTR",
+            "method": "GROUNDING_TEST",
+            "target": "Ground TR",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "JTR",
+            "code": "INSP-JTR-LEAKAGE",
+            "name": "Inspeksi Arus Bocor JTR",
+            "method": "LEAKAGE_CURRENT",
+            "target": "Ground TR",
+            "outage_mode": "NON_OUTAGE"
+        },
+        {
+            "domain": "JTR",
+            "code": "INSP-JTR-PD",
+            "name": "Inspeksi Partial Discharge JTR",
+            "method": "PARTIAL_DISCHARGE",
+            "target": "Material JTR",
+            "outage_mode": "NON_OUTAGE_ONLINE"
+        }
+    ]
+}

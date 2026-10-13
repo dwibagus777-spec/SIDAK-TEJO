@@ -1,0 +1,51 @@
+{
+    "timestamp": "2026-09-11T14:20:38+07:00",
+    "penyulang_id": 15,
+    "pre_count": 98,
+    "post_count": 100,
+    "created_count": 2,
+    "created_ids": [],
+    "provenance_run_id": "",
+    "zero_write_verified": false,
+    "hashes": {
+        "pre_assets_hash": "",
+        "post_assets_hash": "",
+        "pre_temuan_hash": "",
+        "post_temuan_hash": ""
+    },
+    "execution_response": {
+        "status": "success",
+        "action": "BATCH_COMMITTED",
+        "run_id": "TL03-RUN-20260911142037-5ef969",
+        "created_count": 2,
+        "created_translines": [
+            {
+                "id": 111,
+                "transline_code": "TL-15-3215-3221",
+                "natural_key": "TL-NAT:15:3215-3221",
+                "source_asset_id": 3215,
+                "target_asset_id": 3221,
+                "distance_meters": 9.61,
+                "total_score": 91,
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL03|RUN:TL03-RUN-20260911142037-5ef969|PROP:1"
+            },
+            {
+                "id": 112,
+                "transline_code": "TL-15-3358-3359",
+                "natural_key": "TL-NAT:15:3358-3359",
+                "source_asset_id": 3358,
+                "target_asset_id": 3359,
+                "distance_meters": 38.55,
+                "total_score": 91,
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL03|RUN:TL03-RUN-20260911142037-5ef969|PROP:2"
+            }
+        ],
+        "created_ids": [
+            111,
+            112
+        ],
+        "zero_write_invariants_pass": true,
+        "remaining_auto_complete": 0,
+        "total_translines_now": 100
+    }
+}

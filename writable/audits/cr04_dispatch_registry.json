@@ -1,0 +1,162 @@
+{
+    "registry_id": "CR04_DISPATCH_REGISTRY_v1.0",
+    "created_at": "2026-08-24 18:20:33 WIB",
+    "lineage_parent": "CR04_PRE_SNAPSHOT",
+    "governance_rule": "ZERO_AUTO_DISPATCH_HUMAN_AUTHORITY_FINAL",
+    "dispatches": {
+        "DISP-CR04-20260824-182033-8ecaa6": {
+            "dispatch_id": "DISP-CR04-20260824-182033-8ecaa6",
+            "title": "Pemeliharaan ROW Terarah & Insulator Patrol Penyulang BANJAR KEMANTREN",
+            "penyulang_id": 15,
+            "penyulang_name": "BANJAR KEMANTREN",
+            "ulp_id": 1,
+            "work_scope": "INSPEKSI_DAN_PEMANGKASAN_ROW",
+            "justification": "Berdasarkan klaster recurrence CR-03 dan temuan isolator di seksi 2.",
+            "current_state": "SUPERVISOR_VERIFIED",
+            "created_at": "2026-08-24 18:20:33",
+            "created_by": {
+                "actor_id": 1,
+                "actor_name": "BUDI PLANNER",
+                "actor_nip": "198905142014021001",
+                "actor_role": "PLANNER"
+            },
+            "evidence_lineage": {
+                "linked_finding_ids": [
+                    124,
+                    125
+                ],
+                "pattern_evidence_codes": [
+                    "REC-CR03-01",
+                    "REC-CR03-02"
+                ],
+                "disturbance_baseline": 841,
+                "pre_snapshot_id": "CR04_PRE_SNAPSHOT"
+            },
+            "confirmation_token": "8d9e62a344884c66757e93b5d5dd345d3d787f9281790374f6b4edf387db5a42",
+            "state_history": [
+                {
+                    "from_state": null,
+                    "to_state": "DRAFT_DISPATCH_PLAN",
+                    "actor_name": "BUDI PLANNER",
+                    "actor_nip": "198905142014021001",
+                    "actor_role": "PLANNER",
+                    "timestamp": "2026-08-24 18:20:33",
+                    "notes": "Human-initiated draft dispatch created.",
+                    "action_hash": "aec8faa098762b6ab691bed3849d1008e6a0f83e639f2c9f430a07536e244fcf"
+                },
+                {
+                    "from_state": "DRAFT_DISPATCH_PLAN",
+                    "to_state": "PENDING_SUPERVISOR_APPROVAL",
+                    "actor_name": "BUDI PLANNER",
+                    "actor_nip": "198905142014021001",
+                    "actor_role": "PLANNER",
+                    "timestamp": "2026-08-24 18:20:33",
+                    "notes": "Diajukan untuk review supervisor.",
+                    "action_hash": "bc018c8a6ea5d6f1c703452a4023c4ce35a666fd30b0222d4ba6dd749bd3e43b",
+                    "confirmation_token": null
+                },
+                {
+                    "from_state": "PENDING_SUPERVISOR_APPROVAL",
+                    "to_state": "DISPATCH_AUTHORIZED",
+                    "actor_name": "AHMAD SUPERVISOR",
+                    "actor_nip": "198503122009011002",
+                    "actor_role": "SUPERVISOR",
+                    "timestamp": "2026-08-24 18:20:33",
+                    "notes": "Diverifikasi berbasis data recurrence dan temuan lapangan.",
+                    "action_hash": "992c089904436ccea02db9f1fcb8b002236a0bfea7e33b81d40cc275c1620224",
+                    "confirmation_token": "8d9e62a344884c66757e93b5d5dd345d3d787f9281790374f6b4edf387db5a42"
+                },
+                {
+                    "from_state": "DISPATCH_AUTHORIZED",
+                    "to_state": "IN_FIELD_EXECUTION",
+                    "actor_name": "REGU YANTEK TIM 1",
+                    "actor_nip": "199208152018011003",
+                    "actor_role": "FIELD_CREW",
+                    "timestamp": "2026-08-24 18:20:33",
+                    "notes": "Regu meluncur ke lokasi jaringan penyulang.",
+                    "action_hash": "a1cd6608261afd8ff844213e59158164f5d9e3fda90bbc86b3cdfca80f80e059",
+                    "confirmation_token": null
+                },
+                {
+                    "from_state": "IN_FIELD_EXECUTION",
+                    "to_state": "FIELD_COMPLETED",
+                    "actor_name": "REGU YANTEK TIM 1",
+                    "actor_nip": "199208152018011003",
+                    "actor_role": "FIELD_CREW",
+                    "timestamp": "2026-08-24 18:20:33",
+                    "notes": "Pekerjaan fisik pemangkasan pohon selesai.",
+                    "action_hash": "2a5d893bb70ced6c8ad1a9996e1ff2a103da7d92d9e75f4bba36769cae2c0875",
+                    "confirmation_token": null
+                },
+                {
+                    "from_state": "FIELD_COMPLETED",
+                    "to_state": "SUPERVISOR_VERIFIED",
+                    "actor_name": "AHMAD SUPERVISOR",
+                    "actor_nip": "198503122009011002",
+                    "actor_role": "SUPERVISOR",
+                    "timestamp": "2026-08-24 18:20:33",
+                    "notes": "Hasil pekerjaan diverifikasi dan ditutup.",
+                    "action_hash": "32a2a84c91a7326af747cac2f41d6b5c2e7fe886b55d9729854ac270e2e6cb1e",
+                    "confirmation_token": null
+                }
+            ],
+            "updated_at": "2026-08-24 18:20:33",
+            "authorized_at": "2026-08-24 18:20:33",
+            "authorized_by": {
+                "actor_name": "AHMAD SUPERVISOR",
+                "actor_nip": "198503122009011002",
+                "actor_role": "SUPERVISOR"
+            }
+        },
+        "DISP-CR04-20260824-182033-8d37cb": {
+            "dispatch_id": "DISP-CR04-20260824-182033-8d37cb",
+            "title": "Test Guard Dispatch",
+            "penyulang_id": 2,
+            "penyulang_name": "PERMATA HIJAU",
+            "ulp_id": 1,
+            "work_scope": "PENGGANTIAN_ISOLATOR_DEGRADASI",
+            "justification": "Berdasarkan sinyal pattern intelligence recurrence dan temuan inspeksi.",
+            "current_state": "CANCELLED",
+            "created_at": "2026-08-24 18:20:33",
+            "created_by": {
+                "actor_id": 1,
+                "actor_name": "BUDI PLANNER",
+                "actor_nip": "198905142014021001",
+                "actor_role": "PLANNER"
+            },
+            "evidence_lineage": {
+                "linked_finding_ids": [],
+                "pattern_evidence_codes": [
+                    "REC-CR03-01"
+                ],
+                "disturbance_baseline": 841,
+                "pre_snapshot_id": "CR04_PRE_SNAPSHOT"
+            },
+            "confirmation_token": null,
+            "state_history": [
+                {
+                    "from_state": null,
+                    "to_state": "DRAFT_DISPATCH_PLAN",
+                    "actor_name": "BUDI PLANNER",
+                    "actor_nip": "198905142014021001",
+                    "actor_role": "PLANNER",
+                    "timestamp": "2026-08-24 18:20:33",
+                    "notes": "Human-initiated draft dispatch created.",
+                    "action_hash": "58df8bcd5515e907517ecb23b5cca7ba081948aefe26d87dcd58f659fd825f8b"
+                },
+                {
+                    "from_state": "DRAFT_DISPATCH_PLAN",
+                    "to_state": "CANCELLED",
+                    "actor_name": "BUDI PLANNER",
+                    "actor_nip": "198905142014021001",
+                    "actor_role": "PLANNER",
+                    "timestamp": "2026-08-24 18:20:33",
+                    "notes": "Dibatalkan oleh planner.",
+                    "action_hash": "a1a3a79d128910a90c28211c84b780625c487a9f83db6f67f726e7823b363144",
+                    "confirmation_token": null
+                }
+            ],
+            "updated_at": "2026-08-24 18:20:33"
+        }
+    }
+}

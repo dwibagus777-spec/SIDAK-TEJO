@@ -1,13 +1,13 @@
 <?= $this->extend('layouts/admin') ?>
 
-<?= $this->section('title') ?>Buat Inspeksi Kubikel Baru<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>Buat Inspeksi Kubikel Baru<?= $this->endSection() ?>
+<?= $this->section('title') ?>Buat Inspeksi Gardu Baru<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>Buat Inspeksi Gardu Baru<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">
-            <i class="bi bi-clipboard-plus me-2"></i>Buat Inspeksi Kubikel Baru
+            <i class="bi bi-clipboard-plus me-2"></i>Buat Inspeksi Gardu Baru
         </h1>
         <a href="<?= site_url('kubikel-inspeksi') ?>" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Kembali
@@ -98,6 +98,26 @@
                         <input type="text" name="id_pel" id="id_pel" class="form-control" placeholder="ID Pelanggan / IDPEL" maxlength="100">
                         <div class="form-text">Untuk inspeksi aset pelanggan / Beyond KWH</div>
                     </div>
+
+                    <!-- CR-GIS-FIX-07: Kepemilikan & Jenis Gardu -->
+                    <div class="col-md-4">
+                        <label for="kepemilikan_gardu" class="form-label fw-medium">Kepemilikan Gardu <span class="text-danger">*</span></label>
+                        <select name="kepemilikan_gardu" id="kepemilikan_gardu" class="form-select" required>
+                            <option value="PLN">PLN</option>
+                            <option value="PELANGGAN">PELANGGAN (Kubikel Pelanggan)</option>
+                        </select>
+                        <div class="form-text">PLN = gardu sendiri; PELANGGAN = kubikel pelanggan</div>
+                    </div>
+
+                    <div class="col-md-4" id="field-jenis-gardu">
+                        <label for="jenis_gardu" class="form-label fw-medium">Jenis Gardu <span class="text-danger">*</span></label>
+                        <select name="jenis_gardu" id="jenis_gardu" class="form-select" required>
+                            <option value="KUBIKEL">KUBIKEL</option>
+                            <option value="GARDU_KONVENSIONAL">GARDU KONVENSIONAL</option>
+                        </select>
+                        <div class="form-text">Kubikel = Metal Clad; Konvensional = terbuka/pasangan batu</div>
+                    </div>
+                    <!-- END CR-GIS-FIX-07 -->
 
                     <div class="col-md-3">
                         <label for="tgl_inspeksi" class="form-label fw-medium">Tanggal Inspeksi <span class="text-danger">*</span></label>

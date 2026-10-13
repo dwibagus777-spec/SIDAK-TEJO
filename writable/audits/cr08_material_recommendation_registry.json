@@ -1,0 +1,44 @@
+{
+    "registry_id": "CR08_MATERIAL_RECOMMENDATION_REGISTRY_v1.0",
+    "created_at": "2026-08-24 19:58:05 WIB",
+    "created_at_utc": "2026-08-24T12:58:05Z",
+    "recommendations": {
+        "REC-CR08-20260824-195805-c6b3": {
+            "recommendation_id": "REC-CR08-20260824-195805-c6b3",
+            "penyulang_id": 15,
+            "feeder_name": "BANJAR KEMANTREN",
+            "relevant_findings": 31,
+            "aggregated_materials": [
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "official_name": "Traves Cross-Arm UNP 80\u00d745\u00d75 mm Panjang 2000 mm Hot Dip Galvanized",
+                    "total_quantity": 15,
+                    "unit": "BATANG",
+                    "exact_matches": 0,
+                    "high_confidence_matches": 15,
+                    "ambiguous_matches": 0
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "official_name": "Pin Post Insulator 20 kV; 12,5 kN; Porcelain",
+                    "total_quantity": 16,
+                    "unit": "PCS",
+                    "exact_matches": 0,
+                    "high_confidence_matches": 16,
+                    "ambiguous_matches": 0
+                }
+            ],
+            "created_by": {
+                "actor_id": 1,
+                "actor_name": "SUPERVISOR_PEMELIHARAAN_JARINGAN",
+                "actor_nip": "198403152008121003",
+                "actor_role": "MAINTENANCE_SUPERVISOR"
+            },
+            "created_at": "2026-08-24 19:58:05",
+            "human_review_required": true,
+            "autonomous_action": false,
+            "decision_boundary": "RECOMMENDATION_ONLY (Human Technical Authority Final Decision)",
+            "action_hash": "0031cb2154e912721429da7df5b1cbad1eb7c8002d423f716d25b8420540caa4"
+        }
+    }
+}

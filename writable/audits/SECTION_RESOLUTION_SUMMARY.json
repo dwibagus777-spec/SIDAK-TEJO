@@ -1,0 +1,524 @@
+{
+    "status": "SECTION_RESOLUTION_DRY_RUN_PASS",
+    "phase": "PHASE_B1_6_SECTION_RESOLUTION_ENGINE",
+    "timestamp": "2026-09-24T15:42:19+07:00",
+    "git_commit_locked": "fb8c47b",
+    "governance": {
+        "strict_read_only": true,
+        "zero_production_write": true,
+        "write_allowed_default": false,
+        "threshold_auto_accept": 0.95
+    },
+    "global_metrics": {
+        "total_master_assets": 5236,
+        "auto_resolvable_count": 1503,
+        "auto_resolvable_percent": 28.71,
+        "review_required_count": 3733,
+        "review_required_percent": 71.29,
+        "status_breakdown": {
+            "EXPLICIT": 29,
+            "INHERITED_FROM_AUTHORITATIVE_EDGE": 22,
+            "DETERMINISTIC_BOUNDARY": 1366,
+            "PROPAGATED": 86,
+            "AMBIGUOUS": 3,
+            "UNRESOLVED": 3730
+        }
+    },
+    "feeder_matrix": [
+        {
+            "penyulang_id": 79,
+            "nama_penyulang": "JAVA PASIFIK 4",
+            "section_count": 1,
+            "total_assets": 120,
+            "breakdown": {
+                "total": 120,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 120,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 78,
+            "nama_penyulang": "JAVA PASIFIK 3",
+            "section_count": 1,
+            "total_assets": 104,
+            "breakdown": {
+                "total": 104,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 104,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 77,
+            "nama_penyulang": "JAVA PASIFIK 2",
+            "section_count": 2,
+            "total_assets": 87,
+            "breakdown": {
+                "total": 87,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 87
+            }
+        },
+        {
+            "penyulang_id": 76,
+            "nama_penyulang": "JAVA PASIFIK 1",
+            "section_count": 2,
+            "total_assets": 88,
+            "breakdown": {
+                "total": 88,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 88
+            }
+        },
+        {
+            "penyulang_id": 117,
+            "nama_penyulang": "HASIL KARYA 5",
+            "section_count": 1,
+            "total_assets": 35,
+            "breakdown": {
+                "total": 35,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 35,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 116,
+            "nama_penyulang": "HASIL KARYA 4",
+            "section_count": 1,
+            "total_assets": 145,
+            "breakdown": {
+                "total": 145,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 145,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 115,
+            "nama_penyulang": "HASIL KARYA 3",
+            "section_count": 1,
+            "total_assets": 50,
+            "breakdown": {
+                "total": 50,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 50,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 114,
+            "nama_penyulang": "HASIL KARYA 2",
+            "section_count": 2,
+            "total_assets": 129,
+            "breakdown": {
+                "total": 129,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 129
+            }
+        },
+        {
+            "penyulang_id": 113,
+            "nama_penyulang": "HASIL KARYA 1",
+            "section_count": 1,
+            "total_assets": 98,
+            "breakdown": {
+                "total": 98,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 98,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 73,
+            "nama_penyulang": "GERRY FOOD",
+            "section_count": 1,
+            "total_assets": 101,
+            "breakdown": {
+                "total": 101,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 101,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 86,
+            "nama_penyulang": "EXCELLENT",
+            "section_count": 2,
+            "total_assets": 128,
+            "breakdown": {
+                "total": 128,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 128
+            }
+        },
+        {
+            "penyulang_id": 81,
+            "nama_penyulang": "EMDEKI 2",
+            "section_count": 1,
+            "total_assets": 106,
+            "breakdown": {
+                "total": 106,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 106,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 80,
+            "nama_penyulang": "EMDEKI 1",
+            "section_count": 1,
+            "total_assets": 106,
+            "breakdown": {
+                "total": 106,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 106,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 60,
+            "nama_penyulang": "DUA PERMATA",
+            "section_count": 5,
+            "total_assets": 268,
+            "breakdown": {
+                "total": 268,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 2,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 2,
+                "UNRESOLVED": 264
+            }
+        },
+        {
+            "penyulang_id": 49,
+            "nama_penyulang": "DAWAR",
+            "section_count": 2,
+            "total_assets": 134,
+            "breakdown": {
+                "total": 134,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 134
+            }
+        },
+        {
+            "penyulang_id": 48,
+            "nama_penyulang": "CAHAYA METAL",
+            "section_count": 3,
+            "total_assets": 167,
+            "breakdown": {
+                "total": 167,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 167
+            }
+        },
+        {
+            "penyulang_id": 131,
+            "nama_penyulang": "BY PASS",
+            "section_count": 9,
+            "total_assets": 406,
+            "breakdown": {
+                "total": 406,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 1,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 405
+            }
+        },
+        {
+            "penyulang_id": 59,
+            "nama_penyulang": "BARENG KRAJAN",
+            "section_count": 5,
+            "total_assets": 214,
+            "breakdown": {
+                "total": 214,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 214
+            }
+        },
+        {
+            "penyulang_id": 56,
+            "nama_penyulang": "BANJARAN",
+            "section_count": 4,
+            "total_assets": 403,
+            "breakdown": {
+                "total": 403,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 403
+            }
+        },
+        {
+            "penyulang_id": 121,
+            "nama_penyulang": "BAHAGIA STEEL 4",
+            "section_count": 1,
+            "total_assets": 140,
+            "breakdown": {
+                "total": 140,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 140,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 120,
+            "nama_penyulang": "BAHAGIA STEEL 3",
+            "section_count": 2,
+            "total_assets": 47,
+            "breakdown": {
+                "total": 47,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 47
+            }
+        },
+        {
+            "penyulang_id": 119,
+            "nama_penyulang": "BAHAGIA STEEL 2",
+            "section_count": 2,
+            "total_assets": 48,
+            "breakdown": {
+                "total": 48,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 48
+            }
+        },
+        {
+            "penyulang_id": 118,
+            "nama_penyulang": "BAHAGIA STEEL 1",
+            "section_count": 2,
+            "total_assets": 45,
+            "breakdown": {
+                "total": 45,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 2,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 30,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 13
+            }
+        },
+        {
+            "penyulang_id": 108,
+            "nama_penyulang": "ASIA 2",
+            "section_count": 1,
+            "total_assets": 173,
+            "breakdown": {
+                "total": 173,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 16,
+                "DETERMINISTIC_BOUNDARY": 157,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 107,
+            "nama_penyulang": "ASIA 1",
+            "section_count": 1,
+            "total_assets": 204,
+            "breakdown": {
+                "total": 204,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 4,
+                "DETERMINISTIC_BOUNDARY": 200,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 0
+            }
+        },
+        {
+            "penyulang_id": 61,
+            "nama_penyulang": "ALAM PESONA",
+            "section_count": 5,
+            "total_assets": 340,
+            "breakdown": {
+                "total": 340,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 1,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 1,
+                "UNRESOLVED": 338
+            }
+        },
+        {
+            "penyulang_id": 46,
+            "nama_penyulang": "ADI PRIMA 1",
+            "section_count": 2,
+            "total_assets": 175,
+            "breakdown": {
+                "total": 175,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 175
+            }
+        },
+        {
+            "penyulang_id": 47,
+            "nama_penyulang": "ADI PRIMA 2",
+            "section_count": 2,
+            "total_assets": 178,
+            "breakdown": {
+                "total": 178,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 178
+            }
+        },
+        {
+            "penyulang_id": 23,
+            "nama_penyulang": "GEDANGAN",
+            "section_count": 5,
+            "total_assets": 219,
+            "breakdown": {
+                "total": 219,
+                "EXPLICIT": 10,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 42,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 167
+            }
+        },
+        {
+            "penyulang_id": 4,
+            "nama_penyulang": "GEMURUNG",
+            "section_count": 3,
+            "total_assets": 229,
+            "breakdown": {
+                "total": 229,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 229
+            }
+        },
+        {
+            "penyulang_id": 19,
+            "nama_penyulang": "GADING KIRANA",
+            "section_count": 4,
+            "total_assets": 207,
+            "breakdown": {
+                "total": 207,
+                "EXPLICIT": 1,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 1,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 205
+            }
+        },
+        {
+            "penyulang_id": 33,
+            "nama_penyulang": "ECCO",
+            "section_count": 3,
+            "total_assets": 137,
+            "breakdown": {
+                "total": 137,
+                "EXPLICIT": 0,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 0,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 137
+            }
+        },
+        {
+            "penyulang_id": 15,
+            "nama_penyulang": "BANJAR KEMANTREN",
+            "section_count": 5,
+            "total_assets": 205,
+            "breakdown": {
+                "total": 205,
+                "EXPLICIT": 18,
+                "INHERITED_FROM_AUTHORITATIVE_EDGE": 0,
+                "DETERMINISTIC_BOUNDARY": 0,
+                "PROPAGATED": 13,
+                "AMBIGUOUS": 0,
+                "UNRESOLVED": 174
+            }
+        }
+    ]
+}

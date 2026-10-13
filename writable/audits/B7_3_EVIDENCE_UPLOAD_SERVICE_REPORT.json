@@ -1,0 +1,129 @@
+{
+  "audit_metadata": {
+    "report_id": "B7_3_EVIDENCE_UPLOAD_SERVICE_VERIFICATION",
+    "gate": "GATE_B7_3_CHUNKED_EVIDENCE_UPLOAD_AND_CHECKSUM_SEAL",
+    "service_version": "B7-EVIDENCE-1.0",
+    "specification_version": "vB7-SPEC-1.1",
+    "predecessor_gates": [
+      "GATE_B7_1_LOCAL_SCHEMA_MIGRATION",
+      "GATE_B7_2_SYNC_INGESTION_AND_IDEMPOTENCY"
+    ],
+    "generated_at": "2026-09-26T16:30:30+07:00",
+    "execution_target": "LOCAL_TESTBED_ONLY",
+    "production_database_status": "STRICTLY_UNTOUCHED_LOCKED",
+    "verdict": "PASS_LOCAL_TESTBED_VERIFIED"
+  },
+  "modules_implemented": {
+    "initiateUpload": "Session initializer validating case status, device authorization, and path traversal defense",
+    "uploadChunk": "Streaming chunk receiver enforcing chunk size, SHA-256 hash, out-of-order arrival, and composite idempotency",
+    "assembleAndSealEvidence": "Binary reassembly engine validating complete sequential parts and sealing only upon exact full-file SHA-256 match",
+    "purgeStagingDir": "Automatic cleanup purging temporary staged chunk files upon assembly completion or corruption"
+  },
+  "invariants_verified": {
+    "B7-G08": "PASS — Evidence Pre-Hashing & Integrity: Full-file SHA-256 computed on client, verified per-chunk, and sealed on exact assembled match",
+    "B7-G10": "PASS — Comprehensive Journaling & Audit: Staging operations tracked in mobile_evidence_chunks",
+    "B7-G11": "PASS — Registered Device Governance: Unregistered or revoked devices blocked from initiating or sealing evidence",
+    "B7-G14": "PASS — Topology Read-Only: Zero write to gis_translines or assets (Delta = 0)",
+    "B7-G18": "PASS — Evidence Chunk State Machine: CHUNK_INIT -> UPLOADING -> ALL_CHUNKS_RECEIVED -> ASSEMBLING -> HASH_VERIFYING -> SEALED | HASH_MISMATCH",
+    "B7-G19": "PASS — Device Revocation Non-Cascade: Device revocation blocks subsequent domain actions without deleting history",
+    "Authority Separation": "PASS — mobile_evidence_chunks is strictly transport/staging; field_evidence is authoritative domain ground truth"
+  },
+  "adversarial_test_matrix": [
+    {
+      "scenario": "Path traversal attempt in evidence_id (../../etc/passwd)",
+      "result": "HTTP 400 INVALID_EVIDENCE_ID",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Unregistered hardware device_id initiating upload",
+      "result": "HTTP 403 DEVICE_NOT_REGISTERED",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Revoked device_id initiating upload",
+      "result": "HTTP 403 DEVICE_REVOKED",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Out-of-order chunk transmission (Chunk 1 received before Chunk 0)",
+      "result": "ACCEPTED (Ordered assembly succeeds deterministically)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Duplicate chunk upload with identical hash",
+      "result": "HTTP 200 EXISTING (Idempotent deduplication)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Duplicate chunk upload with conflicting hash",
+      "result": "HTTP 409 CHUNK_CONFLICT (Rejected)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Declared chunk size mismatch (Declared 999999 vs Actual 19 bytes)",
+      "result": "HTTP 422 CHUNK_SIZE_MISMATCH",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Corrupted chunk payload / hash mismatch",
+      "result": "HTTP 422 CHUNK_HASH_MISMATCH",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Premature seal attempt with missing chunks (Chunk 0 uploaded, Chunk 1 missing)",
+      "result": "HTTP 422 CHUNKS_INCOMPLETE (Missing indexes reported)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Assembled binary full SHA-256 mismatch against declared target",
+      "result": "HTTP 422 HASH_MISMATCH (Assembly wiped, domain attachment aborted)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Full lifecycle happy path with exact full-file SHA-256 match",
+      "result": "HTTP 200 SEALED (Attached to domain via FieldFindingsService::attachEvidence)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Replay seal call on already SEALED evidence",
+      "result": "HTTP 200 SEALED with is_existing=true (Delta domain rows = 0)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Device revoked during assembly before domain seal",
+      "result": "HTTP 403 DEVICE_REVOKED",
+      "status": "PASS"
+    }
+  ],
+  "topology_sentinel": {
+    "delta_active_translines": 0,
+    "delta_total_translines": 0,
+    "delta_active_assets": 0,
+    "delta_total_assets": 0,
+    "verdict": "PASS_ZERO_MUTATION"
+  },
+  "test_execution_summary": {
+    "dedicated_evidence_test": {
+      "file": "tests/Unit/B7MobileEvidenceUploadServiceTest.php",
+      "tests_run": 13,
+      "assertions": 58,
+      "failures": 0,
+      "errors": 0
+    },
+    "all_b7_tests": {
+      "test_files": 3,
+      "tests_run": 36,
+      "assertions": 190,
+      "failures": 0,
+      "errors": 0
+    },
+    "full_phase_b_suite": {
+      "test_files": 12,
+      "tests_run": 191,
+      "assertions": 943,
+      "failures": 0,
+      "errors": 0,
+      "status": "ALL_GREEN"
+    }
+  }
+}

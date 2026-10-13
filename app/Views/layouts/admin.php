@@ -949,7 +949,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                             <li class="nav-item <?= url_is('kubikel-inspeksi') || url_is('kubikel-inspeksi/create') || url_is('kubikel-inspeksi/edit/*') || url_is('kubikel-inspeksi/detail/*') ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('kubikel-inspeksi') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-clipboard-check text-info"></i></span>
-                                    <span class="nav-link-title">Inspeksi Kubikel</span>
+                                    <span class="nav-link-title">Inspeksi Gardu</span>
                                 </a>
                             </li>
                             <?php if (check_role(['administrator', 'admin', 'admin_pusat'])): ?>

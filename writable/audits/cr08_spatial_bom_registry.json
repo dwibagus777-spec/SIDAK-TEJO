@@ -1,0 +1,1117 @@
+{
+    "registry_id": "CR08_SPATIAL_BOM_REGISTRY_v1.0",
+    "created_at": "2026-08-24 19:55:50 WIB",
+    "created_at_utc": "2026-08-24T12:55:50Z",
+    "total_views": 30,
+    "views": {
+        "AST-BJK-T001": {
+            "kode_asset": "AST-BJK-T001",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 15,
+            "section_id": 48,
+            "coordinates": {
+                "latitude": -7.4478,
+                "longitude": 112.7183
+            },
+            "living_health": 79.5,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-BJK-T002": {
+            "kode_asset": "AST-BJK-T002",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 15,
+            "section_id": 48,
+            "coordinates": {
+                "latitude": -7.4485,
+                "longitude": 112.719
+            },
+            "living_health": 84.5,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-BJK-GRD001": {
+            "kode_asset": "AST-BJK-GRD001",
+            "jenis_asset": "GARDU_DISTRIBUSI_PORTAL",
+            "penyulang_id": 15,
+            "section_id": 48,
+            "coordinates": {
+                "latitude": -7.4492,
+                "longitude": 112.7205
+            },
+            "living_health": 86,
+            "construction_code": "TM-8",
+            "construction_name": "Konstruksi Gardu Tiang Portal (2-Pole Substation)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "2 Tiang portal 13m 350daN"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Fuse Cutout 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Lightning Arrester 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 4,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves dudukan FCO/LA dan dudukan transformator"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-BJK-T003": {
+            "kode_asset": "AST-BJK-T003",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 15,
+            "section_id": 48,
+            "coordinates": {
+                "latitude": -7.4499,
+                "longitude": 112.7215
+            },
+            "living_health": 83,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-BJK-REC001": {
+            "kode_asset": "AST-BJK-REC001",
+            "jenis_asset": "RECLOSER_LBS",
+            "penyulang_id": 15,
+            "section_id": 49,
+            "coordinates": {
+                "latitude": -7.451,
+                "longitude": 112.723
+            },
+            "living_health": 87.5,
+            "construction_code": "TM-REC",
+            "construction_name": "Konstruksi Tiang Recloser / Sectionalizer Pole",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-BJK-GTT001": {
+            "kode_asset": "AST-BJK-GTT001",
+            "jenis_asset": "GTT_GARDU_TRAFO_TIANG",
+            "penyulang_id": 15,
+            "section_id": 49,
+            "coordinates": {
+                "latitude": -7.4525,
+                "longitude": 112.7248
+            },
+            "living_health": 86,
+            "construction_code": "TM-9",
+            "construction_name": "Konstruksi Gardu Tiang Cantol (Single-Pole Substation)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-SML-T001": {
+            "kode_asset": "AST-SML-T001",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 1,
+            "section_id": 1,
+            "coordinates": {
+                "latitude": -7.4321,
+                "longitude": 112.7012
+            },
+            "living_health": 81.5,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-SML-T002": {
+            "kode_asset": "AST-SML-T002",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 1,
+            "section_id": 1,
+            "coordinates": {
+                "latitude": -7.433,
+                "longitude": 112.7025
+            },
+            "living_health": 81.5,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-SML-GRD001": {
+            "kode_asset": "AST-SML-GRD001",
+            "jenis_asset": "GARDU_DISTRIBUSI_PORTAL",
+            "penyulang_id": 1,
+            "section_id": 1,
+            "coordinates": {
+                "latitude": -7.4342,
+                "longitude": 112.704
+            },
+            "living_health": 84.5,
+            "construction_code": "TM-8",
+            "construction_name": "Konstruksi Gardu Tiang Portal (2-Pole Substation)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "2 Tiang portal 13m 350daN"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Fuse Cutout 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Lightning Arrester 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 4,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves dudukan FCO/LA dan dudukan transformator"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-SML-REC001": {
+            "kode_asset": "AST-SML-REC001",
+            "jenis_asset": "RECLOSER_LBS",
+            "penyulang_id": 1,
+            "section_id": 2,
+            "coordinates": {
+                "latitude": -7.436,
+                "longitude": 112.7065
+            },
+            "living_health": 86,
+            "construction_code": "TM-REC",
+            "construction_name": "Konstruksi Tiang Recloser / Sectionalizer Pole",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-SML-T003": {
+            "kode_asset": "AST-SML-T003",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 1,
+            "section_id": 2,
+            "coordinates": {
+                "latitude": -7.4375,
+                "longitude": 112.7082
+            },
+            "living_health": 83,
+            "construction_code": "TM-5",
+            "construction_name": "Konstruksi Tiang Tarik Ganda (Double Dead-End Tension Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tarik ganda 13m 350daN + Grounding"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves ganda UNP L=2500mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+                    "standard_quantity": 6,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Strain insulator ganda (3 fasa incoming + 3 fasa outgoing)"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-SML-GTT001": {
+            "kode_asset": "AST-SML-GTT001",
+            "jenis_asset": "GTT_GARDU_TRAFO_TIANG",
+            "penyulang_id": 1,
+            "section_id": 2,
+            "coordinates": {
+                "latitude": -7.439,
+                "longitude": 112.71
+            },
+            "living_health": 87.5,
+            "construction_code": "TM-9",
+            "construction_name": "Konstruksi Gardu Tiang Cantol (Single-Pole Substation)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-WNY-T001": {
+            "kode_asset": "AST-WNY-T001",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 3,
+            "section_id": 11,
+            "coordinates": {
+                "latitude": -7.4125,
+                "longitude": 112.6012
+            },
+            "living_health": 83,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-WNY-T002": {
+            "kode_asset": "AST-WNY-T002",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 3,
+            "section_id": 11,
+            "coordinates": {
+                "latitude": -7.4132,
+                "longitude": 112.6025
+            },
+            "living_health": 83,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-WNY-GRD001": {
+            "kode_asset": "AST-WNY-GRD001",
+            "jenis_asset": "GARDU_DISTRIBUSI_PORTAL",
+            "penyulang_id": 3,
+            "section_id": 11,
+            "coordinates": {
+                "latitude": -7.414,
+                "longitude": 112.604
+            },
+            "living_health": 84.5,
+            "construction_code": "TM-8",
+            "construction_name": "Konstruksi Gardu Tiang Portal (2-Pole Substation)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "2 Tiang portal 13m 350daN"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Fuse Cutout 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Lightning Arrester 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 4,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves dudukan FCO/LA dan dudukan transformator"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-WNY-REC001": {
+            "kode_asset": "AST-WNY-REC001",
+            "jenis_asset": "RECLOSER_LBS",
+            "penyulang_id": 3,
+            "section_id": 12,
+            "coordinates": {
+                "latitude": -7.4155,
+                "longitude": 112.6062
+            },
+            "living_health": 86,
+            "construction_code": "TM-REC",
+            "construction_name": "Konstruksi Tiang Recloser / Sectionalizer Pole",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-WNY-T003": {
+            "kode_asset": "AST-WNY-T003",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 3,
+            "section_id": 12,
+            "coordinates": {
+                "latitude": -7.4165,
+                "longitude": 112.6075
+            },
+            "living_health": 84.5,
+            "construction_code": "TM-5",
+            "construction_name": "Konstruksi Tiang Tarik Ganda (Double Dead-End Tension Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tarik ganda 13m 350daN + Grounding"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves ganda UNP L=2500mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+                    "standard_quantity": 6,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Strain insulator ganda (3 fasa incoming + 3 fasa outgoing)"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-WNY-GTT001": {
+            "kode_asset": "AST-WNY-GTT001",
+            "jenis_asset": "GTT_GARDU_TRAFO_TIANG",
+            "penyulang_id": 3,
+            "section_id": 12,
+            "coordinates": {
+                "latitude": -7.418,
+                "longitude": 112.609
+            },
+            "living_health": 87.5,
+            "construction_code": "TM-9",
+            "construction_name": "Konstruksi Gardu Tiang Cantol (Single-Pole Substation)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-PRN-T001": {
+            "kode_asset": "AST-PRN-T001",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 18,
+            "section_id": 55,
+            "coordinates": {
+                "latitude": -7.391,
+                "longitude": 112.561
+            },
+            "living_health": 81.5,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-PRN-T002": {
+            "kode_asset": "AST-PRN-T002",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 18,
+            "section_id": 55,
+            "coordinates": {
+                "latitude": -7.392,
+                "longitude": 112.5625
+            },
+            "living_health": 81.5,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-PRN-GRD001": {
+            "kode_asset": "AST-PRN-GRD001",
+            "jenis_asset": "GARDU_DISTRIBUSI_PORTAL",
+            "penyulang_id": 18,
+            "section_id": 55,
+            "coordinates": {
+                "latitude": -7.3935,
+                "longitude": 112.5642
+            },
+            "living_health": 84.5,
+            "construction_code": "TM-8",
+            "construction_name": "Konstruksi Gardu Tiang Portal (2-Pole Substation)",
+            "conductor_spec": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "2 Tiang portal 13m 350daN"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Fuse Cutout 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Lightning Arrester 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 4,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves dudukan FCO/LA dan dudukan transformator"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-PRN-REC001": {
+            "kode_asset": "AST-PRN-REC001",
+            "jenis_asset": "RECLOSER_LBS",
+            "penyulang_id": 18,
+            "section_id": 55,
+            "coordinates": {
+                "latitude": -7.395,
+                "longitude": 112.5665
+            },
+            "living_health": 86,
+            "construction_code": "TM-REC",
+            "construction_name": "Konstruksi Tiang Recloser / Sectionalizer Pole",
+            "conductor_spec": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-PRN-T003": {
+            "kode_asset": "AST-PRN-T003",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 18,
+            "section_id": 55,
+            "coordinates": {
+                "latitude": -7.3965,
+                "longitude": 112.568
+            },
+            "living_health": 83,
+            "construction_code": "TM-5",
+            "construction_name": "Konstruksi Tiang Tarik Ganda (Double Dead-End Tension Pole)",
+            "conductor_spec": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tarik ganda 13m 350daN + Grounding"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves ganda UNP L=2500mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+                    "standard_quantity": 6,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Strain insulator ganda (3 fasa incoming + 3 fasa outgoing)"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-PRN-GTT001": {
+            "kode_asset": "AST-PRN-GTT001",
+            "jenis_asset": "GTT_GARDU_TRAFO_TIANG",
+            "penyulang_id": 18,
+            "section_id": 55,
+            "coordinates": {
+                "latitude": -7.398,
+                "longitude": 112.57
+            },
+            "living_health": 87.5,
+            "construction_code": "TM-9",
+            "construction_name": "Konstruksi Gardu Tiang Cantol (Single-Pole Substation)",
+            "conductor_spec": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-KTR-T001": {
+            "kode_asset": "AST-KTR-T001",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 41,
+            "section_id": 150,
+            "coordinates": {
+                "latitude": -7.405,
+                "longitude": 112.591
+            },
+            "living_health": 83,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-KTR-T002": {
+            "kode_asset": "AST-KTR-T002",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 41,
+            "section_id": 150,
+            "coordinates": {
+                "latitude": -7.4062,
+                "longitude": 112.5928
+            },
+            "living_health": 83,
+            "construction_code": "TM-1",
+            "construction_name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-KTR-GRD001": {
+            "kode_asset": "AST-KTR-GRD001",
+            "jenis_asset": "GARDU_DISTRIBUSI_PORTAL",
+            "penyulang_id": 41,
+            "section_id": 150,
+            "coordinates": {
+                "latitude": -7.4075,
+                "longitude": 112.5945
+            },
+            "living_health": 86,
+            "construction_code": "TM-8",
+            "construction_name": "Konstruksi Gardu Tiang Portal (2-Pole Substation)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "2 Tiang portal 13m 350daN"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Fuse Cutout 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Lightning Arrester 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 4,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves dudukan FCO/LA dan dudukan transformator"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-KTR-REC001": {
+            "kode_asset": "AST-KTR-REC001",
+            "jenis_asset": "RECLOSER_LBS",
+            "penyulang_id": 41,
+            "section_id": 151,
+            "coordinates": {
+                "latitude": -7.409,
+                "longitude": 112.5965
+            },
+            "living_health": 87.5,
+            "construction_code": "TM-REC",
+            "construction_name": "Konstruksi Tiang Recloser / Sectionalizer Pole",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-KTR-T003": {
+            "kode_asset": "AST-KTR-T003",
+            "jenis_asset": "TIANG_BETON",
+            "penyulang_id": 41,
+            "section_id": 151,
+            "coordinates": {
+                "latitude": -7.4102,
+                "longitude": 112.598
+            },
+            "living_health": 84.5,
+            "construction_code": "TM-5",
+            "construction_name": "Konstruksi Tiang Tarik Ganda (Double Dead-End Tension Pole)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "standard_bom": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tarik ganda 13m 350daN + Grounding"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves ganda UNP L=2500mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+                    "standard_quantity": 6,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Strain insulator ganda (3 fasa incoming + 3 fasa outgoing)"
+                }
+            ],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        },
+        "AST-KTR-GTT001": {
+            "kode_asset": "AST-KTR-GTT001",
+            "jenis_asset": "GTT_GARDU_TRAFO_TIANG",
+            "penyulang_id": 41,
+            "section_id": 151,
+            "coordinates": {
+                "latitude": -7.4115,
+                "longitude": 112.5995
+            },
+            "living_health": 86,
+            "construction_code": "TM-9",
+            "construction_name": "Konstruksi Gardu Tiang Cantol (Single-Pole Substation)",
+            "conductor_spec": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "standard_bom": [],
+            "lineage": "CR-08 Spatial BOM Composite View"
+        }
+    }
+}

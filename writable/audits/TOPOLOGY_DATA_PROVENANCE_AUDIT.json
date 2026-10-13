@@ -1,0 +1,147 @@
+{
+    "status": "PROVENANCE_PARTIAL",
+    "phase": "PHASE_B1_5_TOPOLOGY_DATA_PROVENANCE_AUDIT",
+    "timestamp": "2026-09-24T15:36:25+07:00",
+    "git_commit_locked": "fb8c47b",
+    "governance": {
+        "strict_read_only": true,
+        "zero_production_write": true,
+        "thresholds_modified": false,
+        "final_status": "PROVENANCE_PARTIAL"
+    },
+    "section_provenance": {
+        "classification": "B_EXISTS_BUT_UNMAPPED",
+        "sections_table_total": 510,
+        "feeders_with_sections": 134,
+        "assets_with_section": 29,
+        "assets_unmapped": 5207,
+        "authoritative_tl_with_section": 17,
+        "authoritative_tl_no_section": 200,
+        "findings": "510 sections exist in sections table across all 134 feeders, but section_id on assets table is unpopulated for 5,207 assets (99.45%). The data is not absent; it is unmapped."
+    },
+    "parent_provenance": {
+        "classification": "D_EQUIPMENT_MOUNTING_DERIVABLE_RADIAL_TREE_REQUIRES_ROOT",
+        "parent_asset_id_assets": 0,
+        "asset_relationships_rows": 0,
+        "equipment_containment": {
+            "trafo_count": 0,
+            "gardu_count": 0,
+            "collocated_derivable": true
+        },
+        "findings": "parent_asset_id is 0 across all 5,236 assets. Structural equipment containment can be derived deterministically for collocated trafo/gardu on poles. Electrical upstream radial parentage requires anchoring the Substation (GI) feeder exit node."
+    },
+    "authoritative_network_seed": {
+        "total_translines": 217,
+        "feeders": [
+            4,
+            15,
+            23,
+            56,
+            131
+        ],
+        "feeder_distribution": {
+            "GEMURUNG": 2,
+            "BANJAR KEMANTREN": 197,
+            "GEDANGAN": 1,
+            "BANJARAN": 9,
+            "BY PASS": 8
+        },
+        "sections_anchored": {
+            "PMCB BULOG - LBS KOPEL KARANGBONG TIMUR - LBSM BERNOFARM": 2,
+            "GI - LBS MITRA MULIA": 5,
+            "LBS MITRA MULIA - PMCB BULOG": 8,
+            "LBS KARANGBONG TENGAH - LBSM KARANGBONG BARAT": 2
+        }
+    },
+    "section_propagation_audit": {
+        "feeder_15_total_lines": 197,
+        "seeded_lines": 17,
+        "seeded_nodes": 22,
+        "propagatable_1hop": 9,
+        "boundary_ambiguous": 0,
+        "unreached_distant": 171,
+        "verdict": "Section propagation along connected authoritative edges is deterministic within section interior, but cannot cross boundary switching devices."
+    },
+    "data_source_matrix": [
+        {
+            "source": "sections table",
+            "field": "id, nama_section, penyulang_id",
+            "available": "YES",
+            "row_count": 510,
+            "feeders_covered": "134 / 134 (100%)",
+            "confidence": "AUTHORITATIVE (1.00)",
+            "can_be_used": "YES (Master dictionary of electrical boundaries)",
+            "provenance_class": "B. Exists but Unmapped to Assets"
+        },
+        {
+            "source": "assets table (section_id)",
+            "field": "section_id",
+            "available": "PARTIAL",
+            "row_count": 29,
+            "feeders_covered": "2 / 134 (1.49%)",
+            "confidence": "LOW COVERAGE (0.55%)",
+            "can_be_used": "LIMITED (Only 29 assets in Banjar Kemantren & Gemurung)",
+            "provenance_class": "C. Exists in Another Canonical Field"
+        },
+        {
+            "source": "assets table (parent_asset_id)",
+            "field": "parent_asset_id",
+            "available": "NO",
+            "row_count": 0,
+            "feeders_covered": "0 / 134 (0.00%)",
+            "confidence": "UNPOPULATED (0.00)",
+            "can_be_used": "NO (Must be derived from collocated mounting or directed tree)",
+            "provenance_class": "D. Deterministically Derivable (Mounting only)"
+        },
+        {
+            "source": "gis_translines (authoritative)",
+            "field": "source_asset_id, target_asset_id, section_id, conductor_*",
+            "available": "YES",
+            "row_count": 217,
+            "feeders_covered": "5 / 134 (3.73%)",
+            "confidence": "AUTHORITATIVE (1.00)",
+            "can_be_used": "YES (Ground truth seed for Feeder 4, 15, 23, 56, 131)",
+            "provenance_class": "A. Explicit Relation Exists"
+        },
+        {
+            "source": "Natural Pole Sequence (Nomenclature)",
+            "field": "sequence_no (e.g. _001, _002)",
+            "available": "YES",
+            "row_count": 5236,
+            "feeders_covered": "33 / 134 (100% active)",
+            "confidence": "STRONG (0.90 within linear spans)",
+            "can_be_used": "YES (Linear ordering discovery; requires distance firewall)",
+            "provenance_class": "B. Deterministically Derivable"
+        },
+        {
+            "source": "GPS Coordinates (GIS Location)",
+            "field": "latitude, longitude",
+            "available": "YES",
+            "row_count": 5236,
+            "feeders_covered": "33 / 134 (100% active)",
+            "confidence": "HIGH PRECISION (1.00)",
+            "can_be_used": "YES (Spatial adjacency & span verification)",
+            "provenance_class": "A. Explicit Relation Exists"
+        },
+        {
+            "source": "asset_relationships table",
+            "field": "source_asset_id, target_asset_id, parent_asset_id",
+            "available": "SCHEMA EXISTS",
+            "row_count": 0,
+            "feeders_covered": "0 / 134",
+            "confidence": "EMPTY",
+            "can_be_used": "NO (No active rows currently populated)",
+            "provenance_class": "D. No Evidence"
+        },
+        {
+            "source": "network_topology_versions",
+            "field": "geojson_topology, nodes_count, segments_count",
+            "available": "SCHEMA EXISTS",
+            "row_count": "Audit snapshots",
+            "feeders_covered": "Rollback logs",
+            "confidence": "DERIVED SNAPSHOTS",
+            "can_be_used": "AUDIT ONLY (Stores historical serialized GeoJSON)",
+            "provenance_class": "D. Historical Audit Trail"
+        }
+    ]
+}

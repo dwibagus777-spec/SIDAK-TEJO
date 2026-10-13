@@ -1,0 +1,542 @@
+{
+    "registry_id": "CR07_MATERIAL_FIELD_ALIAS_REGISTRY_v1.0",
+    "created_at": "2026-08-24 19:37:09 WIB",
+    "created_at_utc": "2026-08-24T12:37:09Z",
+    "total_aliases": 89,
+    "aliases": {
+        "PIN": {
+            "alias_term": "PIN",
+            "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+            "official_name": "Pin Post Insulator 20 kV; 12,5 kN; Porcelain",
+            "unit": "PCS"
+        },
+        "PIN POST": {
+            "alias_term": "PIN POST",
+            "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+            "official_name": "Pin Post Insulator 20 kV; 12,5 kN; Porcelain",
+            "unit": "PCS"
+        },
+        "PIN POST KERAMIK": {
+            "alias_term": "PIN POST KERAMIK",
+            "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+            "official_name": "Pin Post Insulator 20 kV; 12,5 kN; Porcelain",
+            "unit": "PCS"
+        },
+        "ISOLATOR TUMPU": {
+            "alias_term": "ISOLATOR TUMPU",
+            "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+            "official_name": "Pin Post Insulator 20 kV; 12,5 kN; Porcelain",
+            "unit": "PCS"
+        },
+        "ISOLATOR PIN": {
+            "alias_term": "ISOLATOR PIN",
+            "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+            "official_name": "Pin Post Insulator 20 kV; 12,5 kN; Porcelain",
+            "unit": "PCS"
+        },
+        "LA": {
+            "alias_term": "LA",
+            "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+            "official_name": "Polymer Lightning Arrester 24 kV; 10 kA",
+            "unit": "SET"
+        },
+        "ARRESTER": {
+            "alias_term": "ARRESTER",
+            "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+            "official_name": "Polymer Lightning Arrester 24 kV; 10 kA",
+            "unit": "SET"
+        },
+        "LIGHTNING ARRESTER": {
+            "alias_term": "LIGHTNING ARRESTER",
+            "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+            "official_name": "Polymer Lightning Arrester 24 kV; 10 kA",
+            "unit": "SET"
+        },
+        "PENANGKAL PETIR JTM": {
+            "alias_term": "PENANGKAL PETIR JTM",
+            "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+            "official_name": "Polymer Lightning Arrester 24 kV; 10 kA",
+            "unit": "SET"
+        },
+        "FCO": {
+            "alias_term": "FCO",
+            "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+            "official_name": "Polymer Cut Out Switch 24 kV 100A + Fuse Link",
+            "unit": "SET"
+        },
+        "CUT OUT": {
+            "alias_term": "CUT OUT",
+            "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+            "official_name": "Polymer Cut Out Switch 24 kV 100A + Fuse Link",
+            "unit": "SET"
+        },
+        "FUSE CUT OUT": {
+            "alias_term": "FUSE CUT OUT",
+            "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+            "official_name": "Polymer Cut Out Switch 24 kV 100A + Fuse Link",
+            "unit": "SET"
+        },
+        "SEKRING JTM": {
+            "alias_term": "SEKRING JTM",
+            "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+            "official_name": "Polymer Cut Out Switch 24 kV 100A + Fuse Link",
+            "unit": "SET"
+        },
+        "SAKLAR FUSE": {
+            "alias_term": "SAKLAR FUSE",
+            "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+            "official_name": "Polymer Cut Out Switch 24 kV 100A + Fuse Link",
+            "unit": "SET"
+        },
+        "HANG": {
+            "alias_term": "HANG",
+            "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+            "official_name": "Strain Insulator 20 kV Lengkap (SIR); Porcelain",
+            "unit": "SET"
+        },
+        "STRAIN INSULATOR": {
+            "alias_term": "STRAIN INSULATOR",
+            "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+            "official_name": "Strain Insulator 20 kV Lengkap (SIR); Porcelain",
+            "unit": "SET"
+        },
+        "ISOLATOR TARIK": {
+            "alias_term": "ISOLATOR TARIK",
+            "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+            "official_name": "Strain Insulator 20 kV Lengkap (SIR); Porcelain",
+            "unit": "SET"
+        },
+        "ISOLATOR HANG": {
+            "alias_term": "ISOLATOR HANG",
+            "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+            "official_name": "Strain Insulator 20 kV Lengkap (SIR); Porcelain",
+            "unit": "SET"
+        },
+        "SUSPENSION SET": {
+            "alias_term": "SUSPENSION SET",
+            "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+            "official_name": "Strain Insulator 20 kV Lengkap (SIR); Porcelain",
+            "unit": "SET"
+        },
+        "TIANG 9M": {
+            "alias_term": "TIANG 9M",
+            "canonical_material_code": "MAT-POLE-BETON-9-200",
+            "official_name": "Tiang Beton 9 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG BETON 9-200": {
+            "alias_term": "TIANG BETON 9-200",
+            "canonical_material_code": "MAT-POLE-BETON-9-200",
+            "official_name": "Tiang Beton 9 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG 9 METER": {
+            "alias_term": "TIANG 9 METER",
+            "canonical_material_code": "MAT-POLE-BETON-9-200",
+            "official_name": "Tiang Beton 9 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "POLE 9M": {
+            "alias_term": "POLE 9M",
+            "canonical_material_code": "MAT-POLE-BETON-9-200",
+            "official_name": "Tiang Beton 9 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG 9-200+E": {
+            "alias_term": "TIANG 9-200+E",
+            "canonical_material_code": "MAT-POLE-BETON-9-200E",
+            "official_name": "Tiang Beton 9 Meter / 200 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG 9M+E": {
+            "alias_term": "TIANG 9M+E",
+            "canonical_material_code": "MAT-POLE-BETON-9-200E",
+            "official_name": "Tiang Beton 9 Meter / 200 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG BETON 9 GROUNDING": {
+            "alias_term": "TIANG BETON 9 GROUNDING",
+            "canonical_material_code": "MAT-POLE-BETON-9-200E",
+            "official_name": "Tiang Beton 9 Meter / 200 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG 11M": {
+            "alias_term": "TIANG 11M",
+            "canonical_material_code": "MAT-POLE-BETON-11-200",
+            "official_name": "Tiang Beton 11 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG BETON 11-200": {
+            "alias_term": "TIANG BETON 11-200",
+            "canonical_material_code": "MAT-POLE-BETON-11-200",
+            "official_name": "Tiang Beton 11 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG 11 METER": {
+            "alias_term": "TIANG 11 METER",
+            "canonical_material_code": "MAT-POLE-BETON-11-200",
+            "official_name": "Tiang Beton 11 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG 12M": {
+            "alias_term": "TIANG 12M",
+            "canonical_material_code": "MAT-POLE-BETON-12-200",
+            "official_name": "Tiang Beton 12 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG BETON 12-200": {
+            "alias_term": "TIANG BETON 12-200",
+            "canonical_material_code": "MAT-POLE-BETON-12-200",
+            "official_name": "Tiang Beton 12 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG 12 METER": {
+            "alias_term": "TIANG 12 METER",
+            "canonical_material_code": "MAT-POLE-BETON-12-200",
+            "official_name": "Tiang Beton 12 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG JTM 12M": {
+            "alias_term": "TIANG JTM 12M",
+            "canonical_material_code": "MAT-POLE-BETON-12-200",
+            "official_name": "Tiang Beton 12 Meter / 200 daN",
+            "unit": "BATANG"
+        },
+        "TIANG 13-350+E": {
+            "alias_term": "TIANG 13-350+E",
+            "canonical_material_code": "MAT-POLE-BETON-13-350E",
+            "official_name": "Tiang Beton 13 Meter / 350 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG 13M+E": {
+            "alias_term": "TIANG 13M+E",
+            "canonical_material_code": "MAT-POLE-BETON-13-350E",
+            "official_name": "Tiang Beton 13 Meter / 350 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG BETON 13M": {
+            "alias_term": "TIANG BETON 13M",
+            "canonical_material_code": "MAT-POLE-BETON-13-350E",
+            "official_name": "Tiang Beton 13 Meter / 350 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG GARDU PORTAL": {
+            "alias_term": "TIANG GARDU PORTAL",
+            "canonical_material_code": "MAT-POLE-BETON-13-350E",
+            "official_name": "Tiang Beton 13 Meter / 350 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG 14-350+E": {
+            "alias_term": "TIANG 14-350+E",
+            "canonical_material_code": "MAT-POLE-BETON-14-350E",
+            "official_name": "Tiang Beton 14 Meter / 350 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG 14M+E": {
+            "alias_term": "TIANG 14M+E",
+            "canonical_material_code": "MAT-POLE-BETON-14-350E",
+            "official_name": "Tiang Beton 14 Meter / 350 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG BETON 14M": {
+            "alias_term": "TIANG BETON 14M",
+            "canonical_material_code": "MAT-POLE-BETON-14-350E",
+            "official_name": "Tiang Beton 14 Meter / 350 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "TIANG CROSSING 14M": {
+            "alias_term": "TIANG CROSSING 14M",
+            "canonical_material_code": "MAT-POLE-BETON-14-350E",
+            "official_name": "Tiang Beton 14 Meter / 350 daN + Earth Grounding",
+            "unit": "BATANG"
+        },
+        "AAAC 70": {
+            "alias_term": "AAAC 70",
+            "canonical_material_code": "MAT-COND-AAAC-70",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "unit": "METER"
+        },
+        "KABEL AAAC 70": {
+            "alias_term": "KABEL AAAC 70",
+            "canonical_material_code": "MAT-COND-AAAC-70",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAAC 70 SQMM": {
+            "alias_term": "AAAC 70 SQMM",
+            "canonical_material_code": "MAT-COND-AAAC-70",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "unit": "METER"
+        },
+        "KONDUKTOR 70": {
+            "alias_term": "KONDUKTOR 70",
+            "canonical_material_code": "MAT-COND-AAAC-70",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAAC 150": {
+            "alias_term": "AAAC 150",
+            "canonical_material_code": "MAT-COND-AAAC-150",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "unit": "METER"
+        },
+        "KABEL AAAC 150": {
+            "alias_term": "KABEL AAAC 150",
+            "canonical_material_code": "MAT-COND-AAAC-150",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAAC 150 SQMM": {
+            "alias_term": "AAAC 150 SQMM",
+            "canonical_material_code": "MAT-COND-AAAC-150",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "unit": "METER"
+        },
+        "KONDUKTOR 150": {
+            "alias_term": "KONDUKTOR 150",
+            "canonical_material_code": "MAT-COND-AAAC-150",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAAC 240": {
+            "alias_term": "AAAC 240",
+            "canonical_material_code": "MAT-COND-AAAC-240",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "unit": "METER"
+        },
+        "KABEL AAAC 240": {
+            "alias_term": "KABEL AAAC 240",
+            "canonical_material_code": "MAT-COND-AAAC-240",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAAC 240 SQMM": {
+            "alias_term": "AAAC 240 SQMM",
+            "canonical_material_code": "MAT-COND-AAAC-240",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "unit": "METER"
+        },
+        "KONDUKTOR 240": {
+            "alias_term": "KONDUKTOR 240",
+            "canonical_material_code": "MAT-COND-AAAC-240",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAAC-S 70": {
+            "alias_term": "AAAC-S 70",
+            "canonical_material_code": "MAT-COND-AAACS-70",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 70 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAACS 70": {
+            "alias_term": "AAACS 70",
+            "canonical_material_code": "MAT-COND-AAACS-70",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 70 mm\u00b2",
+            "unit": "METER"
+        },
+        "KABEL BUNGKUS 70": {
+            "alias_term": "KABEL BUNGKUS 70",
+            "canonical_material_code": "MAT-COND-AAACS-70",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 70 mm\u00b2",
+            "unit": "METER"
+        },
+        "SEMI INSULATED 70": {
+            "alias_term": "SEMI INSULATED 70",
+            "canonical_material_code": "MAT-COND-AAACS-70",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 70 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAAC-S 150": {
+            "alias_term": "AAAC-S 150",
+            "canonical_material_code": "MAT-COND-AAACS-150",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAACS 150": {
+            "alias_term": "AAACS 150",
+            "canonical_material_code": "MAT-COND-AAACS-150",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "unit": "METER"
+        },
+        "KABEL BUNGKUS 150": {
+            "alias_term": "KABEL BUNGKUS 150",
+            "canonical_material_code": "MAT-COND-AAACS-150",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "unit": "METER"
+        },
+        "SEMI INSULATED 150": {
+            "alias_term": "SEMI INSULATED 150",
+            "canonical_material_code": "MAT-COND-AAACS-150",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAAC-S 240": {
+            "alias_term": "AAAC-S 240",
+            "canonical_material_code": "MAT-COND-AAACS-240",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 240 mm\u00b2",
+            "unit": "METER"
+        },
+        "AAACS 240": {
+            "alias_term": "AAACS 240",
+            "canonical_material_code": "MAT-COND-AAACS-240",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 240 mm\u00b2",
+            "unit": "METER"
+        },
+        "KABEL BUNGKUS 240": {
+            "alias_term": "KABEL BUNGKUS 240",
+            "canonical_material_code": "MAT-COND-AAACS-240",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 240 mm\u00b2",
+            "unit": "METER"
+        },
+        "SEMI INSULATED 240": {
+            "alias_term": "SEMI INSULATED 240",
+            "canonical_material_code": "MAT-COND-AAACS-240",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 240 mm\u00b2",
+            "unit": "METER"
+        },
+        "MVTIC 150": {
+            "alias_term": "MVTIC 150",
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X150",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7150 + 1\u00d795 mm\u00b2 CWS",
+            "unit": "METER"
+        },
+        "NFA2XSEY 150": {
+            "alias_term": "NFA2XSEY 150",
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X150",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7150 + 1\u00d795 mm\u00b2 CWS",
+            "unit": "METER"
+        },
+        "KABEL PILIN 20KV 150": {
+            "alias_term": "KABEL PILIN 20KV 150",
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X150",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7150 + 1\u00d795 mm\u00b2 CWS",
+            "unit": "METER"
+        },
+        "TWISTED 150": {
+            "alias_term": "TWISTED 150",
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X150",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7150 + 1\u00d795 mm\u00b2 CWS",
+            "unit": "METER"
+        },
+        "MVTIC 240": {
+            "alias_term": "MVTIC 240",
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X240",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7240 + 1\u00d795 mm\u00b2 CWS",
+            "unit": "METER"
+        },
+        "NFA2XSEY 240": {
+            "alias_term": "NFA2XSEY 240",
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X240",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7240 + 1\u00d795 mm\u00b2 CWS",
+            "unit": "METER"
+        },
+        "KABEL PILIN 20KV 240": {
+            "alias_term": "KABEL PILIN 20KV 240",
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X240",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7240 + 1\u00d795 mm\u00b2 CWS",
+            "unit": "METER"
+        },
+        "TWISTED 240": {
+            "alias_term": "TWISTED 240",
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X240",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7240 + 1\u00d795 mm\u00b2 CWS",
+            "unit": "METER"
+        },
+        "KABEL TANAH 150": {
+            "alias_term": "KABEL TANAH 150",
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X150",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7150 mm\u00b2; 20 kV; UG",
+            "unit": "METER"
+        },
+        "NA2XSEYBY 150": {
+            "alias_term": "NA2XSEYBY 150",
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X150",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7150 mm\u00b2; 20 kV; UG",
+            "unit": "METER"
+        },
+        "SKTM 150": {
+            "alias_term": "SKTM 150",
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X150",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7150 mm\u00b2; 20 kV; UG",
+            "unit": "METER"
+        },
+        "UNDERGROUND 150": {
+            "alias_term": "UNDERGROUND 150",
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X150",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7150 mm\u00b2; 20 kV; UG",
+            "unit": "METER"
+        },
+        "KABEL TANAH 240": {
+            "alias_term": "KABEL TANAH 240",
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X240",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7240 mm\u00b2; 20 kV; UG",
+            "unit": "METER"
+        },
+        "NA2XSEYBY 240": {
+            "alias_term": "NA2XSEYBY 240",
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X240",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7240 mm\u00b2; 20 kV; UG",
+            "unit": "METER"
+        },
+        "SKTM 240": {
+            "alias_term": "SKTM 240",
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X240",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7240 mm\u00b2; 20 kV; UG",
+            "unit": "METER"
+        },
+        "UNDERGROUND 240": {
+            "alias_term": "UNDERGROUND 240",
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X240",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7240 mm\u00b2; 20 kV; UG",
+            "unit": "METER"
+        },
+        "TRAVES 2000": {
+            "alias_term": "TRAVES 2000",
+            "canonical_material_code": "MAT-TRV-UNP-2000",
+            "official_name": "Traves Cross-Arm UNP 80\u00d745\u00d75 mm Panjang 2000 mm Hot Dip Galvanized",
+            "unit": "BATANG"
+        },
+        "TRAVES 2M": {
+            "alias_term": "TRAVES 2M",
+            "canonical_material_code": "MAT-TRV-UNP-2000",
+            "official_name": "Traves Cross-Arm UNP 80\u00d745\u00d75 mm Panjang 2000 mm Hot Dip Galvanized",
+            "unit": "BATANG"
+        },
+        "CROSS ARM 2M": {
+            "alias_term": "CROSS ARM 2M",
+            "canonical_material_code": "MAT-TRV-UNP-2000",
+            "official_name": "Traves Cross-Arm UNP 80\u00d745\u00d75 mm Panjang 2000 mm Hot Dip Galvanized",
+            "unit": "BATANG"
+        },
+        "UNP 2000": {
+            "alias_term": "UNP 2000",
+            "canonical_material_code": "MAT-TRV-UNP-2000",
+            "official_name": "Traves Cross-Arm UNP 80\u00d745\u00d75 mm Panjang 2000 mm Hot Dip Galvanized",
+            "unit": "BATANG"
+        },
+        "TRAVES 2500": {
+            "alias_term": "TRAVES 2500",
+            "canonical_material_code": "MAT-TRV-UNP-2500",
+            "official_name": "Traves Cross-Arm UNP 100\u00d750\u00d75 mm Panjang 2500 mm Hot Dip Galvanized",
+            "unit": "BATANG"
+        },
+        "TRAVES 2.5M": {
+            "alias_term": "TRAVES 2.5M",
+            "canonical_material_code": "MAT-TRV-UNP-2500",
+            "official_name": "Traves Cross-Arm UNP 100\u00d750\u00d75 mm Panjang 2500 mm Hot Dip Galvanized",
+            "unit": "BATANG"
+        },
+        "CROSS ARM 2.5M": {
+            "alias_term": "CROSS ARM 2.5M",
+            "canonical_material_code": "MAT-TRV-UNP-2500",
+            "official_name": "Traves Cross-Arm UNP 100\u00d750\u00d75 mm Panjang 2500 mm Hot Dip Galvanized",
+            "unit": "BATANG"
+        },
+        "UNP 2500": {
+            "alias_term": "UNP 2500",
+            "canonical_material_code": "MAT-TRV-UNP-2500",
+            "official_name": "Traves Cross-Arm UNP 100\u00d750\u00d75 mm Panjang 2500 mm Hot Dip Galvanized",
+            "unit": "BATANG"
+        }
+    }
+}

@@ -1,0 +1,98 @@
+{
+    "registry_id": "CR06_INSPECTION_REGISTRY_v1.0",
+    "created_at": "2026-08-24 18:55:22 WIB",
+    "lineage_parent": "CR06_PRE_SNAPSHOT",
+    "sessions": {
+        "INSP-CR06-20260824-185522-eadf33": {
+            "session_id": "INSP-CR06-20260824-185522-eadf33",
+            "title": "Inspeksi Visual & Thermovisi Rutin Penyulang Banjar Kemantren",
+            "penyulang_id": 15,
+            "penyulang_name": "BANJAR KEMANTREN",
+            "ulp_id": 1,
+            "section_id": null,
+            "current_state": "VERIFIED",
+            "assigned_team": "REGU HAR DISTRIBUSI TIM 1",
+            "created_at": "2026-08-24 18:55:22",
+            "created_by": {
+                "actor_id": 3,
+                "actor_name": "SUPERVISOR_INSPEKSI_JARINGAN",
+                "actor_nip": "198607122010011002",
+                "actor_role": "INSPECTION_SUPERVISOR"
+            },
+            "target_asset_ids": [],
+            "action_hash": "b580aa9a92e76f193294d19c67e879b35ae0a569f95ba68fab340f9aa33f4898",
+            "state_history": [
+                {
+                    "from_state": null,
+                    "to_state": "DRAFT",
+                    "actor_nip": "198607122010011002",
+                    "timestamp": "2026-08-24 18:55:22",
+                    "notes": "Session draft initiated."
+                },
+                {
+                    "from_state": "DRAFT",
+                    "to_state": "ASSIGNED",
+                    "actor_nip": "198607122010011002",
+                    "actor_name": "SUPERVISOR_INSPEKSI_JARINGAN",
+                    "timestamp": "2026-08-24 18:55:22",
+                    "notes": "Ditugaskan ke regu.",
+                    "action_hash": "f5e077a8bee66600c366aade7b76ad146e6636a64f5f651d1317147cf6b22440"
+                },
+                {
+                    "from_state": "ASSIGNED",
+                    "to_state": "IN_FIELD",
+                    "actor_nip": "199304192019021004",
+                    "actor_name": "PETUGAS_INSPEKSI_LAPANGAN_1",
+                    "timestamp": "2026-08-24 18:55:22",
+                    "notes": "Regu telah sampai di lokasi.",
+                    "action_hash": "21e7e4a68dacc28a4ccde8e46bbfd04e55a4ded59563b21ec0ddb39ca9687bce"
+                },
+                {
+                    "from_state": "IN_FIELD",
+                    "to_state": "COMPLETED",
+                    "actor_nip": "199304192019021004",
+                    "actor_name": "PETUGAS_INSPEKSI_LAPANGAN_1",
+                    "timestamp": "2026-08-24 18:55:22",
+                    "notes": "Observasi selesai.",
+                    "action_hash": "00531a0e6b98a08518cc27ecce541aee634c4afad5d1ad2e6eb82ade2bb69c90"
+                },
+                {
+                    "from_state": "COMPLETED",
+                    "to_state": "VERIFIED",
+                    "actor_nip": "198607122010011002",
+                    "actor_name": "SUPERVISOR_INSPEKSI_JARINGAN",
+                    "timestamp": "2026-08-24 18:55:22",
+                    "notes": "Diverifikasi oleh supervisor.",
+                    "action_hash": "530810a7b67e70d8372d1b81ee8a798374bfac4c1a8331e781fa400f30ec64e9"
+                }
+            ],
+            "updated_at": "2026-08-24 18:55:22"
+        }
+    },
+    "observations": {
+        "OBS-CR06-20260824-185522-26c2": {
+            "observation_id": "OBS-CR06-20260824-185522-26c2",
+            "session_id": "INSP-CR06-20260824-185522-eadf33",
+            "asset_id": 394,
+            "asset_code": "AST-BJK-T001",
+            "asset_name": "Tiang Beton #01 Outgoing GI Banjar Kemantren",
+            "penyulang_id": 15,
+            "section_id": 48,
+            "visual_condition": "DEGRADASI_RINGAN",
+            "component_status": "NORMAL_ISOLATOR_KOROSI",
+            "notes": "Ditemukan korosi ringan pada traves isolator tiang.",
+            "photo_evidence": "assets/photos/default_inspection.jpg",
+            "previous_health": 84.5,
+            "new_health_score": 79.5,
+            "new_category": "FAIR",
+            "inspector": {
+                "actor_id": 2,
+                "actor_name": "PETUGAS_INSPEKSI_LAPANGAN_1",
+                "actor_nip": "199304192019021004",
+                "actor_role": "FIELD_INSPECTOR"
+            },
+            "observed_at": "2026-08-24 18:55:22",
+            "action_hash": "9bfbc4d297858e039ae4bdbf6bd7d1b8168c34bd4e252f055064d92981ec0c8e"
+        }
+    }
+}

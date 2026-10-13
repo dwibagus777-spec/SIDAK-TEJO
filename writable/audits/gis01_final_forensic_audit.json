@@ -1,0 +1,138 @@
+{
+  "audit_version": "GIS-01.FORENSIC.v1",
+  "system": "SIDAK TEJO Enterprise",
+  "environment": "production",
+  "target_url": "https://sidaktejo.site/gis",
+  "audit_timestamp": "2026-09-11T19:34:00+07:00",
+  "verdict": "PASS_WITH_FINDINGS",
+  "deployment_verification": {
+    "local_head": "089313db53949423251dd212076b861b008db98c",
+    "origin_main_head": "089313db53949423251dd212076b861b008db98c",
+    "production_running_commit": "089313db53949423251dd212076b861b008db98c",
+    "working_tree_clean": true,
+    "untracked_modifications": 0
+  },
+  "database_baseline_and_reconciliation": {
+    "penyulang_id": 15,
+    "feeder_name": "BANJAR KEMANTREN",
+    "assets_total": 205,
+    "assets_jenis_distribution": {
+      "JTM": 205
+    },
+    "assets_construction_distribution": {
+      "TM1": 107,
+      "TM8": 21,
+      "TM11": 17,
+      "GTT2": 15,
+      "TM5": 13,
+      "TM10": 9,
+      "TM2": 7,
+      "GTT": 4,
+      "GTT1": 4,
+      "PMS": 4,
+      "TM4": 2,
+      "TMTP": 2
+    },
+    "gis_translines": {
+      "total_rows": 169,
+      "active_rows": 169,
+      "inactive_rows": 0,
+      "is_active_distribution": {
+        "1": 169
+      },
+      "status_distribution": {
+        "ACTIVE": 169
+      },
+      "provenance_distribution": {
+        "TL-01_manual_admin": 42,
+        "TL-01_manual_dwibagus": 1,
+        "TL-02_progressive_ai": 56,
+        "TL-03_rescore_ai": 2,
+        "TL-04_accelerated_ai": 27,
+        "NETWORK_COMPLETION_v1_engine": 41
+      },
+      "reconciliation_explanation_169_vs_168": "There is no inactive row in the database. All 169 rows in gis_translines have is_active=1 and status='ACTIVE'. The baseline before GIS-01 in scratch/perf_pre_fingerprint.json was already 169 translines. The number 168 originated from initial user prompt text ('±205 aset dan 168 transline') which was casually quoted in previous documentation rather than derived from a row subtraction."
+    },
+    "temuan_total": 4,
+    "temuan_materials_total": 0,
+    "sections_total": 5,
+    "penyulang_total": 46,
+    "gis_transline_proposals_total": 56
+  },
+  "zero_write_firewall": {
+    "assets_sha256_before": "f837ac1ede9d8fad04c45214f211fa5b21bb9e358410af5d9b9d1fd270fe6d6c",
+    "assets_sha256_after": "f837ac1ede9d8fad04c45214f211fa5b21bb9e358410af5d9b9d1fd270fe6d6c",
+    "assets_match": true,
+    "translines_sha256_before": "1c18cf9a3588eb2716da8c149860a09e3e7f5b8edd184c659d53df2f334fc68f",
+    "translines_sha256_after": "1c18cf9a3588eb2716da8c149860a09e3e7f5b8edd184c659d53df2f334fc68f",
+    "translines_match": true,
+    "mutation_count": {
+      "INSERT": 0,
+      "UPDATE": 0,
+      "DELETE": 0,
+      "DDL": 0
+    },
+    "firewall_status": "PASSED"
+  },
+  "performance_benchmark_cdp": {
+    "page_load_ms": 1623,
+    "canvas_count": 1,
+    "svg_path_transline_count": 0,
+    "total_dom_nodes": 4152,
+    "zoom_pan_tests": {
+      "zoom_in_cycles": 5,
+      "zoom_out_cycles": 5,
+      "pan_cycles": 5,
+      "gis_hydration_requests_during_zoom_pan": 0,
+      "firewall_passed": true
+    },
+    "frame_timing": {
+      "measured_frames": 234,
+      "avg_frame_time_ms": 16.79,
+      "measured_fps": 59.5,
+      "long_tasks_over_50ms": 0,
+      "dropped_frames_over_33ms": 1,
+      "methodology": "Chrome CDP native window.requestAnimationFrame delta accumulation with performance.now() high-resolution timestamps during automated zoom and pan iterations"
+    },
+    "memory_leak_test_20_cycles": {
+      "cycles": 20,
+      "heap_before_bytes": 8197324,
+      "heap_after_bytes": 8189352,
+      "heap_growth_bytes": -7972,
+      "heap_growth_mb": -0.01,
+      "memory_leak_detected": false
+    }
+  },
+  "icon_runtime_verification": {
+    "total_png_files_on_server": 24,
+    "png_base_directory": "public/assets/gis/icons/",
+    "http_availability": "100% HTTP 200 on all 24 PNG icons",
+    "runtime_resolved_distribution": {
+      "tm1.png": 141,
+      "tm8.png": 21,
+      "tm11.png": 17,
+      "tm5.png": 13,
+      "tm10.png": 9,
+      "lbsm.png": 4
+    },
+    "visual_findings": {
+      "issue_1_clustering": "At zoom levels < 16, Leaflet MarkerCluster groups 95% of asset markers into generic green and yellow circles with numeric badges.",
+      "issue_2_donut_silhouette": "The authentic PNG icons (tm1, tm5, tm8, tm10, tm11) are based on the PLN single-line diagram top-down donut symbols (circle-donut), which render as circular black outlines on the map.",
+      "issue_3_halo_ring": "Each marker is wrapped inside a 32px circular CSS halo ring (.asset-condition-halo), reinforcing the appearance of a generic small circle.",
+      "issue_4_bypassed_gardu_icons": "Rich equipment PNG icons (gtt1-dist.png, gtt2-dist.png, gi.png) are guarded by type === 'GARDU', but all Feeder 15 assets in table assets currently have jenis_asset='JTM', so GTT1 and GTT2 assets bypass Gardu icons and fall back to tm1.png or tm8.png."
+    }
+  },
+  "domain_isolation": {
+    "temuan_participates_in_transline": false,
+    "temuan_isolated_in_separate_layer": true,
+    "temuan_endpoint_count": 0
+  },
+  "regression_tests": {
+    "test_suite": "PHPUnit 10.5.64",
+    "tests_run": 62,
+    "assertions": 282,
+    "failures": 0,
+    "errors": 0,
+    "pass_rate": "100%"
+  }
+}

@@ -1,0 +1,122 @@
+{
+    "gate": "B7_PRODUCTION_ACTIVATION_PHASE_4",
+    "timestamp": "2026-09-26 18:03:53 WIB",
+    "environment": "production",
+    "target_host": "2.57.91.151 (https:\/\/sidaktejo.site)",
+    "mode": "STRICT_READ_ONLY",
+    "verdict": "PASS",
+    "baseline_snapshot": "TOPOLOGY-20260925-243-ad2c9fcb",
+    "baseline": {
+        "snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+        "network_span_meters": 9418.37,
+        "authoritative": {
+            "active_translines": 243,
+            "active_translines_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+            "active_assets": 5236,
+            "active_assets_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711"
+        },
+        "physical": {
+            "physical_translines": 252,
+            "physical_translines_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+            "physical_assets": 5549,
+            "physical_assets_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+            "inactive_translines": 9,
+            "soft_deleted_assets": 313
+        }
+    },
+    "live_authoritative": {
+        "active_translines": 243,
+        "active_translines_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+        "active_assets": 5236,
+        "active_assets_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+        "network_span_meters": 9418.37,
+        "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb"
+    },
+    "live_physical": {
+        "physical_translines": 252,
+        "physical_translines_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+        "physical_assets": 5549,
+        "physical_assets_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+        "inactive_translines": 9,
+        "soft_deleted_assets": 313
+    },
+    "deltas": {
+        "delta_active_translines": 0,
+        "delta_physical_translines": 0,
+        "delta_active_assets": 0,
+        "delta_physical_assets": 0,
+        "delta_span_meters": 0,
+        "delta_inactive_translines": 0,
+        "delta_soft_deleted_assets": 0
+    },
+    "cryptographic_hashes": {
+        "active_translines": {
+            "baseline_full_sha256": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+            "live_full_sha256": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+            "match": true
+        },
+        "physical_translines": {
+            "baseline_full_sha256": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+            "live_full_sha256": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+            "match": true
+        },
+        "active_assets": {
+            "baseline_full_sha256": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+            "live_full_sha256": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+            "match": true
+        },
+        "physical_assets": {
+            "baseline_full_sha256": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+            "live_full_sha256": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+            "match": true
+        }
+    },
+    "snapshot_verification": {
+        "baseline_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+        "live_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+        "match": true
+    },
+    "4_layer_reconciliation": {
+        "endpoint_status": 200,
+        "verdict": "PASS_AUTHORITATIVE_PRODUCTION",
+        "aligned": true,
+        "pack": {
+            "layer_1_application": {
+                "sync_service_version": "B7-SYNC-1.0",
+                "evidence_service_version": "B7-EVIDENCE-1.0",
+                "pull_service_version": "B7-PULL-1.0",
+                "status": "SEALED & SYNCHRONIZED"
+            },
+            "layer_2_physical_database": {
+                "total_phase_b_tables": 11,
+                "physical_translines_count": 252,
+                "physical_translines_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                "physical_assets_count": 5549,
+                "physical_assets_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                "inactive_translines_count": 9,
+                "soft_deleted_assets_count": 313
+            },
+            "layer_3_authoritative_view": {
+                "active_translines_count": 243,
+                "active_translines_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                "active_assets_count": 5236,
+                "active_assets_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                "authoritative_aligned": true,
+                "formula_translines": "243 Active + 9 Inactive = 252 Physical",
+                "formula_assets": "5236 Active + 313 Soft-Deleted = 5549 Physical"
+            },
+            "layer_4_topology_snapshot": {
+                "snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+                "network_span_meters": 9418.37,
+                "status": "PERMANENTLY_SEALED"
+            }
+        }
+    },
+    "strict_read_only_invariants": {
+        "no_insert": true,
+        "no_update": true,
+        "no_delete": true,
+        "no_alter": true,
+        "mutations": 0
+    }
+}

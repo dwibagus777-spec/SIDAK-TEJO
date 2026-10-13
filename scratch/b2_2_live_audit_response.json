@@ -1,0 +1,154 @@
+{
+    "audit_metadata": {
+        "report_title": "SIDAK TEJO Phase B.2.2 - Post-Commit Forensic & Production Lock Verification",
+        "phase": "PHASE_B2_2_POST_COMMIT_FORENSIC_LOCK",
+        "timestamp_wib": "2026-09-25 16:23:06 WIB",
+        "batch_id": "INGEST-COMMIT-20260924214635-ad2c9fcb",
+        "batch_fingerprint": "ad2c9fcb833ca2680d00bb45adfa27a4e87730745aa65bf1c3419c89cb713397",
+        "batch_governance": "SEALED_IMMUTABLE_HISTORICAL_PRODUCTION_BATCH",
+        "overall_verdict": "PRODUCTION_NETWORK_SEALED_AND_LOCKED",
+        "read_only_verified": true,
+        "database_mutations": 0
+    },
+    "forensic_scorecard": {
+        "check_1_authoritative_invariant": {
+            "name": "AUTHORITATIVE_INVARIANT",
+            "status": "PASS",
+            "total_active_translines": 243,
+            "expected_total": 243,
+            "old_preserved_count": 217,
+            "expected_old_preserved": 217,
+            "new_active_count": 26,
+            "expected_new_active": 26,
+            "new_transline_id_range": "315 - 340",
+            "invariant_formula": "217 (Preserved) + 26 (Ingested) = 243 (Authoritative Network)"
+        },
+        "check_2_fingerprint_uniqueness": {
+            "name": "FINGERPRINT_UNIQUENESS",
+            "status": "PASS",
+            "total_rows_evaluated": 243,
+            "distinct_fingerprints": 243,
+            "collision_count": 0,
+            "collisions": [],
+            "uniqueness_ratio": 1
+        },
+        "check_3_spatial_integrity": {
+            "name": "SPATIAL_INTEGRITY",
+            "status": "PASS",
+            "zero_distance_count": 0,
+            "self_loop_count": 0,
+            "invalid_coords_count": 0,
+            "min_distance_m": 2.36,
+            "max_distance_m": 184.36,
+            "avg_distance_m": 38.76,
+            "total_distance_m": 9418.37,
+            "total_distance_km": 9.418
+        },
+        "check_4_graph_boundary_integrity": {
+            "name": "GRAPH_BOUNDARY_INTEGRITY",
+            "status": "PASS",
+            "cross_feeder_violations": 0,
+            "cross_ulp_violations": 0,
+            "new_ingested_boundary_violations": 0,
+            "legacy_boundary_switch_edges": 2,
+            "legacy_boundary_switch_details": [
+                {
+                    "transline_id": 6,
+                    "penyulang_id": 15,
+                    "is_new_ingested": false,
+                    "source_asset": "BANJARKEMANTRAN_28 (Sec 46)",
+                    "target_asset": "BANJARKEMANTRAN_29 (Sec 47)"
+                },
+                {
+                    "transline_id": 8,
+                    "penyulang_id": 15,
+                    "is_new_ingested": false,
+                    "source_asset": "BANJARKEMANTRAN_28 (Sec 46)",
+                    "target_asset": "BANJARKEMANTRAN_1 (Sec 47)"
+                }
+            ],
+            "missing_endpoints_count": 0,
+            "evaluated_edges": 243
+        },
+        "check_5_asset_immutability": {
+            "name": "ASSET_IMMUTABILITY",
+            "status": "PASS",
+            "total_active_assets": 5236,
+            "expected_active_assets": 5236,
+            "parent_asset_id_touched": false,
+            "section_id_touched": false,
+            "delta_assets_table": 0,
+            "parent_sum": 282802,
+            "section_count": 41,
+            "architecture_verdict": "parent_asset_id remains pure asset hierarchy domain; topology maintained strictly on gis_translines"
+        },
+        "check_6_gis_network_truth_feeder_118": {
+            "name": "GIS_NETWORK_TRUTH_FEEDER_118",
+            "status": "PASS",
+            "feeder_id": 118,
+            "feeder_name": "BAHAGIA STEEL 1",
+            "authoritative_transline_count": 1,
+            "expected_transline_count": 1,
+            "transline_id": 335,
+            "transline_code": "TL-118-5245-5246",
+            "span_length_meters": 27.82,
+            "tiang_33_to_34_status": "AUTHORITATIVE_TRANSLINE (Sec #50 -> Sec #50)",
+            "tiang_20_to_21_status": "BLOCKED_BY_FIREWALL (Sec #46 vs Sec #50 violation)",
+            "tiang_20_to_21_in_db": "SECURELY_BLOCKED",
+            "preview_isolation": "Preview proposals isolated from authoritative active translines"
+        },
+        "check_7_conductor_analytics_canonical": {
+            "name": "CONDUCTOR_ANALYTICS_CANONICAL",
+            "status": "PASS",
+            "global_official_count": 243,
+            "expected_global_count": 243,
+            "global_total_panjang_m": 9418.37,
+            "global_total_panjang_km": 9.418,
+            "feeder_118_official_count": 1,
+            "feeder_118_total_panjang_m": 27.82,
+            "conductor_registry_types": [
+                {
+                    "conductor_type": "A3CS",
+                    "conductor_size": "150 mm\u00b2",
+                    "count": "23"
+                },
+                {
+                    "conductor_type": "AAAC",
+                    "conductor_size": "120 mm\u00b2",
+                    "count": "7"
+                },
+                {
+                    "conductor_type": "AAAC",
+                    "conductor_size": "150 mm\u00b2",
+                    "count": "205"
+                },
+                {
+                    "conductor_type": "AAAC",
+                    "conductor_size": "70 mm\u00b2",
+                    "count": "5"
+                },
+                {
+                    "conductor_type": "MV-TIC",
+                    "conductor_size": "150 mm\u00b2",
+                    "count": "2"
+                },
+                {
+                    "conductor_type": "XLPE",
+                    "conductor_size": "150 mm\u00b2",
+                    "count": "1"
+                }
+            ],
+            "canonical_matching": "Conductor types resolved via canonical registry catalog"
+        }
+    },
+    "governance_queues_retained": {
+        "warning_review_queue": 2289,
+        "review_required_queue": 1730,
+        "rejected_edges_queue": 1158,
+        "policy": "RETAINED_IMMUTABLY_FOR_EVIDENCE_NOT_AUTO_COMMITTED"
+    },
+    "next_phase_gate": {
+        "phase_b3_unlocked": true,
+        "next_milestone": "B.3 \u2014 Network Intelligence (Graph Traversal, Section Topology, Path Analysis)"
+    }
+}

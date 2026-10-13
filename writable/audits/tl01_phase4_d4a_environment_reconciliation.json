@@ -1,0 +1,73 @@
+{
+    "audit_timestamp": "2026-09-04T17:25:00+07:00",
+    "gate": "TL-01 Sub-Gate D4A: Environment & Baseline Reconciliation",
+    "git_head": "c74db8db2e0bf9f23101317cabe43337f93b7aff",
+    "working_directory": "E:\\XAMPP\\htdocs\\SIDAK TEJO",
+    "app_env": "development",
+    "base_url": "https://localhost/SIDAK%20TEJO/public",
+    "hostname": "JTM-ULPSDK-INS",
+    "database_host": "127.0.0.1:3306",
+    "database_name": "sidaktejo",
+    "database_connection_identifier": "default (MySQLi)",
+    "test_database_identifier": "tests (SQLite3 :memory:)",
+    "browser_url": "https://localhost/SIDAK%20TEJO/public/gis",
+    "observed_counts": {
+        "gis_translines": 0,
+        "gis_transline_proposals": 0,
+        "assets": 30,
+        "sections": 508,
+        "penyulang": 134,
+        "temuan": 441,
+        "temuan_materials": 0
+    },
+    "sealed_production_baseline": {
+        "gis_translines": 42,
+        "gis_transline_proposals": 5,
+        "assets": 2660,
+        "sections": 134,
+        "penyulang": 28,
+        "temuan": 623,
+        "temuan_materials": 1842
+    },
+    "environment_classification": "B. LOCAL DEVELOPMENT DATABASE",
+    "reconciliation_findings": {
+        "summary": "Chromium CDP visual testing and local browser execution were conducted against the local XAMPP Apache instance (https://localhost/SIDAK%20TEJO/public) connected to the local MariaDB database ('sidaktejo'). The sealed production baseline (42 translines, 5 proposals, 2660 assets, 134 sections, 28 penyulang, 623 temuan, 1842 temuan_materials) originated from the canonical in-memory SQLite test fixture suite ('tests' group) used during D2/D3 unit and lifecycle integrity validation. The local MariaDB database contains a separate development fixture dataset.",
+        "zero_write_claim_clarification": "The zero-mutation guarantee was successfully verified on the local development MariaDB database, but has NOT been verified on the sealed production database."
+    },
+    "assertion_delta": {
+        "previous_count": 529,
+        "current_count": 549,
+        "delta": 20,
+        "explanation": "The 120 tests / 529 assertions suite comprised 7 test suites: TranslineProposalWorkbenchD4ATest (30/128), TranslineProposalLifecycleD3Test (35/87), TranslineControlledBatchD2CTest (25/165), TranslineControlledConfirmationD2BTest (12/50), TranslineProposalReviewD2ATest (7/31), GisTranslineSubGateD0Test (6/26), and GisMobileTranslineSheetAccessibilityTest (5/42). The reported 549 assertions count included GisTranslineProposalSchemaTest.php (1 test with 39 assertions validating 23 schema columns and table invariants) in place of a 19-assertion variant, resulting in an exact +20 assertion delta. No assertions were removed or weakened."
+    },
+    "zero_write_forensic": {
+        "status": "PASSED",
+        "label": "ZERO-WRITE VERIFIED ON NON-PRODUCTION ENVIRONMENT",
+        "before_fingerprints": {
+            "assets": { "count": 30, "sha256": "c557245959e8f85e8102d042acb8d061382caca31b18961b9c16cd51c64c372e" },
+            "sections": { "count": 508, "sha256": "dee70c47902fd8df91caef0aecbb41d8ec892113dd9d866201b035dc2fe2485f" },
+            "penyulang": { "count": 134, "sha256": "b56303b0a10b68dffa9bea91cf5cdabe523707ec3f7deba72bae291185deb469" },
+            "temuan": { "count": 441, "sha256": "ab3e75fcbf8eeed0797d9b1c489e7516c41f66017941462c0711754efff6cdfc" },
+            "gis_translines": { "count": 0, "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945" }
+        },
+        "after_fingerprints": {
+            "assets": { "count": 30, "sha256": "c557245959e8f85e8102d042acb8d061382caca31b18961b9c16cd51c64c372e" },
+            "sections": { "count": 508, "sha256": "dee70c47902fd8df91caef0aecbb41d8ec892113dd9d866201b035dc2fe2485f" },
+            "penyulang": { "count": 134, "sha256": "b56303b0a10b68dffa9bea91cf5cdabe523707ec3f7deba72bae291185deb469" },
+            "temuan": { "count": 441, "sha256": "ab3e75fcbf8eeed0797d9b1c489e7516c41f66017941462c0711754efff6cdfc" },
+            "gis_translines": { "count": 0, "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945" }
+        },
+        "deltas": {
+            "assets": 0,
+            "sections": 0,
+            "penyulang": 0,
+            "temuan": 0,
+            "gis_translines": 0
+        },
+        "hash_identical": true
+    },
+    "production_verified": false,
+    "d4a_ui_status": "PASS / VERIFIED",
+    "d4a_production_verification": "PENDING",
+    "d4b_status": "LOCKED"
+}

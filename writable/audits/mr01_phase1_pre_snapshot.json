@@ -1,0 +1,201 @@
+{
+    "snapshot_id": "MR01_PHASE1_PRE_SNAPSHOT",
+    "change_component": "MR-01 (Material Master & Construction Mapping Forensic Discovery)",
+    "phase": "PHASE_1_PRE_IMPLEMENTATION_FORENSIC_SNAPSHOT",
+    "captured_at": "2026-09-02 13:36:00 WIB",
+    "captured_at_utc": "2026-09-02T06:36:00Z",
+    "execution_mode": "OCTA_TIER_READ_ONLY_FORENSIC_DISCOVERY",
+    "git_lineage": {
+        "parent_commit": "8a1c2ec747f966ea269a6c584d2958e6ca203f5b",
+        "parent_commit_message": "fix(temuan): harden stale tanggal temuan form state",
+        "cr06_baseline": "SEALED",
+        "git_status": "CLEAN (Zero modified production files)"
+    },
+    "test_baseline": {
+        "framework": "PHPUnit 10.5.64",
+        "php_runtime": "PHP 8.2.12",
+        "total_tests": 198,
+        "total_assertions": 825,
+        "status": "100% GREEN (PASS)"
+    },
+    "source_workbook": {
+        "file_name": "KONSTRUKSI (1).xlsx",
+        "file_path": "C:/Users/INSPEKSIKOTA/Downloads/KONSTRUKSI (1).xlsx",
+        "file_size_bytes": 38136,
+        "last_modified": "2026-09-02 13:14:13",
+        "total_sheets": 9,
+        "sheets": [
+            {
+                "sheet_name": "IDE GILA",
+                "total_rows": 14,
+                "classification": "G. FUTURE REQUIREMENT / CONCEPT",
+                "authoritative": false
+            },
+            {
+                "sheet_name": "MATERIAL JTM",
+                "total_rows": 11,
+                "classification": "A. MASTER MATERIAL",
+                "total_items": 10,
+                "authoritative": true
+            },
+            {
+                "sheet_name": "KONDUKTOR ACCESORIS",
+                "total_rows": 18,
+                "classification": "B. MATERIAL CATEGORY / ACCESSORY",
+                "total_items": 16,
+                "authoritative": true
+            },
+            {
+                "sheet_name": "KONSTRUKSI JTM",
+                "total_rows": 467,
+                "classification": "D. CONSTRUCTION-MATERIAL MAPPING",
+                "total_construction_groups": 17,
+                "total_bom_lines": 448,
+                "authoritative": true
+            },
+            {
+                "sheet_name": "KONSTRUKSI MVTIC",
+                "total_rows": 209,
+                "classification": "D. CONSTRUCTION-MATERIAL MAPPING",
+                "total_construction_groups": 10,
+                "total_bom_lines": 143,
+                "authoritative": true
+            },
+            {
+                "sheet_name": "KONSTRUKSI GTT",
+                "total_rows": 130,
+                "classification": "D. CONSTRUCTION-MATERIAL MAPPING",
+                "total_construction_groups": 2,
+                "total_bom_lines": 67,
+                "authoritative": true
+            },
+            {
+                "sheet_name": "KONSTRUKSI GARDU KUBIKEL",
+                "total_rows": 20,
+                "classification": "H. DRAFT / NOT AUTHORITATIVE",
+                "total_items": 18,
+                "authoritative": false,
+                "governance_note": "Explicitly marked 'BELUM FIX' by engineering"
+            },
+            {
+                "sheet_name": "JENIS PEKERJAAN",
+                "total_rows": 28,
+                "classification": "E. INSPECTION WORK MASTER",
+                "total_items": 12,
+                "authoritative": true,
+                "governance_note": "Inspection and work scope taxonomy, not material master"
+            },
+            {
+                "sheet_name": "PEKERJAAN GTT",
+                "total_rows": 19,
+                "classification": "F. INSPECTION MEASUREMENT STRUCTURE",
+                "total_items": 15,
+                "authoritative": true,
+                "governance_note": "GTT load & fuse measurement schema, not material master"
+            }
+        ]
+    },
+    "material_inventory_metrics": {
+        "master_materials_in_sheet2_and_3": 26,
+        "total_construction_bom_lines": 658,
+        "unique_raw_material_names_in_boms": 157,
+        "matching_statistics": {
+            "exact_matches": 6,
+            "normalized_exact_matches": 0,
+            "possible_matches": 6,
+            "review_required_alias_matches": 0,
+            "unmatched_construction_hardware": 145
+        }
+    },
+    "existing_schema_discovery": {
+        "master_materials": {
+            "migration": "2026-08-27-000001_CreateMasterMaterialsAndAliasesTable.php",
+            "model": "App\\Models\\MasterMaterialModel",
+            "fields": [
+                "id", "material_code", "nama_material", "nama_lapangan", "satuan",
+                "material_domain", "material_category", "specification",
+                "source_workbook", "source_sheet", "source_row", "status",
+                "created_at", "updated_at", "deleted_at"
+            ],
+            "supports_canonical_id": true,
+            "supports_code": true,
+            "supports_unit": true
+        },
+        "material_aliases": {
+            "migration": "2026-08-27-000001_CreateMasterMaterialsAndAliasesTable.php",
+            "fields": [
+                "id", "material_id", "alias_name", "normalized_alias",
+                "alias_type", "source", "created_at"
+            ]
+        },
+        "construction_types": {
+            "migration": "2026-08-07-000005 & 2026-08-27-000002",
+            "model": "App\\Models\\ConstructionTypeModel",
+            "fields": [
+                "id", "code", "name", "construction_code", "construction_name",
+                "construction_family", "network_type", "asset_category",
+                "asset_domain", "approval_status", "source_sheet", "source_row",
+                "created_at", "updated_at"
+            ]
+        },
+        "construction_bom_items": {
+            "migration": "2026-08-27-000002_EnhanceConstructionTypesAndCreateBomTable.php",
+            "model": "App\\Models\\ConstructionBomItemModel",
+            "fields": [
+                "id", "construction_type_id", "material_id", "raw_material_name",
+                "material_alias", "quantity", "quantity_status", "unit",
+                "mandatory", "component_category", "source_sheet", "source_row",
+                "mapping_status", "created_at", "updated_at"
+            ]
+        },
+        "assets_construction_relation": {
+            "model": "App\\Models\\AssetModel",
+            "has_construction_type_id_column": true,
+            "has_asset_type_id_column": true,
+            "resolution_service": "App\\Services\\ConstructionAssetIntelligenceService",
+            "resolution_method": "resolveAssetConstructionType (Direct FK or Tag Inference)"
+        },
+        "temuan_current_state": {
+            "model": "App\\Models\\TemuanModel",
+            "has_asset_id_column": true,
+            "is_asset_id_in_allowed_fields": false,
+            "is_asset_id_in_create_view": false,
+            "current_material_input_mode": "FREE_TEXT_REPEATER",
+            "material_database_storage": "RAW_TEXT_IN_temuan.material (No FK, No quantity column, No unit column)"
+        }
+    },
+    "group_h_governance_baseline": {
+        "status": "PRISTINE_ZERO_BASELINE",
+        "registries": {
+            "package_registry": {
+                "path": "writable/audits/mr01_material_request_package_registry.json",
+                "active_packages": 0
+            },
+            "technical_review_registry": {
+                "path": "writable/audits/mr01_technical_review_registry.json",
+                "total_reviews": 0
+            },
+            "management_approval_registry": {
+                "path": "writable/audits/mr01_management_approval_registry.json",
+                "total_approvals": 0
+            },
+            "warehouse_voucher_registry": {
+                "path": "writable/audits/mr01_warehouse_voucher_registry.json",
+                "total_vouchers": 0
+            }
+        },
+        "six_strict_negatives_verified": {
+            "zero_price_or_rupiah": true,
+            "no_financial_layer": true,
+            "no_procurement_or_vendor": true,
+            "no_stock_deduction": true,
+            "no_autonomous_approval": true,
+            "immutability_cr06": true
+        }
+    },
+    "safety_audit": {
+        "production_database_mutations": 0,
+        "production_schema_mutations": 0,
+        "modified_production_files": 0
+    }
+}

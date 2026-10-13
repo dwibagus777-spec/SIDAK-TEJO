@@ -1,0 +1,80 @@
+{
+    "audit_run_at": "2026-09-04T12:11:44+07:00",
+    "gate": "TL-01 Sub-Gate D4A: Exception Review Workbench",
+    "verdict": "PASS_SEALED",
+    "production_write": "LOCKED",
+    "operational_writes_detected": 0,
+    "violations": [],
+    "baseline_reconciliation": {
+        "gis_translines": {
+            "before_count": 42,
+            "after_count": 42,
+            "delta": 0,
+            "before_hash": "b7435af3fece8bc70713f80a6c8af0051070bb95ba60396be286c10de9d647e3",
+            "after_hash": "b7435af3fece8bc70713f80a6c8af0051070bb95ba60396be286c10de9d647e3",
+            "identical": true
+        },
+        "gis_transline_proposals": {
+            "before_count": 5,
+            "after_count": 5,
+            "delta": 0,
+            "before_hash": "5617c720d800adbe677806da9b7a78a82773450b09841c2042d8528126948a57",
+            "after_hash": "5617c720d800adbe677806da9b7a78a82773450b09841c2042d8528126948a57",
+            "identical": true
+        },
+        "assets": {
+            "before_count": 2660,
+            "after_count": 2660,
+            "delta": 0,
+            "before_hash": "0af43141c9b4dbc7b79fc1eb5ec40217971d2330b78bda7baa89cd4d058ec32c",
+            "after_hash": "0af43141c9b4dbc7b79fc1eb5ec40217971d2330b78bda7baa89cd4d058ec32c",
+            "identical": true
+        },
+        "sections": {
+            "before_count": 134,
+            "after_count": 134,
+            "delta": 0,
+            "before_hash": "02dc708e979386e4b2d0c3f6ca0f70b44e612b06a45dda47fc3c6c75cd2d99e0",
+            "after_hash": "02dc708e979386e4b2d0c3f6ca0f70b44e612b06a45dda47fc3c6c75cd2d99e0",
+            "identical": true
+        },
+        "penyulang": {
+            "before_count": 28,
+            "after_count": 28,
+            "delta": 0,
+            "before_hash": "638b30375be3dd55eeedce9bfcb01fb0af5befe2de9fcae744857fc705b5f59c",
+            "after_hash": "638b30375be3dd55eeedce9bfcb01fb0af5befe2de9fcae744857fc705b5f59c",
+            "identical": true
+        },
+        "temuan": {
+            "before_count": 623,
+            "after_count": 623,
+            "delta": 0,
+            "before_hash": "daa6dfc2d8ffa368abb409247f56244cd740aab35cbadca132046f4b66f0df97",
+            "after_hash": "daa6dfc2d8ffa368abb409247f56244cd740aab35cbadca132046f4b66f0df97",
+            "identical": true
+        },
+        "temuan_materials": {
+            "before_count": 1842,
+            "after_count": 1842,
+            "delta": 0,
+            "before_hash": "3615d1ff6f97cd53fd362e8f6dc911c38a3da4cd46a7637083faba43a6d68bd5",
+            "after_hash": "3615d1ff6f97cd53fd362e8f6dc911c38a3da4cd46a7637083faba43a6d68bd5",
+            "identical": true
+        }
+    },
+    "policy_locks_verified": {
+        "can_confirm": false,
+        "can_rollback": false,
+        "can_reject": false,
+        "can_mutate_asset": false
+    },
+    "subsystem_metrics": {
+        "queue_total": 5,
+        "ready": 3,
+        "human_review": 1,
+        "blocked": 1,
+        "active": 0,
+        "governance_anomaly": 0
+    }
+}

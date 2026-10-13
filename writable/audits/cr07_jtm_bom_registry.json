@@ -1,0 +1,110 @@
+{
+    "registry_id": "CR07_JTM_BOM_REGISTRY_v1.0",
+    "created_at": "2026-08-24 19:37:09 WIB",
+    "created_at_utc": "2026-08-24T12:37:09Z",
+    "total_boms": 3,
+    "boms": {
+        "TM-1": {
+            "construction_code": "TM-1",
+            "bom_version": "BOM-TM1-v1.0",
+            "materials": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-12-200",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tumpu utama 12m 200daN"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves UNP L=2000mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "standard_quantity": 3,
+                    "unit": "PCS",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Isolator tumpu 3 fasa (R, S, T)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-70",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Konduktor AAAC 70 mm\u00b2 (Span standar 50m x 3 fasa)"
+                },
+                {
+                    "canonical_material_code": "MAT-COND-AAAC-150",
+                    "standard_quantity": 150,
+                    "unit": "METER",
+                    "requirement_type": "ALTERNATIVE_SPEC",
+                    "notes": "Opsi Konduktor AAAC 150 mm\u00b2"
+                }
+            ]
+        },
+        "TM-5": {
+            "construction_code": "TM-5",
+            "bom_version": "BOM-TM5-v1.0",
+            "materials": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 1,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Tiang tarik ganda 13m 350daN + Grounding"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves ganda UNP L=2500mm"
+                },
+                {
+                    "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+                    "standard_quantity": 6,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Strain insulator ganda (3 fasa incoming + 3 fasa outgoing)"
+                }
+            ]
+        },
+        "TM-8": {
+            "construction_code": "TM-8",
+            "bom_version": "BOM-TM8-v1.0",
+            "materials": [
+                {
+                    "canonical_material_code": "MAT-POLE-BETON-13-350E",
+                    "standard_quantity": 2,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "2 Tiang portal 13m 350daN"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Fuse Cutout 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+                    "standard_quantity": 3,
+                    "unit": "SET",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Lightning Arrester 24kV 3 fasa"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2500",
+                    "standard_quantity": 4,
+                    "unit": "BATANG",
+                    "requirement_type": "MANDATORY",
+                    "notes": "Traves dudukan FCO/LA dan dudukan transformator"
+                }
+            ]
+        }
+    }
+}

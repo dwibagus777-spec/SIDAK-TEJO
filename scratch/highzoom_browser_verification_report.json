@@ -1,0 +1,149 @@
+{
+  "testRunId": "GIS-HIGHZOOM-1789199342382",
+  "feeder": {
+    "id": 15,
+    "name": "BANJAR KEMANTREN"
+  },
+  "polePairFocus": {
+    "translineId": "1",
+    "lengthMeters": 44.51,
+    "assetA": {
+      "id": 3322,
+      "code": "AST-KOTA-BNJRKMNTRN-JTM-161",
+      "name": "BANJARKEMANTRAN_31",
+      "lat": -7.416645968,
+      "lng": 112.724704
+    },
+    "assetB": {
+      "id": 3302,
+      "code": "AST-KOTA-BNJRKMNTRN-JTM-141",
+      "name": "BANJARKEMANTRAN_32",
+      "lat": -7.416558964,
+      "lng": 112.72431
+    },
+    "midpoint": [
+      -7.4166024660000005,
+      112.724507
+    ]
+  },
+  "runtimeConfig": {
+    "mapMaxZoom": 22,
+    "mapMinZoom": 0,
+    "mapCurrentZoom": 15,
+    "tileLayer": {
+      "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "maxZoom": 22,
+      "maxNativeZoom": 19,
+      "minZoom": 0
+    },
+    "hasCanvasRenderer": true,
+    "markerClusterCutoff": 16
+  },
+  "zoomResults": [
+    {
+      "targetZoom": 18,
+      "actualZoom": 18,
+      "translineCount": 0,
+      "assetCount": 0,
+      "domMarkersCount": 73,
+      "pixelDistanceBetweenPoles": 76,
+      "canvasVisible": true,
+      "apiRequestsCount": 0,
+      "apiRequestsList": [],
+      "hydrationRequestsCount": 0,
+      "tileRequestsCount": 0,
+      "tileRequestsSample": [],
+      "consoleErrorsCount": 0,
+      "consoleWarningsCount": 0,
+      "topologyRecalculationCount": 0,
+      "screenshotFile": "gis02_highzoom_z18.png"
+    },
+    {
+      "targetZoom": 19,
+      "actualZoom": 19,
+      "translineCount": 0,
+      "assetCount": 0,
+      "domMarkersCount": 40,
+      "pixelDistanceBetweenPoles": 151,
+      "canvasVisible": true,
+      "apiRequestsCount": 0,
+      "apiRequestsList": [],
+      "hydrationRequestsCount": 0,
+      "tileRequestsCount": 18,
+      "tileRequestsSample": [
+        "https://a.tile.openstreetmap.org/19/426310/272975.png",
+        "https://b.tile.openstreetmap.org/19/426311/272975.png",
+        "https://c.tile.openstreetmap.org/19/426310/272974.png",
+        "https://a.tile.openstreetmap.org/19/426311/272974.png",
+        "https://b.tile.openstreetmap.org/19/426310/272976.png"
+      ],
+      "consoleErrorsCount": 0,
+      "consoleWarningsCount": 0,
+      "topologyRecalculationCount": 0,
+      "screenshotFile": "gis02_highzoom_z19.png"
+    },
+    {
+      "targetZoom": 20,
+      "actualZoom": 20,
+      "translineCount": 0,
+      "assetCount": 0,
+      "domMarkersCount": 23,
+      "pixelDistanceBetweenPoles": 300,
+      "canvasVisible": true,
+      "apiRequestsCount": 0,
+      "apiRequestsList": [],
+      "hydrationRequestsCount": 0,
+      "tileRequestsCount": 12,
+      "tileRequestsSample": [
+        "https://a.tile.openstreetmap.org/19/426310/272975.png",
+        "https://b.tile.openstreetmap.org/19/426311/272975.png",
+        "https://c.tile.openstreetmap.org/19/426310/272974.png",
+        "https://a.tile.openstreetmap.org/19/426311/272974.png",
+        "https://b.tile.openstreetmap.org/19/426310/272976.png"
+      ],
+      "consoleErrorsCount": 0,
+      "consoleWarningsCount": 0,
+      "topologyRecalculationCount": 0,
+      "screenshotFile": "gis02_highzoom_z20.png"
+    },
+    {
+      "targetZoom": 21,
+      "actualZoom": 21,
+      "translineCount": 0,
+      "assetCount": 0,
+      "domMarkersCount": 9,
+      "pixelDistanceBetweenPoles": 602,
+      "canvasVisible": true,
+      "apiRequestsCount": 0,
+      "apiRequestsList": [],
+      "hydrationRequestsCount": 0,
+      "tileRequestsCount": 0,
+      "tileRequestsSample": [],
+      "consoleErrorsCount": 0,
+      "consoleWarningsCount": 0,
+      "topologyRecalculationCount": 0,
+      "screenshotFile": "gis02_highzoom_z21.png"
+    },
+    {
+      "targetZoom": 22,
+      "actualZoom": 22,
+      "translineCount": 0,
+      "assetCount": 0,
+      "domMarkersCount": 5,
+      "pixelDistanceBetweenPoles": 1204,
+      "canvasVisible": true,
+      "apiRequestsCount": 0,
+      "apiRequestsList": [],
+      "hydrationRequestsCount": 0,
+      "tileRequestsCount": 0,
+      "tileRequestsSample": [],
+      "consoleErrorsCount": 0,
+      "consoleWarningsCount": 0,
+      "topologyRecalculationCount": 0,
+      "screenshotFile": "gis02_highzoom_z22.png"
+    }
+  ],
+  "totalConsoleErrors": 0,
+  "totalConsoleWarnings": 0,
+  "finalVerdict": "PASS"
+}

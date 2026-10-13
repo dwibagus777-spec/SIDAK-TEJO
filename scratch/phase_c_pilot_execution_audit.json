@@ -1,0 +1,201 @@
+{
+    "timestamp": "2026-09-12 16:09:11",
+    "phase": "TL-MF-01 Phase C Pilot",
+    "target_feeder": 131,
+    "target_feeder_name": "BY PASS (ULP Krian)",
+    "execution_result": {
+        "status": "success",
+        "action": "BATCH_COMMITTED",
+        "run_id": "TL04-RUN-20260912160858-54ce52",
+        "created_count": 8,
+        "created_translines": [
+            {
+                "id": 219,
+                "transline_code": "TL-131-6378-6379",
+                "natural_key": "TL-NAT:131:6378-6379",
+                "source_asset_id": 6378,
+                "target_asset_id": 6379,
+                "distance_meters": 27.82,
+                "total_score": 95,
+                "network_score": 30,
+                "promoted": false,
+                "candidate_type": "ISOLATED_PAIR",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912160858-54ce52|PROP:1"
+            },
+            {
+                "id": 220,
+                "transline_code": "TL-131-6387-6388",
+                "natural_key": "TL-NAT:131:6387-6388",
+                "source_asset_id": 6387,
+                "target_asset_id": 6388,
+                "distance_meters": 48.97,
+                "total_score": 93,
+                "network_score": 30,
+                "promoted": false,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912160858-54ce52|PROP:2"
+            },
+            {
+                "id": 221,
+                "transline_code": "TL-131-6140-6142",
+                "natural_key": "TL-NAT:131:6140-6142",
+                "source_asset_id": 6140,
+                "target_asset_id": 6142,
+                "distance_meters": 49.83,
+                "total_score": 90,
+                "network_score": 20,
+                "promoted": false,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912160858-54ce52|PROP:3"
+            },
+            {
+                "id": 222,
+                "transline_code": "TL-131-6173-6175",
+                "natural_key": "TL-NAT:131:6173-6175",
+                "source_asset_id": 6173,
+                "target_asset_id": 6175,
+                "distance_meters": 36.71,
+                "total_score": 90,
+                "network_score": 20,
+                "promoted": false,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912160858-54ce52|PROP:4"
+            },
+            {
+                "id": 223,
+                "transline_code": "TL-131-6384-6386",
+                "natural_key": "TL-NAT:131:6384-6386",
+                "source_asset_id": 6384,
+                "target_asset_id": 6386,
+                "distance_meters": 40.81,
+                "total_score": 90,
+                "network_score": 20,
+                "promoted": false,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912160858-54ce52|PROP:5"
+            },
+            {
+                "id": 224,
+                "transline_code": "TL-131-6126-6221",
+                "natural_key": "TL-NAT:131:6126-6221",
+                "source_asset_id": 6126,
+                "target_asset_id": 6221,
+                "distance_meters": 23.96,
+                "total_score": 88,
+                "network_score": 20,
+                "promoted": true,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912160858-54ce52|PROP:6"
+            },
+            {
+                "id": 225,
+                "transline_code": "TL-131-6129-6414",
+                "natural_key": "TL-NAT:131:6129-6414",
+                "source_asset_id": 6129,
+                "target_asset_id": 6414,
+                "distance_meters": 24.38,
+                "total_score": 88,
+                "network_score": 20,
+                "promoted": true,
+                "candidate_type": "ISOLATED_PAIR",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912160858-54ce52|PROP:7"
+            },
+            {
+                "id": 226,
+                "transline_code": "TL-131-6132-6146",
+                "natural_key": "TL-NAT:131:6132-6146",
+                "source_asset_id": 6132,
+                "target_asset_id": 6146,
+                "distance_meters": 19.55,
+                "total_score": 88,
+                "network_score": 20,
+                "promoted": true,
+                "candidate_type": "ISOLATED_PAIR",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912160858-54ce52|PROP:8"
+            }
+        ],
+        "created_ids": [
+            219,
+            220,
+            221,
+            222,
+            223,
+            224,
+            225,
+            226
+        ],
+        "zero_write_invariants_pass": true,
+        "total_translines_now": 8
+    },
+    "pre_fingerprints": {
+        "assets": {
+            "count": 5549,
+            "sha256": "d774be4f9d338fcdcdac5f6eac9f4a06f74300e1a293e10a8968c133df799ee9"
+        },
+        "gis_translines": {
+            "count": 208,
+            "sha256": "edc2e9f138f0fb035dd6507baae21ee755bde7aba5bcf9eae741f72e297e3833"
+        },
+        "gis_transline_proposals": {
+            "count": 56,
+            "sha256": "74974b866f483ea7fc624c5ffe5f506e85a7a66da4a1e9eb64ee401c8a6d8ca5"
+        },
+        "temuan": {
+            "count": 638,
+            "sha256": "48ae4d223e842a85ae509eeee49203ee2240cb4517b66a0e11bd3db05bb94a3a"
+        },
+        "temuan_materials": {
+            "count": 0,
+            "sha256": "55f43e2fefa3f34c5c82129161873375891626eb56f668b9da5a6414a3585aae"
+        },
+        "sections": {
+            "count": 510,
+            "sha256": "9e36669b061f9879a82825e0cb288f5d24cbdafbabdd85cd7075feceef4b621e"
+        },
+        "penyulang": {
+            "count": 134,
+            "sha256": "cb3ae4e4a8b891cf789fb4505aad2e4d8ae22bf94c9eaacec9fe98777628bb67"
+        },
+        "ulps": {
+            "count": 3,
+            "sha256": "1c3a2ccc852e80040f88b0a8df52ba4dabd1b36cd56e0ed45b5c9cf6edd3a531"
+        }
+    },
+    "post_fingerprints": {
+        "assets": {
+            "count": 5549,
+            "sha256": "d774be4f9d338fcdcdac5f6eac9f4a06f74300e1a293e10a8968c133df799ee9"
+        },
+        "gis_translines": {
+            "count": 216,
+            "sha256": "b5fe7d8d83533ab6056584b112b2087a96b157a4d2347aa0e8c55c3d82b4e319"
+        },
+        "gis_transline_proposals": {
+            "count": 56,
+            "sha256": "74974b866f483ea7fc624c5ffe5f506e85a7a66da4a1e9eb64ee401c8a6d8ca5"
+        },
+        "temuan": {
+            "count": 638,
+            "sha256": "48ae4d223e842a85ae509eeee49203ee2240cb4517b66a0e11bd3db05bb94a3a"
+        },
+        "temuan_materials": {
+            "count": 0,
+            "sha256": "55f43e2fefa3f34c5c82129161873375891626eb56f668b9da5a6414a3585aae"
+        },
+        "sections": {
+            "count": 510,
+            "sha256": "9e36669b061f9879a82825e0cb288f5d24cbdafbabdd85cd7075feceef4b621e"
+        },
+        "penyulang": {
+            "count": 134,
+            "sha256": "cb3ae4e4a8b891cf789fb4505aad2e4d8ae22bf94c9eaacec9fe98777628bb67"
+        },
+        "ulps": {
+            "count": 3,
+            "sha256": "1c3a2ccc852e80040f88b0a8df52ba4dabd1b36cd56e0ed45b5c9cf6edd3a531"
+        }
+    },
+    "all_protected_intact": true,
+    "feeder_isolation_verified": true,
+    "global_active_translines": 207
+}

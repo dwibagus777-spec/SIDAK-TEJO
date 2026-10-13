@@ -1,0 +1,231 @@
+{
+    "timestamp": "2026-09-12T17:14:42+07:00",
+    "phase": "TL-MF-02 PHASE D1 CONTROLLED LIVE PILOT",
+    "feeder": {
+        "penyulang_id": 56,
+        "kode_penyulang": "5130-021",
+        "nama_penyulang": "BANJARAN",
+        "ulp_id": 2,
+        "nama_ulp": "ULP Krian"
+    },
+    "run_id": "TL04-RUN-20260912171440-86c557",
+    "execution_result": {
+        "status": "success",
+        "action": "BATCH_COMMITTED",
+        "run_id": "TL04-RUN-20260912171440-86c557",
+        "created_count": 9,
+        "created_translines": [
+            {
+                "id": 227,
+                "transline_code": "TL-56-5512-5513",
+                "natural_key": "TL-NAT:56:5512-5513",
+                "source_asset_id": 5512,
+                "target_asset_id": 5513,
+                "distance_meters": 52.59,
+                "total_score": 93,
+                "network_score": 30,
+                "promoted": false,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:1"
+            },
+            {
+                "id": 228,
+                "transline_code": "TL-56-5513-5514",
+                "natural_key": "TL-NAT:56:5513-5514",
+                "source_asset_id": 5513,
+                "target_asset_id": 5514,
+                "distance_meters": 37.07,
+                "total_score": 93,
+                "network_score": 30,
+                "promoted": false,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:2"
+            },
+            {
+                "id": 229,
+                "transline_code": "TL-56-5903-5904",
+                "natural_key": "TL-NAT:56:5903-5904",
+                "source_asset_id": 5903,
+                "target_asset_id": 5904,
+                "distance_meters": 52.98,
+                "total_score": 93,
+                "network_score": 30,
+                "promoted": false,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:3"
+            },
+            {
+                "id": 230,
+                "transline_code": "TL-56-5611-5613",
+                "natural_key": "TL-NAT:56:5611-5613",
+                "source_asset_id": 5611,
+                "target_asset_id": 5613,
+                "distance_meters": 13.41,
+                "total_score": 92,
+                "network_score": 20,
+                "promoted": false,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:4"
+            },
+            {
+                "id": 231,
+                "transline_code": "TL-56-5541-5543",
+                "natural_key": "TL-NAT:56:5541-5543",
+                "source_asset_id": 5541,
+                "target_asset_id": 5543,
+                "distance_meters": 54.32,
+                "total_score": 90,
+                "network_score": 20,
+                "promoted": false,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:5"
+            },
+            {
+                "id": 232,
+                "transline_code": "TL-56-5509-5744",
+                "natural_key": "TL-NAT:56:5509-5744",
+                "source_asset_id": 5509,
+                "target_asset_id": 5744,
+                "distance_meters": 16.09,
+                "total_score": 88,
+                "network_score": 20,
+                "promoted": true,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:6"
+            },
+            {
+                "id": 233,
+                "transline_code": "TL-56-5511-5516",
+                "natural_key": "TL-NAT:56:5511-5516",
+                "source_asset_id": 5511,
+                "target_asset_id": 5516,
+                "distance_meters": 27.96,
+                "total_score": 88,
+                "network_score": 20,
+                "promoted": true,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:7"
+            },
+            {
+                "id": 234,
+                "transline_code": "TL-56-5528-5717",
+                "natural_key": "TL-NAT:56:5528-5717",
+                "source_asset_id": 5528,
+                "target_asset_id": 5717,
+                "distance_meters": 24.27,
+                "total_score": 88,
+                "network_score": 20,
+                "promoted": true,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:8"
+            },
+            {
+                "id": 235,
+                "transline_code": "TL-56-5529-5610",
+                "natural_key": "TL-NAT:56:5529-5610",
+                "source_asset_id": 5529,
+                "target_asset_id": 5610,
+                "distance_meters": 21.29,
+                "total_score": 88,
+                "network_score": 20,
+                "promoted": true,
+                "candidate_type": "ISOLATED_CHAIN_SEGMENT",
+                "created_by": "ENGINEER_TRANSLINE_AI|ENGINE=TL04|RUN:TL04-RUN-20260912171440-86c557|PROP:9"
+            }
+        ],
+        "created_ids": [
+            227,
+            228,
+            229,
+            230,
+            231,
+            232,
+            233,
+            234,
+            235
+        ],
+        "zero_write_invariants_pass": true,
+        "total_translines_now": 9
+    },
+    "held_keys": [
+        {
+            "natural_key": "TL-NAT:56:5514-5517",
+            "source": "AST-KRN-BANJARAN-JTM-009",
+            "target": "AST-KRN-BANJARAN-JTM-006",
+            "distance_m": 6.13,
+            "seq_delta": 3,
+            "reason": "SPAN_5_TO_10M_DELTA_EXCEEDS_2 (requires seq_delta <= 2, actual delta = 3)"
+        }
+    ],
+    "pre_fingerprints": {
+        "assets": {
+            "count": 5549,
+            "sha256": "d774be4f9d338fcdcdac5f6eac9f4a06f74300e1a293e10a8968c133df799ee9"
+        },
+        "gis_translines": {
+            "count": 216,
+            "sha256": "b5fe7d8d83533ab6056584b112b2087a96b157a4d2347aa0e8c55c3d82b4e319"
+        },
+        "gis_transline_proposals": {
+            "count": 56,
+            "sha256": "74974b866f483ea7fc624c5ffe5f506e85a7a66da4a1e9eb64ee401c8a6d8ca5"
+        },
+        "temuan": {
+            "count": 638,
+            "sha256": "48ae4d223e842a85ae509eeee49203ee2240cb4517b66a0e11bd3db05bb94a3a"
+        },
+        "temuan_materials": {
+            "count": 0,
+            "sha256": "55f43e2fefa3f34c5c82129161873375891626eb56f668b9da5a6414a3585aae"
+        },
+        "sections": {
+            "count": 510,
+            "sha256": "9e36669b061f9879a82825e0cb288f5d24cbdafbabdd85cd7075feceef4b621e"
+        },
+        "penyulang": {
+            "count": 134,
+            "sha256": "cb3ae4e4a8b891cf789fb4505aad2e4d8ae22bf94c9eaacec9fe98777628bb67"
+        },
+        "ulps": {
+            "count": 3,
+            "sha256": "1c3a2ccc852e80040f88b0a8df52ba4dabd1b36cd56e0ed45b5c9cf6edd3a531"
+        }
+    },
+    "post_fingerprints": {
+        "assets": {
+            "count": 5549,
+            "sha256": "d774be4f9d338fcdcdac5f6eac9f4a06f74300e1a293e10a8968c133df799ee9"
+        },
+        "gis_translines": {
+            "count": 225,
+            "sha256": "d6f4627aa24c9e0215572b0c698166ea851f72bd30d5992530f2781ddc66b530"
+        },
+        "gis_transline_proposals": {
+            "count": 56,
+            "sha256": "74974b866f483ea7fc624c5ffe5f506e85a7a66da4a1e9eb64ee401c8a6d8ca5"
+        },
+        "temuan": {
+            "count": 638,
+            "sha256": "48ae4d223e842a85ae509eeee49203ee2240cb4517b66a0e11bd3db05bb94a3a"
+        },
+        "temuan_materials": {
+            "count": 0,
+            "sha256": "55f43e2fefa3f34c5c82129161873375891626eb56f668b9da5a6414a3585aae"
+        },
+        "sections": {
+            "count": 510,
+            "sha256": "9e36669b061f9879a82825e0cb288f5d24cbdafbabdd85cd7075feceef4b621e"
+        },
+        "penyulang": {
+            "count": 134,
+            "sha256": "cb3ae4e4a8b891cf789fb4505aad2e4d8ae22bf94c9eaacec9fe98777628bb67"
+        },
+        "ulps": {
+            "count": 3,
+            "sha256": "1c3a2ccc852e80040f88b0a8df52ba4dabd1b36cd56e0ed45b5c9cf6edd3a531"
+        }
+    },
+    "table_integrity_pass": true,
+    "feeder_isolation_pass": true,
+    "stop_gate_enforced": true
+}

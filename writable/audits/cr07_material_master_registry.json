@@ -1,0 +1,361 @@
+{
+    "registry_id": "CR07_MATERIAL_MASTER_REGISTRY_v1.0",
+    "created_at": "2026-08-24 19:37:09 WIB",
+    "created_at_utc": "2026-08-24T12:37:09Z",
+    "total_items": 22,
+    "materials": {
+        "MAT-ISO-PIN-20KV-12.5KN": {
+            "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+            "official_name": "Pin Post Insulator 20 kV; 12,5 kN; Porcelain",
+            "category": "INSULATOR",
+            "subcategory": "PIN_POST",
+            "technical_spec": "20 kV, Creepage 600mm, Cantilever 12.5 kN, Porcelain Glazed Brown",
+            "unit": "PCS",
+            "field_aliases": [
+                "PIN",
+                "PIN POST",
+                "PIN POST KERAMIK",
+                "ISOLATOR TUMPU",
+                "ISOLATOR PIN"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.018-1:2014 & CR-07 Gold Baseline"
+        },
+        "MAT-PROT-LA-24KV-10KA": {
+            "canonical_material_code": "MAT-PROT-LA-24KV-10KA",
+            "official_name": "Polymer Lightning Arrester 24 kV; 10 kA",
+            "category": "PROTECTION",
+            "subcategory": "LIGHTNING_ARRESTER",
+            "technical_spec": "Nominal 24 kV, Discharge Current 10 kA Class 1, Polymer Housing",
+            "unit": "SET",
+            "field_aliases": [
+                "LA",
+                "ARRESTER",
+                "LIGHTNING ARRESTER",
+                "PENANGKAL PETIR JTM"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.023:2012 & CR-07 Gold Baseline"
+        },
+        "MAT-PROT-FCO-24KV-100A": {
+            "canonical_material_code": "MAT-PROT-FCO-24KV-100A",
+            "official_name": "Polymer Cut Out Switch 24 kV 100A + Fuse Link",
+            "category": "PROTECTION",
+            "subcategory": "FUSE_CUTOUT",
+            "technical_spec": "24 kV, 100A Continuous, BIL 125/150 kV, Polymer Insulator Body",
+            "unit": "SET",
+            "field_aliases": [
+                "FCO",
+                "CUT OUT",
+                "FUSE CUT OUT",
+                "SEKRING JTM",
+                "SAKLAR FUSE"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.027:2013 & CR-07 Gold Baseline"
+        },
+        "MAT-ISO-HANG-20KV-SIR": {
+            "canonical_material_code": "MAT-ISO-HANG-20KV-SIR",
+            "official_name": "Strain Insulator 20 kV Lengkap (SIR); Porcelain",
+            "category": "INSULATOR",
+            "subcategory": "STRAIN_SUSPENSION",
+            "technical_spec": "20 kV Strain Set (Suspension Insulator + Hardware Fitting), Porcelain",
+            "unit": "SET",
+            "field_aliases": [
+                "HANG",
+                "STRAIN INSULATOR",
+                "ISOLATOR TARIK",
+                "ISOLATOR HANG",
+                "SUSPENSION SET"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.018-2:2014 & CR-07 Gold Baseline"
+        },
+        "MAT-POLE-BETON-9-200": {
+            "canonical_material_code": "MAT-POLE-BETON-9-200",
+            "official_name": "Tiang Beton 9 Meter / 200 daN",
+            "category": "STRUCTURE",
+            "subcategory": "CONCRETE_POLE",
+            "technical_spec": "Panjang 9 Meter, Kekuatan Patah 200 daN, Prestressed Concrete",
+            "unit": "BATANG",
+            "field_aliases": [
+                "TIANG 9M",
+                "TIANG BETON 9-200",
+                "TIANG 9 METER",
+                "POLE 9M"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.019-1:2012 & CR-07 Gold Baseline"
+        },
+        "MAT-POLE-BETON-9-200E": {
+            "canonical_material_code": "MAT-POLE-BETON-9-200E",
+            "official_name": "Tiang Beton 9 Meter / 200 daN + Earth Grounding",
+            "category": "STRUCTURE",
+            "subcategory": "CONCRETE_POLE",
+            "technical_spec": "Panjang 9 Meter, 200 daN, Dilengkapi Kawat Pentanahan Internal",
+            "unit": "BATANG",
+            "field_aliases": [
+                "TIANG 9-200+E",
+                "TIANG 9M+E",
+                "TIANG BETON 9 GROUNDING"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.019-1:2012 & CR-07 Gold Baseline"
+        },
+        "MAT-POLE-BETON-11-200": {
+            "canonical_material_code": "MAT-POLE-BETON-11-200",
+            "official_name": "Tiang Beton 11 Meter / 200 daN",
+            "category": "STRUCTURE",
+            "subcategory": "CONCRETE_POLE",
+            "technical_spec": "Panjang 11 Meter, Kekuatan Patah 200 daN, Prestressed Concrete",
+            "unit": "BATANG",
+            "field_aliases": [
+                "TIANG 11M",
+                "TIANG BETON 11-200",
+                "TIANG 11 METER"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.019-1:2012 & CR-07 Gold Baseline"
+        },
+        "MAT-POLE-BETON-12-200": {
+            "canonical_material_code": "MAT-POLE-BETON-12-200",
+            "official_name": "Tiang Beton 12 Meter / 200 daN",
+            "category": "STRUCTURE",
+            "subcategory": "CONCRETE_POLE",
+            "technical_spec": "Panjang 12 Meter, Kekuatan Patah 200 daN, Standar JTM Tiang Tumpu",
+            "unit": "BATANG",
+            "field_aliases": [
+                "TIANG 12M",
+                "TIANG BETON 12-200",
+                "TIANG 12 METER",
+                "TIANG JTM 12M"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.019-1:2012 & CR-07 Gold Baseline"
+        },
+        "MAT-POLE-BETON-13-350E": {
+            "canonical_material_code": "MAT-POLE-BETON-13-350E",
+            "official_name": "Tiang Beton 13 Meter / 350 daN + Earth Grounding",
+            "category": "STRUCTURE",
+            "subcategory": "CONCRETE_POLE",
+            "technical_spec": "Panjang 13 Meter, 350 daN, Reinforced Heavy Duty + Grounding Earthing",
+            "unit": "BATANG",
+            "field_aliases": [
+                "TIANG 13-350+E",
+                "TIANG 13M+E",
+                "TIANG BETON 13M",
+                "TIANG GARDU PORTAL"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.019-1:2012 & CR-07 Gold Baseline"
+        },
+        "MAT-POLE-BETON-14-350E": {
+            "canonical_material_code": "MAT-POLE-BETON-14-350E",
+            "official_name": "Tiang Beton 14 Meter / 350 daN + Earth Grounding",
+            "category": "STRUCTURE",
+            "subcategory": "CONCRETE_POLE",
+            "technical_spec": "Panjang 14 Meter, 350 daN, Crossing Jalan Raya / Saluran Khusus",
+            "unit": "BATANG",
+            "field_aliases": [
+                "TIANG 14-350+E",
+                "TIANG 14M+E",
+                "TIANG BETON 14M",
+                "TIANG CROSSING 14M"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN D3.019-1:2012 & CR-07 Gold Baseline"
+        },
+        "MAT-COND-AAAC-70": {
+            "canonical_material_code": "MAT-COND-AAAC-70",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 70 mm\u00b2",
+            "category": "CONDUCTOR",
+            "subcategory": "BARE_OVERHEAD",
+            "technical_spec": "All Aluminium Alloy Conductor, Luas Penampang 70 sqmm, Arus 230A",
+            "unit": "METER",
+            "field_aliases": [
+                "AAAC 70",
+                "KABEL AAAC 70",
+                "AAAC 70 SQMM",
+                "KONDUKTOR 70"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 41-8:1981 & CR-07 Gold Baseline"
+        },
+        "MAT-COND-AAAC-150": {
+            "canonical_material_code": "MAT-COND-AAAC-150",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 150 mm\u00b2",
+            "category": "CONDUCTOR",
+            "subcategory": "BARE_OVERHEAD",
+            "technical_spec": "All Aluminium Alloy Conductor, Luas Penampang 150 sqmm, Arus 380A",
+            "unit": "METER",
+            "field_aliases": [
+                "AAAC 150",
+                "KABEL AAAC 150",
+                "AAAC 150 SQMM",
+                "KONDUKTOR 150"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 41-8:1981 & CR-07 Gold Baseline"
+        },
+        "MAT-COND-AAAC-240": {
+            "canonical_material_code": "MAT-COND-AAAC-240",
+            "official_name": "Conductor Bare All Aluminium Alloy AAAC 240 mm\u00b2",
+            "category": "CONDUCTOR",
+            "subcategory": "BARE_OVERHEAD",
+            "technical_spec": "All Aluminium Alloy Conductor, Luas Penampang 240 sqmm, Arus 510A",
+            "unit": "METER",
+            "field_aliases": [
+                "AAAC 240",
+                "KABEL AAAC 240",
+                "AAAC 240 SQMM",
+                "KONDUKTOR 240"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 41-8:1981 & CR-07 Gold Baseline"
+        },
+        "MAT-COND-AAACS-70": {
+            "canonical_material_code": "MAT-COND-AAACS-70",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 70 mm\u00b2",
+            "category": "CONDUCTOR",
+            "subcategory": "INSULATED_OVERHEAD",
+            "technical_spec": "Semi-Insulated XLPE Covered AAAC 70 mm\u00b2, 20 kV Level",
+            "unit": "METER",
+            "field_aliases": [
+                "AAAC-S 70",
+                "AAACS 70",
+                "KABEL BUNGKUS 70",
+                "SEMI INSULATED 70"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 43-5-1:1995 & CR-07 Gold Baseline"
+        },
+        "MAT-COND-AAACS-150": {
+            "canonical_material_code": "MAT-COND-AAACS-150",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 150 mm\u00b2",
+            "category": "CONDUCTOR",
+            "subcategory": "INSULATED_OVERHEAD",
+            "technical_spec": "Semi-Insulated XLPE Covered AAAC 150 mm\u00b2, 20 kV Level",
+            "unit": "METER",
+            "field_aliases": [
+                "AAAC-S 150",
+                "AAACS 150",
+                "KABEL BUNGKUS 150",
+                "SEMI INSULATED 150"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 43-5-1:1995 & CR-07 Gold Baseline"
+        },
+        "MAT-COND-AAACS-240": {
+            "canonical_material_code": "MAT-COND-AAACS-240",
+            "official_name": "Conductor Insulated AAAC-S (Semi-Insulated) 240 mm\u00b2",
+            "category": "CONDUCTOR",
+            "subcategory": "INSULATED_OVERHEAD",
+            "technical_spec": "Semi-Insulated XLPE Covered AAAC 240 mm\u00b2, 20 kV Level",
+            "unit": "METER",
+            "field_aliases": [
+                "AAAC-S 240",
+                "AAACS 240",
+                "KABEL BUNGKUS 240",
+                "SEMI INSULATED 240"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 43-5-1:1995 & CR-07 Gold Baseline"
+        },
+        "MAT-CBL-NFA2XSEY-3X150": {
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X150",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7150 + 1\u00d795 mm\u00b2 CWS",
+            "category": "CABLE",
+            "subcategory": "MVTIC_TWISTED",
+            "technical_spec": "Medium Voltage Aerial Twisted Cable, 3x150 mm\u00b2 Phase + 95 mm\u00b2 CWS Messenger",
+            "unit": "METER",
+            "field_aliases": [
+                "MVTIC 150",
+                "NFA2XSEY 150",
+                "KABEL PILIN 20KV 150",
+                "TWISTED 150"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 43-5-2:1995 & CR-07 Gold Baseline"
+        },
+        "MAT-CBL-NFA2XSEY-3X240": {
+            "canonical_material_code": "MAT-CBL-NFA2XSEY-3X240",
+            "official_name": "Twisted Cable MVTIC NFA2XSEY-T 3\u00d7240 + 1\u00d795 mm\u00b2 CWS",
+            "category": "CABLE",
+            "subcategory": "MVTIC_TWISTED",
+            "technical_spec": "Medium Voltage Aerial Twisted Cable, 3x240 mm\u00b2 Phase + 95 mm\u00b2 CWS Messenger",
+            "unit": "METER",
+            "field_aliases": [
+                "MVTIC 240",
+                "NFA2XSEY 240",
+                "KABEL PILIN 20KV 240",
+                "TWISTED 240"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 43-5-2:1995 & CR-07 Gold Baseline"
+        },
+        "MAT-CBL-NA2XSEYBY-3X150": {
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X150",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7150 mm\u00b2; 20 kV; UG",
+            "category": "CABLE",
+            "subcategory": "UNDERGROUND_ARMOURED",
+            "technical_spec": "Underground XLPE Insulated Aluminium Double Steel Tape Armoured 3x150 mm\u00b2 20kV",
+            "unit": "METER",
+            "field_aliases": [
+                "KABEL TANAH 150",
+                "NA2XSEYBY 150",
+                "SKTM 150",
+                "UNDERGROUND 150"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 43-5-3:1995 & CR-07 Gold Baseline"
+        },
+        "MAT-CBL-NA2XSEYBY-3X240": {
+            "canonical_material_code": "MAT-CBL-NA2XSEYBY-3X240",
+            "official_name": "Underground Armoured Cable NA2XSEYBY 3\u00d7240 mm\u00b2; 20 kV; UG",
+            "category": "CABLE",
+            "subcategory": "UNDERGROUND_ARMOURED",
+            "technical_spec": "Underground XLPE Insulated Aluminium Double Steel Tape Armoured 3x240 mm\u00b2 20kV",
+            "unit": "METER",
+            "field_aliases": [
+                "KABEL TANAH 240",
+                "NA2XSEYBY 240",
+                "SKTM 240",
+                "UNDERGROUND 240"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "SPLN 43-5-3:1995 & CR-07 Gold Baseline"
+        },
+        "MAT-TRV-UNP-2000": {
+            "canonical_material_code": "MAT-TRV-UNP-2000",
+            "official_name": "Traves Cross-Arm UNP 80\u00d745\u00d75 mm Panjang 2000 mm Hot Dip Galvanized",
+            "category": "HARDWARE",
+            "subcategory": "CROSS_ARM",
+            "technical_spec": "Baja UNP 80x45x5 mm, L=2000 mm, HDG min 60 mikron, Termasuk Baut & Washer",
+            "unit": "BATANG",
+            "field_aliases": [
+                "TRAVES 2000",
+                "TRAVES 2M",
+                "CROSS ARM 2M",
+                "UNP 2000"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "Standar Konstruksi Distribusi PLN Buku 5 & CR-07 Baseline"
+        },
+        "MAT-TRV-UNP-2500": {
+            "canonical_material_code": "MAT-TRV-UNP-2500",
+            "official_name": "Traves Cross-Arm UNP 100\u00d750\u00d75 mm Panjang 2500 mm Hot Dip Galvanized",
+            "category": "HARDWARE",
+            "subcategory": "CROSS_ARM",
+            "technical_spec": "Baja UNP 100x50x5 mm, L=2500 mm, HDG min 60 mikron, Untuk Tiang Tarik / Sudut",
+            "unit": "BATANG",
+            "field_aliases": [
+                "TRAVES 2500",
+                "TRAVES 2.5M",
+                "CROSS ARM 2.5M",
+                "UNP 2500"
+            ],
+            "validation_status": "CANONICAL_RATIFIED",
+            "source_lineage": "Standar Konstruksi Distribusi PLN Buku 5 & CR-07 Baseline"
+        }
+    }
+}

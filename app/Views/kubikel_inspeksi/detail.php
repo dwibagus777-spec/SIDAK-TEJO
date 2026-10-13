@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/admin') ?>
 
-<?= $this->section('title') ?>Detail Inspeksi Kubikel<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>Detail Inspeksi Kubikel<?= $this->endSection() ?>
+<?= $this->section('title') ?>Detail Inspeksi Gardu<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>Detail Inspeksi Gardu<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <div class="container-fluid px-4">

@@ -1459,12 +1459,123 @@
     <!-- Pinned Action Footer (Navigation Only, Always Visible) -->
     <div class="sheet-sticky-footer px-3 pt-2 bg-white border-top flex-shrink-0" style="z-index: 1080;">
         <div class="d-flex gap-2">
-            <a id="btn-context-drawer-create-temuan" href="#" class="btn btn-primary flex-fill fw-bold rounded-pill text-white py-2 shadow-sm d-flex justify-content-center align-items-center gap-1" style="font-size: 13px;">
+            <!-- CR-GIS-FIX-04: Input Temuan now opens inline AJAX modal to stay on map -->
+            <button id="btn-context-drawer-create-temuan" type="button"
+                data-bs-toggle="modal" data-bs-target="#modal-gis-quick-temuan"
+                class="btn btn-primary flex-fill fw-bold rounded-pill text-white py-2 shadow-sm d-flex justify-content-center align-items-center gap-1" style="font-size: 13px;">
                 <i class="fas fa-plus-circle"></i> Input Temuan
-            </a>
-            <a id="btn-context-drawer-view-temuan" href="#" class="btn btn-outline-info flex-fill fw-bold rounded-pill py-2 shadow-sm d-flex justify-content-center align-items-center gap-1" style="font-size: 13px;">
+            </button>
+            <a id="btn-context-drawer-view-temuan" href="#" target="_blank" class="btn btn-outline-info flex-fill fw-bold rounded-pill py-2 shadow-sm d-flex justify-content-center align-items-center gap-1" style="font-size: 13px;">
                 <i class="fas fa-clipboard-list"></i> Lihat Temuan (<span id="ctx-drawer-findings-count">0</span>)
             </a>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     GIS QUICK TEMUAN MODAL (AJAX - No Page Reload)
+     CR-GIS-FIX-05: Operator inputs temuan without leaving the GIS map.
+     Asset, ULP, Penyulang, Section are pre-locked from context drawer.
+     ======================================================== -->
+<div class="modal fade" id="modal-gis-quick-temuan" tabindex="-1" aria-labelledby="modalGisTemuanLabel" aria-hidden="true" style="z-index: 2000;">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalGisTemuanLabel">
+                    <i class="fas fa-plus-circle me-2"></i> Input Temuan dari Peta GIS
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Asset Context Banner (locked) -->
+                <div id="gis-modal-asset-banner" class="alert alert-success py-2 px-3 mb-3 d-flex align-items-center gap-2" style="border-radius: 10px;">
+                    <i class="fas fa-lock text-success"></i>
+                    <div>
+                        <strong id="gis-modal-asset-name">—</strong>
+                        <small class="text-muted ms-2" id="gis-modal-asset-network">—</small>
+                    </div>
+                </div>
+                <!-- Hidden fields -->
+                <input type="hidden" id="gis-modal-asset-id" value="">
+                <input type="hidden" id="gis-modal-ulp-id" value="">
+                <input type="hidden" id="gis-modal-penyulang-id" value="">
+                <input type="hidden" id="gis-modal-section-id" value="">
+                <input type="hidden" id="gis-modal-lat" value="">
+                <input type="hidden" id="gis-modal-lng" value="">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Jenis Temuan <span class="text-danger">*</span></label>
+                        <select id="gis-modal-jenis" class="form-select" required>
+                            <option value="">-- Pilih --</option>
+                            <option value="KONSTRUKSI">KONSTRUKSI</option>
+                            <option value="HOTSPOT">HOTSPOT</option>
+                            <option value="ROW">ROW</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Pelaksana <span class="text-danger">*</span></label>
+                        <select id="gis-modal-pelaksana" class="form-select" required>
+                            <option value="">-- Pilih --</option>
+                            <option value="PDKB">PDKB</option>
+                            <option value="HAR GARDU">HAR GARDU</option>
+                            <option value="HAR GTT">HAR GTT</option>
+                            <option value="HAR KONSTRUKSI">HAR KONSTRUKSI</option>
+                            <option value="HAR ROW">HAR ROW</option>
+                            <option value="HAR CRANE">HAR CRANE</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Prioritas <span class="text-danger">*</span></label>
+                        <select id="gis-modal-prioritas" class="form-select" required>
+                            <option value="">-- Pilih --</option>
+                            <option value="EMERGENCY">EMERGENCY (1x24 Jam)</option>
+                            <option value="HIGH">HIGH (3 Hari)</option>
+                            <option value="MEDIUM">MEDIUM (7 Hari)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Potensi Gangguan <span class="text-danger">*</span></label>
+                        <select id="gis-modal-potensi" class="form-select" required>
+                            <option value="">-- Pilih --</option>
+                            <option value="DGR">DGR</option>
+                            <option value="OCR">OCR</option>
+                            <option value="OCRDGR">OCRDGR</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Konduktor <span class="text-danger">*</span></label>
+                        <input type="text" id="gis-modal-konduktor" class="form-control" placeholder="Contoh: A3CS 150mm" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Tanggal Temuan <span class="text-danger">*</span></label>
+                        <input type="date" id="gis-modal-tanggal" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Alamat/Lokasi <span class="text-danger">*</span></label>
+                        <input type="text" id="gis-modal-alamat" class="form-control" placeholder="Alamat atau deskripsi lokasi temuan" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Detail Temuan <span class="text-danger">*</span></label>
+                        <textarea id="gis-modal-detail" class="form-control" rows="3" required placeholder="Deskripsikan kondisi temuan secara detail..."></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Foto Temuan (maks 3 foto)</label>
+                        <input type="file" id="gis-modal-foto" class="form-control" accept="image/*" multiple>
+                        <small class="text-muted">Format: JPG/PNG, maks 5MB per foto</small>
+                        <div id="gis-modal-foto-preview" class="d-flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+                </div>
+                <div id="gis-modal-alert" class="alert d-none mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <a id="gis-modal-full-form-link" href="<?= site_url('temuan/create') ?>" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-external-link-alt me-1"></i> Form Lengkap
+                </a>
+                <button type="button" id="btn-gis-modal-submit" class="btn btn-primary fw-bold px-4">
+                    <i class="fas fa-save me-1"></i> Simpan Temuan
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -3866,8 +3977,30 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 // 5. Navigation Links (Context Handoff Only)
-                const navUrl = (res.navigation && res.navigation.create_temuan_url) ? res.navigation.create_temuan_url : `<?= site_url('temuan/create') ?>?asset_id=${currentAssetContextId}`;
-                $btnCreate.attr('href', navUrl);
+                // CR-GIS-FIX-06: Store full context for GIS Quick Temuan modal
+                const ulpBlock     = (res.network && res.network.ulp)       ? res.network.ulp       : {};
+                const penyulangBlock = (res.network && res.network.penyulang) ? res.network.penyulang : {};
+                const sectionBlock = (res.network && res.network.section)   ? res.network.section   : {};
+                window._gisCurrentAssetContext = {
+                    asset_id:      currentAssetContextId,
+                    nama_asset:    res.asset ? res.asset.nama_asset   : '',
+                    kode_asset:    res.asset ? res.asset.kode_asset   : '',
+                    ulp_id:        ulpBlock.id         || '',
+                    nama_ulp:      ulpBlock.nama_ulp   || '',
+                    penyulang_id:  penyulangBlock.id   || '',
+                    nama_penyulang: penyulangBlock.nama_penyulang || '',
+                    section_id:    sectionBlock.id     || '',
+                    nama_section:  sectionBlock.nama_section || '',
+                    lat:           res.asset ? res.asset.latitude  : '',
+                    lng:           res.asset ? res.asset.longitude : '',
+                    alamat:        res.asset ? res.asset.lokasi    : '',
+                };
+
+                // Update "Form Lengkap" link inside modal
+                const fullFormLink = document.getElementById('gis-modal-full-form-link');
+                if (fullFormLink && currentAssetContextId) {
+                    fullFormLink.href = '<?= site_url('temuan/create') ?>?asset_id=' + currentAssetContextId + '&from=gis_inspection';
+                }
 
                 const viewUrl = (res.navigation && res.navigation.view_temuan_url) ? res.navigation.view_temuan_url : `<?= site_url('temuan') ?>?asset_id=${currentAssetContextId}`;
                 $('#btn-context-drawer-view-temuan').attr('href', viewUrl);
@@ -7629,5 +7762,225 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
+</script>
+
+<script>
+// =====================================================================
+// CR-GIS-FIX-05: GIS Quick Temuan Modal Controller
+// Handles in-page AJAX submission so operator stays on the map.
+// =====================================================================
+(function() {
+    'use strict';
+
+    // Set today's date as default when modal opens
+    document.getElementById('modal-gis-quick-temuan').addEventListener('show.bs.modal', function() {
+        const today = new Date().toISOString().substring(0, 10);
+        const tanggalInput = document.getElementById('gis-modal-tanggal');
+        if (tanggalInput && !tanggalInput.value) {
+            tanggalInput.value = today;
+        }
+
+        // Pre-populate asset context from global state (set by fetchAssetContextWithWorking)
+        const assetId = (typeof currentAssetContextId !== 'undefined') ? currentAssetContextId : null;
+        if (!assetId) {
+            document.getElementById('gis-modal-asset-banner').className = 'alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2';
+            document.getElementById('gis-modal-asset-name').textContent = 'Tidak ada aset dipilih';
+            document.getElementById('gis-modal-asset-network').textContent = 'Pilih aset di peta terlebih dahulu';
+            document.getElementById('gis-modal-asset-id').value = '';
+        }
+
+        // Populate from context drawer data attributes
+        const ctxDrawerHeader = document.getElementById('ctx-drawer-asset-name') || document.getElementById('ctx-drawer-header-name');
+        const assetNameEl = document.getElementById('ctx-drawer-asset-name');
+        const assetNetworkEl = document.getElementById('ctx-drawer-network-text');
+
+        if (assetId) {
+            document.getElementById('gis-modal-asset-id').value = assetId;
+            // Populate full form link
+            const fullFormLink = document.getElementById('gis-modal-full-form-link');
+            if (fullFormLink) {
+                fullFormLink.href = '<?= site_url('temuan/create') ?>?asset_id=' + assetId + '&from=gis_inspection';
+            }
+        }
+
+        // Read ULP/Penyulang/Section from stored context
+        if (typeof window._gisCurrentAssetContext !== 'undefined' && window._gisCurrentAssetContext) {
+            const ctx = window._gisCurrentAssetContext;
+            document.getElementById('gis-modal-asset-id').value = ctx.asset_id || assetId || '';
+            document.getElementById('gis-modal-ulp-id').value = ctx.ulp_id || '';
+            document.getElementById('gis-modal-penyulang-id').value = ctx.penyulang_id || '';
+            document.getElementById('gis-modal-section-id').value = ctx.section_id || '';
+            document.getElementById('gis-modal-lat').value = ctx.lat || '';
+            document.getElementById('gis-modal-lng').value = ctx.lng || '';
+            document.getElementById('gis-modal-asset-name').textContent = ctx.nama_asset || ('Aset #' + assetId);
+            const networkText = [ctx.nama_ulp, ctx.nama_penyulang, ctx.nama_section].filter(Boolean).join(' › ');
+            document.getElementById('gis-modal-asset-network').textContent = networkText || '';
+            if (ctx.alamat) {
+                document.getElementById('gis-modal-alamat').value = ctx.alamat;
+            }
+        } else if (assetId) {
+            document.getElementById('gis-modal-asset-name').textContent = 'Aset #' + assetId;
+        }
+
+        // Clear alert
+        const alertEl = document.getElementById('gis-modal-alert');
+        alertEl.className = 'alert d-none mt-3';
+        alertEl.textContent = '';
+    });
+
+    // Foto preview
+    document.getElementById('gis-modal-foto').addEventListener('change', function() {
+        const preview = document.getElementById('gis-modal-foto-preview');
+        preview.innerHTML = '';
+        const files = Array.from(this.files).slice(0, 3);
+        files.forEach(function(file) {
+            if (!file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.cssText = 'width:70px;height:70px;object-fit:cover;border-radius:8px;border:2px solid #86efac;';
+                preview.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+
+    // AJAX Submission
+    document.getElementById('btn-gis-modal-submit').addEventListener('click', function() {
+        const btn = this;
+        const alertEl = document.getElementById('gis-modal-alert');
+
+        // Collect values
+        const assetId    = document.getElementById('gis-modal-asset-id').value.trim();
+        const ulpId      = document.getElementById('gis-modal-ulp-id').value.trim();
+        const penyulangId = document.getElementById('gis-modal-penyulang-id').value.trim();
+        const sectionId  = document.getElementById('gis-modal-section-id').value.trim();
+        const jenis      = document.getElementById('gis-modal-jenis').value;
+        const pelaksana  = document.getElementById('gis-modal-pelaksana').value;
+        const prioritas  = document.getElementById('gis-modal-prioritas').value;
+        const potensi    = document.getElementById('gis-modal-potensi').value;
+        const konduktor  = document.getElementById('gis-modal-konduktor').value.trim();
+        const tanggal    = document.getElementById('gis-modal-tanggal').value;
+        const alamat     = document.getElementById('gis-modal-alamat').value.trim();
+        const detail     = document.getElementById('gis-modal-detail').value.trim();
+        const lat        = document.getElementById('gis-modal-lat').value;
+        const lng        = document.getElementById('gis-modal-lng').value;
+
+        // Validate required
+        const missing = [];
+        if (!ulpId) missing.push('ULP (pilih aset terlebih dahulu)');
+        if (!penyulangId) missing.push('Penyulang');
+        if (!sectionId) missing.push('Section');
+        if (!jenis) missing.push('Jenis Temuan');
+        if (!pelaksana) missing.push('Pelaksana');
+        if (!prioritas) missing.push('Prioritas');
+        if (!potensi) missing.push('Potensi Gangguan');
+        if (!konduktor) missing.push('Konduktor');
+        if (!tanggal) missing.push('Tanggal Temuan');
+        if (!alamat) missing.push('Alamat/Lokasi');
+        if (!detail) missing.push('Detail Temuan');
+
+        if (missing.length > 0) {
+            alertEl.className = 'alert alert-warning mt-3';
+            alertEl.textContent = 'Lengkapi field berikut: ' + missing.join(', ');
+            return;
+        }
+
+        // Build FormData
+        const fd = new FormData();
+        fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+        fd.append('ajax', '1');
+        fd.append('from', 'gis_inspection');
+        fd.append('focus_asset_id', assetId || '');
+        fd.append('context_lat', lat);
+        fd.append('context_lng', lng);
+        fd.append('context_zoom', '18');
+        fd.append('ulp_id', ulpId);
+        fd.append('penyulang_id', penyulangId);
+        fd.append('section_id', sectionId);
+        fd.append('authoritative_asset_id', assetId || '');
+        fd.append('asset_id', assetId || '');
+        fd.append('jenis_temuan', jenis);
+        fd.append('pelaksana', pelaksana);
+        fd.append('prioritas', prioritas);
+        fd.append('potensi_gangguan', potensi);
+        fd.append('konduktor', konduktor);
+        fd.append('tanggal_temuan', tanggal);
+        fd.append('alamat', alamat);
+        fd.append('detail_temuan', detail);
+        fd.append('material', 'Tidak ada spesifikasi material');
+
+        // Photos (up to 3)
+        const fotoFiles = document.getElementById('gis-modal-foto').files;
+        for (let i = 0; i < Math.min(fotoFiles.length, 3); i++) {
+            fd.append('foto[]', fotoFiles[i]);
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Menyimpan...';
+        alertEl.className = 'alert d-none mt-3';
+
+        fetch('<?= site_url('temuan/store') ?>', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: fd
+        })
+        .then(function(r) {
+            return r.json();
+        })
+        .then(function(data) {
+            if (data.success) {
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modal-gis-quick-temuan'));
+                if (modal) modal.hide();
+
+                // Show success toast
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Temuan Berhasil Disimpan',
+                        html: '<a href="' + (data.redirect_url || '') + '" target="_blank" class="text-success small">Lihat Detail #' + data.id + '</a>',
+                        showConfirmButton: false,
+                        timer: 4000,
+                        timerProgressBar: true
+                    });
+                }
+
+                // Refresh findings count on context drawer WITHOUT leaving map
+                if (typeof fetchAssetContextWithWorking === 'function' && assetId) {
+                    setTimeout(function() {
+                        fetchAssetContextWithWorking(parseInt(assetId));
+                    }, 500);
+                }
+
+                // Reset modal fields
+                document.getElementById('gis-modal-jenis').value = '';
+                document.getElementById('gis-modal-pelaksana').value = '';
+                document.getElementById('gis-modal-prioritas').value = '';
+                document.getElementById('gis-modal-potensi').value = '';
+                document.getElementById('gis-modal-konduktor').value = '';
+                document.getElementById('gis-modal-detail').value = '';
+                document.getElementById('gis-modal-foto').value = '';
+                document.getElementById('gis-modal-foto-preview').innerHTML = '';
+                document.getElementById('gis-modal-alamat').value = '';
+            } else {
+                alertEl.className = 'alert alert-danger mt-3';
+                alertEl.textContent = data.message || 'Gagal menyimpan temuan.';
+            }
+        })
+        .catch(function(err) {
+            alertEl.className = 'alert alert-danger mt-3';
+            alertEl.textContent = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
+            console.error('[GIS_MODAL_ERR]', err);
+        })
+        .finally(function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-1"></i> Simpan Temuan';
+        });
+    });
+})();
 </script>
 <?= $this->endSection() ?>

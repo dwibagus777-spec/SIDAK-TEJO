@@ -1,0 +1,141 @@
+{
+  "audit_metadata": {
+    "report_id": "B7_4_SYNC_PULL_SERVICE_VERIFICATION",
+    "gate": "GATE_B7_4_DOWNSTREAM_DELTA_PULL_ENGINE",
+    "service_version": "B7-PULL-1.0",
+    "specification_version": "vB7-SPEC-1.1",
+    "predecessor_gates": [
+      "GATE_B7_1_LOCAL_SCHEMA_MIGRATION",
+      "GATE_B7_2_SYNC_INGESTION_AND_IDEMPOTENCY",
+      "GATE_B7_3_CHUNKED_EVIDENCE_UPLOAD_AND_CHECKSUM_SEAL"
+    ],
+    "generated_at": "2026-09-26T16:44:00+07:00",
+    "execution_target": "LOCAL_TESTBED_ONLY",
+    "production_database_status": "STRICTLY_UNTOUCHED_LOCKED",
+    "verdict": "PASS_LOCAL_TESTBED_VERIFIED"
+  },
+  "modules_implemented": {
+    "pullDelta": "Delta streaming engine with device authorization, negative cursor protection, monotonic journal_seq ordering, bounded limit (default 50, max 200), pagination-safe next_cursor calculation, and domain entity hydration",
+    "hydrateDeltas": "Domain entity hydrator packaging detailed records for assigned_cases, investigations, findings (with append-only revisions), and evidence",
+    "getReadOnlyTopologyModel": "Electrical network topology read model providing snapshot identity and element counts with hard-coded mutation_permitted = false",
+    "verifyActiveDevice": "Hardware identity sentinel validating registration and enforcing revocation lockouts"
+  },
+  "invariants_verified": {
+    "B7-G11": "PASS — Registered Device Identity: Unregistered hardware device_id receives HTTP 403 DEVICE_NOT_REGISTERED",
+    "B7-G12": "PASS — Monotonic Server Sequence Cursor: Delta log strictly ordered by journal_seq BIGINT AUTO_INCREMENT ASC, guaranteeing deterministic traversal",
+    "B7-G13": "PASS — Push / Pull Architectural Separation: Pull path operates strictly isolated from ingestion transactions and evidence chunk staging",
+    "B7-G14": "PASS — Topology Read-Only Read Model: Zero write or mutation pathways to gis_translines or assets (Delta = 0 certified)",
+    "B7-G16": "PASS — Server Cursor High-Water Mark: Cursor values strictly non-negative; negative cursor values rejected with HTTP 422 INVALID_CURSOR",
+    "B7-G17": "PASS — Cursor Pagination Safety: next_cursor is strictly the journal_seq of the last record in the fetched window; never jumps ahead to global high-water mark",
+    "B7-G19": "PASS — Device Revocation Non-Cascade: Revoked device blocked with HTTP 403 DEVICE_REVOKED while historical journal entries remain fully intact",
+    "Audit Stream Isolation": "PASS — Only ACCEPTED domain operations delivered to mobile clients; REJECTED/DUPLICATE records excluded from delta stream"
+  },
+  "adversarial_test_matrix": [
+    {
+      "scenario": "Empty pull on clean state or cursor = high-water mark",
+      "result": "HTTP 200 SUCCESS, next_cursor = cursor_in, has_more = false, count = 0",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Initial sync pull (cursor = 0)",
+      "result": "HTTP 200 SUCCESS, includes read-only topology read model snapshot",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Missing device_id header/parameter",
+      "result": "HTTP 403 DEVICE_NOT_REGISTERED",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Unregistered hardware device_id",
+      "result": "HTTP 403 DEVICE_NOT_REGISTERED",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Revoked device attempting pull (Guard B7-G19)",
+      "result": "HTTP 403 DEVICE_REVOKED",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Negative cursor value (cursor = -1, Guard B7-G16)",
+      "result": "HTTP 422 INVALID_CURSOR",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Bounded pagination limit (5 available, limit = 3, Guard B7-G17)",
+      "result": "Returns exactly 3 records, next_cursor = seq[2], has_more = true",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Multi-page deterministic sequence (6 records, limit = 2)",
+      "result": "3 consecutive pages fetched; 100% of records in strict ascending sequence; 0 duplicates; 0 gaps",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Concurrent append resilience (new records inserted while client is halfway through pagination)",
+      "result": "next_cursor tracks last returned record; newly inserted records delivered on subsequent page with zero skips",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Domain entity hydration (cases, candidates, investigations, findings, revisions, evidence)",
+      "result": "All referenced domain entities and assigned cases populated with full relational graphs",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Zero topology mutation under multiple pull requests (Guard B7-G14)",
+      "result": "Delta gis_translines = 0, Delta assets = 0, authoritative_bound = true, mutation_permitted = false",
+      "status": "PASS"
+    },
+    {
+      "scenario": "User scoping isolation (user_scope_only = true)",
+      "result": "Only records belonging to target user returned; records of other users completely hidden",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Device last_seen_at heartbeat tracking",
+      "result": "Active device pull automatically updates last_seen_at in mobile_devices",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Exclusion of REJECTED operations from downstream delta stream",
+      "result": "REJECTED journal records remain permanent audit artifacts on server and are never pushed downstream",
+      "status": "PASS"
+    }
+  ],
+  "test_execution_summary": {
+    "b7_4_dedicated_suite": {
+      "file": "tests/Unit/B7MobileSyncPullServiceTest.php",
+      "tests": 11,
+      "assertions": 87,
+      "failures": 0,
+      "errors": 0,
+      "status": "ALL_GREEN"
+    },
+    "b7_all_suites": {
+      "tests": 47,
+      "assertions": 277,
+      "failures": 0,
+      "errors": 0,
+      "status": "ALL_GREEN"
+    },
+    "full_phase_b_regression": {
+      "tests": 202,
+      "assertions": 1030,
+      "failures": 0,
+      "errors": 0,
+      "status": "ALL_GREEN"
+    }
+  },
+  "topology_sentinel": {
+    "gis_translines_delta": 0,
+    "assets_delta": 0,
+    "topology_status": "UNTOUCHED_ZERO_MUTATION"
+  },
+  "production_governance": {
+    "target_host": "sidaktejo.site (2.57.91.151)",
+    "target_database": "u282839912_sidak",
+    "production_actions": "STRICTLY_NONE",
+    "production_delta": 0,
+    "topology_fingerprint_baseline": "TOPOLOGY-20260925-243-ad2c9fcb"
+  }
+}

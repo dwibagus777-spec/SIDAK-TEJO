@@ -1,0 +1,60 @@
+{
+    "audit_run_at": "2026-09-04T12:12:35+07:00",
+    "gate": "TL-01 Sub-Gate D4A: Visual Realization & Live Browser Cockpit",
+    "verdict": "PASS_VERIFIED_SEALED",
+    "production_write_gate": "LOCKED (INSERT=0, UPDATE=0, DELETE=0, DDL=0)",
+    "visual_cockpit_elements": {
+        "workbench_header": "TL-01 \u2014 EXCEPTION REVIEW WORKBENCH with Proposal #ID, Class, Status, Canonical State & Integrity Badges",
+        "hierarchy_breadcrumb": "ULP -> Feeder -> Section -> Span (AST#1 -> AST#2)",
+        "dual_asset_cards": "Source Pole vs Target Pole with Kode, Nama, Jenis, Konstruksi, Lat/Lng, Status (col-12 col-md-6 responsive)",
+        "specifications": "Konduktor, Jarak, Skor Keyakinan, Natural Key, Engine Version",
+        "ai_evidence_inspector": "Framing: BUKTI DETERMINISTIK (AI SIGNAL / EVIDENCE ONLY) advisory diagnostic, Checklist (4 items), Collapsible raw JSON toggle, SHA-256 fingerprint",
+        "authoritative_transline_comparison": "Table with #ID, Kode TL, Scope (LEGACY-AUTH vs PROPOSAL-GOV), Pjg, Delta, Konduktor, Ujung Aset, Status",
+        "resolution_operator_guidance": "Dynamic PETUNJUK RESOLUSI OPERATOR alert and Anomaly list",
+        "server_policy_locks_banner": "Confirm [X] Rollback [X] Reject [X] Asset Mutation [X] (POLICY_GATE_LOCKED_D4A)",
+        "footer_button": "Tutup Workbench (data-bs-dismiss=modal)"
+    },
+    "exception_review_queue_drawer": {
+        "title": "TRANSLINE EXCEPTION & PROPOSAL REVIEW",
+        "feeder_subtitle": "Dynamic Feeder Name",
+        "filter_pills": [
+            "ALL",
+            "GOVERNANCE_ANOMALY",
+            "BLOCKED",
+            "HUMAN_REVIEW",
+            "READY",
+            "ACTIVE"
+        ],
+        "empty_state_text": "No proposal sesuai filter.",
+        "queue_card_content": "ID, Triage Label ([P1]-[P5]), Canonical State, Integrity Status, Feeder/Section, Route (Source -> Target), Conductor, Distance, Reason Code, Focus Map, Workbench",
+        "policy_lock_badge": "WRITE GATE: LOCKED \u00b7 READ-ONLY TRIAGE"
+    },
+    "map_integration": {
+        "layer_type": "L.featureGroup (in-memory proposalHighlightLayer)",
+        "read_only_highlight": "Glowing polyline with start and end circle markers",
+        "database_writes": 0
+    },
+    "live_http_verification": {
+        "auth_login": "HTTP 200 (authenticated session with CSRF)",
+        "gis_page_dom": "HTTP 200 (15/15 DOM checks passed)",
+        "api_queue": "HTTP 200 (GET /gis/api-proposal-exception-queue)",
+        "api_workbench_zero": "HTTP 422 (INVALID_PROPOSAL_ID)"
+    },
+    "test_automation": {
+        "unit_d4a": "30 tests, 128 assertions (100% PASS)",
+        "full_tl01_regression": "109 tests, 461 assertions (100% PASS)",
+        "foundation_pilot": "11 tests, 68 assertions (100% PASS)",
+        "grand_total": "120 tests, 529 assertions (100% PASS)"
+    },
+    "database_baseline": {
+        "gis_translines": 42,
+        "gis_transline_proposals": 5,
+        "assets": 2660,
+        "sections": 134,
+        "penyulang": 28,
+        "temuan": 623,
+        "temuan_materials": 1842,
+        "operational_mutations": 0,
+        "hash_reconciliation": "IDENTICAL"
+    }
+}

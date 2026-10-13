@@ -1,0 +1,11 @@
+{
+    "registry_id": "CC06_EXECUTIVE_KPI_SNAPSHOT_REGISTRY_v1.0",
+    "created_at": "2026-08-24 20:21:05 WIB",
+    "created_at_utc": "2026-08-24T13:21:05Z",
+    "average_giri_score": 83.4,
+    "critical_feeders_count": 5,
+    "healthy_assets_count": 22,
+    "degraded_assets_count": 8,
+    "material_readiness_rate": 88.5,
+    "governance_compliance": 100
+}

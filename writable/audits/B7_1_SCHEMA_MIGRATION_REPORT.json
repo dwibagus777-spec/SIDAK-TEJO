@@ -1,0 +1,93 @@
+{
+  "audit_metadata": {
+    "report_id": "B7_1_LOCAL_SCHEMA_MIGRATION_VERIFICATION",
+    "gate": "GATE_B7_1_LOCAL_SCHEMA_MIGRATION",
+    "specification_version": "vB7-SPEC-1.1",
+    "predecessor_gate": "GATE_B6_PRODUCTION_ACTIVATION_PASS",
+    "generated_at": "2026-09-26T15:58:00+07:00",
+    "execution_target": "LOCAL_TESTBED_ONLY",
+    "production_database_status": "STRICTLY_UNTOUCHED_LOCKED",
+    "verdict": "PASS_LOCAL_TESTBED_VERIFIED"
+  },
+  "invariants_enforced": {
+    "B7-G01": "Zero Authority Bypass — Sync tables serve strictly as transport and forensic journaling",
+    "B7-G02": "Client Submission Identity — client_submission_uuid enforced as UK on mobile_sync_journal",
+    "B7-G03": "Batch Synchronization Protocol — mobile_sync_batches encapsulates transport envelopes",
+    "B7-G05": "Server-Side Idempotency — Unique index on client_submission_uuid rejects duplicate submissions",
+    "B7-G06": "Dual-Clock Time Provenance — Preserves client_created_at, server_received_at, server_processed_at",
+    "B7-G08": "Evidence Pre-Hashing & Integrity — chunk_sha256 and full_file_sha256 columns in mobile_evidence_chunks",
+    "B7-G10": "Comprehensive Sync Journaling — mobile_sync_journal captures complete audit trail",
+    "B7-G11": "Registered Device Governance — mobile_devices tracks device_id and device_identity_fingerprint",
+    "B7-G12": "Monotonic Server Sequence Cursor — journal_seq BIGINT AUTO_INCREMENT PRIMARY KEY",
+    "B7-G14": "Topology Read-Only Read Model — Delta gis_translines = 0, Delta assets = 0",
+    "B7-G15": "Per-Operation Atomicity Support — Schema supports atomic transaction per client_submission_uuid",
+    "B7-G16": "Monotonic Cursor High-Water Mark — journal_seq is the sole replication cursor",
+    "B7-G18": "Evidence Chunk State Machine — UK (evidence_id, chunk_index) prevents duplicate chunk conflicts",
+    "B7-G19": "Device Revocation Non-Cascade — Zero ON DELETE CASCADE to journal; audit history permanent",
+    "B7-G20": "GPS Provenance Semantics — Schema supports explicit client_timezone_offset and full payload JSON"
+  },
+  "schema_forensics": {
+    "tables_created": [
+      {
+        "table_name": "mobile_devices",
+        "column_count": 12,
+        "primary_key": "id",
+        "unique_keys": ["uk_device_id (device_id)"],
+        "governance_rule": "Device revocation sets status='REVOKED'; zero cascade delete to journal"
+      },
+      {
+        "table_name": "mobile_sync_batches",
+        "column_count": 11,
+        "primary_key": "id",
+        "unique_keys": ["uk_batch_sync_id (sync_id)"],
+        "governance_rule": "Encapsulates transport envelope with payload_sha256 checksum"
+      },
+      {
+        "table_name": "mobile_sync_journal",
+        "column_count": 20,
+        "primary_key": "journal_seq (BIGINT UNSIGNED AUTO_INCREMENT)",
+        "unique_keys": ["uk_client_submission_uuid (client_submission_uuid)"],
+        "governance_rule": "Authoritative monotonic sequence and immutable forensic audit history"
+      },
+      {
+        "table_name": "mobile_evidence_chunks",
+        "column_count": 13,
+        "primary_key": "id",
+        "unique_keys": ["uk_evidence_chunk (evidence_id, chunk_index)"],
+        "governance_rule": "Staging for chunked binary uploads with idempotency deduplication"
+      }
+    ]
+  },
+  "predecessor_b6_tables_status": {
+    "fault_cases": "INTACT_PRESERVED",
+    "dispatch_assignments": "INTACT_PRESERVED",
+    "field_investigations": "INTACT_PRESERVED",
+    "field_findings": "INTACT_PRESERVED",
+    "field_finding_revisions": "INTACT_PRESERVED",
+    "field_evidence": "INTACT_PRESERVED",
+    "fault_feedback": "INTACT_PRESERVED",
+    "total_b6_tables_intact": 7
+  },
+  "topology_sentinel": {
+    "delta_active_translines": 0,
+    "delta_total_translines": 0,
+    "delta_active_assets": 0,
+    "delta_total_assets": 0,
+    "status": "PASS_ZERO_MUTATION"
+  },
+  "test_execution_summary": {
+    "test_file": "tests/Unit/B7SchemaMigrationTest.php",
+    "tests_run": 12,
+    "assertions": 81,
+    "failures": 0,
+    "errors": 0,
+    "full_phase_b_suite": {
+      "test_files": 10,
+      "tests_run": 167,
+      "assertions": 834,
+      "failures": 0,
+      "errors": 0,
+      "status": "ALL_GREEN"
+    }
+  }
+}

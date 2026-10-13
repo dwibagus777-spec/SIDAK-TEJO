@@ -1,0 +1,20 @@
+[
+    {
+        "kode_asset": null,
+        "nama_asset": null,
+        "jenis_asset": "jtm_tiang",
+        "unit_name": "SIDOARJO",
+        "ulp_name": "SIDOARJO KOTA",
+        "feeder_name": "ECCO",
+        "section_name": "ECCO_SEC_01",
+        "latitude": -7.4455,
+        "longitude": 112.7155,
+        "kode_konstruksi": "TM1",
+        "tanggal_operasi": null,
+        "kapasitas": null,
+        "jumlah_pohon": null,
+        "parent_asset_id": null,
+        "section_id": null,
+        "sequence_no": null
+    }
+]

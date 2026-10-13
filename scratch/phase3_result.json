@@ -1,0 +1,164 @@
+{
+    "gate": "B7_PRODUCTION_ACTIVATION_PHASE_3",
+    "timestamp": "2026-09-26 17:56:46 WIB",
+    "environment": "production",
+    "target_host": "2.57.91.151 (https:\/\/sidaktejo.site)",
+    "sub_gates": {
+        "3A_security_firewall": {
+            "status": "PASS",
+            "code_401": 401,
+            "code_403": 403
+        },
+        "3B_adversarial_matrix": {
+            "status": "PASS",
+            "scenarios_total": 14,
+            "scenarios_passed": 14,
+            "scenarios": {
+                "ADV-01_invalid_envelope": {
+                    "status": "PASS",
+                    "http_code": 400,
+                    "reason": "Missing required batch envelope parameters: sync_id, device_id, and user_id are mandatory."
+                },
+                "ADV-02_uuid_collision_conflicting_payload": {
+                    "status": "PASS",
+                    "sync_status": "DUPLICATE",
+                    "duplicate_rows": 0,
+                    "message": "Conflicting payload rejected from execution via cached domain receipt"
+                },
+                "ADV-03_batch_replay_idempotency": {
+                    "status": "PASS",
+                    "http_code": 200,
+                    "duplicate_count": 1,
+                    "accepted_count": 0
+                },
+                "ADV-04_mock_gps_rejection": {
+                    "status": "PASS",
+                    "sync_status": "REJECTED",
+                    "journal_status": "REJECTED"
+                },
+                "ADV-05_invalid_gps_coordinates": {
+                    "status": "PASS",
+                    "sync_status": "REJECTED",
+                    "journal_status": "REJECTED"
+                },
+                "ADV-06_revoked_device_push": {
+                    "status": "PASS",
+                    "http_code": 403,
+                    "reason": "DEVICE_REVOKED"
+                },
+                "ADV-07_revoked_device_evidence": {
+                    "status": "PASS",
+                    "http_code": 403,
+                    "reason": "DEVICE_REVOKED"
+                },
+                "ADV-08_revoked_device_pull": {
+                    "status": "PASS",
+                    "http_code": 403,
+                    "reason": "DEVICE_REVOKED"
+                },
+                "ADV-09_fsm_shortcut": {
+                    "status": "PASS",
+                    "sync_status": "REJECTED",
+                    "journal_status": "REJECTED"
+                },
+                "ADV-10_premature_evidence_seal": {
+                    "status": "PASS",
+                    "http_code": 422,
+                    "reason": "CHUNKS_INCOMPLETE"
+                },
+                "ADV-11_tampered_sha256": {
+                    "status": "PASS",
+                    "http_code": 422,
+                    "status_reason": "HASH_MISMATCH",
+                    "zero_domain_rows": true
+                },
+                "ADV-12_user_scoping_isolation": {
+                    "status": "PASS",
+                    "user_a_present": true,
+                    "user_b_leakage": false,
+                    "isolated": true
+                },
+                "ADV-13_rejected_operation_delta_exclusion": {
+                    "status": "PASS",
+                    "mock_rejected_leak": false,
+                    "invalid_coord_leak": false,
+                    "fsm_shortcut_leak": false,
+                    "audit_journal_retained": true,
+                    "delta_stream_clean": true
+                },
+                "ADV-14_topology_sentinel_invariants": {
+                    "status": "PASS",
+                    "zero_mutation": true,
+                    "delta_active_tl": 0,
+                    "delta_physical_tl": 0,
+                    "delta_active_assets": 0,
+                    "delta_physical_assets": 0,
+                    "hash_active_tl_match": true,
+                    "hash_phys_tl_match": true,
+                    "hash_active_asset_match": true,
+                    "hash_phys_asset_match": true,
+                    "sentinel_before": {
+                        "active_translines": 243,
+                        "physical_translines": 252,
+                        "active_assets": 5236,
+                        "physical_assets": 5549,
+                        "active_transline_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                        "active_asset_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                        "physical_transline_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                        "physical_asset_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                        "network_span_meters": 9418.37,
+                        "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb"
+                    },
+                    "sentinel_after": {
+                        "active_translines": 243,
+                        "physical_translines": 252,
+                        "active_assets": 5236,
+                        "physical_assets": 5549,
+                        "active_transline_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                        "active_asset_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                        "physical_transline_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                        "physical_asset_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                        "network_span_meters": 9418.37,
+                        "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb"
+                    }
+                }
+            }
+        },
+        "3C_reconciliation_post_adversarial": {
+            "status": "PASS",
+            "verdict": "PASS_AUTHORITATIVE_PRODUCTION",
+            "pack": {
+                "layer_1_application": {
+                    "sync_service_version": "B7-SYNC-1.0",
+                    "evidence_service_version": "B7-EVIDENCE-1.0",
+                    "pull_service_version": "B7-PULL-1.0",
+                    "status": "SEALED & SYNCHRONIZED"
+                },
+                "layer_2_physical_database": {
+                    "total_phase_b_tables": 11,
+                    "physical_translines_count": 252,
+                    "physical_translines_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                    "physical_assets_count": 5549,
+                    "physical_assets_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                    "inactive_translines_count": 9,
+                    "soft_deleted_assets_count": 313
+                },
+                "layer_3_authoritative_view": {
+                    "active_translines_count": 243,
+                    "active_translines_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                    "active_assets_count": 5236,
+                    "active_assets_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                    "authoritative_aligned": true,
+                    "formula_translines": "243 Active + 9 Inactive = 252 Physical",
+                    "formula_assets": "5236 Active + 313 Soft-Deleted = 5549 Physical"
+                },
+                "layer_4_topology_snapshot": {
+                    "snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+                    "network_span_meters": 9418.37,
+                    "status": "PERMANENTLY_SEALED"
+                }
+            }
+        }
+    },
+    "overall_verdict": "PASS"
+}

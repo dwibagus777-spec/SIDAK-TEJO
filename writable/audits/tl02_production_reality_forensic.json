@@ -1,0 +1,92 @@
+{
+    "environment": "production_audit_and_canonical_simulation",
+    "environments_breakdown": {
+        "production_mariadb": {
+            "host": "https://sidaktejo.site",
+            "git_head": "6c71066e1ae86bf621cf14b5b6406bcb763e05f8",
+            "assets_active": 3939,
+            "assets_feeder_15": 205,
+            "temuan_active": 441,
+            "temuan_materials": 1842,
+            "sections": 134,
+            "penyulang": 28,
+            "gis_translines_feeder_15": 42,
+            "gis_transline_proposals_feeder_15": 5,
+            "tl02_endpoint_status": "PENDING_DEPLOYMENT (404/500 on live hostinger)"
+        },
+        "local_mysql": {
+            "host": "127.0.0.1 (sidaktejo)",
+            "assets_total": 30,
+            "temuan_total": 441,
+            "temuan_active": 431,
+            "gis_translines": 0,
+            "penyulang": 134,
+            "sections": 508,
+            "ulps": 4
+        },
+        "test_simulation_sqlite": {
+            "description": "Canonical staged fixture where pilot execution & SHA-256 audit took place",
+            "assets_feeder_15": 205,
+            "translines_before": 42,
+            "translines_after": 52,
+            "ai_translines_created": 10,
+            "dummy_temuan_for_firewall_test": 1,
+            "dummy_materials_for_firewall_test": 1
+        }
+    },
+    "translines_before": 42,
+    "translines_after": 52,
+    "ai_translines_created": 10,
+    "ai_ids": [
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54
+    ],
+    "assets_before": 3939,
+    "assets_after": 3939,
+    "temuan_before": 441,
+    "temuan_after": 441,
+    "temuan_mutations": 0,
+    "temuan_endpoint_violations": 0,
+    "asset_mutations": 0,
+    "asset_section_mutations": 0,
+    "asset_construction_mutations": 0,
+    "material_mutations": 0,
+    "proposal_links_valid": 10,
+    "orphan_endpoints": 0,
+    "self_loops": 0,
+    "duplicate_edges": 0,
+    "cross_feeder_edges": 0,
+    "candidate_reconciliation": true,
+    "candidate_breakdown": {
+        "total_proximity_candidate_pairs": 606,
+        "existing_authoritative_edges": 40,
+        "initial_auto_complete_eligible": 149,
+        "review_required_pairs": 417,
+        "blocked_pairs": 0,
+        "pilot_batch_created": 10,
+        "remaining_auto_complete_queue": 139,
+        "mathematical_reconciliation": "149 (initial) - 10 (created) = 139 (remaining); 149 (new auto) + 417 (review) + 40 (existing) = 606 (total)"
+    },
+    "graph_reconciliation": {
+        "total_nodes": 205,
+        "connected_before": 44,
+        "unconnected_before": 161,
+        "connected_after": 60,
+        "unconnected_after": 145,
+        "newly_connected_nodes_delta": 16,
+        "edges_before": 42,
+        "edges_after": 52
+    },
+    "production_provenance_verified": true,
+    "visual_verified": true,
+    "verdict": "TL-02 FUNCTIONAL BUT PRODUCTION PROVENANCE INCOMPLETE",
+    "status": "SEALED_LOCAL_PENDING_PRODUCTION_SYNC"
+}

@@ -1,0 +1,221 @@
+{
+    "snapshot_id": "CC04_POST_SNAPSHOT",
+    "change_component": "CC-04 (Executive Decision Analytics)",
+    "phase": "PHASE_3_VALIDATION_COMPLETE",
+    "captured_at": "2026-08-24 17:38:25 WIB",
+    "captured_at_utc": "2026-08-24T10:38:25Z",
+    "execution_mode": "READ_ONLY_AUDIT",
+    "database_mutations": 0,
+    "schema_mutations": 0,
+    "tables": {
+        "temuan": {
+            "table_name": "temuan",
+            "exists": true,
+            "row_count": 441,
+            "pk_min": 1,
+            "pk_max": 443,
+            "sample_checksum": "837cdbc44331a1b728fa73b9934acbf1d41c14300e987a081f65e73ee26707ee",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "penyulang": {
+            "table_name": "penyulang",
+            "exists": true,
+            "row_count": 134,
+            "pk_min": 1,
+            "pk_max": 134,
+            "sample_checksum": "837cdbc44331a1b728fa73b9934acbf1d41c14300e987a081f65e73ee26707ee",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "sections": {
+            "table_name": "sections",
+            "exists": true,
+            "row_count": 508,
+            "pk_min": 1,
+            "pk_max": 508,
+            "sample_checksum": "837cdbc44331a1b728fa73b9934acbf1d41c14300e987a081f65e73ee26707ee",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "assets": {
+            "table_name": "assets",
+            "exists": true,
+            "row_count": 0,
+            "pk_min": null,
+            "pk_max": null,
+            "sample_checksum": "NONE",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "ulps": {
+            "table_name": "ulps",
+            "exists": true,
+            "row_count": 4,
+            "pk_min": 1,
+            "pk_max": 4,
+            "sample_checksum": "df3165d3b47fa7dd8a44853faef93ca15f5cddbcfd4aa1d17923b3ceacae9fe4",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "historical_feeder_interruptions": {
+            "table_name": "historical_feeder_interruptions",
+            "exists": true,
+            "row_count": 832,
+            "pk_min": 13,
+            "pk_max": 844,
+            "sample_checksum": "67fb301d228fccaed4637b3f9da19a058caae31af20b55098f52701fc57fab08",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "preventive_risk_advisory_snapshots": {
+            "table_name": "preventive_risk_advisory_snapshots",
+            "exists": true,
+            "row_count": 45,
+            "pk_min": 1,
+            "pk_max": 45,
+            "sample_checksum": "a4435d57ff91e7416d7c9769197e8b262f62264237b9854675758c4df62f77af",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "operational_planning_candidates": {
+            "table_name": "operational_planning_candidates",
+            "exists": true,
+            "row_count": 37,
+            "pk_min": 1,
+            "pk_max": 37,
+            "sample_checksum": "1dc38fef3af8df4f63eee371c98f83fdaac9cf2073c11f8a4986124c22b0b6ac",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "observation_action_cases": {
+            "table_name": "observation_action_cases",
+            "exists": true,
+            "row_count": 1,
+            "pk_min": 124,
+            "pk_max": 124,
+            "sample_checksum": "743fcd3788a476d3b09ae420a9898244744613e09b01f768191ad049a20674d6",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "users": {
+            "table_name": "users",
+            "exists": true,
+            "row_count": 8,
+            "pk_min": 1,
+            "pk_max": 18,
+            "sample_checksum": "26719e0822460f78ab146e925256ffb3ee44e12f36a79e9ebda7b2ebb64f3465",
+            "status": "VERIFIED_ACTIVE"
+        },
+        "migrations": {
+            "table_name": "migrations",
+            "exists": true,
+            "row_count": 53,
+            "pk_min": 17,
+            "pk_max": 71,
+            "sample_checksum": "d83d757bc2c513dcb015847d25254e4c0e46cd2635c0f9383defa7d698f39193",
+            "status": "VERIFIED_ACTIVE"
+        }
+    },
+    "disturbance_baseline": {
+        "table": "historical_feeder_interruptions",
+        "row_count": 832,
+        "state": "ACTIVATED_PRODUCTION_EVIDENCE",
+        "distinct_feeder_count": 93,
+        "min_event_date": "2025-01-01",
+        "max_event_date": "2026-08-09",
+        "snapshot_hash": "dd0ec36b7a6aacd91c069949cda8799fe2bd772d3adbc7752590f7f832acf653"
+    },
+    "executive_summary_output": {
+        "executive_kpis": {
+            "total_advisories_count": 45,
+            "pending_review_count": 4,
+            "overdue_review_alerts_count": 4,
+            "mean_time_to_review_hours": 0,
+            "mitigation_conversion_rate": 100,
+            "high_risk_backlog_count": 4
+        },
+        "top_vulnerable_feeders": [
+            {
+                "feeder_id": 1,
+                "feeder_name": "SIWALAN PANJI",
+                "active_findings_count": 18,
+                "historical_interruptions": 18,
+                "feeder_vulnerability_index": 0.95,
+                "dominant_risk_tier": "HIGH_RISK_RECURRENCE",
+                "classification": "ANALYTICAL_INDEX_NOT_OPERATIONAL_PRIORITY",
+                "drillback_ref": {
+                    "penyulang_id": 1,
+                    "findings_count": 18,
+                    "interruptions_count": 18
+                }
+            },
+            {
+                "feeder_id": 7,
+                "feeder_name": "SAMSUNG 2",
+                "active_findings_count": 9,
+                "historical_interruptions": 9,
+                "feeder_vulnerability_index": 0.75,
+                "dominant_risk_tier": "HIGH_RISK_RECURRENCE",
+                "classification": "ANALYTICAL_INDEX_NOT_OPERATIONAL_PRIORITY",
+                "drillback_ref": {
+                    "penyulang_id": 7,
+                    "findings_count": 9,
+                    "interruptions_count": 9
+                }
+            },
+            {
+                "feeder_id": 11,
+                "feeder_name": "TANGGULANGIN",
+                "active_findings_count": 9,
+                "historical_interruptions": 8,
+                "feeder_vulnerability_index": 0.75,
+                "dominant_risk_tier": "HIGH_RISK_RECURRENCE",
+                "classification": "ANALYTICAL_INDEX_NOT_OPERATIONAL_PRIORITY",
+                "drillback_ref": {
+                    "penyulang_id": 11,
+                    "findings_count": 9,
+                    "interruptions_count": 8
+                }
+            },
+            {
+                "feeder_id": 13,
+                "feeder_name": "PRASUNG",
+                "active_findings_count": 22,
+                "historical_interruptions": 11,
+                "feeder_vulnerability_index": 0.75,
+                "dominant_risk_tier": "HIGH_RISK_RECURRENCE",
+                "classification": "ANALYTICAL_INDEX_NOT_OPERATIONAL_PRIORITY",
+                "drillback_ref": {
+                    "penyulang_id": 13,
+                    "findings_count": 22,
+                    "interruptions_count": 11
+                }
+            },
+            {
+                "feeder_id": 15,
+                "feeder_name": "BANJAR KEMANTREN",
+                "active_findings_count": 16,
+                "historical_interruptions": 13,
+                "feeder_vulnerability_index": 0.75,
+                "dominant_risk_tier": "HIGH_RISK_RECURRENCE",
+                "classification": "ANALYTICAL_INDEX_NOT_OPERATIONAL_PRIORITY",
+                "drillback_ref": {
+                    "penyulang_id": 15,
+                    "findings_count": 16,
+                    "interruptions_count": 13
+                }
+            }
+        ],
+        "cause_hotspots_count": 1,
+        "drillback_lineage": {
+            "advisory_source_table": "preventive_risk_advisory_snapshots",
+            "interruption_source_table": "historical_feeder_interruptions",
+            "findings_source_table": "temuan",
+            "feeders_source_table": "penyulang",
+            "sections_source_table": "sections",
+            "lineage_integrity_status": "CRYPTOGRAPHICALLY_VERIFIABLE",
+            "aggregate_to_source_path": "EXECUTIVE_KPI -> FVI_RANKING -> PENYULANG_ID -> TEMUAN_ID / DISTURBANCE_RECORD_HASH"
+        }
+    },
+    "sealed_baselines": {
+        "m04_baseline": "SEALED",
+        "m05_baseline": "SEALED",
+        "scoring_weights": "40/35/25",
+        "scoring_version": "PREVENTIVE_SCORING_v1.0",
+        "analytics_model": "EXECUTIVE_ANALYTICS_MODEL_v1.0",
+        "assets_honest_zero": "PRESERVED",
+        "zero_n_plus_one_passed": true
+    }
+}

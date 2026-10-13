@@ -1,0 +1,664 @@
+{
+    "46": {
+        "name": "ADI PRIMA 1",
+        "code": "5130-001",
+        "assets": 175,
+        "switches": 3,
+        "gtts": 0,
+        "jtm": 172,
+        "kp_list": []
+    },
+    "47": {
+        "name": "ADI PRIMA 2",
+        "code": "5130-003",
+        "assets": 178,
+        "switches": 2,
+        "gtts": 0,
+        "jtm": 176,
+        "kp_list": [
+            {
+                "id": 4163,
+                "code": "AST-KRN-DPRM2-JTM-005",
+                "name": "ADI PRIMA 2_125",
+                "ct": "PMS"
+            },
+            {
+                "id": 4176,
+                "code": "AST-KRN-DPRM2-JTM-018",
+                "name": "ADI PRIMA 2_24",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "48": {
+        "name": "CAHAYA METAL",
+        "code": "5130-005",
+        "assets": 167,
+        "switches": 3,
+        "gtts": 0,
+        "jtm": 164,
+        "kp_list": [
+            {
+                "id": 6550,
+                "code": "AST-KRN-CHYMTL-JTM-019",
+                "name": "CAHAYA METAL_168",
+                "ct": "PMS"
+            },
+            {
+                "id": 6598,
+                "code": "AST-KRN-CHYMTL-JTM-067",
+                "name": "CAHAYA METAL_002",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "49": {
+        "name": "DAWAR",
+        "code": "5130-007",
+        "assets": 134,
+        "switches": 5,
+        "gtts": 11,
+        "jtm": 118,
+        "kp_list": [
+            {
+                "id": 6717,
+                "code": "AST-KRN-DAWAR-JTM-019",
+                "name": "DAWAR_0003",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "56": {
+        "name": "BANJARAN",
+        "code": "5130-021",
+        "assets": 403,
+        "switches": 3,
+        "gtts": 7,
+        "jtm": 393,
+        "kp_list": [
+            {
+                "id": 5759,
+                "code": "AST-KRN-BANJARAN-JTM-251",
+                "name": "BANJARAN_0081",
+                "ct": "PMS"
+            },
+            {
+                "id": 5555,
+                "code": "AST-KRN-BANJARAN-JTM-047",
+                "name": "BANJARAN_0097",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "59": {
+        "name": "BARENG KRAJAN",
+        "code": "5130-027",
+        "assets": 214,
+        "switches": 10,
+        "gtts": 16,
+        "jtm": 188,
+        "kp_list": [
+            {
+                "id": 5931,
+                "code": "AST-KRN-BRNGKRJN-JTM-020",
+                "name": "BARENGKRAJAN_54",
+                "ct": "PMS"
+            },
+            {
+                "id": 5953,
+                "code": "AST-KRN-BRNGKRJN-JTM-042",
+                "name": "BARENGKRAJAN_80",
+                "ct": "PMS"
+            },
+            {
+                "id": 6035,
+                "code": "AST-KRN-BRNGKRJN-JTM-124",
+                "name": "BARENGKRAJAN_169",
+                "ct": "PMS"
+            },
+            {
+                "id": 6048,
+                "code": "AST-KRN-BRNGKRJN-JTM-137",
+                "name": "BARENGKRAJAN_73",
+                "ct": "PMS"
+            },
+            {
+                "id": 6079,
+                "code": "AST-KRN-BRNGKRJN-JTM-168",
+                "name": "BARENGKRAJAN_260",
+                "ct": "PMS"
+            },
+            {
+                "id": 6083,
+                "code": "AST-KRN-BRNGKRJN-JTM-172",
+                "name": "BARENGKRAJAN_180",
+                "ct": "PMS"
+            },
+            {
+                "id": 6109,
+                "code": "AST-KRN-BRNGKRJN-JTM-198",
+                "name": "BARENGKRAJAN_186",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "60": {
+        "name": "DUA PERMATA",
+        "code": "5130-029",
+        "assets": 268,
+        "switches": 12,
+        "gtts": 8,
+        "jtm": 248,
+        "kp_list": [
+            {
+                "id": 6942,
+                "code": "AST-KRN-DPRMT-JTM-110",
+                "name": "WRINGIN ANOM_0377-LBSM MOJOKEMUNING",
+                "ct": "PMT"
+            },
+            {
+                "id": 6976,
+                "code": "AST-KRN-DPRMT-JTM-144",
+                "name": "WRINGIN ANOM_0159_REC.SDN SIDOMULYO",
+                "ct": "TM1"
+            },
+            {
+                "id": 7000,
+                "code": "AST-KRN-DPRMT-JTM-168",
+                "name": "DUA PERMATA_107_LBSM WADANG TEMPEL",
+                "ct": "PMS"
+            },
+            {
+                "id": 7034,
+                "code": "AST-KRN-DPRMT-JTM-202",
+                "name": "WRINGIN ANOM_0317_LBS TUNDUNGAN",
+                "ct": "PMT"
+            },
+            {
+                "id": 7047,
+                "code": "AST-KRN-DPRMT-JTM-215",
+                "name": "WRINGIN ANOM_0152_LBSM BHAYANGKARA",
+                "ct": "PMS"
+            },
+            {
+                "id": 7065,
+                "code": "AST-KRN-DPRMT-JTM-233",
+                "name": "WRINGIN ANOM_0354_LBS SIDOMOJO",
+                "ct": "PMT"
+            },
+            {
+                "id": 6834,
+                "code": "AST-KRN-DPRMT-JTM-002",
+                "name": "WRINGIN ANOM_0259_LBS POM SIDOMOJO",
+                "ct": "TM1"
+            },
+            {
+                "id": 7090,
+                "code": "AST-KRN-DPRMT-JTM-258",
+                "name": "WRINGIN ANOM_0299_LBSM LAPANGAN TAMBAK",
+                "ct": "PMS"
+            },
+            {
+                "id": 6895,
+                "code": "AST-KRN-DPRMT-JTM-063",
+                "name": "WRINGIN ANOM_0359_LBS BY PASS TENGAH",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "61": {
+        "name": "ALAM PESONA",
+        "code": "5130-031",
+        "assets": 340,
+        "switches": 10,
+        "gtts": 34,
+        "jtm": 296,
+        "kp_list": [
+            {
+                "id": 4647,
+                "code": "AST-KRN-LMPSN-JTM-136",
+                "name": "5.95.CO branch Taman Sidorejo",
+                "ct": "PMS"
+            },
+            {
+                "id": 4728,
+                "code": "AST-KRN-LMPSN-JTM-217",
+                "name": "PSNN515",
+                "ct": "PMS"
+            },
+            {
+                "id": 4759,
+                "code": "AST-KRN-LMPSN-JTM-248",
+                "name": "BARENGKRAJAN_317",
+                "ct": "PMS"
+            },
+            {
+                "id": 4534,
+                "code": "AST-KRN-LMPSN-JTM-023",
+                "name": "BARENGKRAJAN_59",
+                "ct": "PMS"
+            },
+            {
+                "id": 4818,
+                "code": "AST-KRN-LMPSN-JTM-307",
+                "name": "5.LBS Badas",
+                "ct": "TM1"
+            },
+            {
+                "id": 4828,
+                "code": "AST-KRN-LMPSN-JTM-317",
+                "name": "BARENGKRAJAN_57",
+                "ct": "PMS"
+            },
+            {
+                "id": 4840,
+                "code": "AST-KRN-LMPSN-JTM-329",
+                "name": "BARENGKRAJAN_315",
+                "ct": "PMS"
+            },
+            {
+                "id": 4849,
+                "code": "AST-KRN-LMPSN-JTM-338",
+                "name": "381_REC. GRAHA PERMATA",
+                "ct": "PMS"
+            },
+            {
+                "id": 4606,
+                "code": "AST-KRN-LMPSN-JTM-095",
+                "name": "BARENGKRAJAN_262",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "73": {
+        "name": "GERRY FOOD",
+        "code": "5130-055",
+        "assets": 101,
+        "switches": 2,
+        "gtts": 0,
+        "jtm": 99,
+        "kp_list": [
+            {
+                "id": 7447,
+                "code": "AST-KRN-GRRYFD-JTM-007",
+                "name": "GERY FOOD_092",
+                "ct": "PMS"
+            },
+            {
+                "id": 7520,
+                "code": "AST-KRN-GRRYFD-JTM-080",
+                "name": "GERY FOOD_001",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "76": {
+        "name": "JAVA PASIFIK 1",
+        "code": "5130-061",
+        "assets": 88,
+        "switches": 1,
+        "gtts": 0,
+        "jtm": 87,
+        "kp_list": [
+            {
+                "id": 8047,
+                "code": "AST-KRN-JVPSFK1-JTM-049",
+                "name": "JAVA PACIFIK 1_001",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "77": {
+        "name": "JAVA PASIFIK 2",
+        "code": "5130-063",
+        "assets": 87,
+        "switches": 0,
+        "gtts": 0,
+        "jtm": 87,
+        "kp_list": []
+    },
+    "78": {
+        "name": "JAVA PASIFIK 3",
+        "code": "5130-065",
+        "assets": 104,
+        "switches": 0,
+        "gtts": 0,
+        "jtm": 104,
+        "kp_list": []
+    },
+    "79": {
+        "name": "JAVA PASIFIK 4",
+        "code": "5130-067",
+        "assets": 120,
+        "switches": 0,
+        "gtts": 0,
+        "jtm": 120,
+        "kp_list": []
+    },
+    "80": {
+        "name": "EMDEKI 1",
+        "code": "5130-069",
+        "assets": 106,
+        "switches": 0,
+        "gtts": 0,
+        "jtm": 106,
+        "kp_list": []
+    },
+    "81": {
+        "name": "EMDEKI 2",
+        "code": "5130-071",
+        "assets": 106,
+        "switches": 1,
+        "gtts": 0,
+        "jtm": 105,
+        "kp_list": [
+            {
+                "id": 7207,
+                "code": "AST-KRN-EMDEKI2-JTM-001",
+                "name": "EMDEKI 2_002",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "86": {
+        "name": "EXCELLENT",
+        "code": "5130-044",
+        "assets": 128,
+        "switches": 3,
+        "gtts": 0,
+        "jtm": 125,
+        "kp_list": [
+            {
+                "id": 7431,
+                "code": "AST-KRN-XCLLNT-JTM-119",
+                "name": "EXCELLENT_117",
+                "ct": "PMS"
+            },
+            {
+                "id": 7433,
+                "code": "AST-KRN-XCLLNT-JTM-121",
+                "name": "EXCELLENT_001",
+                "ct": "PMS"
+            },
+            {
+                "id": 7324,
+                "code": "AST-KRN-XCLLNT-JTM-012",
+                "name": "EXCELLENT_100",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "107": {
+        "name": "ASIA 1",
+        "code": "5130-051-fe2",
+        "assets": 204,
+        "switches": 3,
+        "gtts": 0,
+        "jtm": 201,
+        "kp_list": [
+            {
+                "id": 4877,
+                "code": "AST-KRN-ASIA1-JTM-026",
+                "name": "LUMBUNG KERAMIK_150",
+                "ct": "PMS"
+            },
+            {
+                "id": 5013,
+                "code": "AST-KRN-ASIA1-JTM-162",
+                "name": "ASIA 1_1",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "108": {
+        "name": "ASIA 2",
+        "code": "5130-053-18f",
+        "assets": 173,
+        "switches": 2,
+        "gtts": 0,
+        "jtm": 171,
+        "kp_list": [
+            {
+                "id": 5158,
+                "code": "AST-KRN-ASIA2-JTM-103",
+                "name": "ASIA 2_003",
+                "ct": "PMS"
+            },
+            {
+                "id": 5084,
+                "code": "AST-KRN-ASIA2-JTM-029",
+                "name": "ASIA 2_001",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "113": {
+        "name": "HASIL KARYA 1",
+        "code": "5130-063-b1f",
+        "assets": 98,
+        "switches": 0,
+        "gtts": 0,
+        "jtm": 98,
+        "kp_list": []
+    },
+    "114": {
+        "name": "HASIL KARYA 2",
+        "code": "5130-065-928",
+        "assets": 129,
+        "switches": 3,
+        "gtts": 0,
+        "jtm": 126,
+        "kp_list": [
+            {
+                "id": 7640,
+                "code": "AST-KRN-HSLKRY2-JTM-001",
+                "name": "HASIL KARYA2_125",
+                "ct": "PMS"
+            },
+            {
+                "id": 7649,
+                "code": "AST-KRN-HSLKRY2-JTM-010",
+                "name": "HASIL KARYA2_126",
+                "ct": "PMS"
+            },
+            {
+                "id": 7672,
+                "code": "AST-KRN-HSLKRY2-JTM-033",
+                "name": "HASIL KARYA2_043",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "115": {
+        "name": "HASIL KARYA 3",
+        "code": "5130-067-9ed",
+        "assets": 50,
+        "switches": 1,
+        "gtts": 0,
+        "jtm": 49,
+        "kp_list": [
+            {
+                "id": 7776,
+                "code": "AST-KRN-HSLKRY3-JTM-008",
+                "name": "HASIL KARYA 3_DS HASIL KARYA 3",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "116": {
+        "name": "HASIL KARYA 4",
+        "code": "5130-069-72b",
+        "assets": 145,
+        "switches": 0,
+        "gtts": 0,
+        "jtm": 145,
+        "kp_list": []
+    },
+    "117": {
+        "name": "HASIL KARYA 5",
+        "code": "5130-071-7d4",
+        "assets": 35,
+        "switches": 0,
+        "gtts": 0,
+        "jtm": 35,
+        "kp_list": []
+    },
+    "118": {
+        "name": "BAHAGIA STEEL 1",
+        "code": "5130-073-87a",
+        "assets": 45,
+        "switches": 1,
+        "gtts": 0,
+        "jtm": 44,
+        "kp_list": [
+            {
+                "id": 5229,
+                "code": "AST-KRN-BHGSTL1-JTM-001",
+                "name": "BAHAGIA STEEL 1_001",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "119": {
+        "name": "BAHAGIA STEEL 2",
+        "code": "5130-075",
+        "assets": 48,
+        "switches": 5,
+        "gtts": 0,
+        "jtm": 43,
+        "kp_list": [
+            {
+                "id": 5317,
+                "code": "AST-KRN-BHGSTL2-JTM-044",
+                "name": "BAHAGIA STEEL 2_044",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "120": {
+        "name": "BAHAGIA STEEL 3",
+        "code": "5130-077",
+        "assets": 47,
+        "switches": 3,
+        "gtts": 0,
+        "jtm": 44,
+        "kp_list": [
+            {
+                "id": 5349,
+                "code": "AST-KRN-BHGSTL3-JTM-028",
+                "name": "BAHAGIA STEEL 3_051",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "121": {
+        "name": "BAHAGIA STEEL 4",
+        "code": "5130-079",
+        "assets": 140,
+        "switches": 1,
+        "gtts": 0,
+        "jtm": 139,
+        "kp_list": [
+            {
+                "id": 5467,
+                "code": "AST-KRN-BHGSTL4-JTM-099",
+                "name": "BAHAGIA STEEL 4_001",
+                "ct": "PMS"
+            }
+        ]
+    },
+    "131": {
+        "name": "BY PASS",
+        "code": "5130-099",
+        "assets": 406,
+        "switches": 14,
+        "gtts": 19,
+        "jtm": 373,
+        "kp_list": [
+            {
+                "id": 6159,
+                "code": "AST-KRN-BYPASS-JTM-034",
+                "name": "BYPASS_142",
+                "ct": "PMS"
+            },
+            {
+                "id": 6418,
+                "code": "AST-KRN-BYPASS-JTM-293",
+                "name": "BYPASS_57",
+                "ct": "PMS"
+            },
+            {
+                "id": 6437,
+                "code": "AST-KRN-BYPASS-JTM-312",
+                "name": "BYPASS_144",
+                "ct": "PMS"
+            },
+            {
+                "id": 6438,
+                "code": "AST-KRN-BYPASS-JTM-313",
+                "name": "BYPASS_58",
+                "ct": "PMS"
+            },
+            {
+                "id": 6451,
+                "code": "AST-KRN-BYPASS-JTM-326",
+                "name": "PERNING_0145_LBSM PATUK SIDOMULYO",
+                "ct": "PMS"
+            },
+            {
+                "id": 6480,
+                "code": "AST-KRN-BYPASS-JTM-355",
+                "name": "BYPASS_20",
+                "ct": "PMS"
+            },
+            {
+                "id": 6231,
+                "code": "AST-KRN-BYPASS-JTM-106",
+                "name": "PERNING_0219_LBS SUDIMORO",
+                "ct": "PMS"
+            },
+            {
+                "id": 6488,
+                "code": "AST-KRN-BYPASS-JTM-363",
+                "name": "BYPASS_88",
+                "ct": "PMS"
+            },
+            {
+                "id": 6234,
+                "code": "AST-KRN-BYPASS-JTM-109",
+                "name": "BYPASS_173",
+                "ct": "PMS"
+            },
+            {
+                "id": 6238,
+                "code": "AST-KRN-BYPASS-JTM-113",
+                "name": "BYPASS_101",
+                "ct": "PMS"
+            },
+            {
+                "id": 6324,
+                "code": "AST-KRN-BYPASS-JTM-199",
+                "name": "BYPASS_164",
+                "ct": "PMS"
+            },
+            {
+                "id": 6332,
+                "code": "AST-KRN-BYPASS-JTM-207",
+                "name": "BYPASS_1",
+                "ct": "PMS"
+            },
+            {
+                "id": 6353,
+                "code": "AST-KRN-BYPASS-JTM-228",
+                "name": "BYPASS_192",
+                "ct": "PMS"
+            },
+            {
+                "id": 6128,
+                "code": "AST-KRN-BYPASS-JTM-003",
+                "name": "BYPASS_178",
+                "ct": "PMS"
+            }
+        ]
+    }
+}

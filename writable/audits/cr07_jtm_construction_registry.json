@@ -1,0 +1,72 @@
+{
+    "registry_id": "CR07_JTM_CONSTRUCTION_REGISTRY_v1.0",
+    "created_at": "2026-08-24 19:37:09 WIB",
+    "created_at_utc": "2026-08-24T12:37:09Z",
+    "total_items": 8,
+    "constructions": {
+        "TM-1": {
+            "construction_code": "TM-1",
+            "name": "Konstruksi Tiang Tumpu Lurus (Tangent Pole)",
+            "description": "Digunakan pada jalur saluran udara tegangan menengah lurus dengan sudut 0\u00b0 s.d. 5\u00b0.",
+            "angle_range": "0\u00b0 - 5\u00b0",
+            "standard_pole": "MAT-POLE-BETON-12-200",
+            "drawing_ref": "PLN-STD-TM1-REV4"
+        },
+        "TM-2": {
+            "construction_code": "TM-2",
+            "name": "Konstruksi Tiang Sudut Kecil (Small Angle Pole)",
+            "description": "Digunakan pada jalur tikungan sudut 5\u00b0 s.d. 15\u00b0 menggunakan pin post insulator ganda.",
+            "angle_range": "5\u00b0 - 15\u00b0",
+            "standard_pole": "MAT-POLE-BETON-12-200",
+            "drawing_ref": "PLN-STD-TM2-REV4"
+        },
+        "TM-3": {
+            "construction_code": "TM-3",
+            "name": "Konstruksi Tiang Sudut Sedang (Medium Angle Pole)",
+            "description": "Digunakan pada tikungan 15\u00b0 s.d. 30\u00b0 dengan isolator tumpu sudut khusus.",
+            "angle_range": "15\u00b0 - 30\u00b0",
+            "standard_pole": "MAT-POLE-BETON-12-200",
+            "drawing_ref": "PLN-STD-TM3-REV4"
+        },
+        "TM-4": {
+            "construction_code": "TM-4",
+            "name": "Konstruksi Tiang Sudut Besar / Tarik Tunggal (Large Angle Pole)",
+            "description": "Digunakan pada belokan tajam 30\u00b0 s.d. 60\u00b0 dengan rangkaian strain insulator tarik.",
+            "angle_range": "30\u00b0 - 60\u00b0",
+            "standard_pole": "MAT-POLE-BETON-12-200",
+            "drawing_ref": "PLN-STD-TM4-REV4"
+        },
+        "TM-5": {
+            "construction_code": "TM-5",
+            "name": "Konstruksi Tiang Tarik Ganda (Double Dead-End Tension Pole)",
+            "description": "Digunakan sebagai tiang penegang lurus atau sudut besar 60\u00b0 s.d. 90\u00b0 dengan 2 set strain.",
+            "angle_range": "60\u00b0 - 90\u00b0 / Dead-End",
+            "standard_pole": "MAT-POLE-BETON-13-350E",
+            "drawing_ref": "PLN-STD-TM5-REV4"
+        },
+        "TM-8": {
+            "construction_code": "TM-8",
+            "name": "Konstruksi Gardu Tiang Portal (2-Pole Substation)",
+            "description": "Gardu distribusi 2 tiang untuk transformator kapasitas 200 kVA, 250 kVA, s.d. 400 kVA.",
+            "angle_range": "N/A (Substation)",
+            "standard_pole": "MAT-POLE-BETON-13-350E",
+            "drawing_ref": "PLN-STD-TM8-REV4"
+        },
+        "TM-9": {
+            "construction_code": "TM-9",
+            "name": "Konstruksi Gardu Tiang Cantol (Single-Pole Substation)",
+            "description": "Gardu distribusi 1 tiang untuk transformator kapasitas 50 kVA, 100 kVA, s.d. 160 kVA.",
+            "angle_range": "N/A (Substation)",
+            "standard_pole": "MAT-POLE-BETON-12-200",
+            "drawing_ref": "PLN-STD-TM9-REV4"
+        },
+        "TM-REC": {
+            "construction_code": "TM-REC",
+            "name": "Konstruksi Tiang Recloser / Sectionalizer Pole",
+            "description": "Tiang khusus pemutus balik otomatis (Recloser) lengkap dengan proteksi Arrester & Trafo Catu Daya.",
+            "angle_range": "Switching Pole",
+            "standard_pole": "MAT-POLE-BETON-13-350E",
+            "drawing_ref": "PLN-STD-TMREC-REV4"
+        }
+    }
+}

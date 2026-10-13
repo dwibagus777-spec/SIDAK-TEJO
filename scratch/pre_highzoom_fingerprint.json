@@ -1,0 +1,34 @@
+{
+    "assets": {
+        "count": 5549,
+        "sha256": "d774be4f9d338fcdcdac5f6eac9f4a06f74300e1a293e10a8968c133df799ee9"
+    },
+    "gis_translines": {
+        "count": 208,
+        "sha256": "edc2e9f138f0fb035dd6507baae21ee755bde7aba5bcf9eae741f72e297e3833"
+    },
+    "gis_transline_proposals": {
+        "count": 56,
+        "sha256": "74974b866f483ea7fc624c5ffe5f506e85a7a66da4a1e9eb64ee401c8a6d8ca5"
+    },
+    "temuan": {
+        "count": 638,
+        "sha256": "48ae4d223e842a85ae509eeee49203ee2240cb4517b66a0e11bd3db05bb94a3a"
+    },
+    "temuan_materials": {
+        "count": 0,
+        "sha256": "55f43e2fefa3f34c5c82129161873375891626eb56f668b9da5a6414a3585aae"
+    },
+    "sections": {
+        "count": 510,
+        "sha256": "9e36669b061f9879a82825e0cb288f5d24cbdafbabdd85cd7075feceef4b621e"
+    },
+    "penyulang": {
+        "count": 134,
+        "sha256": "cb3ae4e4a8b891cf789fb4505aad2e4d8ae22bf94c9eaacec9fe98777628bb67"
+    },
+    "ulps": {
+        "count": 3,
+        "sha256": "1c3a2ccc852e80040f88b0a8df52ba4dabd1b36cd56e0ed45b5c9cf6edd3a531"
+    }
+}

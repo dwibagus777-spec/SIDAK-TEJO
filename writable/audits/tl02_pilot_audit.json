@@ -1,0 +1,518 @@
+{
+    "timestamp": "2026-09-09T08:28:17+07:00",
+    "engine_version": "TL-02-V1.0",
+    "penyulang_id": 15,
+    "pre_baseline": {
+        "assets_count": 205,
+        "assets_sha256": "4dc770276ee0610877de3c2b7eae389c06626a898e0c5dc9ea90b7fc3df73a1f",
+        "translines_count": 42,
+        "translines_sha256": "030f11d7cd458486d898da46661b3cdf752ebff501a5f59b67a0351d3d9f936f",
+        "proposals_count": 0,
+        "temuan_count": 1,
+        "temuan_sha256": "69717ca07544ea6777922ca558771945594134a7827d4f2a138bb13f4c65d78b",
+        "temuan_materials_count": 1,
+        "temuan_materials_sha256": "0b36754dee7cddd10a1743c33341c9b1753af1e545b3c9042c277353a5012eea"
+    },
+    "pilot_batch": [
+        {
+            "natural_key": "TL-NAT:15:3296-3340",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.98,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3296,
+            "target_asset_id": 3340,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-135",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-179",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 8.32,
+            "expected_distance_meters": 8.32,
+            "source_coordinates": {
+                "lat": -7.416384034,
+                "lng": 112.723587
+            },
+            "target_coordinates": {
+                "lat": -7.416356038,
+                "lng": 112.723517
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "AUTHORITATIVE_ANCHOR_CONTINUATION",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        },
+        {
+            "natural_key": "TL-NAT:15:3166-3243",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.98,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3166,
+            "target_asset_id": 3243,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-005",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-082",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 40.59,
+            "expected_distance_meters": 40.59,
+            "source_coordinates": {
+                "lat": -7.413407033,
+                "lng": 112.72556
+            },
+            "target_coordinates": {
+                "lat": -7.41305097,
+                "lng": 112.725641
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "AUTHORITATIVE_ANCHOR_CONTINUATION",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        },
+        {
+            "natural_key": "TL-NAT:15:3182-3249",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.98,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3182,
+            "target_asset_id": 3249,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-021",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-088",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 45.1,
+            "expected_distance_meters": 45.1,
+            "source_coordinates": {
+                "lat": -7.415822027,
+                "lng": 112.721971
+            },
+            "target_coordinates": {
+                "lat": -7.415967034,
+                "lng": 112.722353
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "AUTHORITATIVE_ANCHOR_CONTINUATION",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        },
+        {
+            "natural_key": "TL-NAT:15:3224-3320",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.95,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3224,
+            "target_asset_id": 3320,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-063",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-159",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 2.96,
+            "expected_distance_meters": 2.96,
+            "source_coordinates": {
+                "lat": -7.40867503,
+                "lng": 112.718196
+            },
+            "target_coordinates": {
+                "lat": -7.408649968,
+                "lng": 112.718205
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        },
+        {
+            "natural_key": "TL-NAT:15:3176-3309",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.95,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3176,
+            "target_asset_id": 3309,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-015",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-148",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 3.87,
+            "expected_distance_meters": 3.87,
+            "source_coordinates": {
+                "lat": -7.409522021,
+                "lng": 112.722182
+            },
+            "target_coordinates": {
+                "lat": -7.40952001,
+                "lng": 112.722147
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        },
+        {
+            "natural_key": "TL-NAT:15:3274-3284",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.95,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3274,
+            "target_asset_id": 3284,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-113",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-123",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 5.59,
+            "expected_distance_meters": 5.59,
+            "source_coordinates": {
+                "lat": -7.412842009,
+                "lng": 112.710327
+            },
+            "target_coordinates": {
+                "lat": -7.412829017,
+                "lng": 112.710278
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        },
+        {
+            "natural_key": "TL-NAT:15:3183-3297",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.95,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3183,
+            "target_asset_id": 3297,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-022",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-136",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 5.79,
+            "expected_distance_meters": 5.79,
+            "source_coordinates": {
+                "lat": -7.411950007,
+                "lng": 112.721508
+            },
+            "target_coordinates": {
+                "lat": -7.411906002,
+                "lng": 112.721536
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        },
+        {
+            "natural_key": "TL-NAT:15:3234-3250",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.95,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3234,
+            "target_asset_id": 3250,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-073",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-089",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 5.96,
+            "expected_distance_meters": 5.96,
+            "source_coordinates": {
+                "lat": -7.409887975,
+                "lng": 112.724513
+            },
+            "target_coordinates": {
+                "lat": -7.409889987,
+                "lng": 112.724567
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        },
+        {
+            "natural_key": "TL-NAT:15:3316-3339",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.95,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3316,
+            "target_asset_id": 3339,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-155",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-178",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 7.75,
+            "expected_distance_meters": 7.75,
+            "source_coordinates": {
+                "lat": -7.409939021,
+                "lng": 112.724943
+            },
+            "target_coordinates": {
+                "lat": -7.409878001,
+                "lng": 112.724909
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        },
+        {
+            "natural_key": "TL-NAT:15:3257-3294",
+            "status": "AUTO_MATCH",
+            "classification": "AUTO_COMPLETE",
+            "confidence_score": 0.95,
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3257,
+            "target_asset_id": 3294,
+            "source_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-096",
+            "target_asset_code": "AST-KOTA-BNJRKMNTRN-JTM-133",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "visual_style_token": "AAAC_150",
+            "visual_pattern": "HEAVY_SOLID",
+            "distance_meters": 7.99,
+            "expected_distance_meters": 7.99,
+            "source_coordinates": {
+                "lat": -7.409447003,
+                "lng": 112.721736
+            },
+            "target_coordinates": {
+                "lat": -7.409454966,
+                "lng": 112.721808
+            },
+            "evidence": [
+                "SAME_PENYULANG",
+                "SPATIAL_CONTINUITY",
+                "VALID_COORDINATES",
+                "NOMINAL_JTM_SPAN"
+            ],
+            "is_existing": false
+        }
+    ],
+    "execution_result": {
+        "status": "success",
+        "action": "AUTO_COMPLETION_COMMITTED",
+        "run_id": "TL02-PILOT-20260909082817-TEST",
+        "created_count": 10,
+        "confirmed_count": 10,
+        "created_translines": [
+            {
+                "id": 45,
+                "transline_id": 45,
+                "proposal_id": 1,
+                "transline_code": "TL-15-3296-3340",
+                "natural_key": "TL-NAT:15:3296-3340",
+                "source_asset_id": 3296,
+                "target_asset_id": 3340,
+                "distance_meters": 8.32,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:1"
+            },
+            {
+                "id": 46,
+                "transline_id": 46,
+                "proposal_id": 2,
+                "transline_code": "TL-15-3166-3243",
+                "natural_key": "TL-NAT:15:3166-3243",
+                "source_asset_id": 3166,
+                "target_asset_id": 3243,
+                "distance_meters": 40.59,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:2"
+            },
+            {
+                "id": 47,
+                "transline_id": 47,
+                "proposal_id": 3,
+                "transline_code": "TL-15-3182-3249",
+                "natural_key": "TL-NAT:15:3182-3249",
+                "source_asset_id": 3182,
+                "target_asset_id": 3249,
+                "distance_meters": 45.1,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:3"
+            },
+            {
+                "id": 48,
+                "transline_id": 48,
+                "proposal_id": 4,
+                "transline_code": "TL-15-3224-3320",
+                "natural_key": "TL-NAT:15:3224-3320",
+                "source_asset_id": 3224,
+                "target_asset_id": 3320,
+                "distance_meters": 2.96,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:4"
+            },
+            {
+                "id": 49,
+                "transline_id": 49,
+                "proposal_id": 5,
+                "transline_code": "TL-15-3176-3309",
+                "natural_key": "TL-NAT:15:3176-3309",
+                "source_asset_id": 3176,
+                "target_asset_id": 3309,
+                "distance_meters": 3.87,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:5"
+            },
+            {
+                "id": 50,
+                "transline_id": 50,
+                "proposal_id": 6,
+                "transline_code": "TL-15-3274-3284",
+                "natural_key": "TL-NAT:15:3274-3284",
+                "source_asset_id": 3274,
+                "target_asset_id": 3284,
+                "distance_meters": 5.59,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:6"
+            },
+            {
+                "id": 51,
+                "transline_id": 51,
+                "proposal_id": 7,
+                "transline_code": "TL-15-3183-3297",
+                "natural_key": "TL-NAT:15:3183-3297",
+                "source_asset_id": 3183,
+                "target_asset_id": 3297,
+                "distance_meters": 5.79,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:7"
+            },
+            {
+                "id": 52,
+                "transline_id": 52,
+                "proposal_id": 8,
+                "transline_code": "TL-15-3234-3250",
+                "natural_key": "TL-NAT:15:3234-3250",
+                "source_asset_id": 3234,
+                "target_asset_id": 3250,
+                "distance_meters": 5.96,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:8"
+            },
+            {
+                "id": 53,
+                "transline_id": 53,
+                "proposal_id": 9,
+                "transline_code": "TL-15-3316-3339",
+                "natural_key": "TL-NAT:15:3316-3339",
+                "source_asset_id": 3316,
+                "target_asset_id": 3339,
+                "distance_meters": 7.75,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:9"
+            },
+            {
+                "id": 54,
+                "transline_id": 54,
+                "proposal_id": 10,
+                "transline_code": "TL-15-3257-3294",
+                "natural_key": "TL-NAT:15:3257-3294",
+                "source_asset_id": 3257,
+                "target_asset_id": 3294,
+                "distance_meters": 7.99,
+                "created_by": "TL-02_AUTO_COMPLETION_ENGINE|RUN:TL02-PILOT-20260909082817-TEST|PROP:10"
+            }
+        ],
+        "confirmed_proposals": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+        ]
+    },
+    "post_audit": {
+        "assets_count": 205,
+        "assets_sha256": "4dc770276ee0610877de3c2b7eae389c06626a898e0c5dc9ea90b7fc3df73a1f",
+        "translines_count": 52,
+        "proposals_count": 10,
+        "temuan_count": 1,
+        "temuan_sha256": "69717ca07544ea6777922ca558771945594134a7827d4f2a138bb13f4c65d78b",
+        "temuan_materials_count": 1,
+        "temuan_materials_sha256": "0b36754dee7cddd10a1743c33341c9b1753af1e545b3c9042c277353a5012eea"
+    },
+    "zero_write_checks": {
+        "assets_unchanged": true,
+        "temuan_unchanged": true,
+        "temuan_materials_unchanged": true,
+        "baseline42_unchanged": true
+    },
+    "idempotency_proof": {
+        "second_exec_aborted": true,
+        "duplicate_rows_created": 0
+    },
+    "rollback_proof": {
+        "status": "success",
+        "deleted_pks": [
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54
+        ],
+        "post_rollback_hash_identical": true
+    }
+}

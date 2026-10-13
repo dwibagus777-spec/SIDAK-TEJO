@@ -1,0 +1,179 @@
+{
+  "timestamp": "2026-09-13T01:09:48.476Z",
+  "targetUrl": "https://sidaktejo.site/dashboard",
+  "allPassed": true,
+  "consoleErrors": [],
+  "jsExceptions": [],
+  "results": [
+    {
+      "name": "Mobile Android",
+      "width": 360,
+      "height": 800,
+      "isMobile": true,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 360,
+        "innerWidth": 360,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": true,
+        "feedCount": 4
+      }
+    },
+    {
+      "name": "Mobile Modern (iPhone 12/13/14)",
+      "width": 390,
+      "height": 844,
+      "isMobile": true,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": true,
+        "feedCount": 4
+      }
+    },
+    {
+      "name": "Large Mobile (Galaxy S20)",
+      "width": 412,
+      "height": 915,
+      "isMobile": true,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 412,
+        "innerWidth": 412,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": true,
+        "feedCount": 4
+      }
+    },
+    {
+      "name": "Large Mobile (iPhone 14 Pro Max)",
+      "width": 430,
+      "height": 932,
+      "isMobile": true,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 430,
+        "innerWidth": 430,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": true,
+        "feedCount": 4
+      }
+    },
+    {
+      "name": "Tablet Portrait (iPad)",
+      "width": 768,
+      "height": 1024,
+      "isMobile": true,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 768,
+        "innerWidth": 768,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": true,
+        "feedCount": 4
+      }
+    },
+    {
+      "name": "Tablet (iPad Air)",
+      "width": 820,
+      "height": 1180,
+      "isMobile": true,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 820,
+        "innerWidth": 820,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": true,
+        "feedCount": 4
+      }
+    },
+    {
+      "name": "Tablet Landscape",
+      "width": 1024,
+      "height": 768,
+      "isMobile": false,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 1024,
+        "innerWidth": 1024,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": false,
+        "feedCount": 4
+      }
+    },
+    {
+      "name": "Desktop HD",
+      "width": 1280,
+      "height": 720,
+      "isMobile": false,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 1280,
+        "innerWidth": 1280,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": false,
+        "feedCount": 4
+      }
+    },
+    {
+      "name": "Desktop (1440x900)",
+      "width": 1440,
+      "height": 900,
+      "isMobile": false,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": false,
+        "feedCount": 4
+      }
+    },
+    {
+      "name": "Large Desktop FHD",
+      "width": 1920,
+      "height": 1080,
+      "isMobile": false,
+      "pass": true,
+      "metrics": {
+        "scrollWidth": 1920,
+        "innerWidth": 1920,
+        "hasOverflow": false,
+        "kpiCount": 8,
+        "mapHeight": 288,
+        "slaCount": 4,
+        "dockVisible": false,
+        "feedCount": 4
+      }
+    }
+  ]
+}

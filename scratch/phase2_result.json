@@ -1,0 +1,161 @@
+{
+    "gate": "B7_PRODUCTION_ACTIVATION_PHASE_2",
+    "timestamp": "2026-09-26 17:49:30 WIB",
+    "environment": "production",
+    "target_host": "2.57.91.151 (https:\/\/sidaktejo.site)",
+    "sub_gates": {
+        "2A_security_firewall": {
+            "status": "PASS",
+            "code_401": 401,
+            "code_403": 403
+        },
+        "2B_synthetic_e2e_execution": {
+            "status": "PASS",
+            "http_code": 200,
+            "execution_time_ms": 339.92,
+            "correlation_id": "B7-PROD-E2E-20260926174933",
+            "correlation_chain": {
+                "sync_id": "SYNC-B7-PROD-E2E-20260926174933-001",
+                "device_id": "SYNTH-DEV-B7-E2E-001",
+                "client_submission_uuid": "UUID-B7-PROD-E2E-20260926174933-OP1..OP5",
+                "event_id": 22,
+                "event_number": "EVT-SYNTH-B7-E2E-20260926174933",
+                "case_id": 10,
+                "assignment_id": 10,
+                "investigation_id": 9,
+                "finding_id": 5,
+                "evidence_id": "EV-B7-PROD-E2E-20260926174933-001",
+                "field_evidence_id": 4,
+                "feedback_id": 4,
+                "journal_seq_start": 1,
+                "journal_seq_end": 5,
+                "pull_cursor_final": 6,
+                "case_final_status": "CLOSED"
+            }
+        },
+        "2C_hard_stops": {
+            "all_pass": true,
+            "hard_stop_1": {
+                "status": "PASS",
+                "delete_count": 0,
+                "case_final_status": "CLOSED",
+                "synthetic_flag": true,
+                "test_mode_flag": true
+            },
+            "hard_stop_2": {
+                "status": "PASS",
+                "http_code": 200,
+                "duplicate_count": 5,
+                "accepted_count": 0,
+                "domain_execution_count": 0,
+                "duplicate_writes": 0
+            },
+            "hard_stop_3": {
+                "status": "PASS",
+                "chunk_0_sha256": "d1f6c0029114e366521e8445011dd1d11d04f220c1dedf0fc6a67745309cabe0",
+                "chunk_1_sha256": "882871586234f6e0378113f16d7ec65c5c3541c25f5e88a2c346d3a01faaf59b",
+                "full_file_sha256": "67e796b74d4558dff75b917ec782ef4c69f4cddf1008bf370c99bf0e4fb5a150",
+                "assembled_sha256_match": true,
+                "field_evidence_sealed": true
+            },
+            "hard_stop_4": {
+                "status": "PASS",
+                "cursor_in": 0,
+                "next_cursor": 6,
+                "records_delivered": 6,
+                "subsequent_pull_count": 0,
+                "zero_duplicates": true,
+                "zero_skips": true,
+                "no_regression": true
+            },
+            "hard_stop_5": {
+                "status": "PASS",
+                "predicted_asset_id": 3162,
+                "actual_asset_id": 3163,
+                "prediction_rank": 2,
+                "match_class": "NEAR_MATCH",
+                "fli_weights_modified": false
+            },
+            "hard_stop_6": {
+                "status": "PASS",
+                "zero_mutation": true,
+                "delta_active_tl": 0,
+                "delta_physical_tl": 0,
+                "delta_active_assets": 0,
+                "delta_physical_assets": 0,
+                "hash_active_tl_match": true,
+                "hash_phys_tl_match": true,
+                "hash_active_asset_match": true,
+                "hash_phys_asset_match": true,
+                "sentinel_before": {
+                    "active_translines": 243,
+                    "physical_translines": 252,
+                    "active_assets": 5236,
+                    "physical_assets": 5549,
+                    "active_transline_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                    "active_asset_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                    "physical_transline_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                    "physical_asset_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                    "network_span_meters": 9418.37,
+                    "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb"
+                },
+                "sentinel_after": {
+                    "active_translines": 243,
+                    "physical_translines": 252,
+                    "active_assets": 5236,
+                    "physical_assets": 5549,
+                    "active_transline_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                    "active_asset_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                    "physical_transline_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                    "physical_asset_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                    "network_span_meters": 9418.37,
+                    "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb"
+                }
+            }
+        },
+        "2D_wire_pull_verification": {
+            "status": "PASS",
+            "page_1_http_code": 200,
+            "page_1_count": 6,
+            "page_1_next_cursor": 6,
+            "page_2_http_code": 200,
+            "page_2_count": 0
+        },
+        "2E_reconciliation_post_e2e": {
+            "status": "PASS",
+            "verdict": "PASS_AUTHORITATIVE_PRODUCTION",
+            "pack": {
+                "layer_1_application": {
+                    "sync_service_version": "B7-SYNC-1.0",
+                    "evidence_service_version": "B7-EVIDENCE-1.0",
+                    "pull_service_version": "B7-PULL-1.0",
+                    "status": "SEALED & SYNCHRONIZED"
+                },
+                "layer_2_physical_database": {
+                    "total_phase_b_tables": 11,
+                    "physical_translines_count": 252,
+                    "physical_translines_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                    "physical_assets_count": 5549,
+                    "physical_assets_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                    "inactive_translines_count": 9,
+                    "soft_deleted_assets_count": 313
+                },
+                "layer_3_authoritative_view": {
+                    "active_translines_count": 243,
+                    "active_translines_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                    "active_assets_count": 5236,
+                    "active_assets_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                    "authoritative_aligned": true,
+                    "formula_translines": "243 Active + 9 Inactive = 252 Physical",
+                    "formula_assets": "5236 Active + 313 Soft-Deleted = 5549 Physical"
+                },
+                "layer_4_topology_snapshot": {
+                    "snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+                    "network_span_meters": 9418.37,
+                    "status": "PERMANENTLY_SEALED"
+                }
+            }
+        }
+    },
+    "overall_verdict": "PASS"
+}

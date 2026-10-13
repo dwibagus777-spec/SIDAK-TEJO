@@ -1,0 +1,4341 @@
+{
+    "1": [
+        {
+            "id": "1",
+            "penyulang_id": "1",
+            "nama_section": "GI-LBSM PDAM",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "5",
+            "penyulang_id": "1",
+            "nama_section": "LBS LAMPU MERAH - LBS BUDURAN 2",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "4",
+            "penyulang_id": "1",
+            "nama_section": "LBS SPBU - LBS LAMPU MERAH",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "6",
+            "penyulang_id": "1",
+            "nama_section": "LBSM BUDURAN 3 - LBS PONDOK BUANA - LBS PPG 1",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-08-07 08:23:48"
+        },
+        {
+            "id": "2",
+            "penyulang_id": "1",
+            "nama_section": "LBSM PDAM - RECLOSER PASAR PANJI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "3",
+            "penyulang_id": "1",
+            "nama_section": "RECLOSER PASAR PANJI - LBSM BUDURAN 3 - LBS SPBU",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-08-07 08:24:25"
+        }
+    ],
+    "2": [
+        {
+            "id": "7",
+            "penyulang_id": "2",
+            "nama_section": "GI - LBS KAMPUNG JAMUR",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "8",
+            "penyulang_id": "2",
+            "nama_section": "LBS KAMPUNG JAMUR - RECLOSER INTI DAYA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "10",
+            "penyulang_id": "2",
+            "nama_section": "LBS MPP - LBS BARATA - GH PDAM - LBSM BLOK O -  LBS CITRALOKA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "9",
+            "penyulang_id": "2",
+            "nama_section": "RECLOSER INTI DAYA - LBS MPP",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "3": [
+        {
+            "id": "11",
+            "penyulang_id": "3",
+            "nama_section": "GI - LBS SIDOMULYO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "12",
+            "penyulang_id": "3",
+            "nama_section": "LBS SIDOMULYO -  PMCB KPI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "13",
+            "penyulang_id": "3",
+            "nama_section": "PMCB KPI - LBS BEDREK - LBSM TRI DASA WINDU",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "4": [
+        {
+            "id": "14",
+            "penyulang_id": "4",
+            "nama_section": "GI - RECLOSER PULAU BATU",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "16",
+            "penyulang_id": "4",
+            "nama_section": "LBSM BANJARSARI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "15",
+            "penyulang_id": "4",
+            "nama_section": "RECLOSER PULAU BATU - LBSM  TRI DASA WINDU - LBS COUPLE PERTIGAAN PRASUNG - LBSM BANJARSARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "5": [
+        {
+            "id": "17",
+            "penyulang_id": "5",
+            "nama_section": "GI - LBSM TKW",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "18",
+            "penyulang_id": "5",
+            "nama_section": "LBSM TKW - PMCB COMFEED",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "19",
+            "penyulang_id": "5",
+            "nama_section": "PMCB COMFEED - LBS MASPION UTARA - LBSM MASPION 3",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "6": [
+        {
+            "id": "20",
+            "penyulang_id": "6",
+            "nama_section": "GI - LBSM SEDERHANA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "22",
+            "penyulang_id": "6",
+            "nama_section": "LBSM SEDERHANA - LBS MASPION SELATAN - LBS KRAGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-08-07 08:25:33"
+        },
+        {
+            "id": "21",
+            "penyulang_id": "6",
+            "nama_section": "LBSM SEDERHANA - LBS POLSEK - RECLOSER JAPFA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "7": [
+        {
+            "id": "23",
+            "penyulang_id": "7",
+            "nama_section": "GI - RECLOSER POLYGON",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "24",
+            "penyulang_id": "7",
+            "nama_section": "RECLOSER POLYGON - LBS MASJID WADUNGASIH - LBS WADUNGASIH - LBS TERAS KOTA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "8": [
+        {
+            "id": "25",
+            "penyulang_id": "8",
+            "nama_section": "GI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "9": [],
+    "10": [
+        {
+            "id": "27",
+            "penyulang_id": "10",
+            "nama_section": "GI - LBSM AVIAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "30",
+            "penyulang_id": "10",
+            "nama_section": "LBS MAKAM GEMURUNG - LBS PEPE - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "28",
+            "penyulang_id": "10",
+            "nama_section": "LBSM AVIAN - RECLOSER NGUDI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "29",
+            "penyulang_id": "10",
+            "nama_section": "RECLOSER NGUDI - LBS KRAGAN - LBS BALDES GEMURUNG - LBS MAKAM GEMURUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "11": [
+        {
+            "id": "31",
+            "penyulang_id": "11",
+            "nama_section": "GI -LBSM SENTRA PANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "108",
+            "penyulang_id": "11",
+            "nama_section": "LBS COKRO - LBS SEKARDANGAN -  LBSM BLIGO TIMUR",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-08-07 08:20:12"
+        },
+        {
+            "id": "510",
+            "penyulang_id": "11",
+            "nama_section": "LBSM BLIGO TIMUR - LBS BLIGO RAYA - LBS ECCO - LBS PG CANDI",
+            "status": "AKTIF",
+            "created_at": "2026-08-07 08:39:55",
+            "updated_at": "2026-08-07 08:39:55"
+        },
+        {
+            "id": "34",
+            "penyulang_id": "11",
+            "nama_section": "LBSM BLURU UTARA - LBSM THREEWAY ARGENT PARK - LBS COUPLE DR WAHIDIN - LBS SEKARDANGAN - LBSM MASJID SEKARDANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "35",
+            "penyulang_id": "11",
+            "nama_section": "LBSM MASJID SEKARDANGAN - LBS GEBANG - LBS LINGKAR TIMUR",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "32",
+            "penyulang_id": "11",
+            "nama_section": "LBSM SENTRA PANGAN - RECLOSER PERKAPALAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "33",
+            "penyulang_id": "11",
+            "nama_section": "RECLOSER PERKAPALAN - LBSM BLURU UTARA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "12": [
+        {
+            "id": "36",
+            "penyulang_id": "12",
+            "nama_section": "GI - LBSM MASJID BUDURAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "39",
+            "penyulang_id": "12",
+            "nama_section": "LBS BLURU BARAT - LBSM THREEWAY ARGENT PARK - LBSM MONGINSIDI - LBS YOS SUDARSO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "40",
+            "penyulang_id": "12",
+            "nama_section": "LBS YOS SUDARSO - LBS AHMAD YANI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "37",
+            "penyulang_id": "12",
+            "nama_section": "LBSM MASJID BUDURAN - RECLOSER STASIUN BUDURAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "38",
+            "penyulang_id": "12",
+            "nama_section": "RECLOSER STASIUN BUDURAN - LBSM BALDES KEMIRI - LBS BLURU BARAT",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "13": [
+        {
+            "id": "41",
+            "penyulang_id": "13",
+            "nama_section": "GI - RECLOSER KUDA LAUT",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "43",
+            "penyulang_id": "13",
+            "nama_section": "LBS KEMIRI - LBS PONDOK BUANA - LBSM BLURU TIMUR",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "44",
+            "penyulang_id": "13",
+            "nama_section": "LBSM BLURU TIMUR - LBS RANGKAH KIDUL - LBS SAFE N LOCK - LBS GEBANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "42",
+            "penyulang_id": "13",
+            "nama_section": "RECLOSER KUDA LAUT - LBS BEDREK - LBS KEMIRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "14": [
+        {
+            "id": "45",
+            "penyulang_id": "14",
+            "nama_section": "GI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "15": [
+        {
+            "id": "46",
+            "penyulang_id": "15",
+            "nama_section": "GI - LBS MITRA MULIA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "50",
+            "penyulang_id": "15",
+            "nama_section": "LBS KARANGBONG TENGAH - LBSM KARANGBONG BARAT",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "47",
+            "penyulang_id": "15",
+            "nama_section": "LBS MITRA MULIA - PMCB BULOG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "49",
+            "penyulang_id": "15",
+            "nama_section": "LBSM BERNOFARM - LBS KARANGBONG TENGAH",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "48",
+            "penyulang_id": "15",
+            "nama_section": "PMCB BULOG - LBS KOPEL KARANGBONG TIMUR - LBSM BERNOFARM",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "16": [
+        {
+            "id": "51",
+            "penyulang_id": "16",
+            "nama_section": "GI - RECLOSER KECAMATAN BUDURAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "53",
+            "penyulang_id": "16",
+            "nama_section": "LBS ARHANUD - LBSM GEDANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "52",
+            "penyulang_id": "16",
+            "nama_section": "RECLOSER KECAMATAN BUDURAN -LBS KENCAR -  LBS KARANGBONG TIMUR - LBS TANRISE - LBS ARHANUD",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "17": [
+        {
+            "id": "54",
+            "penyulang_id": "17",
+            "nama_section": "GI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "18": [
+        {
+            "id": "55",
+            "penyulang_id": "18",
+            "nama_section": "GI - LBS KENCAR - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "19": [
+        {
+            "id": "56",
+            "penyulang_id": "19",
+            "nama_section": "GI - LBSM HUBBEL",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "59",
+            "penyulang_id": "19",
+            "nama_section": "LBS STADION - LBSM BALDES KEMIRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "57",
+            "penyulang_id": "19",
+            "nama_section": "LBSM HUBBEL - LBS JAYA HARMONI - RECLOSER AMAN GRIYA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "58",
+            "penyulang_id": "19",
+            "nama_section": "RECLOSER AMAN GRIYA - LBS KSATRIAN - LBS STADION",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "20": [
+        {
+            "id": "60",
+            "penyulang_id": "20",
+            "nama_section": "GI - LBSM BALDES SUKOREJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "65",
+            "penyulang_id": "20",
+            "nama_section": "LBS PONDOK JATI - LBS KAHURIPAN - LBSM ISTANA MENTARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "64",
+            "penyulang_id": "20",
+            "nama_section": "LBS QUEEN AFLA - LBS DELTA SURYA - LBS PONDOK JATI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "61",
+            "penyulang_id": "20",
+            "nama_section": "LBSM BALDES SUKOREJO - RECLOSER PURI TERATAI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "63",
+            "penyulang_id": "20",
+            "nama_section": "LBSM GAJAH MAGERSARI - LBSM THREEWAY DIREKSI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "62",
+            "penyulang_id": "20",
+            "nama_section": "RECLOSER PURI TERATAI - LBS QUEEN AFLA - LBSM GAJAH MAGERSARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "21": [
+        {
+            "id": "66",
+            "penyulang_id": "21",
+            "nama_section": "GI - LBSM MAKAM SUKOREJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "67",
+            "penyulang_id": "21",
+            "nama_section": "LBSM MAKAM SUKOREJO - LBS JAYA HARMONI - RECLOSER SPM N 2 BUDURAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-08-07 08:22:38"
+        },
+        {
+            "id": "69",
+            "penyulang_id": "21",
+            "nama_section": "LBSM SUMPUT - LBS SUPRAMA - LBSM THREEWAY MASJID CEMENGKALANG - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "68",
+            "penyulang_id": "21",
+            "nama_section": "RECLOSER SMP N 2 BUDURAN - LBS KAHURIPAN - LBSM SUMPUT",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-08-07 08:23:10"
+        }
+    ],
+    "22": [
+        {
+            "id": "74",
+            "penyulang_id": "22",
+            "nama_section": "AVS PAHLAWAN - LBS PDAM",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "70",
+            "penyulang_id": "22",
+            "nama_section": "GI - LBS CIPTA PRATAMA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "71",
+            "penyulang_id": "22",
+            "nama_section": "LBS CIPTA PRATAMA - RECLOSER MEGA ASRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "73",
+            "penyulang_id": "22",
+            "nama_section": "LBSM PAGERWOJO - LBSM THREEWAY SARINADI - LBSM TPI - AVS PAHLAWAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "72",
+            "penyulang_id": "22",
+            "nama_section": "RECLOSER MEGA ASRI - LBS KOPEL GROJO - LBSM PAGERWOJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "23": [
+        {
+            "id": "75",
+            "penyulang_id": "23",
+            "nama_section": "GI - LBS INDUSTRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "76",
+            "penyulang_id": "23",
+            "nama_section": "LBS INDUSTRI -  LBS KOPEL INTERTREND - PMCB BECIRO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "79",
+            "penyulang_id": "23",
+            "nama_section": "LBSM INDOPON -  LBSM MPM - LBSM GEDANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "78",
+            "penyulang_id": "23",
+            "nama_section": "LBSM WONOKOYO - LBS KOPEL JOHO - LBSM INDOPON",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "77",
+            "penyulang_id": "23",
+            "nama_section": "PMCB BECIRO - LBS KOPEL KARANGBONG BARAT - LBS WONOKOYO - LBSM WONOKOYO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "24": [
+        {
+            "id": "80",
+            "penyulang_id": "24",
+            "nama_section": "GI - LBSM OMEGA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "81",
+            "penyulang_id": "24",
+            "nama_section": "LBSM OMEGA - PMCB KASOGI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "82",
+            "penyulang_id": "24",
+            "nama_section": "PMCB KASOGI - LBS KOPEL INTERTREND - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "25": [
+        {
+            "id": "83",
+            "penyulang_id": "25",
+            "nama_section": "GI - LBS KOPEL CIRO - RECLOSER JUMPUT REJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "85",
+            "penyulang_id": "25",
+            "nama_section": "LBSM HERO - LBS DELTA SURYA - LBS PONDOK MUTIARA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "84",
+            "penyulang_id": "25",
+            "nama_section": "RECLOSER JUMPUT REJO - LBS KOPEL GROJO - LBSM THREEWAY SARINADI - LBSM HERO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "26": [
+        {
+            "id": "86",
+            "penyulang_id": "26",
+            "nama_section": "GI - LBSM ATINA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "87",
+            "penyulang_id": "26",
+            "nama_section": "LBSM ATINA -  RECLOSER ADITAMA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "90",
+            "penyulang_id": "26",
+            "nama_section": "LBSM NANGKA SRUNI - LBS TANRISE",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "89",
+            "penyulang_id": "26",
+            "nama_section": "LBSM PURI SEJAHTERA - LBS KOPEL KARANGBONG BARAT - LBS GANTING - LBS KOPEL JOHO - LBSM NANGKA SRUNI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "88",
+            "penyulang_id": "26",
+            "nama_section": "RECLOSER ADITAMA - LBS CIRO - LBSM PURI SEJAHTERA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "27": [
+        {
+            "id": "91",
+            "penyulang_id": "27",
+            "nama_section": "GI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "28": [
+        {
+            "id": "92",
+            "penyulang_id": "28",
+            "nama_section": "GI - LBSM MEIKO 5",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "95",
+            "penyulang_id": "28",
+            "nama_section": "LBSM MASPION - LBS BUDURAN 2",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "93",
+            "penyulang_id": "28",
+            "nama_section": "LBSM MEIKO 5 -  LBS POLSEK WADUNGASIH - LBS MASJID WADUNG ASIH - RECLOSER DANA PAINT",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "94",
+            "penyulang_id": "28",
+            "nama_section": "RECLOSER DANA PAINT -  LBS KEMANTREN - LBSM MASPION",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "29": [
+        {
+            "id": "96",
+            "penyulang_id": "29",
+            "nama_section": "GI - RECLOSER ZENI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "98",
+            "penyulang_id": "29",
+            "nama_section": "LBS DR CIPTO - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "97",
+            "penyulang_id": "29",
+            "nama_section": "RECLOSER ZENI - LBSM KANTORPOS - LBS SIDOKERTO -  LBS PDAM - LBS DR CIPTO - LBSM SUNANDAR",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "30": [
+        {
+            "id": "103",
+            "penyulang_id": "30",
+            "nama_section": "AVS DIPONEGORO - LBSM AIRLANGGA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "99",
+            "penyulang_id": "30",
+            "nama_section": "GI - LBSM MULTI PRIMA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "102",
+            "penyulang_id": "30",
+            "nama_section": "LBS DPR - AVS DIPONEGORO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "100",
+            "penyulang_id": "30",
+            "nama_section": "LBSM MULTI PRIMA - RECLOSER MPU TANTULAR",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "101",
+            "penyulang_id": "30",
+            "nama_section": "RECLOSER MPU TANTULAR - LBS AHMAD YANI - LBS MAGERSARI - THREEWAY DIREKSI - LBS DPR",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "31": [
+        {
+            "id": "104",
+            "penyulang_id": "31",
+            "nama_section": "GI - LBSM GELAM",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "107",
+            "penyulang_id": "31",
+            "nama_section": "LBSM BRAJA LAUT - LBS WEDORO KLURAK - LBS LINGKAR TIMUR - LBS COKRO - LBSM KALI PECABEAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "105",
+            "penyulang_id": "31",
+            "nama_section": "LBSM GELAM - PMCB KEBONSARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "109",
+            "penyulang_id": "31",
+            "nama_section": "LBSM KALI PECABEAN - LBS KENDAL CABEAN - LBSM MONODON",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "110",
+            "penyulang_id": "31",
+            "nama_section": "LBSM MONODON - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "106",
+            "penyulang_id": "31",
+            "nama_section": "PMCB KEBONSARI - LBSM BRAJA LAUT",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "32": [
+        {
+            "id": "115",
+            "penyulang_id": "32",
+            "nama_section": "GH PDAM - LBS HALAL",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "111",
+            "penyulang_id": "32",
+            "nama_section": "GI - RECLOSER NIRWANA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "116",
+            "penyulang_id": "32",
+            "nama_section": "LBS HALAL - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "114",
+            "penyulang_id": "32",
+            "nama_section": "LBSM KLURAK BARAT - LBS COKRO - LBS BARATA - GH PDAM",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "112",
+            "penyulang_id": "32",
+            "nama_section": "RECLOSER NIRWANA -  RECLOSER RAJA PAKSI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "113",
+            "penyulang_id": "32",
+            "nama_section": "RECLOSER RAJA PAKSI - LBSM KLURAK BARAT - LBS PG CANDI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-08-07 08:21:18"
+        }
+    ],
+    "33": [
+        {
+            "id": "117",
+            "penyulang_id": "33",
+            "nama_section": "GI - LBSM PRIMA RAYA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "118",
+            "penyulang_id": "33",
+            "nama_section": "LBSM PRIMA RAYA - RECLOSER BALDES CANDI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "119",
+            "penyulang_id": "33",
+            "nama_section": "RECLOSER BALDES - LBS ECCO - LBS BLIGO RAYA - LBSM THREEWAY RSUD - LBS PASAR LOAK - LBSM SUNANDAR",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "34": [
+        {
+            "id": "120",
+            "penyulang_id": "34",
+            "nama_section": "GI - LBSM SUGIH WARAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "127",
+            "penyulang_id": "34",
+            "nama_section": "LBS BULU SIDOKARE - LBS RANGKAH KIDUL",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "124",
+            "penyulang_id": "34",
+            "nama_section": "LBS CENDRAWASIH - LBS JOGOYUDO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "125",
+            "penyulang_id": "34",
+            "nama_section": "LBS JOGOYUDO - LBSM HASANUDIN - LBS BULU SIDOKARE - LBS DR WAHIDIN - LBSM MONGINSIDI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "126",
+            "penyulang_id": "34",
+            "nama_section": "LBSM HASANUDIN -  LBSM THREEWAY ERLANGGA - LBSM AIRLANGGA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "123",
+            "penyulang_id": "34",
+            "nama_section": "LBSM JATI KEPUH - LBSM THREE WAY RSUD - LBS CENDRAWASIH",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "121",
+            "penyulang_id": "34",
+            "nama_section": "LBSM SUGIH WARAS - RECLOSER TNI AL",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "122",
+            "penyulang_id": "34",
+            "nama_section": "RECLOSER TNI AL - LBSM JATI KEPUH",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "35": [
+        {
+            "id": "128",
+            "penyulang_id": "35",
+            "nama_section": "GI - LBSM YAYASAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "130",
+            "penyulang_id": "35",
+            "nama_section": "LBS SIDOKARE ASRI - LBSM TPI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "129",
+            "penyulang_id": "35",
+            "nama_section": "LBSM YAYASAN - RECLOSER LARANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "131",
+            "penyulang_id": "35",
+            "nama_section": "RECLOSER LARANGAN - LBS PASAR LOAK - LBS SIDOKARE ASRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "36": [
+        {
+            "id": "132",
+            "penyulang_id": "36",
+            "nama_section": "GI - LBSM KARANG TANJUNG BAWAH",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "135",
+            "penyulang_id": "36",
+            "nama_section": "LBS GRAHA KOTA - LBS SUPRAMA - LBS SUKO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "136",
+            "penyulang_id": "36",
+            "nama_section": "LBS SUKO - LBSM AGGIO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "137",
+            "penyulang_id": "36",
+            "nama_section": "LBSM AGGIO - LBSM LEBO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "133",
+            "penyulang_id": "36",
+            "nama_section": "LBSM KARANG TANJUNG BAWAH - PMCB DURUNG BANJAR",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "134",
+            "penyulang_id": "36",
+            "nama_section": "PMCB DURUNG BANJAR - LBS GRAHA KOTA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "37": [
+        {
+            "id": "138",
+            "penyulang_id": "37",
+            "nama_section": "GI - LBSM KARANG TANJUNG ATAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "141",
+            "penyulang_id": "37",
+            "nama_section": "LBSM BANJAR BENDO - LBS PONDOK MUTIARA - LBSM ISTANA MENTARI -  LBSM THREEWAY MASJID CEMENGKALANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "139",
+            "penyulang_id": "37",
+            "nama_section": "LBSM KARANG TANJUNG ATAS - PMCB ROYAL INDAH",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "165",
+            "penyulang_id": "37",
+            "nama_section": "LBSM THREEWAY MASJID CEMENGKALANG - LBSM ISTANA MENTARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "140",
+            "penyulang_id": "37",
+            "nama_section": "PMCB ROYAL INDAH - LBSM BANJAR BENDO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "38": [
+        {
+            "id": "142",
+            "penyulang_id": "38",
+            "nama_section": "GI - LBSM MPM - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "39": [
+        {
+            "id": "143",
+            "penyulang_id": "39",
+            "nama_section": "GI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "40": [
+        {
+            "id": "144",
+            "penyulang_id": "40",
+            "nama_section": "GI - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "41": [
+        {
+            "id": "150",
+            "penyulang_id": "41",
+            "nama_section": "GI - LBSM DECORINDO",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "153",
+            "penyulang_id": "41",
+            "nama_section": "LBS SINAR GEDANGAN -  LBSM MEIKO 1 - LBS WEDI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "151",
+            "penyulang_id": "41",
+            "nama_section": "LBSM DECORINDO - PMCB VALENCIA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "152",
+            "penyulang_id": "41",
+            "nama_section": "PMCB VALENCIA - LBS BALDES GEMURUNG - LBS SINAR GEDANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "42": [
+        {
+            "id": "145",
+            "penyulang_id": "42",
+            "nama_section": "GI - LBSM KOPEL NAURA - LBSM TVRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "149",
+            "penyulang_id": "42",
+            "nama_section": "LBS BUNCITAN - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "148",
+            "penyulang_id": "42",
+            "nama_section": "LBS KUD -  LBS PEPE - LBS BUNCITAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "146",
+            "penyulang_id": "42",
+            "nama_section": "LBSM TVRI - RECLOSER SENOPATI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "147",
+            "penyulang_id": "42",
+            "nama_section": "RECLOSER SENOPATI - LBS WEDI - LBS KUD",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "43": [
+        {
+            "id": "154",
+            "penyulang_id": "43",
+            "nama_section": "GI - LBSM PUNGGUL",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "160",
+            "penyulang_id": "43",
+            "nama_section": "LBS SENTANA - LBS KRAGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "155",
+            "penyulang_id": "43",
+            "nama_section": "LBSM PUNGGUL - PMCB BLOSSOM",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "156",
+            "penyulang_id": "43",
+            "nama_section": "PMCB BLOSSOM - LBS MASPION SELATAN - LBS SENTANA - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "44": [
+        {
+            "id": "157",
+            "penyulang_id": "44",
+            "nama_section": "GI - LBSM ANUGERAH",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "162",
+            "penyulang_id": "44",
+            "nama_section": "LBS ANGKASA PURA - LBSM MEIKO 1",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "161",
+            "penyulang_id": "44",
+            "nama_section": "LBS KETAJEN - LBS ANGKASA PURA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "158",
+            "penyulang_id": "44",
+            "nama_section": "LBSM ANUGERAH - RECLOSER RAJAWALI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "159",
+            "penyulang_id": "44",
+            "nama_section": "RECLOSER RAJAWALI - LBSM MASPION 3 - LBS KETAJEN",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "45": [
+        {
+            "id": "163",
+            "penyulang_id": "45",
+            "nama_section": "GI - LBSM WTS",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "166",
+            "penyulang_id": "45",
+            "nama_section": "LBSM DAMARSI - LBS TERAS KOTA",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        },
+        {
+            "id": "164",
+            "penyulang_id": "45",
+            "nama_section": "LBSM WTS - LBSM KOPEL NAURA - LBSM DAMARSI",
+            "status": "AKTIF",
+            "created_at": "2026-07-16 16:42:23",
+            "updated_at": "2026-07-16 16:42:23"
+        }
+    ],
+    "46": [
+        {
+            "id": "167",
+            "penyulang_id": "46",
+            "nama_section": "GI - LBSM UTARA TOL",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "168",
+            "penyulang_id": "46",
+            "nama_section": "LBSM UTARA TO - INCOMING",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "47": [
+        {
+            "id": "169",
+            "penyulang_id": "47",
+            "nama_section": "GI - LBS ADI PRIMA UTARA TOL",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "170",
+            "penyulang_id": "47",
+            "nama_section": "LBSM UTARA TO - INCOMING",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "48": [
+        {
+            "id": "173",
+            "penyulang_id": "48",
+            "nama_section": "LBS SELATAN TOL - INCOMING",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "171",
+            "penyulang_id": "48",
+            "nama_section": "LBSM PRIME HILL - PMCB BIZPARK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "172",
+            "penyulang_id": "48",
+            "nama_section": "PMCB BIZPARK - LBS SELATAN TOL",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "49": [
+        {
+            "id": "174",
+            "penyulang_id": "49",
+            "nama_section": "GI - REC. SINDU PERWIRA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "175",
+            "penyulang_id": "49",
+            "nama_section": "REC. SINDU PERWIRA - LBS KEDAMAIAN - LBS BRI SELATAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "50": [
+        {
+            "id": "176",
+            "penyulang_id": "50",
+            "nama_section": "GI - LBS BRI UTARA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "177",
+            "penyulang_id": "50",
+            "nama_section": "LBS BRI UTARA - LBS BRI SELATAN - PMCB KORAMIL",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "179",
+            "penyulang_id": "50",
+            "nama_section": "LBSM SUMBER SEHAT - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "178",
+            "penyulang_id": "50",
+            "nama_section": "PMCB KORAMIL - LBSM BALONG JRAMBAH - LBSM SUMBER SEHAT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "51": [
+        {
+            "id": "194",
+            "penyulang_id": "51",
+            "nama_section": "CO BRANCH BANYU ASIN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "184",
+            "penyulang_id": "51",
+            "nama_section": "CO BRANCH GELINDAH",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "195",
+            "penyulang_id": "51",
+            "nama_section": "CO BRANCH PAMOTAN - PB414",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "187",
+            "penyulang_id": "51",
+            "nama_section": "CO BRANCH TEMU IRENG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "185",
+            "penyulang_id": "51",
+            "nama_section": "CO BRANCH TULUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "180",
+            "penyulang_id": "51",
+            "nama_section": "GI - LBSM PDAM SAMALEAK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "191",
+            "penyulang_id": "51",
+            "nama_section": "LBS CINANDANG - LBS JOMBANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "189",
+            "penyulang_id": "51",
+            "nama_section": "LBS GUMBIK - LBS SIDOREJO - REC. PELOPOR",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "192",
+            "penyulang_id": "51",
+            "nama_section": "LBS JOMBANGAN - LBS SIMONGAGROK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "193",
+            "penyulang_id": "51",
+            "nama_section": "LBS SIMO NGAROK - CO BRANCH PAMOTAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "188",
+            "penyulang_id": "51",
+            "nama_section": "LBS WOT GARU - LBS PUCUK - LBS GUMBIK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "182",
+            "penyulang_id": "51",
+            "nama_section": "LBSM PASAR KEDAMAIAN - PMCB BELAHAN REJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "181",
+            "penyulang_id": "51",
+            "nama_section": "LBSM PDAM SAMALEAK - LBSM PASAR KEDAMAIAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "509",
+            "penyulang_id": "51",
+            "nama_section": "LBSM SLEMPIT - LBS KATIMOHO",
+            "status": "AKTIF",
+            "created_at": "2026-07-24 10:04:44",
+            "updated_at": "2026-07-24 10:04:44"
+        },
+        {
+            "id": "186",
+            "penyulang_id": "51",
+            "nama_section": "LBSM TRASENG - LBS RANDEGAN - LBS WOTGARU",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "183",
+            "penyulang_id": "51",
+            "nama_section": "PMCB BELAHAN REJO - LBSM SLEMPIT - LBSM TRASENG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "190",
+            "penyulang_id": "51",
+            "nama_section": "REC. PELOPOR - LBS SKIPING - LBS CINANDANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "52": [
+        {
+            "id": "196",
+            "penyulang_id": "52",
+            "nama_section": "LBSM LESEHAN AGUNG - REC. JAYA BETON",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "197",
+            "penyulang_id": "52",
+            "nama_section": "REC. JAYA BETON - TM11",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "53": [
+        {
+            "id": "198",
+            "penyulang_id": "53",
+            "nama_section": "GI - RAKSA JAYA PERKASA TM11",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "54": [
+        {
+            "id": "199",
+            "penyulang_id": "54",
+            "nama_section": "GI - RAKSA JAYA PERKASA TM11",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "55": [
+        {
+            "id": "200",
+            "penyulang_id": "55",
+            "nama_section": "GI - RAKSA JAYA PERKASA TM11",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "56": [
+        {
+            "id": "201",
+            "penyulang_id": "56",
+            "nama_section": "GI - LBSM KARANG ANDONG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "204",
+            "penyulang_id": "56",
+            "nama_section": "LBSM BANYU URIP - LBSM MONDOLUKU",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "202",
+            "penyulang_id": "56",
+            "nama_section": "LBSM KARANG ANDONG - LBS PASAR - REC. MIRU",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "203",
+            "penyulang_id": "56",
+            "nama_section": "REC. MIRU - LBSM BANYU URIP",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "57": [
+        {
+            "id": "205",
+            "penyulang_id": "57",
+            "nama_section": "GI - LBSM KALANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "206",
+            "penyulang_id": "57",
+            "nama_section": "LBSM KALANGAN - REC. PENDEM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "58": [
+        {
+            "id": "207",
+            "penyulang_id": "58",
+            "nama_section": "GI - LBSM KIA SELATAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "208",
+            "penyulang_id": "58",
+            "nama_section": "LBSM KIA SELATAN - LBSM THREEWAY KIA - PMCB SUMO ESTATE",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "59": [
+        {
+            "id": "209",
+            "penyulang_id": "59",
+            "nama_section": "GI - LBSM BARENG UTARA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "213",
+            "penyulang_id": "59",
+            "nama_section": "LBS SIDOREJO - LBS SIDOREJO TENGAH - LBSM KACONG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "212",
+            "penyulang_id": "59",
+            "nama_section": "LBSM BARENG SELATAN - LBS SIDOREJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "210",
+            "penyulang_id": "59",
+            "nama_section": "LBSM BARENG UTARA - REC. BADAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "211",
+            "penyulang_id": "59",
+            "nama_section": "REC. BADAS - LBS COLD STORAGE - LBSM BARENG SELATAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "60": [
+        {
+            "id": "214",
+            "penyulang_id": "60",
+            "nama_section": "GI - LBSM WADANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "217",
+            "penyulang_id": "60",
+            "nama_section": "LBS TUNDUNGAN - LBS SIDOGOLONG - LBSM LAPANGAN TAMBAK - LBSM MOJO KEMUNING",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "218",
+            "penyulang_id": "60",
+            "nama_section": "LBSM MOJO KEMUNING - LBS SPBU SIDOMOJO - LBS JAYAMAS MEDIKA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "215",
+            "penyulang_id": "60",
+            "nama_section": "LBSM WADANG - REC. SDN SIDOMULYO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "216",
+            "penyulang_id": "60",
+            "nama_section": "REC. SIDOMULYO - LBSM BHAYANGKARA - LBS TUNDUNGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "61": [
+        {
+            "id": "222",
+            "penyulang_id": "61",
+            "nama_section": "CO BRANCH TAMAN SIDOREJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "219",
+            "penyulang_id": "61",
+            "nama_section": "GI - LBSM NGAGROK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "223",
+            "penyulang_id": "61",
+            "nama_section": "LBS BALDES SIDOREJO - LBS SIDOREJO TENGAH - LBS PANCAWANA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "220",
+            "penyulang_id": "61",
+            "nama_section": "LBSM NGAGROK - REC. GRAHA PERMATA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "221",
+            "penyulang_id": "61",
+            "nama_section": "REC. GRAHA PERMATA - LBS BALDES SIDOREJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "62": [
+        {
+            "id": "224",
+            "penyulang_id": "62",
+            "nama_section": "GI - PT. CHAERON PHOKPHAND",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "63": [
+        {
+            "id": "226",
+            "penyulang_id": "63",
+            "nama_section": "GH UMUM - LBSM SIDOREJO BARAT - AVS PRICES",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "225",
+            "penyulang_id": "63",
+            "nama_section": "GI - GH UMUM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "228",
+            "penyulang_id": "63",
+            "nama_section": "LBS BYPASS TIMUR - LBS POM SIDOMOJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "227",
+            "penyulang_id": "63",
+            "nama_section": "LBSM SIDOREJO BARAT - LBS BY PASS TIMUR - LBS COLD STORAGE - LBS SIDOGOLONG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "64": [
+        {
+            "id": "230",
+            "penyulang_id": "64",
+            "nama_section": "GH TRIAS - GH JAVA PASIFIC",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "229",
+            "penyulang_id": "64",
+            "nama_section": "GI - PT. TRIAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "65": [
+        {
+            "id": "231",
+            "penyulang_id": "65",
+            "nama_section": "GI - PT. TRIAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "66": [
+        {
+            "id": "232",
+            "penyulang_id": "66",
+            "nama_section": "GI - PT. TRIAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "67": [
+        {
+            "id": "233",
+            "penyulang_id": "67",
+            "nama_section": "GI - PT. TRIAS TOYOBO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "68": [
+        {
+            "id": "234",
+            "penyulang_id": "68",
+            "nama_section": "GI - LBSM KRIKILAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "237",
+            "penyulang_id": "68",
+            "nama_section": "LBS EVER - LBS MITRA SARUTA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "238",
+            "penyulang_id": "68",
+            "nama_section": "LBS MITRA SARUTA - LBSM KM28",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "235",
+            "penyulang_id": "68",
+            "nama_section": "LBSM KRIKILAN - PMCB KLINIK NAYAKA HUSADA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "239",
+            "penyulang_id": "68",
+            "nama_section": "LBSM YANTO - PMCB SUMO ESTATE - LBSM JEMBATAN JREBENG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "236",
+            "penyulang_id": "68",
+            "nama_section": "PMCB KLINIK NAYAKA HUSADA - LBS EVER - LBSM YANTO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "69": [
+        {
+            "id": "240",
+            "penyulang_id": "69",
+            "nama_section": "GI - LBSM LARANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "243",
+            "penyulang_id": "69",
+            "nama_section": "LBS LEGUNDI - LBSM PEREMPATAN LEGUNDI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "241",
+            "penyulang_id": "69",
+            "nama_section": "LBSM LARANGAN - REC. SPBU LEGUNDI - LBSM HEU CHY",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "242",
+            "penyulang_id": "69",
+            "nama_section": "REC. SPBU LEGUNDI - LBS SDN LEGUNDI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "70": [
+        {
+            "id": "244",
+            "penyulang_id": "70",
+            "nama_section": "LBSM LAPANGAN TENNIS - LBS EMDEKI BARAT - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "71": [
+        {
+            "id": "248",
+            "penyulang_id": "71",
+            "nama_section": "AVS LEMAH PUTIH - LBSM SUKISNO - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "245",
+            "penyulang_id": "71",
+            "nama_section": "GI - REC. INDOMARET",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "247",
+            "penyulang_id": "71",
+            "nama_section": "LBS PASINAN - AVS LEMAH PUTIH - LBS SUMENGKO TIMUR",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "249",
+            "penyulang_id": "71",
+            "nama_section": "LBS SUMENGKO TIMUR - LBS ASIA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "246",
+            "penyulang_id": "71",
+            "nama_section": "REC. INDOMARET - LBS HEUY CHY - LBSM KM28 - LBS PASINAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "72": [
+        {
+            "id": "250",
+            "penyulang_id": "72",
+            "nama_section": "LBSM TOTO - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "73": [
+        {
+            "id": "251",
+            "penyulang_id": "73",
+            "nama_section": "GI - PT. GERRY",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "74": [
+        {
+            "id": "252",
+            "penyulang_id": "74",
+            "nama_section": "GI - REC KAREEM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "254",
+            "penyulang_id": "74",
+            "nama_section": "LBSM ADI PRIMA BARAT - LBSM THREEWAY POWER PACK - LBSM KORAMIL - LBS ARWANA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "255",
+            "penyulang_id": "74",
+            "nama_section": "LBSM KORAMIL - LBSM BROMO PANULUH - LBS ASIA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "253",
+            "penyulang_id": "74",
+            "nama_section": "REC. KAREEM - LBSM ADI PRIMA BARAT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "75": [
+        {
+            "id": "259",
+            "penyulang_id": "75",
+            "nama_section": "CO BRANCH SUMENGKO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "256",
+            "penyulang_id": "75",
+            "nama_section": "GI - LBSM PEGADAIAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "257",
+            "penyulang_id": "75",
+            "nama_section": "LBSM PEGADAIAN - LBSM SENTRA PANGAN BARAT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "258",
+            "penyulang_id": "75",
+            "nama_section": "LBSM SENTRA PANGAN BARAT - LBSM CEMERLANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "76": [
+        {
+            "id": "260",
+            "penyulang_id": "76",
+            "nama_section": "GI - LBS PASAR SUMPUT UTARA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "261",
+            "penyulang_id": "76",
+            "nama_section": "LBS PASAR SUMPUT UTARA - PT. JAVA PASIFIC",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "77": [
+        {
+            "id": "262",
+            "penyulang_id": "77",
+            "nama_section": "GI - LBS PASAR SUMPUT SELATAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "263",
+            "penyulang_id": "77",
+            "nama_section": "LBS PASAR SUMPUT SELATAN - PT. JAVA PASIFIC",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "78": [
+        {
+            "id": "264",
+            "penyulang_id": "78",
+            "nama_section": "GI - PT. JAVA PASIFIK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "79": [
+        {
+            "id": "265",
+            "penyulang_id": "79",
+            "nama_section": "GI - PT. JAVA PASIFIC",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "80": [
+        {
+            "id": "266",
+            "penyulang_id": "80",
+            "nama_section": "GI - PMCB EMDEKI 1",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "81": [
+        {
+            "id": "267",
+            "penyulang_id": "81",
+            "nama_section": "GI - PMCB EMDEKI 2",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "82": [
+        {
+            "id": "272",
+            "penyulang_id": "82",
+            "nama_section": "CO BRANCH THE NAILA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "275",
+            "penyulang_id": "82",
+            "nama_section": "CO BRANCH WEDORO ANOM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "268",
+            "penyulang_id": "82",
+            "nama_section": "GI - LBSM SUMPUT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "273",
+            "penyulang_id": "82",
+            "nama_section": "LBS GK - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "271",
+            "penyulang_id": "82",
+            "nama_section": "LBSM MOJOSARI REJO - LBS GK - LBSM PUNCAK ANOM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "274",
+            "penyulang_id": "82",
+            "nama_section": "LBSM PUNCAK ANOM - LBSM BALONG JRAMBAH",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "269",
+            "penyulang_id": "82",
+            "nama_section": "LBSM SUMPUT - REC. MASJID MOJOSARI REJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "270",
+            "penyulang_id": "82",
+            "nama_section": "REC. MOJOSARI REJO - LBSM MOJOSARI REJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "83": [
+        {
+            "id": "280",
+            "penyulang_id": "83",
+            "nama_section": "CO BRANCH BANJAR WUNGU",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "277",
+            "penyulang_id": "83",
+            "nama_section": "CO BRANCH KEDUNG BOCOK KIDUL",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "281",
+            "penyulang_id": "83",
+            "nama_section": "CO BRANCH KLANTING SARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "276",
+            "penyulang_id": "83",
+            "nama_section": "GI - LBSM NGASEM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "278",
+            "penyulang_id": "83",
+            "nama_section": "LBSM NGASEM - LBSM TARIK - REC. KUD TARIK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "279",
+            "penyulang_id": "83",
+            "nama_section": "REC. KUD TARIK - LBS KALIMATI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "84": [
+        {
+            "id": "286",
+            "penyulang_id": "84",
+            "nama_section": "CO BRANCH DOPLANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "282",
+            "penyulang_id": "84",
+            "nama_section": "GI - REC. KEDUNG BOCOK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "284",
+            "penyulang_id": "84",
+            "nama_section": "LBS KEDUNG BOCOK - LBSM TARIK - LBS SEGODO BANCANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "285",
+            "penyulang_id": "84",
+            "nama_section": "LBS SEGODO BANCANG - LBSM BENDO TRETEK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "283",
+            "penyulang_id": "84",
+            "nama_section": "REC. KEDUNG BOCOK - LBS KEDUNG BOCOK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "85": [
+        {
+            "id": "290",
+            "penyulang_id": "85",
+            "nama_section": "CO BRANCH WONOKITRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "287",
+            "penyulang_id": "85",
+            "nama_section": "GI - LBSM SLAWE",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "288",
+            "penyulang_id": "85",
+            "nama_section": "LBSM SLAWE - REC. SUMO KEMABANGSRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "291",
+            "penyulang_id": "85",
+            "nama_section": "LBSM SUMO KEMBANGSRI - LBS CORIN -LBS HANSA PRATAMA BARAT - LBS BAKUNG TEMENGGUNGAN SELATAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "289",
+            "penyulang_id": "85",
+            "nama_section": "REC. SUMO KEMBANGSRI - LBSM SUMOKEMBANGSRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "86": [
+        {
+            "id": "292",
+            "penyulang_id": "86",
+            "nama_section": "GI - LBSM JUGLANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "293",
+            "penyulang_id": "86",
+            "nama_section": "LBSM JUGLANG - LBS CORIN - TM11 PT. EXCELLENT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "87": [
+        {
+            "id": "298",
+            "penyulang_id": "87",
+            "nama_section": "CO BRANCH BPS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "297",
+            "penyulang_id": "87",
+            "nama_section": "CO BRANCH GKR",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "299",
+            "penyulang_id": "87",
+            "nama_section": "CO BRANCH PRIME PARK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "301",
+            "penyulang_id": "87",
+            "nama_section": "CO BRANCH SEMAMBUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "300",
+            "penyulang_id": "87",
+            "nama_section": "CO BRANCH WONOBOYO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "294",
+            "penyulang_id": "87",
+            "nama_section": "GI - LBSM SORBITOL",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "302",
+            "penyulang_id": "87",
+            "nama_section": "LBS WONOBOYO - LBS JIMBARAN - LBS PERUMTAS SELATAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "295",
+            "penyulang_id": "87",
+            "nama_section": "LBSM SORBITOL - REC. PDAM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "296",
+            "penyulang_id": "87",
+            "nama_section": "REC. RPH - LBS KANTOR - LBS TROPODO - LBS SMK - LBS WONOKALANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "88": [
+        {
+            "id": "309",
+            "penyulang_id": "88",
+            "nama_section": "CO BANCH KRIAN INDAH SEJAHTERA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "307",
+            "penyulang_id": "88",
+            "nama_section": "CO BRANCH KRIAN INDAH REGENCY",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "308",
+            "penyulang_id": "88",
+            "nama_section": "CO BRANCH NIRWANA ASRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "303",
+            "penyulang_id": "88",
+            "nama_section": "GI - LBSM PUSKESMAS KRIAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "306",
+            "penyulang_id": "88",
+            "nama_section": "LBS JUNWANGI - LBS CANDI NEGORO - LBS JUNWATU",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "310",
+            "penyulang_id": "88",
+            "nama_section": "LBS JUNWATU - LBSM KARANG PURI - LBS QUALITY",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "311",
+            "penyulang_id": "88",
+            "nama_section": "LBS QUALITY - LBS PANCAWANA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "304",
+            "penyulang_id": "88",
+            "nama_section": "LBSM PUSKESMAS KRIAN - LBSM THREEWAY JATAYU - LBSM THREEWAY SIBAR - REC. TELKOM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "305",
+            "penyulang_id": "88",
+            "nama_section": "REC. TELKOM - LBSM POM KEMASAN - LBS JUNWANGI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "89": [
+        {
+            "id": "316",
+            "penyulang_id": "89",
+            "nama_section": "CO BRANCH MANDIRI RESIDENCE",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "317",
+            "penyulang_id": "89",
+            "nama_section": "CO BRANCH QUALITY TERIK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "312",
+            "penyulang_id": "89",
+            "nama_section": "GI - LBSM SIRAPAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "315",
+            "penyulang_id": "89",
+            "nama_section": "LBS LOKAPALA - LBS SMK - LBSM TERIK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "313",
+            "penyulang_id": "89",
+            "nama_section": "LBSM SIRAPAN - REC. MILA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "314",
+            "penyulang_id": "89",
+            "nama_section": "REC. MILA - LBS KANTOR - LBS LOKAPALA - LBSM KECAMATAN - LBS PASAR KRIAN - LBSM THREE WAY JATAYU",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "90": [
+        {
+            "id": "323",
+            "penyulang_id": "90",
+            "nama_section": "AVS PRIECES - LBSM POM KEMASAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "318",
+            "penyulang_id": "90",
+            "nama_section": "GI - REC. RUMADI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "321",
+            "penyulang_id": "90",
+            "nama_section": "LBS BABADAN ASRI - LBS DERMO - LBS CIRO - LBSM KARANG PURI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "322",
+            "penyulang_id": "90",
+            "nama_section": "LBS BALDES PUNOKAWAN - AVS PRICES",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "320",
+            "penyulang_id": "90",
+            "nama_section": "LBS SIMPANG LIMA - LBS PASAR KRIAN - LBSM LAPANGAN TAMBAK - LBS JAYAMAS MEDIKA - LBS BALDES PUNOKAWAN - LBS BABADAN ASRI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "319",
+            "penyulang_id": "90",
+            "nama_section": "REC. RUMADI - LBS SIMPANG LIMA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "91": [
+        {
+            "id": "330",
+            "penyulang_id": "91",
+            "nama_section": "CO BRANCH KEDUNG SUGO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "332",
+            "penyulang_id": "91",
+            "nama_section": "CO BRANCH KLINTER",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "328",
+            "penyulang_id": "91",
+            "nama_section": "CO BRANCH WONOPLINTAHAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "325",
+            "penyulang_id": "91",
+            "nama_section": "DS TM11 KEMANGSEN - REC. PDAM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "324",
+            "penyulang_id": "91",
+            "nama_section": "GI - DS TM11 KEMANGSEN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "331",
+            "penyulang_id": "91",
+            "nama_section": "LBS KEDUNG BOTO - LBS GEDANG ROWO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "327",
+            "penyulang_id": "91",
+            "nama_section": "LBSM MONUMEN - LBS TEMU - LBSM BENDO TRETEK - PGS KEDUNG WONOKERTO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "329",
+            "penyulang_id": "91",
+            "nama_section": "PGS KEDUNG WONOKERTO - LBS BALDES KEDUNG WONOKERTO - LBS KALIMATI - LBS KEDUNG BOTO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "326",
+            "penyulang_id": "91",
+            "nama_section": "REC. PDAM - LBSM MONUMEN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "92": [
+        {
+            "id": "333",
+            "penyulang_id": "92",
+            "nama_section": "GI - REC. RPH",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "335",
+            "penyulang_id": "92",
+            "nama_section": "LBSM SMC - LBS PAGER NGUMBUK - LBS DERMO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "334",
+            "penyulang_id": "92",
+            "nama_section": "REC. RPH - LBSM SMC",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "93": [
+        {
+            "id": "336",
+            "penyulang_id": "93",
+            "nama_section": "GI - LBSM KAMPUNG POT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "424",
+            "penyulang_id": "93",
+            "nama_section": "LBS GRABAGAN - LBS PERUMTAS SELATAN - LBS PERUMTAS UTARA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "340",
+            "penyulang_id": "93",
+            "nama_section": "LBS GRABAGAN - UJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "341",
+            "penyulang_id": "93",
+            "nama_section": "LBS JEDONG - LBSM PEJANTRAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "337",
+            "penyulang_id": "93",
+            "nama_section": "LBSM KAMPUNG POT - REC. WISMA TATA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "339",
+            "penyulang_id": "93",
+            "nama_section": "LBSM POPOH - LBS GRABAGAN - LBS JEDONG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        },
+        {
+            "id": "338",
+            "penyulang_id": "93",
+            "nama_section": "REC. WISMA TATA - LBS PAGER NGUMBUK - LBSM THREEWAY PILANG - LBSM POPOH",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:23:36",
+            "updated_at": "2026-07-17 03:23:36"
+        }
+    ],
+    "94": [
+        {
+            "id": "342",
+            "penyulang_id": "94",
+            "nama_section": "GI -LBSM NAI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "345",
+            "penyulang_id": "94",
+            "nama_section": "LBS PENAMBANGAN-LBSM BANGUNSARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "343",
+            "penyulang_id": "94",
+            "nama_section": "LBSM NAI-PMCB SINAR",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "344",
+            "penyulang_id": "94",
+            "nama_section": "PMCB SINAR-LBS PENAMBANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "95": [
+        {
+            "id": "346",
+            "penyulang_id": "95",
+            "nama_section": "GI-LBSM PDAM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "350",
+            "penyulang_id": "95",
+            "nama_section": "LBS DUKUHSARI-LBSM BRANTAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "349",
+            "penyulang_id": "95",
+            "nama_section": "LBSM JEMIRAHAN-LBS DUKUHSARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "348",
+            "penyulang_id": "95",
+            "nama_section": "LBSM KALISOGO-LBSM JEMIRAHAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "347",
+            "penyulang_id": "95",
+            "nama_section": "LBSM PDAM-REC TPA-LBSM KALISOGO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "96": [
+        {
+            "id": "351",
+            "penyulang_id": "96",
+            "nama_section": "GI-PMCB HT POLL",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "357",
+            "penyulang_id": "96",
+            "nama_section": "LBS AHAS-LBS BRINGIN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "358",
+            "penyulang_id": "96",
+            "nama_section": "LBS BRINGIN-LBSM CANDIPARI-LBS KALISAMPURNO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "354",
+            "penyulang_id": "96",
+            "nama_section": "LBS KEBOGUYANG-LBS VESPA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "356",
+            "penyulang_id": "96",
+            "nama_section": "LBS MINDI-LBS KEWADENAN-LBS AHAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "355",
+            "penyulang_id": "96",
+            "nama_section": "LBS VESPA-LBS MINDI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "352",
+            "penyulang_id": "96",
+            "nama_section": "LBSM BANGUNSARI-LBSM PERMISAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "359",
+            "penyulang_id": "96",
+            "nama_section": "LBSM CANDIPARI-KEDUNGBOTO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "353",
+            "penyulang_id": "96",
+            "nama_section": "LBSM PERMISAN-LBS KEBOGUYANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "97": [
+        {
+            "id": "360",
+            "penyulang_id": "97",
+            "nama_section": "GI-REC TAMBAK UDANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "365",
+            "penyulang_id": "97",
+            "nama_section": "LBS ARTERI-LBS BAKSO-LBS KESAMBI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "362",
+            "penyulang_id": "97",
+            "nama_section": "LBS BRANTAS-LBS PESANTREN-LBS PUSDIK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "367",
+            "penyulang_id": "97",
+            "nama_section": "LBS KEDUNGSOLO-LBS TANJEKWAGIR",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "366",
+            "penyulang_id": "97",
+            "nama_section": "LBS LBS BAKSO-LBS KEDUNGSOLO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "363",
+            "penyulang_id": "97",
+            "nama_section": "LBS MINDI-LBS POLSEK PORONG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "364",
+            "penyulang_id": "97",
+            "nama_section": "LBS POLSEK-LBS ARTERI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "368",
+            "penyulang_id": "97",
+            "nama_section": "LBS TANJEK WAGIR-LBSM KREMBUNG BARAT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "361",
+            "penyulang_id": "97",
+            "nama_section": "REC TAMBAKUDANG-LBSM SAWAH-LBSM BRANTAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "98": [
+        {
+            "id": "369",
+            "penyulang_id": "98",
+            "nama_section": "GI-PMCB SUMORAME",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "372",
+            "penyulang_id": "98",
+            "nama_section": "LBS KETAPANG-LBS POM SIMO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "373",
+            "penyulang_id": "98",
+            "nama_section": "LBS POM SIMO-LBSM KEDUNGKAMPIL-LBS KEBONAGUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "371",
+            "penyulang_id": "98",
+            "nama_section": "LBSPOM NGABAN-LBS KETAPANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "370",
+            "penyulang_id": "98",
+            "nama_section": "PMCB SUMORAME-LBS SUMORAME-LBS POM NGABAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "99": [
+        {
+            "id": "374",
+            "penyulang_id": "99",
+            "nama_section": "GI-LBSM MUTIARA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "379",
+            "penyulang_id": "99",
+            "nama_section": "LBS ARTHA GLORI-LBS BALONG GARUT-LBS PUTAT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "378",
+            "penyulang_id": "99",
+            "nama_section": "LBS GELAM-LBS SUGIHWARAS-LBS ARTHA GLORI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "375",
+            "penyulang_id": "99",
+            "nama_section": "LBSM MUTIARA-LBS SIMOTUO-REC GCA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "377",
+            "penyulang_id": "99",
+            "nama_section": "LBSM SINERGI-LBS GELAM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "376",
+            "penyulang_id": "99",
+            "nama_section": "REC GCA-LBSM SINERGI-LBS SUMORAME",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "100": [
+        {
+            "id": "380",
+            "penyulang_id": "100",
+            "nama_section": "GI-LBSM SAMBIROTO-LBSM SHOJILAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "383",
+            "penyulang_id": "100",
+            "nama_section": "LBSM KEDUNG KENDO-LBS BEDUGDOWO-LBSM DURUNGBEDUG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "381",
+            "penyulang_id": "100",
+            "nama_section": "LBSM SHOJILAN-REC KARANGTANJUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "382",
+            "penyulang_id": "100",
+            "nama_section": "REC KARANGTANJUNG-LBSM KEDUNGKENDO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "101": [
+        {
+            "id": "384",
+            "penyulang_id": "101",
+            "nama_section": "GI-LBS MITRA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "390",
+            "penyulang_id": "101",
+            "nama_section": "LBS KALITENGAH-LBS TOL SIRING",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "385",
+            "penyulang_id": "101",
+            "nama_section": "LBS MITRA-REC KLUDAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "389",
+            "penyulang_id": "101",
+            "nama_section": "LBSM GEMPOLSARI-LBS NGMBUL-LBS KALITENGAH",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "387",
+            "penyulang_id": "101",
+            "nama_section": "LBSM KEDUNGANTEN-LBS PASAR NGABAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "388",
+            "penyulang_id": "101",
+            "nama_section": "LBSM PASAR NGABAN-LBS PUTAT-LBSM GEMPOLSARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "391",
+            "penyulang_id": "101",
+            "nama_section": "LBSM PUTAT -LBSM KEDUNGBANTENG-LBSM MINARAK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "386",
+            "penyulang_id": "101",
+            "nama_section": "REC KLUDAN-LBS KEDUNGANTEN-LBS POM SIMO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "102": [
+        {
+            "id": "392",
+            "penyulang_id": "102",
+            "nama_section": "GI-LBSM BORO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "395",
+            "penyulang_id": "102",
+            "nama_section": "LBS RANDEGAN-LBS CEMERLANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "398",
+            "penyulang_id": "102",
+            "nama_section": "LBS SUDIMORO-LBS MEDALEM-LBSM DURUNG BEDUG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "393",
+            "penyulang_id": "102",
+            "nama_section": "LBSM BORO-REC RUNCING",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "396",
+            "penyulang_id": "102",
+            "nama_section": "LBSM CEMERLANG-LBS PANGKEMIRI-LBSM GANGGANGPANJANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "397",
+            "penyulang_id": "102",
+            "nama_section": "LBSM GANGGANGPANJANG-LBS SUDIMORO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "394",
+            "penyulang_id": "102",
+            "nama_section": "REC RUNCING-LBS RANDEGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "103": [
+        {
+            "id": "399",
+            "penyulang_id": "103",
+            "nama_section": "GI -LBSM PW",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "404",
+            "penyulang_id": "103",
+            "nama_section": "LBS KOPEL KLUDAN-LBSM INDRAPRASTA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "403",
+            "penyulang_id": "103",
+            "nama_section": "LBS PANDOKAN-LBS KESAMBI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "405",
+            "penyulang_id": "103",
+            "nama_section": "LBSM INDRAPRASTA-LBS POLSEK TULANGAN-LBS STASIUN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "402",
+            "penyulang_id": "103",
+            "nama_section": "LBSM LAJUK-LBS KANDANGAN-LBS PANDOKAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "400",
+            "penyulang_id": "103",
+            "nama_section": "LBSM PW-REC MAQ PRO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "401",
+            "penyulang_id": "103",
+            "nama_section": "REC MAQ PRO-LBSM LAJUK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "104": [
+        {
+            "id": "406",
+            "penyulang_id": "104",
+            "nama_section": "GI-LBSM KEDENSARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "409",
+            "penyulang_id": "104",
+            "nama_section": "LBS KENONGO-LBS KEPADANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "410",
+            "penyulang_id": "104",
+            "nama_section": "LBS KEPADANGAN-LBSM KEBARON-LBS KOPEL JAYA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "411",
+            "penyulang_id": "104",
+            "nama_section": "LBSM KEBARON-LBS JANTI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "407",
+            "penyulang_id": "104",
+            "nama_section": "LBSM KEDENSARI-REC NURUL IMAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "408",
+            "penyulang_id": "104",
+            "nama_section": "REC NURUL IMAN-LBS KENONGO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "105": [
+        {
+            "id": "412",
+            "penyulang_id": "105",
+            "nama_section": "GI-PMCB HIDAYAH",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "414",
+            "penyulang_id": "105",
+            "nama_section": "LBS BALONG GARUT-LBS KANDANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "418",
+            "penyulang_id": "105",
+            "nama_section": "LBS BULANG-LBS GEDANGROWO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "415",
+            "penyulang_id": "105",
+            "nama_section": "LBS KANDANGAN-LBS WONOMELATI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "416",
+            "penyulang_id": "105",
+            "nama_section": "LBS WONOMELATI-LBSM CANGKRING",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "417",
+            "penyulang_id": "105",
+            "nama_section": "LBSM CANGKRING-LBS KLEPON-LBS BULANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        },
+        {
+            "id": "413",
+            "penyulang_id": "105",
+            "nama_section": "PMCB HIDAYAH-LBS BALONG GARUT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 03:26:56",
+            "updated_at": "2026-07-17 03:26:56"
+        }
+    ],
+    "106": [
+        {
+            "id": "421",
+            "penyulang_id": "106",
+            "nama_section": "CO BRANCH BIZPARK SELATAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "419",
+            "penyulang_id": "106",
+            "nama_section": "GI - REC. SYAHRIR",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "420",
+            "penyulang_id": "106",
+            "nama_section": "REC. SYAHRIR - LBS BANJARSARI - LBS PASAR KANG ANDONG - LBSM THREEWAY KIA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "107": [
+        {
+            "id": "422",
+            "penyulang_id": "107",
+            "nama_section": "RUSAK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "108": [
+        {
+            "id": "423",
+            "penyulang_id": "108",
+            "nama_section": "GI - TM11 PLATINUM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "109": [
+        {
+            "id": "427",
+            "penyulang_id": "109",
+            "nama_section": "CO BRANCH KLAGEN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "428",
+            "penyulang_id": "109",
+            "nama_section": "CO BRANCH THE GRAHA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "425",
+            "penyulang_id": "109",
+            "nama_section": "LBSM TRIARTHA -LBS JANGKEWUH - REC. SEKETI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "429",
+            "penyulang_id": "109",
+            "nama_section": "LBSM WATU TULIS - LBS TEMU",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "426",
+            "penyulang_id": "109",
+            "nama_section": "RE. SEKETI - LBS TROPODO - LBM WATU TULIS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "110": [
+        {
+            "id": "430",
+            "penyulang_id": "110",
+            "nama_section": "GI - LBSM PERGUDANGAN - TM11 SPUNINDO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "111": [
+        {
+            "id": "431",
+            "penyulang_id": "111",
+            "nama_section": "REC. ALUVINDO - LBSM PERGUDANGAN - LBS JANGKEWUH - TM11 SPUNINDO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "112": [
+        {
+            "id": "432",
+            "penyulang_id": "112",
+            "nama_section": "GI - TM11 SPUNINDO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "113": [
+        {
+            "id": "433",
+            "penyulang_id": "113",
+            "nama_section": "GI - TM11 HK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "114": [
+        {
+            "id": "434",
+            "penyulang_id": "114",
+            "nama_section": "GI - LBS CENTRE POINT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "435",
+            "penyulang_id": "114",
+            "nama_section": "LBS CENTRE POINT - TM11 HK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "115": [
+        {
+            "id": "436",
+            "penyulang_id": "115",
+            "nama_section": "GI - TM11 HK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "116": [
+        {
+            "id": "437",
+            "penyulang_id": "116",
+            "nama_section": "GI - TM11 HK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "117": [
+        {
+            "id": "438",
+            "penyulang_id": "117",
+            "nama_section": "GI - TM11 HK",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "118": [
+        {
+            "id": "439",
+            "penyulang_id": "118",
+            "nama_section": "DS GI - DS KALIMAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "440",
+            "penyulang_id": "118",
+            "nama_section": "DS KALIMAS - TM11 BHS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "119": [
+        {
+            "id": "441",
+            "penyulang_id": "119",
+            "nama_section": "DS GI - DS KALIMAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "442",
+            "penyulang_id": "119",
+            "nama_section": "DS KALIMAS - TM11 BHS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "120": [
+        {
+            "id": "443",
+            "penyulang_id": "120",
+            "nama_section": "DS GI - DS KALIMAS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "444",
+            "penyulang_id": "120",
+            "nama_section": "DS KALIMAS - TM11 BHS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "121": [
+        {
+            "id": "445",
+            "penyulang_id": "121",
+            "nama_section": "GI - TM11 BHS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "122": [
+        {
+            "id": "446",
+            "penyulang_id": "122",
+            "nama_section": "GI - LBSM WONOKUPANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "447",
+            "penyulang_id": "122",
+            "nama_section": "LBSM WONOKUPANG - REC. AKP",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "448",
+            "penyulang_id": "122",
+            "nama_section": "REC. AKP - LBSM JANTI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "123": [
+        {
+            "id": "456",
+            "penyulang_id": "123",
+            "nama_section": "CO BRANCH PERUM LOTUS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "458",
+            "penyulang_id": "123",
+            "nama_section": "CO BRANCH SUMENGKO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "455",
+            "penyulang_id": "123",
+            "nama_section": "DS LEBANI SUKO ARAH R.A 725",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "449",
+            "penyulang_id": "123",
+            "nama_section": "GI - LBSM SURUNGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "454",
+            "penyulang_id": "123",
+            "nama_section": "LBS FORINDO - LBSM CEMERLANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "452",
+            "penyulang_id": "123",
+            "nama_section": "LBS SEMBUNG - LBSM THREEWAY WARINGIN PLASTINDO - LBSM KUKMI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "457",
+            "penyulang_id": "123",
+            "nama_section": "LBSM CEMERLANG - LBSM SENTRA PANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "453",
+            "penyulang_id": "123",
+            "nama_section": "LBSM KUKMI - LBS FORINDO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "450",
+            "penyulang_id": "123",
+            "nama_section": "LBSM SURUNGAN - PMCB PASAR SURUNGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "451",
+            "penyulang_id": "123",
+            "nama_section": "PMCB PASAR SURUNGAN - LBS SUMBER RAME - LBS SEMBUNG - LBS SUDIMORO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "124": [
+        {
+            "id": "463",
+            "penyulang_id": "124",
+            "nama_section": "CO BRANCH JETIS",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "462",
+            "penyulang_id": "124",
+            "nama_section": "LBS BAKUNG TEMENGGUNGAN - CO BRANCH JETIS - LBSM SINGKALAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "461",
+            "penyulang_id": "124",
+            "nama_section": "LBS PRAMUKA -LBS HANSA PRATAMA TMUR - LBS BAKUNG TEMENGGUNGAN SELATAN - LBS SDN BAKUNG TEMENGGUNGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "459",
+            "penyulang_id": "124",
+            "nama_section": "LBSM BESUK - PMCB KUA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "464",
+            "penyulang_id": "124",
+            "nama_section": "LBSM SINGKALAN - LBSM THREEWAY INDO OIL - LBS MISPANDI - LBSM KEDUNG ANYAR",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "460",
+            "penyulang_id": "124",
+            "nama_section": "PMCB KUA - LBS PRAMUKA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "125": [
+        {
+            "id": "466",
+            "penyulang_id": "125",
+            "nama_section": "LBS DUTA CIPTA - LBSM MASJID WRINGIN ANOM - LBS ARWANA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "465",
+            "penyulang_id": "125",
+            "nama_section": "REC. BAKALAN UTARA - LBS DUTA CIPTA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "126": [
+        {
+            "id": "472",
+            "penyulang_id": "126",
+            "nama_section": "CO BRANCH SEMBUNG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "469",
+            "penyulang_id": "126",
+            "nama_section": "CO BRANCH SUWALUH",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "467",
+            "penyulang_id": "126",
+            "nama_section": "GI - LBSM WATESSARI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "471",
+            "penyulang_id": "126",
+            "nama_section": "LBS WRINGIN ANOM - CO BRANCH SEMBUNG - LBSM BROMO PANULUH",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "468",
+            "penyulang_id": "126",
+            "nama_section": "LBSM WATESSARI - REC. CITY9",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "470",
+            "penyulang_id": "126",
+            "nama_section": "REC. CITY9 - PGS BAKALAN SELATAN - LBS WRINGIN ANOM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "127": [
+        {
+            "id": "475",
+            "penyulang_id": "127",
+            "nama_section": "CO BRANCH BURENG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "476",
+            "penyulang_id": "127",
+            "nama_section": "CO BRANCH JOTRA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "473",
+            "penyulang_id": "127",
+            "nama_section": "GI  - REC. TAMAN MOUNT DREAM",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "478",
+            "penyulang_id": "127",
+            "nama_section": "LBS NGEMPLAK - LBSM MONDOLUKU - LBSM MADURESO - LBS RANDEGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "479",
+            "penyulang_id": "127",
+            "nama_section": "LBSM MADURESO - LBS PUCUK - LBS SIDOKERTO - LBS SEKIPING",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "477",
+            "penyulang_id": "127",
+            "nama_section": "LBSM SUMBER - LBSM ASS - LBS SUMBER RAME",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "474",
+            "penyulang_id": "127",
+            "nama_section": "REC. TAMAN MOUNT DREAM - LBS NGEMPLAK - LBSM SUMBER WARU",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "128": [
+        {
+            "id": "480",
+            "penyulang_id": "128",
+            "nama_section": "GI - REC. PERTAMINA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "482",
+            "penyulang_id": "128",
+            "nama_section": "LBSM PATOMAN - LBSM KEDUNG ANYAR",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "481",
+            "penyulang_id": "128",
+            "nama_section": "REC. PERTAMINA - LBSM ASS - LBSM PATOMAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "129": [
+        {
+            "id": "483",
+            "penyulang_id": "129",
+            "nama_section": "GI - TM11 TUNGGAL JAYA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "130": [
+        {
+            "id": "484",
+            "penyulang_id": "130",
+            "nama_section": "GI - TM11 TUNGGAL JAYA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "131": [
+        {
+            "id": "485",
+            "penyulang_id": "131",
+            "nama_section": "GI - LBSM MAKAM JABARAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "489",
+            "penyulang_id": "131",
+            "nama_section": "LBS BY PASS SELATAN - LBSM SPBG (UTARA)",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "493",
+            "penyulang_id": "131",
+            "nama_section": "LBS PERUM 2 PERMATA - TM4 DS. WADANG TEMPEL",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "490",
+            "penyulang_id": "131",
+            "nama_section": "LBS SPBG - PERUM KRATON - LBSM MASJID JREBENG - LBSM SIDOMULYO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "488",
+            "penyulang_id": "131",
+            "nama_section": "LBSM KRATON - LBS BYPASS SELATAN - LBS BYPASS BARAT",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "486",
+            "penyulang_id": "131",
+            "nama_section": "LBSM MAKAM JABARAN - LBS SPBE - REC. INDOYUMEN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "492",
+            "penyulang_id": "131",
+            "nama_section": "LBSM MASJID JREBENG - LBSM JEMBATAN JREBENG - LBS PERUM DUA PERMATA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "491",
+            "penyulang_id": "131",
+            "nama_section": "LBSM SIDOMULYO - LBS SUDIMORO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "487",
+            "penyulang_id": "131",
+            "nama_section": "REC. INDOYUMEN - LBSM KRATON",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "132": [
+        {
+            "id": "496",
+            "penyulang_id": "132",
+            "nama_section": "CO BRANCH ASRAMA BRIMOB",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "497",
+            "penyulang_id": "132",
+            "nama_section": "LBS ANWAR MEDIKA - LBS SPBE",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "494",
+            "penyulang_id": "132",
+            "nama_section": "LBSM JABARAN - PMCB MANUNGGAL JATI",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "495",
+            "penyulang_id": "132",
+            "nama_section": "PMCB MANUNGGAL JATI -  LBS ANWAR MEDIKA - LBSM BHAYANGKARA",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "133": [
+        {
+            "id": "502",
+            "penyulang_id": "133",
+            "nama_section": "CO BRANCH WONOKASIAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "498",
+            "penyulang_id": "133",
+            "nama_section": "GI - REC. SUKODONO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "500",
+            "penyulang_id": "133",
+            "nama_section": "LBS SAWO CANGKRING - LBS SUMBERREJO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "501",
+            "penyulang_id": "133",
+            "nama_section": "LBS SUMBERREJO - LBS PILANG SELATAN - LBSM KETIMANG - LBSM THREEWAY PILANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "504",
+            "penyulang_id": "133",
+            "nama_section": "LBSM POM PILANG - LBSM LEBO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "503",
+            "penyulang_id": "133",
+            "nama_section": "LBSM THREE WAY PILANG - LBSM POM PILANG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-24 10:03:30"
+        },
+        {
+            "id": "499",
+            "penyulang_id": "133",
+            "nama_section": "REC. SUKODONO - LBS SAWO CANGKRING",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ],
+    "134": [
+        {
+            "id": "507",
+            "penyulang_id": "134",
+            "nama_section": "CO BRANCH GRAHA PESONA MODONG",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "505",
+            "penyulang_id": "134",
+            "nama_section": "GI -PMCB BUMI JOYO",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "508",
+            "penyulang_id": "134",
+            "nama_section": "LBSM MODONG - LBS PERUM TAS SELATAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        },
+        {
+            "id": "506",
+            "penyulang_id": "134",
+            "nama_section": "PMCB BUMI JOYO - LBSM SUMBER JAYA PERKASA - LBSM MODONG - LBS TULANGAN",
+            "status": "AKTIF",
+            "created_at": "2026-07-17 08:54:27",
+            "updated_at": "2026-07-17 08:54:27"
+        }
+    ]
+}

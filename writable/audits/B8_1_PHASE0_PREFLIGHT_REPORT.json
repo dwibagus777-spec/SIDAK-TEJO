@@ -1,0 +1,21 @@
+{
+    "https_reachable": true,
+    "unauth_401": true,
+    "unauth_403": true,
+    "auth_audit_200": true,
+    "baseline_match": true,
+    "recon_match": true,
+    "errors": [],
+    "baseline": {
+        "active_translines": 243,
+        "physical_translines": 252,
+        "active_assets": 5236,
+        "physical_assets": 5549,
+        "network_span_meters": 9418.37,
+        "snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+        "active_transline_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+        "physical_transline_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+        "active_asset_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+        "physical_asset_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a"
+    }
+}

@@ -1,0 +1,2566 @@
+{
+    "audit_timestamp": "2026-09-02T11:40:39+07:00",
+    "environment": "PRODUCTION_HOSTINGER_MARIADB",
+    "penyulang_id": 15,
+    "penyulang_name": "BANJAR KEMANTREN",
+    "total_master_assets": 205,
+    "total_temuan": 36,
+    "total_translines": 98,
+    "manual_translines_count": 40,
+    "phase1_pilot_count": 10,
+    "phase2_progressive_count": 48,
+    "all_transline_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110
+    ],
+    "baseline_preserved": false,
+    "gis_network_edges": 98,
+    "zero_asset_mutation": true,
+    "zero_temuan_mutation": true,
+    "progressive_lines_detail": [
+        {
+            "id": 43,
+            "transline_id": 43,
+            "code": "TL-15-3213-3249",
+            "transline_code": "TL-15-3213-3249",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3213,
+            "target_asset_id": 3249,
+            "from_asset_id": 3213,
+            "to_asset_id": 3249,
+            "source_asset": {
+                "id": 3213,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-052",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-052",
+                "name": "BANJARKEMANTRAN_41",
+                "nama_asset": "BANJARKEMANTRAN_41",
+                "latitude": -7.416112963,
+                "longitude": 112.722735
+            },
+            "target_asset": {
+                "id": 3249,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-088",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-088",
+                "name": "BANJARKEMANTRAN_42",
+                "nama_asset": "BANJARKEMANTRAN_42",
+                "latitude": -7.415967034,
+                "longitude": 112.722353
+            },
+            "coordinates": [
+                [
+                    112.722735,
+                    -7.416112963
+                ],
+                [
+                    112.722353,
+                    -7.415967034
+                ]
+            ],
+            "length_m": 45.14,
+            "length_meter": 45.14,
+            "distance_meters": 45.14,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "Administrator"
+        },
+        {
+            "id": 44,
+            "transline_id": 44,
+            "code": "TL-15-3319-3213",
+            "transline_code": "TL-15-3319-3213",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3319,
+            "target_asset_id": 3213,
+            "from_asset_id": 3319,
+            "to_asset_id": 3213,
+            "source_asset": {
+                "id": 3319,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-158",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-158",
+                "name": "BANJARKEMANTRAN_38",
+                "nama_asset": "BANJARKEMANTRAN_38",
+                "latitude": -7.416150011,
+                "longitude": 112.722822
+            },
+            "target_asset": {
+                "id": 3213,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-052",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-052",
+                "name": "BANJARKEMANTRAN_41",
+                "nama_asset": "BANJARKEMANTRAN_41",
+                "latitude": -7.416112963,
+                "longitude": 112.722735
+            },
+            "coordinates": [
+                [
+                    112.722822,
+                    -7.416150011
+                ],
+                [
+                    112.722735,
+                    -7.416112963
+                ]
+            ],
+            "length_m": 10.44,
+            "length_meter": 10.44,
+            "distance_meters": 10.44,
+            "conductor": "A3CS 150 mm\u00b2",
+            "conductor_label": "A3CS 150 mm\u00b2",
+            "conductor_type": "A3CS",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "Administrator"
+        },
+        {
+            "id": 65,
+            "transline_id": 65,
+            "code": "TL-15-3223-3234",
+            "transline_code": "TL-15-3223-3234",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3223,
+            "target_asset_id": 3234,
+            "from_asset_id": 3223,
+            "to_asset_id": 3234,
+            "source_asset": {
+                "id": 3223,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-062",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-062",
+                "name": "BANJARKEMANTRAN_90",
+                "nama_asset": "BANJARKEMANTRAN_90",
+                "latitude": -7.409852017,
+                "longitude": 112.724245
+            },
+            "target_asset": {
+                "id": 3234,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-073",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-073",
+                "name": "BANJARKEMANTRAN_88",
+                "nama_asset": "BANJARKEMANTRAN_88",
+                "latitude": -7.409887975,
+                "longitude": 112.724513
+            },
+            "coordinates": [
+                [
+                    112.724245,
+                    -7.409852017
+                ],
+                [
+                    112.724513,
+                    -7.409887975
+                ]
+            ],
+            "length_m": 29.82,
+            "length_meter": 29.82,
+            "distance_meters": 29.82,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:21"
+        },
+        {
+            "id": 66,
+            "transline_id": 66,
+            "code": "TL-15-3243-3291",
+            "transline_code": "TL-15-3243-3291",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3243,
+            "target_asset_id": 3291,
+            "from_asset_id": 3243,
+            "to_asset_id": 3291,
+            "source_asset": {
+                "id": 3243,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-082",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-082",
+                "name": "BANJARKEMANTRAN_19",
+                "nama_asset": "BANJARKEMANTRAN_19",
+                "latitude": -7.41305097,
+                "longitude": 112.725641
+            },
+            "target_asset": {
+                "id": 3291,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-130",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-130",
+                "name": "BANJARKEMANTRAN_20",
+                "nama_asset": "BANJARKEMANTRAN_20",
+                "latitude": -7.412775038,
+                "longitude": 112.725679
+            },
+            "coordinates": [
+                [
+                    112.725641,
+                    -7.41305097
+                ],
+                [
+                    112.725679,
+                    -7.412775038
+                ]
+            ],
+            "length_m": 30.97,
+            "length_meter": 30.97,
+            "distance_meters": 30.97,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:22"
+        },
+        {
+            "id": 67,
+            "transline_id": 67,
+            "code": "TL-15-3232-3274",
+            "transline_code": "TL-15-3232-3274",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3232,
+            "target_asset_id": 3274,
+            "from_asset_id": 3232,
+            "to_asset_id": 3274,
+            "source_asset": {
+                "id": 3232,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-071",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-071",
+                "name": "BANJARKEMANTRAN_75",
+                "nama_asset": "BANJARKEMANTRAN_75",
+                "latitude": -7.412908981,
+                "longitude": 112.710658
+            },
+            "target_asset": {
+                "id": 3274,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-113",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-113",
+                "name": "BANJARKEMANTRAN_76",
+                "nama_asset": "BANJARKEMANTRAN_76",
+                "latitude": -7.412842009,
+                "longitude": 112.710327
+            },
+            "coordinates": [
+                [
+                    112.710658,
+                    -7.412908981
+                ],
+                [
+                    112.710327,
+                    -7.412842009
+                ]
+            ],
+            "length_m": 37.25,
+            "length_meter": 37.25,
+            "distance_meters": 37.25,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:23"
+        },
+        {
+            "id": 68,
+            "transline_id": 68,
+            "code": "TL-15-3250-3339",
+            "transline_code": "TL-15-3250-3339",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3250,
+            "target_asset_id": 3339,
+            "from_asset_id": 3250,
+            "to_asset_id": 3339,
+            "source_asset": {
+                "id": 3250,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-089",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-089",
+                "name": "BANJARKEMANTRAN_87",
+                "nama_asset": "BANJARKEMANTRAN_87",
+                "latitude": -7.409889987,
+                "longitude": 112.724567
+            },
+            "target_asset": {
+                "id": 3339,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-178",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-178",
+                "name": "BANJARKEMANTRAN_86",
+                "nama_asset": "BANJARKEMANTRAN_86",
+                "latitude": -7.409878001,
+                "longitude": 112.724909
+            },
+            "coordinates": [
+                [
+                    112.724567,
+                    -7.409889987
+                ],
+                [
+                    112.724909,
+                    -7.409878001
+                ]
+            ],
+            "length_m": 37.73,
+            "length_meter": 37.73,
+            "distance_meters": 37.73,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:24"
+        },
+        {
+            "id": 69,
+            "transline_id": 69,
+            "code": "TL-15-3294-3309",
+            "transline_code": "TL-15-3294-3309",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3294,
+            "target_asset_id": 3309,
+            "from_asset_id": 3294,
+            "to_asset_id": 3309,
+            "source_asset": {
+                "id": 3294,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-133",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-133",
+                "name": "KEBOAN ANOM_85",
+                "nama_asset": "KEBOAN ANOM_85",
+                "latitude": -7.409454966,
+                "longitude": 112.721808
+            },
+            "target_asset": {
+                "id": 3309,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-148",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-148",
+                "name": "KEBOAN ANOM_86",
+                "nama_asset": "KEBOAN ANOM_86",
+                "latitude": -7.40952001,
+                "longitude": 112.722147
+            },
+            "coordinates": [
+                [
+                    112.721808,
+                    -7.409454966
+                ],
+                [
+                    112.722147,
+                    -7.40952001
+                ]
+            ],
+            "length_m": 38.07,
+            "length_meter": 38.07,
+            "distance_meters": 38.07,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:25"
+        },
+        {
+            "id": 70,
+            "transline_id": 70,
+            "code": "TL-15-3257-3317",
+            "transline_code": "TL-15-3257-3317",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3257,
+            "target_asset_id": 3317,
+            "from_asset_id": 3257,
+            "to_asset_id": 3317,
+            "source_asset": {
+                "id": 3257,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-096",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-096",
+                "name": "KEBOAN ANOM_84",
+                "nama_asset": "KEBOAN ANOM_84",
+                "latitude": -7.409447003,
+                "longitude": 112.721736
+            },
+            "target_asset": {
+                "id": 3317,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-156",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-156",
+                "name": "KEBOAN ANOM_74",
+                "nama_asset": "KEBOAN ANOM_74",
+                "latitude": -7.40933896,
+                "longitude": 112.721401
+            },
+            "coordinates": [
+                [
+                    112.721736,
+                    -7.409447003
+                ],
+                [
+                    112.721401,
+                    -7.40933896
+                ]
+            ],
+            "length_m": 38.84,
+            "length_meter": 38.84,
+            "distance_meters": 38.84,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:26"
+        },
+        {
+            "id": 71,
+            "transline_id": 71,
+            "code": "TL-15-3176-3260",
+            "transline_code": "TL-15-3176-3260",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3176,
+            "target_asset_id": 3260,
+            "from_asset_id": 3176,
+            "to_asset_id": 3260,
+            "source_asset": {
+                "id": 3176,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-015",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-015",
+                "name": "KEBOAN ANOM_87",
+                "nama_asset": "KEBOAN ANOM_87",
+                "latitude": -7.409522021,
+                "longitude": 112.722182
+            },
+            "target_asset": {
+                "id": 3260,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-099",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-099",
+                "name": "KEBOAN ANOM_89",
+                "nama_asset": "KEBOAN ANOM_89",
+                "latitude": -7.409583963,
+                "longitude": 112.722557
+            },
+            "coordinates": [
+                [
+                    112.722182,
+                    -7.409522021
+                ],
+                [
+                    112.722557,
+                    -7.409583963
+                ]
+            ],
+            "length_m": 41.92,
+            "length_meter": 41.92,
+            "distance_meters": 41.92,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:27"
+        },
+        {
+            "id": 72,
+            "transline_id": 72,
+            "code": "TL-15-3280-3297",
+            "transline_code": "TL-15-3280-3297",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3280,
+            "target_asset_id": 3297,
+            "from_asset_id": 3280,
+            "to_asset_id": 3297,
+            "source_asset": {
+                "id": 3280,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-119",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-119",
+                "name": "KEBOAN ANOM_81",
+                "nama_asset": "KEBOAN ANOM_81",
+                "latitude": -7.41155698,
+                "longitude": 112.721701
+            },
+            "target_asset": {
+                "id": 3297,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-136",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-136",
+                "name": "KEBOAN ANOM_82",
+                "nama_asset": "KEBOAN ANOM_82",
+                "latitude": -7.411906002,
+                "longitude": 112.721536
+            },
+            "coordinates": [
+                [
+                    112.721701,
+                    -7.41155698
+                ],
+                [
+                    112.721536,
+                    -7.411906002
+                ]
+            ],
+            "length_m": 42.86,
+            "length_meter": 42.86,
+            "distance_meters": 42.86,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:28"
+        },
+        {
+            "id": 73,
+            "transline_id": 73,
+            "code": "TL-15-3163-3182",
+            "transline_code": "TL-15-3163-3182",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3163,
+            "target_asset_id": 3182,
+            "from_asset_id": 3163,
+            "to_asset_id": 3182,
+            "source_asset": {
+                "id": 3163,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-002",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-002",
+                "name": "BANJARKEMANTRAN_44",
+                "nama_asset": "BANJARKEMANTRAN_44",
+                "latitude": -7.415665034,
+                "longitude": 112.721586
+            },
+            "target_asset": {
+                "id": 3182,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-021",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-021",
+                "name": "BANJARKEMANTRAN_43",
+                "nama_asset": "BANJARKEMANTRAN_43",
+                "latitude": -7.415822027,
+                "longitude": 112.721971
+            },
+            "coordinates": [
+                [
+                    112.721586,
+                    -7.415665034
+                ],
+                [
+                    112.721971,
+                    -7.415822027
+                ]
+            ],
+            "length_m": 45.9,
+            "length_meter": 45.9,
+            "distance_meters": 45.9,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:29"
+        },
+        {
+            "id": 74,
+            "transline_id": 74,
+            "code": "TL-15-3294-3298",
+            "transline_code": "TL-15-3294-3298",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3294,
+            "target_asset_id": 3298,
+            "from_asset_id": 3294,
+            "to_asset_id": 3298,
+            "source_asset": {
+                "id": 3294,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-133",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-133",
+                "name": "KEBOAN ANOM_85",
+                "nama_asset": "KEBOAN ANOM_85",
+                "latitude": -7.409454966,
+                "longitude": 112.721808
+            },
+            "target_asset": {
+                "id": 3298,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-137",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-137",
+                "name": "KEBOAN ANOM_88",
+                "nama_asset": "KEBOAN ANOM_88",
+                "latitude": -7.40953099,
+                "longitude": 112.722266
+            },
+            "coordinates": [
+                [
+                    112.721808,
+                    -7.409454966
+                ],
+                [
+                    112.722266,
+                    -7.40953099
+                ]
+            ],
+            "length_m": 51.2,
+            "length_meter": 51.2,
+            "distance_meters": 51.2,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112946-B1-047cb6|PROP:30"
+        },
+        {
+            "id": 75,
+            "transline_id": 75,
+            "code": "TL-15-3162-3163",
+            "transline_code": "TL-15-3162-3163",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3162,
+            "target_asset_id": 3163,
+            "from_asset_id": 3162,
+            "to_asset_id": 3163,
+            "source_asset": {
+                "id": 3162,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-001",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-001",
+                "name": "BANJARKEMANTRAN_46",
+                "nama_asset": "BANJARKEMANTRAN_46",
+                "latitude": -7.415522961,
+                "longitude": 112.721206
+            },
+            "target_asset": {
+                "id": 3163,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-002",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-002",
+                "name": "BANJARKEMANTRAN_44",
+                "nama_asset": "BANJARKEMANTRAN_44",
+                "latitude": -7.415665034,
+                "longitude": 112.721586
+            },
+            "coordinates": [
+                [
+                    112.721206,
+                    -7.415522961
+                ],
+                [
+                    112.721586,
+                    -7.415665034
+                ]
+            ],
+            "length_m": 44.78,
+            "length_meter": 44.78,
+            "distance_meters": 44.78,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112947-B2-8cb437|PROP:31"
+        },
+        {
+            "id": 76,
+            "transline_id": 76,
+            "code": "TL-15-3219-3260",
+            "transline_code": "TL-15-3219-3260",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3219,
+            "target_asset_id": 3260,
+            "from_asset_id": 3219,
+            "to_asset_id": 3260,
+            "source_asset": {
+                "id": 3219,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-058",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-058",
+                "name": "KEBOAN ANOM_90",
+                "nama_asset": "KEBOAN ANOM_90",
+                "latitude": -7.409635009,
+                "longitude": 112.722845
+            },
+            "target_asset": {
+                "id": 3260,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-099",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-099",
+                "name": "KEBOAN ANOM_89",
+                "nama_asset": "KEBOAN ANOM_89",
+                "latitude": -7.409583963,
+                "longitude": 112.722557
+            },
+            "coordinates": [
+                [
+                    112.722845,
+                    -7.409635009
+                ],
+                [
+                    112.722557,
+                    -7.409583963
+                ]
+            ],
+            "length_m": 32.26,
+            "length_meter": 32.26,
+            "distance_meters": 32.26,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112947-B2-8cb437|PROP:32"
+        },
+        {
+            "id": 77,
+            "transline_id": 77,
+            "code": "TL-15-3280-3331",
+            "transline_code": "TL-15-3280-3331",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3280,
+            "target_asset_id": 3331,
+            "from_asset_id": 3280,
+            "to_asset_id": 3331,
+            "source_asset": {
+                "id": 3280,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-119",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-119",
+                "name": "KEBOAN ANOM_81",
+                "nama_asset": "KEBOAN ANOM_81",
+                "latitude": -7.41155698,
+                "longitude": 112.721701
+            },
+            "target_asset": {
+                "id": 3331,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-170",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-170",
+                "name": "KEBOAN ANOM_80",
+                "nama_asset": "KEBOAN ANOM_80",
+                "latitude": -7.411216004,
+                "longitude": 112.72179
+            },
+            "coordinates": [
+                [
+                    112.721701,
+                    -7.41155698
+                ],
+                [
+                    112.72179,
+                    -7.411216004
+                ]
+            ],
+            "length_m": 39.16,
+            "length_meter": 39.16,
+            "distance_meters": 39.16,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112947-B2-8cb437|PROP:33"
+        },
+        {
+            "id": 78,
+            "transline_id": 78,
+            "code": "TL-15-3232-3344",
+            "transline_code": "TL-15-3232-3344",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3232,
+            "target_asset_id": 3344,
+            "from_asset_id": 3232,
+            "to_asset_id": 3344,
+            "source_asset": {
+                "id": 3232,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-071",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-071",
+                "name": "BANJARKEMANTRAN_75",
+                "nama_asset": "BANJARKEMANTRAN_75",
+                "latitude": -7.412908981,
+                "longitude": 112.710658
+            },
+            "target_asset": {
+                "id": 3344,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-183",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-183",
+                "name": "BANJARKEMANTRAN_74",
+                "nama_asset": "BANJARKEMANTRAN_74",
+                "latitude": -7.412982993,
+                "longitude": 112.711054
+            },
+            "coordinates": [
+                [
+                    112.710658,
+                    -7.412908981
+                ],
+                [
+                    112.711054,
+                    -7.412982993
+                ]
+            ],
+            "length_m": 44.43,
+            "length_meter": 44.43,
+            "distance_meters": 44.43,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112947-B2-8cb437|PROP:34"
+        },
+        {
+            "id": 79,
+            "transline_id": 79,
+            "code": "TL-15-3185-3223",
+            "transline_code": "TL-15-3185-3223",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3185,
+            "target_asset_id": 3223,
+            "from_asset_id": 3185,
+            "to_asset_id": 3223,
+            "source_asset": {
+                "id": 3185,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-024",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-024",
+                "name": "BANJARKEMANTRAN_92",
+                "nama_asset": "BANJARKEMANTRAN_92",
+                "latitude": -7.409752021,
+                "longitude": 112.723818
+            },
+            "target_asset": {
+                "id": 3223,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-062",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-062",
+                "name": "BANJARKEMANTRAN_90",
+                "nama_asset": "BANJARKEMANTRAN_90",
+                "latitude": -7.409852017,
+                "longitude": 112.724245
+            },
+            "coordinates": [
+                [
+                    112.723818,
+                    -7.409752021
+                ],
+                [
+                    112.724245,
+                    -7.409852017
+                ]
+            ],
+            "length_m": 48.38,
+            "length_meter": 48.38,
+            "distance_meters": 48.38,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112947-B2-8cb437|PROP:35"
+        },
+        {
+            "id": 80,
+            "transline_id": 80,
+            "code": "TL-15-3266-3317",
+            "transline_code": "TL-15-3266-3317",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3266,
+            "target_asset_id": 3317,
+            "from_asset_id": 3266,
+            "to_asset_id": 3317,
+            "source_asset": {
+                "id": 3266,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-105",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-105",
+                "name": "KEBOAN ANOM_73",
+                "nama_asset": "KEBOAN ANOM_73",
+                "latitude": -7.409213986,
+                "longitude": 112.72097
+            },
+            "target_asset": {
+                "id": 3317,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-156",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-156",
+                "name": "KEBOAN ANOM_74",
+                "nama_asset": "KEBOAN ANOM_74",
+                "latitude": -7.40933896,
+                "longitude": 112.721401
+            },
+            "coordinates": [
+                [
+                    112.72097,
+                    -7.409213986
+                ],
+                [
+                    112.721401,
+                    -7.40933896
+                ]
+            ],
+            "length_m": 49.51,
+            "length_meter": 49.51,
+            "distance_meters": 49.51,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112947-B2-8cb437|PROP:36"
+        },
+        {
+            "id": 81,
+            "transline_id": 81,
+            "code": "TL-15-3185-3337",
+            "transline_code": "TL-15-3185-3337",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3185,
+            "target_asset_id": 3337,
+            "from_asset_id": 3185,
+            "to_asset_id": 3337,
+            "source_asset": {
+                "id": 3185,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-024",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-024",
+                "name": "BANJARKEMANTRAN_92",
+                "nama_asset": "BANJARKEMANTRAN_92",
+                "latitude": -7.409752021,
+                "longitude": 112.723818
+            },
+            "target_asset": {
+                "id": 3337,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-176",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-176",
+                "name": "BANJARKEMANTRAN_93",
+                "nama_asset": "BANJARKEMANTRAN_93",
+                "latitude": -7.409714973,
+                "longitude": 112.723443
+            },
+            "coordinates": [
+                [
+                    112.723818,
+                    -7.409752021
+                ],
+                [
+                    112.723443,
+                    -7.409714973
+                ]
+            ],
+            "length_m": 41.55,
+            "length_meter": 41.55,
+            "distance_meters": 41.55,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112948-B3-7c8702|PROP:37"
+        },
+        {
+            "id": 82,
+            "transline_id": 82,
+            "code": "TL-15-3162-3287",
+            "transline_code": "TL-15-3162-3287",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3162,
+            "target_asset_id": 3287,
+            "from_asset_id": 3162,
+            "to_asset_id": 3287,
+            "source_asset": {
+                "id": 3162,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-001",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-001",
+                "name": "BANJARKEMANTRAN_46",
+                "nama_asset": "BANJARKEMANTRAN_46",
+                "latitude": -7.415522961,
+                "longitude": 112.721206
+            },
+            "target_asset": {
+                "id": 3287,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-126",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-126",
+                "name": "BANJARKEMANTRAN_47",
+                "nama_asset": "BANJARKEMANTRAN_47",
+                "latitude": -7.415383989,
+                "longitude": 112.720819
+            },
+            "coordinates": [
+                [
+                    112.721206,
+                    -7.415522961
+                ],
+                [
+                    112.720819,
+                    -7.415383989
+                ]
+            ],
+            "length_m": 45.38,
+            "length_meter": 45.38,
+            "distance_meters": 45.38,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112948-B3-7c8702|PROP:38"
+        },
+        {
+            "id": 83,
+            "transline_id": 83,
+            "code": "TL-15-3201-3266",
+            "transline_code": "TL-15-3201-3266",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3201,
+            "target_asset_id": 3266,
+            "from_asset_id": 3201,
+            "to_asset_id": 3266,
+            "source_asset": {
+                "id": 3201,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-040",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-040",
+                "name": "KEBOAN ANOM_72",
+                "nama_asset": "KEBOAN ANOM_72",
+                "latitude": -7.409080965,
+                "longitude": 112.72054
+            },
+            "target_asset": {
+                "id": 3266,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-105",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-105",
+                "name": "KEBOAN ANOM_73",
+                "nama_asset": "KEBOAN ANOM_73",
+                "latitude": -7.409213986,
+                "longitude": 112.72097
+            },
+            "coordinates": [
+                [
+                    112.72054,
+                    -7.409080965
+                ],
+                [
+                    112.72097,
+                    -7.409213986
+                ]
+            ],
+            "length_m": 49.67,
+            "length_meter": 49.67,
+            "distance_meters": 49.67,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112948-B3-7c8702|PROP:39"
+        },
+        {
+            "id": 84,
+            "transline_id": 84,
+            "code": "TL-15-3325-3331",
+            "transline_code": "TL-15-3325-3331",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3325,
+            "target_asset_id": 3331,
+            "from_asset_id": 3325,
+            "to_asset_id": 3331,
+            "source_asset": {
+                "id": 3325,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-164",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-164",
+                "name": "KEBOAN ANOM_79",
+                "nama_asset": "KEBOAN ANOM_79",
+                "latitude": -7.410780983,
+                "longitude": 112.72191
+            },
+            "target_asset": {
+                "id": 3331,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-170",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-170",
+                "name": "KEBOAN ANOM_80",
+                "nama_asset": "KEBOAN ANOM_80",
+                "latitude": -7.411216004,
+                "longitude": 112.72179
+            },
+            "coordinates": [
+                [
+                    112.72191,
+                    -7.410780983
+                ],
+                [
+                    112.72179,
+                    -7.411216004
+                ]
+            ],
+            "length_m": 50.15,
+            "length_meter": 50.15,
+            "distance_meters": 50.15,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112948-B3-7c8702|PROP:40"
+        },
+        {
+            "id": 85,
+            "transline_id": 85,
+            "code": "TL-15-3174-3287",
+            "transline_code": "TL-15-3174-3287",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3174,
+            "target_asset_id": 3287,
+            "from_asset_id": 3174,
+            "to_asset_id": 3287,
+            "source_asset": {
+                "id": 3174,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-013",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-013",
+                "name": "BANJARKEMANTRAN_48",
+                "nama_asset": "BANJARKEMANTRAN_48",
+                "latitude": -7.415255997,
+                "longitude": 112.72041
+            },
+            "target_asset": {
+                "id": 3287,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-126",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-126",
+                "name": "BANJARKEMANTRAN_47",
+                "nama_asset": "BANJARKEMANTRAN_47",
+                "latitude": -7.415383989,
+                "longitude": 112.720819
+            },
+            "coordinates": [
+                [
+                    112.72041,
+                    -7.415255997
+                ],
+                [
+                    112.720819,
+                    -7.415383989
+                ]
+            ],
+            "length_m": 47.29,
+            "length_meter": 47.29,
+            "distance_meters": 47.29,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112949-B4-828f43|PROP:41"
+        },
+        {
+            "id": 86,
+            "transline_id": 86,
+            "code": "TL-15-3289-3325",
+            "transline_code": "TL-15-3289-3325",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3289,
+            "target_asset_id": 3325,
+            "from_asset_id": 3289,
+            "to_asset_id": 3325,
+            "source_asset": {
+                "id": 3289,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-128",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-128",
+                "name": "KEBOAN ANOM_78",
+                "nama_asset": "KEBOAN ANOM_78",
+                "latitude": -7.410362978,
+                "longitude": 112.722055
+            },
+            "target_asset": {
+                "id": 3325,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-164",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-164",
+                "name": "KEBOAN ANOM_79",
+                "nama_asset": "KEBOAN ANOM_79",
+                "latitude": -7.410780983,
+                "longitude": 112.72191
+            },
+            "coordinates": [
+                [
+                    112.722055,
+                    -7.410362978
+                ],
+                [
+                    112.72191,
+                    -7.410780983
+                ]
+            ],
+            "length_m": 49.15,
+            "length_meter": 49.15,
+            "distance_meters": 49.15,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112949-B4-828f43|PROP:42"
+        },
+        {
+            "id": 87,
+            "transline_id": 87,
+            "code": "TL-15-3201-3245",
+            "transline_code": "TL-15-3201-3245",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3201,
+            "target_asset_id": 3245,
+            "from_asset_id": 3201,
+            "to_asset_id": 3245,
+            "source_asset": {
+                "id": 3201,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-040",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-040",
+                "name": "KEBOAN ANOM_72",
+                "nama_asset": "KEBOAN ANOM_72",
+                "latitude": -7.409080965,
+                "longitude": 112.72054
+            },
+            "target_asset": {
+                "id": 3245,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-084",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-084",
+                "name": "KEBOAN ANOM_71",
+                "nama_asset": "KEBOAN ANOM_71",
+                "latitude": -7.408946017,
+                "longitude": 112.720112
+            },
+            "coordinates": [
+                [
+                    112.72054,
+                    -7.409080965
+                ],
+                [
+                    112.720112,
+                    -7.408946017
+                ]
+            ],
+            "length_m": 49.52,
+            "length_meter": 49.52,
+            "distance_meters": 49.52,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112949-B4-828f43|PROP:43"
+        },
+        {
+            "id": 88,
+            "transline_id": 88,
+            "code": "TL-15-3295-3337",
+            "transline_code": "TL-15-3295-3337",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3295,
+            "target_asset_id": 3337,
+            "from_asset_id": 3295,
+            "to_asset_id": 3337,
+            "source_asset": {
+                "id": 3295,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-134",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-134",
+                "name": "KEBOAN ANOM_91",
+                "nama_asset": "KEBOAN ANOM_91",
+                "latitude": -7.409654958,
+                "longitude": 112.722971
+            },
+            "target_asset": {
+                "id": 3337,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-176",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-176",
+                "name": "BANJARKEMANTRAN_93",
+                "nama_asset": "BANJARKEMANTRAN_93",
+                "latitude": -7.409714973,
+                "longitude": 112.723443
+            },
+            "coordinates": [
+                [
+                    112.722971,
+                    -7.409654958
+                ],
+                [
+                    112.723443,
+                    -7.409714973
+                ]
+            ],
+            "length_m": 52.47,
+            "length_meter": 52.47,
+            "distance_meters": 52.47,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112949-B4-828f43|PROP:44"
+        },
+        {
+            "id": 89,
+            "transline_id": 89,
+            "code": "TL-15-3173-3174",
+            "transline_code": "TL-15-3173-3174",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3173,
+            "target_asset_id": 3174,
+            "from_asset_id": 3173,
+            "to_asset_id": 3174,
+            "source_asset": {
+                "id": 3173,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-012",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-012",
+                "name": "BANJARKEMANTRAN_49",
+                "nama_asset": "BANJARKEMANTRAN_49",
+                "latitude": -7.415175028,
+                "longitude": 112.720167
+            },
+            "target_asset": {
+                "id": 3174,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-013",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-013",
+                "name": "BANJARKEMANTRAN_48",
+                "nama_asset": "BANJARKEMANTRAN_48",
+                "latitude": -7.415255997,
+                "longitude": 112.72041
+            },
+            "coordinates": [
+                [
+                    112.720167,
+                    -7.415175028
+                ],
+                [
+                    112.72041,
+                    -7.415255997
+                ]
+            ],
+            "length_m": 28.27,
+            "length_meter": 28.27,
+            "distance_meters": 28.27,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112950-B5-037dc5|PROP:45"
+        },
+        {
+            "id": 90,
+            "transline_id": 90,
+            "code": "TL-15-3289-3304",
+            "transline_code": "TL-15-3289-3304",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3289,
+            "target_asset_id": 3304,
+            "from_asset_id": 3289,
+            "to_asset_id": 3304,
+            "source_asset": {
+                "id": 3289,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-128",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-128",
+                "name": "KEBOAN ANOM_78",
+                "nama_asset": "KEBOAN ANOM_78",
+                "latitude": -7.410362978,
+                "longitude": 112.722055
+            },
+            "target_asset": {
+                "id": 3304,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-143",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-143",
+                "name": "KEBOAN ANOM_77",
+                "nama_asset": "KEBOAN ANOM_77",
+                "latitude": -7.409973973,
+                "longitude": 112.722186
+            },
+            "coordinates": [
+                [
+                    112.722055,
+                    -7.410362978
+                ],
+                [
+                    112.722186,
+                    -7.409973973
+                ]
+            ],
+            "length_m": 45.6,
+            "length_meter": 45.6,
+            "distance_meters": 45.6,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112950-B5-037dc5|PROP:46"
+        },
+        {
+            "id": 91,
+            "transline_id": 91,
+            "code": "TL-15-3233-3245",
+            "transline_code": "TL-15-3233-3245",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3233,
+            "target_asset_id": 3245,
+            "from_asset_id": 3233,
+            "to_asset_id": 3245,
+            "source_asset": {
+                "id": 3233,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-072",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-072",
+                "name": "KEBOAN ANOM_70",
+                "nama_asset": "KEBOAN ANOM_70",
+                "latitude": -7.408817019,
+                "longitude": 112.719685
+            },
+            "target_asset": {
+                "id": 3245,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-084",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-084",
+                "name": "KEBOAN ANOM_71",
+                "nama_asset": "KEBOAN ANOM_71",
+                "latitude": -7.408946017,
+                "longitude": 112.720112
+            },
+            "coordinates": [
+                [
+                    112.719685,
+                    -7.408817019
+                ],
+                [
+                    112.720112,
+                    -7.408946017
+                ]
+            ],
+            "length_m": 49.22,
+            "length_meter": 49.22,
+            "distance_meters": 49.22,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112950-B5-037dc5|PROP:47"
+        },
+        {
+            "id": 92,
+            "transline_id": 92,
+            "code": "TL-15-3173-3241",
+            "transline_code": "TL-15-3173-3241",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3173,
+            "target_asset_id": 3241,
+            "from_asset_id": 3173,
+            "to_asset_id": 3241,
+            "source_asset": {
+                "id": 3173,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-012",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-012",
+                "name": "BANJARKEMANTRAN_49",
+                "nama_asset": "BANJARKEMANTRAN_49",
+                "latitude": -7.415175028,
+                "longitude": 112.720167
+            },
+            "target_asset": {
+                "id": 3241,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-080",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-080",
+                "name": "BANJARKEMANTRAN_50",
+                "nama_asset": "BANJARKEMANTRAN_50",
+                "latitude": -7.415064974,
+                "longitude": 112.719877
+            },
+            "coordinates": [
+                [
+                    112.720167,
+                    -7.415175028
+                ],
+                [
+                    112.719877,
+                    -7.415064974
+                ]
+            ],
+            "length_m": 34.24,
+            "length_meter": 34.24,
+            "distance_meters": 34.24,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112951-B6-d48a3c|PROP:48"
+        },
+        {
+            "id": 93,
+            "transline_id": 93,
+            "code": "TL-15-3233-3313",
+            "transline_code": "TL-15-3233-3313",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3233,
+            "target_asset_id": 3313,
+            "from_asset_id": 3233,
+            "to_asset_id": 3313,
+            "source_asset": {
+                "id": 3233,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-072",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-072",
+                "name": "KEBOAN ANOM_70",
+                "nama_asset": "KEBOAN ANOM_70",
+                "latitude": -7.408817019,
+                "longitude": 112.719685
+            },
+            "target_asset": {
+                "id": 3313,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-152",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-152",
+                "name": "KEBOAN ANOM_69",
+                "nama_asset": "KEBOAN ANOM_69",
+                "latitude": -7.408664972,
+                "longitude": 112.71927
+            },
+            "coordinates": [
+                [
+                    112.719685,
+                    -7.408817019
+                ],
+                [
+                    112.71927,
+                    -7.408664972
+                ]
+            ],
+            "length_m": 48.78,
+            "length_meter": 48.78,
+            "distance_meters": 48.78,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112951-B6-d48a3c|PROP:49"
+        },
+        {
+            "id": 94,
+            "transline_id": 94,
+            "code": "TL-15-3177-3313",
+            "transline_code": "TL-15-3177-3313",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3177,
+            "target_asset_id": 3313,
+            "from_asset_id": 3177,
+            "to_asset_id": 3313,
+            "source_asset": {
+                "id": 3177,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-016",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-016",
+                "name": "KEBOAN ANOM_64",
+                "nama_asset": "KEBOAN ANOM_64",
+                "latitude": -7.408538992,
+                "longitude": 112.718845
+            },
+            "target_asset": {
+                "id": 3313,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-152",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-152",
+                "name": "KEBOAN ANOM_69",
+                "nama_asset": "KEBOAN ANOM_69",
+                "latitude": -7.408664972,
+                "longitude": 112.71927
+            },
+            "coordinates": [
+                [
+                    112.718845,
+                    -7.408538992
+                ],
+                [
+                    112.71927,
+                    -7.408664972
+                ]
+            ],
+            "length_m": 48.91,
+            "length_meter": 48.91,
+            "distance_meters": 48.91,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112951-B7-9dbe08|PROP:50"
+        },
+        {
+            "id": 95,
+            "transline_id": 95,
+            "code": "TL-15-3177-3204",
+            "transline_code": "TL-15-3177-3204",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3177,
+            "target_asset_id": 3204,
+            "from_asset_id": 3177,
+            "to_asset_id": 3204,
+            "source_asset": {
+                "id": 3177,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-016",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-016",
+                "name": "KEBOAN ANOM_64",
+                "nama_asset": "KEBOAN ANOM_64",
+                "latitude": -7.408538992,
+                "longitude": 112.718845
+            },
+            "target_asset": {
+                "id": 3204,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-043",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-043",
+                "name": "KEBOAN ANOM_63",
+                "nama_asset": "KEBOAN ANOM_63",
+                "latitude": -7.408408988,
+                "longitude": 112.718452
+            },
+            "coordinates": [
+                [
+                    112.718845,
+                    -7.408538992
+                ],
+                [
+                    112.718452,
+                    -7.408408988
+                ]
+            ],
+            "length_m": 45.68,
+            "length_meter": 45.68,
+            "distance_meters": 45.68,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112953-B8-a90f38|PROP:51"
+        },
+        {
+            "id": 96,
+            "transline_id": 96,
+            "code": "TL-15-3204-3279",
+            "transline_code": "TL-15-3204-3279",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3204,
+            "target_asset_id": 3279,
+            "from_asset_id": 3204,
+            "to_asset_id": 3279,
+            "source_asset": {
+                "id": 3204,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-043",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-043",
+                "name": "KEBOAN ANOM_63",
+                "nama_asset": "KEBOAN ANOM_63",
+                "latitude": -7.408408988,
+                "longitude": 112.718452
+            },
+            "target_asset": {
+                "id": 3279,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-118",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-118",
+                "name": "KEBOAN ANOM_60",
+                "nama_asset": "KEBOAN ANOM_60",
+                "latitude": -7.408314021,
+                "longitude": 112.718185
+            },
+            "coordinates": [
+                [
+                    112.718452,
+                    -7.408408988
+                ],
+                [
+                    112.718185,
+                    -7.408314021
+                ]
+            ],
+            "length_m": 31.28,
+            "length_meter": 31.28,
+            "distance_meters": 31.28,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112954-B9-3351a7|PROP:52"
+        },
+        {
+            "id": 97,
+            "transline_id": 97,
+            "code": "TL-15-3270-3279",
+            "transline_code": "TL-15-3270-3279",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3270,
+            "target_asset_id": 3279,
+            "from_asset_id": 3270,
+            "to_asset_id": 3279,
+            "source_asset": {
+                "id": 3270,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-109",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-109",
+                "name": "KEBOAN ANOM_54",
+                "nama_asset": "KEBOAN ANOM_54",
+                "latitude": -7.408270016,
+                "longitude": 112.717991
+            },
+            "target_asset": {
+                "id": 3279,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-118",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-118",
+                "name": "KEBOAN ANOM_60",
+                "nama_asset": "KEBOAN ANOM_60",
+                "latitude": -7.408314021,
+                "longitude": 112.718185
+            },
+            "coordinates": [
+                [
+                    112.717991,
+                    -7.408270016
+                ],
+                [
+                    112.718185,
+                    -7.408314021
+                ]
+            ],
+            "length_m": 21.94,
+            "length_meter": 21.94,
+            "distance_meters": 21.94,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112955-B10-a2a55f|PROP:53"
+        },
+        {
+            "id": 98,
+            "transline_id": 98,
+            "code": "TL-15-3195-3270",
+            "transline_code": "TL-15-3195-3270",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3195,
+            "target_asset_id": 3270,
+            "from_asset_id": 3195,
+            "to_asset_id": 3270,
+            "source_asset": {
+                "id": 3195,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-034",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-034",
+                "name": "KEBOAN ANOM_53",
+                "nama_asset": "KEBOAN ANOM_53",
+                "latitude": -7.40819701,
+                "longitude": 112.717567
+            },
+            "target_asset": {
+                "id": 3270,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-109",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-109",
+                "name": "KEBOAN ANOM_54",
+                "nama_asset": "KEBOAN ANOM_54",
+                "latitude": -7.408270016,
+                "longitude": 112.717991
+            },
+            "coordinates": [
+                [
+                    112.717567,
+                    -7.40819701
+                ],
+                [
+                    112.717991,
+                    -7.408270016
+                ]
+            ],
+            "length_m": 47.45,
+            "length_meter": 47.45,
+            "distance_meters": 47.45,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911112956-B11-2c64f4|PROP:54"
+        },
+        {
+            "id": 99,
+            "transline_id": 99,
+            "code": "TL-15-3191-3195",
+            "transline_code": "TL-15-3191-3195",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3191,
+            "target_asset_id": 3195,
+            "from_asset_id": 3191,
+            "to_asset_id": 3195,
+            "source_asset": {
+                "id": 3191,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-030",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-030",
+                "name": "KEBOAN ANOM_52",
+                "nama_asset": "KEBOAN ANOM_52",
+                "latitude": -7.408155017,
+                "longitude": 112.717073
+            },
+            "target_asset": {
+                "id": 3195,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-034",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-034",
+                "name": "KEBOAN ANOM_53",
+                "nama_asset": "KEBOAN ANOM_53",
+                "latitude": -7.40819701,
+                "longitude": 112.717567
+            },
+            "coordinates": [
+                [
+                    112.717073,
+                    -7.408155017
+                ],
+                [
+                    112.717567,
+                    -7.40819701
+                ]
+            ],
+            "length_m": 54.67,
+            "length_meter": 54.67,
+            "distance_meters": 54.67,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113004-B12-76fe0a|PROP:55"
+        },
+        {
+            "id": 100,
+            "transline_id": 100,
+            "code": "TL-15-3191-3351",
+            "transline_code": "TL-15-3191-3351",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3191,
+            "target_asset_id": 3351,
+            "from_asset_id": 3191,
+            "to_asset_id": 3351,
+            "source_asset": {
+                "id": 3191,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-030",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-030",
+                "name": "KEBOAN ANOM_52",
+                "nama_asset": "KEBOAN ANOM_52",
+                "latitude": -7.408155017,
+                "longitude": 112.717073
+            },
+            "target_asset": {
+                "id": 3351,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-190",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-190",
+                "name": "KEBOAN ANOM_51",
+                "nama_asset": "KEBOAN ANOM_51",
+                "latitude": -7.408169014,
+                "longitude": 112.716658
+            },
+            "coordinates": [
+                [
+                    112.717073,
+                    -7.408155017
+                ],
+                [
+                    112.716658,
+                    -7.408169014
+                ]
+            ],
+            "length_m": 45.79,
+            "length_meter": 45.79,
+            "distance_meters": 45.79,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113006-B13-cd73a2|PROP:56"
+        },
+        {
+            "id": 101,
+            "transline_id": 101,
+            "code": "TL-15-3247-3351",
+            "transline_code": "TL-15-3247-3351",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3247,
+            "target_asset_id": 3351,
+            "from_asset_id": 3247,
+            "to_asset_id": 3351,
+            "source_asset": {
+                "id": 3247,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-086",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-086",
+                "name": "KEBOAN ANOM_47",
+                "nama_asset": "KEBOAN ANOM_47",
+                "latitude": -7.408168009,
+                "longitude": 112.716216
+            },
+            "target_asset": {
+                "id": 3351,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-190",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-190",
+                "name": "KEBOAN ANOM_51",
+                "nama_asset": "KEBOAN ANOM_51",
+                "latitude": -7.408169014,
+                "longitude": 112.716658
+            },
+            "coordinates": [
+                [
+                    112.716216,
+                    -7.408168009
+                ],
+                [
+                    112.716658,
+                    -7.408169014
+                ]
+            ],
+            "length_m": 48.74,
+            "length_meter": 48.74,
+            "distance_meters": 48.74,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113008-B14-14d5d9|PROP:57"
+        },
+        {
+            "id": 102,
+            "transline_id": 102,
+            "code": "TL-15-3247-3290",
+            "transline_code": "TL-15-3247-3290",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3247,
+            "target_asset_id": 3290,
+            "from_asset_id": 3247,
+            "to_asset_id": 3290,
+            "source_asset": {
+                "id": 3247,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-086",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-086",
+                "name": "KEBOAN ANOM_47",
+                "nama_asset": "KEBOAN ANOM_47",
+                "latitude": -7.408168009,
+                "longitude": 112.716216
+            },
+            "target_asset": {
+                "id": 3290,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-129",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-129",
+                "name": "KEBOAN ANOM_46",
+                "nama_asset": "KEBOAN ANOM_46",
+                "latitude": -7.408116041,
+                "longitude": 112.71582
+            },
+            "coordinates": [
+                [
+                    112.716216,
+                    -7.408168009
+                ],
+                [
+                    112.71582,
+                    -7.408116041
+                ]
+            ],
+            "length_m": 44.05,
+            "length_meter": 44.05,
+            "distance_meters": 44.05,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113009-B15-cf5550|PROP:58"
+        },
+        {
+            "id": 103,
+            "transline_id": 103,
+            "code": "TL-15-3199-3290",
+            "transline_code": "TL-15-3199-3290",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3199,
+            "target_asset_id": 3290,
+            "from_asset_id": 3199,
+            "to_asset_id": 3290,
+            "source_asset": {
+                "id": 3199,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-038",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-038",
+                "name": "KEBOAN ANOM_45",
+                "nama_asset": "KEBOAN ANOM_45",
+                "latitude": -7.408016967,
+                "longitude": 112.715361
+            },
+            "target_asset": {
+                "id": 3290,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-129",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-129",
+                "name": "KEBOAN ANOM_46",
+                "nama_asset": "KEBOAN ANOM_46",
+                "latitude": -7.408116041,
+                "longitude": 112.71582
+            },
+            "coordinates": [
+                [
+                    112.715361,
+                    -7.408016967
+                ],
+                [
+                    112.71582,
+                    -7.408116041
+                ]
+            ],
+            "length_m": 51.8,
+            "length_meter": 51.8,
+            "distance_meters": 51.8,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113010-B16-c8398d|PROP:59"
+        },
+        {
+            "id": 104,
+            "transline_id": 104,
+            "code": "TL-15-3192-3199",
+            "transline_code": "TL-15-3192-3199",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3192,
+            "target_asset_id": 3199,
+            "from_asset_id": 3192,
+            "to_asset_id": 3199,
+            "source_asset": {
+                "id": 3192,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-031",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-031",
+                "name": "KEBOAN ANOM_38",
+                "nama_asset": "KEBOAN ANOM_38",
+                "latitude": -7.407898027,
+                "longitude": 112.714944
+            },
+            "target_asset": {
+                "id": 3199,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-038",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-038",
+                "name": "KEBOAN ANOM_45",
+                "nama_asset": "KEBOAN ANOM_45",
+                "latitude": -7.408016967,
+                "longitude": 112.715361
+            },
+            "coordinates": [
+                [
+                    112.714944,
+                    -7.407898027
+                ],
+                [
+                    112.715361,
+                    -7.408016967
+                ]
+            ],
+            "length_m": 47.85,
+            "length_meter": 47.85,
+            "distance_meters": 47.85,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113011-B17-a3c6ff|PROP:60"
+        },
+        {
+            "id": 105,
+            "transline_id": 105,
+            "code": "TL-15-3192-3251",
+            "transline_code": "TL-15-3192-3251",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3192,
+            "target_asset_id": 3251,
+            "from_asset_id": 3192,
+            "to_asset_id": 3251,
+            "source_asset": {
+                "id": 3192,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-031",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-031",
+                "name": "KEBOAN ANOM_38",
+                "nama_asset": "KEBOAN ANOM_38",
+                "latitude": -7.407898027,
+                "longitude": 112.714944
+            },
+            "target_asset": {
+                "id": 3251,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-090",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-090",
+                "name": "KEBOAN ANOM_37",
+                "nama_asset": "KEBOAN ANOM_37",
+                "latitude": -7.407807,
+                "longitude": 112.7145
+            },
+            "coordinates": [
+                [
+                    112.714944,
+                    -7.407898027
+                ],
+                [
+                    112.7145,
+                    -7.407807
+                ]
+            ],
+            "length_m": 49.99,
+            "length_meter": 49.99,
+            "distance_meters": 49.99,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113012-B18-fd53e4|PROP:61"
+        },
+        {
+            "id": 106,
+            "transline_id": 106,
+            "code": "TL-15-3251-3323",
+            "transline_code": "TL-15-3251-3323",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3251,
+            "target_asset_id": 3323,
+            "from_asset_id": 3251,
+            "to_asset_id": 3323,
+            "source_asset": {
+                "id": 3251,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-090",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-090",
+                "name": "KEBOAN ANOM_37",
+                "nama_asset": "KEBOAN ANOM_37",
+                "latitude": -7.407807,
+                "longitude": 112.7145
+            },
+            "target_asset": {
+                "id": 3323,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-162",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-162",
+                "name": "KEBOAN ANOM_34",
+                "nama_asset": "KEBOAN ANOM_34",
+                "latitude": -7.407733994,
+                "longitude": 112.714045
+            },
+            "coordinates": [
+                [
+                    112.7145,
+                    -7.407807
+                ],
+                [
+                    112.714045,
+                    -7.407733994
+                ]
+            ],
+            "length_m": 50.82,
+            "length_meter": 50.82,
+            "distance_meters": 50.82,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113013-B19-4684d3|PROP:62"
+        },
+        {
+            "id": 107,
+            "transline_id": 107,
+            "code": "TL-15-3292-3323",
+            "transline_code": "TL-15-3292-3323",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3292,
+            "target_asset_id": 3323,
+            "from_asset_id": 3292,
+            "to_asset_id": 3323,
+            "source_asset": {
+                "id": 3292,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-131",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-131",
+                "name": "KEBOAN ANOM_33",
+                "nama_asset": "KEBOAN ANOM_33",
+                "latitude": -7.407670962,
+                "longitude": 112.713652
+            },
+            "target_asset": {
+                "id": 3323,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-162",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-162",
+                "name": "KEBOAN ANOM_34",
+                "nama_asset": "KEBOAN ANOM_34",
+                "latitude": -7.407733994,
+                "longitude": 112.714045
+            },
+            "coordinates": [
+                [
+                    112.713652,
+                    -7.407670962
+                ],
+                [
+                    112.714045,
+                    -7.407733994
+                ]
+            ],
+            "length_m": 43.9,
+            "length_meter": 43.9,
+            "distance_meters": 43.9,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113014-B20-2b8b27|PROP:63"
+        },
+        {
+            "id": 108,
+            "transline_id": 108,
+            "code": "TL-15-3240-3292",
+            "transline_code": "TL-15-3240-3292",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3240,
+            "target_asset_id": 3292,
+            "from_asset_id": 3240,
+            "to_asset_id": 3292,
+            "source_asset": {
+                "id": 3240,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-079",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-079",
+                "name": "KEBOAN ANOM_32",
+                "nama_asset": "KEBOAN ANOM_32",
+                "latitude": -7.407597033,
+                "longitude": 112.713318
+            },
+            "target_asset": {
+                "id": 3292,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-131",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-131",
+                "name": "KEBOAN ANOM_33",
+                "nama_asset": "KEBOAN ANOM_33",
+                "latitude": -7.407670962,
+                "longitude": 112.713652
+            },
+            "coordinates": [
+                [
+                    112.713318,
+                    -7.407597033
+                ],
+                [
+                    112.713652,
+                    -7.407670962
+                ]
+            ],
+            "length_m": 37.74,
+            "length_meter": 37.74,
+            "distance_meters": 37.74,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113810-B21-62fc8b|PROP:64"
+        },
+        {
+            "id": 109,
+            "transline_id": 109,
+            "code": "TL-15-3240-3282",
+            "transline_code": "TL-15-3240-3282",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3240,
+            "target_asset_id": 3282,
+            "from_asset_id": 3240,
+            "to_asset_id": 3282,
+            "source_asset": {
+                "id": 3240,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-079",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-079",
+                "name": "KEBOAN ANOM_32",
+                "nama_asset": "KEBOAN ANOM_32",
+                "latitude": -7.407597033,
+                "longitude": 112.713318
+            },
+            "target_asset": {
+                "id": 3282,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-121",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-121",
+                "name": "KEBOAN ANOM_31",
+                "nama_asset": "KEBOAN ANOM_31",
+                "latitude": -7.40753199,
+                "longitude": 112.713085
+            },
+            "coordinates": [
+                [
+                    112.713318,
+                    -7.407597033
+                ],
+                [
+                    112.713085,
+                    -7.40753199
+                ]
+            ],
+            "length_m": 26.69,
+            "length_meter": 26.69,
+            "distance_meters": 26.69,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113948-B22-d77fc4|PROP:65"
+        },
+        {
+            "id": 110,
+            "transline_id": 110,
+            "code": "TL-15-3215-3282",
+            "transline_code": "TL-15-3215-3282",
+            "penyulang_id": 15,
+            "section_id": null,
+            "source_asset_id": 3215,
+            "target_asset_id": 3282,
+            "from_asset_id": 3215,
+            "to_asset_id": 3282,
+            "source_asset": {
+                "id": 3215,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-054",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-054",
+                "name": "KEBOAN ANOM_25",
+                "nama_asset": "KEBOAN ANOM_25",
+                "latitude": -7.407422019,
+                "longitude": 112.71268
+            },
+            "target_asset": {
+                "id": 3282,
+                "code": "AST-KOTA-BNJRKMNTRN-JTM-121",
+                "kode_asset": "AST-KOTA-BNJRKMNTRN-JTM-121",
+                "name": "KEBOAN ANOM_31",
+                "nama_asset": "KEBOAN ANOM_31",
+                "latitude": -7.40753199,
+                "longitude": 112.713085
+            },
+            "coordinates": [
+                [
+                    112.71268,
+                    -7.407422019
+                ],
+                [
+                    112.713085,
+                    -7.40753199
+                ]
+            ],
+            "length_m": 46.3,
+            "length_meter": 46.3,
+            "distance_meters": 46.3,
+            "conductor": "AAAC 150 mm\u00b2",
+            "conductor_label": "AAAC 150 mm\u00b2",
+            "conductor_type": "AAAC",
+            "conductor_size": "150 mm\u00b2",
+            "conductor_material": "ALUMINUM_ALLOY",
+            "status": "ACTIVE",
+            "is_active": 1,
+            "created_by": "ENGINEER_TRANSLINE_AI|RUN:TL02-PROG-20260911113949-B23-30ad86|PROP:66"
+        }
+    ]
+}

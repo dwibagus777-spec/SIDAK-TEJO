@@ -1,0 +1,42 @@
+{
+    "registry_id": "MR01_TECHNICAL_REVIEW_REGISTRY_v1.0",
+    "created_at": "2026-08-25 16:15:43 WIB",
+    "created_at_utc": "2026-08-25T09:15:43Z",
+    "total_reviews": 1,
+    "reviews": {
+        "REV-20260825-d729": {
+            "review_id": "REV-20260825-d729",
+            "request_no": "REQ-MAT-20260825-ee4c",
+            "supervisor": {
+                "supervisor_name": "SUPERVISOR_PEMELIHARAAN_JARINGAN",
+                "supervisor_nip": "198403152008121003",
+                "supervisor_role": "MAINTENANCE_SUPERVISOR"
+            },
+            "supervisor_notes": "Hasil verifikasi visual dan beban kerja lapangan: seluruh kuantitas material tervalidasi siap untuk pemadaman terjadwal.",
+            "reviewed_lines": [
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "material_name": "Pin Post Insulator 20 kV; 12,5 kN; Porcelain",
+                    "system_recommended_qty": 12,
+                    "technical_reviewed_qty": 12,
+                    "delta_qty": 0,
+                    "unit": "PCS",
+                    "notes": "Dikonfirmasi sesuai kebutuhan 12 titik temuan lapangan"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "material_name": "Traves Cross-Arm UNP 80\u00d745\u00d75 mm Panjang 2000 mm Hot Dip Galvanized",
+                    "system_recommended_qty": 11,
+                    "technical_reviewed_qty": 11,
+                    "delta_qty": 0,
+                    "unit": "BATANG",
+                    "notes": "Dikonfirmasi sesuai 11 titik konstruksi traves korosi/miring"
+                }
+            ],
+            "reviewed_at": "2026-08-25 16:15:43",
+            "reviewed_at_utc": "2026-08-25T09:15:43Z",
+            "review_hash": "aff8f4dc5770618b8a29e084e0f9a3e45b0823071d8cc3a7d8d071b14117d5e5",
+            "decision": "VERIFIED_AND_SUBMITTED_FOR_MANAGEMENT_APPROVAL"
+        }
+    }
+}

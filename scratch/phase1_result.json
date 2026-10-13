@@ -1,0 +1,133 @@
+{
+    "gate": "B7_PRODUCTION_ACTIVATION_PHASE_1",
+    "timestamp": "2026-09-26 17:33:33 WIB",
+    "environment": "production",
+    "steps": {
+        "1A_authorization": {
+            "status": "PASS",
+            "http_code": 403,
+            "response": {
+                "status": "error",
+                "code": 403,
+                "reason": "FORBIDDEN",
+                "message": "Deployment master key diperlukan untuk operasi migrasi skema B.7."
+            }
+        },
+        "1B_migration_first_run": {
+            "status": "PASS",
+            "http_code": 200,
+            "migration_status": "MIGRATION_ALREADY_SEALED"
+        },
+        "1C_schema_forensics": {
+            "tables": {
+                "mobile_devices": {
+                    "exists": true,
+                    "has_device_id": true,
+                    "has_status": true,
+                    "has_revoked_at": true,
+                    "valid": true
+                },
+                "mobile_sync_batches": {
+                    "exists": true,
+                    "has_sync_id": true,
+                    "has_client_sent_at": true,
+                    "has_server_received_at": true,
+                    "has_status": true,
+                    "valid": true
+                },
+                "mobile_sync_journal": {
+                    "exists": true,
+                    "journal_seq_bigint_pk": true,
+                    "journal_seq_type": "bigint(20) unsigned",
+                    "journal_seq_extra": "auto_increment",
+                    "uuid_unique": true,
+                    "valid": true
+                },
+                "mobile_evidence_chunks": {
+                    "exists": true,
+                    "composite_unique_chunk": true,
+                    "valid": true
+                }
+            },
+            "all_valid": true
+        },
+        "1D_idempotency_second_run": {
+            "status": "PASS",
+            "http_code": 200,
+            "migration_status": "MIGRATION_ALREADY_SEALED"
+        },
+        "1E_sentinel": {
+            "zero_mutation": true,
+            "delta_active_tl": 0,
+            "delta_physical_tl": 0,
+            "delta_active_assets": 0,
+            "delta_physical_assets": 0,
+            "hash_active_tl_match": true,
+            "hash_active_asset_match": true,
+            "hash_phys_tl_match": true,
+            "hash_phys_asset_match": true,
+            "b6_tables_untouched": true,
+            "sentinel_before": {
+                "active_translines": 243,
+                "physical_translines": 252,
+                "active_assets": 5236,
+                "physical_assets": 5549,
+                "active_transline_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                "active_asset_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                "physical_transline_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                "physical_asset_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                "network_span_meters": 9418.37,
+                "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb"
+            },
+            "sentinel_after": {
+                "active_translines": 243,
+                "physical_translines": 252,
+                "active_assets": 5236,
+                "physical_assets": 5549,
+                "active_transline_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                "active_asset_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                "physical_transline_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                "physical_asset_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                "network_span_meters": 9418.37,
+                "topology_snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb"
+            }
+        },
+        "1F_reconciliation": {
+            "gate": "B7_FORENSIC_RECONCILIATION",
+            "timestamp": "2026-09-26 17:33:46 WIB",
+            "reconciliation_pack": {
+                "layer_1_application": {
+                    "sync_service_version": "B7-SYNC-1.0",
+                    "evidence_service_version": "B7-EVIDENCE-1.0",
+                    "pull_service_version": "B7-PULL-1.0",
+                    "status": "SEALED & SYNCHRONIZED"
+                },
+                "layer_2_physical_database": {
+                    "total_phase_b_tables": 11,
+                    "physical_translines_count": 252,
+                    "physical_translines_hash": "35b82b10cea9acf5fefae7fe551aa9f2b8ca833f09acab2ef4f29f2d3755fad6",
+                    "physical_assets_count": 5549,
+                    "physical_assets_hash": "2e0477b238d5e352be5e9e70d2f57d42b808fd7d8d1d409dc40614c59193152a",
+                    "inactive_translines_count": 9,
+                    "soft_deleted_assets_count": 313
+                },
+                "layer_3_authoritative_view": {
+                    "active_translines_count": 243,
+                    "active_translines_hash": "5707f28af259aaca1608b5b595e139ce6dda3b0ffbfe4f1d1ed6c0cb48e40ae5",
+                    "active_assets_count": 5236,
+                    "active_assets_hash": "83d8260ef2dfd1c8517e28879857fbd9816a3742a353217eef03d6a46a431711",
+                    "authoritative_aligned": true,
+                    "formula_translines": "243 Active + 9 Inactive = 252 Physical",
+                    "formula_assets": "5236 Active + 313 Soft-Deleted = 5549 Physical"
+                },
+                "layer_4_topology_snapshot": {
+                    "snapshot_id": "TOPOLOGY-20260925-243-ad2c9fcb",
+                    "network_span_meters": 9418.37,
+                    "status": "PERMANENTLY_SEALED"
+                }
+            },
+            "reconciliation_verdict": "PASS_AUTHORITATIVE_PRODUCTION"
+        }
+    },
+    "overall_verdict": "PASS"
+}

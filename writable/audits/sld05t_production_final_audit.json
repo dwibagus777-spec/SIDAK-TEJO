@@ -1,0 +1,68 @@
+{
+  "audit_gate": "SLD-05T_PRODUCTION_DEPLOYMENT",
+  "feeder_id": 15,
+  "feeder_name": "BANJAR KEMANTRAN",
+  "substation": "GI BUDURAN",
+  "ulp": "ULP Sidoarjo Kota",
+  "commit_hash": "80eb3c3",
+  "commit_message": "feat(sld): seal finding technical annotations",
+  "deployed_at": "2026-09-17T19:07:35+07:00",
+  "verified_at": "2026-09-17T19:12:46+07:00",
+  "deployment_url": "https://sidaktejo.site/sld/view/15",
+  "auto_deploy_status": "HTTP 200 (OPcache purged)",
+  "topology_invariant": {
+    "expected_nodes": 205,
+    "actual_nodes": 205,
+    "delta_nodes": 0,
+    "expected_edges": 197,
+    "actual_edges": 197,
+    "delta_edges": 0,
+    "database_writes": 0,
+    "delta_db": 0,
+    "status": "STRICT_ZERO_MUTATION_VERIFIED"
+  },
+  "sheets_composition": {
+    "total_sheets": 5,
+    "coverage_nodes": 205,
+    "coverage_percentage": "100.0%",
+    "partitions": [
+      { "sheet": 1, "pole_count": 45 },
+      { "sheet": 2, "pole_count": 45 },
+      { "sheet": 3, "pole_count": 45 },
+      { "sheet": 4, "pole_count": 45 },
+      { "sheet": 5, "pole_count": 25 }
+    ]
+  },
+  "findings_overlay": {
+    "total_live_findings": 36,
+    "asset_linked_count": 2,
+    "location_linked_count": 34,
+    "row_binding_to_nearest_asset": 0,
+    "synthesized_nodes": 0,
+    "synthesized_edges": 0,
+    "status": "READ_MODEL_ONLY"
+  },
+  "visual_audit_evidence": {
+    "view_a_normal_sld": "sld05t_prod_view_a_normal_sld.png",
+    "view_b_single_finding": "sld05t_prod_view_b_one_finding.png",
+    "view_c_multiple_findings": "sld05t_prod_view_c_banyak_finding.png",
+    "view_d_row_finding": "sld05t_prod_view_d_row_finding.png",
+    "view_e_print_preview": "sld05t_prod_view_e_print_preview.png"
+  },
+  "unit_tests": {
+    "total_tests": 126,
+    "total_assertions": 8596,
+    "status": "100% PASS (0 FAILURES)"
+  },
+  "gate_status": {
+    "SLD_01": "SEALED",
+    "SLD_02": "SEALED",
+    "SLD_03": "SEALED",
+    "SLD_04": "SEALED",
+    "SLD_05R": "SEALED",
+    "SLD_05S": "SEALED",
+    "SLD_05T": "SEALED",
+    "SLD_06": "STRICTLY_LOCKED",
+    "SLD_07": "STRICTLY_LOCKED"
+  }
+}

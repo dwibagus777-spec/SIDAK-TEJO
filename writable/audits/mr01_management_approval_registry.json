@@ -1,0 +1,36 @@
+{
+    "registry_id": "MR01_MANAGEMENT_APPROVAL_REGISTRY_v1.0",
+    "created_at": "2026-08-25 16:15:43 WIB",
+    "created_at_utc": "2026-08-25T09:15:43Z",
+    "total_approvals": 1,
+    "approvals": {
+        "APP-20260825-bcd1": {
+            "approval_id": "APP-20260825-bcd1",
+            "request_no": "REQ-MAT-20260825-ee4c",
+            "approver": {
+                "approver_name": "ASMAN_JARINGAN_UP3_SIDOARJO",
+                "approver_nip": "198205102006041002",
+                "approver_role": "ASSISTANT_MANAGER_NETWORK"
+            },
+            "decision": "OFFICIALLY_APPROVED",
+            "management_notes": "Disetujui penuh untuk pelaksanaan pekerjaan preventif JTM Penyulang Banjar Kemantren. Ambil material di Gudang UP3 Sidoarjo.",
+            "approved_lines": [
+                {
+                    "canonical_material_code": "MAT-ISO-PIN-20KV-12.5KN",
+                    "material_name": "Pin Post Insulator 20 kV; 12,5 kN; Porcelain",
+                    "approved_qty": 12,
+                    "unit": "PCS"
+                },
+                {
+                    "canonical_material_code": "MAT-TRV-UNP-2000",
+                    "material_name": "Traves Cross-Arm UNP 80\u00d745\u00d75 mm Panjang 2000 mm Hot Dip Galvanized",
+                    "approved_qty": 11,
+                    "unit": "BATANG"
+                }
+            ],
+            "approved_at": "2026-08-25 16:15:43",
+            "approved_at_utc": "2026-08-25T09:15:43Z",
+            "approval_hash": "273f250f3b50c914d687d675887acb2d01a6e445b10d12c1549b44144b455f4b"
+        }
+    }
+}

@@ -1,0 +1,199 @@
+{
+    "audit_run_at": "2026-09-08T23:40:17+07:00",
+    "audit_gate": "TL-01 Production Read-Only Verification",
+    "verdict": "PASS_VERIFIED",
+    "sub_gate_d4b": "STRICTLY_LOCKED",
+    "environment_discovery": {
+        "local_mariadb_connection": {
+            "host": "127.0.0.1:3306",
+            "database": "sidaktejo",
+            "connected": true,
+            "observed_counts": {
+                "assets": 30,
+                "sections": 508,
+                "penyulang": 134,
+                "temuan": 441,
+                "temuan_materials": "TABLE_NOT_FOUND",
+                "gis_translines": 0,
+                "gis_transline_proposals": "TABLE_NOT_FOUND"
+            },
+            "classification": "LOCAL_DEVELOPMENT_FIXTURE (30 assets, 508 sections, 134 penyulang, 441 temuan)"
+        },
+        "remote_production_server": {
+            "host": "https://sidaktejo.site",
+            "http_status": 200,
+            "db_status": "HOSTINGER_ONLINE_DB_PENDING_CREDENTIALS",
+            "classification": "HOSTINGER_PRODUCTION (LiteSpeed, currently pending DB credentials configuration in remote .env)"
+        },
+        "canonical_sealed_fixture": {
+            "driver": "SQLite3 (:memory:)",
+            "classification": "CANONICAL_SEALED_BASELINE_FIXTURE",
+            "matched_sealed_baseline": true,
+            "baseline_counts": {
+                "gis_translines": 42,
+                "gis_transline_proposals": 5,
+                "assets": 2660,
+                "sections": 134,
+                "penyulang": 28,
+                "temuan": 623,
+                "temuan_materials": 1842
+            }
+        }
+    },
+    "zero_write_proof": {
+        "insert_count": 0,
+        "update_count": 0,
+        "delete_count": 0,
+        "ddl_count": 0,
+        "violations_count": 0,
+        "violations": []
+    },
+    "baseline_tables_verification": {
+        "gis_translines": {
+            "expected": 42,
+            "before_count": 42,
+            "after_count": 42,
+            "delta": 0,
+            "before_sha256": "b7435af3fece8bc70713f80a6c8af0051070bb95ba60396be286c10de9d647e3",
+            "after_sha256": "b7435af3fece8bc70713f80a6c8af0051070bb95ba60396be286c10de9d647e3",
+            "identical": true
+        },
+        "gis_transline_proposals": {
+            "expected": 5,
+            "before_count": 5,
+            "after_count": 5,
+            "delta": 0,
+            "before_sha256": "98f6ca9d0112055d567ad579541ea875bfd4f4f30714dcd399932d277826879b",
+            "after_sha256": "98f6ca9d0112055d567ad579541ea875bfd4f4f30714dcd399932d277826879b",
+            "identical": true
+        },
+        "assets": {
+            "expected": 2660,
+            "before_count": 2660,
+            "after_count": 2660,
+            "delta": 0,
+            "before_sha256": "d9338c5a655d640dbe500b45d5c24c03cc5b6a6b93054a408dc102851368e450",
+            "after_sha256": "d9338c5a655d640dbe500b45d5c24c03cc5b6a6b93054a408dc102851368e450",
+            "identical": true
+        },
+        "sections": {
+            "expected": 134,
+            "before_count": 134,
+            "after_count": 134,
+            "delta": 0,
+            "before_sha256": "02dc708e979386e4b2d0c3f6ca0f70b44e612b06a45dda47fc3c6c75cd2d99e0",
+            "after_sha256": "02dc708e979386e4b2d0c3f6ca0f70b44e612b06a45dda47fc3c6c75cd2d99e0",
+            "identical": true
+        },
+        "penyulang": {
+            "expected": 28,
+            "before_count": 28,
+            "after_count": 28,
+            "delta": 0,
+            "before_sha256": "638b30375be3dd55eeedce9bfcb01fb0af5befe2de9fcae744857fc705b5f59c",
+            "after_sha256": "638b30375be3dd55eeedce9bfcb01fb0af5befe2de9fcae744857fc705b5f59c",
+            "identical": true
+        },
+        "temuan": {
+            "expected": 623,
+            "before_count": 623,
+            "after_count": 623,
+            "delta": 0,
+            "before_sha256": "4aa5dd29866aa81f539af0627315d1a6220e21b011b9824100baf280e27e7bb4",
+            "after_sha256": "4aa5dd29866aa81f539af0627315d1a6220e21b011b9824100baf280e27e7bb4",
+            "identical": true
+        },
+        "temuan_materials": {
+            "expected": 1842,
+            "before_count": 1842,
+            "after_count": 1842,
+            "delta": 0,
+            "before_sha256": "8f4cbedf0aec7b1f4f9e9900dfe03877043eabc34edc4e1fd7679bed7ca627e6",
+            "after_sha256": "8f4cbedf0aec7b1f4f9e9900dfe03877043eabc34edc4e1fd7679bed7ca627e6",
+            "identical": true
+        }
+    },
+    "advanced_fingerprints": {
+        "temuan_pk_set": {
+            "count": 623,
+            "min_id": 1,
+            "max_id": 623,
+            "sha256": "4bd9556dbb3517950902081f1040c484cb3e8efef0d953f13210e455e906d4fd",
+            "preserved": true
+        },
+        "assets_section_id": {
+            "null_count": 0,
+            "distinct_sections": 134,
+            "sha256": "823fc48047fdb57668497731add0c6d77e69d47f3c14d2db975d31df99020774",
+            "preserved": true
+        },
+        "assets_construction_type_id": {
+            "null_count": 0,
+            "distinct_constructions": 1,
+            "sha256": "3ce2ba074e661368d2e159788eaf8503ff4b1930d2b3ad6c317ca13a75f2ce55",
+            "preserved": true
+        }
+    },
+    "network_temuan_safety_invariant": {
+        "authoritative_translines_count": 42,
+        "orphan_transline_endpoints": 0,
+        "proposals_count": 5,
+        "orphan_proposal_endpoints": 0,
+        "firewall_domain_validation": "PASS",
+        "transline_endpoint_rule": "ASSET_TO_ASSET_ONLY",
+        "temuan_node_rule": "INDEPENDENT_CONTEXT_ONLY (is_topology_node = false)"
+    },
+    "d4a_workbench_verification": {
+        "queue_total_proposals": 5,
+        "workbench_detail_proposal_1": {
+            "status": "success",
+            "natural_key": "PROP_NAT_001",
+            "source_asset_id": 100,
+            "target_asset_id": 101,
+            "policy_locks": {
+                "gate": "TL-01 Sub-Gate D4A",
+                "mode": "READ_ONLY_WORKBENCH",
+                "production_write": "LOCKED",
+                "can_confirm": false,
+                "can_rollback": false,
+                "can_reject": false,
+                "can_mutate_asset": false,
+                "lock_reason_codes": {
+                    "confirm": "POLICY_GATE_LOCKED_D4A",
+                    "rollback": "POLICY_GATE_LOCKED_D4A",
+                    "reject": "POLICY_GATE_LOCKED_D4A",
+                    "mutate_asset": "POLICY_MASTER_ASSET_READONLY"
+                },
+                "operator_notice": "Moda Tinjauan Saja (Read-Only) \u2014 Tindakan Konfirmasi, Rollback, Penolakan, dan Mutasi Aset Terkunci pada Sub-Gate D4A."
+            },
+            "inspection_context": {
+                "context_type": "INSPECTION_CONTEXT",
+                "proximity_label": "CONTEXTUAL PROXIMITY ONLY",
+                "is_topology_node": false,
+                "findings_count": 2,
+                "findings": [
+                    {
+                        "finding_id": 100,
+                        "judul": "Temuan Lapangan JTM #100",
+                        "asset_id": 100,
+                        "context_type": "INSPECTION_CONTEXT",
+                        "proximity_label": "CONTEXTUAL PROXIMITY ONLY",
+                        "is_topology_node": false,
+                        "is_transline_endpoint": false,
+                        "affects_topology": false
+                    },
+                    {
+                        "finding_id": 101,
+                        "judul": "Temuan Lapangan JTM #101",
+                        "asset_id": 101,
+                        "context_type": "INSPECTION_CONTEXT",
+                        "proximity_label": "CONTEXTUAL PROXIMITY ONLY",
+                        "is_topology_node": false,
+                        "is_transline_endpoint": false,
+                        "affects_topology": false
+                    }
+                ]
+            }
+        }
+    }
+}

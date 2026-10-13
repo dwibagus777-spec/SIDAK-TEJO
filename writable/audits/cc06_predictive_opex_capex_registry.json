@@ -1,0 +1,35 @@
+{
+    "registry_id": "CC06_PREDICTIVE_OPEX_CAPEX_REGISTRY_v1.0",
+    "created_at": "2026-08-25 15:56:00 WIB",
+    "created_at_utc": "2026-08-25T08:56:00Z",
+    "total_estimated_budget": 453000000,
+    "status": "FROZEN_NON_OPERATIONAL_BASELINE",
+    "governance_note": "Financial module locked/frozen until formal Price Governance Layer is ratified; active operational focus remains Quantity & Evidence First.",
+    "price_master_status": "NOT_ACTIVATED",
+    "procurement_integration": "STRICTLY_FORBIDDEN",
+    "decision_boundary": "RECOMMENDATION_ONLY",
+    "human_review_required": true,
+    "autonomous_action": false,
+    "ulp_allocations": {
+        "ULP Sidoarjo Kota": {
+            "opex_preventive": 45000000,
+            "capex_structure": 120000000,
+            "priority": "HIGH"
+        },
+        "ULP Krian": {
+            "opex_preventive": 38000000,
+            "capex_structure": 95000000,
+            "priority": "HIGH"
+        },
+        "ULP Porong": {
+            "opex_preventive": 28000000,
+            "capex_structure": 60000000,
+            "priority": "MEDIUM"
+        },
+        "ULP Sedati": {
+            "opex_preventive": 22000000,
+            "capex_structure": 45000000,
+            "priority": "LOW"
+        }
+    }
+}

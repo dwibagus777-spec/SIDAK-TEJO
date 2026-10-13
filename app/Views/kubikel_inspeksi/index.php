@@ -1,13 +1,13 @@
 <?= $this->extend('layouts/admin') ?>
 
-<?= $this->section('title') ?>Inspeksi Kubikel<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>Inspeksi Kubikel<?= $this->endSection() ?>
+<?= $this->section('title') ?>Inspeksi Gardu<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>Inspeksi Gardu<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">
-            <i class="bi bi-clipboard-check me-2"></i>Inspeksi Kubikel
+            <i class="bi bi-clipboard-check me-2"></i>Inspeksi Gardu
         </h1>
         <a href="<?= site_url('kubikel-inspeksi/create') ?>" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i>Inspeksi Baru

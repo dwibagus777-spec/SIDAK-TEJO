@@ -1,0 +1,74 @@
+{
+    "timestamp": "2026-09-09T08:45:09+07:00",
+    "engine_version": "TL-02-V1.0",
+    "governance_milestone": "TL-02_RATIFIED_SEALED",
+    "penyulang_id": 15,
+    "penyulang_name": "BANJAR KEMANTREN",
+    "ulp_name": "ULP SIDOARJO KOTA",
+    "network_status": {
+        "total_master_assets": 205,
+        "original_authoritative_translines": 42,
+        "pilot_committed_translines": 10,
+        "current_authoritative_translines": 52,
+        "remaining_auto_eligible_candidates": 139,
+        "remaining_review_required_candidates": 417
+    },
+    "pre_baseline": {
+        "assets_count": 205,
+        "assets_sha256": "4dc770276ee0610877de3c2b7eae389c06626a898e0c5dc9ea90b7fc3df73a1f",
+        "translines_count": 42,
+        "translines_sha256": "030f11d7cd458486d898da46661b3cdf752ebff501a5f59b67a0351d3d9f936f",
+        "proposals_count": 0,
+        "temuan_count": 1,
+        "temuan_sha256": "69717ca07544ea6777922ca558771945594134a7827d4f2a138bb13f4c65d78b",
+        "temuan_materials_count": 1,
+        "temuan_materials_sha256": "0b36754dee7cddd10a1743c33341c9b1753af1e545b3c9042c277353a5012eea"
+    },
+    "pilot_execution": {
+        "run_id": "TL02-RUN-PILOT-FINAL",
+        "translines_created_ids": [
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54
+        ],
+        "batch_size": 10,
+        "provenance_signature": "ENGINEER_TRANSLINE_AI|RUN:TL02-RUN-PILOT-FINAL|PROP:AUTO"
+    },
+    "zero_mutation_invariants": {
+        "assets_table_mutation": 0,
+        "temuan_table_mutation": 0,
+        "temuan_materials_table_mutation": 0,
+        "ar01_scoring_mutation": 0,
+        "original_42_translines_integrity": "100% BYTE-FOR-BYTE SHA256 MATCH"
+    },
+    "safety_gates": {
+        "total_gates": 24,
+        "status": "ALL_PASS",
+        "enforcement": "SERVER_AUTHORITATIVE"
+    },
+    "automated_test_results": {
+        "suite": "TL-02 End-to-End Regression Suite",
+        "total_tests": 180,
+        "total_assertions": 788,
+        "failures": 0,
+        "errors": 0,
+        "status": "100% PASS / GREEN"
+    },
+    "frontend_ui_artifacts": {
+        "gis_view": "app/Views/gis/index.php",
+        "topbar_button": "#btn-open-transline-ai",
+        "completion_modal": "#modal-transline-ai-completion",
+        "popup_distinction": "AI AUTO-COMPLETED vs OTORITATIF MANUAL",
+        "endpoints": {
+            "preview": "GET /gis/api-transline-ai-preview",
+            "execute": "POST /gis/api-transline-ai-complete"
+        }
+    }
+}

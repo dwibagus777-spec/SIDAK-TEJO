@@ -121,6 +121,9 @@ class KubikelInspectionController extends BaseController
             'gardu_induk_id'     => (int)($this->request->getPost('gardu_induk_id') ?: 0),
             'asset_id'           => (int)($this->request->getPost('asset_id') ?: 0),
             'id_pel'             => $this->request->getPost('id_pel'),
+            // CR-GIS-FIX-07: Kepemilikan & Jenis Gardu - drives Beyond KWH routing
+            'kepemilikan_gardu'  => $this->request->getPost('kepemilikan_gardu') ?: 'PLN',
+            'jenis_gardu'        => $this->request->getPost('jenis_gardu') ?: 'GARDU_KONVENSIONAL',
             'inspector_user_id'  => $userId,
             'tgl_inspeksi'       => $this->request->getPost('tgl_inspeksi'),
             'waktu_mulai'        => $this->request->getPost('waktu_mulai'),
@@ -630,7 +633,19 @@ class KubikelInspectionController extends BaseController
         }
 
         $assignedUserId = null;
-        if ($this->request->getPost('penerima_rekomendasi') === 'BEYOND_KWH') {
+        $penerimaRekomendasi = $this->request->getPost('penerima_rekomendasi');
+
+        // CR-GIS-FIX-08: Guard Beyond KWH routing - only PELANGGAN + KUBIKEL goes to Beyond KWH
+        if ($penerimaRekomendasi === 'BEYOND_KWH') {
+            $kepemilikan = strtoupper(trim((string)($inspeksi['kepemilikan_gardu'] ?? 'PLN')));
+            $jenisGardu  = strtoupper(trim((string)($inspeksi['jenis_gardu'] ?? 'GARDU_KONVENSIONAL')));
+            if ($kepemilikan !== 'PELANGGAN' || $jenisGardu !== 'KUBIKEL') {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'success' => false,
+                    'message' => 'Rekomendasi Beyond KWH hanya dapat diberikan untuk inspeksi Gardu Kubikel milik Pelanggan. '
+                               . 'Inspeksi ini adalah gardu ' . $kepemilikan . ' (' . $jenisGardu . ').',
+                ]);
+            }
             $assignedUserId = filter_var($this->request->getPost('assigned_to_user_id'), FILTER_VALIDATE_INT) ?: null;
             $assignedUser = \Config\Database::connect()->table('users')
                 ->where('id', $assignedUserId)

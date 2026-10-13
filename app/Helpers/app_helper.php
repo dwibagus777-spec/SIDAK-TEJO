@@ -98,6 +98,7 @@ if (!function_exists('get_role_label')) {
             'yantek' => 'Yantek',
             'supervisor_ulp' => 'Supervisor ULP',
             'supervisor_up3' => 'Supervisor UP3',
+            'beyond_kwh' => 'Beyond KWH',
         ];
 
         return $labels[strtolower($role)] ?? ucfirst($role);

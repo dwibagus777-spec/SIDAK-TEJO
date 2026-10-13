@@ -44,12 +44,36 @@ class InspeksiKubikelRekomendasiModel extends Model
 
     public function getByPenerimaUser(int $userId, string $status = null): array
     {
+        if (!$this->db->tableExists($this->table)) {
+            return [];
+        }
+
         $builder = $this
             ->select('inspeksi_kubikel_rekomendasi.*, inspeksi_kubikel_temuan.komponen AS temuan_komponen, inspeksi_kubikel_temuan.fasa AS temuan_fasa, inspeksi_kubikel_temuan.posisi AS temuan_posisi, inspeksi_kubikel_temuan.deskripsi_temuan, inspeksi_kubikel_temuan.urgensi AS temuan_urgensi, inspeksi_kubikel_temuan.status_temuan AS status_temuan, inspeksi_kubikel.nomor_inspeksi, inspeksi_kubikel.tgl_inspeksi')
             ->join('inspeksi_kubikel_temuan', 'inspeksi_kubikel_temuan.id = inspeksi_kubikel_rekomendasi.temuan_id')
             ->join('inspeksi_kubikel', 'inspeksi_kubikel.id = inspeksi_kubikel_temuan.inspeksi_kubikel_id')
             ->where('inspeksi_kubikel_rekomendasi.penerima', 'BEYOND_KWH')
             ->where('inspeksi_kubikel_rekomendasi.penerima_user_id', $userId)
+            ->where('inspeksi_kubikel_temuan.deleted_at', null)
+            ->where('inspeksi_kubikel.deleted_at', null);
+        if ($status) {
+            $builder->where('inspeksi_kubikel_rekomendasi.status', $status);
+        }
+        return $builder->orderBy('inspeksi_kubikel_rekomendasi.waktu_kirim', 'DESC')->findAll();
+    }
+
+    public function getAllBeyondRekomendasi(string $status = null): array
+    {
+        if (!$this->db->tableExists($this->table)) {
+            return [];
+        }
+
+        $builder = $this
+            ->select('inspeksi_kubikel_rekomendasi.*, inspeksi_kubikel_temuan.komponen AS temuan_komponen, inspeksi_kubikel_temuan.fasa AS temuan_fasa, inspeksi_kubikel_temuan.posisi AS temuan_posisi, inspeksi_kubikel_temuan.deskripsi_temuan, inspeksi_kubikel_temuan.urgensi AS temuan_urgensi, inspeksi_kubikel_temuan.status_temuan AS status_temuan, inspeksi_kubikel.nomor_inspeksi, inspeksi_kubikel.tgl_inspeksi, users.nama_pegawai AS penerima_nama')
+            ->join('inspeksi_kubikel_temuan', 'inspeksi_kubikel_temuan.id = inspeksi_kubikel_rekomendasi.temuan_id')
+            ->join('inspeksi_kubikel', 'inspeksi_kubikel.id = inspeksi_kubikel_temuan.inspeksi_kubikel_id')
+            ->join('users', 'users.id = inspeksi_kubikel_rekomendasi.penerima_user_id', 'left')
+            ->where('inspeksi_kubikel_rekomendasi.penerima', 'BEYOND_KWH')
             ->where('inspeksi_kubikel_temuan.deleted_at', null)
             ->where('inspeksi_kubikel.deleted_at', null);
         if ($status) {

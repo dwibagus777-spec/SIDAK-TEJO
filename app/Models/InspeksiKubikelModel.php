@@ -54,6 +54,9 @@ class InspeksiKubikelModel extends Model
 
     public function getInspeksiByUser(int $userId, string $status = null): array
     {
+        if (!$this->db->tableExists($this->table)) {
+            return [];
+        }
         $builder = $this->where('inspector_user_id', $userId);
         if ($status) {
             $builder->where('status', $status);
@@ -63,6 +66,9 @@ class InspeksiKubikelModel extends Model
 
     public function getInspeksiByPenyulang(int $penyulangId, string $status = null): array
     {
+        if (!$this->db->tableExists($this->table)) {
+            return [];
+        }
         $builder = $this->where('penyulang_id', $penyulangId);
         if ($status) {
             $builder->where('status', $status);
@@ -72,7 +78,13 @@ class InspeksiKubikelModel extends Model
 
     public function getInspeksiByRole(string $role, int $userId, int $ulpId = null): array
     {
-        $builder = $this->select('inspeksi_kubikel.*, users.nama_pegawai as inspector_nama');
+        if (!$this->db->tableExists($this->table)) {
+            log_message('warning', '[InspeksiKubikelModel] Tabel ' . $this->table . ' belum tersedia di database.');
+            return [];
+        }
+
+        $builder = $this->select('inspeksi_kubikel.*, users.nama_pegawai as inspector_nama')
+            ->join('users', 'users.id = inspeksi_kubikel.inspector_user_id', 'left');
 
         switch (strtolower($role)) {
             case 'beyond_kwh':
@@ -91,17 +103,21 @@ class InspeksiKubikelModel extends Model
             default:
                 // ULP/HAR GTT melihat inspeksi di wilayah mereka
                 if ($ulpId) {
-                    $builder->where('ulp_id', $ulpId);
+                    $builder->where('inspeksi_kubikel.ulp_id', $ulpId);
                 } else {
-                    $builder->where('inspector_user_id', $userId);
+                    $builder->where('inspeksi_kubikel.inspector_user_id', $userId);
                 }
         }
 
-        return $builder->orderBy('tgl_inspeksi', 'DESC')->orderBy('id', 'DESC')->findAll();
+        return $builder->orderBy('inspeksi_kubikel.tgl_inspeksi', 'DESC')->orderBy('inspeksi_kubikel.id', 'DESC')->findAll();
     }
 
     public function generateNomorInspeksi(): string
     {
+        if (!$this->db->tableExists($this->table)) {
+            return sprintf('INK-KUB-%s-0001', date('Ymd'));
+        }
+
         $date = date('Ymd');
         $last = $this->where('nomor_inspeksi LIKE', "INK-KUB-$date-%")
             ->orderBy('id', 'DESC')

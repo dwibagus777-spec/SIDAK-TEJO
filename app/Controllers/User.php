@@ -58,7 +58,7 @@ class User extends BaseController
             'nip'          => 'permit_empty|max_length[50]',
             'username'     => 'required|is_unique[users.username]|alpha_dash|max_length[100]',
             'password'     => 'required|min_length[6]|max_length[255]',
-            'role'         => 'required|in_list[administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3]',
+            'role'         => 'required|in_list[administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3,beyond_kwh]',
             'status'       => 'required|in_list[AKTIF,NONAKTIF]'
         ];
 
@@ -160,7 +160,7 @@ class User extends BaseController
             'nama_pegawai' => 'permit_empty|max_length[255]',
             'nip'          => 'permit_empty|max_length[50]',
             'username'     => $usernameRule,
-            'role'         => 'required|in_list[administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3]',
+            'role'         => 'required|in_list[administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3,beyond_kwh]',
             'status'       => 'required|in_list[AKTIF,NONAKTIF]'
         ];
 

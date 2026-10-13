@@ -952,6 +952,14 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                                     <span class="nav-link-title">Inspeksi Kubikel</span>
                                 </a>
                             </li>
+                            <?php if (check_role(['administrator', 'admin', 'admin_pusat'])): ?>
+                            <li class="nav-item <?= url_is('kubikel-inspeksi/beyond-kwh*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('kubikel-inspeksi/beyond-kwh') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-bolt text-warning"></i></span>
+                                    <span class="nav-link-title">Monitoring Beyond KWH</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
                             <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
                             <li class="nav-item <?= url_is('temuan/create') ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('temuan/create') ?>">

@@ -46,11 +46,13 @@ class KubikelInspectionController extends BaseController
             return redirect()->to(site_url('kubikel-inspeksi/beyond-kwh'));
         }
 
-        $inspeksi = $this->inspeksiModel->getInspeksiByRole($role, $userId, $ulpId);
+        $tableExists = $this->inspeksiModel->db->tableExists('inspeksi_kubikel');
+        $inspeksi = $tableExists ? $this->inspeksiModel->getInspeksiByRole($role, $userId, $ulpId) : [];
 
         return view('kubikel_inspeksi/index', [
-            'inspeksi' => $inspeksi,
-            'role'     => $role,
+            'inspeksi'   => $inspeksi,
+            'role'       => $role,
+            'tableReady' => $tableExists,
         ]);
     }
 
@@ -1105,17 +1107,23 @@ class KubikelInspectionController extends BaseController
         $session = session();
         $role = strtolower((string)$session->get('user_role'));
         $userId = (int)$session->get('user_id');
+        $isAdmin = in_array($role, ['administrator', 'admin', 'admin_pusat'], true);
 
-        if ($role !== 'beyond_kwh') {
+        if ($role !== 'beyond_kwh' && !$isAdmin) {
             return redirect()->to(site_url('dashboard'))
-                ->with('error', 'Halaman ini hanya untuk role Beyond KWH.');
+                ->with('error', 'Halaman ini hanya untuk role Beyond KWH atau Administrator.');
         }
 
-        $rekomendasi = $this->rekomendasiModel->getByPenerimaUser($userId);
+        if ($isAdmin) {
+            $rekomendasi = $this->rekomendasiModel->getAllBeyondRekomendasi();
+        } else {
+            $rekomendasi = $this->rekomendasiModel->getByPenerimaUser($userId);
+        }
 
         return view('kubikel_inspeksi/beyond_kwh/index', [
             'rekomendasi' => $rekomendasi,
             'role'        => $role,
+            'isAdmin'     => $isAdmin,
         ]);
     }
 
@@ -1124,38 +1132,41 @@ class KubikelInspectionController extends BaseController
         $session = session();
         $role = strtolower((string)$session->get('user_role'));
         $userId = (int)$session->get('user_id');
+        $isAdmin = in_array($role, ['administrator', 'admin', 'admin_pusat'], true);
 
-        if ($role !== 'beyond_kwh') {
-            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Akses ditolak.']);
+        if ($role !== 'beyond_kwh' && !$isAdmin) {
+            return redirect()->to(site_url('dashboard'))->with('error', 'Akses ditolak.');
         }
 
-        $rekomendasi = $this->rekomendasiModel
-            ->select('inspeksi_kubikel_rekomendasi.id AS rekomendasi_id, inspeksi_kubikel_rekomendasi.temuan_id, inspeksi_kubikel_rekomendasi.penerima, inspeksi_kubikel_rekomendasi.penerima_user_id, inspeksi_kubikel_rekomendasi.deskripsi AS deskripsi_rekomendasi, inspeksi_kubikel_rekomendasi.status AS status_rekomendasi, inspeksi_kubikel_rekomendasi.waktu_kirim, inspeksi_kubikel_rekomendasi.waktu_baca, inspeksi_kubikel_rekomendasi.waktu_selesai, inspeksi_kubikel_rekomendasi.catatan_penerima, inspeksi_kubikel_temuan.inspeksi_kubikel_id AS inspeksi_id, inspeksi_kubikel_temuan.checklist_id, inspeksi_kubikel_temuan.komponen, inspeksi_kubikel_temuan.fasa, inspeksi_kubikel_temuan.posisi, inspeksi_kubikel_temuan.deskripsi_temuan, inspeksi_kubikel_temuan.urgensi, inspeksi_kubikel_temuan.status_temuan, inspeksi_kubikel.nomor_inspeksi, inspeksi_kubikel.tgl_inspeksi, inspeksi_kubikel.status AS status_inspeksi')
+        $query = $this->rekomendasiModel
+            ->select('inspeksi_kubikel_rekomendasi.id AS rekomendasi_id, inspeksi_kubikel_rekomendasi.temuan_id, inspeksi_kubikel_rekomendasi.penerima, inspeksi_kubikel_rekomendasi.penerima_user_id, inspeksi_kubikel_rekomendasi.deskripsi AS deskripsi_rekomendasi, inspeksi_kubikel_rekomendasi.status AS status_rekomendasi, inspeksi_kubikel_rekomendasi.waktu_kirim, inspeksi_kubikel_rekomendasi.waktu_baca, inspeksi_kubikel_rekomendasi.waktu_selesai, inspeksi_kubikel_rekomendasi.catatan_penerima, inspeksi_kubikel_temuan.inspeksi_kubikel_id AS inspeksi_id, inspeksi_kubikel_temuan.checklist_id, inspeksi_kubikel_temuan.komponen, inspeksi_kubikel_temuan.fasa, inspeksi_kubikel_temuan.posisi, inspeksi_kubikel_temuan.deskripsi_temuan, inspeksi_kubikel_temuan.urgensi, inspeksi_kubikel_temuan.status_temuan, inspeksi_kubikel.nomor_inspeksi, inspeksi_kubikel.tgl_inspeksi, inspeksi_kubikel.status AS status_inspeksi, users.nama_pegawai AS penerima_nama')
             ->join('inspeksi_kubikel_temuan', 'inspeksi_kubikel_temuan.id = inspeksi_kubikel_rekomendasi.temuan_id')
             ->join('inspeksi_kubikel', 'inspeksi_kubikel.id = inspeksi_kubikel_temuan.inspeksi_kubikel_id')
+            ->join('users', 'users.id = inspeksi_kubikel_rekomendasi.penerima_user_id', 'left')
             ->where('inspeksi_kubikel_rekomendasi.id', $id)
             ->where('inspeksi_kubikel_rekomendasi.penerima', 'BEYOND_KWH')
-            ->where('inspeksi_kubikel_rekomendasi.penerima_user_id', $userId)
             ->where('inspeksi_kubikel_temuan.deleted_at', null)
-            ->where('inspeksi_kubikel.deleted_at', null)
-            ->first();
+            ->where('inspeksi_kubikel.deleted_at', null);
 
-        if (!$rekomendasi) {
-            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Rekomendasi tidak ditemukan.']);
+        if (!$isAdmin) {
+            $query->where('inspeksi_kubikel_rekomendasi.penerima_user_id', $userId);
         }
 
-        // Tandai sebagai dibaca
-        if ($rekomendasi['status_rekomendasi'] === 'TERKIRIM') {
-            if (!$this->rekomendasiModel->markAsRead($id, $userId)) {
-                log_message('error', '[KUBIKEL_REKOMENDASI_READ] Failed to update read status for recommendation ' . $id);
-                return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Status baca rekomendasi gagal disimpan.']);
-            }
+        $rekomendasi = $query->first();
+
+        if (!$rekomendasi) {
+            return redirect()->to(site_url('kubikel-inspeksi/beyond-kwh'))->with('error', 'Rekomendasi tidak ditemukan.');
+        }
+
+        // Tandai sebagai dibaca jika dibuka oleh penerima yang ditugaskan
+        if ($rekomendasi['status_rekomendasi'] === 'TERKIRIM' && (int)$rekomendasi['penerima_user_id'] === $userId) {
+            $this->rekomendasiModel->markAsRead($id, $userId);
             $rekomendasi['status_rekomendasi'] = 'DIBACA';
             $rekomendasi['waktu_baca'] = date('Y-m-d H:i:s');
         }
 
         $foto = [];
-        if (!empty($rekomendasi['checklist_id'])) {
+        if (!empty($rekomendasi['checklist_id']) && $this->fotoModel->db->tableExists('inspeksi_kubikel_foto')) {
             $foto = $this->fotoModel
                 ->where('inspeksi_kubikel_id', (int)$rekomendasi['inspeksi_id'])
                 ->where('checklist_id', (int)$rekomendasi['checklist_id'])
@@ -1166,6 +1177,7 @@ class KubikelInspectionController extends BaseController
             'rekomendasi' => $rekomendasi,
             'foto'        => $foto,
             'role'        => $role,
+            'isAdmin'     => $isAdmin,
         ]);
     }
 
@@ -1174,13 +1186,14 @@ class KubikelInspectionController extends BaseController
         $session = session();
         $role = strtolower((string)$session->get('user_role'));
         $userId = (int)$session->get('user_id');
+        $isAdmin = in_array($role, ['administrator', 'admin', 'admin_pusat'], true);
 
-        if ($role !== 'beyond_kwh') {
+        if ($role !== 'beyond_kwh' && !$isAdmin) {
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Akses ditolak.']);
         }
 
         $rekomendasi = $this->rekomendasiModel->find($id);
-        if (!$rekomendasi || $rekomendasi['penerima'] !== 'BEYOND_KWH' || (int)$rekomendasi['penerima_user_id'] !== $userId) {
+        if (!$rekomendasi || $rekomendasi['penerima'] !== 'BEYOND_KWH' || (!$isAdmin && (int)$rekomendasi['penerima_user_id'] !== $userId)) {
             return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Rekomendasi tidak ditemukan.']);
         }
         $temuan = $this->temuanModel->find((int)$rekomendasi['temuan_id']);

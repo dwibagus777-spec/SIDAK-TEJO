@@ -49,6 +49,14 @@ class MigrateController extends BaseController
                 $executed[] = 'asset_ingest_schema';
             }
 
+            // Run Kubikel Inspection Migration (Release v2.3.0.32 - Beyond KWH & Kubikel)
+            if (file_exists(APPPATH . 'Database/Migrations/2026-10-12-000001_CreateKubikelInspectionTables.php')) {
+                require_once APPPATH . 'Database/Migrations/2026-10-12-000001_CreateKubikelInspectionTables.php';
+                $kubikelMig = new \App\Database\Migrations\CreateKubikelInspectionTables();
+                $kubikelMig->up();
+                $executed[] = 'kubikel_inspection_tables';
+            }
+
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
             // governed reconciliation with deterministic identity proof, not pattern matching.

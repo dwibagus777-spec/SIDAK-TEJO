@@ -19,11 +19,9 @@ class CreateKubikelInspectionTables extends Migration
             'inspeksi_kubikel_material',
         ];
         $existingTables = array_values(array_filter($tables, fn (string $table): bool => $this->db->tableExists($table, false)));
-        if ($existingTables !== []) {
-            throw new \RuntimeException(
-                '[CreateKubikelInspectionTables] Refusing to create or skip a partial/existing schema: '
-                . implode(', ', $existingTables)
-            );
+        if (count($existingTables) === count($tables)) {
+            log_message('info', '[CreateKubikelInspectionTables] All 7 kubikel tables already exist. Skipping.');
+            return;
         }
 
         // 1. Tabel inspeksi_kubikel (utama untuk inspeksi kubikel)
@@ -146,7 +144,7 @@ class CreateKubikelInspectionTables extends Migration
         $this->forge->addKey(['ulp_id', 'penyulang_id', 'tgl_inspeksi']);
         $this->forge->addKey('inspector_user_id');
         $this->forge->addKey('asset_id');
-        $this->forge->createTable('inspeksi_kubikel');
+        $this->forge->createTable('inspeksi_kubikel', true);
 
         // 2. Tabel inspeksi_kubikel_checklist (detail checklist per inspeksi)
         $this->forge->addField([
@@ -234,7 +232,7 @@ class CreateKubikelInspectionTables extends Migration
         $this->forge->addKey('inspeksi_kubikel_id');
         $this->forge->addKey(['inspeksi_kubikel_id', 'urutan']);
         $this->forge->addForeignKey('inspeksi_kubikel_id', 'inspeksi_kubikel', 'id', 'CASCADE', 'CASCADE', 'fk_ik_checklist_inspeksi');
-        $this->forge->createTable('inspeksi_kubikel_checklist');
+        $this->forge->createTable('inspeksi_kubikel_checklist', true);
 
         // 3. Tabel inspeksi_kubikel_foto (foto untuk inspeksi/checklist/temuan)
         $this->forge->addField([
@@ -308,7 +306,7 @@ class CreateKubikelInspectionTables extends Migration
         $this->forge->addKey('checklist_id');
         $this->forge->addForeignKey('inspeksi_kubikel_id', 'inspeksi_kubikel', 'id', 'CASCADE', 'CASCADE', 'fk_ik_foto_inspeksi');
         $this->forge->addForeignKey('checklist_id', 'inspeksi_kubikel_checklist', 'id', 'CASCADE', 'SET NULL', 'fk_ik_foto_checklist');
-        $this->forge->createTable('inspeksi_kubikel_foto');
+        $this->forge->createTable('inspeksi_kubikel_foto', true);
 
         // 4. Tabel inspeksi_kubikel_temuan (temuan terpisah dari checklist untuk tracking)
         $this->forge->addField([
@@ -416,7 +414,7 @@ class CreateKubikelInspectionTables extends Migration
         $this->forge->addKey('idempotency_key');
         $this->forge->addForeignKey('inspeksi_kubikel_id', 'inspeksi_kubikel', 'id', 'CASCADE', 'CASCADE', 'fk_ik_temuan_inspeksi');
         $this->forge->addForeignKey('checklist_id', 'inspeksi_kubikel_checklist', 'id', 'CASCADE', 'SET NULL', 'fk_ik_temuan_checklist');
-        $this->forge->createTable('inspeksi_kubikel_temuan');
+        $this->forge->createTable('inspeksi_kubikel_temuan', true);
 
         // 5. Tabel inspeksi_kubikel_rekomendasi (tracking rekomendasi ke Beyond KWH dll)
         $this->forge->addField([
@@ -490,7 +488,7 @@ class CreateKubikelInspectionTables extends Migration
         $this->forge->addKey('penerima_user_id');
         $this->forge->addKey('notification_id');
         $this->forge->addForeignKey('temuan_id', 'inspeksi_kubikel_temuan', 'id', 'CASCADE', 'CASCADE', 'fk_ik_rekomendasi_temuan');
-        $this->forge->createTable('inspeksi_kubikel_rekomendasi');
+        $this->forge->createTable('inspeksi_kubikel_rekomendasi', true);
 
         // 6. Tabel inspeksi_kubikel_histori (audit trail untuk penutupan, koreksi, dll)
         $this->forge->addField([
@@ -547,7 +545,7 @@ class CreateKubikelInspectionTables extends Migration
         $this->forge->addKey('inspeksi_kubikel_id');
         $this->forge->addKey(['inspeksi_kubikel_id', 'jenis_perubahan']);
         $this->forge->addForeignKey('inspeksi_kubikel_id', 'inspeksi_kubikel', 'id', 'CASCADE', 'CASCADE', 'fk_ik_histori_inspeksi');
-        $this->forge->createTable('inspeksi_kubikel_histori');
+        $this->forge->createTable('inspeksi_kubikel_histori', true);
 
         // 7. Tabel inspeksi_kubikel_material (material yang digunakan pada pekerjaan)
         $this->forge->addField([
@@ -621,7 +619,7 @@ class CreateKubikelInspectionTables extends Migration
         $this->forge->addKey('temuan_id');
         $this->forge->addForeignKey('inspeksi_kubikel_id', 'inspeksi_kubikel', 'id', 'CASCADE', 'CASCADE', 'fk_ik_material_inspeksi');
         $this->forge->addForeignKey('temuan_id', 'inspeksi_kubikel_temuan', 'id', 'CASCADE', 'SET NULL', 'fk_ik_material_temuan');
-        $this->forge->createTable('inspeksi_kubikel_material');
+        $this->forge->createTable('inspeksi_kubikel_material', true);
     }
 
     public function down()

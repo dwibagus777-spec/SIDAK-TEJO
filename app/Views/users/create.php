@@ -59,6 +59,7 @@
                             <option value="supervisor_ulp" <?= old('role') === 'supervisor_ulp' ? 'selected' : '' ?>>Supervisor ULP (Monitoring per ULP)</option>
                             <option value="supervisor_up3" <?= old('role') === 'supervisor_up3' ? 'selected' : '' ?>>Supervisor UP3 (Cross ULP Monitoring)</option>
                             <option value="har_crane" <?= old('role') === 'har_crane' ? 'selected' : '' ?>>HAR Crane (Semua ULP)</option>
+                            <option value="beyond_kwh" <?= old('role') === 'beyond_kwh' ? 'selected' : '' ?>>Beyond KWH (Tindak Lanjut & Rekomendasi Khusus)</option>
                         </select>
                     </div>
 

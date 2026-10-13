@@ -27,6 +27,15 @@
         </div>
     <?php endif; ?>
 
+    <?php if (empty($tableReady)): ?>
+        <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-info-circle-fill me-2 fs-4"></i>
+            <div>
+                <strong>Modul Inspeksi Kubikel Siap:</strong> Skema tabel database inspeksi kubikel sedang menunggu inisialisasi / migrasi oleh administrator.
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="card shadow-sm">
         <div class="card-header bg-white">
             <div class="row g-2 align-items-center">

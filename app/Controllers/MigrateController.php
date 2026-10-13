@@ -57,6 +57,35 @@ class MigrateController extends BaseController
                 $executed[] = 'kubikel_inspection_tables';
             }
 
+            // Run Kubikel Tanggal Temuan Migration
+            if (file_exists(APPPATH . 'Database/Migrations/2026-10-13-000002_AddTanggalTemuanToInspeksiKubikelTemuan.php')) {
+                require_once APPPATH . 'Database/Migrations/2026-10-13-000002_AddTanggalTemuanToInspeksiKubikelTemuan.php';
+                $tglMig = new \App\Database\Migrations\AddTanggalTemuanToInspeksiKubikelTemuan();
+                $tglMig->up();
+                $executed[] = 'tanggal_temuan_kubikel';
+            }
+
+            // Run Beyond KWH Pipeline Migrations (5 Stages)
+            $beyondMigrations = [
+                'CreateBeyondKwhProbing'    => '2026-10-13-000003_CreateBeyondKwhProbing.php',
+                'CreateBeyondKwhPenawaran'  => '2026-10-13-000004_CreateBeyondKwhPenawaran.php',
+                'CreateBeyondKwhSpkPo'      => '2026-10-13-000005_CreateBeyondKwhSpkPo.php',
+                'CreateBeyondKwhPenagihan'  => '2026-10-13-000006_CreateBeyondKwhPenagihan.php',
+                'CreateBeyondKwhPembayaran' => '2026-10-13-000007_CreateBeyondKwhPembayaran.php',
+            ];
+            foreach ($beyondMigrations as $migClass => $migFile) {
+                $filePath = APPPATH . 'Database/Migrations/' . $migFile;
+                if (file_exists($filePath)) {
+                    require_once $filePath;
+                    $className = "\\App\\Database\\Migrations\\{$migClass}";
+                    if (class_exists($className)) {
+                        $instance = new $className();
+                        $instance->up();
+                        $executed[] = $migClass;
+                    }
+                }
+            }
+
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
             // governed reconciliation with deterministic identity proof, not pattern matching.

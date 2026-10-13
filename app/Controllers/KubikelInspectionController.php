@@ -1167,14 +1167,21 @@ class KubikelInspectionController extends BaseController
         $officers = $isAdmin ? $this->rekomendasiModel->getBeyondOfficers() : [];
 
         // Mirroring Pipeline & 4DX Enterprise Dataset (matching SIDELTA Executive Dashboard)
+        $db = \Config\Database::connect();
+        $probingCount   = $db->tableExists('beyond_kwh_probing') ? (int) $db->table('beyond_kwh_probing')->countAllResults() : 0;
+        $penawaranCount = $db->tableExists('beyond_kwh_penawaran') ? (int) $db->table('beyond_kwh_penawaran')->countAllResults() : 0;
+        $spkCount       = $db->tableExists('beyond_kwh_spkpo') ? (int) $db->table('beyond_kwh_spkpo')->countAllResults() : 0;
+        $penagihanCount = $db->tableExists('beyond_kwh_penagihan') ? (int) $db->table('beyond_kwh_penagihan')->countAllResults() : 0;
+        $bayarCount     = $db->tableExists('beyond_kwh_pembayaran') ? (int) $db->table('beyond_kwh_pembayaran')->countAllResults() : 0;
+
         $pipelineStats = [
-            'total_rows'    => 1964 + ($kpiStats['total'] ?? 0),
-            'probing'       => 106 + ($kpiStats['belum'] ?? 0),
-            'penawaran'     => 52 + ($kpiStats['proses'] ?? 0),
-            'spk'           => 6,
-            'penawaran_spk' => 58 + ($kpiStats['proses'] ?? 0),
-            'penagihan'     => 41,
-            'status_bayar'  => 1 + ($kpiStats['selesai'] ?? 0),
+            'total_rows'    => ($kpiStats['total'] ?? 0) + $probingCount + $penawaranCount + $spkCount + $penagihanCount + $bayarCount,
+            'probing'       => ($kpiStats['belum'] ?? 0) + $probingCount,
+            'penawaran'     => ($kpiStats['proses'] ?? 0) + $penawaranCount,
+            'spk'           => $spkCount,
+            'penawaran_spk' => ($kpiStats['proses'] ?? 0) + $penawaranCount + $spkCount,
+            'penagihan'     => $penagihanCount,
+            'status_bayar'  => ($kpiStats['selesai'] ?? 0) + $bayarCount,
         ];
 
         $yoyData = [
@@ -1339,6 +1346,7 @@ class KubikelInspectionController extends BaseController
         if (!$rekomendasi) {
             return redirect()->to(site_url('kubikel-inspeksi/beyond-kwh'))->with('error', 'Rekomendasi tidak ditemukan.');
         }
+        $rekomendasi['id'] = (int)$rekomendasi['rekomendasi_id'];
 
         // Tandai sebagai dibaca jika dibuka oleh penerima yang ditugaskan
         if ($rekomendasi['status_rekomendasi'] === 'TERKIRIM' && (int)$rekomendasi['penerima_user_id'] === $userId) {
@@ -1355,11 +1363,23 @@ class KubikelInspectionController extends BaseController
                 ->findAll();
         }
 
+        $db = \Config\Database::connect();
+        $probingList = $db->tableExists('beyond_kwh_probing') ? $db->table('beyond_kwh_probing')->where('rekomendasi_id', $id)->orWhere('temuan_id', $rekomendasi['temuan_id'])->orderBy('tanggal_probing', 'DESC')->get()->getResultArray() : [];
+        $penawaranList = $db->tableExists('beyond_kwh_penawaran') ? $db->table('beyond_kwh_penawaran')->where('rekomendasi_id', $id)->orWhere('temuan_id', $rekomendasi['temuan_id'])->orderBy('tanggal_penawaran', 'DESC')->get()->getResultArray() : [];
+        $spkpoList = $db->tableExists('beyond_kwh_spkpo') ? $db->table('beyond_kwh_spkpo')->where('rekomendasi_id', $id)->orWhere('temuan_id', $rekomendasi['temuan_id'])->orderBy('tanggal_spkpo', 'DESC')->get()->getResultArray() : [];
+        $penagihanList = $db->tableExists('beyond_kwh_penagihan') ? $db->table('beyond_kwh_penagihan')->where('rekomendasi_id', $id)->orWhere('temuan_id', $rekomendasi['temuan_id'])->orderBy('tanggal_penagihan', 'DESC')->get()->getResultArray() : [];
+        $pembayaranList = $db->tableExists('beyond_kwh_pembayaran') ? $db->table('beyond_kwh_pembayaran')->where('rekomendasi_id', $id)->orWhere('temuan_id', $rekomendasi['temuan_id'])->orderBy('tanggal_pembayaran', 'DESC')->get()->getResultArray() : [];
+
         return view('kubikel_inspeksi/beyond_kwh/detail', [
-            'rekomendasi' => $rekomendasi,
-            'foto'        => $foto,
-            'role'        => $role,
-            'isAdmin'     => $isAdmin,
+            'rekomendasi'    => $rekomendasi,
+            'foto'           => $foto,
+            'role'           => $role,
+            'isAdmin'        => $isAdmin,
+            'probingList'    => $probingList,
+            'penawaranList'  => $penawaranList,
+            'spkpoList'      => $spkpoList,
+            'penagihanList'  => $penagihanList,
+            'pembayaranList' => $pembayaranList,
         ]);
     }
 

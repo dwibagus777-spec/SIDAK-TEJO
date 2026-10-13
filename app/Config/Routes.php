@@ -202,6 +202,25 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('kubikel-inspeksi/beyond-kwh', 'KubikelInspectionController::myRekomendasi');
     $routes->get('kubikel-inspeksi/beyond-kwh/detail/(:num)', 'KubikelInspectionController::detailRekomendasi/$1');
     $routes->post('kubikel-inspeksi/beyond-kwh/update-status/(:num)', 'KubikelInspectionController::updateRekomendasiStatus/$1');
+
+    // Beyond KWH 5-Stage Pipeline
+    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/probing', 'BeyondKwhController::probing/$1');
+    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/probing/store', 'BeyondKwhController::storeProbing/$1');
+    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/penawaran', 'BeyondKwhController::penawaran/$1');
+    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/penawaran/store', 'BeyondKwhController::storePenawaran/$1');
+    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/spkpo', 'BeyondKwhController::spkpo/$1');
+    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/spkpo/store', 'BeyondKwhController::storeSpkPo/$1');
+    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/penagihan', 'BeyondKwhController::penagihan/$1');
+    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/penagihan/store', 'BeyondKwhController::storePenagihan/$1');
+    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/pembayaran', 'BeyondKwhController::pembayaran/$1');
+    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/pembayaran/store', 'BeyondKwhController::storePembayaran/$1');
+
+    // Friendly alias URLs
+    $routes->get('kubikel-inspeksi/beyond-kwh/probing/(:num)', 'BeyondKwhController::probing/$1');
+    $routes->get('kubikel-inspeksi/beyond-kwh/penawaran/(:num)', 'BeyondKwhController::penawaran/$1');
+    $routes->get('kubikel-inspeksi/beyond-kwh/spkpo/(:num)', 'BeyondKwhController::spkpo/$1');
+    $routes->get('kubikel-inspeksi/beyond-kwh/penagihan/(:num)', 'BeyondKwhController::penagihan/$1');
+    $routes->get('kubikel-inspeksi/beyond-kwh/pembayaran/(:num)', 'BeyondKwhController::pembayaran/$1');
     
     // AI Predictive Maintenance & AI Center Routes
     $routes->get('ai-center', 'AiPredictiveController::index');

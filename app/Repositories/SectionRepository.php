@@ -20,6 +20,19 @@ class SectionRepository extends BaseRepository
             ->join('ulps', 'ulps.id = penyulang.ulp_id');
     }
 
+    public function getActiveSections(): array
+    {
+        try {
+            return $this->model
+                ->where('status', 'AKTIF')
+                ->orderBy('nama_section', 'ASC')
+                ->findAll();
+        } catch (\Throwable $e) {
+            log_message('error', '[SectionRepository::getActiveSections] ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getActiveSectionsByPenyulang(int $penyulangId): array
     {
         return $this->model

@@ -317,19 +317,19 @@
         </div>
         <div class="d-flex flex-wrap gap-2" id="pipeline-pills-container">
             <a href="javascript:void(0)" class="pipeline-pill active" data-stage="all" onclick="filterPipelineStage('all', this)">
-                <i class="fas fa-th-large"></i> SEMUA TAHAPAN (<span id="count-stage-all"><?= number_format($pipelineStats['total_rows'] ?? 1964) ?></span>)
+                <i class="fas fa-th-large"></i> SEMUA TAHAPAN (<span id="count-stage-all"><?= number_format($pipelineStats['total_rows'] ?? 0) ?></span>)
             </a>
             <a href="javascript:void(0)" class="pipeline-pill" data-stage="probing" onclick="filterPipelineStage('probing', this)">
-                <i class="fas fa-search"></i> 1. PROBING ALL (<span id="count-stage-probing"><?= number_format($pipelineStats['probing'] ?? 106) ?></span>)
+                <i class="fas fa-search"></i> 1. PROBING ALL (<span id="count-stage-probing"><?= number_format($pipelineStats['probing'] ?? 0) ?></span>)
             </a>
             <a href="javascript:void(0)" class="pipeline-pill" data-stage="penawaran" onclick="filterPipelineStage('penawaran', this)">
-                <i class="fas fa-folder-open"></i> 2. PENAWARAN (<span id="count-stage-penawaran"><?= number_format($pipelineStats['penawaran'] ?? 52) ?></span>)
+                <i class="fas fa-folder-open"></i> 2. PENAWARAN (<span id="count-stage-penawaran"><?= number_format($pipelineStats['penawaran'] ?? 0) ?></span>)
             </a>
             <a href="javascript:void(0)" class="pipeline-pill" data-stage="spk" onclick="filterPipelineStage('spk', this)">
-                <i class="fas fa-file-contract"></i> 3. SPK / PO (<span id="count-stage-spk"><?= number_format($pipelineStats['spk'] ?? 6) ?></span>)
+                <i class="fas fa-file-contract"></i> 3. SPK / PO (<span id="count-stage-spk"><?= number_format($pipelineStats['spk'] ?? 0) ?></span>)
             </a>
             <a href="javascript:void(0)" class="pipeline-pill" data-stage="penagihan" onclick="filterPipelineStage('penagihan', this)">
-                <i class="fas fa-file-invoice-dollar"></i> 4. PENAGIHAN (<span id="count-stage-penagihan"><?= number_format($pipelineStats['penagihan'] ?? 41) ?></span>)
+                <i class="fas fa-file-invoice-dollar"></i> 4. PENAGIHAN (<span id="count-stage-penagihan"><?= number_format($pipelineStats['penagihan'] ?? 0) ?></span>)
             </a>
             <a href="javascript:void(0)" class="pipeline-pill" data-stage="bayar" onclick="filterPipelineStage('bayar', this)">
                 <i class="fas fa-check-circle"></i> 5. STATUS BAYAR / LUNAS (<span id="count-stage-bayar"><?= number_format($pipelineStats['status_bayar'] ?? 1) ?></span>)
@@ -402,7 +402,7 @@
             <div class="kpi-card kpi-blue">
                 <div>
                     <div class="kpi-title">TOTAL BARIS DATA</div>
-                    <div class="kpi-value" id="kpi-total-val"><?= number_format($pipelineStats['total_rows'] ?? 1964) ?></div>
+                    <div class="kpi-value" id="kpi-total-val"><?= number_format($pipelineStats['total_rows'] ?? 0) ?></div>
                     <div class="kpi-sub">Total Data Disaring</div>
                 </div>
                 <div class="kpi-trend">
@@ -416,7 +416,7 @@
             <div class="kpi-card kpi-red">
                 <div>
                     <div class="kpi-title">TAHAP PROBING</div>
-                    <div class="kpi-value" id="kpi-probing-val"><?= number_format($pipelineStats['probing'] ?? 106) ?></div>
+                    <div class="kpi-value" id="kpi-probing-val"><?= number_format($pipelineStats['probing'] ?? 0) ?></div>
                     <div class="kpi-sub">Permohonan Probing All</div>
                 </div>
                 <div class="kpi-trend">

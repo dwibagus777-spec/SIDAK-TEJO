@@ -35,8 +35,8 @@ jobs:
       HOSTINGER_SSH_HOST: ${{ vars.HOSTINGER_SSH_HOST }}
       HOSTINGER_SSH_USER: ${{ vars.HOSTINGER_SSH_USER }}
       HOSTINGER_SSH_PORT: ${{ vars.HOSTINGER_SSH_PORT }}
-      STAGING_APP_ROOT: /home/u532206332/domains/sidaktejo.site/sidak_staging_app/app_release
-      STAGING_WEB_ROOT: ${{ vars.STAGING_WEB_ROOT }}
+      STAGING_APP_ROOT: /home/u532206332/domains/sidaktejo.site/public_html/staging
+      STAGING_WEB_ROOT: /home/u532206332/domains/sidaktejo.site/public_html/staging
       STAGING_STORAGE: /home/u532206332/domains/sidaktejo.site/sidak_storage_staging/foto
       PRODUCTION_STORAGE: /home/u532206332/domains/sidaktejo.site/sidak_storage/foto
       STAGING_BASE_URL: https://staging.sidaktejo.site

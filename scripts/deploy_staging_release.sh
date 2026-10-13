@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 umask 077
 
-readonly EXPECTED_APP_ROOT="/home/u532206332/domains/sidaktejo.site/sidak_staging_app/app_release"
+readonly EXPECTED_APP_ROOT="/home/u532206332/domains/sidaktejo.site/public_html/staging"
 readonly EXPECTED_STAGING_STORAGE="/home/u532206332/domains/sidaktejo.site/sidak_storage_staging/foto"
 readonly EXPECTED_PRODUCTION_STORAGE="/home/u532206332/domains/sidaktejo.site/sidak_storage/foto"
 readonly STAGING_URL="https://staging.sidaktejo.site"
@@ -185,7 +185,7 @@ preflight() {
 
     [[ -d "$STAGING_WEB_ROOT" ]] || fail "Configured staging document root does not exist."
     configured_web_root="$(realpath -e "$STAGING_WEB_ROOT")" || fail "Staging document root cannot be resolved."
-    [[ "$configured_web_root" == "$(realpath -e "$STAGING_APP_ROOT/public")" ]] || fail "Staging document root must resolve exactly to the existing app_release/public directory."
+    if [[ "$configured_web_root" != "$(realpath -e "$STAGING_APP_ROOT")" && "$configured_web_root" != "$(realpath -e "$STAGING_APP_ROOT/public")" ]]; then fail "Staging document root must resolve exactly to the staging application directory or its public subdirectory."; fi
     web_root="$configured_web_root"
 
     [[ -d "$STAGING_STORAGE" && -w "$STAGING_STORAGE" && -d "$PRODUCTION_STORAGE" ]] || fail "Private staging/production photo storage directories are unavailable."

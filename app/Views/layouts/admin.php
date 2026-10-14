@@ -850,14 +850,8 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                                     <span class="nav-link-title">Dashboard</span>
                                 </a>
                             </li>
-                            <li class="nav-item <?= url_is('kubikel-inspeksi/beyond-kwh*') ? 'active' : '' ?>">
-                                <a class="nav-link" href="<?= site_url('kubikel-inspeksi/beyond-kwh') ?>">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-bolt text-warning"></i></span>
-                                    <span class="nav-link-title">Monitoring Beyond KWH</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-danger" href="<?= site_url('logout') ?>">
+<li class="nav-item">
+                                  <a class="nav-link text-danger" href="<?= site_url('logout') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-power-off text-danger"></i></span>
                                     <span class="nav-link-title">Logout</span>
                                 </a>
@@ -946,22 +940,8 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                                     <span class="nav-link-title">Riwayat Saya</span>
                                 </a>
                             </li>
-                            <li class="nav-item <?= url_is('kubikel-inspeksi') || url_is('kubikel-inspeksi/create') || url_is('kubikel-inspeksi/edit/*') || url_is('kubikel-inspeksi/detail/*') ? 'active' : '' ?>">
-                                <a class="nav-link" href="<?= site_url('kubikel-inspeksi') ?>">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-clipboard-check text-info"></i></span>
-                                    <span class="nav-link-title">Inspeksi Gardu</span>
-                                </a>
-                            </li>
-                            <?php if (check_role(['administrator', 'admin', 'admin_pusat'])): ?>
-                            <li class="nav-item <?= url_is('kubikel-inspeksi/beyond-kwh*') ? 'active' : '' ?>">
-                                <a class="nav-link" href="<?= site_url('kubikel-inspeksi/beyond-kwh') ?>">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-bolt text-warning"></i></span>
-                                    <span class="nav-link-title">Monitoring Beyond KWH</span>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                            <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
-                            <li class="nav-item <?= url_is('temuan/create') ? 'active' : '' ?>">
+<?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
+                              <li class="nav-item <?= url_is('temuan/create') ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('temuan/create') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-plus-circle text-success"></i></span>
                                     <span class="nav-link-title">Input Temuan</span>

@@ -701,6 +701,8 @@ class KubikelInspectionController extends BaseController
             'posisi'               => 'permit_empty|max_length[100]',
             'tanggal_temuan'       => 'permit_empty|valid_date',
             'deskripsi_temuan'     => 'required',
+            'jenis_potensi'        => 'permit_empty|in_list[TREATMENT_TRAFO,CLEANING_KUBIKEL]',
+            'nilai_potensi'        => 'permit_empty|numeric',
             'urgensi'              => 'in_list[RENDAH,SEDANG,TINGGI,KRITIS]',
             'rekomendasi'          => 'permit_empty',
             'penerima_rekomendasi' => 'in_list[ULP,HAR_GTT,BEYOND_KWH,ADMINISTRATOR,LAINNYA]',
@@ -758,6 +760,17 @@ class KubikelInspectionController extends BaseController
 
         $tanggalTemuan = $this->request->getPost('tanggal_temuan') ?: ($inspeksi['tgl_inspeksi'] ?? date('Y-m-d'));
 
+        $jenisPotensi = $this->request->getPost('jenis_potensi');
+        $nilaiPotensi = null;
+        if ($jenisPotensi === 'TREATMENT_TRAFO') {
+            $nilaiPotensi = 5000000;
+        } elseif ($jenisPotensi === 'CLEANING_KUBIKEL') {
+            $nilaiPotensi = 4999000;
+        } else {
+            $jenisPotensi = null;
+            $nilaiPotensi = null;
+        }
+
         $data = [
             'inspeksi_kubikel_id'  => $id,
             'checklist_id'         => $checklistId ? (int)$checklistId : null,
@@ -766,6 +779,8 @@ class KubikelInspectionController extends BaseController
             'posisi'               => $this->request->getPost('posisi'),
             'tanggal_temuan'       => $tanggalTemuan,
             'deskripsi_temuan'     => $this->request->getPost('deskripsi_temuan'),
+            'jenis_potensi'        => $jenisPotensi,
+            'nilai_potensi'        => $nilaiPotensi,
             'urgensi'              => $this->request->getPost('urgensi'),
             'rekomendasi'          => $this->request->getPost('rekomendasi'),
             'penerima_rekomendasi' => $this->request->getPost('penerima_rekomendasi'),
@@ -838,6 +853,8 @@ class KubikelInspectionController extends BaseController
             'posisi'               => 'permit_empty|max_length[100]',
             'tanggal_temuan'       => 'permit_empty|valid_date',
             'deskripsi_temuan'     => 'required',
+            'jenis_potensi'        => 'permit_empty|in_list[TREATMENT_TRAFO,CLEANING_KUBIKEL]',
+            'nilai_potensi'        => 'permit_empty|numeric',
             'urgensi'              => 'in_list[RENDAH,SEDANG,TINGGI,KRITIS]',
             'rekomendasi'          => 'permit_empty',
             'penerima_rekomendasi' => 'in_list[ULP,HAR_GTT,BEYOND_KWH,ADMINISTRATOR,LAINNYA]',
@@ -853,9 +870,22 @@ class KubikelInspectionController extends BaseController
             'posisi'           => $temuan['posisi'],
             'tanggal_temuan'   => $temuan['tanggal_temuan'] ?? null,
             'deskripsi_temuan' => $temuan['deskripsi_temuan'],
+            'jenis_potensi'    => $temuan['jenis_potensi'] ?? null,
+            'nilai_potensi'    => $temuan['nilai_potensi'] ?? null,
             'urgensi'          => $temuan['urgensi'],
             'rekomendasi'      => $temuan['rekomendasi'],
         ];
+
+        $jenisPotensi = $this->request->getPost('jenis_potensi');
+        $nilaiPotensi = null;
+        if ($jenisPotensi === 'TREATMENT_TRAFO') {
+            $nilaiPotensi = 5000000;
+        } elseif ($jenisPotensi === 'CLEANING_KUBIKEL') {
+            $nilaiPotensi = 4999000;
+        } else {
+            $jenisPotensi = null;
+            $nilaiPotensi = null;
+        }
 
         $data = [
             'komponen'             => $this->request->getPost('komponen'),
@@ -863,6 +893,8 @@ class KubikelInspectionController extends BaseController
             'posisi'               => $this->request->getPost('posisi'),
             'tanggal_temuan'       => $this->request->getPost('tanggal_temuan') ?: ($temuan['tanggal_temuan'] ?? date('Y-m-d')),
             'deskripsi_temuan'     => $this->request->getPost('deskripsi_temuan'),
+            'jenis_potensi'        => $jenisPotensi,
+            'nilai_potensi'        => $nilaiPotensi,
             'urgensi'              => $this->request->getPost('urgensi'),
             'rekomendasi'          => $this->request->getPost('rekomendasi'),
         ];
@@ -1261,6 +1293,47 @@ class KubikelInspectionController extends BaseController
         $penagihanCount = $db->tableExists('beyond_kwh_penagihan') ? (int) $db->table('beyond_kwh_penagihan')->countAllResults() : 0;
         $bayarCount     = $db->tableExists('beyond_kwh_pembayaran') ? (int) $db->table('beyond_kwh_pembayaran')->countAllResults() : 0;
 
+        // Live Database Metrics for Dashboard KWH (Actual DB counts, no fake numbers)
+        $totalInspeksi = $db->tableExists('inspeksi_kubikel')
+            ? (int) $db->table('inspeksi_kubikel')->where('deleted_at IS NULL')->countAllResults()
+            : 0;
+
+        $totalTemuan = $db->tableExists('inspeksi_kubikel_temuan')
+            ? (int) $db->table('inspeksi_kubikel_temuan')->where('deleted_at IS NULL')->countAllResults()
+            : 0;
+
+        $countTreatmentTrafo  = 0;
+        $countCleaningKubikel = 0;
+        $totalNilaiPotensi    = 0;
+
+        if ($db->tableExists('inspeksi_kubikel_temuan')) {
+            $countTreatmentTrafo = (int) $db->table('inspeksi_kubikel_temuan')
+                ->where('deleted_at IS NULL')
+                ->where('jenis_potensi', 'TREATMENT_TRAFO')
+                ->countAllResults();
+
+            $countCleaningKubikel = (int) $db->table('inspeksi_kubikel_temuan')
+                ->where('deleted_at IS NULL')
+                ->where('jenis_potensi', 'CLEANING_KUBIKEL')
+                ->countAllResults();
+
+            $sumPotensi = $db->table('inspeksi_kubikel_temuan')
+                ->selectSum('nilai_potensi')
+                ->where('deleted_at IS NULL')
+                ->get()->getRowArray();
+            $totalNilaiPotensi = (float) ($sumPotensi['nilai_potensi'] ?? (($countTreatmentTrafo * 5000000) + ($countCleaningKubikel * 4999000)));
+        }
+
+        $kwhDashboardStats = [
+            'total_inspeksi'         => $totalInspeksi,
+            'total_temuan'           => $totalTemuan,
+            'count_treatment_trafo'  => $countTreatmentTrafo,
+            'count_cleaning_kubikel' => $countCleaningKubikel,
+            'total_nilai_potensi'    => $totalNilaiPotensi,
+            'nilai_treatment_trafo'  => $countTreatmentTrafo * 5000000,
+            'nilai_cleaning_kubikel' => $countCleaningKubikel * 4999000,
+        ];
+
         $pipelineStats = [
             'total_rows'    => ($kpiStats['total'] ?? 0) + $probingCount + $penawaranCount + $spkCount + $penagihanCount + $bayarCount,
             'probing'       => ($kpiStats['belum'] ?? 0) + $probingCount,
@@ -1368,38 +1441,40 @@ class KubikelInspectionController extends BaseController
         // AJAX JSON endpoint support for realtime filter without page reload
         if ($this->request->isAJAX() || $this->request->getGet('format') === 'json') {
             return $this->response->setJSON([
-                'success'       => true,
-                'tableReady'    => $tableReady,
-                'kpi'           => $kpiStats,
-                'pipelineStats' => $pipelineStats,
-                'yoyData'       => $yoyData,
-                'fourDxData'    => $fourDxData,
-                'monthlyTrend'  => $monthlyTrend,
-                'statusDist'    => $statusDist,
-                'priorityDist'  => $priorityDist,
-                'ulpRanking'    => $ulpRanking,
-                'rekomendasi'   => $rekomendasi,
-                'total_rows'    => count($rekomendasi),
+                'success'           => true,
+                'tableReady'        => $tableReady,
+                'kpi'               => $kpiStats,
+                'kwhDashboardStats' => $kwhDashboardStats,
+                'pipelineStats'     => $pipelineStats,
+                'yoyData'           => $yoyData,
+                'fourDxData'        => $fourDxData,
+                'monthlyTrend'      => $monthlyTrend,
+                'statusDist'        => $statusDist,
+                'priorityDist'      => $priorityDist,
+                'ulpRanking'        => $ulpRanking,
+                'rekomendasi'       => $rekomendasi,
+                'total_rows'        => count($rekomendasi),
             ]);
         }
 
         return view('kubikel_inspeksi/beyond_kwh/index', [
-            'rekomendasi'   => $rekomendasi,
-            'kpi'           => $kpiStats,
-            'pipelineStats' => $pipelineStats,
-            'yoyData'       => $yoyData,
-            'fourDxData'    => $fourDxData,
-            'monthlyTrend'  => $monthlyTrend,
-            'statusDist'    => $statusDist,
-            'priorityDist'  => $priorityDist,
-            'ulpRanking'    => $ulpRanking,
-            'ulps'          => $ulps,
-            'penyulangs'    => $penyulangs,
-            'officers'      => $officers,
-            'filters'       => $filters,
-            'tableReady'    => $tableReady,
-            'role'          => $role,
-            'isAdmin'       => $isAdmin,
+            'rekomendasi'       => $rekomendasi,
+            'kpi'               => $kpiStats,
+            'kwhDashboardStats' => $kwhDashboardStats,
+            'pipelineStats'     => $pipelineStats,
+            'yoyData'           => $yoyData,
+            'fourDxData'        => $fourDxData,
+            'monthlyTrend'      => $monthlyTrend,
+            'statusDist'        => $statusDist,
+            'priorityDist'      => $priorityDist,
+            'ulpRanking'        => $ulpRanking,
+            'ulps'              => $ulps,
+            'penyulangs'        => $penyulangs,
+            'officers'          => $officers,
+            'filters'           => $filters,
+            'tableReady'        => $tableReady,
+            'role'              => $role,
+            'isAdmin'           => $isAdmin,
         ]);
     }
 

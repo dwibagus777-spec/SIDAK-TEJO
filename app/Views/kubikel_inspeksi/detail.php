@@ -165,11 +165,21 @@
         <div class="card-header bg-white"><h2 class="h5 mb-0">Temuan dan Rekomendasi</h2></div>
         <?php if ($temuan): ?>
             <div class="table-responsive"><table class="table table-striped align-middle mb-0">
-                <thead><tr><th>Tanggal</th><th>Komponen</th><th>Deskripsi / Rekomendasi</th><th>Urgensi</th><th>Penerima</th><th>Status</th><?php if ($canEdit && $inspeksi['status'] !== 'DITUTUP'): ?><th>Aksi</th><?php endif; ?></tr></thead>
+                <thead><tr><th>Tanggal</th><th>Komponen</th><th>Deskripsi / Rekomendasi</th><th>Potensi</th><th>Urgensi</th><th>Penerima</th><th>Status</th><?php if ($canEdit && $inspeksi['status'] !== 'DITUTUP'): ?><th>Aksi</th><?php endif; ?></tr></thead>
                 <tbody><?php foreach ($temuan as $item): ?><tr>
                     <td><span class="badge text-bg-light border font-monospace"><?= esc(!empty($item['tanggal_temuan']) ? date('d/m/Y', strtotime($item['tanggal_temuan'])) : (!empty($inspeksi['tgl_inspeksi']) ? date('d/m/Y', strtotime($inspeksi['tgl_inspeksi'])) : '-')) ?></span></td>
                     <td><?= esc($item['komponen'] ?? '-') ?><br><span class="text-muted"><?= esc($item['fasa'] ?? '-') ?> · <?= esc($item['posisi'] ?? '-') ?></span></td>
                     <td><?= nl2br(esc($item['deskripsi_temuan'] ?? '-')) ?><br><span class="text-muted"><?= nl2br(esc($item['rekomendasi'] ?? '')) ?></span></td>
+                    <td>
+                        <?php if (!empty($item['jenis_potensi'])): ?>
+                            <span class="badge text-bg-warning">
+                                <?= $item['jenis_potensi'] === 'TREATMENT_TRAFO' ? 'Treatment Trafo' : ($item['jenis_potensi'] === 'CLEANING_KUBIKEL' ? 'Cleaning Kubikel' : esc($item['jenis_potensi'])) ?>
+                            </span>
+                            <div class="small text-success fw-bold">Rp <?= number_format($item['nilai_potensi'] ?? 0, 0, ',', '.') ?></div>
+                        <?php else: ?>
+                            <span class="text-muted">-</span>
+                        <?php endif; ?>
+                    </td>
                     <td><?= esc($item['urgensi'] ?? '-') ?></td><td><?= esc($item['penerima_rekomendasi'] ?? '-') ?></td><td><?= esc($item['status_temuan'] ?? '-') ?></td>
                     <?php if ($canEdit && $inspeksi['status'] !== 'DITUTUP'): ?>
                         <td><details><summary class="btn btn-sm btn-outline-secondary">Ubah</summary>
@@ -181,6 +191,14 @@
                                 <select name="fasa" class="form-select form-select-sm mb-1"><?php foreach (['R','S','T','N','TIDAK_BERFASA'] as $value): ?><option value="<?= $value ?>" <?= ($item['fasa'] ?? '') === $value ? 'selected' : '' ?>><?= $value ?></option><?php endforeach; ?></select>
                                 <input name="posisi" class="form-control form-control-sm mb-1" value="<?= esc($item['posisi'] ?? '') ?>" maxlength="100">
                                 <textarea name="deskripsi_temuan" class="form-control form-control-sm mb-1" required><?= esc($item['deskripsi_temuan'] ?? '') ?></textarea>
+                                <label class="form-label small text-muted mb-0">Potensi Pekerjaan</label>
+                                <select name="jenis_potensi" class="form-select form-select-sm mb-1 edit-potensi-select" onchange="syncPotensiEdit(this)">
+                                    <option value="" data-price="0">-- Tanpa Potensi --</option>
+                                    <option value="TREATMENT_TRAFO" data-price="5000000" <?= ($item['jenis_potensi'] ?? '') === 'TREATMENT_TRAFO' ? 'selected' : '' ?>>Treatment Trafo (Rp 5.000.000)</option>
+                                    <option value="CLEANING_KUBIKEL" data-price="4999000" <?= ($item['jenis_potensi'] ?? '') === 'CLEANING_KUBIKEL' ? 'selected' : '' ?>>Cleaning Kubikel (Rp 4.999.000)</option>
+                                </select>
+                                <input type="hidden" name="nilai_potensi" class="edit-nilai-potensi-val" value="<?= esc($item['nilai_potensi'] ?? '0') ?>">
+                                <input type="text" class="form-control form-control-sm mb-1 bg-light fw-bold text-success edit-nilai-potensi-prev" readonly value="Rp <?= number_format($item['nilai_potensi'] ?? 0, 0, ',', '.') ?>">
                                 <select name="urgensi" class="form-select form-select-sm mb-1"><?php foreach (['RENDAH','SEDANG','TINGGI','KRITIS'] as $value): ?><option value="<?= $value ?>" <?= ($item['urgensi'] ?? '') === $value ? 'selected' : '' ?>><?= $value ?></option><?php endforeach; ?></select>
                                 <textarea name="rekomendasi" class="form-control form-control-sm mb-1" placeholder="Rekomendasi"><?= esc($item['rekomendasi'] ?? '') ?></textarea>
                                 <button class="btn btn-sm btn-primary" type="submit">Simpan Temuan</button>
@@ -201,6 +219,19 @@
                     <div class="col-md-2"><label class="form-label small text-muted mb-0">Posisi</label><input name="posisi" class="form-control" placeholder="Posisi" maxlength="100"></div>
                     <div class="col-md-3"><label class="form-label small text-muted mb-0">Item Checklist</label><select name="checklist_id" class="form-select"><option value="">Tanpa item checklist</option><?php foreach ($checklist as $check): ?><option value="<?= (int)$check['id'] ?>"><?= esc($check['komponen'] . ' — ' . $check['item_pemeriksaan']) ?></option><?php endforeach; ?></select></div>
                     <div class="col-md-6"><textarea name="deskripsi_temuan" class="form-control" placeholder="Deskripsi temuan" required></textarea></div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-0">Potensi Pekerjaan</label>
+                        <select name="jenis_potensi" id="create_jenis_potensi" class="form-select" onchange="syncPotensiPrice(this, '#create_nilai_potensi', '#create_harga_potensi_preview')">
+                            <option value="" data-price="0">-- Tanpa Potensi --</option>
+                            <option value="TREATMENT_TRAFO" data-price="5000000">Treatment Trafo (Rp 5.000.000)</option>
+                            <option value="CLEANING_KUBIKEL" data-price="4999000">Cleaning Kubikel (Rp 4.999.000)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-0">Harga Potensi</label>
+                        <input type="hidden" name="nilai_potensi" id="create_nilai_potensi" value="0">
+                        <input type="text" id="create_harga_potensi_preview" class="form-control bg-light fw-bold text-success" readonly value="Rp 0">
+                    </div>
                     <div class="col-md-3"><select name="urgensi" class="form-select"><?php foreach (['RENDAH','SEDANG','TINGGI','KRITIS'] as $value): ?><option value="<?= $value ?>"><?= $value ?></option><?php endforeach; ?></select></div>
                     <div class="col-md-3"><select name="penerima_rekomendasi" class="form-select" required><option value="ULP">ULP</option><option value="HAR_GTT">HAR GTT</option><option value="BEYOND_KWH">Beyond KWH</option><option value="ADMINISTRATOR">Administrator</option><option value="LAINNYA">Lainnya</option></select></div>
                     <div class="col-md-6"><textarea name="rekomendasi" class="form-control" placeholder="Rekomendasi tindak lanjut"></textarea></div>
@@ -287,5 +318,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+function syncPotensiPrice(selectEl, hiddenSelector, previewSelector) {
+    const opt = selectEl.options[selectEl.selectedIndex];
+    const price = opt ? opt.getAttribute('data-price') : null;
+    const hidden = document.querySelector(hiddenSelector);
+    const preview = document.querySelector(previewSelector);
+    if (price && Number(price) > 0) {
+        if (hidden) hidden.value = price;
+        if (preview) preview.value = 'Rp ' + Number(price).toLocaleString('id-ID');
+    } else {
+        if (hidden) hidden.value = '0';
+        if (preview) preview.value = 'Rp 0';
+    }
+}
+function syncPotensiEdit(selectEl) {
+    const opt = selectEl.options[selectEl.selectedIndex];
+    const price = opt ? opt.getAttribute('data-price') : 0;
+    const form = selectEl.closest('form');
+    if (form) {
+        const hidden = form.querySelector('.edit-nilai-potensi-val');
+        const prev = form.querySelector('.edit-nilai-potensi-prev');
+        if (hidden) hidden.value = price || '0';
+        if (prev) prev.value = 'Rp ' + Number(price || 0).toLocaleString('id-ID');
+    }
+}
 </script>
 <?= $this->endSection() ?>

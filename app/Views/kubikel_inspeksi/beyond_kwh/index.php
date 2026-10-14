@@ -395,60 +395,64 @@
         </form>
     </div>
 
-    <!-- 4 PRIMARY KPI SUMMARY CARDS -->
+    <!-- 4 PRIMARY KPI SUMMARY CARDS (LIVE DATABASE AKTUAL) -->
     <div class="row g-3 mb-4">
-        <!-- CARD 1: BLUE (TOTAL BARIS DATA) -->
+        <!-- CARD 1: BLUE (JUMLAH INSPEKSI) -->
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="kpi-card kpi-blue">
                 <div>
-                    <div class="kpi-title">TOTAL BARIS DATA</div>
-                    <div class="kpi-value" id="kpi-total-val"><?= number_format($pipelineStats['total_rows'] ?? 0) ?></div>
-                    <div class="kpi-sub">Total Data Disaring</div>
+                    <div class="kpi-title">JUMLAH INSPEKSI</div>
+                    <div class="kpi-value" id="kpi-inspeksi-val"><?= number_format($kwhDashboardStats['total_inspeksi'] ?? 0) ?></div>
+                    <div class="kpi-sub">Total Inspeksi Gardu Aktual</div>
                 </div>
                 <div class="kpi-trend">
-                    <i class="fas fa-chart-line"></i> ▲ Real Dataset
+                    <i class="fas fa-clipboard-check"></i> Live Database
                 </div>
             </div>
         </div>
 
-        <!-- CARD 2: RED (TAHAP PROBING) -->
+        <!-- CARD 2: RED (JUMLAH TEMUAN) -->
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="kpi-card kpi-red">
                 <div>
-                    <div class="kpi-title">TAHAP PROBING</div>
-                    <div class="kpi-value" id="kpi-probing-val"><?= number_format($pipelineStats['probing'] ?? 0) ?></div>
-                    <div class="kpi-sub">Permohonan Probing All</div>
+                    <div class="kpi-title">JUMLAH TEMUAN</div>
+                    <div class="kpi-value" id="kpi-temuan-val"><?= number_format($kwhDashboardStats['total_temuan'] ?? 0) ?></div>
+                    <div class="kpi-sub">Total Temuan Lapangan</div>
                 </div>
                 <div class="kpi-trend">
-                    <i class="fas fa-chart-line"></i> ▲ Real Dataset
+                    <i class="fas fa-exclamation-triangle"></i> Live Database
                 </div>
             </div>
         </div>
 
-        <!-- CARD 3: ORANGE GRADIENT (TAHAP PENAWARAN & SPK) -->
+        <!-- CARD 3: ORANGE GRADIENT (JUMLAH TIAP POTENSI) -->
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="kpi-card kpi-orange">
                 <div>
-                    <div class="kpi-title">TAHAP PENAWARAN & SPK</div>
-                    <div class="kpi-value" id="kpi-penawaran-val"><?= number_format($pipelineStats['penawaran_spk'] ?? 58) ?></div>
-                    <div class="kpi-sub">Nilai Komersial Penawaran</div>
+                    <div class="kpi-title">POTENSI PEKERJAAN</div>
+                    <div class="kpi-value" id="kpi-potensi-val" style="font-size: 1.15rem; font-weight: 700;">
+                        Trafo: <?= number_format($kwhDashboardStats['count_treatment_trafo'] ?? 0) ?> | Kubikel: <?= number_format($kwhDashboardStats['count_cleaning_kubikel'] ?? 0) ?>
+                    </div>
+                    <div class="kpi-sub">Treatment Trafo &amp; Cleaning Kubikel</div>
                 </div>
                 <div class="kpi-trend">
-                    <i class="fas fa-chart-line"></i> ▼ Real Dataset
+                    <i class="fas fa-tools"></i> Realtime Count
                 </div>
             </div>
         </div>
 
-        <!-- CARD 4: GREEN (STATUS BAYAR) -->
+        <!-- CARD 4: GREEN (TOTAL NILAI POTENSI) -->
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="kpi-card kpi-green">
                 <div>
-                    <div class="kpi-title">STATUS BAYAR</div>
-                    <div class="kpi-value" id="kpi-bayar-val"><?= number_format($pipelineStats['status_bayar'] ?? 1) ?></div>
-                    <div class="kpi-sub">Realisasi Bayar Lunas</div>
+                    <div class="kpi-title">TOTAL NILAI POTENSI</div>
+                    <div class="kpi-value" id="kpi-nilai-potensi-val" style="font-size: 1.25rem; font-weight: 800;">
+                        Rp <?= number_format($kwhDashboardStats['total_nilai_potensi'] ?? 0, 0, ',', '.') ?>
+                    </div>
+                    <div class="kpi-sub">Komersial Beyond KWH</div>
                 </div>
                 <div class="kpi-trend">
-                    <i class="fas fa-chart-line"></i> ▲ Real Dataset
+                    <i class="fas fa-coins"></i> Nilai Terkalkulasi
                 </div>
             </div>
         </div>

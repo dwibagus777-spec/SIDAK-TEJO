@@ -134,7 +134,6 @@ $routes->get('api/planning/summary', 'ShutdownWorkPlanningController::apiPlannin
 $routes->match(['GET', 'POST'], 'api/planning/compose-scope', 'ShutdownWorkPlanningController::apiComposeScope');
 $routes->get('api/planning/plan/(:segment)', 'ShutdownWorkPlanningController::apiPlanDetail/$1');
 
-
 // Remediation Work Package Lifecycle API v1
 $routes->post('api/v1/remediation/work-packages', 'RemediationController::createWorkPackage');
 $routes->get('api/v1/remediation/work-packages/(:num)', 'RemediationController::getWorkPackage/$1');
@@ -150,7 +149,6 @@ $routes->post('api/v1/remediation/work-packages/(:num)/start', 'RemediationContr
 $routes->post('api/v1/remediation/work-packages/(:num)/complete', 'RemediationController::completeExecution/$1');
 $routes->post('api/v1/remediation/work-packages/(:num)/verify', 'RemediationController::verifyRemediation/$1');
 $routes->delete('api/v1/remediation/work-packages/(:num)', 'RemediationController::deleteWorkPackage/$1');
-
 
 $routes->get('api/debug-assets', 'Api::debugAssets');
 $routes->get('api/debug-filter', 'Api::debugFilter');
@@ -199,29 +197,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('kubikel-inspeksi/reopen/(:num)', 'KubikelInspectionController::reopen/$1');
 
     // Beyond KWH
-    $routes->get('kubikel-inspeksi/beyond-kwh', 'KubikelInspectionController::myRekomendasi');
-    $routes->get('kubikel-inspeksi/beyond-kwh/detail/(:num)', 'KubikelInspectionController::detailRekomendasi/$1');
-    $routes->post('kubikel-inspeksi/beyond-kwh/update-status/(:num)', 'KubikelInspectionController::updateRekomendasiStatus/$1');
 
     // Beyond KWH 5-Stage Pipeline
-    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/probing', 'BeyondKwhController::probing/$1');
-    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/probing/store', 'BeyondKwhController::storeProbing/$1');
-    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/penawaran', 'BeyondKwhController::penawaran/$1');
-    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/penawaran/store', 'BeyondKwhController::storePenawaran/$1');
-    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/spkpo', 'BeyondKwhController::spkpo/$1');
-    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/spkpo/store', 'BeyondKwhController::storeSpkPo/$1');
-    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/penagihan', 'BeyondKwhController::penagihan/$1');
-    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/penagihan/store', 'BeyondKwhController::storePenagihan/$1');
-    $routes->get('kubikel-inspeksi/beyond-kwh/(:num)/pembayaran', 'BeyondKwhController::pembayaran/$1');
-    $routes->post('kubikel-inspeksi/beyond-kwh/(:num)/pembayaran/store', 'BeyondKwhController::storePembayaran/$1');
 
     // Friendly alias URLs
-    $routes->get('kubikel-inspeksi/beyond-kwh/probing/(:num)', 'BeyondKwhController::probing/$1');
-    $routes->get('kubikel-inspeksi/beyond-kwh/penawaran/(:num)', 'BeyondKwhController::penawaran/$1');
-    $routes->get('kubikel-inspeksi/beyond-kwh/spkpo/(:num)', 'BeyondKwhController::spkpo/$1');
-    $routes->get('kubikel-inspeksi/beyond-kwh/penagihan/(:num)', 'BeyondKwhController::penagihan/$1');
-    $routes->get('kubikel-inspeksi/beyond-kwh/pembayaran/(:num)', 'BeyondKwhController::pembayaran/$1');
-    
+
     // AI Predictive Maintenance & AI Center Routes
     $routes->get('ai-center', 'AiPredictiveController::index');
     $routes->get('ai-predictive', 'AiPredictiveController::index');
@@ -475,10 +455,6 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('api/capital-investment/assemble', 'ExecutiveCapitalInvestmentController::apiAssemble');
     $routes->post('api/capital-investment/simulate-saidi', 'ExecutiveCapitalInvestmentController::apiSimulateSaidi');
     $routes->post('api/capital-investment/ratify-executive', 'ExecutiveCapitalInvestmentController::apiRatifyExecutive');
-
-
-
-
 
     // Wave 2 Work Acceptance, Quality Assurance & Closure Governance (Phase OP-07)
     $routes->get('operational-planning/acceptances', 'OperationalWorkAcceptanceController::index');
@@ -885,7 +861,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('temuan/update/(:num)', 'Temuan::update/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/update-pekerjaan', 'Temuan::updatePekerjaan');
     $routes->post('temuan/ajax-update-pekerjaan', 'Temuan::ajaxUpdatePekerjaan');
-    
+
     // AJAX data loading
     $routes->get('temuan/ajax-penyulang/(:num)', 'Temuan::ajaxGetPenyulang/$1');
     $routes->get('temuan/ajax-penyulang', 'Temuan::ajaxGetPenyulang');
@@ -1077,7 +1053,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
 // --- Rute REST API v1 (Flutter Mobile App Backend with JWT) ---
 $routes->group('api/v1', function ($routes) {
-    
+
     // Auth & Sync (Unprotected / Direct API)
     $routes->post('auth/login', 'Api\AuthController::login');
     $routes->post('voice-ai/process', 'Api\VoiceAIApiController::process');
@@ -1089,7 +1065,7 @@ $routes->group('api/v1', function ($routes) {
 
     // Protected via JWT Bearer Token Filter ('filter' => 'jwt')
     $routes->group('', ['filter' => 'jwt'], function ($routes) {
-        
+
         // Auth Self Service
         $routes->get('auth/me', 'Api\AuthController::me');
         $routes->post('auth/change-password', 'Api\AuthController::changePassword');
@@ -1124,7 +1100,7 @@ $routes->group('api/v1', function ($routes) {
 $routes->group('api', function ($routes) {
     // 1. POST /api/login
     $routes->post('login', 'Api\AuthController::login');
-    
+
     // 2. GET /api/sync
     $routes->get('sync', 'Api\SyncApiController::getSyncMeta');
 
@@ -1244,8 +1220,4 @@ $routes->get('api/fault-locator/summary', 'FaultLocatorController::summary');
 $routes->post('api/fault-locator/locate', 'FaultLocatorController::locateFault');
 $routes->post('api/fault-locator/dispatch', 'FaultLocatorController::dispatch');
 $routes->get('api/fault-locator/forensic-bundle/(:any)', 'FaultLocatorController::forensicBundle/$1');
-
-
-
-
 

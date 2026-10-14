@@ -22,9 +22,6 @@ class Auth extends BaseController
         if ($role === 'inspeksi') {
             return site_url('gis');
         }
-        if ($role === 'beyond_kwh') {
-            return site_url('kubikel-inspeksi/beyond-kwh');
-        }
         return site_url('dashboard');
     }
 

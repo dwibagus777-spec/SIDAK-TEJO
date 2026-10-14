@@ -840,23 +840,9 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                     </div>
                 </div>
 
-                <!-- Navigation List with Enterprise Categories & Grouped Accordions -->
+<!-- Navigation List with Enterprise Categories & Grouped Accordions -->
                 <div class="collapse navbar-collapse" id="sidebar-menu">
                     <ul class="navbar-nav pt-lg-3">
-                        <?php if (strtolower((string)session()->get('user_role')) === 'beyond_kwh'): ?>
-                            <li class="nav-item <?= url_is('dashboard') ? 'active' : '' ?>">
-                                <a class="nav-link" href="<?= site_url('dashboard') ?>">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-gauge-high text-primary"></i></span>
-                                    <span class="nav-link-title">Dashboard</span>
-                                </a>
-                            </li>
-<li class="nav-item">
-                                  <a class="nav-link text-danger" href="<?= site_url('logout') ?>">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-power-off text-danger"></i></span>
-                                    <span class="nav-link-title">Logout</span>
-                                </a>
-                            </li>
-                        <?php else: ?>
 
                         <!-- CATEGORY 1: CORE & ANALYTICS (Expanded) -->
                         <li class="nav-header text-uppercase text-muted px-3 mt-2 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-core" aria-expanded="true" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
@@ -1064,11 +1050,10 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                                         <li><a class="dropdown-item <?= url_is('eviden/trafo*') ? 'active' : '' ?>" href="<?= site_url('eviden/trafo') ?>">Eviden Trafo</a></li>
                                         <li><a class="dropdown-item <?= url_is('eviden/management*') ? 'active' : '' ?>" href="<?= site_url('eviden/management') ?>">Management Trafo</a></li>
                                         <?php endif; ?>
-                                    </ul>
-                                </div>
-                            </li>
-                            <?php endif; ?>
-                            <?php if (check_role(['administrator', 'admin_ulp'])): ?>
+</ul>
+                                  </div>
+                              </li>
+                              <?php if (check_role(['administrator', 'admin_ulp'])): ?>
                             <li class="nav-item dropdown <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show active' : '') ?>">
                                 <a class="nav-link dropdown-toggle" href="#menu-master" data-bs-toggle="collapse" role="button">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-layer-group text-info"></i></span>

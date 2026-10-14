@@ -1768,12 +1768,16 @@ class MigrateController extends BaseController
             }
         } catch (\Throwable $e) {}
 
-        return $this->response->setJSON([
+        $deployPayload = [
             'status'      => 'success',
             'message'     => 'Hostinger Git deployment synced & OPcache purged!',
             'diagnostics' => $diagnostics,
             'git_output'  => implode("\n", (array)$output)
-        ]);
+        ];
+        if (!headers_sent()) {
+            @header('Content-Type: application/json; charset=utf-8');
+        }
+        return $this->response->setBody((string)json_encode($deployPayload));
     }
 
     /**

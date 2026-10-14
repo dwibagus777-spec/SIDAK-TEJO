@@ -101,6 +101,8 @@ class KubikelInspectionController extends BaseController
             'id_pel'         => 'permit_empty|max_length[100]',
             'nama_pelanggan' => 'permit_empty|max_length[255]',
             'tgl_inspeksi'   => 'required|valid_date',
+            'jenis_potensi'  => 'permit_empty|in_list[TREATMENT_TRAFO,CLEANING_KUBIKEL]',
+            'nilai_potensi'  => 'permit_empty|numeric',
             'catatan_umum'   => 'permit_empty',
         ];
 
@@ -111,6 +113,17 @@ class KubikelInspectionController extends BaseController
         }
 
         $nomorInspeksi = $this->inspeksiModel->generateNomorInspeksi();
+
+        $jenisPotensi = $this->request->getPost('jenis_potensi');
+        $nilaiPotensi = null;
+        if ($jenisPotensi === 'TREATMENT_TRAFO') {
+            $nilaiPotensi = 5000000;
+        } elseif ($jenisPotensi === 'CLEANING_KUBIKEL') {
+            $nilaiPotensi = 4999000;
+        } else {
+            $jenisPotensi = null;
+            $nilaiPotensi = null;
+        }
 
         $data = [
             'nomor_inspeksi'     => $nomorInspeksi,
@@ -129,8 +142,10 @@ class KubikelInspectionController extends BaseController
             'waktu_mulai'        => null,
             'waktu_selesai'      => null,
             'catatan_umum'       => $this->request->getPost('catatan_umum'),
+            'jenis_potensi'      => $jenisPotensi,
+            'nilai_potensi'      => $nilaiPotensi,
             'status'             => 'DRAFT',
-            'status_temuan'      => 'TIDAK_ADA',
+            'status_temuan'      => (!empty($jenisPotensi) || !empty($this->request->getPost('catatan_umum'))) ? 'ADA' : 'TIDAK_ADA',
         ];
 
         $inspeksiId = $this->inspeksiModel->insert($data, true);
@@ -149,6 +164,36 @@ class KubikelInspectionController extends BaseController
             $userId,
             'Pembuatan inspeksi baru'
         );
+
+        // Otomatis catat temuan dan rekomendasi jika dipilih potensi pekerjaan atau catatan temuan
+        if (!empty($jenisPotensi) || !empty($data['catatan_umum'])) {
+            $komponen = ($jenisPotensi === 'TREATMENT_TRAFO') ? 'Trafo' : (($jenisPotensi === 'CLEANING_KUBIKEL') ? 'Kubikel' : 'Gardu');
+            $penerima = ($data['kepemilikan_gardu'] === 'PELANGGAN') ? 'BEYOND_KWH' : 'HAR_GTT';
+            $deskripsiTemuan = !empty($data['catatan_umum']) ? $data['catatan_umum'] : ($jenisPotensi === 'TREATMENT_TRAFO' ? 'Potensi Treatment Trafo (Rp 5.000.000)' : 'Potensi Cleaning Kubikel (Rp 4.999.000)');
+            $rekomendasi = $jenisPotensi ? "Pekerjaan {$komponen}: " . ($jenisPotensi === 'TREATMENT_TRAFO' ? 'Treatment Trafo' : 'Cleaning Kubikel') : 'Pemeriksaan lebih lanjut';
+
+            $temuanData = [
+                'inspeksi_kubikel_id'  => $inspeksiId,
+                'checklist_id'         => null,
+                'komponen'             => $komponen,
+                'fasa'                 => 'TIDAK_BERFASA',
+                'posisi'               => 'UTAMA',
+                'tanggal_temuan'       => $data['tgl_inspeksi'],
+                'deskripsi_temuan'     => $deskripsiTemuan,
+                'jenis_potensi'        => $jenisPotensi,
+                'nilai_potensi'        => $nilaiPotensi,
+                'urgensi'              => 'SEDANG',
+                'rekomendasi'          => $rekomendasi,
+                'penerima_rekomendasi' => $penerima,
+                'status_temuan'        => 'BARU',
+                'assigned_to_user_id'  => null,
+            ];
+            $temuanData['fingerprint'] = $this->temuanModel->generateFingerprint($temuanData);
+            $newTemuanId = $this->temuanModel->insert($temuanData, true);
+            if ($newTemuanId) {
+                $this->createRekomendasi($newTemuanId, $penerima, $rekomendasi, null);
+            }
+        }
 
         // Handle upload foto inspeksi (multiple)
         $files = $this->request->getFiles();
@@ -335,6 +380,8 @@ class KubikelInspectionController extends BaseController
             'id_pel'         => 'permit_empty|max_length[100]',
             'nama_pelanggan' => 'permit_empty|max_length[255]',
             'tgl_inspeksi'   => 'required|valid_date',
+            'jenis_potensi'  => 'permit_empty|in_list[TREATMENT_TRAFO,CLEANING_KUBIKEL]',
+            'nilai_potensi'  => 'permit_empty|numeric',
             'waktu_mulai'    => 'permit_empty',
             'waktu_selesai'  => 'permit_empty',
             'catatan_umum'   => 'permit_empty',
@@ -346,6 +393,17 @@ class KubikelInspectionController extends BaseController
                 ->with('errors', $this->validator->getErrors());
         }
 
+        $jenisPotensi = $this->request->getPost('jenis_potensi');
+        $nilaiPotensi = null;
+        if ($jenisPotensi === 'TREATMENT_TRAFO') {
+            $nilaiPotensi = 5000000;
+        } elseif ($jenisPotensi === 'CLEANING_KUBIKEL') {
+            $nilaiPotensi = 4999000;
+        } else {
+            $jenisPotensi = null;
+            $nilaiPotensi = null;
+        }
+
         $data = [
             'ulp_id'             => (int)$this->request->getPost('ulp_id'),
             'penyulang_id'       => (int)$this->request->getPost('penyulang_id'),
@@ -355,6 +413,8 @@ class KubikelInspectionController extends BaseController
             'id_pel'             => $this->request->getPost('id_pel') ?: null,
             'nama_pelanggan'     => $this->request->getPost('nama_pelanggan') ?: null,
             'tgl_inspeksi'       => $this->request->getPost('tgl_inspeksi'),
+            'jenis_potensi'      => $jenisPotensi,
+            'nilai_potensi'      => $nilaiPotensi,
             'waktu_mulai'        => $this->request->getPost('waktu_mulai'),
             'waktu_selesai'      => $this->request->getPost('waktu_selesai'),
             'catatan_umum'       => $this->request->getPost('catatan_umum'),

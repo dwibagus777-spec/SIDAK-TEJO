@@ -130,6 +130,23 @@
                         <input type="date" name="tgl_inspeksi" id="tgl_inspeksi" class="form-control" required value="<?= esc(old('tgl_inspeksi', date('Y-m-d'))) ?>">
                     </div>
 
+                    <div class="col-md-4">
+                        <label for="jenis_potensi" class="form-label fw-medium">Potensi Pekerjaan</label>
+                        <select name="jenis_potensi" id="jenis_potensi" class="form-select" onchange="syncCreatePotensi(this)">
+                            <option value="" data-price="0">-- Tanpa Potensi --</option>
+                            <option value="TREATMENT_TRAFO" data-price="5000000" <?= old('jenis_potensi') === 'TREATMENT_TRAFO' ? 'selected' : '' ?>>Treatment Trafo (Rp 5.000.000)</option>
+                            <option value="CLEANING_KUBIKEL" data-price="4999000" <?= old('jenis_potensi') === 'CLEANING_KUBIKEL' ? 'selected' : '' ?>>Cleaning Kubikel (Rp 4.999.000)</option>
+                        </select>
+                        <div class="form-text">Pilih paket potensi pekerjaan jika ditemukan</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="nilai_potensi_preview" class="form-label fw-medium">Harga Potensi</label>
+                        <input type="hidden" name="nilai_potensi" id="nilai_potensi" value="<?= esc(old('nilai_potensi', '0')) ?>">
+                        <input type="text" id="nilai_potensi_preview" class="form-control bg-light fw-bold text-success" readonly value="<?= old('jenis_potensi') === 'TREATMENT_TRAFO' ? 'Rp 5.000.000' : (old('jenis_potensi') === 'CLEANING_KUBIKEL' ? 'Rp 4.999.000' : 'Rp 0') ?>">
+                        <div class="form-text">Harga standar otomatis terkalkulasi</div>
+                    </div>
+
                     <div class="col-12">
                         <label for="catatan_umum" class="form-label fw-medium">Detail Temuan</label>
                         <textarea name="catatan_umum" id="catatan_umum" class="form-control" rows="3" placeholder="Detail temuan untuk inspeksi gardu ini..."><?= esc(old('catatan_umum', '')) ?></textarea>
@@ -296,5 +313,19 @@
             renderPreviews();
         }
     });
+
+    function syncCreatePotensi(selectEl) {
+        const opt = selectEl.options[selectEl.selectedIndex];
+        const price = opt ? opt.getAttribute('data-price') : 0;
+        const hidden = document.getElementById('nilai_potensi');
+        const preview = document.getElementById('nilai_potensi_preview');
+        if (price && Number(price) > 0) {
+            if (hidden) hidden.value = price;
+            if (preview) preview.value = 'Rp ' + Number(price).toLocaleString('id-ID');
+        } else {
+            if (hidden) hidden.value = '0';
+            if (preview) preview.value = 'Rp 0';
+        }
+    }
 </script>
 <?= $this->endSection() ?>

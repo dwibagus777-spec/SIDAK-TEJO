@@ -31,6 +31,8 @@ class InspeksiKubikelModel extends Model
         'status',
         'status_temuan',
         'catatan_umum',
+        'jenis_potensi',
+        'nilai_potensi',
         'alasan_penutupan',
         'supervisor_approval_user_id',
         'supervisor_approval_at',

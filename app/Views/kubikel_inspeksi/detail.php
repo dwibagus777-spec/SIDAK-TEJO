@@ -41,6 +41,8 @@
             'Jenis Gardu' => $inspeksi['jenis_gardu'] ?? '-',
             'Petugas' => $inspeksi['inspector_user_id'] ?? '-',
             'Tanggal Inspeksi' => $inspeksi['tgl_inspeksi'] ?? '-',
+            'Potensi Pekerjaan' => !empty($inspeksi['jenis_potensi']) ? ($inspeksi['jenis_potensi'] === 'TREATMENT_TRAFO' ? 'Treatment Trafo' : ($inspeksi['jenis_potensi'] === 'CLEANING_KUBIKEL' ? 'Cleaning Kubikel' : $inspeksi['jenis_potensi'])) : 'Tidak Ada',
+            'Nilai Potensi' => !empty($inspeksi['nilai_potensi']) ? ('Rp ' . number_format((float)$inspeksi['nilai_potensi'], 0, ',', '.')) : 'Rp 0',
             'Status Temuan' => $inspeksi['status_temuan'] ?? '-',
         ] as $label => $value): ?>
             <div class="col-sm-6 col-lg-4">

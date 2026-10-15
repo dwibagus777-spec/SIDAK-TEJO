@@ -420,6 +420,53 @@ class TemuanRepository extends BaseRepository
     }
 
     /**
+     * Ranking 5 Penyulang by Emergency Temuan Count
+     * Returns: nama_penyulang, nama_ulp, emergency, high, medium, belum_selesai
+     */
+    public function getPenyulangEmergencyRanking(?int $ulpIdFilter = null, int $limit = 5): array
+    {
+        $db = \Config\Database::connect();
+
+        $builder = $db->table('temuan t')
+            ->select('
+                p.nama_penyulang,
+                u.nama_ulp,
+                SUM(CASE WHEN t.prioritas = "EMERGENCY" THEN 1 ELSE 0 END) as emergency,
+                SUM(CASE WHEN t.prioritas = "HIGH" THEN 1 ELSE 0 END) as high,
+                SUM(CASE WHEN t.prioritas = "MEDIUM" THEN 1 ELSE 0 END) as medium,
+                SUM(CASE WHEN t.status != "SELESAI" THEN 1 ELSE 0 END) as belum_selesai
+            ')
+            ->join('penyulang p', 'p.id = t.penyulang_id', 'left')
+            ->join('ulps u', 'u.id = t.ulp_id', 'left')
+            ->where('t.deleted_at IS NULL');
+
+        if ($ulpIdFilter !== null) {
+            $builder->where('t.ulp_id', $ulpIdFilter);
+        }
+
+        $results = self::safeGet(
+            $builder->groupBy('t.penyulang_id, p.nama_penyulang, u.nama_ulp')
+                    ->orderBy('emergency', 'DESC')
+                    ->limit($limit),
+            null,
+            'TemuanRepository::getPenyulangEmergencyRanking'
+        );
+
+        if (empty($results)) {
+            return [];
+        }
+
+        foreach ($results as &$row) {
+            $row['emergency'] = (int)($row['emergency'] ?? 0);
+            $row['high'] = (int)($row['high'] ?? 0);
+            $row['medium'] = (int)($row['medium'] ?? 0);
+            $row['belum_selesai'] = (int)($row['belum_selesai'] ?? 0);
+        }
+
+        return $results;
+    }
+
+    /**
      * Temuan per Pelaksana untuk Grafik (Chart.js)
      */
     public function getPelaksanaStats(?int $ulpIdFilter = null): array

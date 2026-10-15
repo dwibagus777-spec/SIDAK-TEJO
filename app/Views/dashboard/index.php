@@ -1310,6 +1310,18 @@
                                     <div class="contextual-kpi-sub">Terverifikasi</div>
                                 </div>
                             </a>
+
+                            <!-- 5. Total Aset Unik (Dark) -->
+                            <a href="<?= site_url('master-assets') ?>" class="contextual-kpi-card contextual-kpi-dark sidak-bento-kpi-card kpi-drilldown-link">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="contextual-kpi-val sidak-bento-val" id="kpi-total-aset"><?= number_format($assetStats['total'] ?? 0) ?></div>
+                                    <i class="fas fa-arrow-up-right text-muted opacity-75"></i>
+                                </div>
+                                <div>
+                                    <div class="contextual-kpi-title sidak-bento-lbl">Total Aset Unik</div>
+                                    <div class="contextual-kpi-sub">Master Asset PLN</div>
+                                </div>
+                            </a>
                         </div>
 
                         <!-- 3 Mini Metric Indicator Cards (Row of 3) -->
@@ -1384,14 +1396,68 @@
                                             Lihat <i class="fas fa-chevron-right ms-1 opacity-75"></i>
                                         </a>
                                     </div>
-                                <?php endforeach; else: ?>
+<?php endforeach; else: ?>
                                     <div class="text-muted small py-3 text-center">Belum ada temuan terpetakan hari ini.</div>
                                 <?php endif; ?>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- VIEW 2: GIS PREVIEW -->
+                        <!-- Phase 2: Ranking 5 Penyulang by Emergency -->
+                        <div class="contextual-activity-section">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="fw-bold text-dark text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                                    <i class="fas fa-trophy text-warning me-1"></i> Ranking Emergency - Top 5 Penyulang
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <?php if (!empty($penyulangRanking)): ?>
+                                <table class="table table-sm table-hover mb-0" style="font-size: 12px;">
+                                    <thead>
+                                        <tr class="text-uppercase text-muted small" style="font-size: 10px; letter-spacing: 0.5px;">
+                                            <th>Penyulang</th>
+                                            <th>ULP</th>
+                                            <th class="text-center">Emergency</th>
+                                            <th class="text-center">High</th>
+                                            <th class="text-center">Medium</th>
+                                            <th class="text-center">Belum Selesai</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($penyulangRanking as $idx => $row): ?>
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-light text-dark border rounded-circle fw-bold" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 11px;"><?= $idx + 1 ?></span>
+                                                    <span class="fw-medium text-dark"><?= esc($row['nama_penyulang'] ?? 'N/A') ?></span>
+                                                </div>
+                                            </td>
+                                            <td class="text-muted small"><?= esc($row['nama_ulp'] ?? 'N/A') ?></td>
+                                            <td class="text-center">
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 fw-bold"><?= number_format($row['emergency']) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 fw-bold"><?= number_format($row['high']) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1 fw-bold"><?= number_format($row['medium']) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 fw-bold"><?= number_format($row['belum_selesai']) ?></span>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                                <?php else: ?>
+                                <div class="text-center py-4">
+                                    <i class="fas fa-info-circle text-muted fs-1 mb-2"></i>
+                                    <p class="text-muted mb-0">Belum ada data Emergency untuk ranking</p>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- VIEW 2: GIS PREVIEW -->
                     <div id="view-gis" class="contextual-view-block" style="display: none;">
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <div class="sidak-bento-icon-box bg-primary-subtle text-primary rounded-3 fs-4">

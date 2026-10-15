@@ -77,6 +77,9 @@ class Dashboard extends BaseController
         $woStats = $woRepo->getWOStats($ulpIdFilter);
         $assetStats = $assetRepo->getAssetStats($ulpIdFilter);
 
+        // Phase 2: Penyulang Emergency Ranking
+        $penyulangRanking = $this->temuanRepository->getPenyulangEmergencyRanking($ulpIdFilter, 5);
+
         $viewParams = [
             'userName'            => $session->get('user_name') ?: 'Petugas',
             'userRole'            => $role,
@@ -91,6 +94,7 @@ class Dashboard extends BaseController
             'monthlyData'         => $monthlyData,
             'ulpData'             => $ulpData,
             'penyulangData'       => $penyulangData,
+            'penyulangRanking'    => $penyulangRanking,
             'pelaksanaData'       => $pelaksanaData,
             'prioritasData'       => $prioritasData,
             'potensiGangguanData' => $potensiGangguanData,

@@ -202,8 +202,12 @@
                 <div><small class="text-white-50 font-weight-bold" style="font-size: 10px;">EMERGENCY</small><h4 class="fw-bold mb-0"><?= number_format($stats['emergency'] ?? 0) ?></h4></div>
                 <i class="fas fa-chevron-right fs-3 opacity-50"></i>
             </a>
-            <a href="<?= site_url('temuan?prioritas=HIGH') ?>" class="kpi-m-row bg-warning text-dark text-decoration-none shadow-sm d-flex justify-content-between align-items-center">
-                <div><small class="text-dark font-weight-bold" style="font-size: 10px;">HIGH PRIORITY</small><h4 class="fw-bold mb-0"><?= number_format($stats['high'] ?? 0) ?></h4></div>
+            <a href="<?= site_url('temuan?status=BELUM') ?>" class="kpi-m-row bg-warning text-dark text-decoration-none shadow-sm d-flex justify-content-between align-items-center">
+                <div><small class="text-dark font-weight-bold" style="font-size: 10px;">BELUM SELESAI</small><h4 class="fw-bold mb-0"><?= number_format($stats['belum'] ?? 0) ?></h4></div>
+                <i class="fas fa-chevron-right fs-3 opacity-50"></i>
+            </a>
+            <a href="<?= site_url('master-assets') ?>" class="kpi-m-row bg-dark text-white text-decoration-none shadow-sm d-flex justify-content-between align-items-center">
+                <div><small class="text-white-50 font-weight-bold" style="font-size: 10px;">TOTAL ASET UNIK</small><h4 class="fw-bold mb-0"><?= number_format($assetStats['total'] ?? 0) ?></h4></div>
                 <i class="fas fa-chevron-right fs-3 opacity-50"></i>
             </a>
             <a href="<?= site_url('temuan?status=SELESAI') ?>" class="kpi-m-row bg-success text-white text-decoration-none shadow-sm d-flex justify-content-between align-items-center">
@@ -219,6 +223,51 @@
                 <a href="<?= site_url('gis') ?>" class="small text-primary font-weight-bold text-decoration-none" style="font-size: 11px;">Full Map &rarr;</a>
             </div>
             <div id="emc-mini-mobile-map" style="height: 160px; border-radius: 12px;"></div>
+        </div>
+
+        <!-- Phase 2: Ranking 5 Penyulang by Emergency (Mobile) -->
+        <div class="emc-m-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-dark mb-0" style="font-size: 12px;"><i class="fas fa-trophy text-warning me-1"></i> Ranking Emergency - Top 5 Penyulang</h6>
+            </div>
+            <?php if (!empty($penyulangRanking)): ?>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0" style="font-size: 11px;">
+                    <thead>
+                        <tr class="text-uppercase text-muted small" style="font-size: 9px; letter-spacing: 0.5px;">
+                            <th>Penyulang</th>
+                            <th>ULP</th>
+                            <th class="text-center">Emg</th>
+                            <th class="text-center">High</th>
+                            <th class="text-center">Med</th>
+                            <th class="text-center">Belum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($penyulangRanking as $idx => $row): ?>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-light text-dark border rounded-circle fw-bold" style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px;"><?= $idx + 1 ?></span>
+                                    <span class="fw-medium text-dark small"><?= esc($row['nama_penyulang'] ?? 'N/A') ?></span>
+                                </div>
+                            </td>
+                            <td class="text-muted small"><?= esc($row['nama_ulp'] ?? 'N/A') ?></td>
+                            <td class="text-center"><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 fw-bold"><?= number_format($row['emergency']) ?></span></td>
+                            <td class="text-center"><span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 fw-bold"><?= number_format($row['high']) ?></span></td>
+                            <td class="text-center"><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1 fw-bold"><?= number_format($row['medium']) ?></span></td>
+                            <td class="text-center"><span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 fw-bold"><?= number_format($row['belum_selesai']) ?></span></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php else: ?>
+            <div class="text-center py-3">
+                <i class="fas fa-info-circle text-muted fs-2 mb-1"></i>
+                <p class="text-muted mb-0 small">Belum ada data Emergency untuk ranking</p>
+            </div>
+            <?php endif; ?>
         </div>
 
     </div>

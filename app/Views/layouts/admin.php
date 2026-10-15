@@ -215,6 +215,43 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             max-width: 100% !important;
         }
 
+        /* Mission Control Collapsed Rail Mode (~68px) - default on first login */
+        @media (min-width: 992px) {
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical {
+                left: 0 !important;
+                width: 68px !important;
+                box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1) !important;
+            }
+            body.sidak-mission-control.sidebar-collapsed .page-wrapper {
+                margin-left: 68px !important;
+                width: calc(100% - 68px) !important;
+                max-width: calc(100% - 68px) !important;
+            }
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical .nav-link-title,
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical .nav-header span,
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical .nav-header .chevron-icon,
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical .navbar-brand .text-start,
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical .border,
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical #live-sidebar-clock {
+                display: none !important;
+            }
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical .nav-link {
+                margin: 0.15rem 0.35rem;
+                padding: 0.6rem 0.5rem;
+                text-align: center;
+            }
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical .nav-link i.nav-icon {
+                margin-right: 0 !important;
+                font-size: 1.2rem;
+            }
+            body.sidak-mission-control.sidebar-collapsed .navbar-vertical .dropdown-menu {
+                display: none !important;
+            }
+            body.sidak-mission-control.sidebar-collapsed #sidebar-drawer-backdrop {
+                display: none !important;
+            }
+        }
+
         /* CR-NAV-01: High-Specificity Drawer & Mission Control Label Protection */
         body.sidak-mission-control .navbar-vertical .nav-link-title,
         body.sidak-mission-control .navbar-vertical.drawer-open .nav-link-title,
@@ -2611,7 +2648,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             });
         })();
 
-        // CR-NAV-01: Desktop Sidebar Collapse & Storage Handler with Mission Control Isolation
+// CR-NAV-01: Desktop Sidebar Collapse & Storage Handler with Mission Control Isolation
         (function initSidebarCollapse() {
             function setupSidebar() {
                 var isMissionControl = document.body.classList.contains('sidak-mission-control');
@@ -2622,31 +2659,18 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                 if (btnCollapse.dataset.collapseBound) return;
                 btnCollapse.dataset.collapseBound = 'true';
 
-                btnCollapse.addEventListener('click', function() {
-                    var isMissionControlNow = document.body.classList.contains('sidak-mission-control');
-                    if (isMissionControlNow) {
-                        // Mission Control: toggle drawer-open for mobile, toggle sidebar-collapsed for desktop
+                // For Mission Control, toggleSidebarDrawer handles the click (supports both mobile drawer and desktop rail)
+                // For non-mission-control, we still need the click handler here
+                if (!isMissionControl) {
+                    btnCollapse.addEventListener('click', function() {
                         document.body.classList.toggle('sidebar-collapsed');
-                    } else {
-                        // Non-mission-control pages: simple collapsed toggle
-                        document.body.classList.toggle('sidebar-collapsed');
-                    }
-                    var isCollapsed = document.body.classList.contains('sidebar-collapsed');
-                    
-                    // Save preference to session via AJAX (per-user, not localStorage)
-                    fetch('<?= site_url('dashboard/sidebar-preference') ?>', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: 'collapsed=' + (isCollapsed ? '1' : '0')
-                    }).catch(function() {});
-                    
-                    if (typeof window.L !== 'undefined' && typeof window.map !== 'undefined' && window.map) {
-                        window.map.invalidateSize();
-                    }
-                });
+                        var isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                        localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                        if (typeof window.L !== 'undefined' && typeof window.map !== 'undefined' && window.map) {
+                            window.map.invalidateSize();
+                        }
+                    });
+                }
 
                 // Mission Control: default to COLLAPSED unless user explicitly expanded
                 // Read from session via inline PHP (set in Dashboard controller)
@@ -3151,13 +3175,33 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
     window.toggleSidebarDrawer = function() {
         var aside = document.getElementById('main-sidebar-aside');
         var backdrop = document.getElementById('sidebar-drawer-backdrop');
+        var isMissionControl = document.body.classList.contains('sidak-mission-control');
+        var isMobile = window.innerWidth < 992;
+        
         if (aside) {
-            aside.classList.toggle('drawer-open');
-            if (backdrop) {
-                if (aside.classList.contains('drawer-open')) {
-                    backdrop.classList.add('active');
-                } else {
-                    backdrop.classList.remove('active');
+            if (isMissionControl && !isMobile) {
+                // Desktop Mission Control: toggle collapsed rail mode
+                document.body.classList.toggle('sidebar-collapsed');
+                var isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                
+                // Save preference to session via AJAX (per-user, not localStorage)
+                fetch('<?= site_url('dashboard/sidebar-preference') ?>', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'collapsed=' + (isCollapsed ? '1' : '0')
+                }).catch(function() {});
+            } else {
+                // Mobile or non-mission-control: toggle drawer-open
+                aside.classList.toggle('drawer-open');
+                if (backdrop) {
+                    if (aside.classList.contains('drawer-open')) {
+                        backdrop.classList.add('active');
+                    } else {
+                        backdrop.classList.remove('active');
+                    }
                 }
             }
         }

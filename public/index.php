@@ -108,9 +108,4 @@ $paths = new Paths();
 // LOAD THE FRAMEWORK BOOTSTRAP FILE
 require $paths->systemDirectory . '/Boot.php';
 
-try {
-    exit(\CodeIgniter\Boot::bootWeb($paths));
-} catch (\Throwable $e) {
-    http_response_code(500);
-    echo "<h1>PUBLIC_INDEX_EXCEPTION</h1><pre>" . htmlspecialchars($e->getMessage() . "\n" . $e->getTraceAsString()) . "</pre>";
-}
+exit(\CodeIgniter\Boot::bootWeb($paths));

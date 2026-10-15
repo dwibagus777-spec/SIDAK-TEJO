@@ -80,6 +80,9 @@ class Dashboard extends BaseController
         // Phase 2: Penyulang Emergency Ranking
         $penyulangRanking = $this->temuanRepository->getPenyulangEmergencyRanking($ulpIdFilter, 5);
 
+        // Sidebar collapse preference: default TRUE (collapsed) unless user explicitly expanded
+        $prefersCollapsed = $session->get('sidebar_collapsed') ?? true;
+
         $viewParams = [
             'userName'            => $session->get('user_name') ?: 'Petugas',
             'userRole'            => $role,
@@ -102,7 +105,8 @@ class Dashboard extends BaseController
             'topInputOfficers'    => $topInputOfficers,
             'topUpdateOfficers'   => $topUpdateOfficers,
             'monthFilter'         => $monthFilter,
-            'yearFilter'          => $yearFilter
+            'yearFilter'          => $yearFilter,
+            'prefersCollapsed'    => $prefersCollapsed
         ];
 
         if ($showMobile) {
@@ -110,6 +114,22 @@ class Dashboard extends BaseController
         }
 
         return view('dashboard/index', $viewParams);
+    }
+
+    /**
+     * AJAX endpoint to save sidebar collapse preference to user session
+     */
+    public function sidebarPreference()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $collapsed = (bool)$this->request->getPost('collapsed');
+        $session = session();
+        $session->set('sidebar_collapsed', $collapsed);
+
+        return $this->response->setStatusCode(200)->setJSON(['success' => true, 'collapsed' => $collapsed]);
     }
 
     public function toggleView()

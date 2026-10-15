@@ -634,6 +634,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('dashboard/dashboard-kpi', 'ExecutiveDashboardController::getKpiData');
     $routes->get('dashboard/toggle-view', 'Dashboard::toggleView');
     $routes->get('dashboard/analytics-data', 'Dashboard::analyticsData');
+    $routes->post('dashboard/sidebar-preference', 'Dashboard::sidebarPreference');
     $routes->get('auth/ping', 'Auth::ping');
 
     // Self Service Change Password & Announcement Ticker

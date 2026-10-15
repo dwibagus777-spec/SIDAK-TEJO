@@ -2615,27 +2615,54 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         (function initSidebarCollapse() {
             function setupSidebar() {
                 var isMissionControl = document.body.classList.contains('sidak-mission-control');
-                if (isMissionControl) {
-                    // Mission Control secondary drawer is strictly immune to collapsed mode
-                    document.body.classList.remove('sidebar-collapsed');
-                    return;
-                }
-
                 var btnCollapse = document.getElementById('btn-collapse-sidebar');
-                if (btnCollapse && !btnCollapse.dataset.collapseBound) {
-                    btnCollapse.dataset.collapseBound = 'true';
-                    btnCollapse.addEventListener('click', function() {
+                if (!btnCollapse) return;
+
+                // Prevent double-binding
+                if (btnCollapse.dataset.collapseBound) return;
+                btnCollapse.dataset.collapseBound = 'true';
+
+                btnCollapse.addEventListener('click', function() {
+                    var isMissionControlNow = document.body.classList.contains('sidak-mission-control');
+                    if (isMissionControlNow) {
+                        // Mission Control: toggle drawer-open for mobile, toggle sidebar-collapsed for desktop
                         document.body.classList.toggle('sidebar-collapsed');
-                        var isCollapsed = document.body.classList.contains('sidebar-collapsed');
-                        localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
-                        if (typeof window.L !== 'undefined' && typeof window.map !== 'undefined' && window.map) {
-                            window.map.invalidateSize();
-                        }
-                    });
-                    if (localStorage.getItem('sidebar_collapsed') === 'true') {
-                        document.body.classList.add('sidebar-collapsed');
+                    } else {
+                        // Non-mission-control pages: simple collapsed toggle
+                        document.body.classList.toggle('sidebar-collapsed');
                     }
+                    var isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                    
+                    // Save preference to session via AJAX (per-user, not localStorage)
+                    fetch('<?= site_url('dashboard/sidebar-preference') ?>', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: 'collapsed=' + (isCollapsed ? '1' : '0')
+                    }).catch(function() {});
+                    
+                    if (typeof window.L !== 'undefined' && typeof window.map !== 'undefined' && window.map) {
+                        window.map.invalidateSize();
+                    }
+                });
+
+                // Mission Control: default to COLLAPSED unless user explicitly expanded
+                // Read from session via inline PHP (set in Dashboard controller)
+                <?php if ($isDashboardRoute): ?>
+                var prefersCollapsed = <?= $prefersCollapsed ? 'true' : 'false' ?>;
+                if (prefersCollapsed) {
+                    document.body.classList.add('sidebar-collapsed');
+                } else {
+                    document.body.classList.remove('sidebar-collapsed');
                 }
+                <?php else: ?>
+                // Non-mission-control: use localStorage as before
+                if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                    document.body.classList.add('sidebar-collapsed');
+                }
+                <?php endif; ?>
             }
 
             if (document.readyState === 'loading') {
@@ -2644,10 +2671,10 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                 setupSidebar();
             }
 
-            // Clean state if restored via bfcache
+            // Clean state if restored via bfcache - Mission Control stays collapsed by default
             window.addEventListener('pageshow', function() {
                 if (document.body.classList.contains('sidak-mission-control')) {
-                    document.body.classList.remove('sidebar-collapsed');
+                    // Keep collapsed unless user has explicit preference (handled by inline PHP above)
                 }
             });
         })();

@@ -43,7 +43,8 @@ class KubikelInspectionController extends BaseController
         $ulpId = (int)$session->get('ulp_id');
 
         if ($role === 'beyond_kwh') {
-            return redirect()->to(site_url('kubikel-inspeksi/beyond-kwh'));
+            return redirect()->to(site_url('dashboard'))
+                ->with('error', 'Akses ditolak. Role Beyond KWH tidak didukung lagi.');
         }
 
         $tableExists = $this->inspeksiModel->db->tableExists('inspeksi_kubikel');
@@ -60,8 +61,8 @@ class KubikelInspectionController extends BaseController
     {
         $session = session();
         if (strtolower((string)$session->get('user_role')) === 'beyond_kwh') {
-            return redirect()->to(site_url('kubikel-inspeksi/beyond-kwh'))
-                ->with('error', 'Role Beyond KWH hanya dapat mengakses rekomendasi yang ditugaskan kepadanya.');
+            return redirect()->to(site_url('dashboard'))
+                ->with('error', 'Akses ditolak. Role Beyond KWH tidak didukung lagi.');
         }
 
         $userId = (int)$session->get('user_id');
@@ -86,8 +87,8 @@ class KubikelInspectionController extends BaseController
     {
         $session = session();
         if (strtolower((string)$session->get('user_role')) === 'beyond_kwh') {
-            return redirect()->to(site_url('kubikel-inspeksi/beyond-kwh'))
-                ->with('error', 'Role Beyond KWH tidak dapat membuat inspeksi.');
+            return redirect()->to(site_url('dashboard'))
+                ->with('error', 'Akses ditolak. Role Beyond KWH tidak didukung lagi.');
         }
 
         $userId = (int)$session->get('user_id');
@@ -453,8 +454,8 @@ class KubikelInspectionController extends BaseController
         }
 
         if ($role === 'beyond_kwh') {
-            return redirect()->to(site_url('kubikel-inspeksi/beyond-kwh'))
-                ->with('error', 'Gunakan detail rekomendasi yang ditugaskan kepada Anda.');
+            return redirect()->to(site_url('dashboard'))
+                ->with('error', 'Akses ditolak. Role Beyond KWH tidak didukung lagi.');
         }
 
         // Cek akses: admin, inspector, ULP yang sama, atau Beyond KWH (via rekomendasi)
@@ -1404,99 +1405,17 @@ class KubikelInspectionController extends BaseController
             'status_bayar'  => ($kpiStats['selesai'] ?? 0) + $bayarCount,
         ];
 
-        $yoyData = [
-            'probing' => [
-                '2026' => [8, 12, 3, 2, 0, 9, 10, 19, 23, 5, 0, 0],
-                '2025' => [0, 0, 0, 0, 1, 18, 34, 21, 18, 16, 1, 3],
-            ],
-            'penawaran' => [
-                '2026' => [1300000000, 5200000000, 2100000000, 2200000000, 649000000, 1600000000, 1400000000, 3600000000, 1500000000, 680000000, 0, 0],
-                '2025' => [0, 0, 0, 0, 0, 307000000, 546000000, 265000000, 188000000, 2200000000, 126000000, 371000000],
-            ],
-            'spk' => [
-                '2026' => [20000000, 34000000, 112000000, 312000000, 1300000000, 1200000000, 29000000, 495000000, 1700000000, 0, 0, 0],
-                '2025' => [0, 0, 0, 0, 0, 0, 12000000, 44000000, 73000000, 1700000000, 0, 483000000],
-            ],
-            'penagihan' => [
-                '2026' => [0, 0, 0, 0, 710000000, 355000000, 0, 0, 795000000, 0, 0, 0],
-                '2025' => [0, 0, 0, 0, 0, 0, 12000000, 0, 28000000, 79000000, 0, 108000000],
-            ],
-        ];
+                  $yoyData = [
+              "probing" => ["2026" => array_fill(0,12,0), "2025" => array_fill(0,12,0)],
+              "penawaran" => ["2026" => array_fill(0,12,0), "2025" => array_fill(0,12,0)],
+              "spk" => ["2026" => array_fill(0,12,0), "2025" => array_fill(0,12,0)],
+              "penagihan" => ["2026" => array_fill(0,12,0), "2025" => array_fill(0,12,0)],
+          ];
 
-        $fourDxData = [
-            'lead_measures' => [
-                [
-                    'uraian'          => 'PROBLING / VISIT PELANGGAN',
-                    'target_bulan'    => 20,
-                    'minggu_1'        => 2,
-                    'minggu_2'        => 3,
-                    'minggu_3'        => 0,
-                    'minggu_4'        => 0,
-                    'total_realisasi' => 5,
-                    'persentase'      => 25,
-                ],
-                [
-                    'uraian'          => 'PENAWARAN',
-                    'target_bulan'    => 4,
-                    'minggu_1'        => 2,
-                    'minggu_2'        => 1,
-                    'minggu_3'        => 0,
-                    'minggu_4'        => 0,
-                    'total_realisasi' => 3,
-                    'persentase'      => 75,
-                ],
-                [
-                    'uraian'          => 'BROADCAST KE PELANGGAN',
-                    'target_bulan'    => 20,
-                    'minggu_1'        => 2,
-                    'minggu_2'        => 3,
-                    'minggu_3'        => 0,
-                    'minggu_4'        => 0,
-                    'total_realisasi' => 5,
-                    'persentase'      => 25,
-                ],
-                [
-                    'uraian'          => 'KONTRAK (SPK/PO)',
-                    'target_bulan'    => 1,
-                    'minggu_1'        => 0,
-                    'minggu_2'        => 0,
-                    'minggu_3'        => 0,
-                    'minggu_4'        => 0,
-                    'total_realisasi' => 0,
-                    'persentase'      => 0,
-                ],
-            ],
-            'lag_measures' => [
-                [
-                    'uraian'          => 'PENDAPATAN DARI LUAR PLN GROUP',
-                    'target_setahun'  => 5,
-                    'satuan'          => 'RP (Miliar)',
-                    'realisasi_ytd'   => 'Rp 5.10 M',
-                    'persentase'      => 100,
-                ],
-                [
-                    'uraian'          => 'JUMLAH MARKETING PELANGGAN NON CAPTIVE DAN BUSINESS SOLUTION',
-                    'target_setahun'  => 30,
-                    'satuan'          => 'KALI',
-                    'realisasi_ytd'   => '91',
-                    'persentase'      => 100,
-                ],
-                [
-                    'uraian'          => 'PENGEMBANGAN LAYANAN BEYOND KWH TEMATIK PARIWISATA',
-                    'target_setahun'  => 1,
-                    'satuan'          => 'KONTRAK',
-                    'realisasi_ytd'   => '1',
-                    'persentase'      => 100,
-                ],
-                [
-                    'uraian'          => 'PENGEMBANGAN LAYANAN KONSTRUKSI DAN PEMELIHARAAN TT/TM',
-                    'target_setahun'  => 4,
-                    'satuan'          => 'KONTRAK',
-                    'realisasi_ytd'   => '14',
-                    'persentase'      => 100,
-                ],
-            ],
-        ];
+                  $fourDxData = [
+              "lead_measures" => [],
+              "lag_measures"  => [],
+          ];
 
         // AJAX JSON endpoint support for realtime filter without page reload
         if ($this->request->isAJAX() || $this->request->getGet('format') === 'json') {
@@ -1566,7 +1485,8 @@ class KubikelInspectionController extends BaseController
         $rekomendasi = $query->first();
 
         if (!$rekomendasi) {
-            return redirect()->to(site_url('kubikel-inspeksi/beyond-kwh'))->with('error', 'Rekomendasi tidak ditemukan.');
+            return redirect()->to(site_url('dashboard'))
+                ->with('error', 'Rekomendasi tidak ditemukan.');
         }
         $rekomendasi['id'] = (int)$rekomendasi['rekomendasi_id'];
 

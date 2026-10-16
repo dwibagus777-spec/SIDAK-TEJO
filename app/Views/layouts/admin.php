@@ -296,6 +296,191 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
             opacity: 1;
         }
 
+        /* Full Menu Drawer (Menu Lengkap) */
+        .full-menu-drawer {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1070;
+            pointer-events: none;
+        }
+        .full-menu-drawer.open {
+            display: block;
+            pointer-events: auto;
+        }
+        .full-menu-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(6px);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .full-menu-drawer.open .full-menu-backdrop {
+            opacity: 1;
+        }
+        .full-menu-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 360px;
+            max-width: 90vw;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.25);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .full-menu-drawer.open .full-menu-panel {
+            transform: translateX(0);
+        }
+        .full-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            background: #ffffff;
+            flex-shrink: 0;
+        }
+        .full-menu-header h5 {
+            font-size: 1rem;
+            color: #0f172a;
+        }
+        .full-menu-header .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1;
+        }
+        .full-menu-body {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .full-menu-search {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            flex-shrink: 0;
+        }
+        .full-menu-search .form-control {
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        .full-menu-search .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(0, 154, 157, 0.15);
+            border-color: #009A9D;
+        }
+        .full-menu-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem 0.75rem;
+        }
+        .full-menu-category {
+            margin-bottom: 0.75rem;
+        }
+        .full-menu-category-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+        .full-menu-category-header:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+        .full-menu-category-header i {
+            font-size: 0.875rem;
+            width: 18px;
+            text-align: center;
+        }
+        .full-menu-category-header .chevron {
+            margin-left: auto;
+            font-size: 0.65rem;
+            transition: transform 0.2s ease;
+        }
+        .full-menu-category-header[aria-expanded="true"] .chevron {
+            transform: rotate(180deg);
+        }
+        .full-menu-category-body {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.25s ease;
+        }
+        .full-menu-category[aria-expanded="true"] .full-menu-category-body {
+            max-height: 500px;
+        }
+        .full-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+            color: #334155;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .full-menu-item:hover {
+            background: rgba(0, 154, 157, 0.1);
+            color: #009A9D;
+        }
+        .full-menu-item.active {
+            background: rgba(0, 154, 157, 0.15);
+            color: #009A9D;
+            font-weight: 600;
+        }
+        .full-menu-item i {
+            font-size: 0.9rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .full-menu-footer {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            background: #f8fafc;
+            flex-shrink: 0;
+            text-align: center;
+        }
+        .full-menu-footer kbd {
+            background: #e2e8f0;
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-family: inherit;
+        }
+
+        @media (max-width: 768px) {
+            .full-menu-panel {
+                width: 100vw;
+                max-width: 100vw;
+            }
+        }
+
         /* Styling dropdowns di sidebar Tabler */
         .navbar-vertical .dropdown-menu {
             background-color: #003637 !important; /* Darker tosca for submenus */
@@ -787,6 +972,30 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
     <!-- Sidebar Drawer Backdrop (Mission Control Launcher) -->
     <div id="sidebar-drawer-backdrop" onclick="toggleSidebarDrawer()"></div>
 
+    <!-- Full Menu Drawer (Menu Lengkap) -->
+    <div id="full-menu-drawer" class="full-menu-drawer" role="dialog" aria-modal="true" aria-labelledby="full-menu-title">
+        <div class="full-menu-backdrop" onclick="closeFullMenuDrawer()"></div>
+        <div class="full-menu-panel">
+            <div class="full-menu-header">
+                <h5 id="full-menu-title" class="fw-bold mb-0"><i class="fas fa-bars-staggered me-2 text-primary"></i> Menu Lengkap</h5>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeFullMenuDrawer()" aria-label="Tutup Menu Lengkap" title="Tutup (Esc)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="full-menu-body">
+                <div class="full-menu-search">
+                    <input type="text" id="full-menu-search-input" class="form-control form-control-sm" placeholder="Cari menu..." aria-label="Cari menu">
+                </div>
+                <div class="full-menu-content" id="full-menu-content">
+                    <!-- Populated by JavaScript from sidebar menu -->
+                </div>
+            </div>
+            <div class="full-menu-footer">
+                <small class="text-muted">Tekan <kbd>Esc</kbd> untuk menutup</small>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Spinner -->
     <div id="loading-spinner" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #ffffff; z-index: 9999; display: flex; align-items: center; justify-content: center;">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
@@ -1198,7 +1407,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                 <div class="container-xl d-flex justify-content-between align-items-center flex-nowrap" style="gap: 8px;">
                     <div class="d-flex align-items-center flex-shrink-0">
                         <?php if ($isDashboardRoute): ?>
-                        <button type="button" class="btn btn-outline-primary btn-sm me-2 d-none d-lg-inline-flex align-items-center fw-bold" id="btn-collapse-sidebar" onclick="toggleSidebarDrawer()" title="Buka Menu Sekunder">
+                        <button type="button" class="btn btn-outline-primary btn-sm me-2 d-none d-lg-inline-flex align-items-center fw-bold" id="btn-collapse-sidebar" onclick="openFullMenuDrawer()" title="Menu Lengkap">
                             <i class="fas fa-bars-staggered me-1"></i> <span style="font-size: 11px;">Menu Lengkap</span>
                         </button>
                         <?php else: ?>
@@ -3226,6 +3435,97 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             modal.style.display = 'none';
         }
     };
+    window.openFullMenuDrawer = function() {
+        var drawer = document.getElementById('full-menu-drawer');
+        if (!drawer) return;
+        drawer.classList.add('open');
+        var searchInput = document.getElementById('full-menu-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            setTimeout(function() {
+                searchInput.focus();
+            }, 100);
+        }
+        populateFullMenu();
+        var aside = document.getElementById('main-sidebar-aside');
+        if (aside) {
+            aside.classList.remove('drawer-open');
+        }
+        var backdrop = document.getElementById('sidebar-drawer-backdrop');
+        if (backdrop) {
+            backdrop.classList.remove('active');
+        }
+        document.body.style.overflow = 'hidden';
+    };
+    window.closeFullMenuDrawer = function() {
+        var drawer = document.getElementById('full-menu-drawer');
+        if (drawer) {
+            drawer.classList.remove('open');
+        }
+        document.body.style.overflow = '';
+    };
+    function populateFullMenu() {
+        var contentEl = document.getElementById('full-menu-content');
+        var navEl = document.getElementById('sidebar-menu');
+        if (!contentEl || !navEl) return;
+        contentEl.innerHTML = '';
+        var headers = navEl.querySelectorAll('.nav-header[data-bs-target]');
+        if (headers.length === 0) return;
+        headers.forEach(function(header) {
+            var targetId = header.getAttribute('data-bs-target');
+            if (!targetId || !targetId.startsWith('#')) return;
+            var target = navEl.querySelector(targetId);
+            if (!target) return;
+            var categoryDiv = document.createElement('div');
+            categoryDiv.className = 'full-menu-category';
+            categoryDiv.setAttribute('aria-expanded', 'true');
+            var headerDiv = document.createElement('div');
+            headerDiv.className = 'full-menu-category-header';
+            headerDiv.setAttribute('tabindex', '0');
+            headerDiv.setAttribute('role', 'button');
+            headerDiv.setAttribute('aria-expanded', 'true');
+            var iconHtml = header.querySelector('i') ? header.querySelector('i').outerHTML : '';
+            var span = header.querySelector('span');
+            headerDiv.innerHTML = iconHtml + '<span>' + (span ? span.textContent.trim() : '') + '</span><i class="fas fa-chevron-down chevron"></i>';
+            var bodyDiv = document.createElement('div');
+            bodyDiv.className = 'full-menu-category-body';
+            var items = target.querySelectorAll('.nav-item');
+            items.forEach(function(item) {
+                var link = item.querySelector('.nav-link');
+                if (!link) return;
+                var href = link.getAttribute('href');
+                if (!href || href === '#') return;
+                // Skip if dropdown-toggle items in nested dropdowns that aren't direct
+                var titleEl = link.querySelector('.nav-link-title');
+                var iconEl = link.querySelector('.nav-link-icon i, .nav-icon, .nav-link > i');
+                var a = document.createElement('a');
+                a.className = 'full-menu-item';
+                a.href = href;
+                var iconHtmlItem = iconEl ? iconEl.outerHTML : '';
+                a.innerHTML = iconHtmlItem + '<span>' + (titleEl ? titleEl.textContent.trim() : link.textContent.trim()) + '</span>';
+                if (item.classList.contains('active')) a.classList.add('active');
+                bodyDiv.appendChild(a);
+            });
+            headerDiv.addEventListener('click', function() {
+                var expanded = categoryDiv.getAttribute('aria-expanded') === 'true';
+                categoryDiv.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+                headerDiv.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+            });
+            categoryDiv.appendChild(headerDiv);
+            categoryDiv.appendChild(bodyDiv);
+            contentEl.appendChild(categoryDiv);
+        });
+        var searchInput = document.getElementById('full-menu-search-input');
+        if (searchInput) {
+            searchInput.oninput = function() {
+                var term = this.value.toLowerCase();
+                contentEl.querySelectorAll('.full-menu-item').forEach(function(item) {
+                    var text = item.textContent.toLowerCase();
+                    item.style.display = text.indexOf(term) > -1 ? '' : 'none';
+                });
+            };
+        }
+    }
     document.addEventListener('keydown', function(e) {
         if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
             e.preventDefault();
@@ -3233,6 +3533,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         }
         if (e.key === 'Escape') {
             closeCommandPalette();
+            closeFullMenuDrawer();
             var aside = document.getElementById('main-sidebar-aside');
             if (aside && aside.classList.contains('drawer-open')) {
                 toggleSidebarDrawer();

@@ -71,6 +71,8 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         <?php $fileVer = @filemtime(FCPATH . $file) ?: '20260913_bento'; ?>
         <link rel="stylesheet" href="<?= base_url($file) ?>?v=<?= $fileVer ?>">
     <?php endforeach; ?>
+    <!-- Font Awesome 6 Compatibility Layer -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
         :root {
@@ -1016,6 +1018,162 @@ body.dark-mode .dropdown-item {
 body.dark-mode .dropdown-item:hover {
     background-color: #334155 !important;
 }
+        /* Font Awesome Glyph Protection (Prevents text fonts from overriding icons) */
+        .fa, .fas, .far, .fal, .fad, .fab, [class^="fa-"], [class*=" fa-"] {
+            font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome" !important;
+            font-style: normal;
+        }
+
+        /* High-Contrast Dark Mode Overrides for Tables, DataTables, Select2 & Inputs */
+        body.dark-mode label,
+        body.dark-mode .form-label {
+            color: #cbd5e1 !important;
+        }
+        body.dark-mode .card,
+        body.dark-mode .card-modern,
+        body.dark-mode .card-outline {
+            background-color: #131f37 !important;
+            border-color: #243556 !important;
+            color: #f1f5f9 !important;
+        }
+        body.dark-mode .card-header {
+            background-color: rgba(255, 255, 255, 0.02) !important;
+            border-color: #243556 !important;
+            color: #f1f5f9 !important;
+        }
+        body.dark-mode .card-header .card-title,
+        body.dark-mode .card-title {
+            color: #f8fafc !important;
+        }
+        body.dark-mode .table,
+        body.dark-mode .table-modern,
+        body.dark-mode #table-temuan {
+            color: #f1f5f9 !important;
+            border-color: #243556 !important;
+        }
+        body.dark-mode .table-modern thead th,
+        body.dark-mode .table thead th,
+        body.dark-mode #table-temuan thead th {
+            background-color: #1a2942 !important;
+            color: #38bdf8 !important;
+            border-bottom: 2px solid #334155 !important;
+            border-top: none !important;
+        }
+        body.dark-mode .table-modern tbody td,
+        body.dark-mode .table tbody td,
+        body.dark-mode #table-temuan tbody td {
+            background-color: #131f37 !important;
+            color: #f1f5f9 !important;
+            border-bottom: 1px solid #243556 !important;
+        }
+        body.dark-mode .table-hover tbody tr:hover td,
+        body.dark-mode .table-modern tbody tr:hover td {
+            background-color: #1e2e4f !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode .table-striped tbody tr:nth-of-type(odd) td {
+            background-color: #101a2f !important;
+        }
+        body.dark-mode .table-striped tbody tr:nth-of-type(even) td {
+            background-color: #131f37 !important;
+        }
+        body.dark-mode .form-control,
+        body.dark-mode .form-select,
+        body.dark-mode input[type="text"],
+        body.dark-mode input[type="search"],
+        body.dark-mode input[type="date"],
+        body.dark-mode select {
+            background-color: #1a2942 !important;
+            border: 1px solid #334155 !important;
+            color: #f8fafc !important;
+        }
+        body.dark-mode .form-control:focus,
+        body.dark-mode .form-select:focus {
+            border-color: #38bdf8 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 0.2rem rgba(56, 189, 248, 0.25) !important;
+        }
+        body.dark-mode .form-control::placeholder {
+            color: #94a3b8 !important;
+        }
+        body.dark-mode .dataTables_wrapper,
+        body.dark-mode .dataTables_info,
+        body.dark-mode .dataTables_length,
+        body.dark-mode .dataTables_filter,
+        body.dark-mode .dataTables_paginate {
+            color: #cbd5e1 !important;
+        }
+        body.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: #cbd5e1 !important;
+            background: #1a2942 !important;
+            border: 1px solid #334155 !important;
+        }
+        body.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            color: #ffffff !important;
+            background: #0284c7 !important;
+            border-color: #0284c7 !important;
+        }
+        body.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        body.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            color: #ffffff !important;
+            background: #0284c7 !important;
+            border-color: #0284c7 !important;
+        }
+        body.dark-mode .page-link {
+            background-color: #1a2942 !important;
+            border-color: #334155 !important;
+            color: #cbd5e1 !important;
+        }
+        body.dark-mode .page-item.active .page-link {
+            background-color: #0284c7 !important;
+            border-color: #0284c7 !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode .page-item.disabled .page-link {
+            background-color: #131f37 !important;
+            border-color: #243556 !important;
+            color: #64748b !important;
+        }
+        body.dark-mode .select2-container--bootstrap4 .select2-selection--single,
+        body.dark-mode .select2-container--bootstrap4 .select2-selection--multiple,
+        body.dark-mode .select2-container--default .select2-selection--single,
+        body.dark-mode .select2-container--default .select2-selection--multiple {
+            background-color: #1a2942 !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        body.dark-mode .select2-container--bootstrap4 .select2-selection__rendered,
+        body.dark-mode .select2-container--default .select2-selection__rendered {
+            color: #f8fafc !important;
+        }
+        body.dark-mode .select2-container--bootstrap4 .select2-selection__placeholder,
+        body.dark-mode .select2-container--default .select2-selection__placeholder {
+            color: #94a3b8 !important;
+        }
+        body.dark-mode .select2-dropdown {
+            background-color: #1a2942 !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        body.dark-mode .select2-results__option {
+            color: #f8fafc !important;
+        }
+        body.dark-mode .select2-results__option--highlighted,
+        body.dark-mode .select2-results__option[aria-selected="true"] {
+            background-color: #0284c7 !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode .select2-search__field {
+            background-color: #131f37 !important;
+            border-color: #334155 !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode .temuan-date {
+            color: #f1f5f9 !important;
+        }
+        body.dark-mode .temuan-date small {
+            color: #94a3b8 !important;
+        }
 
 /* ==========================================================================
    SIDAK TEJO TWO-PART SIDEBAR (RAIL + CONTEXTUAL WORKSPACE + BACKUP DRAWER)
@@ -1554,11 +1712,20 @@ body.dark-mode .shadow-xs, body.dark-mode .shadow-sm {
 <?php
 $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive'));
 $db = \Config\Database::connect();
-$navTemuanTotal = $db->table('temuan')->where('deleted_at IS NULL')->countAllResults();
-$navEmergencyTotal = $db->table('temuan')->where('prioritas', 'EMERGENCY')->where('status !=', 'SELESAI')->where('deleted_at IS NULL')->countAllResults();
 
 $userSessionName = (string)(session()->get('user_name') ?? 'Administrator');
-$userSessionRole = (string)(session()->get('user_role') ?? 'administrator');
+$userSessionRole = strtolower((string)(session()->get('user_role') ?? 'administrator'));
+$userUlpId = session()->get('user_ulp_id');
+
+$navTemuanQ = $db->table('temuan')->where('deleted_at IS NULL');
+$navEmgQ = $db->table('temuan')->where('prioritas', 'EMERGENCY')->where('status !=', 'SELESAI')->where('deleted_at IS NULL');
+if (!in_array($userSessionRole, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($userUlpId)) {
+    $navTemuanQ->where('ulp_id', (int)$userUlpId);
+    $navEmgQ->where('ulp_id', (int)$userUlpId);
+}
+$navTemuanTotal = $navTemuanQ->countAllResults();
+$navEmergencyTotal = $navEmgQ->countAllResults();
+
 $userInitials = '';
 $nameParts = preg_split('/\s+/', trim($userSessionName));
 if (count($nameParts) >= 2) {
@@ -1568,432 +1735,10 @@ if (count($nameParts) >= 2) {
 }
 
 // Master Menu Registry strictly respecting application roles and routes
-$rawMenuItems = [
-    // DASHBOARD
-    [
-        'id'        => 'dash-utama',
-        'name'      => 'Dashboard Utama',
-        'category'  => 'DASHBOARD',
-        'desc'      => 'Executive overview & live KPIs',
-        'href'      => site_url('dashboard'),
-        'icon'      => 'fas fa-gauge-high',
-        'active'    => (bool)(url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive')),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'exec-analytics',
-        'name'      => 'Executive Analytics',
-        'category'  => 'DASHBOARD',
-        'desc'      => 'Board-level insights',
-        'href'      => site_url('executive-dashboard'),
-        'icon'      => 'fas fa-chart-line',
-        'active'    => (bool)(url_is('executive-dashboard') || url_is('dashboard/executive')),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'gis',
-        'name'      => 'Peta Jaringan GIS',
-        'category'  => 'DASHBOARD',
-        'desc'      => 'GIS Network Health Map',
-        'href'      => site_url('gis'),
-        'icon'      => 'fas fa-map-marked-alt',
-        'active'    => (bool)(url_is('gis*') || url_is('peta-jaringan*')),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'sld-feeder',
-        'name'      => 'SLD Feeder',
-        'category'  => 'DASHBOARD',
-        'desc'      => 'Single Line Diagram Feeder',
-        'href'      => site_url('sld/view/15'),
-        'icon'      => 'fas fa-diagram-project',
-        'active'    => (bool)(url_is('sld/view*') || url_is('sld/feeder*')),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'sld-val',
-        'name'      => 'SLD Validation',
-        'category'  => 'DASHBOARD',
-        'desc'      => 'Validasi topologi SLD',
-        'href'      => site_url('sld/validation'),
-        'icon'      => 'fas fa-shield-halved',
-        'active'    => (bool)url_is('sld/validation*'),
-        'inRail'    => false,
-        'roles'     => null,
-    ],
-
-    // OPERATIONS
-    [
-        'id'        => 'planning',
-        'name'      => 'Planning Inspeksi',
-        'category'  => 'OPERATIONS',
-        'desc'      => 'Jadwal pemeliharaan',
-        'href'      => site_url('planning'),
-        'icon'      => 'fas fa-clipboard-list',
-        'active'    => (bool)url_is('planning*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'my-inspections',
-        'name'      => 'Tugas Inspeksi Saya',
-        'category'  => 'OPERATIONS',
-        'desc'      => 'Tugas inspeksi aktif',
-        'href'      => site_url('my-inspections'),
-        'icon'      => 'fas fa-tasks',
-        'active'    => (bool)url_is('my-inspections*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'my-history',
-        'name'      => 'Riwayat Saya',
-        'category'  => 'OPERATIONS',
-        'desc'      => 'Riwayat inspeksi lapangan',
-        'href'      => site_url('my-history'),
-        'icon'      => 'fas fa-history',
-        'active'    => (bool)url_is('my-history*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'input-temuan',
-        'name'      => 'Input Temuan Baru',
-        'category'  => 'OPERATIONS',
-        'desc'      => 'Quick input temuan',
-        'href'      => site_url('temuan/create'),
-        'icon'      => 'fas fa-plus-circle',
-        'active'    => (bool)url_is('temuan/create'),
-        'inRail'    => true,
-        'roles'     => ['administrator', 'admin_ulp', 'inspeksi'],
-    ],
-    [
-        'id'        => 'daftar-temuan',
-        'name'      => 'Daftar Semua Temuan',
-        'category'  => 'OPERATIONS',
-        'desc'      => 'Database 500+ temuan',
-        'href'      => site_url('temuan'),
-        'icon'      => 'fas fa-list-check',
-        'active'    => (bool)(url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan')),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'har-update',
-        'name'      => 'Update Pekerjaan (HAR)',
-        'category'  => 'OPERATIONS',
-        'desc'      => 'Tindak lanjut HAR & eksekusi',
-        'href'      => site_url('temuan/update-pekerjaan'),
-        'icon'      => 'fas fa-wrench',
-        'active'    => (bool)url_is('temuan/update-pekerjaan*'),
-        'inRail'    => true,
-        'roles'     => ['administrator','admin_ulp','pdkb','har_gardu','har_konstruksi','har_row','har_crane','yantek'],
-    ],
-    [
-        'id'        => 'temuan-terdekat',
-        'name'      => 'Temuan Terdekat',
-        'category'  => 'OPERATIONS',
-        'desc'      => 'Radar GPS temuan terdekat',
-        'href'      => site_url('temuan/terdekat'),
-        'icon'      => 'fas fa-location-crosshairs',
-        'active'    => (bool)url_is('temuan/terdekat*'),
-        'inRail'    => false,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'work-orders',
-        'name'      => 'Work Orders (WO)',
-        'category'  => 'OPERATIONS',
-        'desc'      => 'Feed perintah kerja tim',
-        'href'      => site_url('work-orders'),
-        'icon'      => 'fas fa-file-signature',
-        'active'    => (bool)url_is('work-orders*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-
-    // REMEDIASI
-    [
-        'id'        => 'remediasi-wp',
-        'name'      => 'Work Package Remediasi',
-        'category'  => 'REMEDIASI',
-        'desc'      => 'Manajemen work package',
-        'href'      => site_url('remediation'),
-        'icon'      => 'fas fa-briefcase',
-        'active'    => (bool)(url_is('remediation') && !url_is('remediation/*')),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'remediasi-create',
-        'name'      => 'Buat Work Package',
-        'category'  => 'REMEDIASI',
-        'desc'      => 'Paket eksekusi pemulihan',
-        'href'      => site_url('remediation/create'),
-        'icon'      => 'fas fa-folder-plus',
-        'active'    => (bool)url_is('remediation/create*'),
-        'inRail'    => false,
-        'roles'     => null,
-    ],
-
-    // AI
-    [
-        'id'        => 'ai-copilot',
-        'name'      => 'SIDAK AI Copilot',
-        'category'  => 'AI',
-        'desc'      => 'Rekomendasi & asisten AI',
-        'href'      => site_url('ai-copilot'),
-        'icon'      => 'fas fa-robot',
-        'active'    => (bool)url_is('ai-copilot*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'ai-center',
-        'name'      => 'AI Center & Predictive',
-        'category'  => 'AI',
-        'desc'      => 'Model prediksi kegagalan aset',
-        'href'      => site_url('ai-center'),
-        'icon'      => 'fas fa-brain',
-        'active'    => (bool)url_is('ai-center*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'ai-ranking',
-        'name'      => 'Auto Ranking',
-        'category'  => 'AI',
-        'desc'      => 'Matriks ranking penyulang',
-        'href'      => site_url('ranking'),
-        'icon'      => 'fas fa-medal',
-        'active'    => (bool)url_is('ranking*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-
-    // MASTER
-    [
-        'id'        => 'asset-corpus',
-        'name'      => 'Asset Corpus',
-        'category'  => 'MASTER',
-        'desc'      => 'Workspace corpus aset',
-        'href'      => site_url('asset-corpus/workspace'),
-        'icon'      => 'fas fa-file-csv',
-        'active'    => (bool)url_is('asset-corpus*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'asset-health',
-        'name'      => 'Asset Health Index',
-        'category'  => 'MASTER',
-        'desc'      => 'Skoring kesehatan aset',
-        'href'      => site_url('asset-health'),
-        'icon'      => 'fas fa-heart-pulse',
-        'active'    => (bool)url_is('asset-health*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'master-assets',
-        'name'      => 'Master Asset PLN',
-        'category'  => 'MASTER',
-        'desc'      => 'Master data 610 aset',
-        'href'      => site_url('master-assets'),
-        'icon'      => 'fas fa-boxes-stacked',
-        'active'    => (bool)url_is('master-assets*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'master-gi',
-        'name'      => 'Gardu Induk (GI)',
-        'category'  => 'MASTER',
-        'desc'      => 'Data gardu induk UP3',
-        'href'      => site_url('master-gi'),
-        'icon'      => 'fas fa-charging-station',
-        'active'    => (bool)url_is('master-gi*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'penyulang',
-        'name'      => 'Data Penyulang',
-        'category'  => 'MASTER',
-        'desc'      => '143 penyulang distribusi',
-        'href'      => site_url('penyulang'),
-        'icon'      => 'fas fa-route',
-        'active'    => (bool)url_is('penyulang*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'data-ulp',
-        'name'      => 'Data ULP',
-        'category'  => 'MASTER',
-        'desc'      => 'Unit Layanan Pelanggan',
-        'href'      => site_url('ulps'),
-        'icon'      => 'fas fa-building',
-        'active'    => (bool)url_is('ulps*'),
-        'inRail'    => false,
-        'roles'     => ['administrator'],
-    ],
-    [
-        'id'        => 'sections',
-        'name'      => 'Data Section',
-        'category'  => 'MASTER',
-        'desc'      => 'Zona section jaringan',
-        'href'      => site_url('sections'),
-        'icon'      => 'fas fa-map-pin',
-        'active'    => (bool)url_is('sections*'),
-        'inRail'    => false,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'users',
-        'name'      => 'Data User',
-        'category'  => 'MASTER',
-        'desc'      => 'Akun petugas & role',
-        'href'      => site_url('users'),
-        'icon'      => 'fas fa-users',
-        'active'    => (bool)url_is('users*'),
-        'inRail'    => false,
-        'roles'     => ['administrator'],
-    ],
-    [
-        'id'        => 'import-excel',
-        'name'      => 'Impor Excel',
-        'category'  => 'MASTER',
-        'desc'      => 'Batch import data',
-        'href'      => site_url('import'),
-        'icon'      => 'fas fa-file-excel',
-        'active'    => (bool)url_is('import*'),
-        'inRail'    => false,
-        'roles'     => null,
-    ],
-
-    // SYSTEM
-    [
-        'id'        => 'ecc',
-        'name'      => 'Command Center (ECC)',
-        'category'  => 'SYSTEM',
-        'desc'      => 'Emergency command center',
-        'href'      => site_url('ecc'),
-        'icon'      => 'fas fa-tv',
-        'active'    => (bool)url_is('ecc*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'notifications',
-        'name'      => 'Notifikasi Center',
-        'category'  => 'SYSTEM',
-        'desc'      => 'Pemberitahuan real-time',
-        'href'      => site_url('notifications'),
-        'icon'      => 'fas fa-bell',
-        'active'    => (bool)url_is('notifications*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'my-dashboard',
-        'name'      => 'My Dashboard',
-        'category'  => 'SYSTEM',
-        'desc'      => 'Personalisasi petugas',
-        'href'      => site_url('my-dashboard'),
-        'icon'      => 'fas fa-user-circle',
-        'active'    => (bool)url_is('my-dashboard*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'laporan',
-        'name'      => 'Pusat Laporan',
-        'category'  => 'SYSTEM',
-        'desc'      => 'Cetak & ekspor laporan',
-        'href'      => site_url('laporan'),
-        'icon'      => 'fas fa-file-lines',
-        'active'    => (bool)url_is('laporan*'),
-        'inRail'    => true,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'documents',
-        'name'      => 'Dokumen',
-        'category'  => 'SYSTEM',
-        'desc'      => 'Arsip & dokumen teknis',
-        'href'      => site_url('documents'),
-        'icon'      => 'fas fa-folder',
-        'active'    => (bool)url_is('documents*'),
-        'inRail'    => false,
-        'roles'     => null,
-    ],
-    [
-        'id'        => 'audit-log',
-        'name'      => 'Audit Log',
-        'category'  => 'SYSTEM',
-        'desc'      => 'Log jejak aktivitas',
-        'href'      => site_url('audit-log'),
-        'icon'      => 'fas fa-clock-rotate-left',
-        'active'    => (bool)url_is('audit-log*'),
-        'inRail'    => false,
-        'roles'     => ['administrator'],
-    ],
-    [
-        'id'        => 'integration',
-        'name'      => 'Integrasi & API',
-        'category'  => 'SYSTEM',
-        'desc'      => 'Konfigurasi integrasi eksternal',
-        'href'      => site_url('integration'),
-        'icon'      => 'fas fa-plug',
-        'active'    => (bool)url_is('integration*'),
-        'inRail'    => false,
-        'roles'     => ['administrator'],
-    ],
-    [
-        'id'        => 'backup-database',
-        'name'      => 'Backup Database',
-        'category'  => 'SYSTEM',
-        'desc'      => 'Cadangkan database sistem',
-        'href'      => site_url('backup-database'),
-        'icon'      => 'fas fa-database',
-        'active'    => (bool)url_is('backup-database*'),
-        'inRail'    => true,
-        'roles'     => ['administrator'],
-    ],
-    [
-        'id'        => 'change-password',
-        'name'      => 'Ganti Password',
-        'category'  => 'SYSTEM',
-        'desc'      => 'Ubah kata sandi akun',
-        'href'      => site_url('change-password'),
-        'icon'      => 'fas fa-key',
-        'active'    => (bool)url_is('change-password*'),
-        'inRail'    => false,
-        'roles'     => null,
-    ],
-];
-
-// Filter menu items by user role
-$authorizedMenuItems = array_values(array_filter($rawMenuItems, function($item) {
-    if ($item['roles'] === null) {
-        return true;
-    }
-    return check_role($item['roles']);
-}));
-
-$categoriesDef = [
-    'DASHBOARD'   => ['name' => 'Dashboard Utama', 'icon' => 'fas fa-table-cells-large', 'desc' => 'Executive overview & live KPIs - simple, tapi semua menu tetap ada.'],
-    'OPERATIONS'  => ['name' => 'Operasional & Lapangan', 'icon' => 'fas fa-screwdriver-wrench', 'desc' => 'Perencanaan, tugas inspeksi, temuan & work order.'],
-    'REMEDIASI'   => ['name' => 'Remediasi & Tindak Lanjut', 'icon' => 'fas fa-wrench', 'desc' => 'Work package pemulihan & tindak lanjut temuan.'],
-    'AI'          => ['name' => 'AI Command Center', 'icon' => 'fas fa-brain', 'desc' => 'SIDAK AI Copilot, auto ranking & predictive analysis.'],
-    'MASTER'      => ['name' => 'Data & Referensi', 'icon' => 'fas fa-database', 'desc' => 'Master data aset PLN, penyulang, GI & ULP.'],
-    'SYSTEM'      => ['name' => 'System & Laporan', 'icon' => 'fas fa-gear', 'desc' => 'Pusat laporan, notifikasi, backup & administrasi.'],
-];
+$sidakMenuRegistry = get_sidak_menu_registry();
+$categoriesDef = $sidakMenuRegistry['categories'];
+$authorizedMenuItems = $sidakMenuRegistry['items'];
+$rawMenuItems = $sidakMenuRegistry['raw_items'];
 
 // Determine active category and active menu item
 $activeCategoryKey = 'DASHBOARD';
@@ -2054,6 +1799,12 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             <span>SIDAK TEJO</span>
         </a>
         <div class="d-flex align-items-center" style="gap: 6px;">
+            <button type="button" class="btn btn-sm btn-outline-light border rounded-pill px-2 py-1 font-weight-bold" onclick="openFullMenuDrawer()" title="Semua Menu (35+ Modul)" style="font-size: 11px;">
+                <i class="fas fa-th-large me-1"></i> Menu
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light rounded-circle" title="Ganti Tema (Terang / Gelap)" onclick="toggleDarkMode()" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">
+                <i class="fas fa-moon theme-toggle-icon"></i>
+            </button>
             <a href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>" class="mobile-desktop-btn" title="Ganti ke Versi Desktop">
                 <i class="fas fa-desktop"></i>
             </a>
@@ -2101,7 +1852,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                         data-bs-placement="right" 
                         title="Menu Backup"
                         onclick="openMenuBackupDrawer()">
-                    <i class="fas fa-box-archive"></i>
+                    <i class="fas fa-archive"></i>
                     <span class="sidak-rail-backup-badge" id="rail-backup-badge"><?= $archivedCount ?></span>
                 </button>
                 <div class="sidak-rail-avatar" 
@@ -2223,7 +1974,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 <div class="sidak-backup-card" onclick="openMenuBackupDrawer()">
                     <div class="d-flex align-items-center gap-2">
                         <div style="width: 32px; height: 32px; border-radius: 8px; background: #070e1a; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #22d3ee; font-size: 14px;">
-                            <i class="fas fa-box-archive"></i>
+                            <i class="fas fa-archive"></i>
                         </div>
                         <div>
                             <div class="fw-bold text-white" style="font-size: 12px;">MENU BACKUP</div>
@@ -2254,7 +2005,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             <div class="sidak-backup-header">
                 <div>
                     <div class="fw-bold text-white fs-6 d-flex align-items-center gap-2">
-                        <i class="fas fa-box-archive text-cyan"></i> 
+                        <i class="fas fa-archive text-cyan"></i> 
                         <span>MENU BACKUP (<span id="drawer-total-count"><?= $archivedCount ?></span>)</span>
                     </div>
                     <div class="font-monospace text-muted mt-1" style="font-size: 11px;">
@@ -5159,55 +4910,47 @@ $sidakMenuData = [
     });
     function populateFullMenu() {
         var contentEl = document.getElementById('full-menu-content');
-        var navEl = document.getElementById('sidebar-menu');
-        if (!contentEl || !navEl) return;
+        if (!contentEl) return;
         contentEl.innerHTML = '';
-        var headers = navEl.querySelectorAll('.nav-header[data-bs-target]'); 
-        if (headers.length === 0) return;
-        headers.forEach(function(header) {
-            var targetId = header.getAttribute('data-bs-target');
-            if (!targetId || !targetId.startsWith('#')) return;
-            var target = navEl.querySelector(targetId);
-            if (!target) return;
+        
+        Object.keys(sidakCategoriesDef).forEach(function(catKey) {
+            var cat = sidakCategoriesDef[catKey];
+            var items = sidakAuthorizedMenuItems.filter(function(m) { return m.category === catKey; });
+            if (items.length === 0) return;
+
             var categoryDiv = document.createElement('div');
             categoryDiv.className = 'full-menu-category';
             categoryDiv.setAttribute('aria-expanded', 'true');
+
             var headerDiv = document.createElement('div');
             headerDiv.className = 'full-menu-category-header';
             headerDiv.setAttribute('tabindex', '0');
             headerDiv.setAttribute('role', 'button');
             headerDiv.setAttribute('aria-expanded', 'true');
-            var iconHtml = header.querySelector('i') ? header.querySelector('i').outerHTML : '';
-            var span = header.querySelector('span');
-            headerDiv.innerHTML = iconHtml + '<span>' + (span ? span.textContent.trim() : '') + '</span><i class="fas fa-chevron-down chevron"></i>';
+            headerDiv.innerHTML = '<i class="' + cat.icon + ' me-2 text-primary"></i><span>' + cat.name + '</span><i class="fas fa-chevron-down chevron ms-auto"></i>';
+
             var bodyDiv = document.createElement('div');
             bodyDiv.className = 'full-menu-category-body';
-            var items = target.querySelectorAll('.nav-item');
+
             items.forEach(function(item) {
-                var link = item.querySelector('.nav-link');
-                if (!link) return;
-                var href = link.getAttribute('href');
-                if (!href || href === '#') return;
-                // Skip if dropdown-toggle items in nested dropdowns that aren't direct
-                var titleEl = link.querySelector('.nav-link-title');
-                var iconEl = link.querySelector('.nav-link-icon i, .nav-icon, .nav-link > i');
                 var a = document.createElement('a');
-                a.className = 'full-menu-item';
-                a.href = href;
-                var iconHtmlItem = iconEl ? iconEl.outerHTML : '';
-                a.innerHTML = iconHtmlItem + '<span>' + (titleEl ? titleEl.textContent.trim() : link.textContent.trim()) + '</span>';
-                if (item.classList.contains('active')) a.classList.add('active');
+                a.className = 'full-menu-item' + (item.active ? ' active' : '');
+                a.href = item.href;
+                a.innerHTML = '<i class="' + item.icon + ' me-2"></i><span>' + item.name + '</span>' + (item.active ? '<i class="fas fa-arrow-right ms-auto"></i>' : '');
                 bodyDiv.appendChild(a);
             });
+
             headerDiv.addEventListener('click', function() {
                 var expanded = categoryDiv.getAttribute('aria-expanded') === 'true';
                 categoryDiv.setAttribute('aria-expanded', expanded ? 'false' : 'true');
                 headerDiv.setAttribute('aria-expanded', expanded ? 'false' : 'true');
             });
+
             categoryDiv.appendChild(headerDiv);
             categoryDiv.appendChild(bodyDiv);
             contentEl.appendChild(categoryDiv);
         });
+
         var searchInput = document.getElementById('full-menu-search-input');
         if (searchInput) {
             searchInput.oninput = function() {

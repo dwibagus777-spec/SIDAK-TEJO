@@ -520,17 +520,18 @@ class TemuanRepository extends BaseRepository
     public function getMapPins(?int $ulpIdFilter = null): array
     {
         $builder = $this->model
-            ->select('id, nomor_temuan, prioritas, status, latitude, longitude, alamat, detail_temuan')
-            ->where('latitude IS NOT NULL')
-            ->where('longitude IS NOT NULL')
-            ->where("latitude != ''")
-            ->where("longitude != ''")
-            ->where("latitude != '0'")
-            ->where("longitude != '0'")
-            ->where('deleted_at IS NULL');
+            ->select('temuan.id, temuan.nomor_temuan, temuan.prioritas, temuan.status, temuan.latitude, temuan.longitude, temuan.alamat, temuan.detail_temuan, temuan.penyulang_id, p.nama_penyulang')
+            ->join('penyulang p', 'p.id = temuan.penyulang_id', 'left')
+            ->where('temuan.latitude IS NOT NULL')
+            ->where('temuan.longitude IS NOT NULL')
+            ->where("temuan.latitude != ''")
+            ->where("temuan.longitude != ''")
+            ->where("temuan.latitude != '0'")
+            ->where("temuan.longitude != '0'")
+            ->where('temuan.deleted_at IS NULL');
 
         if ($ulpIdFilter !== null) {
-            $builder->where('ulp_id', $ulpIdFilter);
+            $builder->where('temuan.ulp_id', $ulpIdFilter);
         }
 
         return $builder->findAll();

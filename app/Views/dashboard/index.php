@@ -7,17 +7,19 @@
 <?php
     $health = $assetHealthData ?? [];
     $totalTemuan = (int)($stats['total'] ?? 0);
-    $totalFeeders = (int)($health['total_penyulang'] ?? 134);
-    $avgHealth = (int)($health['avg_health_index'] ?? 89);
-    $sehatCount = (int)($health['sehat_count'] ?? 78);
-    $sehatPct = (int)($health['sehat_pct'] ?? 55);
-    $kronisCount = (int)($health['kronis_count'] ?? 14);
-    $kronisPct = (int)($health['kronis_pct'] ?? 10);
-    $sakitCount = (int)($health['sakit_count'] ?? 8);
-    $sakitPct = (int)($health['sakit_pct'] ?? 6);
-    $kritisCount = (int)($health['kritis_count'] ?? 3);
-    $kritisPct = (int)($health['kritis_pct'] ?? 2);
+    $totalFeeders = (int)($health['total_penyulang'] ?? 0);
+    $avgHealth = (int)($health['avg_health_index'] ?? 0);
+    $sehatCount = (int)($health['sehat_count'] ?? 0);
+    $sehatPct = (int)($health['sehat_pct'] ?? 0);
+    $kronisCount = (int)($health['kronis_count'] ?? 0);
+    $kronisPct = (int)($health['kronis_pct'] ?? 0);
+    $sakitCount = (int)($health['sakit_count'] ?? 0);
+    $sakitPct = (int)($health['sakit_pct'] ?? 0);
+    $kritisCount = (int)($health['kritis_count'] ?? 0);
+    $kritisPct = (int)($health['kritis_pct'] ?? 0);
     $top10 = $health['top10'] ?? [];
+    $allFeeders = $health['all_feeders'] ?? [];
+    $statusRule = $health['status_rule'] ?? 'Berdasarkan temuan Emergency aktif (belum selesai): Sehat=0, Kronis=1, Sakit=2, Kritis=≥3';
     $jenisTemuan = $health['jenis_temuan'] ?? [];
     $recentActs = $health['recent'] ?? [];
     $currentUlp = 'UP3 Sidoarjo';
@@ -459,18 +461,21 @@
                         </svg>
                         <div class="position-absolute bottom-0 start-50 translate-middle-x mb-1 text-center">
                             <h2 class="fw-black mb-0 text-dark" style="font-size: 28px;"><?= $avgHealth ?>%</h2>
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill fw-bold" style="font-size: 10px;">Baik / Sehat</span>
+                            <?php 
+                                $healthBadgeClass = $avgHealth >= 80 ? 'bg-success-subtle text-success border-success-subtle' : ($avgHealth >= 60 ? 'bg-warning-subtle text-warning border-warning-subtle' : ($avgHealth >= 40 ? 'bg-orange-subtle text-orange border-orange-subtle' : 'bg-danger-subtle text-danger border-danger-subtle'));
+                                $healthStatusLabel = $avgHealth >= 80 ? 'Kondisi Baik' : ($avgHealth >= 60 ? 'Waspada' : ($avgHealth >= 40 ? 'Perlu Perhatian' : 'Kritis'));
+                            ?>
+                            <span class="badge <?= $healthBadgeClass ?> border rounded-pill fw-bold" style="font-size: 10px;"><?= $healthStatusLabel ?></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Legend & Target -->
+                <!-- Legend & Real Status Summary -->
                 <div>
                     <div class="p-2 mb-3 rounded-3 bg-light border" style="font-size: 11px;">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="text-muted fw-semibold">Target: <strong>85%</strong></span>
-                            <span class="text-muted fw-semibold">Last: <strong>87%</strong></span>
-                            <span class="text-success fw-bold">Trend: <strong>+2.3%</strong></span>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">Total Penyulang: <strong class="text-dark"><?= $totalFeeders ?></strong></span>
+                            <span class="text-muted">Sehat: <strong class="text-success"><?= $sehatCount ?> (<?= $sehatPct ?>%)</strong></span>
                         </div>
                     </div>
 
@@ -516,21 +521,26 @@
                 </div>
 
                 <div style="font-size: 11px;" class="mt-3">
-                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
-                        <span><span class="badge bg-success rounded-circle p-1 me-1"></span> Sehat</span>
-                        <strong><?= $sehatCount ?> (<?= $sehatPct ?>%)</strong>
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light" style="cursor: pointer;" onclick="showFeederListByStatus('SEHAT')" title="Klik untuk lihat daftar penyulang Sehat (0 Emergency)">
+                        <span><span class="badge bg-success rounded-circle p-1 me-1"></span> Sehat (0 Emg)</span>
+                        <strong><?= $sehatCount ?> (<?= $sehatPct ?>%) <i class="fas fa-chevron-right text-muted ms-1" style="font-size: 9px;"></i></strong>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
-                        <span><span class="badge bg-warning rounded-circle p-1 me-1"></span> Kronis</span>
-                        <strong><?= $kronisCount ?> (<?= $kronisPct ?>%)</strong>
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light" style="cursor: pointer;" onclick="showFeederListByStatus('KRONIS')" title="Klik untuk lihat daftar penyulang Kronis (1 Emergency)">
+                        <span><span class="badge bg-warning rounded-circle p-1 me-1"></span> Kronis (1 Emg)</span>
+                        <strong><?= $kronisCount ?> (<?= $kronisPct ?>%) <i class="fas fa-chevron-right text-muted ms-1" style="font-size: 9px;"></i></strong>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
-                        <span><span class="badge rounded-circle p-1 me-1" style="background:#f97316;"></span> Sakit</span>
-                        <strong><?= $sakitCount ?> (<?= $sakitPct ?>%)</strong>
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light" style="cursor: pointer;" onclick="showFeederListByStatus('SAKIT')" title="Klik untuk lihat daftar penyulang Sakit (2 Emergency)">
+                        <span><span class="badge rounded-circle p-1 me-1" style="background:#f97316;"></span> Sakit (2 Emg)</span>
+                        <strong><?= $sakitCount ?> (<?= $sakitPct ?>%) <i class="fas fa-chevron-right text-muted ms-1" style="font-size: 9px;"></i></strong>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center py-1">
-                        <span><span class="badge bg-danger rounded-circle p-1 me-1"></span> Kritis</span>
-                        <strong><?= $kritisCount ?> (<?= $kritisPct ?>%)</strong>
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light" style="cursor: pointer;" onclick="showFeederListByStatus('KRITIS')" title="Klik untuk lihat daftar penyulang Kritis (≥3 Emergency)">
+                        <span><span class="badge bg-danger rounded-circle p-1 me-1"></span> Kritis (&ge;3 Emg)</span>
+                        <strong><?= $kritisCount ?> (<?= $kritisPct ?>%) <i class="fas fa-chevron-right text-muted ms-1" style="font-size: 9px;"></i></strong>
+                    </div>
+                    <div class="text-center pt-2">
+                        <small class="text-primary fw-semibold" style="font-size: 10px; cursor: pointer;" onclick="showFeederListByStatus('ALL')">
+                            <i class="fas fa-list-check me-1"></i>Lihat Semua Daftar Status Penyulang
+                        </small>
                     </div>
                 </div>
             </div>
@@ -551,10 +561,11 @@
                     <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
                         <thead class="table-light sticky-top" style="font-size: 10px; text-transform: uppercase;">
                             <tr>
-                                <th style="width: 30px;">#</th>
+                                <th style="width: 25px;">#</th>
                                 <th>Penyulang</th>
-                                <th style="width: 45%;">Jumlah Temuan</th>
-                                <th class="text-center" style="width: 80px;">Status</th>
+                                <th style="width: 32%;">Belum Selesai (Rincian)</th>
+                                <th class="text-center" style="width: 15%;">Total Aktif</th>
+                                <th class="text-center" style="width: 75px;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -563,24 +574,40 @@
                                     $maxCnt = max(1, (int)($top10[0]['total_temuan'] ?? 1));
                                     foreach ($top10 as $idx => $r): 
                                         $cnt = (int)($r['total_temuan'] ?? 0);
+                                        $belum = (int)($r['belum_selesai'] ?? 0);
                                         $pctBar = min(100, round(($cnt / $maxCnt) * 100));
                                         $statusClass = 'badge-sehat';
                                         if (($r['status'] ?? '') === 'KRITIS') $statusClass = 'badge-kritis';
                                         elseif (($r['status'] ?? '') === 'SAKIT') $statusClass = 'badge-sakit';
                                         elseif (($r['status'] ?? '') === 'KRONIS') $statusClass = 'badge-kronis';
+                                        $feederJson = htmlspecialchars(json_encode($r), ENT_QUOTES, 'UTF-8');
                                 ?>
-                                <tr>
+                                <tr style="cursor: pointer;" onclick="openFeederDetailModal(<?= $feederJson ?>)" title="Klik untuk rincian <?= esc($r['nama_penyulang']) ?>">
                                     <td class="text-muted fw-bold"><?= $idx + 1 ?></td>
                                     <td>
                                         <div class="fw-semibold text-dark"><?= esc($r['nama_penyulang']) ?></div>
                                         <div class="text-muted small" style="font-size: 10px;"><?= esc($r['nama_ulp'] ?? 'UP3 Sidoarjo') ?></div>
                                     </td>
                                     <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="progress flex-grow-1" style="height: 6px; border-radius: 4px; background: #e2e8f0;">
-                                                <div class="progress-bar rounded-pill" role="progressbar" style="width: <?= $pctBar ?>%; background: linear-gradient(90deg, #38bdf8, #0284c7);" aria-valuenow="<?= $cnt ?>" aria-valuemin="0" aria-valuemax="<?= $maxCnt ?>"></div>
+                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                            <?php if ((int)$r['emg'] > 0): ?>
+                                                <span class="badge bg-danger rounded-pill px-1" style="font-size: 9px;" title="Emergency Belum Selesai">EMG: <?= $r['emg'] ?></span>
+                                            <?php endif; ?>
+                                            <?php if ((int)$r['high'] > 0): ?>
+                                                <span class="badge bg-warning text-dark rounded-pill px-1" style="font-size: 9px;" title="High Belum Selesai">HIGH: <?= $r['high'] ?></span>
+                                            <?php endif; ?>
+                                            <?php if ((int)$r['med'] > 0): ?>
+                                                <span class="badge bg-info-subtle text-info border rounded-pill px-1" style="font-size: 9px;" title="Medium Belum Selesai">MED: <?= $r['med'] ?></span>
+                                            <?php endif; ?>
+                                            <span class="fw-bold text-dark font-monospace small ms-auto"><?= $belum ?></span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex align-items-center justify-content-center gap-2">
+                                            <div class="progress d-none d-sm-block flex-grow-1" style="height: 5px; border-radius: 4px; background: #e2e8f0; max-width: 50px;">
+                                                <div class="progress-bar rounded-pill" role="progressbar" style="width: <?= $pctBar ?>%; background: linear-gradient(90deg, #38bdf8, #0284c7);"></div>
                                             </div>
-                                            <span class="fw-bold text-dark font-monospace" style="width: 25px; text-align: right;"><?= $cnt ?></span>
+                                            <span class="fw-bold text-dark font-monospace"><?= $cnt ?></span>
                                         </div>
                                     </td>
                                     <td class="text-center">
@@ -590,7 +617,7 @@
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">Belum ada data temuan penyulang.</td>
+                                    <td colspan="5" class="text-center py-4 text-muted">Belum ada data temuan penyulang.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -672,44 +699,44 @@
                 <!-- Leaflet Map Container -->
                 <div id="dahGisMap" class="flex-grow-1" style="min-height: 280px; width: 100%; z-index: 1;"></div>
 
-                <!-- Floating Interactive Feeder Detail Card on Map -->
+                <!-- Floating Interactive Pin & Feeder Detail Card on Map -->
                 <div class="gis-popup-overlay d-none d-md-block shadow">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold text-dark" style="font-size: 12px;" id="popupFeederTitle">Penyulang PRASUNG</span>
-                        <span class="badge-kritis" id="popupFeederBadge">KRITIS</span>
+                        <span class="fw-bold text-dark" style="font-size: 12px;" id="popupFeederTitle">Detail Titik Temuan GIS</span>
+                        <span class="badge bg-light text-muted border" id="popupFeederBadge">-</span>
                     </div>
                     <div class="small text-muted mb-2" style="font-size: 11px;">
                         <div class="d-flex justify-content-between py-1 border-bottom border-light">
-                            <span>Health Index:</span>
-                            <strong class="text-danger" id="popupFeederHealth">38%</strong>
+                            <span>Penyulang:</span>
+                            <strong class="text-primary text-truncate ms-2" style="max-width: 130px;" id="popupFeederName">-</strong>
                         </div>
                         <div class="d-flex justify-content-between py-1 border-bottom border-light">
-                            <span>Total Temuan:</span>
-                            <strong class="text-dark" id="popupFeederTemuan">23</strong>
+                            <span>Prioritas:</span>
+                            <strong id="popupFeederPrio">-</strong>
                         </div>
                         <div class="d-flex justify-content-between py-1 border-bottom border-light">
-                            <span>Belum Selesai:</span>
-                            <strong class="text-warning" id="popupFeederBelum">22</strong>
+                            <span>Status:</span>
+                            <strong id="popupFeederStatus">-</strong>
                         </div>
-                        <div class="d-flex justify-content-between py-1">
-                            <span>Update:</span>
-                            <strong class="text-muted" id="popupFeederUpdate"><?= date('d M H:i') ?> WIB</strong>
+                        <div class="py-1">
+                            <span class="d-block text-muted" style="font-size: 10px;">Catatan:</span>
+                            <div class="text-dark small text-truncate" id="popupFeederDetail" style="font-size: 11px;">Pilih pin pada peta atau klik penyulang di Top 10</div>
                         </div>
                     </div>
-                    <a href="<?= site_url('sld/view/15') ?>" class="btn btn-xs btn-outline-primary w-100 rounded-pill fw-bold" style="font-size: 10px;">
-                        Buka Single Line Diagram &rarr;
+                    <a href="<?= site_url('temuan') ?>" id="popupFeederLink" class="btn btn-xs btn-outline-primary w-100 rounded-pill fw-bold" style="font-size: 10px;">
+                        Buka Halaman Temuan &rarr;
                     </a>
                 </div>
 
-                <!-- Map Bottom Legend -->
+                <!-- Map Bottom Legend & Disclaimer -->
                 <div class="p-2 bg-white border-top d-flex flex-wrap align-items-center justify-content-between px-3 z-2" style="font-size: 11px;">
                     <div class="d-flex align-items-center gap-3 text-muted">
-                        <span><span class="badge bg-success rounded-circle p-1 me-1"></span> Sehat</span>
-                        <span><span class="badge bg-warning rounded-circle p-1 me-1"></span> Kronis</span>
-                        <span><span class="badge rounded-circle p-1 me-1" style="background:#f97316;"></span> Sakit</span>
-                        <span><span class="badge bg-danger rounded-circle p-1 me-1"></span> Kritis</span>
+                        <span><span class="badge bg-danger rounded-circle p-1 me-1"></span> Emergency</span>
+                        <span><span class="badge bg-warning rounded-circle p-1 me-1"></span> High</span>
+                        <span><span class="badge bg-info rounded-circle p-1 me-1"></span> Medium</span>
+                        <span><span class="badge bg-success rounded-circle p-1 me-1"></span> Low</span>
                     </div>
-                    <span class="text-muted small">Leaflet &bull; OpenStreetMap &bull; Sidoarjo Grid</span>
+                    <span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Pin peta mewakili titik temuan fisik (gardu/tiang), bukan rute utuh kawat jaringan.</span>
                 </div>
             </div>
         </div>
@@ -836,6 +863,127 @@
 
 </div>
 
+<!-- Modal: Daftar Penyulang Berdasarkan Status -->
+<div class="modal fade" id="feederStatusModal" tabindex="-1" aria-labelledby="feederStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark mb-1" id="feederStatusModalLabel">
+                        <i class="fas fa-list-check text-primary me-2"></i>Daftar Penyulang &bull; <span id="modalStatusBadge"></span>
+                    </h5>
+                    <small class="text-muted" id="modalStatusRuleText"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 12px;">
+                        <thead class="table-light text-muted sticky-top" style="font-size: 11px; text-transform: uppercase;">
+                            <tr>
+                                <th style="width: 35px;">#</th>
+                                <th>Penyulang</th>
+                                <th>ULP</th>
+                                <th class="text-center" title="Emergency Belum Selesai">EMG</th>
+                                <th class="text-center" title="High Belum Selesai">HIGH</th>
+                                <th class="text-center" title="Medium Belum Selesai">MED</th>
+                                <th class="text-center" title="Total Belum Selesai">Belum</th>
+                                <th class="text-center" title="Total Akumulasi Temuan">Total</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center" style="width: 90px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalFeederListBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer py-2 border-top bg-light">
+                <span class="text-muted small me-auto" id="modalFeederCountText">0 penyulang</span>
+                <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Detail Lengkap Penyulang (Drill-down dari Top 10) -->
+<div class="modal fade" id="feederDetailModal" tabindex="-1" aria-labelledby="feederDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="detailModalFeederName">Penyulang</h5>
+                        <span id="detailModalFeederBadge"></span>
+                    </div>
+                    <small class="text-muted" id="detailModalFeederUlp">UP3 Sidoarjo</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Health Score Summary -->
+                <div class="p-3 rounded-3 bg-light border mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted small">Asset Health Score</span>
+                        <strong class="text-dark" id="detailModalHealthScore">0%</strong>
+                    </div>
+                    <div class="progress" style="height: 6px; border-radius: 3px;">
+                        <div class="progress-bar rounded-pill" id="detailModalHealthBar" role="progressbar" style="width: 0%;"></div>
+                    </div>
+                    <small class="text-muted d-block mt-2" style="font-size: 10px;" id="detailModalStatusRuleDesc"></small>
+                </div>
+
+                <!-- Breakdown Temuan Belum Selesai -->
+                <h6 class="fw-bold text-dark mb-2" style="font-size: 13px;">Rincian Temuan Belum Selesai</h6>
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <div class="p-2 border rounded text-center bg-danger-subtle border-danger-subtle">
+                            <span class="text-danger fw-black d-block fs-5" id="detailModalEmg">0</span>
+                            <small class="text-danger fw-semibold" style="font-size: 10px;">Emergency</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 border rounded text-center bg-warning-subtle border-warning-subtle">
+                            <span class="text-warning fw-black d-block fs-5" id="detailModalHigh">0</span>
+                            <small class="text-warning fw-semibold" style="font-size: 10px;">High</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 border rounded text-center bg-info-subtle border-info-subtle">
+                            <span class="text-info fw-black d-block fs-5" id="detailModalMed">0</span>
+                            <small class="text-info fw-semibold" style="font-size: 10px;">Medium</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 border rounded bg-white" style="font-size: 12px;">
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light">
+                        <span class="text-muted">Total Temuan Belum Selesai:</span>
+                        <strong class="text-danger font-monospace" id="detailModalTotalBelum">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light">
+                        <span class="text-muted">Total Temuan Sudah Selesai:</span>
+                        <strong class="text-success font-monospace" id="detailModalTotalSelesai">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Akumulasi Seluruh Temuan:</span>
+                        <strong class="text-dark font-monospace" id="detailModalTotalAll">0</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2 border-top bg-light d-flex gap-2">
+                <a href="#" id="detailModalBtnTemuan" class="btn btn-sm btn-primary rounded-pill flex-grow-1">
+                    <i class="fas fa-list-check me-1"></i>Daftar Temuan
+                </a>
+                <button type="button" id="detailModalBtnGis" class="btn btn-sm btn-outline-info rounded-pill">
+                    <i class="fas fa-map-marked-alt me-1"></i>Fokus di GIS
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary rounded-pill" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- FOOTER RUNTIME SCRIPTS FOR CHARTS & GIS -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -849,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (clockEl) clockEl.textContent = timeStr;
     }, 1000);
 
-    // 2. Feeder Status Donut Chart
+    // 2. Feeder Status Donut Chart with onClick Drill-Down
     var donutCtx = document.getElementById('feederStatusDonutChart');
     if (donutCtx) {
         new Chart(donutCtx.getContext('2d'), {
@@ -861,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     backgroundColor: ['#22c55e', '#f59e0b', '#f97316', '#ef4444'],
                     borderWidth: 2,
                     borderColor: '#ffffff',
-                    hoverOffset: 4
+                    hoverOffset: 6
                 }]
             },
             options: {
@@ -873,9 +1021,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     tooltip: {
                         callbacks: {
                             label: function(ctx) {
-                                return ctx.label + ': ' + ctx.raw + ' Penyulang';
+                                return ctx.label + ': ' + ctx.raw + ' Penyulang (Klik untuk daftar)';
                             }
                         }
+                    }
+                },
+                onClick: function(evt, elements) {
+                    if (!elements || !elements.length) return;
+                    var statusMap = ['SEHAT', 'KRONIS', 'SAKIT', 'KRITIS'];
+                    var idx = elements[0].index;
+                    if (statusMap[idx]) {
+                        showFeederListByStatus(statusMap[idx]);
                     }
                 }
             }
@@ -941,8 +1097,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 4. GIS Network Health Leaflet Map
     var mapContainer = document.getElementById('dahGisMap');
+    var map = null;
+    var markerLayers = [];
+
     if (mapContainer && typeof L !== 'undefined') {
-        var map = L.map('dahGisMap', {
+        map = L.map('dahGisMap', {
             zoomControl: false,
             attributionControl: false
         }).setView([-7.4726, 112.6675], 11);
@@ -953,17 +1112,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // Real temuan pins from DB (prioritas + status per point)
+        // Real temuan pins from DB (prioritas, status, and linked feeder)
         <?php
             $safePins = array_map(function($p) {
                 return [
-                    'id'     => (int)$p['id'],
-                    'label'  => (string)($p['nomor_temuan'] ?? 'T-' . $p['id']),
-                    'lat'    => (float)$p['latitude'],
-                    'lng'    => (float)$p['longitude'],
-                    'status' => strtoupper((string)($p['status'] ?? 'OPEN')),
-                    'prio'   => strtoupper((string)($p['prioritas'] ?? 'MEDIUM')),
-                    'detail' => mb_substr((string)($p['detail_temuan'] ?? $p['alamat'] ?? ''), 0, 80, 'UTF-8'),
+                    'id'           => (int)$p['id'],
+                    'label'        => (string)($p['nomor_temuan'] ?? 'T-' . $p['id']),
+                    'lat'          => (float)$p['latitude'],
+                    'lng'          => (float)$p['longitude'],
+                    'status'       => strtoupper((string)($p['status'] ?? 'BELUM')),
+                    'prio'         => strtoupper((string)($p['prioritas'] ?? 'MEDIUM')),
+                    'penyulang_id' => (int)($p['penyulang_id'] ?? 0),
+                    'penyulang'    => (string)($p['nama_penyulang'] ?? '-'),
+                    'detail'       => mb_substr((string)($p['detail_temuan'] ?? $p['alamat'] ?? ''), 0, 100, 'UTF-8'),
                 ];
             }, $mapPins ?? []);
             $pinsJson = json_encode($safePins, JSON_INVALID_UTF8_SUBSTITUTE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
@@ -989,23 +1150,189 @@ document.addEventListener('DOMContentLoaded', function() {
                 fillOpacity: 0.85
             }).addTo(map);
 
-            circle.on('click', function() {
-                var titleEl = document.getElementById('popupFeederTitle');
-                var badgeEl = document.getElementById('popupFeederBadge');
-                var healthEl = document.getElementById('popupFeederHealth');
-                var temuanEl = document.getElementById('popupFeederTemuan');
-                var belumEl = document.getElementById('popupFeederBelum');
+            circle.feederId = f.penyulang_id;
+            circle.pinData = f;
+            markerLayers.push(circle);
 
-                if (titleEl) titleEl.textContent = 'Temuan ' + f.label;
-                if (badgeEl) {
-                    badgeEl.textContent = f.prio;
-                    badgeEl.className = f.prio === 'EMERGENCY' ? 'badge-kritis' : (f.prio === 'HIGH' ? 'badge-sakit' : 'badge-sehat');
-                }
-                if (healthEl) { healthEl.textContent = f.status; healthEl.className = ''; }
-                if (temuanEl) temuanEl.textContent = f.detail || '-';
-                if (belumEl) belumEl.textContent = f.status === 'SELESAI' ? 'Selesai' : 'Belum Selesai';
+            circle.on('click', function() {
+                updateGisPopupCard(f);
             });
         });
+    }
+
+    function updateGisPopupCard(f) {
+        var titleEl  = document.getElementById('popupFeederTitle');
+        var badgeEl  = document.getElementById('popupFeederBadge');
+        var nameEl   = document.getElementById('popupFeederName');
+        var prioEl   = document.getElementById('popupFeederPrio');
+        var statusEl = document.getElementById('popupFeederStatus');
+        var detailEl = document.getElementById('popupFeederDetail');
+        var linkEl   = document.getElementById('popupFeederLink');
+
+        if (titleEl) titleEl.textContent = 'Temuan ' + f.label;
+        if (badgeEl) {
+            badgeEl.textContent = f.prio;
+            badgeEl.className = f.prio === 'EMERGENCY' ? 'badge bg-danger' : (f.prio === 'HIGH' ? 'badge bg-warning text-dark' : 'badge bg-info');
+        }
+        if (nameEl) nameEl.textContent = f.penyulang || 'Tanpa Penyulang';
+        if (prioEl) {
+            prioEl.textContent = f.prio;
+            prioEl.className = f.prio === 'EMERGENCY' ? 'text-danger' : (f.prio === 'HIGH' ? 'text-warning' : 'text-primary');
+        }
+        if (statusEl) {
+            statusEl.textContent = f.status === 'SELESAI' ? 'Selesai' : 'Belum Selesai';
+            statusEl.className = f.status === 'SELESAI' ? 'text-success' : 'text-danger';
+        }
+        if (detailEl) detailEl.textContent = f.detail || '-';
+        if (linkEl) {
+            linkEl.href = '<?= site_url('temuan') ?>?id=' + f.id;
+            linkEl.textContent = 'Buka Temuan ' + f.label + ' →';
+        }
+    }
+
+    // 5. Global Helpers: Highlight Feeder on Map
+    window.highlightFeederOnMap = function(feederId, feederName) {
+        if (!map || !markerLayers || !markerLayers.length) return;
+        var matched = [];
+        markerLayers.forEach(function(m) {
+            if (m.feederId === parseInt(feederId)) {
+                matched.push(m.getLatLng());
+                m.setStyle({ weight: 4, color: '#f59e0b' });
+            } else {
+                m.setStyle({ weight: 2, color: '#ffffff' });
+            }
+        });
+
+        if (matched.length > 0) {
+            var group = L.featureGroup(markerLayers.filter(function(m) { return m.feederId === parseInt(feederId); }));
+            map.fitBounds(group.getBounds().pad(0.3));
+
+            var gisCard = document.getElementById('dahGisMap');
+            if (gisCard) gisCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            var titleEl  = document.getElementById('popupFeederTitle');
+            var badgeEl  = document.getElementById('popupFeederBadge');
+            var nameEl   = document.getElementById('popupFeederName');
+            var detailEl = document.getElementById('popupFeederDetail');
+            var linkEl   = document.getElementById('popupFeederLink');
+
+            if (titleEl) titleEl.textContent = 'Fokus Penyulang';
+            if (badgeEl) { badgeEl.textContent = 'FEEDER'; badgeEl.className = 'badge bg-primary'; }
+            if (nameEl) nameEl.textContent = feederName;
+            if (detailEl) detailEl.textContent = 'Menampilkan ' + matched.length + ' titik temuan untuk ' + feederName;
+            if (linkEl) {
+                linkEl.href = '<?= site_url('temuan') ?>?penyulang_id=' + feederId;
+                linkEl.textContent = 'Buka Semua Temuan ' + feederName + ' →';
+            }
+        } else {
+            alert('Penyulang ' + feederName + ' belum memiliki koordinat titik temuan di peta.');
+        }
+    };
+
+    // 6. Global Helpers: Show Feeder List by Status Modal
+    window.allFeedersData = <?= json_encode($allFeeders, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+
+    window.showFeederListByStatus = function(status) {
+        var modalEl = document.getElementById('feederStatusModal');
+        if (!modalEl) return;
+        var filtered = [];
+        if (status === 'ALL') {
+            filtered = window.allFeedersData;
+        } else {
+            filtered = window.allFeedersData.filter(function(f) {
+                return (f.status || '').toUpperCase() === status.toUpperCase();
+            });
+        }
+
+        var badgeMap = {
+            'SEHAT': { text: 'SEHAT', cls: 'bg-success', desc: 'Penyulang tanpa temuan Emergency aktif (0 Emergency)' },
+            'KRONIS': { text: 'KRONIS', cls: 'bg-warning text-dark', desc: 'Penyulang dengan 1 temuan Emergency belum selesai' },
+            'SAKIT': { text: 'SAKIT', cls: 'bg-orange text-white', desc: 'Penyulang dengan 2 temuan Emergency belum selesai' },
+            'KRITIS': { text: 'KRITIS', cls: 'bg-danger text-white', desc: 'Penyulang dengan ≥ 3 temuan Emergency belum selesai' },
+            'ALL': { text: 'SEMUA STATUS', cls: 'bg-primary text-white', desc: 'Daftar seluruh penyulang distribusi' }
+        };
+
+        var info = badgeMap[status] || { text: status, cls: 'bg-secondary', desc: '' };
+        document.getElementById('modalStatusBadge').innerHTML = '<span class="badge ' + info.cls + '">' + info.text + '</span>';
+        document.getElementById('modalStatusRuleText').textContent = info.desc;
+        document.getElementById('modalFeederCountText').textContent = filtered.length + ' penyulang ditemukan';
+
+        var tbody = document.getElementById('modalFeederListBody');
+        tbody.innerHTML = '';
+
+        if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">Tidak ada penyulang dengan status ' + status + '.</td></tr>';
+        } else {
+            filtered.forEach(function(r, idx) {
+                var tr = document.createElement('tr');
+                var statusCls = r.status === 'KRITIS' ? 'badge-kritis' : (r.status === 'SAKIT' ? 'badge-sakit' : (r.status === 'KRONIS' ? 'badge-kronis' : 'badge-sehat'));
+                var temuanUrl = '<?= site_url('temuan') ?>?penyulang_id=' + r.id;
+                tr.innerHTML = '<td class="text-muted">' + (idx + 1) + '</td>' +
+                    '<td class="fw-semibold text-dark">' + escHtml(r.nama_penyulang) + '</td>' +
+                    '<td class="text-muted">' + escHtml(r.nama_ulp || 'UP3 Sidoarjo') + '</td>' +
+                    '<td class="text-center"><span class="badge ' + (r.emg > 0 ? 'bg-danger' : 'bg-light text-muted border') + '">' + r.emg + '</span></td>' +
+                    '<td class="text-center"><span class="badge ' + (r.high > 0 ? 'bg-warning text-dark' : 'bg-light text-muted border') + '">' + r.high + '</span></td>' +
+                    '<td class="text-center"><span class="badge ' + (r.med > 0 ? 'bg-info-subtle text-info border' : 'bg-light text-muted border') + '">' + r.med + '</span></td>' +
+                    '<td class="text-center fw-bold text-dark font-monospace">' + r.belum_selesai + '</td>' +
+                    '<td class="text-center fw-bold text-muted font-monospace">' + r.total_temuan + '</td>' +
+                    '<td class="text-center"><span class="' + statusCls + '">' + r.status + '</span></td>' +
+                    '<td class="text-center">' +
+                    '  <a href="' + temuanUrl + '" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0" title="Buka Temuan"><i class="fas fa-arrow-up-right-from-square"></i></a>' +
+                    '</td>';
+                tbody.appendChild(tr);
+            });
+        }
+
+        var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        bsModal.show();
+    };
+
+    // 7. Global Helpers: Open Feeder Detail Modal from Top 10
+    window.openFeederDetailModal = function(f) {
+        var modalEl = document.getElementById('feederDetailModal');
+        if (!modalEl || !f) return;
+
+        document.getElementById('detailModalFeederName').textContent = f.nama_penyulang;
+        document.getElementById('detailModalFeederUlp').textContent = f.nama_ulp || 'UP3 Sidoarjo';
+
+        var statusCls = f.status === 'KRITIS' ? 'badge-kritis' : (f.status === 'SAKIT' ? 'badge-sakit' : (f.status === 'KRONIS' ? 'badge-kronis' : 'badge-sehat'));
+        document.getElementById('detailModalFeederBadge').innerHTML = '<span class="' + statusCls + '">' + f.status + '</span>';
+
+        var score = f.health_score || 0;
+        document.getElementById('detailModalHealthScore').textContent = score + '%';
+        var bar = document.getElementById('detailModalHealthBar');
+        bar.style.width = score + '%';
+        bar.className = 'progress-bar rounded-pill ' + (score >= 80 ? 'bg-success' : (score >= 60 ? 'bg-warning' : (score >= 40 ? 'bg-orange' : 'bg-danger')));
+
+        var ruleDesc = 'Status ' + f.status + ' ditentukan dari temuan Emergency belum selesai: ' + (f.emg || 0) + ' temuan.';
+        document.getElementById('detailModalStatusRuleDesc').textContent = ruleDesc;
+
+        document.getElementById('detailModalEmg').textContent = f.emg || 0;
+        document.getElementById('detailModalHigh').textContent = f.high || 0;
+        document.getElementById('detailModalMed').textContent = f.med || 0;
+        document.getElementById('detailModalTotalBelum').textContent = f.belum_selesai || 0;
+        document.getElementById('detailModalTotalSelesai').textContent = f.selesai || Math.max(0, (f.total_temuan - f.belum_selesai));
+        document.getElementById('detailModalTotalAll').textContent = f.total_temuan || 0;
+
+        var btnTemuan = document.getElementById('detailModalBtnTemuan');
+        if (btnTemuan) btnTemuan.href = '<?= site_url('temuan') ?>?penyulang_id=' + f.id;
+
+        var btnGis = document.getElementById('detailModalBtnGis');
+        if (btnGis) {
+            btnGis.onclick = function() {
+                var bsModal = bootstrap.Modal.getInstance(modalEl);
+                if (bsModal) bsModal.hide();
+                highlightFeederOnMap(f.id, f.nama_penyulang);
+            };
+        }
+
+        var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        bsModal.show();
+    };
+
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 });
 </script>

@@ -105,39 +105,47 @@ class Dashboard extends BaseController
         $healthCalc = new \App\AI\AssetHealthCalculator();
 
         foreach ($allFeeders as &$f) {
+            $f['id'] = (int)$f['id'];
             $f['total_temuan'] = (int)($f['total_temuan'] ?? 0);
             $f['emg'] = (int)($f['emg'] ?? 0);
             $f['high'] = (int)($f['high'] ?? 0);
             $f['med'] = (int)($f['med'] ?? 0);
             $f['low'] = (int)($f['low'] ?? 0);
             $f['belum_selesai'] = (int)($f['belum_selesai'] ?? 0);
+            $f['selesai'] = max(0, $f['total_temuan'] - $f['belum_selesai']);
 
             $calc = $healthCalc->calculateHealthIndex($f['emg'], $f['high'], $f['med'], $f['low']);
             $score = $calc['score'];
             $f['health_score'] = $score;
             $totalHealthScore += $score;
 
-            if ($score >= 80) {
-                $f['status'] = 'SEHAT';
-                $sehatCount++;
-            } elseif ($score >= 60) {
-                $f['status'] = 'KRONIS';
-                $kronisCount++;
-            } elseif ($score >= 40) {
-                $f['status'] = 'SAKIT';
-                $sakitCount++;
-            } else {
+            // Klasifikasi Status Penyulang:
+            // Berdasarkan temuan Emergency aktif (belum selesai) sesuai kebutuhan operasional PLN:
+            // - KRITIS: Emergency >= 3
+            // - SAKIT: Emergency = 2
+            // - KRONIS: Emergency = 1
+            // - SEHAT: Emergency = 0
+            if ($f['emg'] >= 3) {
                 $f['status'] = 'KRITIS';
                 $kritisCount++;
+            } elseif ($f['emg'] == 2) {
+                $f['status'] = 'SAKIT';
+                $sakitCount++;
+            } elseif ($f['emg'] == 1) {
+                $f['status'] = 'KRONIS';
+                $kronisCount++;
+            } else {
+                $f['status'] = 'SEHAT';
+                $sehatCount++;
             }
             $rankedFeeders[] = $f;
         }
         unset($f);
 
         $totalFeeders = count($allFeeders);
-        $avgHealthIndex = $totalFeeders > 0 ? (int)round($totalHealthScore / $totalFeeders) : 89;
+        $avgHealthIndex = $totalFeeders > 0 ? (int)round($totalHealthScore / $totalFeeders) : 0;
 
-        // Sort by total findings DESC for Top 10
+        // Sort by total findings DESC for Top 10 (konsisten: akumulasi temuan fisik aktif)
         usort($rankedFeeders, fn($a, $b) => $b['total_temuan'] <=> $a['total_temuan']);
         $top10Feeders = array_slice($rankedFeeders, 0, 10);
 
@@ -231,14 +239,16 @@ class Dashboard extends BaseController
             'total_penyulang'  => $totalFeeders,
             'avg_health_index' => $avgHealthIndex,
             'sehat_count'      => $sehatCount,
-            'sehat_pct'        => $totalFeeders > 0 ? round(($sehatCount / $totalFeeders) * 100) : 55,
+            'sehat_pct'        => $totalFeeders > 0 ? round(($sehatCount / $totalFeeders) * 100) : 0,
             'kronis_count'     => $kronisCount,
-            'kronis_pct'       => $totalFeeders > 0 ? round(($kronisCount / $totalFeeders) * 100) : 10,
+            'kronis_pct'       => $totalFeeders > 0 ? round(($kronisCount / $totalFeeders) * 100) : 0,
             'sakit_count'      => $sakitCount,
-            'sakit_pct'        => $totalFeeders > 0 ? round(($sakitCount / $totalFeeders) * 100) : 6,
+            'sakit_pct'        => $totalFeeders > 0 ? round(($sakitCount / $totalFeeders) * 100) : 0,
             'kritis_count'     => $kritisCount,
-            'kritis_pct'       => $totalFeeders > 0 ? round(($kritisCount / $totalFeeders) * 100) : 2,
+            'kritis_pct'       => $totalFeeders > 0 ? round(($kritisCount / $totalFeeders) * 100) : 0,
             'top10'            => $top10Feeders,
+            'all_feeders'      => $rankedFeeders,
+            'status_rule'      => 'Berdasarkan temuan Emergency aktif (belum selesai): Sehat=0, Kronis=1, Sakit=2, Kritis=≥3',
             'jenis_temuan'     => $jenisTemuanStats,
             'recent'           => $recentActivities,
             'gangguan'         => $gangguanStats,

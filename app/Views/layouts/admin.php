@@ -3675,7 +3675,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         var navEl = document.getElementById('sidebar-menu');
         if (!contentEl || !navEl) return;
         contentEl.innerHTML = '';
-        var headers = navEl.querySelectorAll('.nav-header[data-bs-target]'); onclick="openSidakSubmenu('        var headers = navEl.querySelectorAll('.nav-header[data-bs-target]');', event)"
+        var headers = navEl.querySelectorAll('.nav-header[data-bs-target]'); 
         if (headers.length === 0) return;
         headers.forEach(function(header) {
             var targetId = header.getAttribute('data-bs-target');

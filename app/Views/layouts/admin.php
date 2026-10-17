@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $session = @session();
 $viewMode = $session->get('view_mode') ?: ($_COOKIE['view_mode'] ?? null);
 $req = \Config\Services::request();
@@ -1091,7 +1091,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                     <ul class="navbar-nav pt-lg-3">
 
                         <!-- CATEGORY 1: CORE & ANALYTICS (Expanded) -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-2 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-core" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-core', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-2 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-core" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-core', event)">
                             <span><i class="fas fa-compass me-1 text-primary"></i> CORE & ANALYTICS</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1117,7 +1117,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY: SINGLE LINE DIAGRAM (CR-NAV-01) -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-sld" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-sld', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-sld" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-sld', event)">
                             <span><i class="fas fa-bolt me-1 text-warning"></i> SINGLE LINE DIAGRAM</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1137,7 +1137,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 2: OPERASIONAL & LAPANGAN (Expanded) -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-operasional" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-operasional', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-operasional" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-operasional', event)">
                             <span><i class="fas fa-screwdriver-wrench me-1 text-info"></i> OPERASIONAL & LAPANGAN</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1209,7 +1209,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY B8.1: REMEDIASI -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-remediasi" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-remediasi', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-remediasi" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-remediasi', event)">
                             <span><i class="fas fa-tools me-1 text-warning"></i> REMEDIASI</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1229,7 +1229,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 3: AI & INTELLIGENCE -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-ai" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-ai', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-ai" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-ai', event)">
                             <span><i class="fas fa-brain me-1 text-purple"></i> AI & INTELLIGENCE</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1255,7 +1255,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 4: DATA & MASTER REFERENSI -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-data" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-data', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-data" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-data', event)">
                             <span><i class="fas fa-database me-1 text-success"></i> DATA & MASTER REFERENSI</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1295,10 +1295,10 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                                         <li><a class="dropdown-item <?= url_is('eviden/kubikel*') ? 'active' : '' ?>" href="<?= site_url('eviden/kubikel') ?>">Eviden Kubikel</a></li>
                                         <li><a class="dropdown-item <?= url_is('eviden/trafo*') ? 'active' : '' ?>" href="<?= site_url('eviden/trafo') ?>">Eviden Trafo</a></li>
                                         <li><a class="dropdown-item <?= url_is('eviden/management*') ? 'active' : '' ?>" href="<?= site_url('eviden/management') ?>">Management Trafo</a></li>
-                                        <?php endif; ?>
-</ul>
-                                  </div>
-                              </li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <?php endif; ?>
                               <?php if (check_role(['administrator', 'admin_ulp'])): ?>
                             <li class="nav-item dropdown <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show active' : '') ?>">
                                 <a class="nav-link dropdown-toggle" href="#menu-master" data-bs-toggle="collapse" role="button">
@@ -1322,7 +1322,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 5: SYSTEM & LAPORAN -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-system" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-system', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-system" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-system', event)">
                             <span><i class="fas fa-gear me-1 text-secondary"></i> SYSTEM & LAPORAN</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -3564,13 +3564,6 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         }
         document.body.style.overflow = '';
     };
-    var sidakSubmenuData = {};
-    function closeSidakSubmenu() {
-        var panel = document.getElementById('sidak-submenu-panel');
-        var backdrop = document.getElementById('sidak-submenu-backdrop');
-        if (panel) panel.classList.remove('active');
-        if (backdrop) backdrop.classList.remove('active');
-    }
     var sidakSubmenuData = {
         'group-core': { title: 'Core & Analytics', icon: 'fas fa-compass', desc: 'Dashboard & Analytics', groups: [{ name: 'Umum', items: [
             { href: '<?= site_url('dashboard') ?>', icon: 'fas fa-gauge-high', text: 'Dashboard Utama', active: <?= json_encode(url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive')) ?> },
@@ -3583,28 +3576,31 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         ]}]},
         'group-operasional': { title: 'Operasional & Lapangan', icon: 'fas fa-screwdriver-wrench', desc: 'Inspeksi & Temuan', groups: [{ name: 'Inspeksi', items: [
             { href: '<?= site_url('planning') ?>', icon: 'fas fa-clipboard-list', text: 'Planning Inspeksi', active: <?= json_encode(url_is('planning*')) ?> },
-            { href: '<?= site_url('inspection-progress') ?>', icon: 'fas fa-chart-line', text: 'Progress Inspeksi (Live)', active: <?= json_encode(url_is('inspection-progress*')) ?> },
             { href: '<?= site_url('my-inspections') ?>', icon: 'fas fa-tasks', text: 'Tugas Inspeksi Saya', active: <?= json_encode(url_is('my-inspections*')) ?> },
-            { href: '<?= site_url('my-progress') ?>', icon: 'fas fa-play-circle', text: 'Progress Saya', active: <?= json_encode(url_is('my-progress*')) ?> },
             { href: '<?= site_url('my-history') ?>', icon: 'fas fa-history', text: 'Riwayat Saya', active: <?= json_encode(url_is('my-history*')) ?> },
 <?php if (check_role(['administrator','admin_ulp','inspeksi'])): ?>
-            { href: '<?= site_url('temuan/create') ?>', icon: 'fas fa-plus-circle', text: 'Input Temuan', active: <?= json_encode(url_is('temuan/create')) ?> },
+            { href: '<?= site_url('temuan/create') ?>', icon: 'fas fa-plus-circle', text: 'Input Temuan Baru', active: <?= json_encode(url_is('temuan/create')) ?> },
 <?php endif; ?>
-            { href: '<?= site_url('temuan') ?>', icon: 'fas fa-list-check', text: 'Daftar Temuan', active: <?= json_encode(url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan')) ?> }
+            { href: '<?= site_url('temuan') ?>', icon: 'fas fa-list-check', text: 'Daftar Semua Temuan', active: <?= json_encode(url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan')) ?> },
+<?php if (check_role(['administrator', 'admin_ulp', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek'])): ?>
+            { href: '<?= site_url('temuan/update-pekerjaan') ?>', icon: 'fas fa-wrench', text: 'Update Pekerjaan (HAR)', active: <?= json_encode(url_is('temuan/update-pekerjaan*')) ?> },
+<?php endif; ?>
+            { href: '<?= site_url('temuan/terdekat') ?>', icon: 'fas fa-location-crosshairs', text: 'Temuan Terdekat', active: <?= json_encode(url_is('temuan/terdekat*')) ?> },
+            { href: '<?= site_url('work-orders') ?>', icon: 'fas fa-file-signature', text: 'Work Orders (WO)', active: <?= json_encode(url_is('work-orders*')) ?> }
         ]}]},
         'group-remediasi': { title: 'Remediasi & Tindak Lanjut', icon: 'fas fa-wrench', desc: 'Perbaikan Temuan', groups: [{ name: 'Tindak Lanjut', items: [
-            { href: '<?= site_url('remediation/dashboard') ?>', icon: 'fas fa-tachometer-alt', text: 'Dashboard Remediasi', active: <?= json_encode(url_is('remediation/dashboard*')) ?> },
-            { href: '<?= site_url('remediation/work-orders') ?>', icon: 'fas fa-clipboard-check', text: 'Work Order', active: <?= json_encode(url_is('remediation/work-orders*')) ?> },
-            { href: '<?= site_url('remediation/assignments') ?>', icon: 'fas fa-user-check', text: 'Penugasan', active: <?= json_encode(url_is('remediation/assignments*')) ?> },
-            { href: '<?= site_url('remediation/approval') ?>', icon: 'fas fa-check-double', text: 'Persetujuan', active: <?= json_encode(url_is('remediation/approval*')) ?> },
-            { href: '<?= site_url('remediation/progress') ?>', icon: 'fas fa-spinner', text: 'Progress Remediasi', active: <?= json_encode(url_is('remediation/progress*')) ?> },
-            { href: '<?= site_url('remediation/closed') ?>', icon: 'fas fa-lock', text: 'Closed (Selesai)', active: <?= json_encode(url_is('remediation/closed*')) ?> }
+            { href: '<?= site_url('remediation') ?>', icon: 'fas fa-briefcase', text: 'Work Package Remediasi', active: <?= json_encode(url_is('remediation') && !url_is('remediation/*')) ?> },
+            { href: '<?= site_url('remediation/create') ?>', icon: 'fas fa-plus-circle', text: 'Buat Work Package', active: <?= json_encode(url_is('remediation/create*')) ?> }
         ]}]},
         'group-ai': { title: 'AI Command Center', icon: 'fas fa-brain', desc: 'AI & Analytics', groups: [{ name: 'AI', items: [
-            { href: '<?= site_url('ai') ?>', icon: 'fas fa-robot', text: 'AI Assistant', active: <?= json_encode(url_is('ai*') && !url_is('ranking*')) ?> },
-            { href: '<?= site_url('ranking') ?>', icon: 'fas fa-medal', text: 'Ranking & Analytics', active: <?= json_encode(url_is('ranking*')) ?> }
+            { href: '<?= site_url('ai-copilot') ?>', icon: 'fas fa-robot', text: 'SIDAK AI Copilot', active: <?= json_encode(url_is('ai-copilot*')) ?> },
+            { href: '<?= site_url('ai-center') ?>', icon: 'fas fa-brain', text: 'AI Center & Predictive', active: <?= json_encode(url_is('ai-center*')) ?> },
+            { href: '<?= site_url('ranking') ?>', icon: 'fas fa-medal', text: 'Auto Ranking', active: <?= json_encode(url_is('ranking*')) ?> }
         ]}]},
         'group-data': { title: 'Data & Referensi', icon: 'fas fa-database', desc: 'Master Data', groups: [{ name: 'Master', items: [
+            { href: '<?= site_url('asset-corpus/workspace') ?>', icon: 'fas fa-file-csv', text: 'Asset Corpus', active: <?= json_encode(url_is('asset-corpus*')) ?> },
+            { href: '<?= site_url('asset-health') ?>', icon: 'fas fa-heart-pulse', text: 'Asset Health Index', active: <?= json_encode(url_is('asset-health*')) ?> },
+            { href: '<?= site_url('master-assets') ?>', icon: 'fas fa-boxes-stacked', text: 'Master Asset PLN', active: <?= json_encode(url_is('master-assets*')) ?> },
             { href: '<?= site_url('master-gi') ?>', icon: 'fas fa-charging-station', text: 'Gardu Induk (GI)', active: <?= json_encode(url_is('master-gi*')) ?> },
 <?php if (check_role(['administrator'])): ?>
             { href: '<?= site_url('ulps') ?>', icon: 'fas fa-building', text: 'Data ULP', active: <?= json_encode(url_is('ulps*')) ?> },
@@ -3612,16 +3608,13 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             { href: '<?= site_url('penyulang') ?>', icon: 'fas fa-route', text: 'Data Penyulang', active: <?= json_encode(url_is('penyulang*')) ?> },
             { href: '<?= site_url('sections') ?>', icon: 'fas fa-map-pin', text: 'Data Section', active: <?= json_encode(url_is('sections*')) ?> },
             { href: '<?= site_url('users') ?>', icon: 'fas fa-users', text: 'Data User', active: <?= json_encode(url_is('users*')) ?> },
-            { href: '<?= site_url('import') ?>', icon: 'fas fa-file-excel', text: 'Impor Excel', active: <?= json_encode(url_is('import*')) ?> },
-            { href: '<?= site_url('asset-corpus') ?>', icon: 'fas fa-boxes-stacked', text: 'Korpus Aset', active: <?= json_encode(url_is('asset-corpus*')) ?> },
-            { href: '<?= site_url('eviden/kubikel') ?>', icon: 'fas fa-camera', text: 'Eviden Kubikel', active: <?= json_encode(url_is('eviden/kubikel*')) ?> },
-            { href: '<?= site_url('eviden/trafo') ?>', icon: 'fas fa-bolt-lightning', text: 'Eviden Trafo', active: <?= json_encode(url_is('eviden/trafo*')) ?> }
+            { href: '<?= site_url('import') ?>', icon: 'fas fa-file-excel', text: 'Impor Excel', active: <?= json_encode(url_is('import*')) ?> }
         ]}]},
         'group-system': { title: 'System & Laporan', icon: 'fas fa-gear', desc: 'Pengaturan & Laporan', groups: [{ name: 'Umum', items: [
             { href: '<?= site_url('ecc') ?>', icon: 'fas fa-tv', text: 'Command Center (ECC)', active: <?= json_encode(url_is('ecc*')) ?> },
             { href: '<?= site_url('notifications') ?>', icon: 'fas fa-bell', text: 'Notifikasi Center', active: <?= json_encode(url_is('notifications*')) ?> },
             { href: '<?= site_url('my-dashboard') ?>', icon: 'fas fa-user-circle', text: 'My Dashboard', active: <?= json_encode(url_is('my-dashboard*')) ?> },
-            { href: '<?= site_url('laporan') ?>', icon: 'fas fa-file-lines', text: 'Laporan', active: <?= json_encode(url_is('laporan*')) ?> },
+            { href: '<?= site_url('laporan') ?>', icon: 'fas fa-file-lines', text: 'Pusat Laporan', active: <?= json_encode(url_is('laporan*')) ?> },
             { href: '<?= site_url('documents') ?>', icon: 'fas fa-folder', text: 'Dokumen', active: <?= json_encode(url_is('documents*')) ?> },
 <?php if (check_role(['administrator'])): ?>
             { href: '<?= site_url('audit-log') ?>', icon: 'fas fa-clock-rotate-left', text: 'Audit Log', active: <?= json_encode(url_is('audit-log*')) ?> },

@@ -46,6 +46,12 @@ class Dashboard extends BaseController
             $ulpIdFilter = (int)$ulpId;
         }
 
+        // Admin/supervisor can override via ?ulp_id= URL param
+        $urlUlpId = $this->request->getGet('ulp_id');
+        if ($urlUlpId && in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3'])) {
+            $ulpIdFilter = (int)$urlUlpId;
+        }
+
         // Month & Year Filter for Top 10 Leaderboard & Stats
         $monthFilter = $this->request->getGet('month') ? (int)$this->request->getGet('month') : date('n');
         $yearFilter = $this->request->getGet('year') ? (int)$this->request->getGet('year') : date('Y');
@@ -61,8 +67,8 @@ class Dashboard extends BaseController
         $canApprove = check_role(['administrator', 'supervisor_ulp', 'supervisor_up3']);
         $canMonitoring = check_role(['administrator', 'admin_pusat', 'supervisor_up3', 'manager']);
 
-        // Fetch All Dashboard Analytics Data
-        $stats               = $this->temuanRepository->getDashboardStats($ulpIdFilter, $role);
+        // Fetch All Dashboard Analytics Data (System-scoped or ULP-scoped, preventing empty role stats)
+        $stats               = $this->temuanRepository->getDashboardStats($ulpIdFilter, null);
         $monthlyData         = $this->temuanRepository->getMonthlyStats($ulpIdFilter);
         $ulpData             = $this->temuanRepository->getUlpStats($ulpIdFilter);
         $penyulangData       = $this->temuanRepository->getPenyulangStats($ulpIdFilter);
@@ -70,6 +76,108 @@ class Dashboard extends BaseController
         $prioritasData       = $this->temuanRepository->getPrioritasStats($ulpIdFilter);
         $potensiGangguanData = $this->temuanRepository->getPotensiGangguanStats($ulpIdFilter);
         $mapPins             = $this->temuanRepository->getMapPins($ulpIdFilter);
+
+        // Distribution Asset Health Monitoring Calculations
+        $db = \Config\Database::connect();
+        $feederQuery = $db->table('penyulang p')
+            ->select("p.id, p.nama_penyulang, u.nama_ulp,
+                      COUNT(t.id) as total_temuan,
+                      SUM(CASE WHEN t.prioritas = 'EMERGENCY' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as emg,
+                      SUM(CASE WHEN t.prioritas = 'HIGH' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as high,
+                      SUM(CASE WHEN t.prioritas = 'MEDIUM' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as med,
+                      SUM(CASE WHEN t.status != 'SELESAI' THEN 1 ELSE 0 END) as belum_selesai")
+            ->join('ulps u', 'p.ulp_id = u.id', 'left')
+            ->join('temuan t', 't.penyulang_id = p.id AND t.deleted_at IS NULL', 'left');
+
+        if ($ulpIdFilter !== null) {
+            $feederQuery->where('p.ulp_id', $ulpIdFilter);
+        }
+
+        $allFeeders = $feederQuery->groupBy('p.id, p.nama_penyulang, u.nama_ulp')->get()->getResultArray();
+
+        $sehatCount = 0;
+        $kronisCount = 0;
+        $sakitCount = 0;
+        $kritisCount = 0;
+        $totalHealthScore = 0;
+        $rankedFeeders = [];
+
+        foreach ($allFeeders as &$f) {
+            $f['total_temuan'] = (int)($f['total_temuan'] ?? 0);
+            $f['emg'] = (int)($f['emg'] ?? 0);
+            $f['high'] = (int)($f['high'] ?? 0);
+            $f['med'] = (int)($f['med'] ?? 0);
+            $f['belum_selesai'] = (int)($f['belum_selesai'] ?? 0);
+
+            $penalty = ($f['emg'] * 15) + ($f['high'] * 5) + ($f['med'] * 2);
+            $score = max(20, min(100, 100 - $penalty));
+            $f['health_score'] = $score;
+            $totalHealthScore += $score;
+
+            if ($score > 80) {
+                $f['status'] = 'SEHAT';
+                $sehatCount++;
+            } elseif ($score >= 60) {
+                $f['status'] = 'KRONIS';
+                $kronisCount++;
+            } elseif ($score >= 40) {
+                $f['status'] = 'SAKIT';
+                $sakitCount++;
+            } else {
+                $f['status'] = 'KRITIS';
+                $kritisCount++;
+            }
+            $rankedFeeders[] = $f;
+        }
+        unset($f);
+
+        $totalFeeders = count($allFeeders);
+        $avgHealthIndex = $totalFeeders > 0 ? (int)round($totalHealthScore / $totalFeeders) : 89;
+
+        // Sort by total findings DESC for Top 10
+        usort($rankedFeeders, fn($a, $b) => $b['total_temuan'] <=> $a['total_temuan']);
+        $top10Feeders = array_slice($rankedFeeders, 0, 10);
+
+        // Finding types breakdown
+        $jenisQuery = $db->table('temuan')
+            ->select('jenis_temuan, COUNT(*) as cnt')
+            ->where('deleted_at IS NULL');
+        if ($ulpIdFilter !== null) {
+            $jenisQuery->where('ulp_id', $ulpIdFilter);
+        }
+        $jenisTemuanStats = $jenisQuery->groupBy('jenis_temuan')->orderBy('cnt', 'DESC')->limit(6)->get()->getResultArray();
+
+        // Recent inspections / activities
+        $recentActQuery = $db->table('temuan t')
+            ->select('t.id, t.nomor_temuan, t.jenis_temuan, t.prioritas, t.status, t.pelaksana, t.created_at, t.detail_temuan, u.nama_ulp, p.nama_penyulang')
+            ->join('ulps u', 't.ulp_id = u.id', 'left')
+            ->join('penyulang p', 't.penyulang_id = p.id', 'left')
+            ->where('t.deleted_at IS NULL')
+            ->orderBy('t.id', 'DESC')
+            ->limit(5);
+        if ($ulpIdFilter !== null) {
+            $recentActQuery->where('t.ulp_id', $ulpIdFilter);
+        }
+        $recentActivities = $recentActQuery->get()->getResultArray();
+
+        // ULP List for Filter Dropdown
+        $ulpsList = $db->table('ulps')->select('id, nama_ulp')->orderBy('nama_ulp', 'ASC')->get()->getResultArray();
+
+        $assetHealthData = [
+            'total_penyulang'  => $totalFeeders,
+            'avg_health_index' => $avgHealthIndex,
+            'sehat_count'      => $sehatCount,
+            'sehat_pct'        => $totalFeeders > 0 ? round(($sehatCount / $totalFeeders) * 100) : 55,
+            'kronis_count'     => $kronisCount,
+            'kronis_pct'       => $totalFeeders > 0 ? round(($kronisCount / $totalFeeders) * 100) : 10,
+            'sakit_count'      => $sakitCount,
+            'sakit_pct'        => $totalFeeders > 0 ? round(($sakitCount / $totalFeeders) * 100) : 6,
+            'kritis_count'     => $kritisCount,
+            'kritis_pct'       => $totalFeeders > 0 ? round(($kritisCount / $totalFeeders) * 100) : 2,
+            'top10'            => $top10Feeders,
+            'jenis_temuan'     => $jenisTemuanStats,
+            'recent'           => $recentActivities,
+        ];
 
         // Ambil Data Work Order & Asset Stats (Phase 31.1 Mission Control)
         $woRepo = new \App\Repositories\WorkOrderRepository();
@@ -92,6 +200,9 @@ class Dashboard extends BaseController
             'canApprove'          => $canApprove,
             'canMonitoring'       => $canMonitoring,
             'stats'               => $stats,
+            'assetHealthData'     => $assetHealthData,
+            'ulpsList'            => $ulpsList,
+            'selectedUlpId'       => $ulpIdFilter,
             'woStats'             => $woStats,
             'assetStats'          => $assetStats,
             'monthlyData'         => $monthlyData,

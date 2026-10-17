@@ -85,6 +85,7 @@ class Dashboard extends BaseController
                       SUM(CASE WHEN t.prioritas = 'EMERGENCY' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as emg,
                       SUM(CASE WHEN t.prioritas = 'HIGH' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as high,
                       SUM(CASE WHEN t.prioritas = 'MEDIUM' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as med,
+                      SUM(CASE WHEN t.prioritas = 'LOW' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as low,
                       SUM(CASE WHEN t.status != 'SELESAI' THEN 1 ELSE 0 END) as belum_selesai")
             ->join('ulps u', 'p.ulp_id = u.id', 'left')
             ->join('temuan t', 't.penyulang_id = p.id AND t.deleted_at IS NULL', 'left');
@@ -101,20 +102,22 @@ class Dashboard extends BaseController
         $kritisCount = 0;
         $totalHealthScore = 0;
         $rankedFeeders = [];
+        $healthCalc = new \App\AI\AssetHealthCalculator();
 
         foreach ($allFeeders as &$f) {
             $f['total_temuan'] = (int)($f['total_temuan'] ?? 0);
             $f['emg'] = (int)($f['emg'] ?? 0);
             $f['high'] = (int)($f['high'] ?? 0);
             $f['med'] = (int)($f['med'] ?? 0);
+            $f['low'] = (int)($f['low'] ?? 0);
             $f['belum_selesai'] = (int)($f['belum_selesai'] ?? 0);
 
-            $penalty = ($f['emg'] * 15) + ($f['high'] * 5) + ($f['med'] * 2);
-            $score = max(20, min(100, 100 - $penalty));
+            $calc = $healthCalc->calculateHealthIndex($f['emg'], $f['high'], $f['med'], $f['low']);
+            $score = $calc['score'];
             $f['health_score'] = $score;
             $totalHealthScore += $score;
 
-            if ($score > 80) {
+            if ($score >= 80) {
                 $f['status'] = 'SEHAT';
                 $sehatCount++;
             } elseif ($score >= 60) {
@@ -137,6 +140,67 @@ class Dashboard extends BaseController
         // Sort by total findings DESC for Top 10
         usort($rankedFeeders, fn($a, $b) => $b['total_temuan'] <=> $a['total_temuan']);
         $top10Feeders = array_slice($rankedFeeders, 0, 10);
+
+        // Real YoY Interruption Stats (historical_feeder_interruptions)
+        $curYear = (int)date('Y');
+        $lastYear = $curYear - 1;
+        $curMonth = (int)date('n');
+
+        $selectedUlpName = null;
+        if ($ulpIdFilter !== null) {
+            $ulpRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
+            $selectedUlpName = $ulpRow['nama_ulp'] ?? null;
+        }
+
+        $ggnCurQuery = $db->table('historical_feeder_interruptions')
+            ->where('YEAR(event_date)', $curYear)
+            ->where('MONTH(event_date) <=', $curMonth);
+        $ggnLastQuery = $db->table('historical_feeder_interruptions')
+            ->where('YEAR(event_date)', $lastYear)
+            ->where('MONTH(event_date) <=', $curMonth);
+
+        if ($selectedUlpName) {
+            $cleanUlp = trim(str_ireplace('ULP', '', $selectedUlpName));
+            $ggnCurQuery->groupStart()
+                ->like('ulp_name', $cleanUlp)
+                ->orLike('ulp_name', $selectedUlpName)
+                ->groupEnd();
+            $ggnLastQuery->groupStart()
+                ->like('ulp_name', $cleanUlp)
+                ->orLike('ulp_name', $selectedUlpName)
+                ->groupEnd();
+        }
+
+        $cntGgnCur = $ggnCurQuery->countAllResults();
+        $cntGgnLast = $ggnLastQuery->countAllResults();
+        $yoyPct = 0;
+        $yoyText = 'Stabil';
+        $yoyClass = 'text-muted';
+
+        if ($cntGgnLast > 0) {
+            $yoyPct = round((($cntGgnCur - $cntGgnLast) / $cntGgnLast) * 100, 1);
+            if ($yoyPct < 0) {
+                $yoyText = "{$yoyPct}% YoY (Membaik)";
+                $yoyClass = 'text-success';
+            } elseif ($yoyPct > 0) {
+                $yoyText = "+{$yoyPct}% YoY (Meningkat)";
+                $yoyClass = 'text-danger';
+            } else {
+                $yoyText = '0% YoY (Sama)';
+            }
+        } else {
+            $yoyText = 'Data pembanding n/a';
+        }
+
+        $gangguanStats = [
+            'current_ytd' => $cntGgnCur,
+            'last_ytd'    => $cntGgnLast,
+            'yoy_pct'     => $yoyPct,
+            'yoy_text'    => $yoyText,
+            'yoy_class'   => $yoyClass,
+            'year'        => $curYear,
+            'last_year'   => $lastYear,
+        ];
 
         // Finding types breakdown
         $jenisQuery = $db->table('temuan')
@@ -177,6 +241,7 @@ class Dashboard extends BaseController
             'top10'            => $top10Feeders,
             'jenis_temuan'     => $jenisTemuanStats,
             'recent'           => $recentActivities,
+            'gangguan'         => $gangguanStats,
         ];
 
         // Ambil Data Work Order & Asset Stats (Phase 31.1 Mission Control)
@@ -201,6 +266,7 @@ class Dashboard extends BaseController
             'canMonitoring'       => $canMonitoring,
             'stats'               => $stats,
             'assetHealthData'     => $assetHealthData,
+            'gangguanStats'       => $gangguanStats,
             'ulpsList'            => $ulpsList,
             'selectedUlpId'       => $ulpIdFilter,
             'woStats'             => $woStats,

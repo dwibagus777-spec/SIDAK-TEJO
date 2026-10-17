@@ -1016,7 +1016,74 @@ body.dark-mode .dropdown-item {
 body.dark-mode .dropdown-item:hover {
     background-color: #334155 !important;
 }
+
+/* Submenu Panel Dark Mode */
+body.dark-mode .sidak-submenu-panel {
+    background: #1e293b !important;
+    border-right-color: #334155 !important;
+    box-shadow: 8px 0 24px rgba(0,0,0,.5) !important;
+}
+body.dark-mode .sidak-submenu-header {
+    background: #0f172a !important;
+    border-bottom-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+body.dark-mode .sidak-submenu-group-title {
+    color: #94a3b8 !important;
+}
+body.dark-mode .sidak-submenu-item {
+    color: #e2e8f0 !important;
+}
+body.dark-mode .sidak-submenu-item:hover {
+    background: #334155 !important;
+    color: #38bdf8 !important;
+}
+body.dark-mode .sidak-submenu-item.active {
+    background: rgba(14, 165, 233, 0.2) !important;
+    color: #38bdf8 !important;
+}
+body.dark-mode .sidak-submenu-item i {
+    color: #94a3b8 !important;
+}
+body.dark-mode .sidak-submenu-item.active i {
+    color: #38bdf8 !important;
+}
+
+/* Sidebar Drawer Header (MENU SEKUNDER) - Only visible when drawer is open */
+.sidebar-drawer-header {
+    display: none !important;
+}
+.navbar-vertical.drawer-open .sidebar-drawer-header {
+    display: flex !important;
+}
+
+/* Dark mode top navbar, light backgrounds & cards */
+body.dark-mode .navbar-light, body.dark-mode header.navbar {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+body.dark-mode .bg-light {
+    background-color: #0f172a !important;
+    color: #cbd5e1 !important;
+}
+body.dark-mode .shadow-xs, body.dark-mode .shadow-sm {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
 </style>
+<script>
+(function() {
+    var savedTheme = localStorage.getItem('sidak_theme');
+    if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('dark-mode');
+            document.querySelectorAll('.theme-toggle-icon, #theme-icon, #dah-theme-icon').forEach(function(icon) {
+                icon.className = 'fas fa-sun text-warning theme-toggle-icon';
+            });
+        });
+    }
+})();
+</script>
 <?php
 $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive'));
 ?>
@@ -1081,7 +1148,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark d-print-none" id="main-sidebar-aside">
             <div class="container-fluid">
                 <?php if ($isDashboardRoute): ?>
-                <div class="d-flex justify-content-between align-items-center w-100 px-3 py-2 mb-2 border-bottom border-secondary border-opacity-25 d-none d-lg-flex" style="background: rgba(0,0,0,0.2); border-radius: 8px;">
+                <div class="sidebar-drawer-header justify-content-between align-items-center w-100 px-3 py-2 mb-2 border-bottom border-secondary border-opacity-25" style="background: rgba(0,0,0,0.2); border-radius: 8px;">
                     <span class="text-white-50 small fw-bold" style="font-size: 11px; letter-spacing: 0.5px;"><i class="fas fa-bars-staggered me-1 text-primary"></i> MENU SEKUNDER</span>
                     <button type="button" class="btn btn-sm btn-outline-light rounded-circle" onclick="toggleSidebarDrawer()" title="Tutup Drawer" style="width:26px;height:26px;padding:0;display:flex;align-items:center;justify-content:center;">
                         <i class="fas fa-times" style="font-size: 11px;"></i>
@@ -1558,8 +1625,8 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                             </a>
                         </div>
                         <div class="nav-item">
-                            <button id="theme-toggle-btn" class="btn btn-sm btn-outline-light border rounded-circle ms-1" title="Ganti Tema" onclick="toggleDarkMode()">
-                                <i id="theme-icon" class="fas fa-moon"></i>
+                            <button id="theme-toggle-btn" class="btn btn-sm btn-outline-secondary rounded-circle ms-1" title="Ganti Tema (Terang / Gelap)" onclick="toggleDarkMode()" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+                                <i id="theme-icon" class="fas fa-moon text-dark theme-toggle-icon"></i>
                             </button>
                         </div>
                         <div class="nav-item">
@@ -3854,24 +3921,20 @@ $sidakMenuData = [
     // Dark Mode Toggle
     function toggleDarkMode() {
         var body = document.body;
-        var icon = document.getElementById('theme-icon');
-        if (body.classList.contains('dark-mode')) {
-            body.classList.remove('dark-mode');
-            localStorage.setItem('sidak_theme', 'light');
-            if (icon) { icon.className = 'fas fa-moon'; }
-        } else {
-            body.classList.add('dark-mode');
-            localStorage.setItem('sidak_theme', 'dark');
-            if (icon) { icon.className = 'fas fa-sun'; }
-        }
+        var isDark = body.classList.toggle('dark-mode');
+        localStorage.setItem('sidak_theme', isDark ? 'dark' : 'light');
+        document.querySelectorAll('.theme-toggle-icon, #theme-icon, #dah-theme-icon').forEach(function(icon) {
+            icon.className = isDark ? 'fas fa-sun text-warning theme-toggle-icon' : 'fas fa-moon text-dark theme-toggle-icon';
+        });
     }
     // Apply saved theme on load
     (function() {
         var saved = localStorage.getItem('sidak_theme');
         if (saved === 'dark') {
             document.body.classList.add('dark-mode');
-            var icon = document.getElementById('theme-icon');
-            if (icon) { icon.className = 'fas fa-sun'; }
+            document.querySelectorAll('.theme-toggle-icon, #theme-icon, #dah-theme-icon').forEach(function(icon) {
+                icon.className = 'fas fa-sun text-warning theme-toggle-icon';
+            });
         }
     })();
     </script>

@@ -276,11 +276,28 @@
                 <span class="status-dot-live"></span> Live Data
             </div>
 
+            <!-- Interruption YoY Metric Badge (Domain Data) -->
+            <?php if (!empty($gangguanStats)): ?>
+            <div class="d-none d-md-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill border shadow-xs" title="Berdasarkan data historis pemadaman & gangguan penyulang YTD vs tahun lalu periode sama" style="font-size: 11px; font-weight: 600;">
+                <i class="fas fa-bolt text-warning"></i>
+                <span class="text-muted">Gangguan <?= esc($gangguanStats['year']) ?>:</span>
+                <strong class="text-dark"><?= number_format($gangguanStats['current_ytd']) ?>x</strong>
+                <span class="badge <?= ($gangguanStats['yoy_pct'] < 0) ? 'bg-success' : (($gangguanStats['yoy_pct'] > 0) ? 'bg-danger' : 'bg-secondary') ?> rounded-pill" style="font-size: 10px;">
+                    <?= esc($gangguanStats['yoy_text']) ?>
+                </span>
+            </div>
+            <?php endif; ?>
+
+            <!-- Theme Toggle Button (Light / Dark Mode) -->
+            <button type="button" class="btn btn-sm btn-outline-secondary border rounded-circle" title="Ganti Tema (Terang / Gelap)" onclick="toggleDarkMode()" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">
+                <i id="dah-theme-icon" class="fas fa-moon text-dark theme-toggle-icon"></i>
+            </button>
+
             <!-- Quick Utilities -->
-            <a href="<?= site_url('backup-database') ?>" class="btn btn-sm btn-outline-light text-muted border rounded-circle" title="Backup Database">
+            <a href="<?= site_url('backup-database') ?>" class="btn btn-sm btn-outline-secondary text-muted border rounded-circle" title="Backup Database" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">
                 <i class="fas fa-database"></i>
             </a>
-            <a href="<?= site_url('change-password') ?>" class="btn btn-sm btn-outline-light text-muted border rounded-circle" title="Ganti Password">
+            <a href="<?= site_url('change-password') ?>" class="btn btn-sm btn-outline-secondary text-muted border rounded-circle" title="Ganti Password" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">
                 <i class="fas fa-key"></i>
             </a>
         </div>
@@ -937,17 +954,24 @@ document.addEventListener('DOMContentLoaded', function() {
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         // Real temuan pins from DB (prioritas + status per point)
-        var mapPins = <?= json_encode(array_map(function($p) {
-            return [
-                'id'     => (int)$p['id'],
-                'label'  => $p['nomor_temuan'] ?? 'T-' . $p['id'],
-                'lat'    => (float)$p['latitude'],
-                'lng'    => (float)$p['longitude'],
-                'status' => strtoupper($p['status'] ?? 'OPEN'),
-                'prio'   => strtoupper($p['prioritas'] ?? 'MEDIUM'),
-                'detail' => substr($p['detail_temuan'] ?? $p['alamat'] ?? '', 0, 80),
-            ];
-        }, $mapPins ?? [])) ?>;
+        <?php
+            $safePins = array_map(function($p) {
+                return [
+                    'id'     => (int)$p['id'],
+                    'label'  => (string)($p['nomor_temuan'] ?? 'T-' . $p['id']),
+                    'lat'    => (float)$p['latitude'],
+                    'lng'    => (float)$p['longitude'],
+                    'status' => strtoupper((string)($p['status'] ?? 'OPEN')),
+                    'prio'   => strtoupper((string)($p['prioritas'] ?? 'MEDIUM')),
+                    'detail' => mb_substr((string)($p['detail_temuan'] ?? $p['alamat'] ?? ''), 0, 80, 'UTF-8'),
+                ];
+            }, $mapPins ?? []);
+            $pinsJson = json_encode($safePins, JSON_INVALID_UTF8_SUBSTITUTE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
+            if ($pinsJson === false || empty($pinsJson)) {
+                $pinsJson = '[]';
+            }
+        ?>
+        var mapPins = <?= $pinsJson ?>;
 
         mapPins.forEach(function(f) {
             var color = '#0ea5e9'; // default = MEDIUM

@@ -962,6 +962,60 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 .ticker-wrapper:hover .ticker-content {
     animation-play-state: paused !important;
 }
+
+/* Dark Mode Theme */
+body.dark-mode {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+}
+body.dark-mode .card, body.dark-mode .dah-card, body.dark-mode .dah-kpi-card {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+}
+body.dark-mode .dah-header {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+}
+body.dark-mode .dah-quick-pill {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+body.dark-mode .table {
+    color: #e2e8f0 !important;
+}
+body.dark-mode .table > :not(caption) > * > * {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+body.dark-mode .bg-white {
+    background-color: #1e293b !important;
+}
+body.dark-mode .text-dark, body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
+    color: #f1f5f9 !important;
+}
+body.dark-mode .text-muted {
+    color: #94a3b8 !important;
+}
+body.dark-mode .border, body.dark-mode .border-top, body.dark-mode .border-bottom {
+    border-color: #334155 !important;
+}
+body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+    color: #e2e8f0 !important;
+}
+body.dark-mode .dropdown-menu {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+body.dark-mode .dropdown-item {
+    color: #cbd5e1 !important;
+}
+body.dark-mode .dropdown-item:hover {
+    background-color: #334155 !important;
+}
 </style>
 <?php
 $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive'));
@@ -1502,6 +1556,11 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                             <a class="btn btn-outline-primary btn-sm px-2 py-1" href="<?= site_url('change-password') ?>" title="Ganti Password Saya" style="font-size: 11px; font-weight: 600; border-radius: 4px; white-space: nowrap;">
                                 <i class="fas fa-key"></i> <span class="d-none d-md-inline ms-1">Ganti Password</span>
                             </a>
+                        </div>
+                        <div class="nav-item">
+                            <button id="theme-toggle-btn" class="btn btn-sm btn-outline-light border rounded-circle ms-1" title="Ganti Tema" onclick="toggleDarkMode()">
+                                <i id="theme-icon" class="fas fa-moon"></i>
+                            </button>
                         </div>
                         <div class="nav-item">
                             <a class="btn btn-outline-danger btn-icon-only rounded-circle" href="<?= site_url('logout') ?>" title="Keluar" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">
@@ -3564,66 +3623,118 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         }
         document.body.style.overflow = '';
     };
-    var sidakSubmenuData = {
-        'group-core': { title: 'Core & Analytics', icon: 'fas fa-compass', desc: 'Dashboard & Analytics', groups: [{ name: 'Umum', items: [
-            { href: '<?= site_url('dashboard') ?>', icon: 'fas fa-gauge-high', text: 'Dashboard Utama', active: <?= json_encode(url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive')) ?> },
-            { href: '<?= site_url('executive-dashboard') ?>', icon: 'fas fa-chart-line', text: 'Executive Analytics', active: <?= json_encode(url_is('executive-dashboard') || url_is('dashboard/executive')) ?> },
-            { href: '<?= site_url('gis') ?>', icon: 'fas fa-map-marked-alt', text: 'Peta Jaringan (GIS)', active: <?= json_encode(url_is('gis*') || url_is('peta-jaringan*')) ?> }
-        ]}]},
-        'group-sld': { title: 'Single Line Diagram', icon: 'fas fa-bolt', desc: 'SLD & Validasi', groups: [{ name: 'SLD', items: [
-            { href: '<?= site_url('sld/view/15') ?>', icon: 'fas fa-diagram-project', text: 'SLD Feeder', active: <?= json_encode(url_is('sld/view*') || url_is('sld/feeder*')) ?> },
-            { href: '<?= site_url('sld/validation') ?>', icon: 'fas fa-shield-halved', text: 'SLD Validation', active: <?= json_encode(url_is('sld/validation*')) ?> }
-        ]}]},
-        'group-operasional': { title: 'Operasional & Lapangan', icon: 'fas fa-screwdriver-wrench', desc: 'Inspeksi & Temuan', groups: [{ name: 'Inspeksi', items: [
-            { href: '<?= site_url('planning') ?>', icon: 'fas fa-clipboard-list', text: 'Planning Inspeksi', active: <?= json_encode(url_is('planning*')) ?> },
-            { href: '<?= site_url('my-inspections') ?>', icon: 'fas fa-tasks', text: 'Tugas Inspeksi Saya', active: <?= json_encode(url_is('my-inspections*')) ?> },
-            { href: '<?= site_url('my-history') ?>', icon: 'fas fa-history', text: 'Riwayat Saya', active: <?= json_encode(url_is('my-history*')) ?> },
-<?php if (check_role(['administrator','admin_ulp','inspeksi'])): ?>
-            { href: '<?= site_url('temuan/create') ?>', icon: 'fas fa-plus-circle', text: 'Input Temuan Baru', active: <?= json_encode(url_is('temuan/create')) ?> },
-<?php endif; ?>
-            { href: '<?= site_url('temuan') ?>', icon: 'fas fa-list-check', text: 'Daftar Semua Temuan', active: <?= json_encode(url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan')) ?> },
-<?php if (check_role(['administrator', 'admin_ulp', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek'])): ?>
-            { href: '<?= site_url('temuan/update-pekerjaan') ?>', icon: 'fas fa-wrench', text: 'Update Pekerjaan (HAR)', active: <?= json_encode(url_is('temuan/update-pekerjaan*')) ?> },
-<?php endif; ?>
-            { href: '<?= site_url('temuan/terdekat') ?>', icon: 'fas fa-location-crosshairs', text: 'Temuan Terdekat', active: <?= json_encode(url_is('temuan/terdekat*')) ?> },
-            { href: '<?= site_url('work-orders') ?>', icon: 'fas fa-file-signature', text: 'Work Orders (WO)', active: <?= json_encode(url_is('work-orders*')) ?> }
-        ]}]},
-        'group-remediasi': { title: 'Remediasi & Tindak Lanjut', icon: 'fas fa-wrench', desc: 'Perbaikan Temuan', groups: [{ name: 'Tindak Lanjut', items: [
-            { href: '<?= site_url('remediation') ?>', icon: 'fas fa-briefcase', text: 'Work Package Remediasi', active: <?= json_encode(url_is('remediation') && !url_is('remediation/*')) ?> },
-            { href: '<?= site_url('remediation/create') ?>', icon: 'fas fa-plus-circle', text: 'Buat Work Package', active: <?= json_encode(url_is('remediation/create*')) ?> }
-        ]}]},
-        'group-ai': { title: 'AI Command Center', icon: 'fas fa-brain', desc: 'AI & Analytics', groups: [{ name: 'AI', items: [
-            { href: '<?= site_url('ai-copilot') ?>', icon: 'fas fa-robot', text: 'SIDAK AI Copilot', active: <?= json_encode(url_is('ai-copilot*')) ?> },
-            { href: '<?= site_url('ai-center') ?>', icon: 'fas fa-brain', text: 'AI Center & Predictive', active: <?= json_encode(url_is('ai-center*')) ?> },
-            { href: '<?= site_url('ranking') ?>', icon: 'fas fa-medal', text: 'Auto Ranking', active: <?= json_encode(url_is('ranking*')) ?> }
-        ]}]},
-        'group-data': { title: 'Data & Referensi', icon: 'fas fa-database', desc: 'Master Data', groups: [{ name: 'Master', items: [
-            { href: '<?= site_url('asset-corpus/workspace') ?>', icon: 'fas fa-file-csv', text: 'Asset Corpus', active: <?= json_encode(url_is('asset-corpus*')) ?> },
-            { href: '<?= site_url('asset-health') ?>', icon: 'fas fa-heart-pulse', text: 'Asset Health Index', active: <?= json_encode(url_is('asset-health*')) ?> },
-            { href: '<?= site_url('master-assets') ?>', icon: 'fas fa-boxes-stacked', text: 'Master Asset PLN', active: <?= json_encode(url_is('master-assets*')) ?> },
-            { href: '<?= site_url('master-gi') ?>', icon: 'fas fa-charging-station', text: 'Gardu Induk (GI)', active: <?= json_encode(url_is('master-gi*')) ?> },
-<?php if (check_role(['administrator'])): ?>
-            { href: '<?= site_url('ulps') ?>', icon: 'fas fa-building', text: 'Data ULP', active: <?= json_encode(url_is('ulps*')) ?> },
-<?php endif; ?>
-            { href: '<?= site_url('penyulang') ?>', icon: 'fas fa-route', text: 'Data Penyulang', active: <?= json_encode(url_is('penyulang*')) ?> },
-            { href: '<?= site_url('sections') ?>', icon: 'fas fa-map-pin', text: 'Data Section', active: <?= json_encode(url_is('sections*')) ?> },
-            { href: '<?= site_url('users') ?>', icon: 'fas fa-users', text: 'Data User', active: <?= json_encode(url_is('users*')) ?> },
-            { href: '<?= site_url('import') ?>', icon: 'fas fa-file-excel', text: 'Impor Excel', active: <?= json_encode(url_is('import*')) ?> }
-        ]}]},
-        'group-system': { title: 'System & Laporan', icon: 'fas fa-gear', desc: 'Pengaturan & Laporan', groups: [{ name: 'Umum', items: [
-            { href: '<?= site_url('ecc') ?>', icon: 'fas fa-tv', text: 'Command Center (ECC)', active: <?= json_encode(url_is('ecc*')) ?> },
-            { href: '<?= site_url('notifications') ?>', icon: 'fas fa-bell', text: 'Notifikasi Center', active: <?= json_encode(url_is('notifications*')) ?> },
-            { href: '<?= site_url('my-dashboard') ?>', icon: 'fas fa-user-circle', text: 'My Dashboard', active: <?= json_encode(url_is('my-dashboard*')) ?> },
-            { href: '<?= site_url('laporan') ?>', icon: 'fas fa-file-lines', text: 'Pusat Laporan', active: <?= json_encode(url_is('laporan*')) ?> },
-            { href: '<?= site_url('documents') ?>', icon: 'fas fa-folder', text: 'Dokumen', active: <?= json_encode(url_is('documents*')) ?> },
-<?php if (check_role(['administrator'])): ?>
-            { href: '<?= site_url('audit-log') ?>', icon: 'fas fa-clock-rotate-left', text: 'Audit Log', active: <?= json_encode(url_is('audit-log*')) ?> },
-            { href: '<?= site_url('integration') ?>', icon: 'fas fa-plug', text: 'Integrasi & API', active: <?= json_encode(url_is('integration*')) ?> },
-            { href: '<?= site_url('backup-database') ?>', icon: 'fas fa-database', text: 'Backup Database', active: <?= json_encode(url_is('backup-database*')) ?> },
-<?php endif; ?>
-            { href: '<?= site_url('change-password') ?>', icon: 'fas fa-key', text: 'Ganti Password', active: <?= json_encode(url_is('change-password*')) ?> }
-        ]}]}
-    };
+<?php
+// Build submenu data server-side to avoid trailing commas in JS
+$sidakMenuData = [
+    'group-core' => [
+        'title' => 'Core & Analytics',
+        'icon'  => 'fas fa-compass',
+        'desc'  => 'Dashboard & Analytics',
+        'groups' => [[
+            'name'  => 'Umum',
+            'items' => [
+                ['href' => site_url('dashboard'), 'icon' => 'fas fa-gauge-high', 'text' => 'Dashboard Utama', 'active' => (bool)(url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive'))],
+                ['href' => site_url('executive-dashboard'), 'icon' => 'fas fa-chart-line', 'text' => 'Executive Analytics', 'active' => (bool)(url_is('executive-dashboard') || url_is('dashboard/executive'))],
+                ['href' => site_url('gis'), 'icon' => 'fas fa-map-marked-alt', 'text' => 'Peta Jaringan (GIS)', 'active' => (bool)(url_is('gis*') || url_is('peta-jaringan*'))],
+            ]
+        ]]
+    ],
+    'group-sld' => [
+        'title' => 'Single Line Diagram',
+        'icon'  => 'fas fa-bolt',
+        'desc'  => 'SLD & Validasi',
+        'groups' => [[
+            'name'  => 'SLD',
+            'items' => [
+                ['href' => site_url('sld/view/15'), 'icon' => 'fas fa-diagram-project', 'text' => 'SLD Feeder', 'active' => (bool)(url_is('sld/view*') || url_is('sld/feeder*'))],
+                ['href' => site_url('sld/validation'), 'icon' => 'fas fa-shield-halved', 'text' => 'SLD Validation', 'active' => (bool)url_is('sld/validation*')],
+            ]
+        ]]
+    ],
+    'group-operasional' => [
+        'title' => 'Operasional & Lapangan',
+        'icon'  => 'fas fa-screwdriver-wrench',
+        'desc'  => 'Inspeksi & Temuan',
+        'groups' => [[
+            'name'  => 'Inspeksi',
+            'items' => array_values(array_filter([
+                ['href' => site_url('planning'), 'icon' => 'fas fa-clipboard-list', 'text' => 'Planning Inspeksi', 'active' => (bool)url_is('planning*')],
+                ['href' => site_url('my-inspections'), 'icon' => 'fas fa-tasks', 'text' => 'Tugas Inspeksi Saya', 'active' => (bool)url_is('my-inspections*')],
+                ['href' => site_url('my-history'), 'icon' => 'fas fa-history', 'text' => 'Riwayat Saya', 'active' => (bool)url_is('my-history*')],
+                check_role(['administrator','admin_ulp','inspeksi']) ? ['href' => site_url('temuan/create'), 'icon' => 'fas fa-plus-circle', 'text' => 'Input Temuan Baru', 'active' => (bool)url_is('temuan/create')] : null,
+                ['href' => site_url('temuan'), 'icon' => 'fas fa-list-check', 'text' => 'Daftar Semua Temuan', 'active' => (bool)(url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan'))],
+                check_role(['administrator','admin_ulp','pdkb','har_gardu','har_konstruksi','har_row','har_crane','yantek']) ? ['href' => site_url('temuan/update-pekerjaan'), 'icon' => 'fas fa-wrench', 'text' => 'Update Pekerjaan (HAR)', 'active' => (bool)url_is('temuan/update-pekerjaan*')] : null,
+                ['href' => site_url('temuan/terdekat'), 'icon' => 'fas fa-location-crosshairs', 'text' => 'Temuan Terdekat', 'active' => (bool)url_is('temuan/terdekat*')],
+                ['href' => site_url('work-orders'), 'icon' => 'fas fa-file-signature', 'text' => 'Work Orders (WO)', 'active' => (bool)url_is('work-orders*')],
+            ]))
+        ]]
+    ],
+    'group-remediasi' => [
+        'title' => 'Remediasi & Tindak Lanjut',
+        'icon'  => 'fas fa-wrench',
+        'desc'  => 'Perbaikan Temuan',
+        'groups' => [[
+            'name'  => 'Tindak Lanjut',
+            'items' => [
+                ['href' => site_url('remediation'), 'icon' => 'fas fa-briefcase', 'text' => 'Work Package Remediasi', 'active' => (bool)(url_is('remediation') && !url_is('remediation/*'))],
+                ['href' => site_url('remediation/create'), 'icon' => 'fas fa-plus-circle', 'text' => 'Buat Work Package', 'active' => (bool)url_is('remediation/create*')],
+            ]
+        ]]
+    ],
+    'group-ai' => [
+        'title' => 'AI Command Center',
+        'icon'  => 'fas fa-brain',
+        'desc'  => 'AI & Analytics',
+        'groups' => [[
+            'name'  => 'AI',
+            'items' => [
+                ['href' => site_url('ai-copilot'), 'icon' => 'fas fa-robot', 'text' => 'SIDAK AI Copilot', 'active' => (bool)url_is('ai-copilot*')],
+                ['href' => site_url('ai-center'), 'icon' => 'fas fa-brain', 'text' => 'AI Center & Predictive', 'active' => (bool)url_is('ai-center*')],
+                ['href' => site_url('ranking'), 'icon' => 'fas fa-medal', 'text' => 'Auto Ranking', 'active' => (bool)url_is('ranking*')],
+            ]
+        ]]
+    ],
+    'group-data' => [
+        'title' => 'Data & Referensi',
+        'icon'  => 'fas fa-database',
+        'desc'  => 'Master Data',
+        'groups' => [[
+            'name'  => 'Master',
+            'items' => array_values(array_filter([
+                ['href' => site_url('asset-corpus/workspace'), 'icon' => 'fas fa-file-csv', 'text' => 'Asset Corpus', 'active' => (bool)url_is('asset-corpus*')],
+                ['href' => site_url('asset-health'), 'icon' => 'fas fa-heart-pulse', 'text' => 'Asset Health Index', 'active' => (bool)url_is('asset-health*')],
+                ['href' => site_url('master-assets'), 'icon' => 'fas fa-boxes-stacked', 'text' => 'Master Asset PLN', 'active' => (bool)url_is('master-assets*')],
+                ['href' => site_url('master-gi'), 'icon' => 'fas fa-charging-station', 'text' => 'Gardu Induk (GI)', 'active' => (bool)url_is('master-gi*')],
+                check_role(['administrator']) ? ['href' => site_url('ulps'), 'icon' => 'fas fa-building', 'text' => 'Data ULP', 'active' => (bool)url_is('ulps*')] : null,
+                ['href' => site_url('penyulang'), 'icon' => 'fas fa-route', 'text' => 'Data Penyulang', 'active' => (bool)url_is('penyulang*')],
+                ['href' => site_url('sections'), 'icon' => 'fas fa-map-pin', 'text' => 'Data Section', 'active' => (bool)url_is('sections*')],
+                ['href' => site_url('users'), 'icon' => 'fas fa-users', 'text' => 'Data User', 'active' => (bool)url_is('users*')],
+                ['href' => site_url('import'), 'icon' => 'fas fa-file-excel', 'text' => 'Impor Excel', 'active' => (bool)url_is('import*')],
+            ]))
+        ]]
+    ],
+    'group-system' => [
+        'title' => 'System & Laporan',
+        'icon'  => 'fas fa-gear',
+        'desc'  => 'Pengaturan & Laporan',
+        'groups' => [[
+            'name'  => 'Umum',
+            'items' => array_values(array_filter([
+                ['href' => site_url('ecc'), 'icon' => 'fas fa-tv', 'text' => 'Command Center (ECC)', 'active' => (bool)url_is('ecc*')],
+                ['href' => site_url('notifications'), 'icon' => 'fas fa-bell', 'text' => 'Notifikasi Center', 'active' => (bool)url_is('notifications*')],
+                ['href' => site_url('my-dashboard'), 'icon' => 'fas fa-user-circle', 'text' => 'My Dashboard', 'active' => (bool)url_is('my-dashboard*')],
+                ['href' => site_url('laporan'), 'icon' => 'fas fa-file-lines', 'text' => 'Pusat Laporan', 'active' => (bool)url_is('laporan*')],
+                ['href' => site_url('documents'), 'icon' => 'fas fa-folder', 'text' => 'Dokumen', 'active' => (bool)url_is('documents*')],
+                check_role(['administrator']) ? ['href' => site_url('audit-log'), 'icon' => 'fas fa-clock-rotate-left', 'text' => 'Audit Log', 'active' => (bool)url_is('audit-log*')] : null,
+                check_role(['administrator']) ? ['href' => site_url('integration'), 'icon' => 'fas fa-plug', 'text' => 'Integrasi & API', 'active' => (bool)url_is('integration*')] : null,
+                check_role(['administrator']) ? ['href' => site_url('backup-database'), 'icon' => 'fas fa-database', 'text' => 'Backup Database', 'active' => (bool)url_is('backup-database*')] : null,
+                ['href' => site_url('change-password'), 'icon' => 'fas fa-key', 'text' => 'Ganti Password', 'active' => (bool)url_is('change-password*')],
+            ]))
+        ]]
+    ],
+];
+?>
+    var sidakSubmenuData = <?= json_encode($sidakMenuData, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
     function openSidakSubmenu(key, ev) {
         if (!key) return;
         var data = sidakSubmenuData[key];
@@ -3739,6 +3850,30 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             }
         }
     });
+
+    // Dark Mode Toggle
+    function toggleDarkMode() {
+        var body = document.body;
+        var icon = document.getElementById('theme-icon');
+        if (body.classList.contains('dark-mode')) {
+            body.classList.remove('dark-mode');
+            localStorage.setItem('sidak_theme', 'light');
+            if (icon) { icon.className = 'fas fa-moon'; }
+        } else {
+            body.classList.add('dark-mode');
+            localStorage.setItem('sidak_theme', 'dark');
+            if (icon) { icon.className = 'fas fa-sun'; }
+        }
+    }
+    // Apply saved theme on load
+    (function() {
+        var saved = localStorage.getItem('sidak_theme');
+        if (saved === 'dark') {
+            document.body.classList.add('dark-mode');
+            var icon = document.getElementById('theme-icon');
+            if (icon) { icon.className = 'fas fa-sun'; }
+        }
+    })();
     </script>
 
     <?= $this->renderSection('scripts') ?>

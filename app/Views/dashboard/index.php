@@ -29,6 +29,39 @@
             }
         }
     }
+
+    // Calculate month-over-month comparison for Total Temuan
+    $curMonthKey = date('Y-m');
+    $prevMonthKey = date('Y-m', strtotime('first day of last month'));
+    $monthlyByMonth = [];
+    if (!empty($monthlyData) && is_array($monthlyData)) {
+        foreach ($monthlyData as $md) {
+            if (isset($md['bulan'])) {
+                $monthlyByMonth[$md['bulan']] = (int)($md['total'] ?? 0);
+            }
+        }
+    }
+
+    $curMonthTemuan = $monthlyByMonth[$curMonthKey] ?? null;
+    $prevMonthTemuan = $monthlyByMonth[$prevMonthKey] ?? null;
+
+    if ($curMonthTemuan !== null && $prevMonthTemuan !== null && $prevMonthTemuan > 0) {
+        $diff = $curMonthTemuan - $prevMonthTemuan;
+        $pctChange = round(($diff / $prevMonthTemuan) * 100);
+        if ($pctChange > 0) {
+            $temuanChangeText = '<i class="fas fa-arrow-up"></i> ' . $pctChange . '% dari bulan lalu';
+            $temuanChangeClass = 'text-primary';
+        } elseif ($pctChange < 0) {
+            $temuanChangeText = '<i class="fas fa-arrow-down"></i> ' . abs($pctChange) . '% dari bulan lalu';
+            $temuanChangeClass = 'text-success';
+        } else {
+            $temuanChangeText = '<i class="fas fa-minus"></i> 0% dari bulan lalu';
+            $temuanChangeClass = 'text-muted';
+        }
+    } else {
+        $temuanChangeText = 'Data baru periode ini';
+        $temuanChangeClass = 'text-muted';
+    }
 ?>
 
 <style>
@@ -297,8 +330,8 @@
                     <div class="dah-kpi-val text-dark"><?= number_format($totalTemuan) ?></div>
                     <div class="dah-kpi-lbl">Total Temuan</div>
                 </div>
-                <div class="dah-kpi-sub text-primary">
-                    <i class="fas fa-arrow-up"></i> 12% dari bulan lalu
+                <div class="dah-kpi-sub <?= $temuanChangeClass ?>">
+                    <?= $temuanChangeText ?>
                 </div>
             </div>
         </div>
@@ -378,7 +411,7 @@
                     <div class="dah-kpi-lbl">Health Index Sistem</div>
                 </div>
                 <div class="dah-kpi-sub text-info">
-                    <i class="fas fa-arrow-up"></i> 5% dibanding bulan lalu
+                    Avg score seluruh penyulang
                 </div>
             </div>
         </div>

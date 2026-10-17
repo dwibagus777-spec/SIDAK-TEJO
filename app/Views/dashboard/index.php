@@ -1,11 +1,11 @@
-<?= $this->extend('layouts/admin') ?>
+﻿<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('title') ?>Enterprise Monitoring Center PLN<?= $this->endSection() ?>
 <?= $this->section('page_title') ?>SIDAK TEJO Enterprise Monitoring Center PLN<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <style>
-    /* Scoped Modern Bento Design System — SIDAK TEJO Enterprise */
+    /* Scoped Modern Bento Design System â€” SIDAK TEJO Enterprise */
     .emc-container, .sidak-bento-container {
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
@@ -129,7 +129,7 @@
         justify-content: space-between;
     }
 
-    /* Soft Pastel Executive Tints — Prototype Faithful */
+    /* Soft Pastel Executive Tints â€” Prototype Faithful */
     .sidak-bento-kpi-primary {
         background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
         border: 1px solid #a7f3d0;
@@ -1015,7 +1015,7 @@
                         else $greeting = 'Selamat Malam';
                     ?>
                     <h4 class="fw-bold mb-1 text-white">
-                        <?= $greeting ?>, <span class="text-warning"><?= esc(session()->get('user_name') ?: 'Mas Dwi') ?></span> 👋
+                        <?= $greeting ?>, <span class="text-warning"><?= esc(session()->get('user_name') ?: 'Mas Dwi') ?></span> ðŸ‘‹
                     </h4>
                     <p class="text-white-50 small mb-0">
                         Hari ini ada <strong>18 pekerjaan aktif</strong> &middot; ULP: <strong><?= esc(session()->get('user_ulp_nama') ?: 'UP3 Sidoarjo') ?></strong> &middot; Role: <strong><?= esc(get_role_label((string)(session()->get('user_role') ?: 'administrator'))) ?></strong>
@@ -1089,23 +1089,6 @@
             <div class="sidak-bento-card emc-card constellation-canvas-card h-100">
                 <!-- Canvas Top Header -->
                 <div class="p-3 pb-2 d-flex justify-content-between align-items-start z-2 position-relative">
-                    <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">
-                                <i class="fas fa-network-wired me-1"></i> CONSTELLATION NAV &bull; LIVE
-                            </span>
-                        </div>
-                        <h5 class="fw-bold text-dark mb-1" style="letter-spacing: -0.3px;">Pilih titik cahaya untuk membuka menu</h5>
-                        <p class="text-muted small mb-0" style="font-size: 11px;">Setiap node adalah lokasi menu operasional. Hover untuk preview, klik untuk navigasi langsung.</p>
-                    </div>
-                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-1 small fw-bold">9 nodes</span>
-                </div>
-
-                <!-- Constellation Interactive Body -->
-                <div class="constellation-canvas-body position-relative">
-                    <!-- SVG Vector Connecting Lines Overlay -->
-                    <svg class="constellation-svg-network" viewBox="0 0 1000 600" preserveAspectRatio="none">
-                        <!-- Ring web connections between adjacent satellites -->
                         <line x1="500" y1="72" x2="820" y2="156" class="constellation-svg-line" />
                         <line x1="820" y1="156" x2="840" y2="324" class="constellation-svg-line" />
                         <line x1="840" y1="324" x2="740" y2="492" class="constellation-svg-line" />
@@ -1126,7 +1109,7 @@
                         <line id="svg-line-gis" x1="500" y1="288" x2="180" y2="156" class="constellation-svg-line active" />
                     </svg>
 
-                    <!-- 1. Central Hub Node: ◎ Dashboard Utama -->
+                    <!-- 1. Central Hub Node: â—Ž Dashboard Utama -->
                     <div class="constellation-central-node" style="left: 50%; top: 48%;" id="node-hub-dashboard" data-node="dashboard" onmouseenter="showNodePreview('dashboard')" onmouseleave="scheduleResetPreview()">
                         <div class="constellation-central-halo"></div>
                         <a href="<?= site_url('dashboard') ?>" class="constellation-central-ring" title="Dashboard Utama">
@@ -1287,7 +1270,7 @@
                                 </div>
                             </a>
 
-                            <!-- 3. Belum Selesai (Peach) — User Amendment #1 Preserved -->
+                            <!-- 3. Belum Selesai (Peach) â€” User Amendment #1 Preserved -->
                             <a href="<?= site_url('temuan?status=BELUM') ?>" class="contextual-kpi-card contextual-kpi-peach sidak-bento-kpi-card kpi-drilldown-link">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="contextual-kpi-val text-warning sidak-bento-val" id="kpi-belum"><?= number_format($stats['belum'] ?? 0) ?></div>

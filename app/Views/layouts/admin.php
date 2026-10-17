@@ -1400,7 +1400,6 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             </div>
         </aside>
 
-        </aside>
 
         <!-- SIDAK TWO-LEVEL SUBMENU PANEL -->
         <div id="sidak-submenu-panel" class="sidak-submenu-panel" role="region" aria-label="Submenu Kategori">

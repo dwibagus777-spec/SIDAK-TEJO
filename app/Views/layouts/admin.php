@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $session = @session();
 $viewMode = $session->get('view_mode') ?: ($_COOKIE['view_mode'] ?? null);
 $req = \Config\Services::request();
@@ -1091,7 +1091,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                     <ul class="navbar-nav pt-lg-3">
 
                         <!-- CATEGORY 1: CORE & ANALYTICS (Expanded) -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-2 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-core" aria-expanded="true" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                        <li class="nav-header text-uppercase text-muted px-3 mt-2 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-core" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-core', event)"
                             <span><i class="fas fa-compass me-1 text-primary"></i> CORE & ANALYTICS</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1117,7 +1117,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY: SINGLE LINE DIAGRAM (CR-NAV-01) -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-sld" aria-expanded="<?= url_is('sld*') ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-sld" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-sld', event)"
                             <span><i class="fas fa-bolt me-1 text-warning"></i> SINGLE LINE DIAGRAM</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1137,7 +1137,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 2: OPERASIONAL & LAPANGAN (Expanded) -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-operasional" aria-expanded="true" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-operasional" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-operasional', event)"
                             <span><i class="fas fa-screwdriver-wrench me-1 text-info"></i> OPERASIONAL & LAPANGAN</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1209,7 +1209,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY B8.1: REMEDIASI -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-remediasi" aria-expanded="<?= url_is('remediation*') ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-remediasi" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-remediasi', event)"
                             <span><i class="fas fa-tools me-1 text-warning"></i> REMEDIASI</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1229,7 +1229,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 3: AI & INTELLIGENCE -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-ai" aria-expanded="<?= (url_is('ai*') || url_is('sidak-ai*') || url_is('ranking*')) ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-ai" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-ai', event)"
                             <span><i class="fas fa-brain me-1 text-purple"></i> AI & INTELLIGENCE</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1237,7 +1237,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                             <li class="nav-item <?= (url_is('ai-copilot*') || url_is('sidak-ai*')) ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('ai-copilot') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-robot text-info"></i></span>
-                                    <span class="nav-link-title">🤖 SIDAK AI Copilot</span>
+                                    <span class="nav-link-title">ðŸ¤– SIDAK AI Copilot</span>
                                 </a>
                             </li>
                             <li class="nav-item <?= (url_is('ai-predictive*') || url_is('ai-center*')) ? 'active' : '' ?>">
@@ -1255,7 +1255,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 4: DATA & MASTER REFERENSI -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-data" aria-expanded="<?= (url_is('asset-corpus*') || url_is('master*') || url_is('asset*') || url_is('eviden*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*')) ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-data" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-data', event)"
                             <span><i class="fas fa-database me-1 text-success"></i> DATA & MASTER REFERENSI</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1322,7 +1322,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 5: SYSTEM & LAPORAN -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#group-system" aria-expanded="<?= (url_is('ecc*') || url_is('notifications*') || url_is('my-dashboard*') || url_is('laporan*') || url_is('documents*') || url_is('audit-log*') || url_is('integration*') || url_is('backup-database*') || url_is('change-password*')) ? 'true' : 'false' ?>" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-system" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-system', event)"
                             <span><i class="fas fa-gear me-1 text-secondary"></i> SYSTEM & LAPORAN</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1400,7 +1400,30 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             </div>
         </aside>
 
+        </aside>
+
+        <!-- SIDAK TWO-LEVEL SUBMENU PANEL -->
+        <div id="sidak-submenu-panel" class="sidak-submenu-panel" role="region" aria-label="Submenu Kategori">
+            <div class="sidak-submenu-header">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-th-large me-2 text-primary" id="sidak-submenu-icon"></i>
+                    <div>
+                        <h6 class="mb-0 fw-bold" id="sidak-submenu-title">Kategori</h6>
+                        <small class="text-muted" id="sidak-submenu-desc">Submenu</small>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeSidakSubmenu()" aria-label="Tutup submenu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="sidak-submenu-body" id="sidak-submenu-body">
+                <!-- Populated by JS based on sidebar categories -->
+            </div>
+        </div>
+        <div id="sidak-submenu-backdrop" class="sidak-submenu-backdrop" onclick="closeSidakSubmenu()"></div>
+
         <!-- Main Content Area -->
+
         <div class="page-wrapper d-flex flex-column" style="min-height: 100vh;">
             <!-- Top Navbar Header -->
             <header class="navbar navbar-expand navbar-light d-flex d-print-none navbar-top-wrapper" style="border-bottom: 1px solid rgba(0, 0, 0, 0.08); background-color: #ffffff; padding: 0.5rem 1rem;">
@@ -1436,12 +1459,12 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                     <div class="flex-grow-1 mx-2 d-none d-md-block sidak-cmd-wrapper" style="max-width: 420px; position: relative;" id="global-search-wrapper">
                         <form method="GET" action="<?= site_url('smart-search') ?>" autocomplete="off" id="global-search-form">
                             <div class="sidak-cmd-bar" <?= $isDashboardRoute ? 'onclick="openCommandPalette()"' : '' ?>>
-                                <span class="text-muted me-1" style="font-size: 13px;">✨</span>
+                                <span class="text-muted me-1" style="font-size: 13px;">âœ¨</span>
                                 <input type="text" name="q" id="global-search-input" class="form-control sidak-cmd-input flex-grow-1"
                                        placeholder="<?= $isDashboardRoute ? 'Cari menu atau fungsi (Ctrl+K)...' : 'Tanya AI atau cari PA1656, gardu, temuan...' ?>"
                                        autocomplete="off"
                                        <?= $isDashboardRoute ? 'onclick="openCommandPalette(); event.preventDefault();"' : '' ?>>
-                                <kbd class="sidak-cmd-kbd" title="Shortcut keyboard (Ctrl+K / Cmd+K)" style="cursor: pointer;" onclick="openCommandPalette()">⌘K</kbd>
+                                <kbd class="sidak-cmd-kbd" title="Shortcut keyboard (Ctrl+K / Cmd+K)" style="cursor: pointer;" onclick="openCommandPalette()">âŒ˜K</kbd>
                                 <button type="button" class="btn btn-sm btn-light border-0 p-1 rounded-circle" id="btn-qr-scan-header" title="Scan QR Code Asset / Temuan" onclick="triggerQrScanModal()">
                                     <i class="fas fa-qrcode text-primary" style="font-size: 13px;"></i>
                                 </button>
@@ -1462,7 +1485,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                             <ul class="dropdown-menu dropdown-menu-end p-2" id="fav-menu-list" style="min-width: 220px; border-radius: 14px;">
                                 <li class="text-muted small px-2 pb-1 fw-bold" style="font-size: 10px; letter-spacing: 1px;">MENU FAVORIT</li>
                                 <li><hr class="dropdown-divider mt-0 mb-2"></li>
-                                <li><div class="text-center text-muted py-2" style="font-size: 12px;" id="fav-empty-msg">Belum ada menu favorit.<br><small>Klik ⭐ di sidebar untuk tambah.</small></div></li>
+                                <li><div class="text-center text-muted py-2" style="font-size: 12px;" id="fav-empty-msg">Belum ada menu favorit.<br><small>Klik â­ di sidebar untuk tambah.</small></div></li>
                             </ul>
                         </div>
                         <div class="nav-item me-1 d-none d-sm-block">
@@ -2288,7 +2311,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                                 toast: true,
                                 position: 'top',
                                 icon: 'info',
-                                title: '🤖 SIDAK AI Assistant',
+                                title: 'ðŸ¤– SIDAK AI Assistant',
                                 text: res.response_text,
                                 showConfirmButton: false,
                                 timer: 4500,
@@ -2634,7 +2657,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             }
         });
 
-        // STEP 11: Session Restore — reload saved draft on create form page
+        // STEP 11: Session Restore â€” reload saved draft on create form page
         (function restoreFormDraft() {
             if (window.location.pathname.indexOf('/create') === -1) return;
             var saved = localStorage.getItem('sidak_form_draft');
@@ -2686,7 +2709,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                                 if (item.prioritas) html += '<small class="badge badge-sm" style="font-size:9px;background:#e2e8f0;color:#374151;">' + item.prioritas + '</small>';
                                 html += '</div></a>';
                             });
-                            html += '<a href="' + fullUrl + '?q=' + encodeURIComponent(q) + '" class="d-block text-center py-2 text-primary small fw-bold border-top">Lihat semua hasil →</a>';
+                            html += '<a href="' + fullUrl + '?q=' + encodeURIComponent(q) + '" class="d-block text-center py-2 text-primary small fw-bold border-top">Lihat semua hasil â†’</a>';
                             $drop.html(html).show();
                         })
                         .catch(function() { $drop.hide(); });
@@ -2743,7 +2766,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                     localStorage.setItem(FAV_KEY, JSON.stringify(favs));
                     loadFavs();
                     if (typeof Toastify !== 'undefined') {
-                        Toastify({ text: '⭐ Ditambahkan ke Favorit!', duration: 2500, gravity: 'bottom', position: 'right', style: { background: '#10b981' } }).showToast();
+                        Toastify({ text: 'â­ Ditambahkan ke Favorit!', duration: 2500, gravity: 'bottom', position: 'right', style: { background: '#10b981' } }).showToast();
                     }
                 }
             };
@@ -3040,7 +3063,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                 if (isQrProcessingLock) return;
                 isQrProcessingLock = true;
                 
-                showQrScanStatus('✅ QR Code Terbaca! Memproses data...', 'success');
+                showQrScanStatus('âœ… QR Code Terbaca! Memproses data...', 'success');
                 stopQrCameraScanner();
                 executeQrLookup(decodedText);
             };
@@ -3178,7 +3201,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             });
         }
 
-        // ── ENTERPRISE CINEMATIC LOGOUT INTERCEPTOR ──
+        // â”€â”€ ENTERPRISE CINEMATIC LOGOUT INTERCEPTOR â”€â”€
         var logoutLinks = document.querySelectorAll('a[href*="logout"]');
         logoutLinks.forEach(function(link) {
             link.addEventListener('click', function(e) {
@@ -3206,7 +3229,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             });
         });
 
-        // ── TRUE TWO-DOOR REVEAL ON DASHBOARD ENTRY ──
+        // â”€â”€ TRUE TWO-DOOR REVEAL ON DASHBOARD ENTRY â”€â”€
         var revealEl = document.getElementById('cinematicReveal');
         if (revealEl) {
             requestAnimationFrame(function() {
@@ -3239,7 +3262,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
     </div>
 
     <style>
-    /* ── TRUE TWO-DOOR REVEAL FROM CENTER ── */
+    /* â”€â”€ TRUE TWO-DOOR REVEAL FROM CENTER â”€â”€ */
     .cinematic-reveal {
         position: fixed;
         inset: 0;
@@ -3378,6 +3401,84 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         }
         .cinematic-reveal { display: none !important; }
     }
+    
+    /* SIDAK TWO-LEVEL SIDEBAR */
+    .navbar-vertical { transition: width .25s ease, left .25s ease; }
+    body.sidak-mission-control.sidebar-collapsed .navbar-vertical,
+    body.sidak-mission-control .navbar-vertical {
+        width: 68px !important;
+        left: 0 !important;
+    }
+    body.sidak-mission-control .page-wrapper {
+        margin-left: 68px !important;
+        transition: margin-left .25s ease;
+    }
+    @media (max-width: 991.98px) {
+        body.sidak-mission-control .navbar-vertical { left: -300px !important; width: 280px !important; }
+        body.sidak-mission-control .navbar-vertical.drawer-open { left: 0 !important; }
+        body.sidak-mission-control .page-wrapper { margin-left: 0 !important; }
+    }
+    .sidak-submenu-panel {
+        position: fixed;
+        left: 68px;
+        top: 0;
+        bottom: 0;
+        width: 320px;
+        background: #fff;
+        border-right: 1px solid #e9ecef;
+        box-shadow: 8px 0 24px rgba(0,0,0,.08);
+        z-index: 1055;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .sidak-submenu-panel.active { display: flex; }
+    body.sidak-mission-control.sidebar-collapsed .sidak-submenu-panel.active { display: flex; }
+    .sidak-submenu-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .875rem 1rem;
+        border-bottom: 1px solid #f1f3f5;
+        background: linear-gradient(180deg,#fff,#f8f9fa);
+    }
+    .sidak-submenu-body { overflow-y: auto; padding: .75rem 1rem 1rem; }
+    .sidak-submenu-group { margin-bottom: 1rem; }
+    .sidak-submenu-group-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: #6c757d;
+        font-weight: 700;
+        margin-bottom: .5rem;
+    }
+    .sidak-submenu-item {
+        display: flex;
+        align-items: center;
+        gap: .625rem;
+        padding: .5rem .625rem;
+        border-radius: 6px;
+        color: #212529;
+        text-decoration: none;
+        font-size: .9rem;
+        margin-bottom: .25rem;
+    }
+    .sidak-submenu-item:hover { background: #f8f9fa; color: #212529; text-decoration: none; }
+    .sidak-submenu-item.active { background: rgba(0,181,184,.12); color: #004d4f; font-weight: 600; }
+    .sidak-submenu-item i { width: 18px; text-align: center; color: #495057; }
+    .sidak-submenu-item.active i { color: #004d4f; }
+    .sidak-submenu-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.25);
+        z-index: 1054;
+        display: none;
+    }
+    .sidak-submenu-backdrop.active { display: block; }
+    @media (max-width: 991.98px) {
+        .sidak-submenu-panel { left: 0; width: 100%; max-width: 360px; }
+    }
+
     </style>
 
     <script>
@@ -3464,6 +3565,112 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         }
         document.body.style.overflow = '';
     };
+    var sidakSubmenuData = {};
+    function closeSidakSubmenu() {
+        var panel = document.getElementById('sidak-submenu-panel');
+        var backdrop = document.getElementById('sidak-submenu-backdrop');
+        if (panel) panel.classList.remove('active');
+        if (backdrop) backdrop.classList.remove('active');
+    }
+    var sidakSubmenuData = {
+        'group-core': { title: 'Core & Analytics', icon: 'fas fa-compass', desc: 'Dashboard & Analytics', groups: [{ name: 'Umum', items: [
+            { href: '<?= site_url('dashboard') ?>', icon: 'fas fa-gauge-high', text: 'Dashboard Utama', active: <?= json_encode(url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive')) ?> },
+            { href: '<?= site_url('executive-dashboard') ?>', icon: 'fas fa-chart-line', text: 'Executive Analytics', active: <?= json_encode(url_is('executive-dashboard') || url_is('dashboard/executive')) ?> },
+            { href: '<?= site_url('gis') ?>', icon: 'fas fa-map-marked-alt', text: 'Peta Jaringan (GIS)', active: <?= json_encode(url_is('gis*') || url_is('peta-jaringan*')) ?> }
+        ]}]},
+        'group-sld': { title: 'Single Line Diagram', icon: 'fas fa-bolt', desc: 'SLD & Validasi', groups: [{ name: 'SLD', items: [
+            { href: '<?= site_url('sld/view/15') ?>', icon: 'fas fa-diagram-project', text: 'SLD Feeder', active: <?= json_encode(url_is('sld/view*') || url_is('sld/feeder*')) ?> },
+            { href: '<?= site_url('sld/validation') ?>', icon: 'fas fa-shield-halved', text: 'SLD Validation', active: <?= json_encode(url_is('sld/validation*')) ?> }
+        ]}]},
+        'group-operasional': { title: 'Operasional & Lapangan', icon: 'fas fa-screwdriver-wrench', desc: 'Inspeksi & Temuan', groups: [{ name: 'Inspeksi', items: [
+            { href: '<?= site_url('planning') ?>', icon: 'fas fa-clipboard-list', text: 'Planning Inspeksi', active: <?= json_encode(url_is('planning*')) ?> },
+            { href: '<?= site_url('inspection-progress') ?>', icon: 'fas fa-chart-line', text: 'Progress Inspeksi (Live)', active: <?= json_encode(url_is('inspection-progress*')) ?> },
+            { href: '<?= site_url('my-inspections') ?>', icon: 'fas fa-tasks', text: 'Tugas Inspeksi Saya', active: <?= json_encode(url_is('my-inspections*')) ?> },
+            { href: '<?= site_url('my-progress') ?>', icon: 'fas fa-play-circle', text: 'Progress Saya', active: <?= json_encode(url_is('my-progress*')) ?> },
+            { href: '<?= site_url('my-history') ?>', icon: 'fas fa-history', text: 'Riwayat Saya', active: <?= json_encode(url_is('my-history*')) ?> },
+<?php if (check_role(['administrator','admin_ulp','inspeksi'])): ?>
+            { href: '<?= site_url('temuan/create') ?>', icon: 'fas fa-plus-circle', text: 'Input Temuan', active: <?= json_encode(url_is('temuan/create')) ?> },
+<?php endif; ?>
+            { href: '<?= site_url('temuan') ?>', icon: 'fas fa-list-check', text: 'Daftar Temuan', active: <?= json_encode(url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan')) ?> }
+        ]}]},
+        'group-remediasi': { title: 'Remediasi & Tindak Lanjut', icon: 'fas fa-wrench', desc: 'Perbaikan Temuan', groups: [{ name: 'Tindak Lanjut', items: [
+            { href: '<?= site_url('remediation/dashboard') ?>', icon: 'fas fa-tachometer-alt', text: 'Dashboard Remediasi', active: <?= json_encode(url_is('remediation/dashboard*')) ?> },
+            { href: '<?= site_url('remediation/work-orders') ?>', icon: 'fas fa-clipboard-check', text: 'Work Order', active: <?= json_encode(url_is('remediation/work-orders*')) ?> },
+            { href: '<?= site_url('remediation/assignments') ?>', icon: 'fas fa-user-check', text: 'Penugasan', active: <?= json_encode(url_is('remediation/assignments*')) ?> },
+            { href: '<?= site_url('remediation/approval') ?>', icon: 'fas fa-check-double', text: 'Persetujuan', active: <?= json_encode(url_is('remediation/approval*')) ?> },
+            { href: '<?= site_url('remediation/progress') ?>', icon: 'fas fa-spinner', text: 'Progress Remediasi', active: <?= json_encode(url_is('remediation/progress*')) ?> },
+            { href: '<?= site_url('remediation/closed') ?>', icon: 'fas fa-lock', text: 'Closed (Selesai)', active: <?= json_encode(url_is('remediation/closed*')) ?> }
+        ]}]},
+        'group-ai': { title: 'AI Command Center', icon: 'fas fa-brain', desc: 'AI & Analytics', groups: [{ name: 'AI', items: [
+            { href: '<?= site_url('ai') ?>', icon: 'fas fa-robot', text: 'AI Assistant', active: <?= json_encode(url_is('ai*') && !url_is('ranking*')) ?> },
+            { href: '<?= site_url('ranking') ?>', icon: 'fas fa-medal', text: 'Ranking & Analytics', active: <?= json_encode(url_is('ranking*')) ?> }
+        ]}]},
+        'group-data': { title: 'Data & Referensi', icon: 'fas fa-database', desc: 'Master Data', groups: [{ name: 'Master', items: [
+            { href: '<?= site_url('master-gi') ?>', icon: 'fas fa-charging-station', text: 'Gardu Induk (GI)', active: <?= json_encode(url_is('master-gi*')) ?> },
+<?php if (check_role(['administrator'])): ?>
+            { href: '<?= site_url('ulps') ?>', icon: 'fas fa-building', text: 'Data ULP', active: <?= json_encode(url_is('ulps*')) ?> },
+<?php endif; ?>
+            { href: '<?= site_url('penyulang') ?>', icon: 'fas fa-route', text: 'Data Penyulang', active: <?= json_encode(url_is('penyulang*')) ?> },
+            { href: '<?= site_url('sections') ?>', icon: 'fas fa-map-pin', text: 'Data Section', active: <?= json_encode(url_is('sections*')) ?> },
+            { href: '<?= site_url('users') ?>', icon: 'fas fa-users', text: 'Data User', active: <?= json_encode(url_is('users*')) ?> },
+            { href: '<?= site_url('import') ?>', icon: 'fas fa-file-excel', text: 'Impor Excel', active: <?= json_encode(url_is('import*')) ?> },
+            { href: '<?= site_url('asset-corpus') ?>', icon: 'fas fa-boxes-stacked', text: 'Korpus Aset', active: <?= json_encode(url_is('asset-corpus*')) ?> },
+            { href: '<?= site_url('eviden/kubikel') ?>', icon: 'fas fa-camera', text: 'Eviden Kubikel', active: <?= json_encode(url_is('eviden/kubikel*')) ?> },
+            { href: '<?= site_url('eviden/trafo') ?>', icon: 'fas fa-bolt-lightning', text: 'Eviden Trafo', active: <?= json_encode(url_is('eviden/trafo*')) ?> }
+        ]}]},
+        'group-system': { title: 'System & Laporan', icon: 'fas fa-gear', desc: 'Pengaturan & Laporan', groups: [{ name: 'Umum', items: [
+            { href: '<?= site_url('ecc') ?>', icon: 'fas fa-tv', text: 'Command Center (ECC)', active: <?= json_encode(url_is('ecc*')) ?> },
+            { href: '<?= site_url('notifications') ?>', icon: 'fas fa-bell', text: 'Notifikasi Center', active: <?= json_encode(url_is('notifications*')) ?> },
+            { href: '<?= site_url('my-dashboard') ?>', icon: 'fas fa-user-circle', text: 'My Dashboard', active: <?= json_encode(url_is('my-dashboard*')) ?> },
+            { href: '<?= site_url('laporan') ?>', icon: 'fas fa-file-lines', text: 'Laporan', active: <?= json_encode(url_is('laporan*')) ?> },
+            { href: '<?= site_url('documents') ?>', icon: 'fas fa-folder', text: 'Dokumen', active: <?= json_encode(url_is('documents*')) ?> },
+<?php if (check_role(['administrator'])): ?>
+            { href: '<?= site_url('audit-log') ?>', icon: 'fas fa-clock-rotate-left', text: 'Audit Log', active: <?= json_encode(url_is('audit-log*')) ?> },
+            { href: '<?= site_url('integration') ?>', icon: 'fas fa-plug', text: 'Integrasi & API', active: <?= json_encode(url_is('integration*')) ?> },
+            { href: '<?= site_url('backup-database') ?>', icon: 'fas fa-database', text: 'Backup Database', active: <?= json_encode(url_is('backup-database*')) ?> },
+<?php endif; ?>
+            { href: '<?= site_url('change-password') ?>', icon: 'fas fa-key', text: 'Ganti Password', active: <?= json_encode(url_is('change-password*')) ?> }
+        ]}]}
+    };
+    function openSidakSubmenu(key, ev) {
+        if (!key) return;
+        var data = sidakSubmenuData[key];
+        if (!data) return;
+        var panel = document.getElementById('sidak-submenu-panel');
+        var backdrop = document.getElementById('sidak-submenu-backdrop');
+        var icon = document.getElementById('sidak-submenu-icon');
+        var title = document.getElementById('sidak-submenu-title');
+        var desc = document.getElementById('sidak-submenu-desc');
+        var body = document.getElementById('sidak-submenu-body');
+        if (!panel || !body) return;
+        if (icon) { icon.className = data.icon + ' me-2 text-primary'; }
+        if (title) title.textContent = data.title;
+        if (desc) desc.textContent = data.desc || '';
+        body.innerHTML = '';
+        if (data.groups) {
+            data.groups.forEach(function(g) {
+                var gdiv = document.createElement('div'); gdiv.className = 'sidak-submenu-group';
+                var gtitle = document.createElement('div'); gtitle.className = 'sidak-submenu-group-title'; gtitle.textContent = g.name; gdiv.appendChild(gtitle);
+                if (g.items) {
+                    g.items.forEach(function(it) {
+                        var a = document.createElement('a'); a.className = 'sidak-submenu-item' + (it.active ? ' active' : ''); a.href = it.href;
+                        var iel = document.createElement('i'); iel.className = it.icon || 'fas fa-circle'; a.appendChild(iel);
+                        var span = document.createElement('span'); span.textContent = it.text; a.appendChild(span);
+                        gdiv.appendChild(a);
+                    });
+                }
+                body.appendChild(gdiv);
+            });
+        }
+        panel.classList.add('active');
+        if (backdrop) backdrop.classList.add('active');
+    }
+    function closeSidakSubmenu() {
+        var panel = document.getElementById('sidak-submenu-panel');
+        var backdrop = document.getElementById('sidak-submenu-backdrop');
+        if (panel) panel.classList.remove('active');
+        if (backdrop) backdrop.classList.remove('active');
+    }
     function populateFullMenu() {
         var contentEl = document.getElementById('full-menu-content');
         var navEl = document.getElementById('sidebar-menu');
@@ -3545,3 +3752,5 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
     <?= $this->renderSection('scripts') ?>
 </body>
 </html>
+
+

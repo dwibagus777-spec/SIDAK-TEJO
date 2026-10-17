@@ -1117,7 +1117,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY: SINGLE LINE DIAGRAM (CR-NAV-01) -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-sld" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-sld', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-sld" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-sld', event)"
                             <span><i class="fas fa-bolt me-1 text-warning"></i> SINGLE LINE DIAGRAM</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1137,7 +1137,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 2: OPERASIONAL & LAPANGAN (Expanded) -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-operasional" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-operasional', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-operasional" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-operasional', event)"
                             <span><i class="fas fa-screwdriver-wrench me-1 text-info"></i> OPERASIONAL & LAPANGAN</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1209,7 +1209,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY B8.1: REMEDIASI -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-remediasi" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-remediasi', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-remediasi" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-remediasi', event)"
                             <span><i class="fas fa-tools me-1 text-warning"></i> REMEDIASI</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1229,7 +1229,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 3: AI & INTELLIGENCE -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-ai" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-ai', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-ai" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-ai', event)"
                             <span><i class="fas fa-brain me-1 text-purple"></i> AI & INTELLIGENCE</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1255,7 +1255,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 4: DATA & MASTER REFERENSI -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-data" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-data', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-data" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-data', event)"
                             <span><i class="fas fa-database me-1 text-success"></i> DATA & MASTER REFERENSI</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -1322,7 +1322,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
                         </div>
 
                         <!-- CATEGORY 5: SYSTEM & LAPORAN -->
-                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-system" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;"> onclick="openSidakSubmenu('group-system', event)"
+                        <li class="nav-header text-uppercase text-muted px-3 mt-3 mb-1 cursor-pointer d-flex justify-content-between align-items-center" data-bs-target="#group-system" aria-expanded="false" style="font-size: 10px; font-weight: 800; letter-spacing: 1px;" onclick="openSidakSubmenu('group-system', event)"
                             <span><i class="fas fa-gear me-1 text-secondary"></i> SYSTEM & LAPORAN</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
@@ -3675,7 +3675,7 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
         var navEl = document.getElementById('sidebar-menu');
         if (!contentEl || !navEl) return;
         contentEl.innerHTML = '';
-        var headers = navEl.querySelectorAll('.nav-header[data-bs-target]');
+        var headers = navEl.querySelectorAll('.nav-header[data-bs-target]'); onclick="openSidakSubmenu('        var headers = navEl.querySelectorAll('.nav-header[data-bs-target]');', event)"
         if (headers.length === 0) return;
         headers.forEach(function(header) {
             var targetId = header.getAttribute('data-bs-target');

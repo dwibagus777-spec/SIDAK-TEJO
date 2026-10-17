@@ -1017,36 +1017,503 @@ body.dark-mode .dropdown-item:hover {
     background-color: #334155 !important;
 }
 
-/* Submenu Panel Dark Mode */
-body.dark-mode .sidak-submenu-panel {
-    background: #1e293b !important;
-    border-right-color: #334155 !important;
-    box-shadow: 8px 0 24px rgba(0,0,0,.5) !important;
+/* ==========================================================================
+   SIDAK TEJO TWO-PART SIDEBAR (RAIL + CONTEXTUAL WORKSPACE + BACKUP DRAWER)
+   ========================================================================== */
+
+/* 1. NARROW ICON RAIL (64px) */
+.sidak-rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 64px;
+    background: #070e1a;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 1060;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 0;
+    transition: transform 0.25s ease;
 }
-body.dark-mode .sidak-submenu-header {
-    background: #0f172a !important;
-    border-bottom-color: #334155 !important;
-    color: #f1f5f9 !important;
+
+.sidak-rail-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    color: #070e1a;
+    font-weight: 900;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: -0.5px;
+    text-decoration: none;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.45);
+    margin-bottom: 16px;
+    flex-shrink: 0;
 }
-body.dark-mode .sidak-submenu-group-title {
-    color: #94a3b8 !important;
+
+.sidak-rail-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    padding: 0 8px;
 }
-body.dark-mode .sidak-submenu-item {
-    color: #e2e8f0 !important;
+
+.sidak-rail-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: rgba(255, 255, 255, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    position: relative;
 }
-body.dark-mode .sidak-submenu-item:hover {
-    background: #334155 !important;
-    color: #38bdf8 !important;
+
+.sidak-rail-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.1);
 }
-body.dark-mode .sidak-submenu-item.active {
-    background: rgba(14, 165, 233, 0.2) !important;
-    color: #38bdf8 !important;
+
+.sidak-rail-btn.active {
+    background: #ffffff !important;
+    color: #070e1a !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border-color: #ffffff !important;
 }
-body.dark-mode .sidak-submenu-item i {
-    color: #94a3b8 !important;
+
+.sidak-rail-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
 }
-body.dark-mode .sidak-submenu-item.active i {
-    color: #38bdf8 !important;
+
+.sidak-rail-backup-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px dashed rgba(6, 182, 212, 0.4);
+    color: #22d3ee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.sidak-rail-backup-btn:hover {
+    background: rgba(6, 182, 212, 0.2);
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+}
+
+.sidak-rail-backup-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #06b6d4;
+    color: #070e1a;
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidak-rail-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0e172a 0%, #1e293b 100%);
+    border: 2px solid rgba(6, 182, 212, 0.4);
+    color: #22d3ee;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* 2. CONTEXTUAL WORKSPACE PANEL (280px) */
+.sidak-workspace-panel {
+    position: fixed;
+    top: 0;
+    left: 64px;
+    bottom: 0;
+    width: 280px;
+    background: #081120;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 1055;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: transform 0.25s ease, left 0.25s ease;
+}
+
+body.workspace-collapsed .sidak-workspace-panel {
+    transform: translateX(-280px);
+}
+
+.sidak-workspace-header {
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidak-workspace-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: #22d3ee;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sidak-workspace-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sidak-workspace-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.4;
+    margin-bottom: 0;
+}
+
+.sidak-workspace-body {
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+}
+
+.sidak-group-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding-left: 4px;
+}
+
+.sidak-menu-card {
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    margin-bottom: 6px;
+}
+
+.sidak-menu-card.active {
+    background: #ffffff !important;
+    color: #070e1a !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+}
+
+.sidak-menu-card.active .sidak-menu-card-desc {
+    color: rgba(7, 14, 26, 0.7) !important;
+}
+
+.sidak-menu-card.active .sidak-menu-card-icon {
+    background: #070e1a !important;
+    color: #ffffff !important;
+}
+
+.sidak-menu-card.active .sidak-menu-card-arrow {
+    color: #070e1a !important;
+}
+
+.sidak-menu-card:not(.active) {
+    background: #0e1c33;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.sidak-menu-card:not(.active):hover {
+    background: #132746;
+    border-color: rgba(6, 182, 212, 0.3);
+    color: #ffffff;
+}
+
+.sidak-menu-card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.sidak-menu-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.sidak-menu-card-desc {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+.sidak-menu-card-arrow {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+/* SUBMENU AKTIF CARD */
+.sidak-submenu-card {
+    border-radius: 14px;
+    background: #0d1e38;
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    padding: 12px;
+}
+
+.sidak-submenu-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.sidak-submenu-card-title {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #22d3ee;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sidak-submenu-card-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22d3ee;
+    animation: dahPulse 2s infinite;
+}
+
+.sidak-submenu-item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 6px;
+    text-decoration: none;
+}
+
+.sidak-submenu-item-row:hover {
+    color: #22d3ee;
+}
+
+.sidak-submenu-item-row.active {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* LIVE DUAL STAT BOX */
+.sidak-dual-stats {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidak-stat-box {
+    flex: 1;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 8px;
+}
+
+.sidak-stat-box-emergency {
+    flex: 1;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    padding: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* MENU BACKUP MINI CARD IN WORKSPACE */
+.sidak-backup-card {
+    border-radius: 14px;
+    background: rgba(6, 182, 212, 0.05);
+    border: 1px dashed rgba(6, 182, 212, 0.3);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidak-backup-card:hover {
+    background: rgba(6, 182, 212, 0.12);
+    border-color: rgba(6, 182, 212, 0.6);
+}
+
+/* BUKA WORKSPACE BUTTON */
+.sidak-workspace-btn {
+    width: 100%;
+    height: 42px;
+    border-radius: 12px;
+    background: #06b6d4;
+    color: #070e1a;
+    font-weight: 800;
+    font-size: 13px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.45);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.sidak-workspace-btn:hover {
+    background: #22d3ee;
+    color: #070e1a;
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.6);
+    text-decoration: none;
+}
+
+/* 3. MENU BACKUP DRAWER (SLIDE FROM RIGHT) */
+.sidak-backup-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 380px;
+    max-width: 92vw;
+    background: #081120;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+    z-index: 1070;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidak-backup-drawer.open {
+    transform: translateX(0);
+}
+
+.sidak-backup-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1065;
+    display: none;
+}
+
+.sidak-backup-backdrop.active {
+    display: block;
+}
+
+.sidak-backup-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sidak-backup-body {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.sidak-backup-footer {
+    padding: 14px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* 4. MAIN PAGE WRAPPER OFFSET FOR TWO-PART SIDEBAR */
+@media (min-width: 992px) {
+    .page-wrapper {
+        margin-left: 344px !important;
+        transition: margin-left 0.25s ease;
+    }
+    body.workspace-collapsed .page-wrapper {
+        margin-left: 64px !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .page-wrapper {
+        margin-left: 0 !important;
+    }
+    .sidak-rail,
+    .sidak-workspace-panel {
+        display: none !important;
+    }
 }
 
 /* Sidebar Drawer Header (MENU SEKUNDER) - Only visible when drawer is open */
@@ -1086,6 +1553,459 @@ body.dark-mode .shadow-xs, body.dark-mode .shadow-sm {
 </script>
 <?php
 $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive'));
+$db = \Config\Database::connect();
+$navTemuanTotal = $db->table('temuan')->where('deleted_at IS NULL')->countAllResults();
+$navEmergencyTotal = $db->table('temuan')->where('prioritas', 'EMERGENCY')->where('status !=', 'SELESAI')->where('deleted_at IS NULL')->countAllResults();
+
+$userSessionName = (string)(session()->get('user_name') ?? 'Administrator');
+$userSessionRole = (string)(session()->get('user_role') ?? 'administrator');
+$userInitials = '';
+$nameParts = preg_split('/\s+/', trim($userSessionName));
+if (count($nameParts) >= 2) {
+    $userInitials = strtoupper(mb_substr($nameParts[0], 0, 1, 'UTF-8') . mb_substr($nameParts[1], 0, 1, 'UTF-8'));
+} else {
+    $userInitials = strtoupper(mb_substr($userSessionName, 0, 2, 'UTF-8'));
+}
+
+// Master Menu Registry strictly respecting application roles and routes
+$rawMenuItems = [
+    // DASHBOARD
+    [
+        'id'        => 'dash-utama',
+        'name'      => 'Dashboard Utama',
+        'category'  => 'DASHBOARD',
+        'desc'      => 'Executive overview & live KPIs',
+        'href'      => site_url('dashboard'),
+        'icon'      => 'fas fa-gauge-high',
+        'active'    => (bool)(url_is('dashboard') && !url_is('executive-dashboard') && !url_is('dashboard/executive')),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'exec-analytics',
+        'name'      => 'Executive Analytics',
+        'category'  => 'DASHBOARD',
+        'desc'      => 'Board-level insights',
+        'href'      => site_url('executive-dashboard'),
+        'icon'      => 'fas fa-chart-line',
+        'active'    => (bool)(url_is('executive-dashboard') || url_is('dashboard/executive')),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'gis',
+        'name'      => 'Peta Jaringan GIS',
+        'category'  => 'DASHBOARD',
+        'desc'      => 'GIS Network Health Map',
+        'href'      => site_url('gis'),
+        'icon'      => 'fas fa-map-marked-alt',
+        'active'    => (bool)(url_is('gis*') || url_is('peta-jaringan*')),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'sld-feeder',
+        'name'      => 'SLD Feeder',
+        'category'  => 'DASHBOARD',
+        'desc'      => 'Single Line Diagram Feeder',
+        'href'      => site_url('sld/view/15'),
+        'icon'      => 'fas fa-diagram-project',
+        'active'    => (bool)(url_is('sld/view*') || url_is('sld/feeder*')),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'sld-val',
+        'name'      => 'SLD Validation',
+        'category'  => 'DASHBOARD',
+        'desc'      => 'Validasi topologi SLD',
+        'href'      => site_url('sld/validation'),
+        'icon'      => 'fas fa-shield-halved',
+        'active'    => (bool)url_is('sld/validation*'),
+        'inRail'    => false,
+        'roles'     => null,
+    ],
+
+    // OPERATIONS
+    [
+        'id'        => 'planning',
+        'name'      => 'Planning Inspeksi',
+        'category'  => 'OPERATIONS',
+        'desc'      => 'Jadwal pemeliharaan',
+        'href'      => site_url('planning'),
+        'icon'      => 'fas fa-clipboard-list',
+        'active'    => (bool)url_is('planning*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'my-inspections',
+        'name'      => 'Tugas Inspeksi Saya',
+        'category'  => 'OPERATIONS',
+        'desc'      => 'Tugas inspeksi aktif',
+        'href'      => site_url('my-inspections'),
+        'icon'      => 'fas fa-tasks',
+        'active'    => (bool)url_is('my-inspections*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'my-history',
+        'name'      => 'Riwayat Saya',
+        'category'  => 'OPERATIONS',
+        'desc'      => 'Riwayat inspeksi lapangan',
+        'href'      => site_url('my-history'),
+        'icon'      => 'fas fa-history',
+        'active'    => (bool)url_is('my-history*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'input-temuan',
+        'name'      => 'Input Temuan Baru',
+        'category'  => 'OPERATIONS',
+        'desc'      => 'Quick input temuan',
+        'href'      => site_url('temuan/create'),
+        'icon'      => 'fas fa-plus-circle',
+        'active'    => (bool)url_is('temuan/create'),
+        'inRail'    => true,
+        'roles'     => ['administrator', 'admin_ulp', 'inspeksi'],
+    ],
+    [
+        'id'        => 'daftar-temuan',
+        'name'      => 'Daftar Semua Temuan',
+        'category'  => 'OPERATIONS',
+        'desc'      => 'Database 500+ temuan',
+        'href'      => site_url('temuan'),
+        'icon'      => 'fas fa-list-check',
+        'active'    => (bool)(url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan')),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'har-update',
+        'name'      => 'Update Pekerjaan (HAR)',
+        'category'  => 'OPERATIONS',
+        'desc'      => 'Tindak lanjut HAR & eksekusi',
+        'href'      => site_url('temuan/update-pekerjaan'),
+        'icon'      => 'fas fa-wrench',
+        'active'    => (bool)url_is('temuan/update-pekerjaan*'),
+        'inRail'    => true,
+        'roles'     => ['administrator','admin_ulp','pdkb','har_gardu','har_konstruksi','har_row','har_crane','yantek'],
+    ],
+    [
+        'id'        => 'temuan-terdekat',
+        'name'      => 'Temuan Terdekat',
+        'category'  => 'OPERATIONS',
+        'desc'      => 'Radar GPS temuan terdekat',
+        'href'      => site_url('temuan/terdekat'),
+        'icon'      => 'fas fa-location-crosshairs',
+        'active'    => (bool)url_is('temuan/terdekat*'),
+        'inRail'    => false,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'work-orders',
+        'name'      => 'Work Orders (WO)',
+        'category'  => 'OPERATIONS',
+        'desc'      => 'Feed perintah kerja tim',
+        'href'      => site_url('work-orders'),
+        'icon'      => 'fas fa-file-signature',
+        'active'    => (bool)url_is('work-orders*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+
+    // REMEDIASI
+    [
+        'id'        => 'remediasi-wp',
+        'name'      => 'Work Package Remediasi',
+        'category'  => 'REMEDIASI',
+        'desc'      => 'Manajemen work package',
+        'href'      => site_url('remediation'),
+        'icon'      => 'fas fa-briefcase',
+        'active'    => (bool)(url_is('remediation') && !url_is('remediation/*')),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'remediasi-create',
+        'name'      => 'Buat Work Package',
+        'category'  => 'REMEDIASI',
+        'desc'      => 'Paket eksekusi pemulihan',
+        'href'      => site_url('remediation/create'),
+        'icon'      => 'fas fa-folder-plus',
+        'active'    => (bool)url_is('remediation/create*'),
+        'inRail'    => false,
+        'roles'     => null,
+    ],
+
+    // AI
+    [
+        'id'        => 'ai-copilot',
+        'name'      => 'SIDAK AI Copilot',
+        'category'  => 'AI',
+        'desc'      => 'Rekomendasi & asisten AI',
+        'href'      => site_url('ai-copilot'),
+        'icon'      => 'fas fa-robot',
+        'active'    => (bool)url_is('ai-copilot*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'ai-center',
+        'name'      => 'AI Center & Predictive',
+        'category'  => 'AI',
+        'desc'      => 'Model prediksi kegagalan aset',
+        'href'      => site_url('ai-center'),
+        'icon'      => 'fas fa-brain',
+        'active'    => (bool)url_is('ai-center*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'ai-ranking',
+        'name'      => 'Auto Ranking',
+        'category'  => 'AI',
+        'desc'      => 'Matriks ranking penyulang',
+        'href'      => site_url('ranking'),
+        'icon'      => 'fas fa-medal',
+        'active'    => (bool)url_is('ranking*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+
+    // MASTER
+    [
+        'id'        => 'asset-corpus',
+        'name'      => 'Asset Corpus',
+        'category'  => 'MASTER',
+        'desc'      => 'Workspace corpus aset',
+        'href'      => site_url('asset-corpus/workspace'),
+        'icon'      => 'fas fa-file-csv',
+        'active'    => (bool)url_is('asset-corpus*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'asset-health',
+        'name'      => 'Asset Health Index',
+        'category'  => 'MASTER',
+        'desc'      => 'Skoring kesehatan aset',
+        'href'      => site_url('asset-health'),
+        'icon'      => 'fas fa-heart-pulse',
+        'active'    => (bool)url_is('asset-health*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'master-assets',
+        'name'      => 'Master Asset PLN',
+        'category'  => 'MASTER',
+        'desc'      => 'Master data 610 aset',
+        'href'      => site_url('master-assets'),
+        'icon'      => 'fas fa-boxes-stacked',
+        'active'    => (bool)url_is('master-assets*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'master-gi',
+        'name'      => 'Gardu Induk (GI)',
+        'category'  => 'MASTER',
+        'desc'      => 'Data gardu induk UP3',
+        'href'      => site_url('master-gi'),
+        'icon'      => 'fas fa-charging-station',
+        'active'    => (bool)url_is('master-gi*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'penyulang',
+        'name'      => 'Data Penyulang',
+        'category'  => 'MASTER',
+        'desc'      => '143 penyulang distribusi',
+        'href'      => site_url('penyulang'),
+        'icon'      => 'fas fa-route',
+        'active'    => (bool)url_is('penyulang*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'data-ulp',
+        'name'      => 'Data ULP',
+        'category'  => 'MASTER',
+        'desc'      => 'Unit Layanan Pelanggan',
+        'href'      => site_url('ulps'),
+        'icon'      => 'fas fa-building',
+        'active'    => (bool)url_is('ulps*'),
+        'inRail'    => false,
+        'roles'     => ['administrator'],
+    ],
+    [
+        'id'        => 'sections',
+        'name'      => 'Data Section',
+        'category'  => 'MASTER',
+        'desc'      => 'Zona section jaringan',
+        'href'      => site_url('sections'),
+        'icon'      => 'fas fa-map-pin',
+        'active'    => (bool)url_is('sections*'),
+        'inRail'    => false,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'users',
+        'name'      => 'Data User',
+        'category'  => 'MASTER',
+        'desc'      => 'Akun petugas & role',
+        'href'      => site_url('users'),
+        'icon'      => 'fas fa-users',
+        'active'    => (bool)url_is('users*'),
+        'inRail'    => false,
+        'roles'     => ['administrator'],
+    ],
+    [
+        'id'        => 'import-excel',
+        'name'      => 'Impor Excel',
+        'category'  => 'MASTER',
+        'desc'      => 'Batch import data',
+        'href'      => site_url('import'),
+        'icon'      => 'fas fa-file-excel',
+        'active'    => (bool)url_is('import*'),
+        'inRail'    => false,
+        'roles'     => null,
+    ],
+
+    // SYSTEM
+    [
+        'id'        => 'ecc',
+        'name'      => 'Command Center (ECC)',
+        'category'  => 'SYSTEM',
+        'desc'      => 'Emergency command center',
+        'href'      => site_url('ecc'),
+        'icon'      => 'fas fa-tv',
+        'active'    => (bool)url_is('ecc*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'notifications',
+        'name'      => 'Notifikasi Center',
+        'category'  => 'SYSTEM',
+        'desc'      => 'Pemberitahuan real-time',
+        'href'      => site_url('notifications'),
+        'icon'      => 'fas fa-bell',
+        'active'    => (bool)url_is('notifications*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'my-dashboard',
+        'name'      => 'My Dashboard',
+        'category'  => 'SYSTEM',
+        'desc'      => 'Personalisasi petugas',
+        'href'      => site_url('my-dashboard'),
+        'icon'      => 'fas fa-user-circle',
+        'active'    => (bool)url_is('my-dashboard*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'laporan',
+        'name'      => 'Pusat Laporan',
+        'category'  => 'SYSTEM',
+        'desc'      => 'Cetak & ekspor laporan',
+        'href'      => site_url('laporan'),
+        'icon'      => 'fas fa-file-lines',
+        'active'    => (bool)url_is('laporan*'),
+        'inRail'    => true,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'documents',
+        'name'      => 'Dokumen',
+        'category'  => 'SYSTEM',
+        'desc'      => 'Arsip & dokumen teknis',
+        'href'      => site_url('documents'),
+        'icon'      => 'fas fa-folder',
+        'active'    => (bool)url_is('documents*'),
+        'inRail'    => false,
+        'roles'     => null,
+    ],
+    [
+        'id'        => 'audit-log',
+        'name'      => 'Audit Log',
+        'category'  => 'SYSTEM',
+        'desc'      => 'Log jejak aktivitas',
+        'href'      => site_url('audit-log'),
+        'icon'      => 'fas fa-clock-rotate-left',
+        'active'    => (bool)url_is('audit-log*'),
+        'inRail'    => false,
+        'roles'     => ['administrator'],
+    ],
+    [
+        'id'        => 'integration',
+        'name'      => 'Integrasi & API',
+        'category'  => 'SYSTEM',
+        'desc'      => 'Konfigurasi integrasi eksternal',
+        'href'      => site_url('integration'),
+        'icon'      => 'fas fa-plug',
+        'active'    => (bool)url_is('integration*'),
+        'inRail'    => false,
+        'roles'     => ['administrator'],
+    ],
+    [
+        'id'        => 'backup-database',
+        'name'      => 'Backup Database',
+        'category'  => 'SYSTEM',
+        'desc'      => 'Cadangkan database sistem',
+        'href'      => site_url('backup-database'),
+        'icon'      => 'fas fa-database',
+        'active'    => (bool)url_is('backup-database*'),
+        'inRail'    => true,
+        'roles'     => ['administrator'],
+    ],
+    [
+        'id'        => 'change-password',
+        'name'      => 'Ganti Password',
+        'category'  => 'SYSTEM',
+        'desc'      => 'Ubah kata sandi akun',
+        'href'      => site_url('change-password'),
+        'icon'      => 'fas fa-key',
+        'active'    => (bool)url_is('change-password*'),
+        'inRail'    => false,
+        'roles'     => null,
+    ],
+];
+
+// Filter menu items by user role
+$authorizedMenuItems = array_values(array_filter($rawMenuItems, function($item) {
+    if ($item['roles'] === null) {
+        return true;
+    }
+    return check_role($item['roles']);
+}));
+
+$categoriesDef = [
+    'DASHBOARD'   => ['name' => 'Dashboard Utama', 'icon' => 'fas fa-table-cells-large', 'desc' => 'Executive overview & live KPIs - simple, tapi semua menu tetap ada.'],
+    'OPERATIONS'  => ['name' => 'Operasional & Lapangan', 'icon' => 'fas fa-screwdriver-wrench', 'desc' => 'Perencanaan, tugas inspeksi, temuan & work order.'],
+    'REMEDIASI'   => ['name' => 'Remediasi & Tindak Lanjut', 'icon' => 'fas fa-wrench', 'desc' => 'Work package pemulihan & tindak lanjut temuan.'],
+    'AI'          => ['name' => 'AI Command Center', 'icon' => 'fas fa-brain', 'desc' => 'SIDAK AI Copilot, auto ranking & predictive analysis.'],
+    'MASTER'      => ['name' => 'Data & Referensi', 'icon' => 'fas fa-database', 'desc' => 'Master data aset PLN, penyulang, GI & ULP.'],
+    'SYSTEM'      => ['name' => 'System & Laporan', 'icon' => 'fas fa-gear', 'desc' => 'Pusat laporan, notifikasi, backup & administrasi.'],
+];
+
+// Determine active category and active menu item
+$activeCategoryKey = 'DASHBOARD';
+$activeMenuItem = $authorizedMenuItems[0] ?? null;
+foreach ($authorizedMenuItems as $it) {
+    if ($it['active']) {
+        $activeCategoryKey = $it['category'];
+        $activeMenuItem = $it;
+        break;
+    }
+}
+$archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail']));
 ?>
 </head>
 <body class="<?= $isMobileMode ? 'is-mobile-app' : '' ?> <?= $isDashboardRoute ? 'sidak-mission-control' : '' ?>">
@@ -1144,8 +2064,260 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
     </div>
 
     <div class="page">
-        <!-- Sidebar Menu (Tabler Vertical Navbar / Offcanvas Drawer on Mission Control) -->
-        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark d-print-none" id="main-sidebar-aside">
+        <!-- ================================================================ -->
+        <!-- SIDAK TEJO TWO-PART SIDEBAR (RAIL + WORKSPACE PANEL + BACKUP)     -->
+        <!-- ================================================================ -->
+        <!-- 1. Narrow Icon Rail (64px) -->
+        <nav class="sidak-rail d-none d-lg-flex" aria-label="Navigasi Utama">
+            <a href="<?= site_url('dashboard') ?>" class="sidak-rail-logo" title="SIDAK TEJO">
+                ST
+            </a>
+            <div style="width: 32px; height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 12px;"></div>
+            
+            <div class="sidak-rail-nav" id="sidak-rail-nav">
+                <?php foreach ($categoriesDef as $catKey => $cat): ?>
+                    <?php
+                    $isCatActive = ($activeCategoryKey === $catKey);
+                    $catItems = array_filter($authorizedMenuItems, fn($m) => $m['category'] === $catKey);
+                    if (empty($catItems)) continue;
+                    ?>
+                    <button type="button" 
+                            class="sidak-rail-btn <?= $isCatActive ? 'active' : '' ?>" 
+                            data-category="<?= $catKey ?>"
+                            data-bs-toggle="tooltip" 
+                            data-bs-placement="right" 
+                            title="<?= esc($cat['name']) ?>"
+                            onclick="openCategoryWorkspace('<?= $catKey ?>')">
+                        <i class="<?= esc($cat['icon']) ?>"></i>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="sidak-rail-footer">
+                <button type="button" 
+                        class="sidak-rail-backup-btn" 
+                        id="rail-backup-trigger"
+                        data-bs-toggle="tooltip" 
+                        data-bs-placement="right" 
+                        title="Menu Backup"
+                        onclick="openMenuBackupDrawer()">
+                    <i class="fas fa-box-archive"></i>
+                    <span class="sidak-rail-backup-badge" id="rail-backup-badge"><?= $archivedCount ?></span>
+                </button>
+                <div class="sidak-rail-avatar" 
+                     data-bs-toggle="tooltip" 
+                     data-bs-placement="right" 
+                     title="<?= esc($userSessionName) ?> (<?= esc($userSessionRole) ?>)">
+                    <?= esc($userInitials) ?>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 2. Contextual Workspace Panel (280px) -->
+        <aside class="sidak-workspace-panel d-none d-lg-flex" id="sidak-workspace-panel" aria-label="Contextual Workspace">
+            <div class="sidak-workspace-header">
+                <div class="d-flex align-items-start justify-content-between gap-2">
+                    <div class="d-flex gap-3 align-items-center">
+                        <div class="sidak-workspace-icon-box" id="workspace-header-icon" style="width: 40px; height: 40px; border-radius: 12px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); display: flex; align-items: center; justify-content: center; color: #22d3ee; font-size: 18px;">
+                            <i class="<?= esc($categoriesDef[$activeCategoryKey]['icon'] ?? 'fas fa-table-cells-large') ?>"></i>
+                        </div>
+                        <div>
+                            <div class="sidak-workspace-eyebrow" id="workspace-header-eyebrow">
+                                <?= esc($activeCategoryKey) ?>
+                            </div>
+                            <div class="sidak-workspace-title mb-0" id="workspace-header-title">
+                                <?= esc($categoriesDef[$activeCategoryKey]['name'] ?? 'Dashboard Utama') ?>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary border-0 text-white-50" onclick="toggleWorkspacePanel()" title="Tutup Workspace" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <p class="sidak-workspace-desc mt-3" id="workspace-header-desc">
+                    <?= esc($categoriesDef[$activeCategoryKey]['desc'] ?? 'Executive overview & live KPIs') ?>
+                </p>
+            </div>
+
+            <div class="sidak-workspace-body">
+                <div>
+                    <div class="sidak-group-label" id="workspace-group-label">
+                        GROUP <?= esc($activeCategoryKey) ?>
+                    </div>
+                    <div id="workspace-menu-list">
+                        <?php
+                        $currentCatItems = array_filter($authorizedMenuItems, fn($m) => $m['category'] === $activeCategoryKey);
+                        foreach ($currentCatItems as $mItem):
+                            $isActive = $mItem['active'];
+                        ?>
+                        <a href="<?= esc($mItem['href']) ?>" class="sidak-menu-card <?= $isActive ? 'active' : '' ?>" data-menu-id="<?= esc($mItem['id']) ?>">
+                            <div class="d-flex align-items-center min-w-0">
+                                <div class="sidak-menu-card-icon">
+                                    <i class="<?= esc($mItem['icon']) ?>"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="sidak-menu-card-title text-truncate"><?= esc($mItem['name']) ?></div>
+                                    <div class="sidak-menu-card-desc text-truncate"><?= esc($mItem['desc']) ?></div>
+                                </div>
+                            </div>
+                            <div class="sidak-menu-card-arrow">
+                                <i class="fas <?= $isActive ? 'fa-arrow-right' : 'fa-chevron-right' ?>"></i>
+                            </div>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- SUBMENU AKTIF CARD -->
+                <div class="sidak-submenu-card">
+                    <div class="sidak-submenu-card-header">
+                        <div class="sidak-submenu-card-title">
+                            <div class="sidak-submenu-card-pulse"></div>
+                            <span>SUBMENU AKTIF</span>
+                        </div>
+                        <span class="badge bg-cyan-lt text-cyan font-monospace px-2 py-0.5 rounded-pill" style="font-size: 10px;"><?= $navTemuanTotal ?></span>
+                    </div>
+                    
+                    <div class="d-flex flex-column gap-1 mb-2">
+                        <a href="<?= site_url('dashboard') ?>" class="sidak-submenu-item-row <?= url_is('dashboard') ? 'active' : '' ?>">
+                            <span class="badge bg-cyan rounded-circle p-1 me-1" style="width: 6px; height: 6px;"></span>
+                            <span>Overview & KPIs</span>
+                            <span class="ms-auto font-monospace text-muted small"><?= $navTemuanTotal ?></span>
+                        </a>
+                        <a href="<?= site_url('temuan') ?>" class="sidak-submenu-item-row <?= url_is('temuan') ? 'active' : '' ?>">
+                            <span class="badge bg-white-50 rounded-circle p-1 me-1" style="width: 6px; height: 6px;"></span>
+                            <span>Temuan Menunggu</span>
+                            <span class="ms-auto font-monospace text-muted small"><?= $navEmergencyTotal ?></span>
+                        </a>
+                        <a href="<?= site_url('gis') ?>" class="sidak-submenu-item-row <?= url_is('gis*') ? 'active' : '' ?>">
+                            <span class="badge bg-cyan rounded-circle p-1 me-1" style="width: 6px; height: 6px;"></span>
+                            <span>Peta Jaringan GIS</span>
+                        </a>
+                    </div>
+
+                    <!-- LIVE DUAL STAT BOX -->
+                    <div class="sidak-dual-stats">
+                        <div class="sidak-stat-box">
+                            <div class="font-monospace text-muted" style="font-size: 9px; letter-spacing: 0.5px;">TOTAL</div>
+                            <div class="fw-bold fs-6 text-white lh-1 mt-1">
+                                <?= number_format($navTemuanTotal, 0, ',', '.') ?> <span class="fw-normal text-muted" style="font-size: 10px;">temuan</span>
+                            </div>
+                            <div class="progress mt-2" style="height: 4px; background: rgba(255,255,255,0.1);">
+                                <div class="progress-bar bg-cyan" style="width: 72%;"></div>
+                            </div>
+                        </div>
+                        <div class="sidak-stat-box-emergency">
+                            <div class="font-monospace text-danger" style="font-size: 9px; letter-spacing: 0.5px;">EMERGENCY</div>
+                            <div class="fw-bold fs-6 text-danger lh-1 mt-1">
+                                <?= number_format($navEmergencyTotal, 0, ',', '.') ?> <span class="fw-normal text-danger opacity-75" style="font-size: 10px;">live</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 mt-2">
+                                <span class="badge bg-danger rounded-circle animate-ping p-0" style="width: 5px; height: 5px;"></span>
+                                <span class="text-danger font-monospace" style="font-size: 9px; font-weight: 700;">LIVE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MENU BACKUP MINI CARD -->
+                <div class="sidak-backup-card" onclick="openMenuBackupDrawer()">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: #070e1a; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #22d3ee; font-size: 14px;">
+                            <i class="fas fa-box-archive"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-white" style="font-size: 12px;">MENU BACKUP</div>
+                            <div class="font-monospace text-white-50" style="font-size: 10px;" id="workspace-backup-subtitle"><?= $archivedCount ?> menus archived</div>
+                        </div>
+                    </div>
+                    <div class="badge rounded-circle bg-cyan text-dark fw-bold d-flex align-items-center justify-content-center" style="width: 26px; height: 26px; font-size: 11px;" id="workspace-backup-badge">
+                        <?= $archivedCount ?>
+                    </div>
+                </div>
+
+                <!-- BUKA WORKSPACE BUTTON -->
+                <div class="mt-auto pt-2">
+                    <a href="<?= esc($activeMenuItem['href'] ?? site_url('dashboard')) ?>" class="sidak-workspace-btn" id="workspace-primary-btn">
+                        <i class="fas fa-bolt"></i> Buka Workspace
+                    </a>
+                    <div class="text-center font-monospace text-muted mt-2" style="font-size: 9px;">
+                        <span class="badge bg-success rounded-circle p-0 me-1" style="width: 5px; height: 5px; display: inline-block;"></span> SIDAK TEJO • UNIFIED BUILD
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 3. Menu Backup Slide-Over Drawer -->
+        <div class="sidak-backup-backdrop" id="sidak-backup-backdrop" onclick="closeMenuBackupDrawer()"></div>
+
+        <aside class="sidak-backup-drawer" id="sidak-backup-drawer" aria-label="Menu Backup Drawer">
+            <div class="sidak-backup-header">
+                <div>
+                    <div class="fw-bold text-white fs-6 d-flex align-items-center gap-2">
+                        <i class="fas fa-box-archive text-cyan"></i> 
+                        <span>MENU BACKUP (<span id="drawer-total-count"><?= $archivedCount ?></span>)</span>
+                    </div>
+                    <div class="font-monospace text-muted mt-1" style="font-size: 11px;">
+                        Semua menu tersimpan • restore ke rail kapan saja
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-light rounded-circle" onclick="closeMenuBackupDrawer()" style="width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="sidak-backup-body" id="sidak-backup-body">
+                <?php foreach ($categoriesDef as $catKey => $cat): ?>
+                    <?php
+                    $catItems = array_values(array_filter($authorizedMenuItems, fn($m) => $m['category'] === $catKey));
+                    if (empty($catItems)) continue;
+                    $catInRailCount = count(array_filter($catItems, fn($m) => $m['inRail']));
+                    ?>
+                    <div class="sidak-backup-category-group" data-group="<?= $catKey ?>">
+                        <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+                            <span class="font-monospace text-white-50" style="font-size: 10px; letter-spacing: 0.1em;"><?= $catKey ?></span>
+                            <span class="badge bg-dark text-white-50 font-monospace border border-secondary border-opacity-25 rounded-pill px-2" style="font-size: 10px;" id="drawer-cat-badge-<?= $catKey ?>">
+                                <?= $catInRailCount ?>/<?= count($catItems) ?> in rail
+                            </span>
+                        </div>
+                        <div class="d-flex flex-column gap-1.5">
+                            <?php foreach ($catItems as $cItem): ?>
+                                <div class="sidak-backup-item d-flex align-items-center justify-content-between rounded-3 p-2 border <?= $cItem['inRail'] ? 'bg-white text-dark border-white shadow-xs' : 'bg-dark bg-opacity-50 text-white border-secondary border-opacity-25' ?>" data-item-id="<?= esc($cItem['id']) ?>" style="transition: all 0.2s;">
+                                    <div class="d-flex align-items-center gap-2 min-w-0">
+                                        <div class="rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width: 28px; height: 28px; font-size: 11px; flex-shrink: 0; background: <?= $cItem['inRail'] ? '#070e1a; color: #fff;' : 'rgba(255,255,255,0.1); color: #22d3ee;' ?>">
+                                            <i class="<?= esc($cItem['icon']) ?>" style="font-size: 12px;"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="fw-semibold text-truncate" style="font-size: 12px;"><?= esc($cItem['name']) ?></div>
+                                            <div class="text-truncate opacity-75" style="font-size: 10px;"><?= esc($cItem['desc']) ?></div>
+                                        </div>
+                                    </div>
+                                    <div class="ms-2 flex-shrink-0">
+                                        <?php if ($cItem['inRail']): ?>
+                                            <button type="button" class="btn btn-sm btn-light py-0 px-2 rounded-pill fw-medium" style="font-size: 10px;" onclick="toggleMenuRailStatus('<?= esc($cItem['id']) ?>')">Hide</button>
+                                        <?php else: ?>
+                                            <button type="button" class="btn btn-sm btn-cyan text-dark py-0 px-2 rounded-pill fw-bold" style="font-size: 10px; background: #06b6d4;" onclick="toggleMenuRailStatus('<?= esc($cItem['id']) ?>')">Restore</button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="sidak-backup-footer">
+                <div class="font-monospace text-white-50" style="font-size: 11px;">
+                    Total backed up: <strong class="text-white" id="drawer-footer-count"><?= $archivedCount ?></strong> menus
+                </div>
+                <button type="button" class="btn btn-sm btn-light rounded-pill px-3 fw-bold" style="font-size: 11px;" onclick="resetMenuRailDefaults()">
+                    Reset
+                </button>
+            </div>
+        </aside>
+
+        <!-- Sidebar Menu for Mobile Screen (Offcanvas / Hamburger Drawer) -->
+        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark d-print-none d-lg-none" id="main-sidebar-aside">
             <div class="container-fluid">
                 <?php if ($isDashboardRoute): ?>
                 <div class="sidebar-drawer-header justify-content-between align-items-center w-100 px-3 py-2 mb-2 border-bottom border-secondary border-opacity-25" style="background: rgba(0,0,0,0.2); border-radius: 8px;">
@@ -1521,26 +2693,6 @@ $isDashboardRoute = (url_is('dashboard') && !url_is('executive-dashboard') && !u
             </div>
         </aside>
 
-
-        <!-- SIDAK TWO-LEVEL SUBMENU PANEL -->
-        <div id="sidak-submenu-panel" class="sidak-submenu-panel" role="region" aria-label="Submenu Kategori">
-            <div class="sidak-submenu-header">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-th-large me-2 text-primary" id="sidak-submenu-icon"></i>
-                    <div>
-                        <h6 class="mb-0 fw-bold" id="sidak-submenu-title">Kategori</h6>
-                        <small class="text-muted" id="sidak-submenu-desc">Submenu</small>
-                    </div>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeSidakSubmenu()" aria-label="Tutup submenu">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="sidak-submenu-body" id="sidak-submenu-body">
-                <!-- Populated by JS based on sidebar categories -->
-            </div>
-        </div>
-        <div id="sidak-submenu-backdrop" class="sidak-submenu-backdrop" onclick="closeSidakSubmenu()"></div>
 
         <!-- Main Content Area -->
 
@@ -3801,46 +4953,210 @@ $sidakMenuData = [
     ],
 ];
 ?>
-    var sidakSubmenuData = <?= json_encode($sidakMenuData, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
-    function openSidakSubmenu(key, ev) {
-        if (!key) return;
-        var data = sidakSubmenuData[key];
-        if (!data) return;
-        var panel = document.getElementById('sidak-submenu-panel');
-        var backdrop = document.getElementById('sidak-submenu-backdrop');
-        var icon = document.getElementById('sidak-submenu-icon');
-        var title = document.getElementById('sidak-submenu-title');
-        var desc = document.getElementById('sidak-submenu-desc');
-        var body = document.getElementById('sidak-submenu-body');
-        if (!panel || !body) return;
-        if (icon) { icon.className = data.icon + ' me-2 text-primary'; }
-        if (title) title.textContent = data.title;
-        if (desc) desc.textContent = data.desc || '';
-        body.innerHTML = '';
-        if (data.groups) {
-            data.groups.forEach(function(g) {
-                var gdiv = document.createElement('div'); gdiv.className = 'sidak-submenu-group';
-                var gtitle = document.createElement('div'); gtitle.className = 'sidak-submenu-group-title'; gtitle.textContent = g.name; gdiv.appendChild(gtitle);
-                if (g.items) {
-                    g.items.forEach(function(it) {
-                        var a = document.createElement('a'); a.className = 'sidak-submenu-item' + (it.active ? ' active' : ''); a.href = it.href;
-                        var iel = document.createElement('i'); iel.className = it.icon || 'fas fa-circle'; a.appendChild(iel);
-                        var span = document.createElement('span'); span.textContent = it.text; a.appendChild(span);
-                        gdiv.appendChild(a);
-                    });
-                }
-                body.appendChild(gdiv);
+    var sidakCategoriesDef = <?= json_encode($categoriesDef, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+    var sidakAuthorizedMenuItems = <?= json_encode($authorizedMenuItems, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+    var sidakCurrentCategory = '<?= esc($activeCategoryKey) ?>';
+
+    function initSidakSidebar() {
+        var savedState = localStorage.getItem('sidak_menu_state');
+        if (savedState) {
+            try {
+                var stateObj = JSON.parse(savedState);
+                sidakAuthorizedMenuItems.forEach(function(m) {
+                    if (typeof stateObj[m.id] !== 'undefined') {
+                        m.inRail = stateObj[m.id];
+                    }
+                });
+            } catch(e) {
+                console.warn('Failed parsing saved sidak_menu_state', e);
+            }
+        }
+        updateBackupCounters();
+
+        if (localStorage.getItem('sidak_workspace_collapsed') === 'true') {
+            document.body.classList.add('workspace-collapsed');
+        }
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            document.querySelectorAll('.sidak-rail-btn, .sidak-rail-backup-btn, .sidak-rail-avatar').forEach(function(el) {
+                try { new bootstrap.Tooltip(el, { boundary: 'window' }); } catch(err) {}
             });
         }
-        panel.classList.add('active');
-        if (backdrop) backdrop.classList.add('active');
     }
-    function closeSidakSubmenu() {
-        var panel = document.getElementById('sidak-submenu-panel');
-        var backdrop = document.getElementById('sidak-submenu-backdrop');
-        if (panel) panel.classList.remove('active');
+
+    function openCategoryWorkspace(categoryKey) {
+        if (!categoryKey || !sidakCategoriesDef[categoryKey]) return;
+        sidakCurrentCategory = categoryKey;
+        document.body.classList.remove('workspace-collapsed');
+        localStorage.setItem('sidak_workspace_collapsed', 'false');
+
+        document.querySelectorAll('.sidak-rail-btn').forEach(function(btn) {
+            if (btn.getAttribute('data-category') === categoryKey) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        var cat = sidakCategoriesDef[categoryKey];
+        var iconEl = document.getElementById('workspace-header-icon');
+        var eyebrowEl = document.getElementById('workspace-header-eyebrow');
+        var titleEl = document.getElementById('workspace-header-title');
+        var descEl = document.getElementById('workspace-header-desc');
+        var groupLabel = document.getElementById('workspace-group-label');
+        var listEl = document.getElementById('workspace-menu-list');
+        var primaryBtn = document.getElementById('workspace-primary-btn');
+
+        if (iconEl) iconEl.innerHTML = '<i class="' + cat.icon + '"></i>';
+        if (eyebrowEl) eyebrowEl.textContent = categoryKey;
+        if (titleEl) titleEl.textContent = cat.name;
+        if (descEl) descEl.textContent = cat.desc;
+        if (groupLabel) groupLabel.textContent = 'GROUP ' + categoryKey;
+
+        if (listEl) {
+            var items = sidakAuthorizedMenuItems.filter(function(m) {
+                return m.category === categoryKey;
+            });
+            var html = '';
+            var firstHref = '<?= site_url('dashboard') ?>';
+            items.forEach(function(item, idx) {
+                if (idx === 0) firstHref = item.href;
+                var isAct = item.active;
+                html += '<a href="' + item.href + '" class="sidak-menu-card ' + (isAct ? 'active' : '') + '" data-menu-id="' + item.id + '">';
+                html += '  <div class="d-flex align-items-center min-w-0">';
+                html += '    <div class="sidak-menu-card-icon"><i class="' + item.icon + '"></i></div>';
+                html += '    <div class="min-w-0">';
+                html += '      <div class="sidak-menu-card-title text-truncate">' + item.name + '</div>';
+                html += '      <div class="sidak-menu-card-desc text-truncate">' + item.desc + '</div>';
+                html += '    </div>';
+                html += '  </div>';
+                html += '  <div class="sidak-menu-card-arrow"><i class="fas ' + (isAct ? 'fa-arrow-right' : 'fa-chevron-right') + '"></i></div>';
+                html += '</a>';
+            });
+            listEl.innerHTML = html;
+            if (primaryBtn) primaryBtn.href = firstHref;
+        }
+    }
+
+    function toggleWorkspacePanel() {
+        var isCollapsed = document.body.classList.toggle('workspace-collapsed');
+        localStorage.setItem('sidak_workspace_collapsed', isCollapsed ? 'true' : 'false');
+    }
+
+    function openMenuBackupDrawer() {
+        var drawer = document.getElementById('sidak-backup-drawer');
+        var backdrop = document.getElementById('sidak-backup-backdrop');
+        if (drawer) drawer.classList.add('open');
+        if (backdrop) backdrop.classList.add('active');
+        renderBackupDrawerItems();
+    }
+
+    function closeMenuBackupDrawer() {
+        var drawer = document.getElementById('sidak-backup-drawer');
+        var backdrop = document.getElementById('sidak-backup-backdrop');
+        if (drawer) drawer.classList.remove('open');
         if (backdrop) backdrop.classList.remove('active');
     }
+
+    function toggleMenuRailStatus(itemId) {
+        var item = sidakAuthorizedMenuItems.find(function(m) { return m.id === itemId; });
+        if (!item) return;
+        item.inRail = !item.inRail;
+
+        var state = {};
+        sidakAuthorizedMenuItems.forEach(function(m) {
+            state[m.id] = m.inRail;
+        });
+        localStorage.setItem('sidak_menu_state', JSON.stringify(state));
+
+        updateBackupCounters();
+        renderBackupDrawerItems();
+    }
+
+    function resetMenuRailDefaults() {
+        localStorage.removeItem('sidak_menu_state');
+        sidakAuthorizedMenuItems = JSON.parse(JSON.stringify(<?= json_encode($authorizedMenuItems, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>));
+        updateBackupCounters();
+        renderBackupDrawerItems();
+    }
+
+    function updateBackupCounters() {
+        var archived = sidakAuthorizedMenuItems.filter(function(m) { return !m.inRail; }).length;
+        var railBadge = document.getElementById('rail-backup-badge');
+        var wsSubtitle = document.getElementById('workspace-backup-subtitle');
+        var wsBadge = document.getElementById('workspace-backup-badge');
+        var drawerCount = document.getElementById('drawer-total-count');
+        var drawerFooter = document.getElementById('drawer-footer-count');
+
+        if (railBadge) railBadge.textContent = archived;
+        if (wsSubtitle) wsSubtitle.textContent = archived + ' menus archived';
+        if (wsBadge) wsBadge.textContent = archived;
+        if (drawerCount) drawerCount.textContent = archived;
+        if (drawerFooter) drawerFooter.textContent = archived;
+
+        Object.keys(sidakCategoriesDef).forEach(function(catKey) {
+            var catItems = sidakAuthorizedMenuItems.filter(function(m) { return m.category === catKey; });
+            var inRail = catItems.filter(function(m) { return m.inRail; }).length;
+            var badge = document.getElementById('drawer-cat-badge-' + catKey);
+            if (badge) {
+                badge.textContent = inRail + '/' + catItems.length + ' in rail';
+            }
+        });
+    }
+
+    function renderBackupDrawerItems() {
+        var body = document.getElementById('sidak-backup-body');
+        if (!body) return;
+        var html = '';
+        Object.keys(sidakCategoriesDef).forEach(function(catKey) {
+            var catItems = sidakAuthorizedMenuItems.filter(function(m) { return m.category === catKey; });
+            if (catItems.length === 0) return;
+            var inRailCount = catItems.filter(function(m) { return m.inRail; }).length;
+            html += '<div class="sidak-backup-category-group" data-group="' + catKey + '">';
+            html += '  <div class="d-flex align-items-center justify-content-between mb-2 px-1">';
+            html += '    <span class="font-monospace text-white-50" style="font-size: 10px; letter-spacing: 0.1em;">' + catKey + '</span>';
+            html += '    <span class="badge bg-dark text-white-50 font-monospace border border-secondary border-opacity-25 rounded-pill px-2" style="font-size: 10px;" id="drawer-cat-badge-' + catKey + '">';
+            html +=        inRailCount + '/' + catItems.length + ' in rail';
+            html += '    </span>';
+            html += '  </div>';
+            html += '  <div class="d-flex flex-column gap-1.5">';
+            catItems.forEach(function(item) {
+                var isInRail = item.inRail;
+                html += '<div class="sidak-backup-item d-flex align-items-center justify-content-between rounded-3 p-2 border ' + (isInRail ? 'bg-white text-dark border-white shadow-xs' : 'bg-dark bg-opacity-50 text-white border-secondary border-opacity-25') + '" data-item-id="' + item.id + '" style="transition: all 0.2s;">';
+                html += '  <div class="d-flex align-items-center gap-2 min-w-0">';
+                html += '    <div class="rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width: 28px; height: 28px; font-size: 11px; flex-shrink: 0; background: ' + (isInRail ? '#070e1a; color: #fff;' : 'rgba(255,255,255,0.1); color: #22d3ee;') + '">';
+                html += '      <i class="' + item.icon + '" style="font-size: 12px;"></i>';
+                html += '    </div>';
+                html += '    <div class="min-w-0">';
+                html += '      <div class="fw-semibold text-truncate" style="font-size: 12px;">' + item.name + '</div>';
+                html += '      <div class="text-truncate opacity-75" style="font-size: 10px;">' + item.desc + '</div>';
+                html += '    </div>';
+                html += '  </div>';
+                html += '  <div class="ms-2 flex-shrink-0">';
+                if (isInRail) {
+                    html += '<button type="button" class="btn btn-sm btn-light py-0 px-2 rounded-pill fw-medium" style="font-size: 10px;" onclick="toggleMenuRailStatus(\'' + item.id + '\')">Hide</button>';
+                } else {
+                    html += '<button type="button" class="btn btn-sm btn-cyan text-dark py-0 px-2 rounded-pill fw-bold" style="font-size: 10px; background: #06b6d4;" onclick="toggleMenuRailStatus(\'' + item.id + '\')">Restore</button>';
+                }
+                html += '  </div>';
+                html += '</div>';
+            });
+            html += '  </div>';
+            html += '</div>';
+        });
+        body.innerHTML = html;
+    }
+
+    function openSidakSubmenu(key, ev) {
+        openCategoryWorkspace(key);
+    }
+    function closeSidakSubmenu() {
+        toggleWorkspacePanel();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initSidakSidebar();
+    });
     function populateFullMenu() {
         var contentEl = document.getElementById('full-menu-content');
         var navEl = document.getElementById('sidebar-menu');

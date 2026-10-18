@@ -280,8 +280,15 @@
 
             <!-- Interruption YoY Metric Badge (Domain Data) -->
             <?php if (!empty($gangguanStats)): ?>
-            <a href="<?= site_url('gangguan') ?>" class="text-decoration-none d-none d-md-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill border shadow-xs text-dark hover-shadow" title="Klik untuk kelola & melihat detail data gangguan penyulang (YTD vs tahun lalu periode sama)" style="font-size: 11px; font-weight: 600; cursor: pointer;">
+            <?php
+                $ggYearA = (int)($gangguanStats['year'] ?? date('Y'));
+                $ggYearB = (int)($gangguanStats['last_year'] ?? ($ggYearA - 1));
+                $ggUlpQ  = !empty($ulpIdFilter) ? '&ulp_id=' . (int)$ulpIdFilter : '';
+                $ggUrl   = site_url('gangguan') . '?year_a=' . $ggYearA . '&year_b=' . $ggYearB . $ggUlpQ;
+            ?>
+            <a href="<?= $ggUrl ?>" class="text-decoration-none d-none d-md-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill border shadow-xs text-dark hover-shadow" title="Klik untuk kelola & melihat detail data gangguan penyulang (YTD vs tahun lalu periode sama)" style="font-size: 11px; font-weight: 600; cursor: pointer;">
                 <i class="fas fa-bolt text-warning"></i>
+
                 <span class="text-muted">Gangguan <?= esc($gangguanStats['year']) ?>:</span>
                 <strong class="text-dark"><?= number_format($gangguanStats['current_ytd']) ?>x</strong>
                 <span class="badge <?= ($gangguanStats['yoy_pct'] < 0) ? 'bg-success' : (($gangguanStats['yoy_pct'] > 0) ? 'bg-danger' : 'bg-secondary') ?> rounded-pill" style="font-size: 10px;">

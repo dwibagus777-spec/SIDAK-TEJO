@@ -169,9 +169,21 @@ class Dashboard extends BaseController
         $top10Feeders = array_slice($rankedFeeders, 0, 10);
 
         // Real YoY Interruption Stats (historical_feeder_interruptions)
-        $curYear = (int)date('Y');
+        // Use latest year with actual data — never hardcode calendar year
+        $maxYrRow = $db->table('historical_feeder_interruptions')
+            ->selectMax('YEAR(event_date)', 'max_yr')
+            ->where('event_date IS NOT NULL')
+            ->get()->getRowArray();
+        $curYear  = (!empty($maxYrRow['max_yr'])) ? (int)$maxYrRow['max_yr'] : (int)date('Y');
         $lastYear = $curYear - 1;
-        $curMonth = (int)date('n');
+        // For comparing same period: use max month available in curYear
+        $maxMonthRow = $db->table('historical_feeder_interruptions')
+            ->selectMax('MONTH(event_date)', 'max_mo')
+            ->where('YEAR(event_date)', $curYear)
+            ->where('event_date IS NOT NULL')
+            ->get()->getRowArray();
+        $curMonth = (!empty($maxMonthRow['max_mo'])) ? (int)$maxMonthRow['max_mo'] : (int)date('n');
+
 
         $ggnCurQuery = $db->table('historical_feeder_interruptions')
             ->where('YEAR(event_date)', $curYear)

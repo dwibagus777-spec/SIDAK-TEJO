@@ -21,29 +21,78 @@ class Gangguan extends BaseController
 
     public function index()
     {
-        $session = session();
-        $role = strtolower((string)$session->get('user_role'));
-        $userUlpId = $session->get('user_ulp_id');
+        $session    = session();
+        $role       = strtolower((string)$session->get('user_role'));
+        $userUlpId  = $session->get('user_ulp_id');
 
+        // ─── Role-based ULP scope ───────────────────────────────────────────
         $ulpIdFilter = null;
         if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($userUlpId)) {
             $ulpIdFilter = (int)$userUlpId;
         }
-
         $urlUlpId = $this->request->getGet('ulp_id');
         if ($urlUlpId && in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3'])) {
             $ulpIdFilter = (int)$urlUlpId;
         }
 
-        $penyulangId = $this->request->getGet('penyulang_id') ? (int)$this->request->getGet('penyulang_id') : null;
-        $yearFilter = $this->request->getGet('year') ? (int)$this->request->getGet('year') : null;
-        $categoryFilter = $this->request->getGet('category') ? strtoupper(trim((string)$this->request->getGet('category'))) : null;
-        $search = trim((string)$this->request->getGet('search'));
-
+        // ─── Available years from DB (no hardcode) ──────────────────────────
         $availableYears = $this->interruptionModel->getAvailableYears();
         if (empty($availableYears)) {
             $availableYears = [(int)date('Y'), (int)date('Y') - 1];
         }
+        $latestYear = $availableYears[0] ?? (int)date('Y');
+
+        // ─── Year A / Year B (analytics selectors) ─────────────────────────
+        $yearA = $this->request->getGet('year_a') ? (int)$this->request->getGet('year_a') : $latestYear;
+        $yearB = $this->request->getGet('year_b') ? (int)$this->request->getGet('year_b') : ($yearA - 1);
+        // Make sure they are within available set (fallback gracefully)
+        if (!in_array($yearA, $availableYears)) $yearA = $latestYear;
+        if (!in_array($yearB, $availableYears) && count($availableYears) > 1) $yearB = $availableYears[1];
+
+        // ─── Analytics: Monthly breakdown per year ──────────────────────────
+        $monthlyA = $this->interruptionModel->getMonthlyByYear($yearA, $ulpIdFilter);
+        $monthlyB = $this->interruptionModel->getMonthlyByYear($yearB, $ulpIdFilter);
+
+        // ─── Analytics: Comparable period description ───────────────────────
+        $periodInfo       = $this->interruptionModel->getComparablePeriod($yearA, $yearB, $ulpIdFilter);
+        $comparableMonths = $periodInfo['comparable_months'];
+
+        $totalA = $this->interruptionModel->getTotalByYearUpToMonth($yearA, $comparableMonths, $ulpIdFilter);
+        $totalB = $this->interruptionModel->getTotalByYearUpToMonth($yearB, $comparableMonths, $ulpIdFilter);
+        $selisih = $totalA - $totalB;
+        $pctChange = ($totalB > 0) ? round(($selisih / $totalB) * 100, 1) : null;
+
+        // ─── Analytics: Top 10 penyulang ────────────────────────────────────
+        $top10A = $this->interruptionModel->getTop10ByYear($yearA, $ulpIdFilter, 10);
+        $top10B = $this->interruptionModel->getTop10ByYear($yearB, $ulpIdFilter, 10);
+
+        // Build indexed lookup for yearB by penyulang_id for easy join
+        $top10BIdx = [];
+        foreach ($top10B as $row) {
+            if ($row['penyulang_id']) $top10BIdx[(int)$row['penyulang_id']] = (int)$row['cnt'];
+        }
+
+        // Merge: use yearA list as base, append yearB-only entries
+        $top10Merged = [];
+        foreach ($top10A as $row) {
+            $pid  = (int)$row['penyulang_id'];
+            $cntB = $top10BIdx[$pid] ?? 0;
+            $top10Merged[] = [
+                'penyulang_id'   => $pid,
+                'nama_penyulang' => $row['nama_penyulang'],
+                'nama_ulp'       => $row['nama_ulp'],
+                'cnt_a'          => (int)$row['cnt'],
+                'cnt_b'          => $cntB,
+                'selisih'        => (int)$row['cnt'] - $cntB,
+            ];
+            unset($top10BIdx[$pid]);
+        }
+
+        // ─── List / filter (existing table view) ───────────────────────────
+        $penyulangId  = $this->request->getGet('penyulang_id') ? (int)$this->request->getGet('penyulang_id') : null;
+        $yearFilter   = $this->request->getGet('year') ? (int)$this->request->getGet('year') : null;
+        $categoryFilter = $this->request->getGet('category') ? strtoupper(trim((string)$this->request->getGet('category'))) : null;
+        $search       = trim((string)$this->request->getGet('search'));
 
         $builder = $this->interruptionModel->builder();
         $builder->select('historical_feeder_interruptions.*, ulps.nama_ulp as master_ulp, penyulang.nama_penyulang as master_penyulang')
@@ -74,16 +123,10 @@ class Gangguan extends BaseController
         $builder->orderBy('historical_feeder_interruptions.event_date', 'DESC')
                 ->orderBy('historical_feeder_interruptions.interruption_started_at', 'DESC');
 
-        // Stats summary
         $statsBuilder = clone $builder;
-        $allRows = $statsBuilder->get()->getResultArray();
+        $allRows  = $statsBuilder->get()->getResultArray();
         $totalCount = count($allRows);
-        $totalKwh = 0;
-        $dgrCount = 0;
-        $ocrCount = 0;
-        $tempCount = 0;
-        $permCount = 0;
-
+        $totalKwh = 0; $dgrCount = 0; $ocrCount = 0; $tempCount = 0; $permCount = 0;
         foreach ($allRows as $r) {
             $totalKwh += (float)($r['energy_not_supplied_kwh'] ?? 0);
             $relay = strtoupper((string)($r['relay_trip_type'] ?? ''));
@@ -94,18 +137,14 @@ class Gangguan extends BaseController
             else $tempCount++;
         }
 
-        // Pagination: 25 items per page
         $page = max(1, (int)$this->request->getGet('page'));
         $perPage = 25;
         $totalFiltered = $totalCount;
         $totalPages = max(1, (int)ceil($totalFiltered / $perPage));
         $offset = ($page - 1) * $perPage;
+        $items  = array_slice($allRows, $offset, $perPage);
 
-        $items = array_slice($allRows, $offset, $perPage);
-
-        // ULP and Feeder master lists
         $ulps = $this->ulpRepository->getActiveUlps();
-        $penyulangs = [];
         if ($ulpIdFilter) {
             $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($ulpIdFilter);
         } else {
@@ -116,6 +155,19 @@ class Gangguan extends BaseController
         $canManage = check_role(['administrator', 'admin', 'admin_ulp', 'supervisor_up3', 'supervisor_ulp', 'inspeksi']);
 
         return view('gangguan/index', [
+            // ── Analytics
+            'yearA'          => $yearA,
+            'yearB'          => $yearB,
+            'availableYears' => $availableYears,
+            'monthlyA'       => array_values($monthlyA),  // 0-indexed for JS
+            'monthlyB'       => array_values($monthlyB),
+            'periodInfo'     => $periodInfo,
+            'totalA'         => $totalA,
+            'totalB'         => $totalB,
+            'selisih'        => $selisih,
+            'pctChange'      => $pctChange,
+            'top10Merged'    => $top10Merged,
+            // ── List / filter
             'items'          => $items,
             'totalCount'     => $totalCount,
             'totalKwh'       => $totalKwh,
@@ -127,9 +179,7 @@ class Gangguan extends BaseController
             'perPage'        => $perPage,
             'totalPages'     => $totalPages,
             'offset'         => $offset,
-            'availableYears' => $availableYears,
             'yearFilter'     => $yearFilter,
-
             'ulpIdFilter'    => $ulpIdFilter,
             'penyulangId'    => $penyulangId,
             'categoryFilter' => $categoryFilter,
@@ -139,6 +189,7 @@ class Gangguan extends BaseController
             'canManage'      => $canManage,
         ]);
     }
+
 
     public function create()
     {

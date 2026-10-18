@@ -42,7 +42,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
     <meta name="description" content="SIDAK TEJO - Sistem Inspeksi Jaringan Operasi Sidoarjo - Tema Tabler Modern">
     <title>SIDAK TEJO | <?= $this->renderSection('title') ?></title>
 
@@ -1755,11 +1755,121 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
 </head>
 <body class="<?= $isMobileMode ? 'is-mobile-app' : '' ?> <?= $isDashboardRoute ? 'sidak-mission-control' : '' ?>">
 
-    <!-- Sidebar Drawer Backdrop (Mission Control Launcher) -->
+    <!-- Mobile Drawer Backdrop -->
+    <div id="mobile-drawer-backdrop" class="mobile-drawer-backdrop" onclick="closeMobileNavDrawer(true)"></div>
+
+    <!-- The ONE Unified Mobile Navigation Drawer -->
+    <aside id="mobile-unified-drawer" class="mobile-unified-drawer" aria-label="Navigasi Mobile" aria-hidden="true">
+        <!-- Drawer Header with User Profile & Close Button -->
+        <div class="mobile-drawer-header">
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="Logo SIDAK" style="height: 26px;">
+                    <div>
+                        <div class="mobile-drawer-brand">SIDAK TEJO</div>
+                        <div class="mobile-drawer-subbrand">PLN UP3 SIDOARJO</div>
+                    </div>
+                </div>
+                <button type="button" class="mobile-drawer-close-btn" onclick="closeMobileNavDrawer(true)" aria-label="Tutup Menu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- User Info Card inside Drawer -->
+            <div class="mobile-drawer-user-card">
+                <div class="mobile-drawer-avatar">
+                    <?= esc($userInitials) ?>
+                </div>
+                <div class="min-w-0 flex-grow-1">
+                    <div class="mobile-drawer-username text-truncate"><?= esc($userSessionName) ?></div>
+                    <div class="d-flex align-items-center gap-1 mt-0.5">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 10px; font-weight: 700; padding: 2px 6px;">
+                            <?= esc(strtoupper($userSessionRole)) ?>
+                        </span>
+                        <?php if (!empty($userUlpId)): ?>
+                            <span class="badge bg-light text-muted border" style="font-size: 10px; padding: 2px 6px;">
+                                ULP <?= esc($userUlpId) ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instant Search Input -->
+            <div class="mobile-drawer-search-wrap">
+                <i class="fas fa-search mobile-drawer-search-icon"></i>
+                <input type="text" id="mobile-drawer-search-input" class="mobile-drawer-search-input" placeholder="Cari 35+ modul SIDAK..." aria-label="Cari menu">
+                <button type="button" id="mobile-drawer-search-clear" class="mobile-drawer-search-clear d-none" onclick="clearMobileDrawerSearch()">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Drawer Body with Scrollable Categorized Menus -->
+        <div class="mobile-drawer-body" id="mobile-drawer-menu-container">
+            <?php foreach ($categoriesDef as $catKey => $cat): ?>
+                <?php
+                $catItems = array_values(array_filter($authorizedMenuItems, fn($m) => $m['category'] === $catKey));
+                if (empty($catItems)) continue;
+                $hasActiveItem = count(array_filter($catItems, fn($m) => $m['active'])) > 0;
+                ?>
+                <div class="mobile-drawer-group" data-category="<?= esc($catKey) ?>">
+                    <div class="mobile-drawer-group-header" onclick="toggleMobileDrawerGroup('<?= esc($catKey) ?>')">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="<?= esc($cat['icon']) ?> text-primary"></i>
+                            <span><?= esc($cat['name']) ?></span>
+                            <span class="badge bg-secondary-subtle text-muted rounded-pill ms-1" style="font-size: 10px;"><?= count($catItems) ?></span>
+                        </div>
+                        <i class="fas fa-chevron-down mobile-drawer-chevron <?= $hasActiveItem ? 'open' : '' ?>" id="chevron-<?= esc($catKey) ?>"></i>
+                    </div>
+                    <div class="mobile-drawer-group-items <?= $hasActiveItem ? 'show' : '' ?>" id="group-items-<?= esc($catKey) ?>">
+                        <?php foreach ($catItems as $item): ?>
+                            <a href="<?= esc($item['href']) ?>" class="mobile-drawer-link <?= $item['active'] ? 'active' : '' ?>" data-menu-text="<?= esc(strtolower($item['name'] . ' ' . $item['desc'] . ' ' . $catKey)) ?>">
+                                <div class="mobile-drawer-link-icon">
+                                    <i class="<?= esc($item['icon']) ?>"></i>
+                                </div>
+                                <div class="mobile-drawer-link-content">
+                                    <div class="mobile-drawer-link-title"><?= esc($item['name']) ?></div>
+                                    <div class="mobile-drawer-link-desc"><?= esc($item['desc']) ?></div>
+                                </div>
+                                <?php if ($item['active']): ?>
+                                    <i class="fas fa-check-circle text-primary ms-auto" style="font-size: 14px;"></i>
+                                <?php else: ?>
+                                    <i class="fas fa-chevron-right text-muted opacity-50 ms-auto" style="font-size: 11px;"></i>
+                                <?php endif; ?>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+            <div id="mobile-drawer-no-results" class="text-center py-4 text-muted d-none">
+                <i class="fas fa-search fs-3 opacity-50 mb-2 d-block"></i>
+                Menu tidak ditemukan.
+            </div>
+        </div>
+
+        <!-- Drawer Footer with Theme Toggle, Desktop Mode & Logout -->
+        <div class="mobile-drawer-footer">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill d-flex align-items-center gap-1 px-2.5 py-1" onclick="toggleDarkMode()">
+                <i class="fas fa-moon theme-toggle-icon"></i>
+                <span style="font-size: 11px;">Tema</span>
+            </button>
+            <a href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>" class="btn btn-sm btn-outline-secondary rounded-pill d-flex align-items-center gap-1 px-2.5 py-1" title="Beralih ke tampilan desktop">
+                <i class="fas fa-desktop"></i>
+                <span style="font-size: 11px;">Desktop</span>
+            </a>
+            <a href="<?= site_url('logout') ?>" class="btn btn-sm btn-danger rounded-pill d-flex align-items-center gap-1 px-2.5 py-1 ms-auto" style="font-size: 11px;">
+                <i class="fas fa-power-off"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Sidebar Drawer Backdrop (Mission Control Desktop Launcher) -->
     <div id="sidebar-drawer-backdrop" onclick="toggleSidebarDrawer()"></div>
 
-    <!-- Full Menu Drawer (Menu Lengkap) -->
-    <div id="full-menu-drawer" class="full-menu-drawer" role="dialog" aria-modal="true" aria-labelledby="full-menu-title">
+    <!-- Full Menu Drawer (Menu Lengkap - Desktop Search Modal) -->
+    <div id="full-menu-drawer" class="full-menu-drawer d-none d-lg-block" role="dialog" aria-modal="true" aria-labelledby="full-menu-title">
         <div class="full-menu-backdrop" onclick="closeFullMenuDrawer()"></div>
         <div class="full-menu-panel">
             <div class="full-menu-header">
@@ -1791,25 +1901,22 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
 
     <!-- Mobile Top Header -->
     <div class="mobile-app-header">
-        <a href="javascript:smartBack('<?= site_url('dashboard') ?>');" class="mobile-back-btn" title="Kembali">
-            <i class="fas fa-chevron-left"></i>
-        </a>
-        <a href="<?= site_url('dashboard') ?>" class="mobile-title text-white text-decoration-none d-flex align-items-center" style="cursor: pointer;" title="Ke Dashboard">
-            <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="Logo" style="height: 22px; margin-right: 6px;">
-            <span>SIDAK TEJO</span>
-        </a>
-        <div class="d-flex align-items-center" style="gap: 6px;">
-            <button type="button" class="btn btn-sm btn-outline-light border rounded-pill px-2 py-1 font-weight-bold" onclick="openFullMenuDrawer()" title="Semua Menu (35+ Modul)" style="font-size: 11px;">
-                <i class="fas fa-th-large me-1"></i> Menu
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm text-white p-1 d-flex align-items-center justify-content-center" onclick="openMobileNavDrawer()" aria-label="Buka Menu Navigasi" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.15); border: none; font-size: 16px;">
+                <i class="fas fa-bars"></i>
             </button>
-            <button type="button" class="btn btn-sm btn-outline-light rounded-circle" title="Ganti Tema (Terang / Gelap)" onclick="toggleDarkMode()" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">
+            <a href="<?= site_url('dashboard') ?>" class="text-white text-decoration-none d-flex align-items-center gap-2" title="Ke Dashboard">
+                <img src="<?= base_url('assets/img/logo_sidak.png') ?>" alt="Logo SIDAK" style="height: 24px;">
+                <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.05rem; letter-spacing: 0.3px;">SIDAK TEJO</span>
+            </a>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-light rounded-circle" title="Ganti Tema (Terang / Gelap)" onclick="toggleDarkMode()" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
                 <i class="fas fa-moon theme-toggle-icon"></i>
             </button>
-            <a href="<?= site_url('dashboard/toggle-view?t=' . time()) ?>" class="mobile-desktop-btn" title="Ganti ke Versi Desktop">
-                <i class="fas fa-desktop"></i>
-            </a>
-            <a href="<?= site_url('logout') ?>" class="btn btn-sm btn-outline-danger text-white border-white py-0 px-2 font-weight-bold" title="Keluar dari Sistem" style="font-size: 11px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: rgba(220, 38, 38, 0.85);">
-                <i class="fas fa-power-off me-1"></i> Logout
+            <a href="<?= site_url('logout') ?>" class="btn btn-sm btn-danger text-white py-1 px-2.5 font-weight-bold d-inline-flex align-items-center gap-1" title="Keluar dari Sistem" style="font-size: 11px; border-radius: 6px;">
+                <i class="fas fa-power-off"></i>
+                <span class="d-none d-sm-inline">Keluar</span>
             </a>
         </div>
     </div>
@@ -2067,8 +2174,8 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             </div>
         </aside>
 
-        <!-- Sidebar Menu for Mobile Screen (Offcanvas / Hamburger Drawer) -->
-        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark d-print-none d-lg-none" id="main-sidebar-aside">
+        <!-- Legacy Sidebar Aside (Superseded by Desktop Rail & Mobile Unified Drawer) -->
+        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark d-print-none d-none" id="main-sidebar-aside">
             <div class="container-fluid">
                 <?php if ($isDashboardRoute): ?>
                 <div class="sidebar-drawer-header justify-content-between align-items-center w-100 px-3 py-2 mb-2 border-bottom border-secondary border-opacity-25" style="background: rgba(0,0,0,0.2); border-radius: 8px;">
@@ -2615,10 +2722,10 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 <span class="sidak-fab-label">WO</span>
             </a>
             <?php endif; ?>
-            <!-- Slot 5: AI / More (Pusat Akses 40 Modul Terpadu) -->
-            <button type="button" class="sidak-dock-item btn p-0 border-0" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMoreMenu" aria-controls="offcanvasMoreMenu" title="Semua Modul & Alat Lapangan">
-                <i class="fas fa-bars-staggered"></i>
-                <span>More</span>
+            <!-- Slot 5: Menu Navigasi Mobile -->
+            <button type="button" class="sidak-dock-item btn p-0 border-0" onclick="openMobileNavDrawer()" title="Buka Menu Lengkap">
+                <i class="fas fa-bars"></i>
+                <span>Menu</span>
             </button>
         </div>
     </nav>
@@ -4482,120 +4589,586 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
         .cinematic-reveal { display: none !important; }
     }
     
-    /* SIDAK TWO-LEVEL SIDEBAR */
-    .navbar-vertical { transition: width .25s ease, left .25s ease; }
-    body.sidak-mission-control.sidebar-collapsed .navbar-vertical,
-    body.sidak-mission-control .navbar-vertical {
-        width: 68px !important;
-        left: 0 !important;
+    /* ===== DESKTOP MISSION CONTROL TWO-LEVEL SIDEBAR (>= 992px) ===== */
+    @media (min-width: 992px) {
+        .navbar-vertical { transition: width .25s ease, left .25s ease; }
+        body.sidak-mission-control.sidebar-collapsed .navbar-vertical,
+        body.sidak-mission-control .navbar-vertical {
+            width: 68px !important;
+            left: 0 !important;
+        }
+        body.sidak-mission-control .page-wrapper {
+            margin-left: 68px !important;
+            transition: margin-left .25s ease;
+        }
+        #mobile-unified-drawer,
+        #mobile-drawer-backdrop,
+        .mobile-app-header,
+        #sidak-mobile-dock {
+            display: none !important;
+        }
     }
-    body.sidak-mission-control .page-wrapper {
-        margin-left: 68px !important;
-        transition: margin-left .25s ease;
-    }
+
+    /* ===== MOBILE & TABLET LAYOUT (< 992px) ===== */
     @media (max-width: 991.98px) {
-        body.sidak-mission-control .navbar-vertical { left: -300px !important; width: 280px !important; }
-        body.sidak-mission-control .navbar-vertical.drawer-open { left: 0 !important; }
-        body.sidak-mission-control .page-wrapper { margin-left: 0 !important; }
+        /* 1. Eliminate desktop sidebars, workspace, backup drawer, and legacy navbar-vertical */
+        .sidak-rail,
+        .sidak-workspace-panel,
+        .sidak-backup-drawer,
+        .sidak-backup-backdrop,
+        .sidak-submenu-panel,
+        .sidak-submenu-backdrop,
+        #sidebar-drawer-backdrop,
+        #full-menu-drawer,
+        .full-menu-drawer,
+        #offcanvasMoreMenu,
+        body .navbar-vertical,
+        body.sidak-mission-control .navbar-vertical,
+        body.sidak-mission-control.sidebar-collapsed .navbar-vertical,
+        body.sidebar-collapsed .navbar-vertical,
+        #main-sidebar-aside {
+            display: none !important;
+            width: 0 !important;
+            left: -9999px !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+
+        /* 2. Page layout & viewport containment */
+        html, body {
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
+            position: relative;
+        }
+        body,
+        body.sidak-mission-control,
+        body.sidebar-collapsed,
+        body.workspace-collapsed {
+            overflow-x: hidden !important;
+        }
+        body .page-wrapper,
+        body.sidak-mission-control .page-wrapper,
+        body.sidebar-collapsed .page-wrapper,
+        body.workspace-collapsed .page-wrapper {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+            padding-top: 56px !important;
+            padding-bottom: 72px !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
+        }
+        .page, .container, .container-fluid, .container-xl {
+            max-width: 100vw !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+        }
+
+        /* 3. Mobile Header & Bottom Dock */
+        .mobile-app-header {
+            display: flex !important;
+        }
+        #sidak-mobile-dock {
+            display: flex !important;
+        }
+
+        /* 4. Table responsive touch scroll */
+        .table-responsive {
+            max-width: 100% !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
     }
-    .sidak-submenu-panel {
+
+    /* ===== THE ONE UNIFIED MOBILE DRAWER STYLING ===== */
+    .mobile-drawer-backdrop {
+        display: none;
         position: fixed;
-        left: 68px;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 1065;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+    .mobile-drawer-backdrop.open {
+        display: block;
+        opacity: 1;
+    }
+
+    .mobile-unified-drawer {
+        position: fixed;
         top: 0;
+        left: 0;
         bottom: 0;
         width: 320px;
-        background: #fff;
-        border-right: 1px solid #e9ecef;
-        box-shadow: 8px 0 24px rgba(0,0,0,.08);
-        z-index: 1055;
-        display: none;
+        max-width: 86vw;
+        height: 100vh;
+        height: 100dvh;
+        background: #ffffff;
+        z-index: 1070;
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.35);
+        display: flex;
         flex-direction: column;
         overflow: hidden;
     }
-    .sidak-submenu-panel.active { display: flex; }
-    body.sidak-mission-control.sidebar-collapsed .sidak-submenu-panel.active { display: flex; }
-    .sidak-submenu-header {
+    .mobile-unified-drawer.open {
+        transform: translateX(0);
+    }
+
+    /* Drawer Header */
+    .mobile-drawer-header {
+        background: var(--color-tosca-dark, #004d4f);
+        color: #ffffff;
+        padding: 14px 16px 12px;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .mobile-drawer-brand {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: 0.5px;
+        line-height: 1.1;
+        color: #ffffff;
+    }
+    .mobile-drawer-subbrand {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.8px;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+    }
+    .mobile-drawer-close-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: background 0.15s ease;
+    }
+    .mobile-drawer-close-btn:active {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* User Profile Card */
+    .mobile-drawer-user-card {
+        margin-top: 12px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .mobile-drawer-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0284c7, #06b6d4);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    .mobile-drawer-username {
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff;
+        line-height: 1.2;
+    }
+
+    /* Search Box */
+    .mobile-drawer-search-wrap {
+        position: relative;
+        margin-top: 10px;
+    }
+    .mobile-drawer-search-icon {
+        position: absolute;
+        top: 50%;
+        left: 10px;
+        transform: translateY(-50%);
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.6);
+        pointer-events: none;
+    }
+    .mobile-drawer-search-input {
+        width: 100%;
+        padding: 6px 28px 6px 30px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        font-size: 12px;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    .mobile-drawer-search-input::placeholder {
+        color: rgba(255, 255, 255, 0.65);
+    }
+    .mobile-drawer-search-input:focus {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+    .mobile-drawer-search-clear {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    /* Drawer Body */
+    .mobile-drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 8px 10px;
+        background: #f8fafc;
+    }
+
+    /* Group Accordions */
+    .mobile-drawer-group {
+        margin-bottom: 8px;
+        border-radius: 10px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+    .mobile-drawer-group-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: .875rem 1rem;
-        border-bottom: 1px solid #f1f3f5;
-        background: linear-gradient(180deg,#fff,#f8f9fa);
-    }
-    .sidak-submenu-body { overflow-y: auto; padding: .75rem 1rem 1rem; }
-    .sidak-submenu-group { margin-bottom: 1rem; }
-    .sidak-submenu-group-title {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: .08em;
-        color: #6c757d;
+        padding: 10px 12px;
+        font-size: 11.5px;
         font-weight: 700;
-        margin-bottom: .5rem;
+        color: #334155;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s ease;
     }
-    .sidak-submenu-item {
+    .mobile-drawer-group-header:active {
+        background: #f1f5f9;
+    }
+    .mobile-drawer-chevron {
+        font-size: 10px;
+        color: #94a3b8;
+        transition: transform 0.2s ease;
+    }
+    .mobile-drawer-chevron.open {
+        transform: rotate(180deg);
+    }
+    .mobile-drawer-group-items {
+        display: none;
+        border-top: 1px solid #f1f5f9;
+        padding: 4px 6px;
+    }
+    .mobile-drawer-group-items.show {
+        display: block;
+    }
+
+    /* Menu Item Link */
+    .mobile-drawer-link {
         display: flex;
         align-items: center;
-        gap: .625rem;
-        padding: .5rem .625rem;
-        border-radius: 6px;
-        color: #212529;
-        text-decoration: none;
-        font-size: .9rem;
-        margin-bottom: .25rem;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        text-decoration: none !important;
+        color: #1e293b;
+        margin-bottom: 2px;
+        transition: all 0.15s ease;
     }
-    .sidak-submenu-item:hover { background: #f8f9fa; color: #212529; text-decoration: none; }
-    .sidak-submenu-item.active { background: rgba(0,181,184,.12); color: #004d4f; font-weight: 600; }
-    .sidak-submenu-item i { width: 18px; text-align: center; color: #495057; }
-    .sidak-submenu-item.active i { color: #004d4f; }
-    .sidak-submenu-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.25);
-        z-index: 1054;
-        display: none;
+    .mobile-drawer-link:active,
+    .mobile-drawer-link:hover {
+        background: #f1f5f9;
+        color: #0f172a;
     }
-    .sidak-submenu-backdrop.active { display: block; }
-    @media (max-width: 991.98px) {
-        .sidak-submenu-panel { left: 0; width: 100%; max-width: 360px; }
+    .mobile-drawer-link.active {
+        background: rgba(0, 154, 157, 0.1);
+        color: var(--color-tosca-dark, #004d4f);
+        font-weight: 600;
+    }
+    .mobile-drawer-link-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 13px;
+        color: #475569;
+    }
+    .mobile-drawer-link.active .mobile-drawer-link-icon {
+        background: var(--color-tosca-dark, #004d4f);
+        color: #ffffff;
+    }
+    .mobile-drawer-link-content {
+        min-width: 0;
+        flex: 1;
+    }
+    .mobile-drawer-link-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: inherit;
+        white-space: normal;
+        line-height: 1.25;
+    }
+    .mobile-drawer-link-desc {
+        font-size: 10px;
+        color: #64748b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.2;
+    }
+
+    /* Drawer Footer */
+    .mobile-drawer-footer {
+        padding: 10px 14px;
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    /* Dark Mode for Drawer */
+    body.dark-mode .mobile-unified-drawer {
+        background: #0f172a;
+        color: #f1f5f9;
+    }
+    body.dark-mode .mobile-drawer-body {
+        background: #0f172a;
+    }
+    body.dark-mode .mobile-drawer-group {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    body.dark-mode .mobile-drawer-group-header {
+        color: #f1f5f9;
+    }
+    body.dark-mode .mobile-drawer-group-items {
+        border-color: #334155;
+    }
+    body.dark-mode .mobile-drawer-link {
+        color: #e2e8f0;
+    }
+    body.dark-mode .mobile-drawer-link:hover,
+    body.dark-mode .mobile-drawer-link:active {
+        background: #334155;
+    }
+    body.dark-mode .mobile-drawer-link-icon {
+        background: #334155;
+        color: #94a3b8;
+    }
+    body.dark-mode .mobile-drawer-footer {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    body.dark-mode .mobile-drawer-search-input {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
     }
 
     </style>
 
     <script>
-    window.toggleSidebarDrawer = function() {
-        var aside = document.getElementById('main-sidebar-aside');
-        var backdrop = document.getElementById('sidebar-drawer-backdrop');
-        var isMissionControl = document.body.classList.contains('sidak-mission-control');
-        var isMobile = window.innerWidth < 992;
+    /* ===== THE ONE UNIFIED MOBILE DRAWER CONTROLLER ===== */
+    window.openMobileNavDrawer = function() {
+        var drawer = document.getElementById('mobile-unified-drawer');
+        var backdrop = document.getElementById('mobile-drawer-backdrop');
+        if (!drawer) return;
         
-        if (aside) {
-            if (isMissionControl && !isMobile) {
-                // Desktop Mission Control: toggle collapsed rail mode
-                document.body.classList.toggle('sidebar-collapsed');
-                var isCollapsed = document.body.classList.contains('sidebar-collapsed');
-                
-                // Save preference to session via AJAX (per-user, not localStorage)
-                fetch('<?= site_url('dashboard/sidebar-preference') ?>', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: 'collapsed=' + (isCollapsed ? '1' : '0')
-                }).catch(function() {});
-            } else {
-                // Mobile or non-mission-control: toggle drawer-open
-                aside.classList.toggle('drawer-open');
-                if (backdrop) {
-                    if (aside.classList.contains('drawer-open')) {
-                        backdrop.classList.add('active');
-                    } else {
-                        backdrop.classList.remove('active');
-                    }
-                }
+        drawer.classList.add('open');
+        drawer.setAttribute('aria-hidden', 'false');
+        if (backdrop) backdrop.classList.add('open');
+        document.body.classList.add('mobile-drawer-active');
+        document.body.style.overflow = 'hidden';
+        
+        // Push state so Android hardware/gesture Back button closes the drawer
+        try {
+            if (!history.state || !history.state.sidakMobileDrawer) {
+                history.pushState({ sidakMobileDrawer: true }, '');
+            }
+        } catch(e) {}
+    };
+
+    window.closeMobileNavDrawer = function(shouldPopState) {
+        var drawer = document.getElementById('mobile-unified-drawer');
+        var backdrop = document.getElementById('mobile-drawer-backdrop');
+        if (drawer) {
+            drawer.classList.remove('open');
+            drawer.setAttribute('aria-hidden', 'true');
+        }
+        if (backdrop) backdrop.classList.remove('open');
+        document.body.classList.remove('mobile-drawer-active');
+        document.body.style.overflow = '';
+        
+        if (shouldPopState && history.state && history.state.sidakMobileDrawer) {
+            try { history.back(); } catch(e) {}
+        }
+    };
+
+    window.toggleMobileDrawerGroup = function(catKey) {
+        var groupItems = document.getElementById('group-items-' + catKey);
+        var chevron = document.getElementById('chevron-' + catKey);
+        if (groupItems) {
+            var isShowing = groupItems.classList.toggle('show');
+            if (chevron) {
+                if (isShowing) chevron.classList.add('open');
+                else chevron.classList.remove('open');
             }
         }
     };
+
+    window.clearMobileDrawerSearch = function() {
+        var input = document.getElementById('mobile-drawer-search-input');
+        var clearBtn = document.getElementById('mobile-drawer-search-clear');
+        if (input) input.value = '';
+        if (clearBtn) clearBtn.classList.add('d-none');
+        document.querySelectorAll('.mobile-drawer-group').forEach(function(g) { g.classList.remove('d-none'); });
+        document.querySelectorAll('.mobile-drawer-link').forEach(function(l) { l.classList.remove('d-none'); });
+        var noRes = document.getElementById('mobile-drawer-no-results');
+        if (noRes) noRes.classList.add('d-none');
+    };
+
+    // Android / Browser Back button closes drawer seamlessly
+    window.addEventListener('popstate', function(e) {
+        var drawer = document.getElementById('mobile-unified-drawer');
+        if (drawer && drawer.classList.contains('open')) {
+            closeMobileNavDrawer(false);
+        }
+    });
+
+    // Wire search and click handlers
+    document.addEventListener('DOMContentLoaded', function() {
+        var searchInput = document.getElementById('mobile-drawer-search-input');
+        var clearBtn = document.getElementById('mobile-drawer-search-clear');
+        var noRes = document.getElementById('mobile-drawer-no-results');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                var q = this.value.trim().toLowerCase();
+                if (clearBtn) {
+                    if (q.length > 0) clearBtn.classList.remove('d-none');
+                    else clearBtn.classList.add('d-none');
+                }
+                if (q.length === 0) {
+                    clearMobileDrawerSearch();
+                    return;
+                }
+
+                var totalVisible = 0;
+                document.querySelectorAll('.mobile-drawer-group').forEach(function(group) {
+                    var groupVisibleCount = 0;
+                    group.querySelectorAll('.mobile-drawer-link').forEach(function(link) {
+                        var text = link.getAttribute('data-menu-text') || '';
+                        if (text.indexOf(q) !== -1) {
+                            link.classList.remove('d-none');
+                            groupVisibleCount++;
+                        } else {
+                            link.classList.add('d-none');
+                        }
+                    });
+                    var groupItems = group.querySelector('.mobile-drawer-group-items');
+                    var chevron = group.querySelector('.mobile-drawer-chevron');
+                    if (groupVisibleCount > 0) {
+                        group.classList.remove('d-none');
+                        if (groupItems) groupItems.classList.add('show');
+                        if (chevron) chevron.classList.add('open');
+                        totalVisible += groupVisibleCount;
+                    } else {
+                        group.classList.add('d-none');
+                    }
+                });
+
+                if (noRes) {
+                    if (totalVisible === 0) noRes.classList.remove('d-none');
+                    else noRes.classList.add('d-none');
+                }
+            });
+        }
+
+        // Close drawer when link clicked
+        document.querySelectorAll('.mobile-drawer-link').forEach(function(link) {
+            link.addEventListener('click', function() {
+                closeMobileNavDrawer(false);
+            });
+        });
+    });
+
+    // Universal routing for toggleSidebarDrawer & openFullMenuDrawer on mobile
+    window.toggleSidebarDrawer = function() {
+        if (window.innerWidth < 992) {
+            var drawer = document.getElementById('mobile-unified-drawer');
+            if (drawer && drawer.classList.contains('open')) {
+                closeMobileNavDrawer(true);
+            } else {
+                openMobileNavDrawer();
+            }
+            return;
+        }
+
+        // Desktop Mission Control
+        var aside = document.getElementById('main-sidebar-aside');
+        document.body.classList.toggle('sidebar-collapsed');
+        var isCollapsed = document.body.classList.contains('sidebar-collapsed');
+        fetch('<?= site_url('dashboard/sidebar-preference') ?>', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: 'collapsed=' + (isCollapsed ? '1' : '0')
+        }).catch(function() {});
+    };
+
+    window.openFullMenuDrawer = function() {
+        if (window.innerWidth < 992) {
+            openMobileNavDrawer();
+            return;
+        }
+        var drawer = document.getElementById('full-menu-drawer');
+        if (!drawer) return;
+        drawer.classList.add('open');
+        var searchInput = document.getElementById('full-menu-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            setTimeout(function() { searchInput.focus(); }, 100);
+        }
+        populateFullMenu();
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeFullMenuDrawer = function() {
+        closeMobileNavDrawer(true);
+        var drawer = document.getElementById('full-menu-drawer');
+        if (drawer) drawer.classList.remove('open');
+        document.body.style.overflow = '';
+    };
+
     window.openCommandPalette = function() {
         var modal = document.getElementById('sidak-command-palette-modal');
         if (modal) {
@@ -4615,35 +5188,6 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
         if (modal) {
             modal.style.display = 'none';
         }
-    };
-    window.openFullMenuDrawer = function() {
-        var drawer = document.getElementById('full-menu-drawer');
-        if (!drawer) return;
-        drawer.classList.add('open');
-        var searchInput = document.getElementById('full-menu-search-input');
-        if (searchInput) {
-            searchInput.value = '';
-            setTimeout(function() {
-                searchInput.focus();
-            }, 100);
-        }
-        populateFullMenu();
-        var aside = document.getElementById('main-sidebar-aside');
-        if (aside) {
-            aside.classList.remove('drawer-open');
-        }
-        var backdrop = document.getElementById('sidebar-drawer-backdrop');
-        if (backdrop) {
-            backdrop.classList.remove('active');
-        }
-        document.body.style.overflow = 'hidden';
-    };
-    window.closeFullMenuDrawer = function() {
-        var drawer = document.getElementById('full-menu-drawer');
-        if (drawer) {
-            drawer.classList.remove('open');
-        }
-        document.body.style.overflow = '';
     };
 <?php
 // Build submenu data server-side to avoid trailing commas in JS

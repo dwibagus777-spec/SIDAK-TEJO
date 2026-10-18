@@ -168,6 +168,11 @@ $compDesc     = 'Perbandingan periode setara: ' . ($periodInfo['comparable_perio
     </div>
 </div>
 
+<?php
+$sumA = array_sum($monthlyA ?? []);
+$sumB = array_sum($monthlyB ?? []);
+$hasChartData = ($sumA > 0 || $sumB > 0);
+?>
 <!-- ═══════════════════════════════════════════════ Monthly Chart ══ -->
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -182,8 +187,21 @@ $compDesc     = 'Perbandingan periode setara: ' . ($periodInfo['comparable_perio
             <span class="d-inline-block rounded-2 ms-2" style="width:14px;height:14px;background:#adb5bd;"></span> <?= $yearB ?>
         </div>
     </div>
-    <div class="card-body pt-0" style="min-height: 280px;">
-        <canvas id="chartGangguan" height="100"></canvas>
+    <div class="card-body pt-0" id="chartGangguanContainer" style="min-height: 260px;">
+        <?php if ($hasChartData): ?>
+            <div style="height: 280px; position: relative;">
+                <canvas id="chartGangguan"></canvas>
+            </div>
+        <?php else: ?>
+            <div class="d-flex flex-column align-items-center justify-content-center py-5 text-center text-muted">
+                <i class="fas fa-chart-line fs-1 text-secondary opacity-50 mb-3"></i>
+                <h6 class="fw-semibold text-secondary mb-1">Belum Ada Data Kejadian Gangguan</h6>
+                <p class="small text-muted mb-0">
+                    Tidak ditemukan catatan kejadian gangguan untuk tahun <?= esc($yearA) ?> maupun <?= esc($yearB) ?>
+                    <?= ($penyulangId && !empty($activePenyulangName)) ? ' pada penyulang <strong>' . esc($activePenyulangName) . '</strong>' : '' ?>.
+                </p>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -591,142 +609,192 @@ $compDesc     = 'Perbandingan periode setara: ' . ($periodInfo['comparable_perio
     </div>
 </div>
 <?php endif; ?>
+<!-- ═══════════════════════════════════════════════════════════ End Content ══ -->
+<?= $this->endSection() ?>
 
 <!-- ═══════════════════════════════════════════════════════════ Scripts ══ -->
+<?= $this->section('scripts') ?>
 <script>
 (function() {
     'use strict';
 
-    // ── Chart.js – Monthly bar chart ──────────────────────────────────────
-    var monthLabels = <?= json_encode($monthLabels) ?>;
-    var dataA       = <?= json_encode(array_values($monthlyA)) ?>;
-    var dataB       = <?= json_encode(array_values($monthlyB)) ?>;
-    var yearA       = <?= (int)$yearA ?>;
-    var yearB       = <?= (int)$yearB ?>;
+    /**
+     * Ensure Chart.js is loaded and ready before calling callback.
+     * Checks window.Chart -> local plugin asset -> CDN fallback -> error message.
+     */
+    function ensureChartLoaded(callback) {
+        if (typeof window.Chart !== 'undefined') {
+            callback();
+            return;
+        }
 
-    var ctx = document.getElementById('chartGangguan');
-    if (ctx) {
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: monthLabels,
-                datasets: [
-                    {
-                        label: 'Tahun ' + yearA,
-                        data: dataA,
-                        backgroundColor: 'rgba(13,110,253,0.75)',
-                        borderColor: '#0d6efd',
-                        borderWidth: 1,
-                        borderRadius: 4,
+        // Try local asset first
+        var localScript = document.createElement('script');
+        localScript.src = '<?= base_url('plugins/chart.js') ?>';
+        localScript.onload = function() {
+            if (typeof window.Chart !== 'undefined') {
+                callback();
+            } else {
+                loadCdn();
+            }
+        };
+        localScript.onerror = loadCdn;
+
+        function loadCdn() {
+            var cdnScript = document.createElement('script');
+            cdnScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js';
+            cdnScript.onload = function() {
+                if (typeof window.Chart !== 'undefined') {
+                    callback();
+                } else {
+                    showError();
+                }
+            };
+            cdnScript.onerror = showError;
+            document.head.appendChild(cdnScript);
+        }
+
+        function showError() {
+            var container = document.getElementById('chartGangguanContainer');
+            if (container) {
+                container.innerHTML = '<div class="alert alert-warning py-3 text-center my-3"><i class="fas fa-exclamation-triangle me-2"></i>Pustaka grafik Chart.js tidak dapat dimuat. Silakan periksa koneksi internet atau muat ulang halaman.</div>';
+            }
+        }
+
+        document.head.appendChild(localScript);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // ── Chart.js – Monthly bar chart ──────────────────────────────────
+        var ctx = document.getElementById('chartGangguan');
+        if (ctx) {
+            ensureChartLoaded(function() {
+                var monthLabels = <?= json_encode($monthLabels) ?>;
+                var dataA       = <?= json_encode(array_values($monthlyA)) ?>;
+                var dataB       = <?= json_encode(array_values($monthlyB)) ?>;
+                var yearA       = <?= (int)$yearA ?>;
+                var yearB       = <?= (int)$yearB ?>;
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [
+                            {
+                                label: 'Tahun ' + yearA,
+                                data: dataA,
+                                backgroundColor: 'rgba(13,110,253,0.75)',
+                                borderColor: '#0d6efd',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            },
+                            {
+                                label: 'Tahun ' + yearB,
+                                data: dataB,
+                                backgroundColor: 'rgba(173,181,189,0.6)',
+                                borderColor: '#adb5bd',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            }
+                        ]
                     },
-                    {
-                        label: 'Tahun ' + yearB,
-                        data: dataB,
-                        backgroundColor: 'rgba(173,181,189,0.6)',
-                        borderColor: '#adb5bd',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(ctx) {
-                                return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y + ' kejadian';
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y + ' kejadian';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11 } }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { font: { size: 11 }, stepSize: 1 },
+                                grid: { color: 'rgba(0,0,0,0.05)' }
+                            }
+                        },
+                        onClick: function(e, elements) {
+                            if (elements.length > 0) {
+                                var yr = elements[0].datasetIndex === 0 ? yearA : yearB;
+                                var url = '<?= site_url('gangguan') ?>?year_a=<?= $yearA ?>&year_b=<?= $yearB ?><?= $ulpParam ?>&year=' + yr + '&page=1';
+                                var collapseEl = document.getElementById('collapseHistori');
+                                if (collapseEl) {
+                                    var bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+                                    bsCollapse.show();
+                                }
+                                window.location.href = url;
                             }
                         }
                     }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 11 } }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        ticks: { font: { size: 11 }, stepSize: 1 },
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    }
-                },
-                onClick: function(e, elements) {
-                    if (elements.length > 0) {
-                        var monthIdx = elements[0].index + 1; // 1-based
-                        var yr = elements[0].datasetIndex === 0 ? yearA : yearB;
-                        var url = '<?= site_url('gangguan') ?>?year_a=<?= $yearA ?>&year_b=<?= $yearB ?><?= $ulpParam ?>&year=' + yr + '&page=1';
-                        // Expand histori section and apply filter
-                        var collapseEl = document.getElementById('collapseHistori');
-                        if (collapseEl) {
-                            var bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
-                            bsCollapse.show();
-                        }
-                        window.location.href = url;
-                    }
-                }
-            }
-        });
-    }
-
-    // ── Collapse icon toggle ──────────────────────────────────────────────
-    var colEl = document.getElementById('collapseHistori');
-    if (colEl) {
-        colEl.addEventListener('show.bs.collapse', function() {
-            var icon = document.getElementById('iconCollapseHistori');
-            if (icon) { icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up'); }
-        });
-        colEl.addEventListener('hide.bs.collapse', function() {
-            var icon = document.getElementById('iconCollapseHistori');
-            if (icon) { icon.classList.remove('fa-chevron-up'); icon.classList.add('fa-chevron-down'); }
-        });
-        // Auto-expand if any list filter is active
-        <?php if ($yearFilter || $penyulangId || $categoryFilter || $search !== ''): ?>
-        bootstrap.Collapse.getOrCreateInstance(colEl, { toggle: false }).show();
-        <?php endif; ?>
-    }
-
-    // ── Modal: cascade ULP → Penyulang ───────────────────────────────────
-    var modalUlp      = document.getElementById('modal_ulp_id');
-    var modalPenyulang = document.getElementById('modal_penyulang_id');
-    if (modalUlp && modalPenyulang) {
-        var allOpts = Array.from(modalPenyulang.querySelectorAll('option[data-ulp]'));
-        modalUlp.addEventListener('change', function() {
-            var selUlp = this.value;
-            modalPenyulang.value = '';
-            allOpts.forEach(function(opt) {
-                opt.style.display = (!selUlp || opt.getAttribute('data-ulp') === selUlp) ? '' : 'none';
+                });
             });
-        });
-    }
+        }
 
-    // ── Filter cascade ULP → Penyulang via AJAX ──────────────────────────
-    var filterUlp      = document.getElementById('filter_ulp');
-    var filterPenyulang = document.getElementById('filter_penyulang');
-    if (filterUlp && filterPenyulang) {
-        filterUlp.addEventListener('change', function() {
-            var selUlp = this.value;
-            if (!selUlp) { return; }
-            fetch('<?= site_url('gangguan/api-feeders') ?>/' + selUlp)
-                .then(function(r) { return r.json(); })
-                .then(function(res) {
-                    if (res.status === 'success' && res.data) {
-                        filterPenyulang.innerHTML = '<option value="">Semua Penyulang</option>';
-                        res.data.forEach(function(p) {
-                            var opt = document.createElement('option');
-                            opt.value = p.id;
-                            opt.textContent = p.nama_penyulang;
-                            filterPenyulang.appendChild(opt);
-                        });
-                    }
-                })
-                .catch(function(err) { console.error('Gagal memuat penyulang:', err); });
-        });
-    }
+        // ── Collapse icon toggle ──────────────────────────────────────────
+        var colEl = document.getElementById('collapseHistori');
+        if (colEl) {
+            colEl.addEventListener('show.bs.collapse', function() {
+                var icon = document.getElementById('iconCollapseHistori');
+                if (icon) { icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up'); }
+            });
+            colEl.addEventListener('hide.bs.collapse', function() {
+                var icon = document.getElementById('iconCollapseHistori');
+                if (icon) { icon.classList.remove('fa-chevron-up'); icon.classList.add('fa-chevron-down'); }
+            });
+            // Auto-expand if any list filter is active
+            <?php if ($yearFilter || $penyulangId || $categoryFilter || $search !== ''): ?>
+            bootstrap.Collapse.getOrCreateInstance(colEl, { toggle: false }).show();
+            <?php endif; ?>
+        }
+
+        // ── Modal: cascade ULP → Penyulang ───────────────────────────────
+        var modalUlp      = document.getElementById('modal_ulp_id');
+        var modalPenyulang = document.getElementById('modal_penyulang_id');
+        if (modalUlp && modalPenyulang) {
+            var allOpts = Array.from(modalPenyulang.querySelectorAll('option[data-ulp]'));
+            modalUlp.addEventListener('change', function() {
+                var selUlp = this.value;
+                modalPenyulang.value = '';
+                allOpts.forEach(function(opt) {
+                    opt.style.display = (!selUlp || opt.getAttribute('data-ulp') === selUlp) ? '' : 'none';
+                });
+            });
+        }
+
+        // ── Filter cascade ULP → Penyulang via AJAX ──────────────────────
+        var filterUlp      = document.getElementById('filter_ulp');
+        var filterPenyulang = document.getElementById('filter_penyulang');
+        if (filterUlp && filterPenyulang) {
+            filterUlp.addEventListener('change', function() {
+                var selUlp = this.value;
+                if (!selUlp) { return; }
+                fetch('<?= site_url('gangguan/api-feeders') ?>/' + selUlp)
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (res.status === 'success' && res.data) {
+                            filterPenyulang.innerHTML = '<option value="">Semua Penyulang</option>';
+                            res.data.forEach(function(p) {
+                                var opt = document.createElement('option');
+                                opt.value = p.id;
+                                opt.textContent = p.nama_penyulang;
+                                filterPenyulang.appendChild(opt);
+                            });
+                        }
+                    })
+                    .catch(function(err) { console.error('Gagal memuat penyulang:', err); });
+            });
+        }
+    });
 })();
 </script>
-
 <?= $this->endSection() ?>

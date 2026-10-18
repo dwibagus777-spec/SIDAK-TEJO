@@ -227,8 +227,28 @@
         border: 1px solid #cbd5e1;
         border-radius: 14px;
         padding: 14px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.12);
-        z-index: 1000;
+    }
+    .dah-chip-gangguan {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 9999px;
+        padding: 5px 12px;
+        transition: all 0.2s ease;
+        text-decoration: none !important;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .dah-chip-gangguan:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08) !important;
+        border-color: #0284c7 !important;
+    }
+    body.dark-mode .dah-chip-gangguan {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+    }
+    body.dark-mode .dah-chip-gangguan .text-dark {
+        color: #f1f5f9 !important;
     }
 </style>
 
@@ -278,22 +298,25 @@
                 <span class="status-dot-live"></span> Live Data
             </div>
 
-            <!-- Interruption YoY Metric Badge (Domain Data) -->
+            <!-- Interruption Metric Chip (Domain Data) -->
             <?php if (!empty($gangguanStats)): ?>
             <?php
-                $ggYearA = (int)($gangguanStats['year'] ?? date('Y'));
-                $ggYearB = (int)($gangguanStats['last_year'] ?? ($ggYearA - 1));
-                $ggUlpQ  = !empty($ulpIdFilter) ? '&ulp_id=' . (int)$ulpIdFilter : '';
-                $ggUrl   = site_url('gangguan') . '?year_a=' . $ggYearA . '&year_b=' . $ggYearB . $ggUlpQ;
+                $ggYearA   = (int)($gangguanStats['year'] ?? date('Y'));
+                $ggYearB   = (int)($gangguanStats['last_year'] ?? ($ggYearA - 1));
+                $ggUlpQ    = !empty($ulpIdFilter) ? '&ulp_id=' . (int)$ulpIdFilter : '';
+                $ggUrl     = site_url('gangguan') . '?year_a=' . $ggYearA . '&year_b=' . $ggYearB . $ggUlpQ;
+                $curCount  = (int)($gangguanStats['current_ytd'] ?? 0);
             ?>
-            <a href="<?= $ggUrl ?>" class="text-decoration-none d-none d-md-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill border shadow-xs text-dark hover-shadow" title="Klik untuk kelola & melihat detail data gangguan penyulang (YTD vs tahun lalu periode sama)" style="font-size: 11px; font-weight: 600; cursor: pointer;">
-                <i class="fas fa-bolt text-warning"></i>
-
-                <span class="text-muted">Gangguan <?= esc($gangguanStats['year']) ?>:</span>
-                <strong class="text-dark"><?= number_format($gangguanStats['current_ytd']) ?>x</strong>
-                <span class="badge <?= ($gangguanStats['yoy_pct'] < 0) ? 'bg-success' : (($gangguanStats['yoy_pct'] > 0) ? 'bg-danger' : 'bg-secondary') ?> rounded-pill" style="font-size: 10px;">
-                    <?= esc($gangguanStats['yoy_text']) ?>
+            <a href="<?= $ggUrl ?>" class="dah-chip-gangguan d-inline-flex align-items-center gap-2 shadow-xs" title="Klik untuk membuka analitik gangguan penyulang (<?= $ggYearA ?> vs <?= $ggYearB ?>)">
+                <i class="fas fa-bolt text-warning fs-6"></i>
+                <span class="text-dark fw-bold" style="font-size: 12px; white-space: nowrap;">
+                    Gangguan <?= esc($ggYearA) ?> &bull; <?= number_format($curCount) ?> kali
                 </span>
+                <?php if (!empty($gangguanStats['yoy_text']) && !empty($gangguanStats['yoy_pct'])): ?>
+                    <span class="badge <?= ($gangguanStats['yoy_pct'] < 0) ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger' ?> rounded-pill px-2" style="font-size: 10px; font-weight: 600;">
+                        <?= esc($gangguanStats['yoy_text']) ?>
+                    </span>
+                <?php endif; ?>
             </a>
             <?php endif; ?>
 

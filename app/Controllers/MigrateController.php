@@ -265,6 +265,37 @@ class MigrateController extends BaseController
             }
             $executed[] = 'network_baselines';
 
+            // 3B. Table historical_feeder_interruptions schema harmonization (Release v2.4.0)
+            if ($db->tableExists('historical_feeder_interruptions')) {
+                $interruptionCols = array_column($db->query("SHOW COLUMNS FROM historical_feeder_interruptions")->getResultArray(), 'Field');
+                if (!in_array('ulp_id', $interruptionCols)) {
+                    try {
+                        $db->query("ALTER TABLE `historical_feeder_interruptions` ADD COLUMN `ulp_id` INT NULL AFTER `ulp_name`");
+                    } catch (\Throwable $exUlp) {}
+                }
+                if (!in_array('penyulang_id', $interruptionCols)) {
+                    try {
+                        $db->query("ALTER TABLE `historical_feeder_interruptions` ADD COLUMN `penyulang_id` INT NULL AFTER `feeder_name`");
+                    } catch (\Throwable $exPny) {}
+                }
+
+                // Backfill relational IDs if missing
+                try {
+                    $db->query("UPDATE historical_feeder_interruptions h 
+                                JOIN ulps u ON TRIM(UPPER(REPLACE(h.ulp_name, 'ULP ', ''))) = TRIM(UPPER(REPLACE(u.nama_ulp, 'ULP ', ''))) 
+                                SET h.ulp_id = u.id 
+                                WHERE h.ulp_id IS NULL");
+                } catch (\Throwable $exBackfillUlp) {}
+
+                try {
+                    $db->query("UPDATE historical_feeder_interruptions h 
+                                JOIN penyulang p ON TRIM(UPPER(h.feeder_name)) = TRIM(UPPER(p.nama_penyulang)) 
+                                SET h.penyulang_id = p.id 
+                                WHERE h.penyulang_id IS NULL");
+                } catch (\Throwable $exBackfillPny) {}
+                $executed[] = 'historical_feeder_interruptions';
+            }
+
             // 4. Table baseline_assets (Migration 000007)
             $db->query("CREATE TABLE IF NOT EXISTS `baseline_assets` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

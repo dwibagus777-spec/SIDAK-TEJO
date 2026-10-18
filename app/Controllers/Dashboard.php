@@ -193,8 +193,18 @@ class Dashboard extends BaseController
             ->where('MONTH(event_date) <=', $curMonth);
 
         if ($ulpIdFilter !== null) {
-            $ggnCurQuery->where('ulp_id', $ulpIdFilter);
-            $ggnLastQuery->where('ulp_id', $ulpIdFilter);
+            $interruptionFields = $db->getFieldNames('historical_feeder_interruptions');
+            if (in_array('ulp_id', $interruptionFields, true)) {
+                $ggnCurQuery->where('ulp_id', $ulpIdFilter);
+                $ggnLastQuery->where('ulp_id', $ulpIdFilter);
+            } else {
+                $uRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
+                if ($uRow) {
+                    $cleanU = trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']));
+                    $ggnCurQuery->like('ulp_name', $cleanU);
+                    $ggnLastQuery->like('ulp_name', $cleanU);
+                }
+            }
         }
 
         $cntGgnCur = $ggnCurQuery->countAllResults();

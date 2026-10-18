@@ -41,13 +41,12 @@ $ulpParam    = $ulpIdFilter ? '&ulp_id=' . $ulpIdFilter : '';
 </div>
 <?php endif; ?>
 
-<!-- ═══════════════════════════════════════════════════ Year Selector Bar ══ -->
+<!-- ═══════════════════════════════════════════════════ Year & Feeder Selector Bar ══ -->
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body py-2 px-3">
         <form method="GET" action="<?= $baseUrl ?>" id="analyticsForm" class="row g-2 align-items-center">
-            <?php if ($ulpIdFilter): ?><input type="hidden" name="ulp_id" value="<?= $ulpIdFilter ?>"><?php endif; ?>
             <div class="col-auto">
-                <span class="fw-semibold text-secondary small"><i class="fas fa-chart-bar me-1 text-primary"></i>Bandingkan Tahun:</span>
+                <span class="fw-semibold text-secondary small"><i class="fas fa-chart-bar me-1 text-primary"></i>Analitik YoY:</span>
             </div>
             <div class="col-auto">
                 <label class="form-label small mb-0 me-1 text-muted">Tahun A</label>
@@ -69,24 +68,62 @@ $ulpParam    = $ulpIdFilter ? '&ulp_id=' . $ulpIdFilter : '';
             <?php if (in_array(strtolower((string)session()->get('user_role')), ['administrator', 'admin', 'admin_pusat', 'supervisor_up3'])): ?>
             <div class="col-auto">
                 <label class="form-label small mb-0 me-1 text-muted">ULP</label>
-                <select name="ulp_id" class="form-select form-select-sm rounded-pill d-inline-block" style="width: auto;" onchange="document.getElementById('analyticsForm').submit()">
+                <select name="ulp_id" id="selUlpAnalytics" class="form-select form-select-sm rounded-pill d-inline-block" style="width: auto;" onchange="document.getElementById('analyticsForm').submit()">
                     <option value="">Semua ULP</option>
                     <?php foreach ($ulps as $u): ?>
                         <option value="<?= $u['id'] ?>" <?= ((int)$ulpIdFilter === (int)$u['id']) ? 'selected' : '' ?>><?= esc($u['nama_ulp']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
+            <?php else: ?>
+                <?php if ($ulpIdFilter): ?><input type="hidden" name="ulp_id" value="<?= $ulpIdFilter ?>"><?php endif; ?>
+            <?php endif; ?>
+            <div class="col-auto">
+                <label class="form-label small mb-0 me-1 text-muted">Penyulang</label>
+                <select name="penyulang_id" id="selPenyulangAnalytics" class="form-select form-select-sm rounded-pill d-inline-block" style="width: auto; max-width: 190px;" onchange="document.getElementById('analyticsForm').submit()">
+                    <option value="">Semua Penyulang</option>
+                    <?php foreach ($penyulangs as $p): ?>
+                        <option value="<?= $p['id'] ?>" <?= ((int)$penyulangId === (int)$p['id']) ? 'selected' : '' ?>><?= esc($p['nama_penyulang']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php if ($penyulangId || $ulpIdFilter): ?>
+            <div class="col-auto">
+                <a href="<?= $baseUrl ?>?year_a=<?= $yearA ?>&year_b=<?= $yearB ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-2" title="Reset filter penyulang/ULP">
+                    <i class="fas fa-times me-1"></i>Reset Filter
+                </a>
+            </div>
             <?php endif; ?>
             <div class="col-auto ms-auto">
                 <?php if ($canManage): ?>
                 <button type="button" class="btn btn-sm btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalAddGangguan">
-                    <i class="fas fa-plus me-1"></i> Input Gangguan
+                    <i class="fas fa-plus me-1"></i> Form Input (Draft)
                 </button>
                 <?php endif; ?>
             </div>
         </form>
     </div>
 </div>
+
+<?php if ($penyulangId): ?>
+<?php
+    $activePenyulangName = '';
+    foreach ($penyulangs as $p) {
+        if ((int)$p['id'] === (int)$penyulangId) {
+            $activePenyulangName = $p['nama_penyulang'];
+            break;
+        }
+    }
+?>
+<div class="alert alert-info border-0 shadow-sm rounded-4 d-flex justify-content-between align-items-center py-2 px-3 mb-4">
+    <div class="small">
+        <i class="fas fa-filter text-primary me-2"></i>Menampilkan analitik khusus Penyulang: <strong><?= esc($activePenyulangName ?: ('ID #' . $penyulangId)) ?></strong>
+    </div>
+    <a href="<?= $baseUrl ?>?year_a=<?= $yearA ?>&year_b=<?= $yearB ?><?= $ulpParam ?>" class="btn btn-xs btn-outline-primary rounded-pill px-3 py-1 small">
+        Tampilkan Semua Penyulang
+    </a>
+</div>
+<?php endif; ?>
 
 <!-- ══════════════════════════════════════════════════════ YoY Summary ══ -->
 <?php
@@ -136,6 +173,9 @@ $compDesc     = 'Perbandingan periode setara: ' . ($periodInfo['comparable_perio
     <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h6 class="fw-bold mb-0 text-dark">
             <i class="fas fa-chart-bar text-primary me-2"></i>Distribusi Gangguan per Bulan
+            <?php if ($penyulangId && !empty($activePenyulangName)): ?>
+                <span class="badge bg-primary-subtle text-primary border ms-2 font-monospace"><?= esc($activePenyulangName) ?></span>
+            <?php endif; ?>
         </h6>
         <div class="d-flex gap-2 align-items-center" style="font-size:12px;">
             <span class="d-inline-block rounded-2" style="width:14px;height:14px;background:#0d6efd;"></span> <?= $yearA ?>
@@ -171,7 +211,7 @@ $compDesc     = 'Perbandingan periode setara: ' . ($periodInfo['comparable_perio
                     <th class="text-center" style="width:110px;">Gangguan <?= $yearA ?></th>
                     <th class="text-center" style="width:110px;">Gangguan <?= $yearB ?></th>
                     <th class="text-center" style="width:100px;">Selisih</th>
-                    <th class="text-center" style="width:100px;">Aksi</th>
+                    <th class="text-center" style="width:140px;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -185,7 +225,7 @@ $compDesc     = 'Perbandingan periode setara: ' . ($periodInfo['comparable_perio
                 $diffCls   = $diff > 0 ? 'text-danger' : ($diff < 0 ? 'text-success' : 'text-muted');
                 $barW      = round($row['cnt_a'] / $maxCntA * 100);
                 ?>
-                <tr>
+                <tr class="<?= ((int)$penyulangId === (int)$row['penyulang_id'] && !empty($row['penyulang_id'])) ? 'table-primary' : '' ?>">
                     <td class="ps-3 text-muted fw-semibold"><?= $i + 1 ?></td>
                     <td>
                         <div class="fw-semibold text-dark"><?= esc($row['nama_penyulang'] ?: '—') ?></div>
@@ -194,15 +234,26 @@ $compDesc     = 'Perbandingan periode setara: ' . ($periodInfo['comparable_perio
                         </div>
                     </td>
                     <td class="text-muted"><?= esc($row['nama_ulp'] ?: '—') ?></td>
-                    <td class="text-center fw-bold text-primary"><?= $row['cnt_a'] ?: '—' ?></td>
-                    <td class="text-center text-muted"><?= $row['cnt_b'] ?: '—' ?></td>
+                    <td class="text-center fw-bold text-primary"><?= $row['cnt_a'] ?: '0' ?></td>
+                    <td class="text-center text-muted"><?= $row['cnt_b'] ?: '0' ?></td>
                     <td class="text-center fw-semibold <?= $diffCls ?>"><?= $diffLabel ?></td>
                     <td class="text-center">
-                        <a href="<?= site_url('temuan?penyulang_id=' . $row['penyulang_id']) ?>"
-                           class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0"
-                           title="Daftar Temuan penyulang ini" style="font-size:11px;">
-                            <i class="fas fa-list-check me-1"></i>Temuan
-                        </a>
+                        <div class="btn-group btn-group-sm">
+                            <?php if (!empty($row['penyulang_id'])): ?>
+                            <a href="<?= $baseUrl ?>?year_a=<?= $yearA ?>&year_b=<?= $yearB ?><?= $ulpParam ?>&penyulang_id=<?= $row['penyulang_id'] ?>"
+                               class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0 me-1"
+                               title="Filter grafik dan ringkasan ke penyulang ini" style="font-size:11px;">
+                                <i class="fas fa-chart-line me-1"></i>Fokus
+                            </a>
+                            <a href="<?= site_url('temuan?penyulang_id=' . $row['penyulang_id']) ?>"
+                               class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0"
+                               title="Daftar Temuan penyulang ini" style="font-size:11px;">
+                                <i class="fas fa-list-check me-1"></i>Temuan
+                            </a>
+                            <?php else: ?>
+                            <span class="text-muted small">—</span>
+                            <?php endif; ?>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -524,11 +575,16 @@ $compDesc     = 'Perbandingan periode setara: ' . ($periodInfo['comparable_perio
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success rounded-pill px-4">
-                        <i class="fas fa-save me-1"></i> Simpan Data Gangguan
-                    </button>
+                <div class="modal-footer border-0 pt-0 d-flex justify-content-between align-items-center">
+                    <span class="badge bg-warning-subtle text-warning border px-2 py-1 small">
+                        <i class="fas fa-lock me-1"></i>Penyimpanan Terkunci (Menunggu Format Data)
+                    </span>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" disabled title="Penyimpanan dinonaktifkan sementara menunggu contoh data dan format final">
+                            <i class="fas fa-clock me-1"></i> Simpan (Menunggu Format Data)
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

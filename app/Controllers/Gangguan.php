@@ -49,16 +49,18 @@ class Gangguan extends BaseController
         if (!in_array($yearA, $availableYears)) $yearA = $latestYear;
         if (!in_array($yearB, $availableYears) && count($availableYears) > 1) $yearB = $availableYears[1];
 
+        $penyulangId = $this->request->getGet('penyulang_id') ? (int)$this->request->getGet('penyulang_id') : null;
+
         // ─── Analytics: Monthly breakdown per year ──────────────────────────
-        $monthlyA = $this->interruptionModel->getMonthlyByYear($yearA, $ulpIdFilter);
-        $monthlyB = $this->interruptionModel->getMonthlyByYear($yearB, $ulpIdFilter);
+        $monthlyA = $this->interruptionModel->getMonthlyByYear($yearA, $ulpIdFilter, $penyulangId);
+        $monthlyB = $this->interruptionModel->getMonthlyByYear($yearB, $ulpIdFilter, $penyulangId);
 
         // ─── Analytics: Comparable period description ───────────────────────
-        $periodInfo       = $this->interruptionModel->getComparablePeriod($yearA, $yearB, $ulpIdFilter);
+        $periodInfo       = $this->interruptionModel->getComparablePeriod($yearA, $yearB, $ulpIdFilter, $penyulangId);
         $comparableMonths = $periodInfo['comparable_months'];
 
-        $totalA = $this->interruptionModel->getTotalByYearUpToMonth($yearA, $comparableMonths, $ulpIdFilter);
-        $totalB = $this->interruptionModel->getTotalByYearUpToMonth($yearB, $comparableMonths, $ulpIdFilter);
+        $totalA = $this->interruptionModel->getTotalByYearUpToMonth($yearA, $comparableMonths, $ulpIdFilter, $penyulangId);
+        $totalB = $this->interruptionModel->getTotalByYearUpToMonth($yearB, $comparableMonths, $ulpIdFilter, $penyulangId);
         $selisih = $totalA - $totalB;
         $pctChange = ($totalB > 0) ? round(($selisih / $totalB) * 100, 1) : null;
 
@@ -89,21 +91,43 @@ class Gangguan extends BaseController
         }
 
         // ─── List / filter (existing table view) ───────────────────────────
-        $penyulangId  = $this->request->getGet('penyulang_id') ? (int)$this->request->getGet('penyulang_id') : null;
         $yearFilter   = $this->request->getGet('year') ? (int)$this->request->getGet('year') : null;
         $categoryFilter = $this->request->getGet('category') ? strtoupper(trim((string)$this->request->getGet('category'))) : null;
         $search       = trim((string)$this->request->getGet('search'));
 
+        $hasUlpId       = $this->interruptionModel->hasColumn('ulp_id');
+        $hasPenyulangId = $this->interruptionModel->hasColumn('penyulang_id');
+
         $builder = $this->interruptionModel->builder();
-        $builder->select('historical_feeder_interruptions.*, ulps.nama_ulp as master_ulp, penyulang.nama_penyulang as master_penyulang')
-            ->join('ulps', 'ulps.id = historical_feeder_interruptions.ulp_id', 'left')
-            ->join('penyulang', 'penyulang.id = historical_feeder_interruptions.penyulang_id', 'left');
+        if ($hasUlpId && $hasPenyulangId) {
+            $builder->select('historical_feeder_interruptions.*, ulps.nama_ulp as master_ulp, penyulang.nama_penyulang as master_penyulang')
+                ->join('ulps', 'ulps.id = historical_feeder_interruptions.ulp_id', 'left')
+                ->join('penyulang', 'penyulang.id = historical_feeder_interruptions.penyulang_id', 'left');
+        } else {
+            $builder->select('historical_feeder_interruptions.*, historical_feeder_interruptions.ulp_name as master_ulp, historical_feeder_interruptions.feeder_name as master_penyulang');
+        }
 
         if ($ulpIdFilter !== null) {
-            $builder->where('historical_feeder_interruptions.ulp_id', $ulpIdFilter);
+            if ($hasUlpId) {
+                $builder->where('historical_feeder_interruptions.ulp_id', $ulpIdFilter);
+            } else {
+                $uRow = $this->ulpRepository->find($ulpIdFilter);
+                if ($uRow) {
+                    $cleanU = trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']));
+                    $builder->like('historical_feeder_interruptions.ulp_name', $cleanU);
+                }
+            }
         }
         if ($penyulangId !== null && $penyulangId > 0) {
-            $builder->where('historical_feeder_interruptions.penyulang_id', $penyulangId);
+            if ($hasPenyulangId) {
+                $builder->where('historical_feeder_interruptions.penyulang_id', $penyulangId);
+            } else {
+                $dbTmp = \Config\Database::connect();
+                $pRow = $dbTmp->table('penyulang')->select('nama_penyulang')->where('id', $penyulangId)->get()->getRowArray();
+                if ($pRow) {
+                    $builder->where('historical_feeder_interruptions.feeder_name', $pRow['nama_penyulang']);
+                }
+            }
         }
         if ($yearFilter !== null && $yearFilter > 0) {
             $builder->where('YEAR(historical_feeder_interruptions.event_date)', $yearFilter);

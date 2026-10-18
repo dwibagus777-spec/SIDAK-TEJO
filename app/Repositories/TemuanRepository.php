@@ -371,7 +371,7 @@ class TemuanRepository extends BaseRepository
     /**
      * Temuan Bulanan untuk Grafik (Chart.js)
      */
-    public function getMonthlyStats(?int $ulpIdFilter = null): array
+    public function getMonthlyStats(?int $ulpIdFilter = null, ?int $yearFilter = null): array
     {
         $builder = $this->getBuilder('temuan')
             ->select("DATE_FORMAT(tanggal_temuan, '%Y-%m') as bulan, COUNT(id) as total")
@@ -381,8 +381,13 @@ class TemuanRepository extends BaseRepository
             $builder->where('ulp_id', $ulpIdFilter);
         }
 
-        return self::safeGet($builder->groupBy('bulan')->orderBy('bulan', 'ASC')->limit(12), null, 'TemuanRepository::getMonthlyStats');
+        if ($yearFilter !== null) {
+            $builder->where('YEAR(tanggal_temuan)', $yearFilter);
+        }
+
+        return self::safeGet($builder->groupBy('bulan')->orderBy('bulan', 'ASC'), null, 'TemuanRepository::getMonthlyStats');
     }
+
 
     /**
      * Temuan per ULP untuk Grafik (Chart.js)

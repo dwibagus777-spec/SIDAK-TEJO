@@ -204,10 +204,32 @@ class Temuan extends BaseController
     {
         [$ulps, $penyulangs, $isRestricted] = $this->getScopedUlpsAndPenyulangs();
 
+        $selectedPenyulangId = $this->request->getGet('penyulang_id') ? (int)$this->request->getGet('penyulang_id') : null;
+        $selectedUlpId       = $this->request->getGet('ulp_id') ? (int)$this->request->getGet('ulp_id') : null;
+        $selectedMonth       = $this->request->getGet('month') ? (int)$this->request->getGet('month') : null;
+        $selectedYear        = $this->request->getGet('year') ? (int)$this->request->getGet('year') : null;
+        $selectedStatus      = $this->request->getGet('status') ? (string)$this->request->getGet('status') : null;
+        $selectedPrioritas   = $this->request->getGet('prioritas') ? (string)$this->request->getGet('prioritas') : null;
+
+        // Auto-align ULP if penyulang is selected without ulp_id
+        if ($selectedPenyulangId && !$selectedUlpId && !$isRestricted) {
+            $db = \Config\Database::connect();
+            $pRow = $db->table('penyulang')->select('ulp_id')->where('id', $selectedPenyulangId)->get()->getRowArray();
+            if (!empty($pRow['ulp_id'])) {
+                $selectedUlpId = (int)$pRow['ulp_id'];
+            }
+        }
+
         return view('temuan/index', [
-            'ulps'         => $ulps,
-            'penyulangs'   => $penyulangs,
-            'isRestricted' => $isRestricted
+            'ulps'                => $ulps,
+            'penyulangs'          => $penyulangs,
+            'isRestricted'        => $isRestricted,
+            'selectedPenyulangId' => $selectedPenyulangId,
+            'selectedUlpId'       => $selectedUlpId,
+            'selectedMonth'       => $selectedMonth,
+            'selectedYear'        => $selectedYear,
+            'selectedStatus'      => $selectedStatus,
+            'selectedPrioritas'   => $selectedPrioritas,
         ]);
     }
 

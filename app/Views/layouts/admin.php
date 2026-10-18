@@ -3059,9 +3059,15 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                     recognition.onerror = function(event) {
                         isListening = false;
                         $('#btn-global-mic').removeClass('listening');
-                        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                        console.warn('[VOICE_AI] SpeechRecognition error:', event.error);
+                        if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
                             isContinuous = false;
-                            console.warn('[VOICE_AI] Microphone access denied or blocked:', event.error);
+                            var friendlyMsg = (event.error === 'audio-capture') 
+                                ? 'Perangkat mikrofon fisik tidak dapat menangkap suara.' 
+                                : 'Izin akses mikrofon belum diberikan pada browser ini.';
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({ toast: true, position: 'top', icon: 'warning', title: 'Perintah Suara', text: friendlyMsg, showConfirmButton: false, timer: 3500 });
+                            }
                         }
                     };
 
@@ -3069,9 +3075,14 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                         isListening = false;
                         $('#btn-global-mic').removeClass('listening');
                         if (isContinuous) {
-                            setTimeout(() => { try { recognition.start(); } catch(e){} }, 1000);
+                            setTimeout(() => { 
+                                if (isContinuous && recognition) {
+                                    try { recognition.start(); } catch(e) { isContinuous = false; }
+                                }
+                            }, 1000);
                         }
                     };
+
 
                     recognition.onresult = function(event) {
                         const lastIndex = event.results.length - 1;
@@ -3214,22 +3225,63 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                     }
                 }
 
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        stream.getTracks().forEach(track => track.stop());
-                        $('#modalVoiceDiagnostic').modal('hide');
-                        isContinuous = true;
-                        initSpeechRecognition();
-                        if (recognition) {
-                            try { recognition.start(); } catch(e) {}
-                        }
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    var errorMsg = 'Peramban ini tidak mendukung API mikrofon atau tidak berjalan pada konteks aman (HTTPS).';
+                    $alertContainer.html('<div class="alert alert-danger py-2 px-3 small mb-0"><i class="fas fa-exclamation-circle me-1"></i> ' + errorMsg + '</div>');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Mikrofon Tidak Didukung', text: errorMsg, confirmButtonColor: '#005eb8' });
+                    }
+                    return;
+                }
+
+                let stream = null;
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    // Cleanly stop all audio tracks immediately to ensure indicator doesn't linger
+                    if (stream) {
+                        stream.getTracks().forEach(function(track) {
+                            try { track.stop(); } catch(e) {}
+                        });
+                    }
+                    $('#modalVoiceDiagnostic').modal('hide');
+                    isContinuous = true;
+                    initSpeechRecognition();
+                    if (recognition) {
+                        try { recognition.start(); } catch(e) {}
+                    }
+                    if (typeof Swal !== 'undefined') {
                         Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Mikrofon Aktif', text: 'Voice AI siap mendengarkan', showConfirmButton: false, timer: 2500 });
-                    } catch (err) {
-                        runVoiceDiagnostic(false);
+                    }
+                } catch (err) {
+                    var detail = '';
+                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                        detail = 'Izin mikrofon ditolak oleh pengguna atau sistem. Klik ikon gembok/setelan situs pada bilah URL browser dan pilih "Izinkan" untuk Mikrofon.';
+                    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                        detail = 'Perangkat mikrofon fisik tidak terdeteksi pada perangkat ini. Pastikan headset atau mikrofon internal telah terpasang.';
+                    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                        detail = 'Mikrofon sedang digunakan oleh aplikasi lain atau terjadi masalah perangkat keras.';
+                    } else if (err.name === 'SecurityError') {
+                        detail = 'Akses mikrofon dibatasi karena halaman web tidak dibuka melalui protokol aman HTTPS atau localhost.';
+                    } else {
+                        detail = 'Gagal mengakses mikrofon: ' + (err.message || err.name || 'Terjadi kesalahan tidak terduga.');
+                    }
+
+                    $alertContainer.html('<div class="alert alert-warning py-2 px-3 small mb-0"><i class="fas fa-triangle-exclamation me-1"></i> ' + detail + '</div>');
+                    $micBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Ditolak / Tidak Siap');
+                    
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Akses Mikrofon', text: detail, confirmButtonColor: '#005eb8' });
+                    }
+                    console.warn('[VOICE_AI] getUserMedia error:', err);
+                } finally {
+                    if (stream) {
+                        stream.getTracks().forEach(function(track) {
+                            try { track.stop(); } catch(e) {}
+                        });
                     }
                 }
             }
+
 
             $('#btn-diag-retry').on('click', function() {
                 runVoiceDiagnostic(false);

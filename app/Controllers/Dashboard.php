@@ -68,8 +68,27 @@ class Dashboard extends BaseController
         $canMonitoring = check_role(['administrator', 'admin_pusat', 'supervisor_up3', 'manager']);
 
         // Fetch All Dashboard Analytics Data (System-scoped or ULP-scoped, preventing empty role stats)
+        $db = \Config\Database::connect();
+
+        // Available years in temuan database
+        $yearsQuery = $db->table('temuan')
+            ->select('DISTINCT YEAR(tanggal_temuan) as yr')
+            ->where('tanggal_temuan IS NOT NULL')
+            ->where('deleted_at IS NULL')
+            ->orderBy('yr', 'DESC')
+            ->get()->getResultArray();
+        $availableTrendYears = array_values(array_filter(array_map(fn($r) => (int)$r['yr'], $yearsQuery)));
+        if (empty($availableTrendYears)) {
+            $availableTrendYears = [(int)date('Y'), (int)date('Y') - 1];
+        }
+
+        $trendYear = $this->request->getGet('trend_year') ? (int)$this->request->getGet('trend_year') : ($this->request->getGet('year') ? (int)$this->request->getGet('year') : (int)date('Y'));
+        if (!in_array($trendYear, $availableTrendYears)) {
+            $trendYear = $availableTrendYears[0] ?? (int)date('Y');
+        }
+
         $stats               = $this->temuanRepository->getDashboardStats($ulpIdFilter, null);
-        $monthlyData         = $this->temuanRepository->getMonthlyStats($ulpIdFilter);
+        $monthlyData         = $this->temuanRepository->getMonthlyStats($ulpIdFilter, $trendYear);
         $ulpData             = $this->temuanRepository->getUlpStats($ulpIdFilter);
         $penyulangData       = $this->temuanRepository->getPenyulangStats($ulpIdFilter);
         $pelaksanaData       = $this->temuanRepository->getPelaksanaStats($ulpIdFilter);
@@ -78,8 +97,8 @@ class Dashboard extends BaseController
         $mapPins             = $this->temuanRepository->getMapPins($ulpIdFilter);
 
         // Distribution Asset Health Monitoring Calculations
-        $db = \Config\Database::connect();
         $feederQuery = $db->table('penyulang p')
+
             ->select("p.id, p.nama_penyulang, u.nama_ulp,
                       COUNT(t.id) as total_temuan,
                       SUM(CASE WHEN t.prioritas = 'EMERGENCY' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as emg,
@@ -154,12 +173,6 @@ class Dashboard extends BaseController
         $lastYear = $curYear - 1;
         $curMonth = (int)date('n');
 
-        $selectedUlpName = null;
-        if ($ulpIdFilter !== null) {
-            $ulpRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
-            $selectedUlpName = $ulpRow['nama_ulp'] ?? null;
-        }
-
         $ggnCurQuery = $db->table('historical_feeder_interruptions')
             ->where('YEAR(event_date)', $curYear)
             ->where('MONTH(event_date) <=', $curMonth);
@@ -167,16 +180,9 @@ class Dashboard extends BaseController
             ->where('YEAR(event_date)', $lastYear)
             ->where('MONTH(event_date) <=', $curMonth);
 
-        if ($selectedUlpName) {
-            $cleanUlp = trim(str_ireplace('ULP', '', $selectedUlpName));
-            $ggnCurQuery->groupStart()
-                ->like('ulp_name', $cleanUlp)
-                ->orLike('ulp_name', $selectedUlpName)
-                ->groupEnd();
-            $ggnLastQuery->groupStart()
-                ->like('ulp_name', $cleanUlp)
-                ->orLike('ulp_name', $selectedUlpName)
-                ->groupEnd();
+        if ($ulpIdFilter !== null) {
+            $ggnCurQuery->where('ulp_id', $ulpIdFilter);
+            $ggnLastQuery->where('ulp_id', $ulpIdFilter);
         }
 
         $cntGgnCur = $ggnCurQuery->countAllResults();
@@ -209,6 +215,60 @@ class Dashboard extends BaseController
             'year'        => $curYear,
             'last_year'   => $lastYear,
         ];
+
+        // Real Monthly Trend YoY / Comparison Calculation
+        $priorYearTotalQuery = $db->table('temuan')
+            ->where('deleted_at IS NULL')
+            ->where('YEAR(tanggal_temuan)', $trendYear - 1);
+        if ($ulpIdFilter !== null) {
+            $priorYearTotalQuery->where('ulp_id', $ulpIdFilter);
+        }
+        if ($trendYear === (int)date('Y')) {
+            $priorYearTotalQuery->where('MONTH(tanggal_temuan) <=', (int)date('n'));
+        }
+        $cntPriorYear = $priorYearTotalQuery->countAllResults();
+
+        $curYearTotalQuery = $db->table('temuan')
+            ->where('deleted_at IS NULL')
+            ->where('YEAR(tanggal_temuan)', $trendYear);
+        if ($ulpIdFilter !== null) {
+            $curYearTotalQuery->where('ulp_id', $ulpIdFilter);
+        }
+        if ($trendYear === (int)date('Y')) {
+            $curYearTotalQuery->where('MONTH(tanggal_temuan) <=', (int)date('n'));
+        }
+        $cntCurYear = $curYearTotalQuery->countAllResults();
+
+        $trendComparison = [
+            'available'   => ($cntPriorYear > 0),
+            'current'     => $cntCurYear,
+            'prior'       => $cntPriorYear,
+            'pct'         => 0,
+            'text'        => 'Data pembanding tidak tersedia',
+            'class'       => 'text-muted',
+            'badge_class' => 'bg-light text-muted border',
+            'year'        => $trendYear,
+            'prior_year'  => $trendYear - 1
+        ];
+
+        if ($cntPriorYear > 0) {
+            $pct = round((($cntCurYear - $cntPriorYear) / $cntPriorYear) * 100);
+            $trendComparison['pct'] = $pct;
+            if ($pct < 0) {
+                $trendComparison['text'] = abs($pct) . '% Penurunan vs ' . ($trendYear - 1);
+                $trendComparison['class'] = 'text-success';
+                $trendComparison['badge_class'] = 'bg-success-subtle text-success border border-success-subtle';
+            } elseif ($pct > 0) {
+                $trendComparison['text'] = '+' . $pct . '% Kenaikan vs ' . ($trendYear - 1);
+                $trendComparison['class'] = 'text-danger';
+                $trendComparison['badge_class'] = 'bg-danger-subtle text-danger border border-danger-subtle';
+            } else {
+                $trendComparison['text'] = '0% (Sama dengan ' . ($trendYear - 1) . ')';
+                $trendComparison['class'] = 'text-primary';
+                $trendComparison['badge_class'] = 'bg-primary-subtle text-primary border border-primary-subtle';
+            }
+        }
+
 
         // Finding types breakdown
         $jenisQuery = $db->table('temuan')
@@ -293,8 +353,12 @@ class Dashboard extends BaseController
             'topUpdateOfficers'   => $topUpdateOfficers,
             'monthFilter'         => $monthFilter,
             'yearFilter'          => $yearFilter,
+            'availableTrendYears' => $availableTrendYears,
+            'trendYear'           => $trendYear,
+            'trendComparison'     => $trendComparison,
             'prefersCollapsed'    => $prefersCollapsed
         ];
+
 
         if ($showMobile) {
             return view('dashboard/mobile', $viewParams);

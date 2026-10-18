@@ -154,7 +154,7 @@
                             <select id="filter_ulp_id" class="form-control form-control-sm select2" autocomplete="off">
                                 <option value="">-- Semua ULP --</option>
                                 <?php foreach ($ulps as $u): ?>
-                                    <option value="<?= $u['id'] ?>"><?= esc($u['nama_ulp']) ?></option>
+                                    <option value="<?= $u['id'] ?>" <?= (!empty($selectedUlpId) && (int)$selectedUlpId === (int)$u['id']) ? 'selected' : '' ?>><?= esc($u['nama_ulp']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         <?php endif; ?>
@@ -166,7 +166,7 @@
                         <select id="filter_penyulang_id" class="form-control form-control-sm select2" autocomplete="off">
                             <option value="">-- Semua Penyulang --</option>
                             <?php foreach ($penyulangs as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= esc($p['nama_penyulang']) ?></option>
+                                <option value="<?= $p['id'] ?>" <?= (!empty($selectedPenyulangId) && (int)$selectedPenyulangId === (int)$p['id']) ? 'selected' : '' ?>><?= esc($p['nama_penyulang']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -417,9 +417,32 @@
         const urlParams = new URLSearchParams(window.location.search);
         const urlQ = urlParams.get('q') || urlParams.get('query') || urlParams.get('penyulang') || urlParams.get('jenis') || urlParams.get('search') || '';
         const urlPelaksana = urlParams.get('pelaksana');
-        const urlPrioritas = urlParams.get('prioritas');
-        const urlStatus = urlParams.get('status');
+        const urlPrioritas = urlParams.get('prioritas') || '<?= esc($selectedPrioritas ?? '', 'js') ?>';
+        const urlStatus = urlParams.get('status') || '<?= esc($selectedStatus ?? '', 'js') ?>';
+        const urlPenyulangId = urlParams.get('penyulang_id') || '<?= $selectedPenyulangId ?? '' ?>';
+        const urlUlpId = urlParams.get('ulp_id') || '<?= $selectedUlpId ?? '' ?>';
+        const urlMonth = urlParams.get('month') || '<?= $selectedMonth ?? '' ?>';
+        const urlYear = urlParams.get('year') || '<?= $selectedYear ?? '' ?>';
 
+        // Pre-populate Month & Year if provided
+        if (urlMonth && urlYear) {
+            const mStr = String(urlMonth).padStart(2, '0');
+            const lastDay = new Date(parseInt(urlYear), parseInt(urlMonth), 0).getDate();
+            const startD = urlYear + '-' + mStr + '-01';
+            const endD = urlYear + '-' + mStr + '-' + String(lastDay).padStart(2, '0');
+            $('#filter_start_date').val(startD);
+            $('#filter_end_date').val(endD);
+        } else if (urlYear && !urlMonth) {
+            $('#filter_start_date').val(urlYear + '-01-01');
+            $('#filter_end_date').val(urlYear + '-12-31');
+        }
+
+        if (urlUlpId) {
+            $('#filter_ulp_id').val(urlUlpId).trigger('change.select2');
+        }
+        if (urlPenyulangId) {
+            $('#filter_penyulang_id').val(urlPenyulangId).trigger('change.select2');
+        }
         if (urlPelaksana) {
             $('#filter_pelaksana').val(urlPelaksana.toUpperCase()).trigger('change.select2');
         }
@@ -452,8 +475,8 @@
                 "cache": false,
                 "data": function(d) {
                     d.<?= csrf_token() ?> = "<?= csrf_hash() ?>";
-                    d.ulp_id = $('#filter_ulp_id').val();
-                    d.penyulang_id = $('#filter_penyulang_id').val();
+                    d.ulp_id = $('#filter_ulp_id').val() || urlUlpId || '';
+                    d.penyulang_id = $('#filter_penyulang_id').val() || urlPenyulangId || '';
                     d.section_id = $('#filter_section_id').val();
                     d.pelaksana = $('#filter_pelaksana').val();
                     d.prioritas = $('#filter_prioritas').val();
@@ -492,13 +515,16 @@
 
         // 4. Cascade ULP -> Penyulang (jika ULP tidak di-restricted)
         <?php if (!$isRestricted): ?>
-        $('#filter_ulp_id').change(function() {
+        var isInitialCascade = Boolean(urlPenyulangId);
+        $('#filter_ulp_id').change(function(e, isManual) {
             const ulpId = $(this).val();
             const penyulangSelect = $('#filter_penyulang_id');
             const sectionSelect = $('#filter_section_id');
             
-            penyulangSelect.empty().append('<option value="">-- Semua Penyulang --</option>').trigger('change.select2');
-            sectionSelect.empty().append('<option value="">-- Semua Section --</option>').trigger('change.select2');
+            if (!isInitialCascade) {
+                penyulangSelect.empty().append('<option value="">-- Semua Penyulang --</option>').trigger('change.select2');
+                sectionSelect.empty().append('<option value="">-- Semua Section --</option>').trigger('change.select2');
+            }
             
             if (ulpId) {
                 $.ajax({
@@ -506,17 +532,22 @@
                     type: 'GET',
                     dataType: 'JSON',
                     success: function(data) {
+                        penyulangSelect.empty().append('<option value="">-- Semua Penyulang --</option>');
                         $.each(data, function(index, item) {
-                            penyulangSelect.append('<option value="' + item.id + '">' + item.nama_penyulang + '</option>');
+                            var sel = (urlPenyulangId && String(urlPenyulangId) === String(item.id)) ? ' selected' : '';
+                            penyulangSelect.append('<option value="' + item.id + '"' + sel + '>' + item.nama_penyulang + '</option>');
                         });
+                        if (isInitialCascade && urlPenyulangId) {
+                            penyulangSelect.val(urlPenyulangId);
+                            isInitialCascade = false;
+                        }
                         penyulangSelect.trigger('change.select2');
                     }
                 });
+            } else {
+                isInitialCascade = false;
             }
         });
-        
-        // Sync ULP filter dropdown values on load to prevent browser cache mismatch
-        $('#filter_ulp_id').trigger('change.select2');
         <?php endif; ?>
  
         // Cascade Penyulang -> Section

@@ -280,15 +280,16 @@
 
             <!-- Interruption YoY Metric Badge (Domain Data) -->
             <?php if (!empty($gangguanStats)): ?>
-            <div class="d-none d-md-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill border shadow-xs" title="Berdasarkan data historis pemadaman & gangguan penyulang YTD vs tahun lalu periode sama" style="font-size: 11px; font-weight: 600;">
+            <a href="<?= site_url('gangguan') ?>" class="text-decoration-none d-none d-md-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill border shadow-xs text-dark hover-shadow" title="Klik untuk kelola & melihat detail data gangguan penyulang (YTD vs tahun lalu periode sama)" style="font-size: 11px; font-weight: 600; cursor: pointer;">
                 <i class="fas fa-bolt text-warning"></i>
                 <span class="text-muted">Gangguan <?= esc($gangguanStats['year']) ?>:</span>
                 <strong class="text-dark"><?= number_format($gangguanStats['current_ytd']) ?>x</strong>
                 <span class="badge <?= ($gangguanStats['yoy_pct'] < 0) ? 'bg-success' : (($gangguanStats['yoy_pct'] > 0) ? 'bg-danger' : 'bg-secondary') ?> rounded-pill" style="font-size: 10px;">
                     <?= esc($gangguanStats['yoy_text']) ?>
                 </span>
-            </div>
+            </a>
             <?php endif; ?>
+
 
             <!-- Theme Toggle Button (Light / Dark Mode) -->
             <button type="button" class="btn btn-sm btn-outline-secondary border rounded-circle" title="Ganti Tema (Terang / Gelap)" onclick="toggleDarkMode()" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">
@@ -341,10 +342,13 @@
     <div class="row g-3 mb-4">
         <!-- 1. Total Temuan -->
         <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #0284c7;">
+            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #0284c7; cursor: pointer;" onclick="window.location.href='<?= site_url('temuan') ?>'" title="Klik untuk membuka seluruh data temuan">
                 <div>
-                    <div class="dah-kpi-icon bg-info-subtle text-info">
-                        <i class="fas fa-file-lines"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="dah-kpi-icon bg-info-subtle text-info mb-0">
+                            <i class="fas fa-file-lines"></i>
+                        </div>
+                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                     </div>
                     <div class="dah-kpi-val text-dark"><?= number_format($totalTemuan) ?></div>
                     <div class="dah-kpi-lbl">Total Temuan</div>
@@ -357,84 +361,100 @@
 
         <!-- 2. Penyulang Sehat -->
         <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #22c55e;">
+            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #22c55e; cursor: pointer;" onclick="showFeederListByStatus('SEHAT')" title="Klik untuk membuka rincian penyulang sehat (0 Emergency)">
                 <div>
-                    <div class="dah-kpi-icon bg-success-subtle text-success">
-                        <i class="fas fa-circle-check"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="dah-kpi-icon bg-success-subtle text-success mb-0">
+                            <i class="fas fa-circle-check"></i>
+                        </div>
+                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                     </div>
                     <div class="dah-kpi-val text-success"><?= number_format($sehatCount) ?></div>
                     <div class="dah-kpi-lbl">Penyulang Sehat</div>
                 </div>
                 <div class="dah-kpi-sub text-success">
-                    <span><?= $sehatPct ?>%</span> dari total penyulang
+                    <span><?= $sehatPct ?>%</span> (0 Emergency aktif)
                 </div>
             </div>
         </div>
 
         <!-- 3. Penyulang Kronis -->
         <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #f59e0b;">
+            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #f59e0b; cursor: pointer;" onclick="showFeederListByStatus('KRONIS')" title="Klik untuk membuka rincian penyulang kronis (1 Emergency aktif)">
                 <div>
-                    <div class="dah-kpi-icon bg-warning-subtle text-warning">
-                        <i class="fas fa-triangle-exclamation"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="dah-kpi-icon bg-warning-subtle text-warning mb-0">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                     </div>
                     <div class="dah-kpi-val text-warning"><?= number_format($kronisCount) ?></div>
                     <div class="dah-kpi-lbl">Penyulang Kronis</div>
                 </div>
                 <div class="dah-kpi-sub text-warning">
-                    <span><?= $kronisPct ?>%</span> dari total penyulang
+                    <span><?= $kronisPct ?>%</span> (1 Emergency aktif)
                 </div>
             </div>
         </div>
 
         <!-- 4. Penyulang Sakit -->
         <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #f97316;">
+            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #f97316; cursor: pointer;" onclick="showFeederListByStatus('SAKIT')" title="Klik untuk membuka rincian penyulang sakit (2 Emergency aktif)">
                 <div>
-                    <div class="dah-kpi-icon bg-danger-subtle text-danger">
-                        <i class="fas fa-heart-pulse"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="dah-kpi-icon bg-danger-subtle text-danger mb-0">
+                            <i class="fas fa-heart-pulse"></i>
+                        </div>
+                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                     </div>
                     <div class="dah-kpi-val text-danger"><?= number_format($sakitCount) ?></div>
                     <div class="dah-kpi-lbl">Penyulang Sakit</div>
                 </div>
                 <div class="dah-kpi-sub text-danger">
-                    <span><?= $sakitPct ?>%</span> dari total penyulang
+                    <span><?= $sakitPct ?>%</span> (2 Emergency aktif)
                 </div>
             </div>
         </div>
 
         <!-- 5. Penyulang Kritis -->
         <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #ef4444;">
+            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #ef4444; cursor: pointer;" onclick="showFeederListByStatus('KRITIS')" title="Klik untuk membuka rincian penyulang kritis (≥ 3 Emergency aktif)">
                 <div>
-                    <div class="dah-kpi-icon bg-danger-subtle text-danger">
-                        <i class="fas fa-bell"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="dah-kpi-icon bg-danger-subtle text-danger mb-0">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                     </div>
                     <div class="dah-kpi-val text-danger"><?= number_format($kritisCount) ?></div>
                     <div class="dah-kpi-lbl">Penyulang Kritis</div>
                 </div>
                 <div class="dah-kpi-sub text-danger">
-                    <span><?= $kritisPct ?>%</span> dari total penyulang
+                    <span><?= $kritisPct ?>%</span> (≥ 3 Emergency aktif)
                 </div>
             </div>
         </div>
 
         <!-- 6. Health Index Sistem -->
         <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #06b6d4;">
+            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #06b6d4; cursor: pointer;" onclick="showFeederListByStatus('ALL')" title="Klik untuk melihat skor & rincian seluruh penyulang">
                 <div>
-                    <div class="dah-kpi-icon bg-info-subtle text-info">
-                        <i class="fas fa-chart-column"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="dah-kpi-icon bg-info-subtle text-info mb-0">
+                            <i class="fas fa-chart-column"></i>
+                        </div>
+                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                     </div>
                     <div class="dah-kpi-val text-info"><?= $avgHealth ?>%</div>
                     <div class="dah-kpi-lbl">Health Index Sistem</div>
                 </div>
                 <div class="dah-kpi-sub text-info">
-                    Avg score seluruh penyulang
+                    Avg score <?= number_format($totalFeeders) ?> penyulang
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- 4. ROW 2: HEALTH GAUGE, STATUS DONUT, & TOP 10 FEEDERS -->
     <div class="row g-4 mb-4">
@@ -791,15 +811,30 @@
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
                     <div>
                         <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-chart-line text-primary me-2"></i>Trend Jumlah Temuan Bulanan</h6>
-                        <small class="text-muted" style="font-size: 11px;">Grafik tren penurunan temuan per bulan pada tahun <?= date('Y') ?></small>
+                        <small class="text-muted" style="font-size: 11px;">Klik titik/bulan untuk membuka daftar temuan periode tersebut</small>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-light text-dark border rounded-pill px-3 py-1 font-monospace" style="font-size: 11px;">Tahun <?= date('Y') ?></span>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 fw-bold" style="font-size: 11px;">
-                            <i class="fas fa-arrow-trend-down me-1"></i> -72% Penurunan
+                        <!-- Dynamic Year Selector Dropdown -->
+                        <div class="d-flex align-items-center gap-1">
+                            <label for="trendYearSelect" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">Tahun:</label>
+                            <select id="trendYearSelect" class="form-select form-select-sm rounded-pill font-monospace" style="font-size: 11px; width: auto; padding: 2px 24px 2px 10px;" onchange="changeTrendYear(this.value)">
+                                <?php foreach ($availableTrendYears ?? [date('Y')] as $yr): ?>
+                                    <option value="<?= $yr ?>" <?= ((int)($trendYear ?? date('Y')) === (int)$yr) ? 'selected' : '' ?>>
+                                        <?= $yr ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <!-- Dynamic Comparison Badge (YoY / Same Period) -->
+                        <span class="badge <?= $trendComparison['badge_class'] ?? 'bg-light text-muted border' ?> rounded-pill px-3 py-1 fw-bold" style="font-size: 11px;">
+                            <?php if (!empty($trendComparison['available'])): ?>
+                                <i class="fas <?= ($trendComparison['pct'] < 0) ? 'fa-arrow-trend-down' : (($trendComparison['pct'] > 0) ? 'fa-arrow-trend-up' : 'fa-minus') ?> me-1"></i>
+                            <?php endif; ?>
+                            <?= esc($trendComparison['text'] ?? 'Data pembanding tidak tersedia') ?>
                         </span>
                     </div>
                 </div>
+
 
                 <div style="height: 220px; width: 100%;">
                     <canvas id="monthlyTrendChart"></canvas>
@@ -1042,12 +1077,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var trendCtx = document.getElementById('monthlyTrendChart');
     if (trendCtx) {
         <?php
-            // Build 12-slot monthly array for current year
+            // Build 12-slot monthly array for selected trend year
+            $selectedTrendYear = (int)($trendYear ?? date('Y'));
             $monthlySlots = array_fill(1, 12, 0);
-            $currentYear  = date('Y');
             foreach ($monthlyData as $md) {
                 $parts = explode('-', $md['bulan'] ?? '');
-                if (count($parts) === 2 && (int)$parts[0] === (int)$currentYear) {
+                if (count($parts) === 2 && (int)$parts[0] === $selectedTrendYear) {
                     $monthlySlots[(int)$parts[1]] = (int)($md['total'] ?? 0);
                 }
             }
@@ -1058,26 +1093,41 @@ document.addEventListener('DOMContentLoaded', function() {
             data: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
                 datasets: [{
-                    label: 'Jumlah Temuan (<?= $currentYear ?>)',
+                    label: 'Jumlah Temuan (<?= $selectedTrendYear ?>)',
                     data: <?= json_encode($monthlyValues) ?>,
                     borderColor: '#0284c7',
                     backgroundColor: 'rgba(2, 132, 199, 0.08)',
                     borderWidth: 2.5,
                     fill: true,
                     tension: 0.35,
-                    pointRadius: 4,
+                    pointRadius: 5,
                     pointBackgroundColor: '#0284c7',
-                    pointHoverRadius: 6
+                    pointHoverRadius: 8,
+                    pointHoverBackgroundColor: '#0369a1'
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onClick: function(evt, elements) {
+                    if (elements && elements.length > 0) {
+                        var clickedMonth = elements[0].index + 1;
+                        var targetUrl = '<?= site_url('temuan') ?>?year=<?= $selectedTrendYear ?>&month=' + clickedMonth + '<?= !empty($selectedUlpId) ? ('&ulp_id=' . $selectedUlpId) : '' ?>';
+                        window.location.href = targetUrl;
+                    }
+                },
                 plugins: {
                     legend: {
                         display: true,
                         position: 'top',
                         labels: { boxWidth: 12, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function() {
+                                return 'Klik untuk buka temuan bulan ini';
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -1094,6 +1144,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    window.changeTrendYear = function(newYear) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('trend_year', newYear);
+        window.location.href = url.toString();
+    };
+
 
     // 4. GIS Network Health Leaflet Map
     var mapContainer = document.getElementById('dahGisMap');
@@ -1190,25 +1247,44 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function isSidoarjoCoord(lat, lng) {
+        return (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng) && lat >= -8.2 && lat <= -7.0 && lng >= 112.2 && lng <= 113.3);
+    }
+
     // 5. Global Helpers: Highlight Feeder on Map
     window.highlightFeederOnMap = function(feederId, feederName) {
         if (!map || !markerLayers || !markerLayers.length) return;
-        var matched = [];
+        var validMatched = [];
+        var outlierCount = 0;
+        var totalMatched = 0;
+
         markerLayers.forEach(function(m) {
             if (m.feederId === parseInt(feederId)) {
-                matched.push(m.getLatLng());
-                m.setStyle({ weight: 4, color: '#f59e0b' });
+                totalMatched++;
+                var ll = m.getLatLng();
+                if (isSidoarjoCoord(ll.lat, ll.lng)) {
+                    validMatched.push(m);
+                    m.setStyle({ weight: 4, color: '#f59e0b', opacity: 1, fillOpacity: 0.95 });
+                    m.bringToFront();
+                } else {
+                    outlierCount++;
+                    m.setStyle({ weight: 1, color: '#94a3b8', opacity: 0.3, fillOpacity: 0.2 });
+                }
             } else {
-                m.setStyle({ weight: 2, color: '#ffffff' });
+                m.setStyle({ weight: 1, color: '#ffffff', opacity: 0.35, fillOpacity: 0.25 });
             }
         });
 
-        if (matched.length > 0) {
-            var group = L.featureGroup(markerLayers.filter(function(m) { return m.feederId === parseInt(feederId); }));
-            map.fitBounds(group.getBounds().pad(0.3));
+        var gisCard = document.getElementById('dahGisMap');
+        if (gisCard) gisCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            var gisCard = document.getElementById('dahGisMap');
-            if (gisCard) gisCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (validMatched.length > 0) {
+            map.invalidateSize();
+            setTimeout(function() {
+                var group = L.featureGroup(validMatched);
+                map.fitBounds(group.getBounds().pad(0.3), { maxZoom: 16 });
+                setTimeout(function() { map.invalidateSize(); }, 300);
+            }, 100);
 
             var titleEl  = document.getElementById('popupFeederTitle');
             var badgeEl  = document.getElementById('popupFeederBadge');
@@ -1219,15 +1295,25 @@ document.addEventListener('DOMContentLoaded', function() {
             if (titleEl) titleEl.textContent = 'Fokus Penyulang';
             if (badgeEl) { badgeEl.textContent = 'FEEDER'; badgeEl.className = 'badge bg-primary'; }
             if (nameEl) nameEl.textContent = feederName;
-            if (detailEl) detailEl.textContent = 'Menampilkan ' + matched.length + ' titik temuan untuk ' + feederName;
+            
+            var detailText = 'Menampilkan ' + validMatched.length + ' titik temuan aktif untuk ' + feederName;
+            if (outlierCount > 0) {
+                detailText += ' (' + outlierCount + ' titik dengan koordinat outlier di luar wilayah tidak disertakan dalam fokus)';
+            }
+            if (detailEl) detailEl.textContent = detailText;
             if (linkEl) {
                 linkEl.href = '<?= site_url('temuan') ?>?penyulang_id=' + feederId;
                 linkEl.textContent = 'Buka Semua Temuan ' + feederName + ' →';
             }
         } else {
-            alert('Penyulang ' + feederName + ' belum memiliki koordinat titik temuan di peta.');
+            if (outlierCount > 0) {
+                alert('Penyulang ' + feederName + ' memiliki ' + outlierCount + ' temuan, tetapi koordinatnya berada di luar batas wilayah valid (outlier/kesalahan input GPS). Silakan perbaiki koordinat pada menu Temuan.');
+            } else {
+                alert('Penyulang ' + feederName + ' belum memiliki koordinat titik temuan di peta.');
+            }
         }
     };
+
 
     // 6. Global Helpers: Show Feeder List by Status Modal
     window.allFeedersData = <?= json_encode($allFeeders, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;

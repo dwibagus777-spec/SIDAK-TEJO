@@ -1001,6 +1001,14 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('identifikasi/export-csv', 'Identifikasi::exportCsv');
     $routes->post('identifikasi/export-ppt', 'Identifikasi::exportPpt');
 
+    // Manajemen Histori & Input Gangguan Penyulang
+    $routes->get('gangguan', 'Gangguan::index');
+    $routes->get('gangguan/create', 'Gangguan::create');
+    $routes->post('gangguan/store', 'Gangguan::store');
+    $routes->post('gangguan/delete/(:num)', 'Gangguan::delete/$1');
+    $routes->get('gangguan/api-feeders/(:num)', 'Gangguan::apiFeedersByUlp/$1');
+
+
     // Eviden Lapangan (Kubikel & Trafo) - HAR Gardu, PDKB, Admin ULP & Admin
     $routes->group('eviden', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,har_gardu,har_konstruksi,har_row,har_crane,pdkb,yantek,inspeksi,supervisor_ulp,supervisor_up3'], function ($routes) {
         // Kubikel

@@ -976,6 +976,18 @@ if (!function_exists('get_sidak_menu_registry')) {
                 'inRail'    => true,
                 'roles'     => null,
             ],
+            [
+                'id'        => 'gangguan-penyulang',
+                'name'      => 'Data Gangguan Penyulang',
+                'category'  => 'OPERATIONS',
+                'desc'      => 'Histori trip & input gangguan',
+                'href'      => site_url('gangguan'),
+                'icon'      => 'fas fa-bolt',
+                'active'    => (bool)url_is('gangguan*'),
+                'inRail'    => true,
+                'roles'     => null,
+            ],
+
 
             // REMEDIASI
             [

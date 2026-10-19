@@ -112,6 +112,15 @@ class MigrateController extends BaseController
                 $executed[] = 'potensi_inspeksi_kubikel';
             }
 
+            // Run EnhanceHistoricalFeederInterruptionsSchema Migration
+            $enhanceInterruptionMigFile = APPPATH . 'Database/Migrations/2026-10-19-000001_EnhanceHistoricalFeederInterruptionsSchema.php';
+            if (file_exists($enhanceInterruptionMigFile)) {
+                require_once $enhanceInterruptionMigFile;
+                $enhMig = new \App\Database\Migrations\EnhanceHistoricalFeederInterruptionsSchema();
+                $enhMig->up();
+                $executed[] = 'enhance_historical_feeder_interruptions_schema';
+            }
+
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
             // governed reconciliation with deterministic identity proof, not pattern matching.

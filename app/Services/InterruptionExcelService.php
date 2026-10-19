@@ -221,8 +221,21 @@ class InterruptionExcelService
 
             if (isset($existingHashes[$normalized['source_record_hash']])) {
                 $duplicateCount++;
-                $rowIssues[] = 'Sudah pernah diimpor (duplikat hash SHA-256)';
+                $errors[] = [
+                    'row'    => $rowNum,
+                    'type'   => 'DUPLICATE',
+                    'reason' => 'Duplikat (kejadian gangguan identik sudah ada di database atau baris sebelumnya)',
+                    'data'   => [
+                        'tanggal'   => $normalized['event_date'],
+                        'penyulang' => $normalized['feeder_name'],
+                        'kategori'  => $normalized['kategori_raw'],
+                    ],
+                ];
+                continue;
             }
+
+            // Mark hash as seen to detect duplicates within the same workbook
+            $existingHashes[$normalized['source_record_hash']] = true;
 
             if (!empty($rowIssues)) {
                 $warningCount++;
@@ -263,7 +276,7 @@ class InterruptionExcelService
             'warning_count'       => $warningCount,
             'rejected_count'      => $rejectedCount,
             'duplicate_count'     => $duplicateCount,
-            'ready_to_import'     => $headerValid ? (($validCount + $warningCount) - $duplicateCount) : 0,
+            'ready_to_import'     => $headerValid ? ($validCount + $warningCount) : 0,
             'column_mapping'      => $columnMapping,
             'samples'             => $samples,
             'issues'              => array_slice($errors, 0, 50), // Show up to 50 issues in preview
@@ -303,20 +316,32 @@ class InterruptionExcelService
         // 1. Create entry in interruption_import_batches if table exists
         $batchId = 0;
         if ($this->db->tableExists('interruption_import_batches')) {
-            $this->db->table('interruption_import_batches')->insert([
-                'batch_code'         => $batchCode,
-                'source_file_name'   => basename($filePath),
-                'source_record_count'=> count($rawRows),
-                'import_status'      => 'PROCESSING',
-                'created_by'         => $userId,
-                'created_at'         => date('Y-m-d H:i:s'),
-            ]);
+            $batchCols = array_flip($this->db->getFieldNames('interruption_import_batches'));
+            $batchPayload = [
+                'batch_code'           => $batchCode,
+                'source_system'        => 'EXCEL_WORKBOOK_IMPORT',
+                'source_filename'      => basename($filePath),
+                'source_sheet_name'    => 'Sheet1',
+                'total_rows_read'      => count($rawRows),
+                'total_rows_imported'  => 0,
+                'total_rows_duplicate' => 0,
+                'total_rows_flagged'   => 0,
+                'batch_checksum'       => @hash_file('sha256', $filePath) ?: null,
+                'status'               => 'PROCESSING',
+                'imported_by'          => (string)$userId,
+                'created_at'           => date('Y-m-d H:i:s'),
+                'updated_at'           => date('Y-m-d H:i:s'),
+            ];
+            $this->db->table('interruption_import_batches')->insert(array_intersect_key($batchPayload, $batchCols));
             $batchId = (int)$this->db->insertID();
         }
+
+        $actualInterruptionCols = array_flip($this->db->getFieldNames('historical_feeder_interruptions'));
 
         $insertedCount  = 0;
         $skippedDupCount= 0;
         $rejectedCount  = 0;
+        $flaggedCount   = 0;
         $batchRecords   = [];
         $batchChunkSize = 200;
 
@@ -334,10 +359,15 @@ class InterruptionExcelService
                 continue;
             }
 
+            if ($normalized['ingestion_status'] === 'FLAGGED') {
+                $flaggedCount++;
+            }
+
             // Mark hash as used
             $existingHashes[$normalized['source_record_hash']] = true;
             $normalized['batch_id'] = $batchId;
-            $batchRecords[] = $normalized;
+            // Strictly intersect with existing table columns to prevent unknown column errors
+            $batchRecords[] = array_intersect_key($normalized, $actualInterruptionCols);
 
             if (count($batchRecords) >= $batchChunkSize) {
                 $this->db->table('historical_feeder_interruptions')->insertBatch($batchRecords);
@@ -353,13 +383,16 @@ class InterruptionExcelService
 
         // Update batch record
         if ($batchId > 0) {
-            $this->db->table('interruption_import_batches')->where('id', $batchId)->update([
-                'imported_count'  => $insertedCount,
-                'duplicate_count' => $skippedDupCount,
-                'rejected_count'  => $rejectedCount,
-                'import_status'   => 'COMPLETED',
-                'completed_at'    => date('Y-m-d H:i:s'),
-            ]);
+            $batchCols = array_flip($this->db->getFieldNames('interruption_import_batches'));
+            $updatePayload = [
+                'total_rows_imported'  => $insertedCount,
+                'total_rows_duplicate' => $skippedDupCount,
+                'total_rows_flagged'   => $flaggedCount,
+                'status'               => 'COMPLETED',
+                'notes'                => "Sukses diimpor: {$insertedCount} data baru, {$skippedDupCount} duplikat, {$rejectedCount} ditolak.",
+                'updated_at'           => date('Y-m-d H:i:s'),
+            ];
+            $this->db->table('interruption_import_batches')->where('id', $batchId)->update(array_intersect_key($updatePayload, $batchCols));
         }
 
         $this->db->transComplete();
@@ -522,11 +555,11 @@ class InterruptionExcelService
             'masuk_total_raw'          => $masukTotal,
             'outage_duration_minutes'  => $durationMinutes,
             'lama_padam_raw'           => $rawLamaPadam,
-            'substation_name'          => $giName,
-            'up3_name'                 => $up3Name,
-            'ulp_name'                 => $rawUlp,
+            'substation_name'          => $giName ?: 'GI SIDOARJO',
+            'up3_name'                 => $up3Name ?: 'SDA',
+            'ulp_name'                 => $rawUlp ?: 'UP3 SIDOARJO',
             'ulp_id'                   => $ulpId,
-            'feeder_name'              => $rawFeeder,
+            'feeder_name'              => $rawFeeder ?: 'UNKNOWN FEEDER',
             'penyulang_id'             => $penyulangId,
             'switching_device_type'    => $deviceType ?: 'RECL-PMCB',
             'device_name'              => $deviceName,
@@ -536,9 +569,9 @@ class InterruptionExcelService
             'interruption_category'    => $category,
             'kategori_raw'             => $rawKategori,
             'interruption_group'       => 'GGN_PENYULANG',
-            'cause_raw'                => $penyebab,
-            'cause_canonical_code'     => $causeRes['cause_canonical_code'] ?? 'CAUSE_UNMAPPED_ADVISORY',
-            'cause_category'           => $causeRes['cause_category'] ?? 'UNKNOWN_INVESTIGATION',
+            'cause_raw'                => $penyebab ?: 'Belum Diketemukan',
+            'cause_canonical_code'     => $causeRes['cause_canonical_code'] ?? 'CAUSE_UNKNOWN',
+            'cause_category'           => $causeRes['cause_category'] ?? 'UNKNOWN',
             'cause_mapping_status'     => $causeRes['cause_mapping_status'] ?? 'UNMAPPED',
             'field_narrative_raw'      => $keterangan,
             'restoration_action_raw'   => '',

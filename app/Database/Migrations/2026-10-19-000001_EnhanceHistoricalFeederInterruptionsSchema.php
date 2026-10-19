@@ -24,6 +24,28 @@ class EnhanceHistoricalFeederInterruptionsSchema extends Migration
             ];
         }
 
+        if (!$db->fieldExists('ulp_id', 'historical_feeder_interruptions')) {
+            $fieldsToAdd['ulp_id'] = [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
+                'null'       => true,
+                'after'      => 'ulp_name',
+                'comment'    => 'Nullable FK to ulps.id',
+            ];
+        }
+
+        if (!$db->fieldExists('penyulang_id', 'historical_feeder_interruptions')) {
+            $fieldsToAdd['penyulang_id'] = [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
+                'null'       => true,
+                'after'      => 'feeder_name',
+                'comment'    => 'Nullable FK to penyulang.id',
+            ];
+        }
+
         if (!$db->fieldExists('masuk_total_raw', 'historical_feeder_interruptions')) {
             $fieldsToAdd['masuk_total_raw'] = [
                 'type'       => 'VARCHAR',

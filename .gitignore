@@ -133,3 +133,7 @@ public/uploads/*
 /public/foto/*
 !/public/foto/index.html
 !/public/foto/.gitkeep
+
+# Scratch debugging and local analysis scripts
+/scratch/*
+

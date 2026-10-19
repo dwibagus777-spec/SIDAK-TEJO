@@ -168,6 +168,43 @@ class Dashboard extends BaseController
         usort($rankedFeeders, fn($a, $b) => $b['total_temuan'] <=> $a['total_temuan']);
         $top10Feeders = array_slice($rankedFeeders, 0, 10);
 
+        // Agregasi Pelaksana Kanonik dari tabel temuan untuk Top 10 Feeders
+        $pelaksanaBreakdownRows = $db->table('temuan t')
+            ->select("t.penyulang_id,
+                      COALESCE(NULLIF(TRIM(t.pelaksana), ''), 'LAINNYA') as pelaksana_name,
+                      SUM(CASE WHEN t.prioritas = 'EMERGENCY' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as emg,
+                      SUM(CASE WHEN t.prioritas = 'HIGH' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as high,
+                      SUM(CASE WHEN t.prioritas = 'MEDIUM' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as med,
+                      SUM(CASE WHEN t.prioritas = 'LOW' AND t.status != 'SELESAI' THEN 1 ELSE 0 END) as low,
+                      SUM(CASE WHEN t.status != 'SELESAI' THEN 1 ELSE 0 END) as belum_selesai,
+                      COUNT(t.id) as total_temuan")
+            ->where('t.deleted_at IS NULL')
+            ->groupBy('t.penyulang_id, pelaksana_name')
+            ->orderBy('belum_selesai', 'DESC')
+            ->get()->getResultArray();
+
+        $pelaksanaByFeeder = [];
+        foreach ($pelaksanaBreakdownRows as $pRow) {
+            $pid = (int)$pRow['penyulang_id'];
+            if (!isset($pelaksanaByFeeder[$pid])) {
+                $pelaksanaByFeeder[$pid] = [];
+            }
+            $pelaksanaByFeeder[$pid][] = [
+                'pelaksana'     => $pRow['pelaksana_name'],
+                'emg'           => (int)$pRow['emg'],
+                'high'          => (int)$pRow['high'],
+                'med'           => (int)$pRow['med'],
+                'low'           => (int)$pRow['low'],
+                'belum_selesai' => (int)$pRow['belum_selesai'],
+                'total_temuan'  => (int)$pRow['total_temuan'],
+            ];
+        }
+
+        foreach ($top10Feeders as &$f) {
+            $f['pelaksana_breakdown'] = $pelaksanaByFeeder[$f['id']] ?? [];
+        }
+        unset($f);
+
         // Real YoY Interruption Stats (historical_feeder_interruptions)
         // Use latest year with actual data — never hardcode calendar year
         $maxYrRow = $db->table('historical_feeder_interruptions')

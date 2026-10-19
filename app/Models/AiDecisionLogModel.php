@@ -11,7 +11,11 @@ class AiDecisionLogModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $allowedFields    = ['target_type', 'target_id', 'engine_name', 'input_data', 'score', 'output_recommendation', 'explanation', 'created_at'];
+    protected $allowedFields    = [
+        'target_type', 'target_id', 'engine_name', 'input_data', 'score',
+        'output_recommendation', 'explanation', 'k2_k3_analysis',
+        'analysis_version', 'input_summary', 'rule_sources', 'created_at',
+    ];
     protected $useTimestamps    = false;
 
     public function __construct()
@@ -59,6 +63,23 @@ class AiDecisionLogModel extends Model
                         'null' => true,
                     ],
                     'explanation' => [
+                        'type' => 'TEXT',
+                        'null' => true,
+                    ],
+                    'k2_k3_analysis' => [
+                        'type' => 'TEXT',
+                        'null' => true,
+                    ],
+                    'analysis_version' => [
+                        'type' => 'VARCHAR',
+                        'constraint' => 50,
+                        'null' => true,
+                    ],
+                    'input_summary' => [
+                        'type' => 'TEXT',
+                        'null' => true,
+                    ],
+                    'rule_sources' => [
                         'type' => 'TEXT',
                         'null' => true,
                     ],

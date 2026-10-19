@@ -493,6 +493,15 @@ class Temuan extends BaseController
         if ($res['success']) {
             $insertedId = $res['id'] ?? null;
             if ($insertedId) {
+                try {
+                    $savedFinding = $this->temuanRepository->getDetail((int)$insertedId, null);
+                    if ($savedFinding) {
+                        (new \App\Services\PredictiveMaintenanceService())->getExplainableRecommendation($savedFinding);
+                    }
+                } catch (\Throwable $aiError) {
+                    log_message('error', '[TEMUAN_CREATE_AI_ANALYSIS] ' . $aiError->getMessage());
+                }
+
                 // MR-01 Phase 3B: Governed structured material transaction attachment
                 if ($hasMaterialRequest && $structuredData !== null && $assetId !== null) {
                     $structuredData['temuan_id'] = (int)$insertedId;

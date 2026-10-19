@@ -186,10 +186,14 @@ class PredictiveMaintenanceService
         ]);
 
         $result = array_merge($riskRes, $recRes);
+        $history = $this->getSimilarFindings($temuan);
+        $historicalSimilarCount = $history['count'];
+        $safetyAnalysis = (new SafetyHazardAnalysisService())->analyze($temuan, $historicalSimilarCount, $history['findings']);
+        $result['k2_k3_analysis'] = $safetyAnalysis;
 
         // Log AI Decision
         try {
-            $this->logModel->insert([
+            $logData = [
                 'target_type'           => 'TEMUAN',
                 'target_id'             => $temuan['id'],
                 'engine_name'           => 'RecommendationEngine_XAI',
@@ -197,13 +201,57 @@ class PredictiveMaintenanceService
                 'score'                 => $riskRes['score'],
                 'output_recommendation' => $recRes['recommendation_text'],
                 'explanation'           => implode(" | ", $recRes['reasons']),
+                'k2_k3_analysis'        => json_encode($safetyAnalysis, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'analysis_version'      => SafetyHazardAnalysisService::VERSION,
+                'input_summary'         => json_encode([
+                    'jenis_temuan' => $temuan['jenis_temuan'] ?? null,
+                    'prioritas' => $temuan['prioritas'] ?? null,
+                    'ulp_id' => $temuan['ulp_id'] ?? null,
+                    'penyulang_id' => $temuan['penyulang_id'] ?? null,
+                    'section_id' => $temuan['section_id'] ?? null,
+                    'historical_similar_count' => $historicalSimilarCount,
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'rule_sources'          => json_encode($safetyAnalysis['sources'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 'created_at'            => date('Y-m-d H:i:s'),
-            ]);
+            ];
+            $existingLog = $this->logModel->where('target_type', 'TEMUAN')
+                ->where('target_id', (int)$temuan['id'])
+                ->where('engine_name', 'RecommendationEngine_XAI')
+                ->orderBy('id', 'DESC')
+                ->first();
+            if ($existingLog) {
+                $this->logModel->update((int)$existingLog['id'], $logData);
+            } else {
+                $this->logModel->insert($logData);
+            }
         } catch (\Throwable $e) {
-            // Ignore log exceptions
+            log_message('error', '[TEMUAN_AI_LOG] ' . $e->getMessage());
         }
 
         return $result;
+    }
+
+    private function getSimilarFindings(array $temuan): array
+    {
+        try {
+            $db = \Config\Database::connect();
+            if (!$db->tableExists('temuan') || empty($temuan['jenis_temuan']) || empty($temuan['ulp_id'])) {
+                return ['count' => 0, 'findings' => []];
+            }
+            $builder = $db->table('temuan')
+                ->where('ulp_id', (int)$temuan['ulp_id'])
+                ->where('jenis_temuan', (string)$temuan['jenis_temuan'])
+                ->where('deleted_at IS NULL');
+            if (!empty($temuan['id'])) {
+                $builder->where('id !=', (int)$temuan['id']);
+            }
+            $count = (int)(clone $builder)->countAllResults();
+            $findings = $builder->select('jenis_temuan, detail_temuan, konduktor, material, pelaksana, prioritas')->orderBy('id', 'DESC')->limit(100)->get()->getResultArray();
+            return ['count' => $count, 'findings' => $findings ?: []];
+        } catch (\Throwable $e) {
+            log_message('warning', '[TEMUAN_AI_HISTORY] ' . $e->getMessage());
+            return ['count' => 0, 'findings' => []];
+        }
     }
 
     public function exportMlDataset(string $format = 'csv'): string

@@ -883,6 +883,8 @@ class GisTranslineService
                 'section_id'         => !empty($r['section_id']) ? (int)$r['section_id'] : null,
                 'source_asset_id'    => $sourceId,
                 'target_asset_id'    => $targetId,
+                'source_section_id'  => !empty($r['sa_section_id']) ? (int)$r['sa_section_id'] : null,
+                'target_section_id'  => !empty($r['ta_section_id']) ? (int)$r['ta_section_id'] : null,
                 'from_asset_id'      => $sourceId,
                 'to_asset_id'        => $targetId,
                 'source_asset'       => [

@@ -440,6 +440,11 @@ $authorizedMenuItems = $sidakMenuRegistry['items'];
             <a href="<?= site_url('temuan/terdekat') ?>" class="quick-emc-m-item">
                 <i class="fas fa-crosshairs text-danger"></i><span>Terdekat</span>
             </a>
+            <a href="<?= site_url('captive-non-penugasan') ?>" class="quick-emc-m-item"><i class="fas fa-plug text-warning"></i><span>Captive</span></a>
+        </div>
+
+        <div class="emc-m-card"><div class="fw-bold mb-2">Panjang Konduktor per Penyulang</div><div class="small text-muted mb-2">AAAC / AAACS / MVTIC / XLPE — km</div>
+            <?php foreach (($networkData['feeders'] ?? []) as $net): ?><div class="d-flex justify-content-between gap-2 border-bottom py-2"><span><?= esc($net['nama_ulp']) ?> · <?= esc($net['nama']) ?></span><span class="text-nowrap"><?= number_format((float)$net['aaac_kms'],1) ?> / <?= number_format((float)$net['aaacs_kms'],1) ?> / <?= number_format((float)$net['mvtic_kms'],1) ?> / <?= number_format((float)$net['xlpe_kms'],1) ?></span></div><?php endforeach ?>
         </div>
 
         <!-- 5. RESPONSIVE 2-COLUMN KPI GRID (Replaces single-column stack) -->

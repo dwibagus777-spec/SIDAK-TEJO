@@ -944,6 +944,17 @@ if (!function_exists('get_sidak_menu_registry')) {
                 'roles'     => null,
             ],
             [
+                'id'        => 'captive-non-penugasan',
+                'name'      => 'Captive Non Penugasan',
+                'category'  => 'OPERATIONS',
+                'desc'      => 'Potensi coating dan temuan captive',
+                'href'      => site_url('captive-non-penugasan'),
+                'icon'      => 'fas fa-plug',
+                'active'    => (bool)url_is('captive-non-penugasan*'),
+                'inRail'    => true,
+                'roles'     => null,
+            ],
+            [
                 'id'        => 'har-update',
                 'name'      => 'Update Pekerjaan (HAR)',
                 'category'  => 'OPERATIONS',

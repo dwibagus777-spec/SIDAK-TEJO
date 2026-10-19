@@ -526,6 +526,7 @@ try {
         'confidence'          => 0,
     ];
 }
+$safetyAnalysis = $aiRecommendation['k2_k3_analysis'] ?? [];
 ?>
 
 <!-- Mobile Sticky Header (< 992px) -->
@@ -606,6 +607,42 @@ try {
                                 <li class="mb-1"><?= esc($reason) ?></li>
                             <?php endforeach; ?>
                         </ul>
+                    </div>
+
+                    <div class="bg-dark bg-opacity-25 rounded-3 p-3 mt-3" style="font-size: 12px;">
+                        <strong class="text-info d-block mb-2"><i class="fas fa-shield-halved me-1"></i> Potensi Bahaya K2/K3 dari Temuan</strong>
+                        <?php if (!empty($safetyAnalysis['hazards'])): ?>
+                            <?php foreach ($safetyAnalysis['hazards'] as $hazard): ?>
+                                <div class="border border-secondary border-opacity-25 rounded-2 p-2 mb-2">
+                                    <div class="d-flex flex-wrap justify-content-between gap-1">
+                                        <strong class="text-light"><?= esc($hazard['hazard'] ?? 'Bahaya perlu ditinjau') ?></strong>
+                                        <span class="badge bg-warning text-dark"><?= esc($hazard['category'] ?? 'K2/K3') ?> • <?= esc($hazard['level'] ?? 'PERLU VERIFIKASI') ?></span>
+                                    </div>
+                                    <div class="text-light opacity-75 mt-1">Pemicu: <?= esc($hazard['trigger'] ?? 'Konteks temuan') ?></div>
+                                    <?php if (!empty($hazard['controls'])): ?>
+                                        <ul class="text-light opacity-75 mb-0 mt-1 ps-3">
+                                            <?php foreach ($hazard['controls'] as $control): ?><li><?= esc($control) ?></li><?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                    <small class="text-warning">Verifikasi kondisi lapangan sebelum penugasan.</small>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p class="text-light opacity-75 mb-2">Belum ada pemicu bahaya spesifik yang cocok dengan teks temuan. Tetap lakukan JSA/HIRADC dan verifikasi lapangan.</p>
+                        <?php endif; ?>
+                        <small class="text-light opacity-75 d-block mb-2">
+                            Temuan sejenis di ULP ini: <?= number_format((int)($safetyAnalysis['historical_context']['count'] ?? 0)) ?>.
+                            Ruleset <?= esc($safetyAnalysis['version'] ?? 'N/A') ?>.
+                        </small>
+                        <?php if (!empty($safetyAnalysis['historical_context']['hazard_patterns'])): ?><small class="d-block mb-2"><strong>Pola bahaya pada temuan sejenis sebelumnya:</strong> <?= esc(implode(', ', array_map(static fn($p) => $p['hazard'] . ' (' . $p['count'] . ')', $safetyAnalysis['historical_context']['hazard_patterns']))) ?></small><?php endif ?>
+                        <small class="text-warning d-block mb-2"><?= esc($safetyAnalysis['notice'] ?? 'Analisis ini hanya saran awal dan bukan pengganti SOP atau penilaian petugas berwenang.') ?></small>
+                        <?php if (!empty($safetyAnalysis['sources'])): ?>
+                            <div class="d-flex flex-wrap gap-2">
+                                <?php foreach ($safetyAnalysis['sources'] as $source): ?>
+                                    <a class="small text-info" href="<?= esc($source['url'] ?? '#') ?>" target="_blank" rel="noopener noreferrer"><?= esc($source['title'] ?? 'Rujukan keselamatan') ?></a>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 

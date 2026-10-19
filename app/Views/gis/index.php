@@ -5374,6 +5374,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 🟢 TRANSLINE OTORITATIF JTM (PERSISTED)
                             </span>
                         </div>
+                        ${(tl.conductor_type && tl.conductor_type.toUpperCase().includes('AAAC') && !tl.conductor_type.toUpperCase().includes('AAACS')) ? `<a class="btn btn-sm btn-warning w-100 mt-2" href="<?= site_url('captive-non-penugasan') ?>?transline_id=${encodeURIComponent(Number(tId))}"><i class="fas fa-highlighter me-1"></i> Tandai Potensi Coating</a>` : ''}
                     </div>
                 `;
 
@@ -5781,7 +5782,8 @@ document.addEventListener("DOMContentLoaded", function () {
         var layersParam = getSelectedSetupLayers().join(',');
         toggleLoading(true);
 
-        var fetchUrl = `<?= site_url('gis/api-network') ?>?penyulang_id=${currentFeederId}&zoom=${map ? map.getZoom() : 14}&layers=${layersParam}`;
+        var captiveOnly = new URLSearchParams(window.location.search).get('captive_only') === '1';
+        var fetchUrl = `<?= site_url('gis/api-network') ?>?penyulang_id=${currentFeederId}&zoom=${map ? map.getZoom() : 14}&layers=${layersParam}${captiveOnly ? '&captive_only=1' : ''}`;
         var fetchOpts = activeNetworkAbortController ? { signal: activeNetworkAbortController.signal } : {};
 
         var reqPromise = fetchJson(fetchUrl, fetchOpts)

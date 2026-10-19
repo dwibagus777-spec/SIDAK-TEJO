@@ -366,7 +366,29 @@
             <i class="fas fa-robot text-purple fs-6"></i>
             <span>AI Copilot</span>
         </a>
+        <a href="<?= site_url('captive-non-penugasan') ?>" class="dah-quick-pill"><i class="fas fa-plug text-warning fs-6"></i><span>Captive Non Penugasan</span></a>
     </div>
+
+    <?php
+        $networkRows = $networkData['feeders'] ?? [];
+        $networkTotals = ['penyulang' => 0, 'aset' => 0, 'aaac_kms' => 0, 'aaacs_kms' => 0, 'mvtic_kms' => 0, 'xlpe_kms' => 0, 'gis' => []];
+        foreach (($networkData['ulp_summary'] ?? []) as $networkSummary) {
+            if (!empty($selectedUlpId) && (int)($networkSummary['ulp_id'] ?? 0) !== (int)$selectedUlpId) continue;
+            foreach ($networkTotals as $field => &$value) {
+                if (isset($networkSummary[$field]) && is_numeric($networkSummary[$field])) $value += $networkSummary[$field];
+            }
+            unset($value);
+            $networkTotals['gis'] = array_values(array_unique(array_merge($networkTotals['gis'], $networkSummary['gis'] ?? [])));
+        }
+        $networkMaxKm = max(0.01, (float)$networkTotals['aaac_kms'], (float)$networkTotals['aaacs_kms'], (float)$networkTotals['mvtic_kms'], (float)$networkTotals['xlpe_kms']);
+    ?>
+    <div class="card dah-card mb-4"><div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2"><div><strong>Jaringan UP3 Sidoarjo</strong><div class="small text-muted">GI, ULP, jumlah aset, dan panjang transline aktif dari database GIS</div></div><a class="btn btn-sm btn-outline-primary" href="<?= site_url('captive-non-penugasan') ?>">Kelola potensi coating</a></div>
+    <div class="card-body border-bottom"><div class="d-flex flex-wrap gap-4 mb-3 small"><span><strong>Gardu Induk:</strong> <?= esc(implode(', ', $networkTotals['gis']) ?: '-') ?></span><span><strong>Penyulang:</strong> <?= number_format((int)$networkTotals['penyulang']) ?></span><span><strong>Aset:</strong> <?= number_format((int)$networkTotals['aset']) ?></span></div>
+        <?php foreach (['aaac_kms' => 'AAAC', 'aaacs_kms' => 'AAACS', 'mvtic_kms' => 'MVTIC', 'xlpe_kms' => 'XLPE'] as $metric => $label): ?><?php $percent = min(100, (float)$networkTotals[$metric] / $networkMaxKm * 100); ?><div class="d-flex align-items-center gap-2 small mb-2"><span style="width:52px"><?= esc($label) ?></span><div class="progress flex-grow-1" style="height:9px"><div class="progress-bar bg-info" role="progressbar" style="width:<?= esc((string)$percent) ?>%" aria-valuenow="<?= esc((string)$percent) ?>" aria-valuemin="0" aria-valuemax="100"></div></div><strong style="width:90px;text-align:right"><?= number_format((float)$networkTotals[$metric], 2) ?> km</strong></div><?php endforeach ?>
+    </div><div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0"><thead><tr><th>Gardu Induk</th><th>ULP</th><th>Penyulang</th><th>Aset</th><th>AAAC (km)</th><th>AAACS (km)</th><th>MVTIC (km)</th><th>XLPE (km)</th><th></th></tr></thead><tbody>
+    <?php foreach ($networkRows as $net): ?><tr><td><?= esc($net['gardu_induk'] ?? '-') ?></td><td><?= esc($net['nama_ulp'] ?? '-') ?></td><td><?= esc($net['nama'] ?? '-') ?> <span class="text-muted small"><?= esc($net['kode'] ?? '') ?></span></td><td><?= number_format((int)$net['aset']) ?></td><td><?= number_format((float)$net['aaac_kms'],2) ?></td><td><?= number_format((float)$net['aaacs_kms'],2) ?></td><td><?= number_format((float)$net['mvtic_kms'],2) ?></td><td><?= number_format((float)$net['xlpe_kms'],2) ?></td><td><a class="btn btn-sm btn-outline-secondary" href="<?= site_url('gis?penyulang_id=' . (int)$net['id']) ?>">GIS</a><?php if (!empty($net['captive_candidates'])): ?> <a class="btn btn-sm btn-warning" href="<?= site_url('gis?penyulang_id=' . (int)$net['id'] . '&captive_only=1') ?>">Potensi <?= (int)$net['captive_candidates'] ?></a><?php endif ?></td></tr><?php endforeach ?>
+    <?php if (!$networkRows): ?><tr><td colspan="9" class="text-center text-muted">Data penyulang tidak tersedia dalam cakupan ini.</td></tr><?php endif ?>
+    </tbody></table></div></div>
 
     <!-- 3. TOP 6 BENTO KPI CARDS (MATCHING REFERENCE IMAGE) -->
     <div class="row g-3 mb-4">

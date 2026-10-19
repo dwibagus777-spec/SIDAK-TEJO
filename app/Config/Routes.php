@@ -849,6 +849,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     // Temuan & AJAX Cascades
     $routes->get('temuan', 'Temuan::index');
+    $routes->get('captive-non-penugasan', 'CaptiveNonPenugasanController::index', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('captive-non-penugasan/store', 'CaptiveNonPenugasanController::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('captive-non-penugasan/complete/(:num)', 'CaptiveNonPenugasanController::complete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/terdekat', 'Temuan::terdekat');
     $routes->get('temuan/ajax-terdekat', 'Temuan::ajaxTerdekat');
     $routes->get('temuan/ajax-detail/(:num)', 'Temuan::ajaxDetail/$1');

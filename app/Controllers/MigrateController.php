@@ -121,6 +121,15 @@ class MigrateController extends BaseController
                 $executed[] = 'enhance_historical_feeder_interruptions_schema';
             }
 
+            // Run AddTranslineToTemuan Migration (captive_non_penugasan + k2k3 columns)
+            $addTranslineMigFile = APPPATH . 'Database/Migrations/2026-10-20-000001_AddTranslineToTemuan.php';
+            if (file_exists($addTranslineMigFile)) {
+                require_once $addTranslineMigFile;
+                $addTlMig = new \App\Database\Migrations\AddTranslineToTemuan();
+                $addTlMig->up();
+                $executed[] = 'add_transline_to_temuan_captive_k2k3';
+            }
+
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
             // governed reconciliation with deterministic identity proof, not pattern matching.

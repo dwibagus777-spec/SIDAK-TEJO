@@ -382,6 +382,96 @@ class Dashboard extends BaseController
         // Phase 2: Penyulang Emergency Ranking
         $penyulangRanking = $this->temuanRepository->getPenyulangEmergencyRanking($ulpIdFilter, 5);
 
+        // Distribution network summary from master feeder/GI relations.
+        $giMapRows = $db->tableExists('gardu_induk')
+            ? $db->query("SELECT UPPER(TRIM(p.nama_penyulang)) AS fdr, MAX(gi.nama_gi) AS gi_name FROM penyulang p LEFT JOIN gardu_induk gi ON gi.id = p.gi_id GROUP BY UPPER(TRIM(p.nama_penyulang))")->getResultArray()
+            : [];
+        $giByFeeder = array_column($giMapRows, 'gi_name', 'fdr');
+
+        $translineRows = $db->query("
+            SELECT penyulang_id,
+                SUM(CASE WHEN UPPER(conductor_type) LIKE '%AAACS%' THEN distance_meters ELSE 0 END)/1000 as aaacs_kms,
+                SUM(CASE WHEN UPPER(conductor_type) LIKE '%AAAC%' AND UPPER(conductor_type) NOT LIKE '%AAACS%' THEN distance_meters ELSE 0 END)/1000 as aaac_kms,
+                SUM(CASE WHEN UPPER(conductor_type) LIKE '%MVTIC%' THEN distance_meters ELSE 0 END)/1000 as mvtic_kms,
+                SUM(CASE WHEN UPPER(conductor_type) LIKE '%XLPE%' THEN distance_meters ELSE 0 END)/1000 as xlpe_kms,
+                SUM(CASE WHEN conductor_type IS NULL OR (UPPER(conductor_type) NOT LIKE '%AAAC%' AND UPPER(conductor_type) NOT LIKE '%MVTIC%' AND UPPER(conductor_type) NOT LIKE '%XLPE%') THEN distance_meters ELSE 0 END)/1000 as other_kms,
+                COUNT(id) as spans
+            FROM gis_translines
+            WHERE (status = 'ACTIVE' OR is_active = 1) AND deleted_at IS NULL AND penyulang_id IS NOT NULL
+            GROUP BY penyulang_id
+        ")->getResultArray();
+        $translinesByPenyulang = array_column($translineRows, null, 'penyulang_id');
+
+        $candidateCounts = [];
+        if ($db->tableExists('captive_non_penugasan')) {
+            $candidateRows = $db->table('captive_non_penugasan')->select('penyulang_id, COUNT(*) AS cnt')->where('jenis', 'COATING')->where('status', 'POTENSI')->where('deleted_at IS NULL')->groupBy('penyulang_id')->get()->getResultArray();
+            $candidateCounts = array_column($candidateRows, 'cnt', 'penyulang_id');
+        }
+
+        $assetCountRows = $db->query("
+            SELECT penyulang_id, COUNT(*) as cnt FROM assets WHERE deleted_at IS NULL AND penyulang_id IS NOT NULL GROUP BY penyulang_id
+        ")->getResultArray();
+        $assetsByPenyulang = array_column($assetCountRows, 'cnt', 'penyulang_id');
+
+        // Build per-feeder and per-ULP aggregations
+        $penyulangQuery = $db->table('penyulang p')
+            ->select('p.id, p.kode_penyulang, p.nama_penyulang, p.ulp_id, u.nama_ulp')
+            ->join('ulps u', 'p.ulp_id = u.id', 'left')
+            ->where('p.status', 'ACTIVE');
+        if ($ulpIdFilter !== null) {
+            $penyulangQuery->where('p.ulp_id', $ulpIdFilter);
+        }
+        $allPenyulang = $penyulangQuery->orderBy('u.nama_ulp')->orderBy('p.nama_penyulang')->get()->getResultArray();
+
+        $networkFeeders = [];
+        $ulpAccum = []; // keyed by ulp_id
+        foreach ($allPenyulang as $p) {
+            $pid  = $p['id'];
+            $uid  = $p['ulp_id'];
+            $fKey = strtoupper(trim($p['nama_penyulang']));
+            $tl   = $translinesByPenyulang[$pid] ?? null;
+            $row  = [
+                'id'            => $pid,
+                'kode'          => $p['kode_penyulang'],
+                'nama'          => $p['nama_penyulang'],
+                'ulp_id'        => $uid,
+                'nama_ulp'      => $p['nama_ulp'],
+                'gardu_induk'   => $giByFeeder[$fKey] ?? '-',
+                'aset'          => (int)($assetsByPenyulang[$pid] ?? 0),
+                'aaac_kms'      => $tl ? round((float)$tl['aaac_kms'], 2) : 0,
+                'aaacs_kms'     => $tl ? round((float)$tl['aaacs_kms'], 2) : 0,
+                'mvtic_kms'     => $tl ? round((float)$tl['mvtic_kms'], 2) : 0,
+                'xlpe_kms'      => $tl ? round((float)$tl['xlpe_kms'], 2) : 0,
+                'other_kms'     => $tl ? round((float)$tl['other_kms'], 2) : 0,
+                'spans'         => $tl ? (int)$tl['spans'] : 0,
+                'captive_candidates' => (int)($candidateCounts[$pid] ?? 0),
+            ];
+            $networkFeeders[] = $row;
+            if (!isset($ulpAccum[$uid])) {
+                $ulpAccum[$uid] = ['ulp_id' => (int)$uid, 'nama_ulp' => $p['nama_ulp'], 'penyulang' => 0, 'aset' => 0, 'aaac_kms' => 0, 'aaacs_kms' => 0, 'mvtic_kms' => 0, 'xlpe_kms' => 0, 'other_kms' => 0, 'gis' => []];
+            }
+            $ulpAccum[$uid]['penyulang']++;
+            $ulpAccum[$uid]['aset']     += $row['aset'];
+            $ulpAccum[$uid]['aaac_kms'] += $row['aaac_kms'];
+            $ulpAccum[$uid]['aaacs_kms']+= $row['aaacs_kms'];
+            $ulpAccum[$uid]['mvtic_kms']+= $row['mvtic_kms'];
+            $ulpAccum[$uid]['xlpe_kms'] += $row['xlpe_kms'];
+            $ulpAccum[$uid]['other_kms']+= $row['other_kms'];
+            if ($row['gardu_induk'] !== '-' && !in_array($row['gardu_induk'], $ulpAccum[$uid]['gis'])) {
+                $ulpAccum[$uid]['gis'][] = $row['gardu_induk'];
+            }
+        }
+        // Round ULP totals
+        foreach ($ulpAccum as &$u) {
+            $u['aaac_kms']  = round($u['aaac_kms'], 2);
+            $u['aaacs_kms'] = round($u['aaacs_kms'], 2);
+            $u['mvtic_kms'] = round($u['mvtic_kms'], 2);
+            $u['xlpe_kms'] = round($u['xlpe_kms'], 2);
+            $u['other_kms'] = round($u['other_kms'], 2);
+        }
+        unset($u);
+        $networkData = ['ulp_summary' => array_values($ulpAccum), 'feeders' => $networkFeeders, 'ulp_accum' => $ulpAccum];
+
         // Sidebar collapse preference: default TRUE (collapsed) unless user explicitly expanded
         $prefersCollapsed = $session->get('sidebar_collapsed') ?? true;
 
@@ -415,7 +505,8 @@ class Dashboard extends BaseController
             'availableTrendYears' => $availableTrendYears,
             'trendYear'           => $trendYear,
             'trendComparison'     => $trendComparison,
-            'prefersCollapsed'    => $prefersCollapsed
+            'prefersCollapsed'    => $prefersCollapsed,
+            'networkData'         => $networkData,
         ];
 
 

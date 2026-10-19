@@ -94,10 +94,13 @@ $ulpParam    = $ulpIdFilter ? '&ulp_id=' . $ulpIdFilter : '';
                 </a>
             </div>
             <?php endif; ?>
-            <div class="col-auto ms-auto">
+            <div class="col-auto ms-auto d-flex gap-2">
                 <?php if ($canManage): ?>
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalImportExcel">
+                    <i class="fas fa-file-excel me-1"></i> Impor XLSX
+                </button>
                 <button type="button" class="btn btn-sm btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalAddGangguan">
-                    <i class="fas fa-plus me-1"></i> Form Input (Draft)
+                    <i class="fas fa-plus me-1"></i> Tambah Gangguan
                 </button>
                 <?php endif; ?>
             </div>
@@ -579,6 +582,11 @@ $hasChartData = ($sumA > 0 || $sumB > 0);
                         </div>
 
                         <div class="col-12">
+                            <label class="form-label small fw-semibold text-dark">Penyebab Gangguan (Sesuai Kode Gangguan)</label>
+                            <input type="text" name="cause_raw" class="form-control rounded-3" placeholder="Contoh: POHON, BINA-BURUNG, PETIR, JUMPER PUTUS, dsb.">
+                        </div>
+
+                        <div class="col-12">
                             <label class="form-label small fw-semibold text-dark">Narasi / Indikasi Penyebab di Lapangan</label>
                             <textarea name="field_narrative_raw" class="form-control rounded-3" rows="2" placeholder="Jelaskan temuan di lapangan saat penelusuran..."></textarea>
                         </div>
@@ -594,17 +602,219 @@ $hasChartData = ($sumA > 0 || $sumB > 0);
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0 d-flex justify-content-between align-items-center">
-                    <span class="badge bg-warning-subtle text-warning border px-2 py-1 small">
-                        <i class="fas fa-lock me-1"></i>Penyimpanan Terkunci (Menunggu Format Data)
+                    <span class="text-muted small">
+                        <i class="fas fa-shield-halved text-success me-1"></i>Tervalidasi Skema Database
                     </span>
                     <div>
                         <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
-                        <button type="button" class="btn btn-secondary rounded-pill px-4" disabled title="Penyimpanan dinonaktifkan sementara menunggu contoh data dan format final">
-                            <i class="fas fa-clock me-1"></i> Simpan (Menunggu Format Data)
+                        <button type="submit" class="btn btn-success rounded-pill px-4">
+                            <i class="fas fa-save me-1"></i> Simpan Gangguan
                         </button>
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ Modal Impor XLSX ══ -->
+<div class="modal fade" id="modalImportExcel" tabindex="-1" aria-labelledby="modalImportExcelLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-success-subtle text-success rounded-3">
+                        <i class="fas fa-file-excel fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="modalImportExcelLabel">
+                            Impor Data Gangguan Penyulang (XLSX)
+                        </h5>
+                        <small class="text-muted">Parser Native PHP • 22 Kolom Bisnis • Validasi & Isolasi Keamanan</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Source Selection -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-7">
+                        <div class="card h-100 border rounded-3 p-3 bg-light">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="import_source_type" id="src_upload" value="upload" checked>
+                                <label class="form-check-label fw-bold text-dark" for="src_upload">
+                                    <i class="fas fa-upload me-1 text-primary"></i> Unggah Berkas XLSX dari Komputer
+                                </label>
+                            </div>
+                            <input type="file" id="excel_file_input" class="form-control rounded-3" accept=".xlsx">
+                            <small class="text-muted mt-1 d-block" style="font-size: 11px;">Format berkas harus Microsoft Excel (.xlsx), ukuran maks. 15MB.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="card h-100 border rounded-3 p-3 bg-light">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="import_source_type" id="src_server" value="server">
+                                <label class="form-check-label fw-bold text-dark" for="src_server">
+                                    <i class="fas fa-server me-1 text-secondary"></i> Gunakan Berkas Kanonik Server
+                                </label>
+                            </div>
+                            <div class="p-2 border rounded bg-white text-muted small font-monospace">
+                                E:\GANGGUAN PENYULANG.xlsx
+                            </div>
+                            <small class="text-muted mt-1 d-block" style="font-size: 11px;">Berkas workbook gangguan resmi yang tersedia di root server lokal.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="text-muted small">
+                        <i class="fas fa-info-circle me-1 text-info"></i>
+                        Pratinjau akan memverifikasi 22 header kolom bisnis, mendeteksi duplikat hash, dan memvalidasi baris sebelum masuk database.
+                    </div>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnRunPreview" onclick="runExcelPreview()">
+                        <i class="fas fa-magnifying-glass me-1"></i> Periksa Berkas (Dry Run)
+                    </button>
+                </div>
+
+                <!-- Preview Results Container (Hidden until preview loaded) -->
+                <div id="previewResultsContainer" style="display: none;">
+                    <hr class="my-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold text-dark mb-0">
+                            <i class="fas fa-clipboard-check text-success me-2"></i>Hasil Pratinjau & Diagnosa Berkas
+                        </h6>
+                        <span id="previewHeaderBadge" class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
+                            Header Valid (22/22)
+                        </span>
+                    </div>
+
+                    <!-- Metrics Cards -->
+                    <div class="row g-2 mb-4">
+                        <div class="col-6 col-md-2">
+                            <div class="p-2 border rounded-3 text-center bg-light">
+                                <small class="text-muted d-block" style="font-size: 11px;">Baris Fisik</small>
+                                <span class="fw-bold fs-5 text-dark font-monospace" id="statTotalRows">0</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <div class="p-2 border rounded-3 text-center bg-success-subtle border-success-subtle">
+                                <small class="text-success d-block fw-semibold" style="font-size: 11px;">Siap Impor</small>
+                                <span class="fw-bold fs-5 text-success font-monospace" id="statReadyImport">0</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <div class="p-2 border rounded-3 text-center bg-info-subtle border-info-subtle">
+                                <small class="text-info d-block fw-semibold" style="font-size: 11px;">Valid Bersih</small>
+                                <span class="fw-bold fs-5 text-info font-monospace" id="statValidCount">0</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <div class="p-2 border rounded-3 text-center bg-warning-subtle border-warning-subtle">
+                                <small class="text-warning-emphasis d-block fw-semibold" style="font-size: 11px;">Peringatan / #REF!</small>
+                                <span class="fw-bold fs-5 text-warning-emphasis font-monospace" id="statWarningCount">0</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <div class="p-2 border rounded-3 text-center bg-secondary-subtle">
+                                <small class="text-secondary d-block fw-semibold" style="font-size: 11px;">Duplikat Hash</small>
+                                <span class="fw-bold fs-5 text-secondary font-monospace" id="statDuplicateCount">0</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <div class="p-2 border rounded-3 text-center bg-danger-subtle border-danger-subtle">
+                                <small class="text-danger d-block fw-semibold" style="font-size: 11px;">Ditolak (Kosong)</small>
+                                <span class="fw-bold fs-5 text-danger font-monospace" id="statRejectedCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs for Preview Details -->
+                    <ul class="nav nav-tabs nav-tabs-bordered mb-3" id="previewTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-2 px-3 fw-semibold small" id="tab-samples-btn" data-bs-toggle="tab" data-bs-target="#tab-samples" type="button" role="tab">
+                                <i class="fas fa-table-list me-1"></i> Sampel Data Normalisasi
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 px-3 fw-semibold small" id="tab-columns-btn" data-bs-toggle="tab" data-bs-target="#tab-columns" type="button" role="tab">
+                                <i class="fas fa-columns me-1"></i> Pemetaan 22 Kolom Standar
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 px-3 fw-semibold small" id="tab-issues-btn" data-bs-toggle="tab" data-bs-target="#tab-issues" type="button" role="tab">
+                                <i class="fas fa-triangle-exclamation me-1 text-warning"></i> Catatan & Isu Baris (<span id="badgeIssueCount">0</span>)
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="previewTabsContent">
+                        <!-- Tab 1: Samples -->
+                        <div class="tab-pane fade show active" id="tab-samples" role="tabpanel">
+                            <div class="table-responsive border rounded-3" style="max-height: 250px;">
+                                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 11px;">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th>Baris</th>
+                                            <th>Tanggal</th>
+                                            <th>ULP</th>
+                                            <th>Penyulang</th>
+                                            <th>Relai</th>
+                                            <th>Kategori</th>
+                                            <th>Lama Padam</th>
+                                            <th>Keterangan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="previewSamplesTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Column Mapping -->
+                        <div class="tab-pane fade" id="tab-columns" role="tabpanel">
+                            <div class="table-responsive border rounded-3" style="max-height: 250px;">
+                                <table class="table table-sm table-striped align-middle mb-0" style="font-size: 11px;">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th style="width: 50px;">Idx</th>
+                                            <th>Kolom Standar (Kanonik)</th>
+                                            <th>Nama di Berkas</th>
+                                            <th class="text-center" style="width: 100px;">Kecocokan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="previewColumnsTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Issues -->
+                        <div class="tab-pane fade" id="tab-issues" role="tabpanel">
+                            <div class="table-responsive border rounded-3" style="max-height: 250px;">
+                                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 11px;">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th style="width: 60px;">Baris</th>
+                                            <th style="width: 90px;">Tipe</th>
+                                            <th>Alasan / Penjelasan Normalisasi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="previewIssuesTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-3 bg-light d-flex justify-content-between">
+                <div>
+                    <span id="importExecutionStatus" class="small text-muted"></span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-success rounded-pill px-4" id="btnExecuteImport" disabled onclick="executeExcelImport()">
+                        <i class="fas fa-cloud-arrow-up me-1"></i> Eksekusi Impor ke Database
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -795,6 +1005,192 @@ $hasChartData = ($sumA > 0 || $sumB > 0);
             });
         }
     });
+
+    // ── Global Excel Preview & Import Handlers ────────────────────────
+    var currentImportToken = null;
+
+    window.runExcelPreview = function() {
+        var isServer = document.getElementById('src_server').checked;
+        var fileInput = document.getElementById('excel_file_input');
+        var btnPreview = document.getElementById('btnRunPreview');
+        var btnExecute = document.getElementById('btnExecuteImport');
+        var container = document.getElementById('previewResultsContainer');
+        var statusEl = document.getElementById('importExecutionStatus');
+
+        if (!isServer && (!fileInput.files || fileInput.files.length === 0)) {
+            alert('Silakan pilih berkas .xlsx terlebih dahulu.');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+        if (isServer) {
+            formData.append('use_server_file', '1');
+        } else {
+            formData.append('excel_file', fileInput.files[0]);
+        }
+
+        btnPreview.disabled = true;
+        btnPreview.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Membaca Berkas...';
+        btnExecute.disabled = true;
+        statusEl.innerHTML = '<span class="text-primary"><i class="fas fa-spinner fa-spin me-1"></i>Menganalisis lembar kerja dan 22 kolom...</span>';
+
+        fetch('<?= site_url('gangguan/preview-excel') ?>', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            btnPreview.disabled = false;
+            btnPreview.innerHTML = '<i class="fas fa-magnifying-glass me-1"></i> Periksa Berkas (Dry Run)';
+
+            if (res.status !== 'success') {
+                statusEl.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-1"></i>' + (res.message || 'Gagal memeriksa berkas.') + '</span>';
+                alert(res.message || 'Gagal memeriksa berkas.');
+                return;
+            }
+
+            var d = res.data;
+            currentImportToken = res.import_token;
+            container.style.display = 'block';
+
+            // Metrics
+            document.getElementById('statTotalRows').textContent = d.total_physical_rows || 0;
+            document.getElementById('statReadyImport').textContent = d.ready_to_import || 0;
+            document.getElementById('statValidCount').textContent = d.valid_count || 0;
+            document.getElementById('statWarningCount').textContent = d.warning_count || 0;
+            document.getElementById('statDuplicateCount').textContent = d.duplicate_count || 0;
+            document.getElementById('statRejectedCount').textContent = d.rejected_count || 0;
+            document.getElementById('badgeIssueCount').textContent = d.total_issues_count || 0;
+
+            var badge = document.getElementById('previewHeaderBadge');
+            if (d.header_valid) {
+                badge.className = 'badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill';
+                badge.innerHTML = '<i class="fas fa-check me-1"></i>Header Standar Valid (22/22)';
+            } else {
+                badge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill';
+                badge.innerHTML = '<i class="fas fa-triangle-exclamation me-1"></i>Header Kolom Tidak Sesuai';
+            }
+
+            // Samples Table
+            var sampleBody = document.getElementById('previewSamplesTableBody');
+            sampleBody.innerHTML = '';
+            if (d.samples && d.samples.length > 0) {
+                d.samples.forEach(function(s) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>#' + s.row + '</td>' +
+                        '<td>' + (s.event_date || '-') + '</td>' +
+                        '<td>' + (s.ulp || '-') + '</td>' +
+                        '<td><span class="fw-semibold">' + (s.penyulang || '-') + '</span></td>' +
+                        '<td>' + (s.rele || '-') + '</td>' +
+                        '<td><span class="badge ' + (s.kategori === 'PERMANENT' ? 'bg-danger' : 'bg-primary') + '">' + (s.kategori || '-') + '</span></td>' +
+                        '<td>' + (s.durasi_menit ? s.durasi_menit + ' m' : (s.lama_padam || '-')) + '</td>' +
+                        '<td class="text-muted small">' + (s.keterangan || '-') + '</td>';
+                    sampleBody.appendChild(tr);
+                });
+            } else {
+                sampleBody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-muted">Tidak ada data sampel untuk ditampilkan.</td></tr>';
+            }
+
+            // Columns Mapping Table
+            var colBody = document.getElementById('previewColumnsTableBody');
+            colBody.innerHTML = '';
+            if (d.column_mapping) {
+                d.column_mapping.forEach(function(c) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td class="font-monospace text-muted">#' + c.index + '</td>' +
+                        '<td class="fw-semibold">' + c.expected + '</td>' +
+                        '<td class="font-monospace">' + (c.actual || '<span class="text-danger">(kosong)</span>') + '</td>' +
+                        '<td class="text-center">' + (c.matched ? '<span class="badge bg-success-subtle text-success">Cocok</span>' : '<span class="badge bg-danger-subtle text-danger">Tidak Cocok</span>') + '</td>';
+                    colBody.appendChild(tr);
+                });
+            }
+
+            // Issues Table
+            var issueBody = document.getElementById('previewIssuesTableBody');
+            issueBody.innerHTML = '';
+            if (d.issues && d.issues.length > 0) {
+                d.issues.forEach(function(iss) {
+                    var tr = document.createElement('tr');
+                    var badgeCls = iss.type === 'REJECTED' ? 'bg-danger' : 'bg-warning text-dark';
+                    tr.innerHTML = '<td class="font-monospace">#' + iss.row + '</td>' +
+                        '<td><span class="badge ' + badgeCls + '">' + iss.type + '</span></td>' +
+                        '<td>' + iss.reason + '</td>';
+                    issueBody.appendChild(tr);
+                });
+            } else {
+                issueBody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-success"><i class="fas fa-check-circle me-1"></i>Tidak ada anomali atau isu baris terdeteksi.</td></tr>';
+            }
+
+            // Enable execute import button if ready
+            if (d.header_valid && d.ready_to_import > 0) {
+                btnExecute.disabled = false;
+                statusEl.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>' + d.ready_to_import + ' data siap diimpor ke database.</span>';
+            } else if (!d.header_valid) {
+                btnExecute.disabled = true;
+                statusEl.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Impor ditolak karena struktur kolom berkas tidak sesuai standar.</span>';
+            } else {
+                btnExecute.disabled = true;
+                statusEl.innerHTML = '<span class="text-warning-emphasis"><i class="fas fa-info-circle me-1"></i>Semua data telah diimpor sebelumnya (duplikat).</span>';
+            }
+        })
+        .catch(function(err) {
+            btnPreview.disabled = false;
+            btnPreview.innerHTML = '<i class="fas fa-magnifying-glass me-1"></i> Periksa Berkas (Dry Run)';
+            statusEl.innerHTML = '<span class="text-danger">Koneksi gagal atau respons server tidak valid.</span>';
+            console.error('Preview error:', err);
+        });
+    };
+
+    window.executeExcelImport = function() {
+        if (!currentImportToken) {
+            alert('Silakan lakukan pratinjau berkas terlebih dahulu.');
+            return;
+        }
+
+        if (!confirm('Apakah Anda yakin ingin mengeksekusi impor data gangguan ke database?')) {
+            return;
+        }
+
+        var btnExecute = document.getElementById('btnExecuteImport');
+        var btnPreview = document.getElementById('btnRunPreview');
+        var statusEl = document.getElementById('importExecutionStatus');
+
+        btnExecute.disabled = true;
+        btnExecute.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan ke Database...';
+        btnPreview.disabled = true;
+
+        var formData = new FormData();
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+        formData.append('import_token', currentImportToken);
+
+        fetch('<?= site_url('gangguan/import-excel') ?>', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            btnExecute.innerHTML = '<i class="fas fa-cloud-arrow-up me-1"></i> Eksekusi Impor ke Database';
+            btnPreview.disabled = false;
+
+            if (res.status === 'success') {
+                statusEl.innerHTML = '<span class="text-success fw-bold"><i class="fas fa-check-double me-1"></i>' + res.message + '</span>';
+                alert(res.message);
+                window.location.reload();
+            } else {
+                btnExecute.disabled = false;
+                statusEl.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-1"></i>' + (res.message || 'Gagal mengeksekusi impor.') + '</span>';
+                alert(res.message || 'Gagal mengeksekusi impor.');
+            }
+        })
+        .catch(function(err) {
+            btnExecute.disabled = false;
+            btnExecute.innerHTML = '<i class="fas fa-cloud-arrow-up me-1"></i> Eksekusi Impor ke Database';
+            btnPreview.disabled = false;
+            statusEl.innerHTML = '<span class="text-danger">Gagal menghubungi server saat eksekusi impor.</span>';
+            console.error('Import error:', err);
+        });
+    };
 })();
 </script>
 <?= $this->endSection() ?>

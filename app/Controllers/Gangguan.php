@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\InterruptionModel;
 use App\Repositories\PenyulangRepository;
 use App\Repositories\UlpRepository;
+use App\Services\InterruptionExcelService;
 
 class Gangguan extends BaseController
 {
@@ -316,6 +317,7 @@ class Gangguan extends BaseController
             'energy_not_supplied_kwh'  => $this->request->getPost('energy_not_supplied_kwh') !== '' ? (float)$this->request->getPost('energy_not_supplied_kwh') : null,
             'interruption_category'    => strtoupper(trim((string)$this->request->getPost('interruption_category'))) ?: 'TEMPORARY',
             'interruption_group'       => 'GGN_PENYULANG',
+            'cause_raw'                => trim((string)$this->request->getPost('cause_raw')),
             'field_narrative_raw'      => trim((string)$this->request->getPost('field_narrative_raw')),
             'restoration_action_raw'   => trim((string)$this->request->getPost('restoration_action_raw')),
             'extracted_zone_section'   => trim((string)$this->request->getPost('extracted_zone_section')),
@@ -326,6 +328,167 @@ class Gangguan extends BaseController
         $this->interruptionModel->insert($data);
 
         return redirect()->to(site_url('gangguan'))->with('success', 'Data kejadian gangguan penyulang berhasil disimpan.');
+    }
+
+    public function previewExcel()
+    {
+        $canManage = check_role(['administrator', 'admin', 'admin_ulp', 'supervisor_up3']);
+        if (!$canManage) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Anda tidak memiliki hak akses untuk mengunggah atau meninjau berkas gangguan.'
+            ])->setStatusCode(403);
+        }
+
+        $session = session();
+        $importDir = WRITEPATH . 'uploads/interruption_imports/';
+        if (!is_dir($importDir)) {
+            mkdir($importDir, 0755, true);
+        }
+
+        $useServer = (bool)$this->request->getPost('use_server_file');
+        $token = 'import_' . bin2hex(random_bytes(16));
+        $targetFile = $importDir . $token . '.xlsx';
+
+        if ($useServer) {
+            // Canonical allowed server paths only - strictly constrained
+            $allowedServerPaths = [
+                'E:\\GANGGUAN PENYULANG.xlsx',
+                'E:/GANGGUAN PENYULANG.xlsx',
+                ROOTPATH . 'GANGGUAN PENYULANG.xlsx',
+                ROOTPATH . '../GANGGUAN PENYULANG.xlsx',
+            ];
+            $serverPathFound = null;
+            foreach ($allowedServerPaths as $p) {
+                if (file_exists($p)) {
+                    $serverPathFound = $p;
+                    break;
+                }
+            }
+
+            if (!$serverPathFound) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Berkas kanonik server E:\\GANGGUAN PENYULANG.xlsx tidak ditemukan pada path yang diizinkan.'
+                ])->setStatusCode(404);
+            }
+
+            if (!copy($serverPathFound, $targetFile)) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Gagal menyalin berkas server ke direktori isolasi impor.'
+                ])->setStatusCode(500);
+            }
+        } else {
+            $file = $this->request->getFile('excel_file');
+            if (!$file || !$file->isValid()) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Berkas Excel tidak valid atau gagal diunggah: ' . ($file ? $file->getErrorString() : 'Berkas tidak ditemukan')
+                ])->setStatusCode(400);
+            }
+
+            $ext = strtolower($file->getClientExtension());
+            if ($ext !== 'xlsx') {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Hanya berkas berekstensi .xlsx yang didukung oleh parser XLSX native.'
+                ])->setStatusCode(400);
+            }
+
+            $file->move($importDir, $token . '.xlsx');
+        }
+
+        try {
+            $excelService = new InterruptionExcelService();
+            $previewResult = $excelService->previewXlsx($targetFile);
+
+            // Register valid token in user session for import authorization
+            $pending = $session->get('pending_excel_imports') ?? [];
+            $pending[$token] = [
+                'path'       => $targetFile,
+                'created_at' => time(),
+                'ready'      => $previewResult['ready_to_import'],
+            ];
+            $session->set('pending_excel_imports', $pending);
+
+            return $this->response->setJSON([
+                'status'       => 'success',
+                'import_token' => $token,
+                'data'         => $previewResult,
+            ]);
+        } catch (\Throwable $e) {
+            if (file_exists($targetFile)) {
+                @unlink($targetFile);
+            }
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Terjadi kesalahan saat memeriksa berkas Excel: ' . $e->getMessage()
+            ])->setStatusCode(500);
+        }
+    }
+
+    public function importExcel()
+    {
+        $canManage = check_role(['administrator', 'admin', 'admin_ulp', 'supervisor_up3']);
+        if (!$canManage) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Anda tidak memiliki wewenang untuk mengeksekusi impor data gangguan.'
+            ])->setStatusCode(403);
+        }
+
+        $session = session();
+        $token = trim((string)$this->request->getPost('import_token'));
+        $pending = $session->get('pending_excel_imports') ?? [];
+
+        if (empty($token) || !isset($pending[$token])) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Sesi impor tidak valid atau telah kedaluwarsa. Silakan lakukan pratinjau berkas kembali.'
+            ])->setStatusCode(400);
+        }
+
+        $filePath = $pending[$token]['path'] ?? '';
+        if (empty($filePath) || !file_exists($filePath)) {
+            unset($pending[$token]);
+            $session->set('pending_excel_imports', $pending);
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Berkas fisik impor pada direktori isolasi tidak ditemukan.'
+            ])->setStatusCode(404);
+        }
+
+        $userId = (int)($session->get('user_id') ?? 1);
+        $batchCode = 'BATCH-' . date('Ymd-His') . '-' . substr($token, 7, 6);
+
+        try {
+            $excelService = new InterruptionExcelService();
+            $result = $excelService->importXlsx($filePath, $userId, $batchCode);
+
+            // Clean up temporary file and session token after successful import
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+            unset($pending[$token]);
+            $session->set('pending_excel_imports', $pending);
+
+            return $this->response->setJSON([
+                'status'  => 'success',
+                'message' => "Impor berhasil diselesaikan: {$result['inserted_count']} data baru disimpan, {$result['duplicate_count']} duplikat dilewati, {$result['rejected_count']} baris ditolak.",
+                'result'  => $result
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Validasi struktur gagal: ' . $e->getMessage()
+            ])->setStatusCode(422);
+        } catch (\Throwable $e) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Eksekusi transaksi impor gagal: ' . $e->getMessage()
+            ])->setStatusCode(500);
+        }
     }
 
     public function delete($id)

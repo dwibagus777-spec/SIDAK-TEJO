@@ -651,6 +651,20 @@
                                             <?php endif; ?>
                                             <span class="fw-bold text-dark font-monospace small ms-auto"><?= $belum ?></span>
                                         </div>
+                                        <?php if (!empty($r['pelaksana_breakdown'])): ?>
+                                        <div class="d-flex align-items-center gap-1 flex-wrap mt-1">
+                                            <?php foreach (array_slice($r['pelaksana_breakdown'], 0, 3) as $pb): ?>
+                                                <?php if ($pb['belum_selesai'] > 0): ?>
+                                                    <span class="badge bg-light text-secondary border rounded-pill px-1" style="font-size: 8.5px;" title="<?= esc($pb['pelaksana']) ?>: <?= $pb['belum_selesai'] ?> belum selesai (EMG: <?= $pb['emg'] ?>, HIGH: <?= $pb['high'] ?>, MED: <?= $pb['med'] ?>)">
+                                                        <?= esc($pb['pelaksana']) ?>: <?= $pb['belum_selesai'] ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                            <?php if (count($r['pelaksana_breakdown']) > 3): ?>
+                                                <span class="text-muted" style="font-size: 8.5px;">+<?= count($r['pelaksana_breakdown']) - 3 ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex align-items-center justify-content-center gap-2">
@@ -1033,6 +1047,34 @@
                     <div class="d-flex justify-content-between py-1">
                         <span class="text-muted">Akumulasi Seluruh Temuan:</span>
                         <strong class="text-dark font-monospace" id="detailModalTotalAll">0</strong>
+                    </div>
+                </div>
+
+                <!-- Rincian Pelaksana & Prioritas (Kanonik Temuan) -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark mb-0" style="font-size: 13px;">
+                            <i class="fas fa-users-gear text-primary me-1"></i>Rincian Menurut Pelaksana & Prioritas
+                        </h6>
+                        <small class="text-muted" style="font-size: 10px;">Data Inspeksi Fisik</small>
+                    </div>
+                    <div class="table-responsive border rounded-3" style="max-height: 200px;">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 11px;">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Pelaksana</th>
+                                    <th class="text-center" style="width: 45px;">EMG</th>
+                                    <th class="text-center" style="width: 45px;">HIGH</th>
+                                    <th class="text-center" style="width: 45px;">MED</th>
+                                    <th class="text-center" style="width: 45px;">LOW</th>
+                                    <th class="text-center" style="width: 55px;">Belum</th>
+                                    <th class="text-center" style="width: 50px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailModalPelaksanaTableBody">
+                                <!-- Populated dynamically by openFeederDetailModal -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1429,6 +1471,32 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('detailModalTotalBelum').textContent = f.belum_selesai || 0;
         document.getElementById('detailModalTotalSelesai').textContent = f.selesai || Math.max(0, (f.total_temuan - f.belum_selesai));
         document.getElementById('detailModalTotalAll').textContent = f.total_temuan || 0;
+
+        var pelBody = document.getElementById('detailModalPelaksanaTableBody');
+        if (pelBody) {
+            pelBody.innerHTML = '';
+            var pList = f.pelaksana_breakdown || [];
+            if (pList.length > 0) {
+                pList.forEach(function(p) {
+                    var tr = document.createElement('tr');
+                    var emgBadge = p.emg > 0 ? '<span class="badge bg-danger rounded-pill px-1">' + p.emg + '</span>' : '<span class="text-muted">-</span>';
+                    var highBadge = p.high > 0 ? '<span class="badge bg-warning text-dark rounded-pill px-1">' + p.high + '</span>' : '<span class="text-muted">-</span>';
+                    var medBadge = p.med > 0 ? '<span class="badge bg-info-subtle text-info border rounded-pill px-1">' + p.med + '</span>' : '<span class="text-muted">-</span>';
+                    var lowBadge = p.low > 0 ? '<span class="badge bg-secondary-subtle text-secondary rounded-pill px-1">' + p.low + '</span>' : '<span class="text-muted">-</span>';
+                    var drillUrl = '<?= site_url('temuan') ?>?penyulang_id=' + f.id + '&pelaksana=' + encodeURIComponent(p.pelaksana) + '&status=BELUM_SELESAI';
+                    tr.innerHTML = '<td><span class="fw-semibold text-dark">' + escHtml(p.pelaksana) + '</span></td>' +
+                        '<td class="text-center">' + emgBadge + '</td>' +
+                        '<td class="text-center">' + highBadge + '</td>' +
+                        '<td class="text-center">' + medBadge + '</td>' +
+                        '<td class="text-center">' + lowBadge + '</td>' +
+                        '<td class="text-center"><strong class="font-monospace ' + (p.belum_selesai > 0 ? 'text-danger' : 'text-success') + '">' + p.belum_selesai + '</strong></td>' +
+                        '<td class="text-center"><a href="' + drillUrl + '" class="btn btn-xs btn-outline-primary py-0 px-1 rounded" style="font-size: 10px;" title="Lihat Temuan ' + escHtml(p.pelaksana) + '"><i class="fas fa-arrow-right"></i></a></td>';
+                    pelBody.appendChild(tr);
+                });
+            } else {
+                pelBody.innerHTML = '<tr><td colspan="7" class="text-center py-2 text-muted">Tidak ada rincian pelaksana untuk penyulang ini.</td></tr>';
+            }
+        }
 
         var btnTemuan = document.getElementById('detailModalBtnTemuan');
         if (btnTemuan) btnTemuan.href = '<?= site_url('temuan') ?>?penyulang_id=' + f.id;

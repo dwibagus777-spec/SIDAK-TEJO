@@ -1005,6 +1005,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('gangguan', 'Gangguan::index');
     $routes->get('gangguan/create', 'Gangguan::create');
     $routes->post('gangguan/store', 'Gangguan::store');
+    $routes->post('gangguan/preview-excel', 'Gangguan::previewExcel');
+    $routes->post('gangguan/import-excel', 'Gangguan::importExcel');
     $routes->post('gangguan/delete/(:num)', 'Gangguan::delete/$1');
     $routes->get('gangguan/api-feeders/(:num)', 'Gangguan::apiFeedersByUlp/$1');
 

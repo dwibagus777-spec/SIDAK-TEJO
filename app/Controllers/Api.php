@@ -432,6 +432,26 @@ class Api extends BaseController
     }
 
     /**
+     * GET /api/audit-asset-integrity
+     * Forensic Asset Integrity Audit & Reconciliation (Strict Read-Only)
+     */
+    public function auditAssetIntegrity()
+    {
+        try {
+            $service = new \App\Services\AssetIntegrityAuditService();
+            $data = $service->runAudit();
+            return $this->respond($data);
+        } catch (\Throwable $e) {
+            return $this->respond([
+                'status'  => 'ERROR',
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ], 500);
+        }
+    }
+
+    /**
      * GET /api/system/version
      * Public deployment fingerprint endpoint
      */

@@ -3329,6 +3329,8 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             }
 
             async function requestMicAccess() {
+                const $alertContainer = $('#diag-alert-container');
+                const $micBadge = $('#diag-mic-badge');
                 const isAndroidApp = !!(window.AndroidBridge || navigator.userAgent.indexOf('SIDAKTEJO-Android-AppShell') > -1);
                 
                 // If Android app and Android permission not granted, invoke bridge first

@@ -1602,6 +1602,7 @@
         }
         $networkTotals['ulp_count'] = count($seenNetworkUlps) ?: (!empty($selectedUlpId) ? 1 : count($ulpsList ?? []));
         $totalKonduktorKm = (float)$networkTotals['aaac_kms'] + (float)$networkTotals['aaacs_kms'] + (float)$networkTotals['mvtic_kms'] + (float)$networkTotals['xlpe_kms'];
+        $unassignedAssets = (int)($networkData['unassigned_assets'] ?? 0);
     ?>
     <div class="card dah-card shadow-sm border mb-4" id="networkSummaryModuleCard">
         <div class="card-header bg-white py-3 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
@@ -1663,14 +1664,21 @@
                 <div class="col-xl-3 col-md-6 col-12">
                     <div class="p-2.5 rounded-3 bg-white border h-100 d-flex align-items-center justify-content-around text-center">
                         <div>
-                            <div class="text-muted small fw-semibold" style="font-size: 11px;">Jumlah Penyulang</div>
+                            <div class="text-muted small fw-semibold" style="font-size: 11px;">Penyulang</div>
                             <div class="fs-4 fw-bold text-dark font-monospace lh-1 mt-1" id="netStatFeederCount"><?= number_format((int)$networkTotals['penyulang']) ?></div>
                         </div>
                         <div class="vr opacity-25"></div>
                         <div>
-                            <div class="text-muted small fw-semibold" style="font-size: 11px;">Jumlah Aset Jaringan</div>
-                            <div class="fs-4 fw-bold text-primary font-monospace lh-1 mt-1" id="netStatAssetCount"><?= number_format((int)$networkTotals['aset']) ?></div>
+                            <div class="text-muted small fw-semibold" style="font-size: 11px;">Aset Mapped</div>
+                            <div class="fs-4 fw-bold text-primary font-monospace lh-1 mt-1" id="netStatAssetCount" title="Aset tiang yang sudah terhubung ke penyulang spesifik"><?= number_format((int)$networkTotals['aset']) ?></div>
                         </div>
+                        <?php if ($unassignedAssets > 0): ?>
+                        <div class="vr opacity-25"></div>
+                        <div>
+                            <div class="text-warning-emphasis small fw-semibold" style="font-size: 11px;">Pool ULP</div>
+                            <div class="fs-4 fw-bold text-warning font-monospace lh-1 mt-1" id="netStatUnassignedCount" title="Aset tiang ULP yang belum terhubung foreign key penyulang (penyulang_id IS NULL)"><?= number_format($unassignedAssets) ?></div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <!-- Active Conductor Length Breakdown (AAAC, AAACS, MVTIC, XLPE) -->
@@ -1710,6 +1718,20 @@
                 </div>
             </div>
         </div>
+
+        <?php if ($unassignedAssets > 0): ?>
+        <div class="px-3 py-2 bg-light-subtle border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="small text-muted" style="font-size: 11px;">
+                <i class="fas fa-circle-info text-primary me-1"></i>
+                Total Master Aset UP3: <strong class="text-dark font-monospace"><?= number_format((int)$networkTotals['aset'] + $unassignedAssets) ?></strong> unit
+                (<strong class="text-primary font-monospace"><?= number_format((int)$networkTotals['aset']) ?></strong> unit terpetakan ke penyulang, 
+                <strong class="text-warning font-monospace"><?= number_format($unassignedAssets) ?></strong> unit pada pool ULP menanti relasi foreign key penyulang).
+            </div>
+            <a href="<?= site_url('api/audit-asset-integrity') ?>" target="_blank" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 10.5px;" title="Lihat hasil audit forensik aset">
+                <i class="fas fa-microscope me-1"></i>Audit Forensik Aset (Read-Only)
+            </a>
+        </div>
+        <?php endif; ?>
 
         <!-- Feeder Details Table -->
         <div class="card-body p-0">

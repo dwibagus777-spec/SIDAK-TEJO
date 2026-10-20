@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
     private var cameraImageUri: Uri? = null
     private var doubleBackToExitPressedOnce = false
+    private var pendingAudioPermissionRequest: PermissionRequest? = null
 
     private val TARGET_URL = "https://sidaktejo.site/dashboard"
 
@@ -47,6 +48,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         runOnUiThread {
+            if (audioGranted) {
+                pendingAudioPermissionRequest?.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
+            } else {
+                pendingAudioPermissionRequest?.deny()
+            }
+            pendingAudioPermissionRequest = null
+
             webView.evaluateJavascript(
                 "window.onAndroidPermissionResult && window.onAndroidPermissionResult('RECORD_AUDIO', $audioGranted);",
                 null
@@ -61,7 +69,12 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread {
             if (isGranted) {
                 Toast.makeText(this, "Izin Mikrofon Aktif", Toast.LENGTH_SHORT).show()
+                pendingAudioPermissionRequest?.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
+            } else {
+                pendingAudioPermissionRequest?.deny()
             }
+            pendingAudioPermissionRequest = null
+
             webView.evaluateJavascript(
                 "window.onAndroidPermissionResult && window.onAndroidPermissionResult('RECORD_AUDIO', $isGranted);",
                 null
@@ -176,24 +189,30 @@ class MainActivity : AppCompatActivity() {
                         }
 
                         val requestedResources = req.resources
-                        val granted = mutableListOf<String>()
-                        for (r in requestedResources) {
-                            if (r == PermissionRequest.RESOURCE_AUDIO_CAPTURE) {
-                                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                                    granted.add(r)
-                                } else {
-                                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                }
-                            }
-                            // Do not grant any other resource per security policy
-                        }
-                        if (granted.isNotEmpty()) {
-                            req.grant(granted.toTypedArray())
-                        } else {
+                        val hasAudioCapture = requestedResources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)
+
+                        if (!hasAudioCapture) {
                             req.deny()
+                            return@runOnUiThread
+                        }
+
+                        if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                            req.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
+                        } else {
+                            // Hold reference asynchronously without premature rejection
+                            pendingAudioPermissionRequest?.deny()
+                            pendingAudioPermissionRequest = req
+                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         }
                     }
                 }
+            }
+
+            override fun onPermissionRequestCanceled(request: PermissionRequest?) {
+                if (pendingAudioPermissionRequest == request) {
+                    pendingAudioPermissionRequest = null
+                }
+                super.onPermissionRequestCanceled(request)
             }
 
             // Native Android Camera & Image File Chooser for Uploads

@@ -21,7 +21,7 @@ class SecurityHeadersFilter implements FilterInterface
         $response->setHeader('X-XSS-Protection', '1; mode=block');
         $response->setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-        $response->setHeader('Permissions-Policy', 'geolocation=(self), camera=(self), microphone=()');
+        $response->setHeader('Permissions-Policy', 'geolocation=(self), camera=(self), microphone=(self)');
         $response->setHeader('Content-Security-Policy', "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';");
 
         // Selective Injection for AJAX and JSON Responses

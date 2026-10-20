@@ -473,7 +473,24 @@ class Dashboard extends BaseController
             $u['other_kms'] = round($u['other_kms'], 2);
         }
         unset($u);
-        $networkData = ['ulp_summary' => array_values($ulpAccum), 'feeders' => $networkFeeders, 'ulp_accum' => $ulpAccum];
+        // Calculate unassigned assets count (assets awaiting feeder mapping)
+        $unassignedBuilder = $db->table('assets')
+            ->where('deleted_at IS NULL')
+            ->groupStart()
+                ->where('penyulang_id IS NULL')
+                ->orWhere('penyulang_id', 0)
+            ->groupEnd();
+        if ($ulpIdFilter !== null) {
+            $unassignedBuilder->where('ulp_id', $ulpIdFilter);
+        }
+        $unassignedAssetCount = (int)$unassignedBuilder->countAllResults();
+
+        $networkData = [
+            'ulp_summary'       => array_values($ulpAccum),
+            'feeders'           => $networkFeeders,
+            'ulp_accum'         => $ulpAccum,
+            'unassigned_assets' => $unassignedAssetCount,
+        ];
 
         // Asset summary: total per jenis_asset for the dashboard header panel
         $assetSummaryRows = $db->query(

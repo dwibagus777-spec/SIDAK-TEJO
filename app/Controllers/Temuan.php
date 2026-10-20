@@ -322,13 +322,17 @@ class Temuan extends BaseController
         $accService = new \App\Services\JtmAccessoryService();
         $jtmAccessories = $accService->getActiveAccessories();
 
+        $txService = new \App\Services\MaterialTransactionService();
+        $bomMaterialsCatalog = $txService->getActiveBomCatalog();
+
         return view('temuan/create', [
-            'ulps'               => $ulps,
-            'defaultTanggal'     => $defaultTanggal,
-            'isValidationReturn' => $isValidationReturn,
-            'serverToday'        => $serverToday,
-            'preselectedAsset'   => $preselectedAsset,
-            'jtmAccessories'     => $jtmAccessories,
+            'ulps'                => $ulps,
+            'defaultTanggal'      => $defaultTanggal,
+            'isValidationReturn'  => $isValidationReturn,
+            'serverToday'         => $serverToday,
+            'preselectedAsset'    => $preselectedAsset,
+            'jtmAccessories'      => $jtmAccessories,
+            'bomMaterialsCatalog' => $bomMaterialsCatalog,
         ]);
     }
 
@@ -343,17 +347,20 @@ class Temuan extends BaseController
             : $this->ulpRepository->getActiveUlps();
 
         $serverToday = date('Y-m-d');
+        $txService = new \App\Services\MaterialTransactionService();
+        $bomMaterialsCatalog = $txService->getActiveBomCatalog();
 
         if (!$this->validate($this->getTemuanFormRules())) {
             log_message('error', '[TEMUAN_VALIDATION_ERRORS] ' . json_encode($this->validator->getErrors()));
             $defaultTanggal = $this->request->getPost('tanggal_temuan') ?: (old('tanggal_temuan') ?: $serverToday);
 
             return view('temuan/create', [
-                'ulps'               => $ulps,
-                'validation'         => $this->validator,
-                'defaultTanggal'     => $defaultTanggal,
-                'isValidationReturn' => true,
-                'serverToday'        => $serverToday,
+                'ulps'                => $ulps,
+                'validation'          => $this->validator,
+                'defaultTanggal'      => $defaultTanggal,
+                'isValidationReturn'  => true,
+                'serverToday'         => $serverToday,
+                'bomMaterialsCatalog' => $bomMaterialsCatalog,
             ]);
         }
 
@@ -362,11 +369,12 @@ class Temuan extends BaseController
         if ($tanggalTemuan > $serverToday) {
             $this->validator->setError('tanggal_temuan', 'Tanggal temuan tidak boleh melebihi tanggal hari ini (' . date('d/m/Y') . ').');
             return view('temuan/create', [
-                'ulps'               => $ulps,
-                'validation'         => $this->validator,
-                'defaultTanggal'     => $tanggalTemuan,
-                'isValidationReturn' => true,
-                'serverToday'        => $serverToday,
+                'ulps'                => $ulps,
+                'validation'          => $this->validator,
+                'defaultTanggal'      => $tanggalTemuan,
+                'isValidationReturn'  => true,
+                'serverToday'         => $serverToday,
+                'bomMaterialsCatalog' => $bomMaterialsCatalog,
             ]);
         }
 
@@ -380,26 +388,41 @@ class Temuan extends BaseController
             return redirect()->to(site_url('temuan/create'))->with('error', 'Anda hanya diizinkan menginput temuan untuk ULP Anda.');
         }
 
+        $conductorTypePost = strtoupper(trim((string)($this->request->getPost('conductor_type') ?? '')));
+        if (!in_array($conductorTypePost, ['AAAC', 'AAACS', 'MVTIC', 'XLPE'], true)) {
+            $conductorTypePost = null;
+        }
+        $conductorSizePost = preg_replace('/[^0-9]/', '', (string)($this->request->getPost('conductor_size') ?? ''));
+        if (!in_array($conductorSizePost, ['70', '110', '150', '240'], true)) {
+            $conductorSizePost = null;
+        }
+        $konduktorText = trim((string)($this->request->getPost('konduktor') ?? ''));
+        if ($conductorTypePost && $conductorSizePost && $konduktorText === '') {
+            $konduktorText = "{$conductorTypePost} {$conductorSizePost} mm²";
+        }
+
         $data = [
-            'ulp_id'           => $ulpIdInput,
-            'penyulang_id'     => (int)$this->request->getPost('penyulang_id'),
-            'section_id'       => (int)$this->request->getPost('section_id'),
-            'jenis_temuan'     => $this->request->getPost('jenis_temuan'),
-            'pelaksana'        => $this->request->getPost('pelaksana'),
-            'prioritas'        => $this->request->getPost('prioritas'),
-            'potensi_gangguan' => $this->request->getPost('potensi_gangguan'),
-            'konduktor'        => trim($this->request->getPost('konduktor')),
-            'noga'             => trim($this->request->getPost('noga')) ?: null,
-            'material'         => $materialInput,
-            'detail_temuan'    => trim($this->request->getPost('detail_temuan')),
-            'alamat'           => trim($this->request->getPost('alamat')),
-            'latitude'         => $this->request->getPost('latitude') !== '' ? (float)$this->request->getPost('latitude') : null,
-            'longitude'        => $this->request->getPost('longitude') !== '' ? (float)$this->request->getPost('longitude') : null,
-            'tanggal_temuan'   => $this->request->getPost('tanggal_temuan'),
+            'ulp_id'                => $ulpIdInput,
+            'penyulang_id'          => (int)$this->request->getPost('penyulang_id'),
+            'section_id'            => (int)$this->request->getPost('section_id'),
+            'jenis_temuan'          => $this->request->getPost('jenis_temuan'),
+            'finding_component_key' => trim((string)($this->request->getPost('finding_component_key') ?? '')) ?: null,
+            'pelaksana'             => $this->request->getPost('pelaksana'),
+            'prioritas'             => $this->request->getPost('prioritas'),
+            'potensi_gangguan'      => $this->request->getPost('potensi_gangguan'),
+            'konduktor'             => $konduktorText,
+            'conductor_type'        => $conductorTypePost,
+            'conductor_size'        => $conductorSizePost,
+            'noga'                  => trim($this->request->getPost('noga')) ?: null,
+            'material'              => $materialInput,
+            'detail_temuan'         => trim($this->request->getPost('detail_temuan')),
+            'alamat'                => trim($this->request->getPost('alamat')),
+            'latitude'              => $this->request->getPost('latitude') !== '' ? (float)$this->request->getPost('latitude') : null,
+            'longitude'             => $this->request->getPost('longitude') !== '' ? (float)$this->request->getPost('longitude') : null,
+            'tanggal_temuan'        => $this->request->getPost('tanggal_temuan'),
         ];
 
-        // MR-01 Governed Invariant: asset_id is OPTIONAL for Temuan persistence.
-        // Asset is ONLY REQUIRED when governed material is requested.
+        // MR-01 + Direct BOM Material Requirement Support (works with or without pole asset_id)
         $structuredJson = $this->request->getPost('structured_materials_json');
         $hasMaterialRequest = false;
         $structuredData = null;
@@ -421,11 +444,8 @@ class Temuan extends BaseController
         }
 
         // CR-GIS-FIX-01: Prioritize authoritative_asset_id (locked GIS asset) over dropdown.
-        // The asset dropdown (#mr01_asset_id) submits empty string when user hasn't interacted with it,
-        // but authoritative_asset_id is always set when coming from GIS asset context drawer.
         $rawAssetId       = trim((string)($this->request->getPost('asset_id') ?? ''));
         $rawAuthoritativeId = trim((string)($this->request->getPost('authoritative_asset_id') ?? ''));
-        // Use authoritative if dropdown is empty (e.g. GIS AJAX modal or pre-selected asset URL param)
         if ($rawAuthoritativeId !== '' && $rawAuthoritativeId !== '0') {
             $assetIdInput = $rawAuthoritativeId;
         } elseif ($rawAssetId !== '' && $rawAssetId !== '0') {
@@ -434,13 +454,6 @@ class Temuan extends BaseController
             $assetIdInput = '';
         }
         $assetId = ($assetIdInput !== '' && is_numeric($assetIdInput)) ? (int)$assetIdInput : null;
-
-        // INVARIANT 1: If material is requested, asset_id is strictly MANDATORY
-        if ($hasMaterialRequest) {
-            if ($assetId === null || $assetId <= 0) {
-                return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan wajib dipilih jika menambahkan material yang dibutuhkan.');
-            }
-        }
 
         // INVARIANT 2: If asset_id is provided, conditionally validate existence and topological compatibility
         if ($assetId !== null && $assetId > 0) {
@@ -502,12 +515,15 @@ class Temuan extends BaseController
                     log_message('error', '[TEMUAN_CREATE_AI_ANALYSIS] ' . $aiError->getMessage());
                 }
 
-                // MR-01 Phase 3B: Governed structured material transaction attachment
-                if ($hasMaterialRequest && $structuredData !== null && $assetId !== null) {
-                    $structuredData['temuan_id'] = (int)$insertedId;
-                    $structuredData['asset_id']  = (int)$assetId;
+                // MR-01 Phase 3B + Direct BOM Material Requirement persistence (with or without asset_id)
+                if ($hasMaterialRequest && $structuredData !== null) {
+                    $structuredData['temuan_id']      = (int)$insertedId;
+                    $structuredData['asset_id']       = $assetId;
+                    $structuredData['jenis_temuan']   = $data['jenis_temuan'] ?? 'KONSTRUKSI';
+                    $structuredData['conductor_type'] = $data['conductor_type'] ?? null;
+                    $structuredData['conductor_size'] = $data['conductor_size'] ?? null;
                     $txService = new \App\Services\MaterialTransactionService();
-                    $txResult = $txService->persistTransaction($structuredData, $session->get('user_id') ? (int)$session->get('user_id') : null);
+                    $txResult = $txService->persistDirectBomMaterials($structuredData, $session->get('user_id') ? (int)$session->get('user_id') : null);
                     if (($txResult['status'] ?? '') !== 'SUCCESS') {
                         log_message('error', '[MR01_TX_FAIL] Temuan #' . $insertedId . ': ' . ($txResult['message'] ?? 'Unknown error'));
                     }
@@ -822,11 +838,25 @@ class Temuan extends BaseController
         $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
         $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
 
+        $txService = new \App\Services\MaterialTransactionService();
+        $bomMaterialsCatalog = $txService->getActiveBomCatalog();
+        $db = \Config\Database::connect();
+        $existingStructuredMaterials = [];
+        if ($db->tableExists('temuan_materials')) {
+            $existingStructuredMaterials = $db->table('temuan_materials')
+                ->where('temuan_id', $id)
+                ->orderBy('id', 'ASC')
+                ->get()
+                ->getResultArray() ?: [];
+        }
+
         return view('temuan/edit', [
-            'temuan'    => $temuan,
-            'ulps'      => $ulps,
-            'penyulangs'=> $penyulangs,
-            'sections'  => $sections,
+            'temuan'                      => $temuan,
+            'ulps'                        => $ulps,
+            'penyulangs'                  => $penyulangs,
+            'sections'                    => $sections,
+            'bomMaterialsCatalog'         => $bomMaterialsCatalog,
+            'existingStructuredMaterials' => $existingStructuredMaterials,
         ]);
     }
 
@@ -846,6 +876,18 @@ class Temuan extends BaseController
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses.');
         }
 
+        $txService = new \App\Services\MaterialTransactionService();
+        $bomMaterialsCatalog = $txService->getActiveBomCatalog();
+        $db = \Config\Database::connect();
+        $existingStructuredMaterials = [];
+        if ($db->tableExists('temuan_materials')) {
+            $existingStructuredMaterials = $db->table('temuan_materials')
+                ->where('temuan_id', $id)
+                ->orderBy('id', 'ASC')
+                ->get()
+                ->getResultArray() ?: [];
+        }
+
         if (!$this->validate($this->getTemuanFormRules())) {
             $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
                 ? [$this->ulpRepository->find($userUlpId)]
@@ -855,11 +897,13 @@ class Temuan extends BaseController
             $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
 
             return view('temuan/edit', [
-                'temuan'     => $temuan,
-                'ulps'       => $ulps,
-                'penyulangs' => $penyulangs,
-                'sections'   => $sections,
-                'validation' => $this->validator
+                'temuan'                      => $temuan,
+                'ulps'                        => $ulps,
+                'penyulangs'                  => $penyulangs,
+                'sections'                    => $sections,
+                'bomMaterialsCatalog'         => $bomMaterialsCatalog,
+                'existingStructuredMaterials' => $existingStructuredMaterials,
+                'validation'                  => $this->validator
             ]);
         }
 
@@ -876,11 +920,13 @@ class Temuan extends BaseController
 
             $this->validator->setError('tanggal_temuan', 'Tanggal temuan tidak boleh melebihi tanggal hari ini (' . date('d/m/Y') . ').');
             return view('temuan/edit', [
-                'temuan'     => $temuan,
-                'ulps'       => $ulps,
-                'penyulangs' => $penyulangs,
-                'sections'   => $sections,
-                'validation' => $this->validator
+                'temuan'                      => $temuan,
+                'ulps'                        => $ulps,
+                'penyulangs'                  => $penyulangs,
+                'sections'                    => $sections,
+                'bomMaterialsCatalog'         => $bomMaterialsCatalog,
+                'existingStructuredMaterials' => $existingStructuredMaterials,
+                'validation'                  => $this->validator
             ]);
         }
 
@@ -894,29 +940,44 @@ class Temuan extends BaseController
             return redirect()->to(site_url("temuan/edit/{$id}"))->with('error', 'Anda hanya diizinkan memilih ULP Anda.');
         }
 
+        $conductorTypePost = strtoupper(trim((string)($this->request->getPost('conductor_type') ?? ($temuan['conductor_type'] ?? ''))));
+        if (!in_array($conductorTypePost, ['AAAC', 'AAACS', 'MVTIC', 'XLPE'], true)) {
+            $conductorTypePost = null;
+        }
+        $conductorSizePost = preg_replace('/[^0-9]/', '', (string)($this->request->getPost('conductor_size') ?? ($temuan['conductor_size'] ?? '')));
+        if (!in_array($conductorSizePost, ['70', '110', '150', '240'], true)) {
+            $conductorSizePost = null;
+        }
+        $konduktorText = trim((string)($this->request->getPost('konduktor') ?? ''));
+        if ($conductorTypePost && $conductorSizePost && $konduktorText === '') {
+            $konduktorText = "{$conductorTypePost} {$conductorSizePost} mm²";
+        }
+
         $data = [
-            'ulp_id'           => $ulpIdInput,
-            'penyulang_id'     => (int)$this->request->getPost('penyulang_id'),
-            'section_id'       => (int)$this->request->getPost('section_id'),
-            'jenis_temuan'     => $this->request->getPost('jenis_temuan'),
-            'pelaksana'        => $this->request->getPost('pelaksana'),
-            'prioritas'        => $this->request->getPost('prioritas'),
-            'potensi_gangguan' => $this->request->getPost('potensi_gangguan'),
-            'konduktor'        => trim($this->request->getPost('konduktor')),
-            'noga'             => trim($this->request->getPost('noga')) ?: null,
-            'material'         => $materialInput,
-            'detail_temuan'    => trim($this->request->getPost('detail_temuan')),
-            'alamat'           => trim($this->request->getPost('alamat')),
-            'latitude'         => $this->request->getPost('latitude') !== '' ? (float)$this->request->getPost('latitude') : null,
-            'longitude'        => $this->request->getPost('longitude') !== '' ? (float)$this->request->getPost('longitude') : null,
-            'tanggal_temuan'   => $this->request->getPost('tanggal_temuan'),
+            'ulp_id'                => $ulpIdInput,
+            'penyulang_id'          => (int)$this->request->getPost('penyulang_id'),
+            'section_id'            => (int)$this->request->getPost('section_id'),
+            'jenis_temuan'          => $this->request->getPost('jenis_temuan'),
+            'finding_component_key' => trim((string)($this->request->getPost('finding_component_key') ?? ($temuan['finding_component_key'] ?? ''))) ?: null,
+            'pelaksana'             => $this->request->getPost('pelaksana'),
+            'prioritas'             => $this->request->getPost('prioritas'),
+            'potensi_gangguan'      => $this->request->getPost('potensi_gangguan'),
+            'konduktor'             => $konduktorText,
+            'conductor_type'        => $conductorTypePost,
+            'conductor_size'        => $conductorSizePost,
+            'noga'                  => trim($this->request->getPost('noga')) ?: null,
+            'material'              => $materialInput,
+            'detail_temuan'         => trim($this->request->getPost('detail_temuan')),
+            'alamat'                => trim($this->request->getPost('alamat')),
+            'latitude'              => $this->request->getPost('latitude') !== '' ? (float)$this->request->getPost('latitude') : null,
+            'longitude'             => $this->request->getPost('longitude') !== '' ? (float)$this->request->getPost('longitude') : null,
+            'tanggal_temuan'        => $this->request->getPost('tanggal_temuan'),
         ];
 
         // CR-HOTFIX-02 Part B: Coordinate Invariant on Update
         $assetIdInput = $this->request->getPost('asset_id') ?: $this->request->getPost('authoritative_asset_id') ?: ($temuan['asset_id'] ?? null);
         $assetId = (!empty($assetIdInput) && is_numeric($assetIdInput)) ? (int)$assetIdInput : null;
         if ($assetId !== null && $assetId > 0) {
-            $db = \Config\Database::connect();
             if ($db->tableExists('assets')) {
                 $assetRow = $db->table('assets')->where('id', $assetId)->get()->getRowArray();
                 if ($assetRow) {
@@ -936,6 +997,19 @@ class Temuan extends BaseController
         $res = $this->temuanService->updateTemuan($id, $data, $newFiles, $replaceOld);
 
         if ($res['success']) {
+            $structuredJson = $this->request->getPost('structured_materials_json');
+            if (!empty($structuredJson)) {
+                $decoded = json_decode((string)$structuredJson, true);
+                if (is_array($decoded) && !empty($decoded['materials']) && is_array($decoded['materials'])) {
+                    $decoded['temuan_id']        = $id;
+                    $decoded['asset_id']         = $assetId;
+                    $decoded['jenis_temuan']     = $data['jenis_temuan'];
+                    $decoded['conductor_type']   = $conductorTypePost;
+                    $decoded['conductor_size']   = $conductorSizePost;
+                    $decoded['replace_existing'] = true;
+                    $txService->persistDirectBomMaterials($decoded, $session->get('user_id') ? (int)$session->get('user_id') : null);
+                }
+            }
             return redirect()->to(site_url('temuan/detail/' . $id))->with('success', $res['message']);
         }
 

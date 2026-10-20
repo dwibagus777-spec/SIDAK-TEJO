@@ -16,10 +16,12 @@ class TemuanModel extends Model
     protected $deletedField     = 'deleted_at';
 
     protected $allowedFields    = [
-        'nomor_temuan', 'ulp_id', 'penyulang_id', 'section_id', 
-        'jenis_temuan', 'pelaksana', 'prioritas', 'potensi_gangguan', 
-        'konduktor', 'noga', 'material', 'detail_temuan', 'alamat', 
-        'latitude', 'longitude', 'tanggal_temuan', 'tanggal_selesai', 
+        'nomor_temuan', 'ulp_id', 'penyulang_id', 'section_id',
+        'transline_id', 'asset_id', 'jenis_temuan', 'finding_component_key',
+        'pelaksana', 'prioritas', 'potensi_gangguan',
+        'konduktor', 'conductor_type', 'conductor_size',
+        'noga', 'material', 'detail_temuan', 'alamat', 'transline_snapshot',
+        'latitude', 'longitude', 'tanggal_temuan', 'tanggal_selesai',
         'foto', 'status', 'created_by', 'created_by_name', 'created_by_nip',
         'updated_by', 'updated_by_name', 'updated_by_nip',
         'foto_path', 'tindak_lanjut', 'catatan_tindak_lanjut'

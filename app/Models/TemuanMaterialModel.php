@@ -25,6 +25,8 @@ class TemuanMaterialModel extends Model
         'canonical_name_snapshot',
         'unit_snapshot',
         'quantity',
+        'conductor_type',
+        'conductor_size',
         'justification_note',
         'source_mode',
         'created_by',

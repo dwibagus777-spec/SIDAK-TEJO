@@ -233,23 +233,131 @@
                     </div>
 
                     <div class="row">
-                        <!-- Konduktor -->
-                        <div class="col-md-6 form-group mb-3">
-                            <label for="konduktor">Nama Konduktor <span class="text-danger">*</span></label>
-                            <input type="text" name="konduktor" id="konduktor" class="form-control <?= ($validation && $validation->hasError('konduktor')) ? 'is-invalid' : '' ?>" placeholder="Contoh: A3CS 150mm" value="<?= old('konduktor') ?>" required>
+                        <!-- Jenis Konduktor (AAAC / AAACS / MVTIC / XLPE) -->
+                        <div class="col-md-4 form-group mb-3">
+                            <label for="conductor_type">Jenis Konduktor <span class="text-danger">*</span></label>
+                            <?php $oldCondType = strtoupper(trim((string)old('conductor_type', ''))); ?>
+                            <select name="conductor_type" id="conductor_type" class="form-control select2" required>
+                                <option value="">-- Pilih Jenis Konduktor --</option>
+                                <option value="AAAC" <?= $oldCondType === 'AAAC' ? 'selected' : '' ?>>AAAC (Telanjang / Bare)</option>
+                                <option value="AAACS" <?= $oldCondType === 'AAACS' ? 'selected' : '' ?>>AAACS (Half Insulated / A3CS)</option>
+                                <option value="MVTIC" <?= $oldCondType === 'MVTIC' ? 'selected' : '' ?>>MVTIC (Twisted Insulated 20 kV)</option>
+                                <option value="XLPE" <?= $oldCondType === 'XLPE' ? 'selected' : '' ?>>XLPE (Kabel Tanah / Udara 20 kV)</option>
+                            </select>
+                            <small class="text-muted" style="font-size: 11px;">Pilih jenis konduktor terlebih dahulu untuk menampilkan ukuran penampang.</small>
+                        </div>
+
+                        <!-- Ukuran Konduktor (70 / 110 / 150 / 240 mm²) -->
+                        <div class="col-md-4 form-group mb-3">
+                            <label for="conductor_size">Ukuran Konduktor (mm²) <span class="text-danger">*</span></label>
+                            <?php $oldCondSize = preg_replace('/[^0-9]/', '', (string)old('conductor_size', '')); ?>
+                            <select name="conductor_size" id="conductor_size" class="form-control select2" required <?= $oldCondType === '' ? 'disabled' : '' ?>>
+                                <option value=""><?= $oldCondType === '' ? '-- Pilih Jenis Konduktor Dahulu --' : '-- Pilih Ukuran (mm²) --' ?></option>
+                                <option value="70" <?= $oldCondSize === '70' ? 'selected' : '' ?>>70 mm² (Tidak Standar &lt; 150 mm²)</option>
+                                <option value="110" <?= $oldCondSize === '110' ? 'selected' : '' ?>>110 mm² (Tidak Standar &lt; 150 mm²)</option>
+                                <option value="150" <?= $oldCondSize === '150' ? 'selected' : '' ?>>150 mm² (Standar JTM PLN)</option>
+                                <option value="240" <?= $oldCondSize === '240' ? 'selected' : '' ?>>240 mm² (Standar Feeder Utama / XLPE)</option>
+                            </select>
+                            <input type="hidden" name="konduktor" id="konduktor" value="<?= esc(old('konduktor')) ?>">
                             <?php if ($validation && $validation->hasError('konduktor')): ?>
-                                <div class="invalid-feedback"><?= $validation->getError('konduktor') ?></div>
+                                <div class="invalid-feedback d-block"><?= $validation->getError('konduktor') ?></div>
                             <?php endif; ?>
                         </div>
 
                         <!-- NOGA -->
-                        <div class="col-md-6 form-group mb-3">
+                        <div class="col-md-4 form-group mb-3">
                             <label for="noga">Nomor Gardu (NOGA)</label>
                             <input type="text" name="noga" id="noga" class="form-control <?= ($validation && $validation->hasError('noga')) ? 'is-invalid' : '' ?>" placeholder="Contoh: G.123 (Boleh kosong)" value="<?= old('noga') ?>">
                             <?php if ($validation && $validation->hasError('noga')): ?>
                                 <div class="invalid-feedback"><?= $validation->getError('noga') ?></div>
                             <?php endif; ?>
                         </div>
+                    </div>
+
+                    <!-- Direct Canonical BOM & Material Requirement Selector (Always Available) -->
+                    <?php
+                    $bomByGroup = [
+                        'CROSS_ARM_TRAVERS' => ['label' => 'Travers / Crossarm & Arm Tie', 'items' => []],
+                        'ISOLATOR'          => ['label' => 'Isolator Tumpu (Pin) & Tarik (Hang)', 'items' => []],
+                        'PROTECTION'        => ['label' => 'Proteksi (FCO / Cut Out & Arrester LA)', 'items' => []],
+                        'CONNECTOR_CLAMP'   => ['label' => 'Skun, Konektor, Line Tap & Strain Clamp', 'items' => []],
+                        'GROUNDING_ACC'     => ['label' => 'GSW, Grounding, Top Tie & Baut Konstruksi', 'items' => []],
+                        'KONDUKTOR'         => ['label' => 'Konduktor JTM (AAAC / AAACS / MVTIC / XLPE)', 'items' => []],
+                        'SWITCH_EQUIP'      => ['label' => 'Peralatan Switching (LBS / LBSM / PMCB / Recloser)', 'items' => []],
+                    ];
+                    foreach (($bomMaterialsCatalog ?? []) as $bm) {
+                        $cat = strtoupper((string)($bm['material_category'] ?? ''));
+                        if ($cat === 'CROSS_ARM_TRAVERS') {
+                            $bomByGroup['CROSS_ARM_TRAVERS']['items'][] = $bm;
+                        } elseif ($cat === 'ISOLATOR') {
+                            $bomByGroup['ISOLATOR']['items'][] = $bm;
+                        } elseif ($cat === 'PROTECTION' || $cat === 'MONITORING') {
+                            $bomByGroup['PROTECTION']['items'][] = $bm;
+                        } elseif (in_array($cat, ['CONNECTOR', 'CLAMP'], true)) {
+                            $bomByGroup['CONNECTOR_CLAMP']['items'][] = $bm;
+                        } elseif ($cat === 'KONDUKTOR') {
+                            $bomByGroup['KONDUKTOR']['items'][] = $bm;
+                        } elseif (in_array($cat, ['SWITCH', 'CONTROL', 'POWER', 'TRANSFORMER'], true)) {
+                            $bomByGroup['SWITCH_EQUIP']['items'][] = $bm;
+                        } else {
+                            $bomByGroup['GROUNDING_ACC']['items'][] = $bm;
+                        }
+                    }
+                    ?>
+                    <div class="form-group mb-4 p-3 rounded" id="direct-bom-selector-card" style="background-color: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 14px;">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 pb-2 border-bottom border-info-subtle">
+                            <div>
+                                <label class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
+                                    <i class="fas fa-clipboard-list text-primary me-2"></i> Klasifikasi Komponen & Kebutuhan Material BOM Standar PLN
+                                </label>
+                                <small class="text-muted d-block" style="font-size: 11px;">
+                                    Pilih komponen/material resmi dari katalog BOM (Armtie, Crossarm, Pin Isolator, Hang Isolator, FCO, Arrester, Skun, Konduktor, dll) beserta kuantitasnya.
+                                </small>
+                            </div>
+                            <span class="badge bg-primary text-white px-2 py-1" style="font-size: 11px;">
+                                <i class="fas fa-database me-1"></i> Terhubung Katalog BOM Resmi
+                            </span>
+                        </div>
+
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col-md-7">
+                                <label class="small fw-bold text-secondary mb-1">Pilih Material dari Katalog BOM PLN</label>
+                                <select id="direct_bom_material_select" class="form-control select2">
+                                    <option value="">-- Cari Kode / Nama Material BOM (misal: Arm Tie, Cross Arm, Pin, Hang, FCO, LA) --</option>
+                                    <?php foreach ($bomByGroup as $gKey => $grp): ?>
+                                        <?php if (!empty($grp['items'])): ?>
+                                            <optgroup label="<?= esc($grp['label']) ?>">
+                                                <?php foreach ($grp['items'] as $mItem): ?>
+                                                    <option value="<?= (int)$mItem['id'] ?>"
+                                                            data-code="<?= esc($mItem['material_code']) ?>"
+                                                            data-name="<?= esc($mItem['nama_material']) ?>"
+                                                            data-alias="<?= esc($mItem['nama_lapangan'] ?? '') ?>"
+                                                            data-unit="<?= esc($mItem['satuan'] ?? 'buah') ?>"
+                                                            data-category="<?= esc($mItem['material_category'] ?? '') ?>">
+                                                        [<?= esc($mItem['material_code']) ?>] <?= esc($mItem['nama_material']) ?><?= !empty($mItem['nama_lapangan']) ? ' (' . esc($mItem['nama_lapangan']) . ')' : '' ?> — (<?= esc($mItem['satuan'] ?? 'buah') ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </optgroup>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-3 col-7">
+                                <label class="small fw-bold text-secondary mb-1">Kuantitas</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" min="0.01" id="direct_bom_qty_input" class="form-control" value="1" placeholder="Qty">
+                                    <span class="input-group-text bg-white text-secondary small" id="direct_bom_unit_badge">buah</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-5">
+                                <button type="button" id="btn_add_direct_bom_item" class="btn btn-primary w-100 fw-bold">
+                                    <i class="fas fa-plus me-1"></i> Tambah
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="direct_bom_selected_list" class="mt-2"></div>
+                        <input type="hidden" name="finding_component_key" id="finding_component_key" value="<?= esc(old('finding_component_key')) ?>">
                     </div>
 
                     <!-- MR-01: Governed Material Requirement Section (Triggered by operator request) -->
@@ -1334,38 +1442,180 @@
             updateStructuredMaterialsJson();
         });
 
-        function updateStructuredMaterialsJson() {
-            const assetId = $('#mr01_asset_id').val();
-            if (!assetId || !isMaterialFlowActive) {
-                $('#structured_materials_json').val('');
-                $('#material-hidden-field').val('Tidak ada spesifikasi material');
+        // --- CASCADING KONDUKTOR (AAAC / AAACS / MVTIC / XLPE -> 70 / 110 / 150 / 240 mm²) & DIRECT BOM SELECTOR ---
+        const directBomItems = [];
+
+        function syncKonduktorField() {
+            const cType = ($('#conductor_type').val() || '').trim();
+            const cSize = ($('#conductor_size').val() || '').trim();
+            if (cType && cSize) {
+                $('#konduktor').val(cType + ' ' + cSize + ' mm²');
+            } else if (cType) {
+                $('#konduktor').val(cType);
+            } else {
+                $('#konduktor').val('');
+            }
+        }
+
+        $('#conductor_type').on('change', function() {
+            const cType = ($(this).val() || '').trim();
+            const $sizeSelect = $('#conductor_size');
+            if (!cType) {
+                $sizeSelect.val('').prop('disabled', true);
+            } else {
+                $sizeSelect.prop('disabled', false);
+                if (!$sizeSelect.val()) {
+                    $sizeSelect.val(cType === 'XLPE' ? '240' : '150');
+                }
+            }
+            refreshSelect2($sizeSelect);
+            syncKonduktorField();
+            updateStructuredMaterialsJson();
+        });
+
+        $('#conductor_size').on('change', function() {
+            syncKonduktorField();
+            updateStructuredMaterialsJson();
+        });
+
+        $('#direct_bom_material_select').on('change', function() {
+            const $opt = $(this).find('option:selected');
+            const unit = $opt.data('unit') || 'buah';
+            $('#direct_bom_unit_badge').text(unit);
+        });
+
+        function renderDirectBomSelectedList() {
+            const $list = $('#direct_bom_selected_list');
+            $list.empty();
+            if (directBomItems.length === 0) {
+                $list.html('<div class="small text-muted fst-italic py-1"><i class="fas fa-info-circle me-1"></i> Belum ada item material BOM yang dipilih.</div>');
+                updateStructuredMaterialsJson();
                 return;
             }
+            let html = '<div class="table-responsive"><table class="table table-sm table-bordered bg-white mb-0 align-middle" style="font-size:12px;">';
+            html += '<thead class="table-light"><tr><th>Kode BOM</th><th>Nama Material Standar PLN</th><th class="text-center" style="width:130px;">Kuantitas</th><th class="text-center" style="width:50px;">Aksi</th></tr></thead><tbody>';
+            directBomItems.forEach(function(it, idx) {
+                html += `<tr>
+                    <td><code class="fw-bold text-primary">${it.code}</code></td>
+                    <td><span class="fw-semibold text-dark">${it.name}</span> ${it.alias ? '<span class="text-muted small">(' + it.alias + ')</span>' : ''}</td>
+                    <td class="text-center">
+                        <div class="input-group input-group-sm">
+                            <input type="number" step="0.01" min="0.01" class="form-control text-center direct-bom-row-qty" data-idx="${idx}" value="${it.quantity}">
+                            <span class="input-group-text bg-light">${it.unit}</span>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger border-0 btn-remove-direct-bom" data-idx="${idx}" title="Hapus"><i class="fas fa-trash-can"></i></button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            $list.html(html);
+            updateStructuredMaterialsJson();
+        }
 
-            const materials = [];
+        $('#btn_add_direct_bom_item').on('click', function() {
+            const $sel = $('#direct_bom_material_select');
+            const matId = parseInt($sel.val() || '0', 10);
+            if (!matId) {
+                Toast.fire({ icon: 'warning', title: 'Pilih material dari katalog BOM terlebih dahulu.' });
+                return;
+            }
+            const $opt = $sel.find('option:selected');
+            const qty = parseFloat($('#direct_bom_qty_input').val() || '1');
+            if (isNaN(qty) || qty <= 0) {
+                Toast.fire({ icon: 'warning', title: 'Masukkan kuantitas lebih dari 0.' });
+                return;
+            }
+            const existingIdx = directBomItems.findIndex(x => x.material_id === matId);
+            if (existingIdx >= 0) {
+                directBomItems[existingIdx].quantity = parseFloat((directBomItems[existingIdx].quantity + qty).toFixed(2));
+            } else {
+                directBomItems.push({
+                    material_id: matId,
+                    code: $opt.data('code') || '',
+                    name: $opt.data('name') || '',
+                    alias: $opt.data('alias') || '',
+                    unit: $opt.data('unit') || 'buah',
+                    quantity: qty
+                });
+            }
+            $sel.val('');
+            refreshSelect2($sel);
+            $('#direct_bom_qty_input').val('1');
+            renderDirectBomSelectedList();
+        });
+
+        $(document).on('input', '.direct-bom-row-qty', function() {
+            const idx = parseInt($(this).data('idx'), 10);
+            const q = parseFloat($(this).val());
+            if (!isNaN(q) && q > 0 && directBomItems[idx]) {
+                directBomItems[idx].quantity = q;
+                updateStructuredMaterialsJson();
+            }
+        });
+
+        $(document).on('click', '.btn-remove-direct-bom', function() {
+            const idx = parseInt($(this).data('idx'), 10);
+            if (!isNaN(idx)) {
+                directBomItems.splice(idx, 1);
+                renderDirectBomSelectedList();
+            }
+        });
+
+        function updateStructuredMaterialsJson() {
+            const assetId = $('#mr01_asset_id').val();
+            const cType = ($('#conductor_type').val() || '').trim();
+            const cSize = ($('#conductor_size').val() || '').trim();
+            const materialsMap = new Map();
             const textSummaries = [];
 
-            $('.mr01-mat-check:checked').each(function() {
-                const matId = $(this).val();
-                const matName = $(this).data('name') || '';
-                const matUnit = $(this).data('unit') || '';
-                const qtyVal = $('#mat_qty_' + matId).val();
-                const qty = parseFloat(qtyVal);
-                const note = $('#mat_note_' + matId).val();
-
-                if (!isNaN(qty) && qty > 0) {
-                    materials.push({
-                        material_id: parseInt(matId),
-                        quantity: qty,
-                        justification_note: note && note.trim() ? note.trim() : null
+            // 1. Direct BOM items selected from catalog
+            directBomItems.forEach(function(it) {
+                if (it.quantity > 0) {
+                    materialsMap.set(it.material_id, {
+                        material_id: it.material_id,
+                        material_code: it.code,
+                        quantity: it.quantity,
+                        conductor_type: cType || null,
+                        conductor_size: cSize || null,
+                        justification_note: 'Pilihan katalog BOM form temuan'
                     });
-                    textSummaries.push(`${matName}: ${qty} ${matUnit}` + (note && note.trim() ? ` (${note.trim()})` : ''));
+                    textSummaries.push(`[${it.code}] ${it.name}: ${it.quantity} ${it.unit}`);
                 }
             });
 
+            // 2. MR-01 Asset BOM picker checked items
+            if (isMaterialFlowActive) {
+                $('.mr01-mat-check:checked').each(function() {
+                    const matId = parseInt($(this).val(), 10);
+                    const matName = $(this).data('name') || '';
+                    const matCode = $(this).data('code') || '';
+                    const matUnit = $(this).data('unit') || 'buah';
+                    const qtyVal = $('#mat_qty_' + matId).val();
+                    const qty = parseFloat(qtyVal);
+                    const note = $('#mat_note_' + matId).val();
+
+                    if (!isNaN(qty) && qty > 0) {
+                        materialsMap.set(matId, {
+                            material_id: matId,
+                            material_code: matCode,
+                            quantity: qty,
+                            conductor_type: cType || null,
+                            conductor_size: cSize || null,
+                            justification_note: note && note.trim() ? note.trim() : null
+                        });
+                        textSummaries.push(`${matName}: ${qty} ${matUnit}` + (note && note.trim() ? ` (${note.trim()})` : ''));
+                    }
+                });
+            }
+
+            const materials = Array.from(materialsMap.values());
             if (materials.length > 0) {
                 $('#structured_materials_json').val(JSON.stringify({
-                    asset_id: parseInt(assetId),
+                    asset_id: assetId ? parseInt(assetId, 10) : null,
+                    conductor_type: cType || null,
+                    conductor_size: cSize || null,
                     materials: materials
                 }));
                 $('#material-hidden-field').val(textSummaries.join(', '));
@@ -1374,6 +1624,9 @@
                 $('#material-hidden-field').val('Tidak ada spesifikasi material');
             }
         }
+
+        renderDirectBomSelectedList();
+        syncKonduktorField();
 
         // Dedicated ROW Fallback listener
         $('#jenis_temuan').on('change', function() {
@@ -1543,22 +1796,9 @@
                 return false;
             }
 
-            // If material flow is active and user checked materials:
+            // Validate that every checked MR-01 material has a valid quantity > 0
             const checkedMaterials = $('.mr01-mat-check:checked');
             if (isMaterialFlowActive && checkedMaterials.length > 0) {
-                const assetId = $('#mr01_asset_id').val();
-                if (!assetId) {
-                    e.preventDefault();
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Aset Jaringan Diperlukan',
-                        text: 'Pilih Aset Jaringan terlebih dahulu untuk menambahkan material konstruksi.',
-                        confirmButtonColor: '#005eb8'
-                    });
-                    return false;
-                }
-
-                // Validate that every checked material has a valid quantity > 0
                 let invalidQty = false;
                 checkedMaterials.each(function() {
                     const matId = $(this).val();
@@ -1582,12 +1822,9 @@
                     });
                     return false;
                 }
-            } else {
-                // If material flow is not active or 0 materials checked:
-                $('#structured_materials_json').val('');
-                $('#material-hidden-field').val('Tidak ada spesifikasi material');
             }
 
+            syncKonduktorField();
             // Sync structured materials JSON and summary
             updateStructuredMaterialsJson();
 

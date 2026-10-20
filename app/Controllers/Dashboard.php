@@ -215,47 +215,16 @@ class Dashboard extends BaseController
         }
         unset($f);
 
-        // Real YoY Interruption Stats (historical_feeder_interruptions)
-        // Use latest year with actual data — never hardcode calendar year
-        $maxYrRow = $db->table('historical_feeder_interruptions')
-            ->selectMax('YEAR(event_date)', 'max_yr')
-            ->where('event_date IS NOT NULL')
-            ->get()->getRowArray();
-        $curYear  = (!empty($maxYrRow['max_yr'])) ? (int)$maxYrRow['max_yr'] : (int)date('Y');
-        $lastYear = $curYear - 1;
-        // For comparing same period: use max month available in curYear
-        $maxMonthRow = $db->table('historical_feeder_interruptions')
-            ->selectMax('MONTH(event_date)', 'max_mo')
-            ->where('YEAR(event_date)', $curYear)
-            ->where('event_date IS NOT NULL')
-            ->get()->getRowArray();
-        $curMonth = (!empty($maxMonthRow['max_mo'])) ? (int)$maxMonthRow['max_mo'] : (int)date('n');
+        // Real YoY Interruption Stats via InterruptionModel (identical source & filter contract as /gangguan)
+        $interruptionModel = new \App\Models\InterruptionModel();
+        $availableInterruptionYears = $interruptionModel->getAvailableYears();
+        $curYear  = !empty($availableInterruptionYears) ? (int)$availableInterruptionYears[0] : (int)date('Y');
+        $lastYear = isset($availableInterruptionYears[1]) ? (int)$availableInterruptionYears[1] : ($curYear - 1);
 
-
-        $ggnCurQuery = $db->table('historical_feeder_interruptions')
-            ->where('YEAR(event_date)', $curYear)
-            ->where('MONTH(event_date) <=', $curMonth);
-        $ggnLastQuery = $db->table('historical_feeder_interruptions')
-            ->where('YEAR(event_date)', $lastYear)
-            ->where('MONTH(event_date) <=', $curMonth);
-
-        if ($ulpIdFilter !== null) {
-            $interruptionFields = $db->getFieldNames('historical_feeder_interruptions');
-            if (in_array('ulp_id', $interruptionFields, true)) {
-                $ggnCurQuery->where('ulp_id', $ulpIdFilter);
-                $ggnLastQuery->where('ulp_id', $ulpIdFilter);
-            } else {
-                $uRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
-                if ($uRow) {
-                    $cleanU = trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']));
-                    $ggnCurQuery->like('ulp_name', $cleanU);
-                    $ggnLastQuery->like('ulp_name', $cleanU);
-                }
-            }
-        }
-
-        $cntGgnCur = $ggnCurQuery->countAllResults();
-        $cntGgnLast = $ggnLastQuery->countAllResults();
+        $compPeriod = $interruptionModel->getComparablePeriod($curYear, $lastYear, $ulpIdFilter, null);
+        $compMonths = (int)($compPeriod['comparable_months'] ?? 12);
+        $cntGgnCur  = $interruptionModel->getTotalByYearUpToMonth($curYear, $compMonths, $ulpIdFilter, null);
+        $cntGgnLast = $interruptionModel->getTotalByYearUpToMonth($lastYear, $compMonths, $ulpIdFilter, null);
         $yoyPct = 0;
         $yoyText = 'Stabil';
         $yoyClass = 'text-muted';
@@ -276,13 +245,14 @@ class Dashboard extends BaseController
         }
 
         $gangguanStats = [
-            'current_ytd' => $cntGgnCur,
-            'last_ytd'    => $cntGgnLast,
-            'yoy_pct'     => $yoyPct,
-            'yoy_text'    => $yoyText,
-            'yoy_class'   => $yoyClass,
-            'year'        => $curYear,
-            'last_year'   => $lastYear,
+            'current_ytd'       => $cntGgnCur,
+            'last_ytd'          => $cntGgnLast,
+            'yoy_pct'           => $yoyPct,
+            'yoy_text'          => $yoyText,
+            'yoy_class'         => $yoyClass,
+            'year'              => $curYear,
+            'last_year'         => $lastYear,
+            'comparable_period' => $compPeriod['comparable_period'] ?? 'YTD',
         ];
 
         // Real Monthly Trend YoY / Comparison Calculation
@@ -504,54 +474,26 @@ class Dashboard extends BaseController
             'by_type'  => $assetByType,
         ];
 
-        // Cumulative gangguan per month (YoY multi-year series + selected year, respecting ULP filter consistently)
+        // Cumulative gangguan per month (YoY multi-year series + selected year, using InterruptionModel for 100% parity with /gangguan)
         $ulpWhereClause = "";
         if ($ulpIdFilter !== null) {
-            $uRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
-            $cleanU = $uRow ? $db->escapeLikeString(trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']))) : '';
             $interruptionFields = $db->getFieldNames('historical_feeder_interruptions');
-            $ulpConds = ["p.ulp_id = " . (int)$ulpIdFilter];
             if (in_array('ulp_id', $interruptionFields, true)) {
-                $ulpConds[] = "h.ulp_id = " . (int)$ulpIdFilter;
+                $ulpWhereClause = " AND h.ulp_id = " . (int)$ulpIdFilter;
+            } else {
+                $uRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
+                $cleanU = $uRow ? $db->escapeLikeString(trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']))) : '';
+                if ($cleanU !== '' && in_array('ulp_name', $interruptionFields, true)) {
+                    $ulpWhereClause = " AND h.ulp_name LIKE '%" . $cleanU . "%'";
+                } else {
+                    $ulpWhereClause = " AND p.ulp_id = " . (int)$ulpIdFilter;
+                }
             }
-            if ($cleanU !== '' && in_array('ulp_name', $interruptionFields, true)) {
-                $ulpConds[] = "h.ulp_name LIKE '%" . $cleanU . "%'";
-            }
-            $ulpWhereClause = " AND (" . implode(" OR ", $ulpConds) . ")";
         }
-
-        // Distinct years that actually exist in historical_feeder_interruptions
-        $ggnYearsRaw = $db->tableExists('historical_feeder_interruptions')
-            ? $db->query("SELECT DISTINCT YEAR(event_date) AS yr FROM historical_feeder_interruptions WHERE event_date IS NOT NULL ORDER BY yr DESC")->getResultArray()
-            : [];
-        $availableInterruptionYears = array_values(array_unique(array_filter(array_map(static fn($r) => (int)($r['yr'] ?? 0), $ggnYearsRaw))));
-        rsort($availableInterruptionYears);
-
-        // All available years in historical_feeder_interruptions (union with availableTrendYears for full awareness)
-        $ggnAllMonthlyRaw = $db->tableExists('historical_feeder_interruptions')
-            ? $db->query(
-                "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo, COUNT(h.id) cnt
-                 FROM historical_feeder_interruptions h
-                 LEFT JOIN penyulang p ON UPPER(TRIM(p.nama_penyulang)) = UPPER(TRIM(h.feeder_name))
-                 WHERE h.event_date IS NOT NULL" . $ulpWhereClause . "
-                 GROUP BY YEAR(h.event_date), MONTH(h.event_date)
-                 ORDER BY yr DESC, mo ASC"
-            )->getResultArray()
-            : [];
 
         $monthlyByYear = [];
         foreach ($availableInterruptionYears as $yr) {
-            $monthlyByYear[(int)$yr] = array_fill(1, 12, 0);
-        }
-        foreach ($ggnAllMonthlyRaw as $row) {
-            $yr = (int)$row['yr'];
-            $mo = (int)$row['mo'];
-            if ($yr > 0 && $mo >= 1 && $mo <= 12) {
-                if (!isset($monthlyByYear[$yr])) {
-                    $monthlyByYear[$yr] = array_fill(1, 12, 0);
-                }
-                $monthlyByYear[$yr][$mo] = (int)$row['cnt'];
-            }
+            $monthlyByYear[(int)$yr] = $interruptionModel->getMonthlyByYear((int)$yr, $ulpIdFilter, null);
         }
         krsort($monthlyByYear);
 
@@ -563,14 +505,13 @@ class Dashboard extends BaseController
                 $runSum += (int)($monthsArr[$m] ?? 0);
                 $cumArr[$m] = $runSum;
             }
-            // Only include years that actually have historical interruption records in the YoY chart/badges
             if ($runSum > 0 || in_array((int)$yr, $availableInterruptionYears, true)) {
                 $cumulativeGangguanYoY[(int)$yr] = [
-                    'year'          => (int)$yr,
-                    'total'         => (int)$runSum,
-                    'has_source'    => in_array((int)$yr, $availableInterruptionYears, true),
-                    'monthly'       => array_values($monthsArr),
-                    'cumulative'    => array_values($cumArr),
+                    'year'       => (int)$yr,
+                    'total'      => (int)$runSum,
+                    'has_source' => in_array((int)$yr, $availableInterruptionYears, true),
+                    'monthly'    => array_values($monthsArr),
+                    'cumulative' => array_values($cumArr),
                 ];
             }
         }
@@ -669,16 +610,8 @@ class Dashboard extends BaseController
             ];
         }
 
-        // Top 10 feeders by interruption count for trend year
-        $topFeedersGangguanRows = $db->query(
-            "SELECT h.feeder_name, p.id penyulang_id, p.nama_penyulang, u.nama_ulp, COUNT(h.id) cnt
-             FROM historical_feeder_interruptions h
-             LEFT JOIN penyulang p ON UPPER(TRIM(p.nama_penyulang)) = UPPER(TRIM(h.feeder_name))
-             LEFT JOIN ulps u ON p.ulp_id = u.id
-             WHERE h.event_date IS NOT NULL AND YEAR(h.event_date) = " . (int)$trendYear
-            . $ulpWhereClause
-            . " GROUP BY h.feeder_name, p.id, p.nama_penyulang, u.nama_ulp ORDER BY cnt DESC LIMIT 10"
-        )->getResultArray();
+        // Top 10 feeders by interruption count for trend year (via InterruptionModel for parity with /gangguan)
+        $topFeedersGangguanRows = $interruptionModel->getTop10ByYear((int)$trendYear, $ulpIdFilter, 10);
 
         // Top 10 feeders by active inspection findings with pelaksana breakdown
         $temuanByPenyulangRaw = $db->query(
@@ -702,7 +635,130 @@ class Dashboard extends BaseController
             'har_row'       => (int)$r['har_row'],
         ], $temuanByPenyulangRaw);
 
-        // Captive coating summary + per-feeder operational breakdown (AAAC only)
+        // Tabel Temuan dan Kebutuhan Material (BOM) per GI, ULP, Penyulang, Section + Standar BOM Konstruksi
+        $temuanMaterialMatrix = [
+            'rows'             => [],
+            'summary_by_mat'   => [],
+            'bom_constructions'=> [],
+            'gis_list'         => [],
+            'total_temuan'     => 0,
+            'total_items_qty'  => 0.0,
+        ];
+        if ($db->tableExists('temuan') && $db->tableExists('temuan_materials')) {
+            $tmRowsSql = "
+                SELECT
+                    t.penyulang_id,
+                    COALESCE(p.nama_penyulang, '-') AS nama_penyulang,
+                    t.section_id,
+                    COALESCE(s.nama_section, '-') AS nama_section,
+                    t.ulp_id,
+                    COALESCE(u.nama_ulp, '-') AS nama_ulp,
+                    COALESCE(gi.nama_gi, '-') AS nama_gi,
+                    COALESCE(NULLIF(TRIM(t.conductor_type), ''), 'AAAC') AS conductor_type,
+                    COALESCE(NULLIF(TRIM(t.conductor_size), ''), '150') AS conductor_size,
+                    COUNT(DISTINCT t.id) AS total_temuan,
+                    SUM(CASE WHEN tm.canonical_code_snapshot = 'CANON-HDW-003' THEN tm.quantity ELSE 0 END) AS qty_armtie,
+                    SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-001', 'CANON-HDW-013', 'CANON-HDW-014', 'CANON-HDW-019') THEN tm.quantity ELSE 0 END) AS qty_crossarm,
+                    SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-001', 'CANON-ACC-010', 'CANON-ACC-011', 'CANON-ACC-012') THEN tm.quantity ELSE 0 END) AS qty_pin_isolator,
+                    SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-004', 'CANON-HDW-007', 'CANON-HDW-010') THEN tm.quantity ELSE 0 END) AS qty_hang_isolator,
+                    SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-003', 'MAT-PROT-FCO-LAT') THEN tm.quantity ELSE 0 END) AS qty_fco,
+                    SUM(CASE WHEN tm.canonical_code_snapshot = 'CANON-MAT-002' THEN tm.quantity ELSE 0 END) AS qty_arrester,
+                    SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-023', 'CANON-HDW-024', 'CANON-HDW-025') THEN tm.quantity ELSE 0 END) AS qty_skun_konektor,
+                    SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-015', 'CANON-HDW-016', 'CANON-HDW-022') THEN tm.quantity ELSE 0 END) AS qty_gsw_ground,
+                    SUM(CASE WHEN tm.canonical_code_snapshot LIKE 'MAT-COND-%' THEN tm.quantity ELSE 0 END) AS qty_konduktor_m,
+                    GROUP_CONCAT(DISTINCT CONCAT(tm.canonical_code_snapshot, ' (', ROUND(tm.quantity, 0), ' ', tm.unit_snapshot, ')') SEPARATOR ', ') AS rincian_material
+                FROM temuan t
+                LEFT JOIN temuan_materials tm ON tm.temuan_id = t.id
+                LEFT JOIN penyulang p ON p.id = t.penyulang_id
+                LEFT JOIN sections s ON s.id = t.section_id
+                LEFT JOIN ulps u ON u.id = t.ulp_id
+                LEFT JOIN gardu_induk gi ON gi.id = p.gi_id
+                WHERE t.deleted_at IS NULL
+                " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
+                GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp, gi.nama_gi, conductor_type, conductor_size
+                ORDER BY total_temuan DESC, p.nama_penyulang ASC, s.nama_section ASC
+            ";
+            $tmMatrixRows = $db->query($tmRowsSql)->getResultArray();
+            $gisSet = [];
+            foreach ($tmMatrixRows as &$tmr) {
+                $fKey = strtoupper(trim((string)$tmr['nama_penyulang']));
+                if (($tmr['nama_gi'] === '-' || empty($tmr['nama_gi'])) && isset($giByFeeder[$fKey])) {
+                    $tmr['nama_gi'] = $giByFeeder[$fKey];
+                }
+                if ($tmr['nama_gi'] !== '-' && !empty($tmr['nama_gi'])) {
+                    $gisSet[$tmr['nama_gi']] = true;
+                }
+                $tmr['total_temuan']      = (int)$tmr['total_temuan'];
+                $tmr['qty_armtie']        = (float)$tmr['qty_armtie'];
+                $tmr['qty_crossarm']      = (float)$tmr['qty_crossarm'];
+                $tmr['qty_pin_isolator']  = (float)$tmr['qty_pin_isolator'];
+                $tmr['qty_hang_isolator'] = (float)$tmr['qty_hang_isolator'];
+                $tmr['qty_fco']           = (float)$tmr['qty_fco'];
+                $tmr['qty_arrester']      = (float)$tmr['qty_arrester'];
+                $tmr['qty_skun_konektor'] = (float)$tmr['qty_skun_konektor'];
+                $tmr['qty_gsw_ground']    = (float)$tmr['qty_gsw_ground'];
+                $tmr['qty_konduktor_m']   = (float)$tmr['qty_konduktor_m'];
+                $temuanMaterialMatrix['total_temuan'] += $tmr['total_temuan'];
+            }
+            unset($tmr);
+            $temuanMaterialMatrix['rows'] = $tmMatrixRows;
+            $temuanMaterialMatrix['gis_list'] = array_keys($gisSet);
+            sort($temuanMaterialMatrix['gis_list']);
+
+            // Aggregate totals by canonical BOM material code
+            $matRecapRows = $db->query("
+                SELECT
+                    tm.canonical_code_snapshot AS material_code,
+                    tm.canonical_name_snapshot AS nama_material,
+                    tm.unit_snapshot AS satuan,
+                    COALESCE(mm.nama_lapangan, tm.canonical_name_snapshot) AS nama_lapangan,
+                    COALESCE(mm.material_category, 'HARDWARE') AS material_category,
+                    COUNT(DISTINCT tm.temuan_id) AS temuan_count,
+                    SUM(tm.quantity) AS total_qty
+                FROM temuan_materials tm
+                INNER JOIN temuan t ON t.id = tm.temuan_id AND t.deleted_at IS NULL
+                LEFT JOIN master_materials mm ON mm.id = tm.material_id
+                WHERE 1=1
+                " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
+                GROUP BY tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot, mm.nama_lapangan, mm.material_category
+                ORDER BY total_qty DESC
+            ")->getResultArray();
+            $temuanMaterialMatrix['summary_by_mat'] = $matRecapRows;
+        }
+
+        if ($db->tableExists('construction_types') && $db->tableExists('construction_bom_items')) {
+            $bomCtRows = $db->query("
+                SELECT ct.id, ct.code, ct.name,
+                       b.material_id, m.material_code, b.raw_material_name, b.material_alias, b.quantity, b.unit, b.component_category
+                FROM construction_types ct
+                INNER JOIN construction_bom_items b ON b.construction_type_id = ct.id
+                LEFT JOIN master_materials m ON m.id = b.material_id
+                WHERE ct.is_active = 1
+                ORDER BY ct.sort_order ASC, ct.id ASC, b.sort_order ASC, b.id ASC
+            ")->getResultArray();
+            $groupedBomCt = [];
+            foreach ($bomCtRows as $bcr) {
+                $cCode = (string)$bcr['code'];
+                if (!isset($groupedBomCt[$cCode])) {
+                    $groupedBomCt[$cCode] = [
+                        'code'  => $cCode,
+                        'name'  => (string)$bcr['name'],
+                        'items' => [],
+                    ];
+                }
+                $groupedBomCt[$cCode]['items'][] = [
+                    'material_code' => (string)($bcr['material_code'] ?? '-'),
+                    'name'          => (string)$bcr['raw_material_name'],
+                    'alias'         => (string)($bcr['material_alias'] ?? ''),
+                    'quantity'      => (float)$bcr['quantity'],
+                    'unit'          => (string)($bcr['unit'] ?: 'buah'),
+                    'category'      => (string)($bcr['component_category'] ?? ''),
+                ];
+            }
+            $temuanMaterialMatrix['bom_constructions'] = array_values($groupedBomCt);
+        }
+
+        // Captive coating summary + Konduktor Tidak Standar (< 150 mm²: 70 & 110 mm² vs Standar 150 & 240 mm²)
         $coatingSummary = [
             'total_titik'     => 0,
             'total_meter'     => 0.0,
@@ -711,6 +767,15 @@ class Dashboard extends BaseController
             'aaac_pool_spans' => 0,
             'aaac_pool_kms'   => 0.0,
             'aaac_top_feeders'=> [],
+            'non_std_titik'   => 0,
+            'non_std_meter'   => 0.0,
+            'non_std_rows'    => [],
+            'size_recap'      => [
+                '70'  => ['spans' => 0, 'kms' => 0.0, 'temuan_cnt' => 0, 'is_standard' => false],
+                '110' => ['spans' => 0, 'kms' => 0.0, 'temuan_cnt' => 0, 'is_standard' => false],
+                '150' => ['spans' => 0, 'kms' => 0.0, 'temuan_cnt' => 0, 'is_standard' => true],
+                '240' => ['spans' => 0, 'kms' => 0.0, 'temuan_cnt' => 0, 'is_standard' => true],
+            ],
         ];
         if ($db->tableExists('captive_non_penugasan')) {
             $coatingWhere = "c.jenis = 'COATING' AND c.status = 'POTENSI' AND c.deleted_at IS NULL"
@@ -752,6 +817,66 @@ class Dashboard extends BaseController
             $coatingSummary['total_meter']     = $totMeter;
             $coatingSummary['total_penyulang'] = count($coatingByFeederRows);
             $coatingSummary['by_feeder']       = $coatingByFeederRows;
+
+            // Non-standard conductor (< 150 mm² / KONDUKTOR) candidates from captive_non_penugasan
+            $nonStdWhere = "c.jenis != 'COATING' AND c.status = 'POTENSI' AND c.deleted_at IS NULL";
+            if ($ulpIdFilter !== null) {
+                $nonStdWhere .= " AND c.ulp_id = " . (int)$ulpIdFilter;
+            }
+            $nonStdCaptiveRows = $db->query(
+                "SELECT c.penyulang_id,
+                        COALESCE(p.nama_penyulang, '-') AS nama_penyulang,
+                        COALESCE(u.nama_ulp, '-') AS nama_ulp,
+                        COALESCE(c.conductor_type, 'AAAC') AS conductor_type,
+                        COALESCE(c.conductor_size, '70 mm²') AS conductor_size,
+                        COALESCE(c.target_conductor_size, '150 mm²') AS target_conductor_size,
+                        COUNT(c.id) AS total_titik,
+                        SUM(COALESCE(c.distance_meters, 0)) AS total_meter
+                 FROM captive_non_penugasan c
+                 LEFT JOIN penyulang p ON p.id = c.penyulang_id
+                 LEFT JOIN ulps u ON u.id = COALESCE(c.ulp_id, p.ulp_id)
+                 WHERE " . $nonStdWhere . "
+                 GROUP BY c.penyulang_id, p.nama_penyulang, u.nama_ulp, c.conductor_type, c.conductor_size, c.target_conductor_size
+                 ORDER BY total_meter DESC"
+            )->getResultArray();
+            foreach ($nonStdCaptiveRows as $nsr) {
+                $coatingSummary['non_std_titik'] += (int)$nsr['total_titik'];
+                $coatingSummary['non_std_meter'] += (float)$nsr['total_meter'];
+                $coatingSummary['non_std_rows'][] = $nsr;
+            }
+        }
+        // Populate size_recap from gis_translines & temuan
+        if ($db->tableExists('gis_translines')) {
+            $tlSizeSql = "
+                SELECT gt.conductor_size, COUNT(gt.id) AS spans, SUM(COALESCE(gt.distance_meters, 0))/1000 AS kms
+                FROM gis_translines gt
+                LEFT JOIN penyulang p ON p.id = gt.penyulang_id
+                WHERE (gt.status = 'ACTIVE' OR gt.is_active = 1) AND gt.deleted_at IS NULL
+                " . ($ulpIdFilter !== null ? " AND p.ulp_id = " . (int)$ulpIdFilter : "") . "
+                GROUP BY gt.conductor_size
+            ";
+            foreach ($db->query($tlSizeSql)->getResultArray() as $tsr) {
+                $sz = preg_replace('/[^0-9]/', '', (string)($tsr['conductor_size'] ?? '150'));
+                if (isset($coatingSummary['size_recap'][$sz])) {
+                    $coatingSummary['size_recap'][$sz]['spans'] += (int)$tsr['spans'];
+                    $coatingSummary['size_recap'][$sz]['kms']   = round($coatingSummary['size_recap'][$sz]['kms'] + (float)$tsr['kms'], 2);
+                }
+            }
+        }
+        if ($db->tableExists('temuan')) {
+            $tmSizeSql = "
+                SELECT COALESCE(NULLIF(TRIM(conductor_size), ''), '150') AS sz, COUNT(id) AS cnt
+                FROM temuan
+                WHERE deleted_at IS NULL
+                " . ($ulpIdFilter !== null ? " AND ulp_id = " . (int)$ulpIdFilter : "") . "
+                GROUP BY sz
+            ";
+            foreach ($db->query($tmSizeSql)->getResultArray() as $tmsr) {
+                $sz = preg_replace('/[^0-9]/', '', (string)$tmsr['sz']);
+                if (isset($coatingSummary['size_recap'][$sz])) {
+                    $coatingSummary['size_recap'][$sz]['temuan_cnt'] += (int)$tmsr['cnt'];
+                }
+            }
         }
         // Calculate total eligible AAAC pool from gis_translines (respecting ULP filter)
         foreach ($networkFeeders as $nf) {
@@ -805,6 +930,7 @@ class Dashboard extends BaseController
             'causeBreakdownByYear'       => $causeBreakdownByYear,
             'topFeedersGangguan'    => $topFeedersGangguanRows,
             'topInspeksiPenyulang'  => $topInspeksiPenyulang,
+            'temuanMaterialMatrix'  => $temuanMaterialMatrix,
             'coatingSummary'        => $coatingSummary,
         ];
 

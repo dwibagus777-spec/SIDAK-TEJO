@@ -253,8 +253,8 @@
         color: #f1f5f9 !important;
     }
     .dah-cum-card {
-        height: 310px !important;
-        max-height: 320px !important;
+        height: 335px !important;
+        max-height: 345px !important;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -262,29 +262,29 @@
     .dah-cum-chart-box {
         position: relative !important;
         width: 100% !important;
-        height: 225px !important;
-        max-height: 225px !important;
-        flex: 0 0 225px !important;
+        height: 255px !important;
+        max-height: 255px !important;
+        flex: 0 0 255px !important;
         overflow: hidden;
     }
     .dah-cum-chart-box canvas {
         display: block;
         width: 100% !important;
         height: 100% !important;
-        max-height: 225px !important;
+        max-height: 255px !important;
     }
     @media (max-width: 767.98px) {
         .dah-cum-card {
-            height: 260px !important;
-            max-height: 270px !important;
+            height: 280px !important;
+            max-height: 290px !important;
         }
         .dah-cum-chart-box {
-            height: 180px !important;
-            max-height: 180px !important;
-            flex: 0 0 180px !important;
+            height: 200px !important;
+            max-height: 200px !important;
+            flex: 0 0 200px !important;
         }
         .dah-cum-chart-box canvas {
-            max-height: 180px !important;
+            max-height: 200px !important;
         }
     }
 </style>
@@ -981,18 +981,458 @@
     </div>
 
 
-        <!-- 6. ANALISIS KEANDALAN GANGGUAN & TEMUAN INSPEKSI -->
-    <div class="row g-3 mb-4 align-items-start">
-        <!-- Kolom Kiri: Modul Gangguan (Penyulang Terbanyak + Tepat di bawahnya Gangguan Kumulatif) -->
-        <div class="col-lg-6 col-12 d-flex flex-column gap-3">
-            <!-- 6A. Penyulang Gangguan Terbanyak -->
-            <div class="card dah-card shadow-sm border">
+        <!-- 6. ANALISIS TEMUAN INSPEKSI, KEBUTUHAN MATERIAL BOM, & EVALUASI GANGGUAN -->
+    <!-- 6A. Penyulang Temuan Inspeksi Terbanyak -->
+    <div class="card dah-card shadow-sm border mb-3">
+        <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-info-subtle text-info p-2 rounded-2"><i class="fas fa-clipboard-list"></i></span>
+                <div>
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 13.5px;">Penyulang Temuan Inspeksi Terbanyak</h6>
+                    <small class="text-muted" style="font-size: 11px;">Rincian pelaksana temuan aktif (PDKB, HAR Gardu, HAR ROW) &bull; Klik baris untuk sorot peta GIS</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1 small">
+                    <?= count($topInspeksiPenyulang ?? []) ?> Penyulang
+                </span>
+                <a href="<?= site_url('temuan') ?>" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 11px;">
+                    Semua Temuan <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+                    <thead class="table-light sticky-top" style="font-size: 11px; text-transform: uppercase;">
+                        <tr>
+                            <th style="width: 40px;" class="text-center">#</th>
+                            <th>Penyulang</th>
+                            <th class="text-end" style="width: 110px;" title="Temuan PDKB">PDKB</th>
+                            <th class="text-end" style="width: 110px;" title="Temuan HAR Gardu">HAR Gardu</th>
+                            <th class="text-end" style="width: 110px;" title="Temuan HAR ROW">HAR ROW</th>
+                            <th class="text-end" style="width: 110px;" title="Total Temuan Aktif">Total Temuan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach (($topInspeksiPenyulang ?? []) as $rank => $row): ?>
+                        <tr style="cursor: pointer;" onclick="highlightFeederOnMap(<?= (int)$row['penyulang_id'] ?>, '<?= esc(addslashes($row['nama_penyulang'] ?? '')) ?>')" title="Klik untuk fokus ke titik penyulang di GIS Map">
+                            <td class="text-center text-muted fw-bold"><?= $rank + 1 ?></td>
+                            <td>
+                                <span class="fw-semibold text-dark"><?= esc($row['nama_penyulang'] ?? '-') ?></span>
+                                <span class="text-muted ms-2" style="font-size: 10px;"><i class="fas fa-location-dot text-primary me-1"></i>Lihat di GIS</span>
+                            </td>
+                            <td class="text-end"><span class="badge bg-light text-dark border font-monospace"><?= (int)($row['pdkb'] ?? 0) ?></span></td>
+                            <td class="text-end"><span class="badge bg-light text-dark border font-monospace"><?= (int)($row['har_gardu'] ?? 0) ?></span></td>
+                            <td class="text-end"><span class="badge bg-light text-dark border font-monospace"><?= (int)($row['har_row'] ?? 0) ?></span></td>
+                            <td class="text-end fw-bold text-info font-monospace fs-6"><?= (int)($row['total'] ?? 0) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php if (empty($topInspeksiPenyulang)): ?>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4 small">Tidak ada data temuan inspeksi aktif.</td>
+                        </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6B. TABEL TEMUAN DAN KEBUTUHAN MATERIAL (TEPAT DI BAWAH PENYULANG TEMUAN INSPEKSI TERBANYAK) -->
+    <?php
+        $bomMatrixRows      = $temuanMaterialMatrix['rows'] ?? [];
+        $bomSummaryByMat    = $temuanMaterialMatrix['summary_by_mat'] ?? [];
+        $bomConstructions   = $temuanMaterialMatrix['bom_constructions'] ?? [];
+        $bomGisList         = $temuanMaterialMatrix['gis_list'] ?? [];
+        $bomCondTypes       = $temuanMaterialMatrix['conductor_types'] ?? ['AAAC', 'AAACS', 'MVTIC', 'XLPE'];
+        $bomCondSizes       = $temuanMaterialMatrix['conductor_sizes'] ?? ['70', '110', '150', '240'];
+
+        $totMatTemuan   = 0;
+        $totMatArmtie   = 0.0;
+        $totMatCrossarm = 0.0;
+        $totMatPinIso   = 0.0;
+        $totMatHangIso  = 0.0;
+        $totMatFco      = 0.0;
+        $totMatArrester = 0.0;
+        $totMatSkun     = 0.0;
+        $totMatGsw      = 0.0;
+        $totMatCondM    = 0.0;
+        foreach ($bomMatrixRows as $bmRow) {
+            $totMatTemuan   += (int)($bmRow['total_temuan'] ?? $bmRow['temuan_count'] ?? 0);
+            $totMatArmtie   += (float)($bmRow['qty_armtie'] ?? 0);
+            $totMatCrossarm += (float)($bmRow['qty_crossarm'] ?? 0);
+            $totMatPinIso   += (float)($bmRow['qty_pin_isolator'] ?? 0);
+            $totMatHangIso  += (float)($bmRow['qty_hang_isolator'] ?? 0);
+            $totMatFco      += (float)($bmRow['qty_fco'] ?? 0);
+            $totMatArrester += (float)($bmRow['qty_arrester'] ?? 0);
+            $totMatSkun     += (float)($bmRow['qty_skun_konektor'] ?? 0);
+            $totMatGsw      += (float)($bmRow['qty_gsw_ground'] ?? 0);
+            $totMatCondM    += (float)($bmRow['qty_konduktor_m'] ?? 0);
+        }
+    ?>
+    <div class="card dah-card shadow-sm border mb-4" id="temuanMaterialBomCard">
+        <div class="card-header bg-white py-3 px-3 border-bottom">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary-subtle text-primary p-2 rounded-2"><i class="fas fa-boxes-stacked fs-5"></i></span>
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0" style="font-size: 14px;">Tabel Temuan dan Kebutuhan Material (Standar BOM Konstruksi PLN)</h5>
+                        <div class="small text-muted" style="font-size: 11px;">
+                            Rekapitulasi temuan per GI, ULP, Penyulang, Section, Spesifikasi Konduktor (<code>AAAC</code>, <code>AAACS</code>, <code>MVTIC</code>, <code>XLPE</code> &bull; <code>70</code>, <code>110</code>, <code>150</code>, <code>240 mm²</code>), serta rincian kebutuhan material BOM aktual
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <ul class="nav nav-pills nav-fill gap-1 bg-light p-1 rounded-pill border" id="bomModuleTabs" role="tablist" style="font-size: 11px;">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active rounded-pill py-1 px-2.5 fw-semibold" id="tab-bom-matrix-btn" data-bs-toggle="pill" data-bs-target="#pane-bom-matrix" type="button" role="tab">
+                                <i class="fas fa-table me-1"></i>Matriks per Penyulang &amp; Section (<?= count($bomMatrixRows) ?>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill py-1 px-2.5 fw-semibold" id="tab-bom-recap-btn" data-bs-toggle="pill" data-bs-target="#pane-bom-recap" type="button" role="tab">
+                                <i class="fas fa-list-ol me-1"></i>Rekap Kode Material BOM (<?= count($bomSummaryByMat) ?>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill py-1 px-2.5 fw-semibold" id="tab-bom-std-btn" data-bs-toggle="pill" data-bs-target="#pane-bom-std" type="button" role="tab">
+                                <i class="fas fa-book-open me-1"></i>Standar Konstruksi JTM (TM-1 s/d TM-11)
+                            </button>
+                        </li>
+                    </ul>
+                    <a href="<?= site_url('temuan/create') ?>" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold" style="font-size: 11px;">
+                        <i class="fas fa-plus me-1"></i> Input Temuan &amp; BOM
+                    </a>
+                </div>
+            </div>
+
+            <!-- Interactive Filter Bar: GI, ULP, Penyulang, Jenis Konduktor, Ukuran Konduktor -->
+            <div class="d-flex flex-wrap align-items-center gap-2 pt-2 border-top">
+                <div class="d-flex align-items-center gap-1">
+                    <label for="bomFilterGi" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">GI:</label>
+                    <select id="bomFilterGi" class="form-select form-select-sm rounded-pill" style="font-size: 11px; width: auto; min-width: 135px;" onchange="applyBomMatrixFilter()">
+                        <option value="">Semua GI (<?= count($bomGisList) ?>)</option>
+                        <?php foreach ($bomGisList as $giOpt): ?>
+                            <option value="<?= esc($giOpt) ?>"><?= esc($giOpt) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <label for="bomFilterUlp" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">ULP:</label>
+                    <select id="bomFilterUlp" class="form-select form-select-sm rounded-pill" style="font-size: 11px; width: auto; min-width: 145px;" onchange="applyBomMatrixFilter()">
+                        <option value="">Semua ULP</option>
+                        <?php foreach (($ulpsList ?? []) as $uOpt): ?>
+                            <option value="<?= (int)$uOpt['id'] ?>"><?= esc($uOpt['nama_ulp']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <label for="bomFilterCondType" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">Konduktor:</label>
+                    <select id="bomFilterCondType" class="form-select form-select-sm rounded-pill fw-semibold text-primary" style="font-size: 11px; width: auto; min-width: 135px;" onchange="onBomCondTypeFilterChange()">
+                        <option value="">Semua Jenis (AAAC/AAACS/MVTIC/XLPE)</option>
+                        <?php foreach ($bomCondTypes as $cType): ?>
+                            <option value="<?= esc($cType) ?>"><?= esc($cType) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <label for="bomFilterCondSize" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">Ukuran:</label>
+                    <select id="bomFilterCondSize" class="form-select form-select-sm rounded-pill font-monospace" style="font-size: 11px; width: auto; min-width: 125px;" onchange="applyBomMatrixFilter()">
+                        <option value="">Semua Ukuran (70–240 mm²)</option>
+                        <?php foreach ($bomCondSizes as $cSz): ?>
+                            <option value="<?= esc($cSz) ?>"><?= esc($cSz) ?> mm² <?= ((int)$cSz < 150) ? '(Non-Standar)' : '(Standar)' ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-1 flex-grow-1" style="max-width: 240px;">
+                    <input type="text" id="bomFilterSearch" class="form-control form-control-sm rounded-pill" style="font-size: 11px;" placeholder="Cari penyulang / section / kode BOM..." oninput="applyBomMatrixFilter()">
+                </div>
+                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-muted" style="font-size: 11px;" onclick="resetBomMatrixFilter()">
+                    <i class="fas fa-rotate-left"></i> Reset
+                </button>
+                <span class="ms-auto badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 font-monospace" style="font-size: 11px;" id="bomMatrixActiveCountBadge">
+                    <?= number_format($totMatTemuan) ?> Temuan &bull; <?= count($bomMatrixRows) ?> Segmen
+                </span>
+            </div>
+        </div>
+
+        <div class="tab-content" id="bomModuleTabContent">
+            <!-- TAB 1: Matriks per GI, ULP, Penyulang, Section, Konduktor & Komponen BOM -->
+            <div class="tab-pane fade show active" id="pane-bom-matrix" role="tabpanel">
+                <div class="table-responsive" style="max-height: 390px; overflow-y: auto;">
+                    <table class="table table-sm table-hover table-bordered align-middle mb-0" style="font-size: 11.5px;" id="bomMatrixTable">
+                        <thead class="table-light sticky-top text-center" style="font-size: 10.5px; text-transform: uppercase;">
+                            <tr>
+                                <th rowspan="2" style="width: 34px;" class="align-middle">#</th>
+                                <th rowspan="2" class="align-middle text-start">Gardu Induk (GI)</th>
+                                <th rowspan="2" class="align-middle text-start">ULP</th>
+                                <th rowspan="2" class="align-middle text-start">Penyulang</th>
+                                <th rowspan="2" class="align-middle text-start">Section / Segmen</th>
+                                <th rowspan="2" class="align-middle">Konduktor &amp; Ukuran</th>
+                                <th rowspan="2" class="align-middle text-end" title="Jumlah Temuan pada Segmen">Temuan</th>
+                                <th colspan="9" class="bg-primary-subtle text-primary fw-bold py-1">Kebutuhan Material Standar BOM PLN</th>
+                                <th rowspan="2" class="align-middle" style="width: 195px;">Rincian Kode Material BOM</th>
+                            </tr>
+                            <tr>
+                                <th class="text-end" title="BES00080015 Besi Arm Tie 750 mm (Bh)">Armtie<br><small class="text-muted fw-normal">(Bh)</small></th>
+                                <th class="text-end" title="BES00020031 / BES00020003 Cross Arm UNP 10 (Bh)">Crossarm<br><small class="text-muted fw-normal">(Bh)</small></th>
+                                <th class="text-end" title="ISO00020004 Isolator Tumpu / Pin Post 20 kV (Bh)">Pin Iso<br><small class="text-muted fw-normal">(Bh)</small></th>
+                                <th class="text-end" title="ISO00010004 Isolator Tarik / Hang Long Rod 20 kV (Set)">Hang Iso<br><small class="text-muted fw-normal">(Set)</small></th>
+                                <th class="text-end" title="CUT00010002 Fuse Cut Out (FCO) 20 kV (Bh)">FCO<br><small class="text-muted fw-normal">(Bh)</small></th>
+                                <th class="text-end" title="ARR00010006 Lightning Arrester (LA) 20 kV (Bh)">Arrester<br><small class="text-muted fw-normal">(Bh)</small></th>
+                                <th class="text-end" title="CCO00020004 / KON00040001 Joint Sleeve / Skun / Konektor (Bh)">Skun/Konek<br><small class="text-muted fw-normal">(Bh)</small></th>
+                                <th class="text-end" title="MAT-GSW-ACC /PEN00050002 GSW &amp; Grounding (Set)">GSW/Grd<br><small class="text-muted fw-normal">(Set)</small></th>
+                                <th class="text-end text-primary" title="MAT-COND-* Kebutuhan Konduktor (Meter)">Konduktor<br><small class="text-muted fw-normal">(m)</small></th>
+                            </tr>
+                        </thead>
+                        <tbody id="bomMatrixTableBody">
+                            <?php foreach ($bomMatrixRows as $bIdx => $bRow):
+                                $cType = (string)($bRow['conductor_type'] ?? 'AAACS');
+                                $cSize = (string)($bRow['conductor_size'] ?? '150');
+                                $bGi   = (string)($bRow['nama_gi'] ?? $bRow['gardu_induk'] ?? '-');
+                                $bSec  = (string)($bRow['nama_section'] ?? $bRow['section_name'] ?? '-');
+                                $bTem  = (int)($bRow['total_temuan'] ?? $bRow['temuan_count'] ?? 0);
+                                $isNonStdSize = ((int)$cSize > 0 && (int)$cSize < 150);
+                                $cBadgeCls = $cType === 'AAAC'
+                                    ? 'bg-warning-subtle text-warning-emphasis border-warning-subtle'
+                                    : ($cType === 'MVTIC' || $cType === 'XLPE'
+                                        ? 'bg-secondary-subtle text-dark border-secondary-subtle'
+                                        : 'bg-info-subtle text-info-emphasis border-info-subtle');
+                                $matSummaryStr = (string)($bRow['rincian_material'] ?? '');
+                                $matFullStr    = $matSummaryStr;
+                                if (mb_strlen($matSummaryStr) > 55) {
+                                    $matSummaryStr = mb_substr($matSummaryStr, 0, 52) . '...';
+                                }
+                            ?>
+                            <tr class="bom-matrix-row"
+                                data-gi="<?= esc($bGi) ?>"
+                                data-ulp-id="<?= (int)($bRow['ulp_id'] ?? 0) ?>"
+                                data-feeder-id="<?= (int)($bRow['penyulang_id'] ?? 0) ?>"
+                                data-cond-type="<?= esc($cType) ?>"
+                                data-cond-size="<?= esc($cSize) ?>"
+                                data-search="<?= esc(strtolower($bGi . ' ' . ($bRow['nama_ulp'] ?? '') . ' ' . ($bRow['nama_penyulang'] ?? '') . ' ' . $bSec . ' ' . $cType . ' ' . $cSize . ' ' . $matFullStr)) ?>"
+                                data-temuan="<?= $bTem ?>"
+                                data-armtie="<?= (float)($bRow['qty_armtie'] ?? 0) ?>"
+                                data-crossarm="<?= (float)($bRow['qty_crossarm'] ?? 0) ?>"
+                                data-pin="<?= (float)($bRow['qty_pin_isolator'] ?? 0) ?>"
+                                data-hang="<?= (float)($bRow['qty_hang_isolator'] ?? 0) ?>"
+                                data-fco="<?= (float)($bRow['qty_fco'] ?? 0) ?>"
+                                data-arrester="<?= (float)($bRow['qty_arrester'] ?? 0) ?>"
+                                data-skun="<?= (float)($bRow['qty_skun_konektor'] ?? 0) ?>"
+                                data-gsw="<?= (float)($bRow['qty_gsw_ground'] ?? 0) ?>"
+                                data-condm="<?= (float)($bRow['qty_konduktor_m'] ?? 0) ?>">
+                                <td class="text-center text-muted fw-bold"><?= $bIdx + 1 ?></td>
+                                <td><span class="badge bg-light text-dark border"><?= esc($bGi) ?></span></td>
+                                <td class="text-muted small"><?= esc($bRow['nama_ulp'] ?? '-') ?></td>
+                                <td>
+                                    <a href="<?= site_url('temuan?penyulang_id=' . (int)($bRow['penyulang_id'] ?? 0)) ?>" class="fw-bold text-dark text-decoration-none">
+                                        <?= esc($bRow['nama_penyulang'] ?? '-') ?>
+                                    </a>
+                                </td>
+                                <td class="text-muted small font-monospace"><?= esc($bSec) ?></td>
+                                <td class="text-center">
+                                    <span class="badge border <?= $cBadgeCls ?> font-monospace" style="font-size: 10px;">
+                                        <?= esc($cType) ?> <?= esc($cSize) ?> mm²
+                                    </span>
+                                    <?php if ($isNonStdSize): ?>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-0.5" style="font-size: 9px;" title="Konduktor Tidak Standar (< 150 mm²)">&lt;150</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-end fw-bold text-dark font-monospace"><?= number_format($bTem) ?></td>
+                                <td class="text-end font-monospace <?= ($bRow['qty_armtie'] ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' ?>"><?= ($bRow['qty_armtie'] ?? 0) > 0 ? number_format((float)$bRow['qty_armtie'], 0) : '-' ?></td>
+                                <td class="text-end font-monospace <?= ($bRow['qty_crossarm'] ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' ?>"><?= ($bRow['qty_crossarm'] ?? 0) > 0 ? number_format((float)$bRow['qty_crossarm'], 0) : '-' ?></td>
+                                <td class="text-end font-monospace <?= ($bRow['qty_pin_isolator'] ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' ?>"><?= ($bRow['qty_pin_isolator'] ?? 0) > 0 ? number_format((float)$bRow['qty_pin_isolator'], 0) : '-' ?></td>
+                                <td class="text-end font-monospace <?= ($bRow['qty_hang_isolator'] ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' ?>"><?= ($bRow['qty_hang_isolator'] ?? 0) > 0 ? number_format((float)$bRow['qty_hang_isolator'], 0) : '-' ?></td>
+                                <td class="text-end font-monospace <?= ($bRow['qty_fco'] ?? 0) > 0 ? 'fw-bold text-danger' : 'text-muted' ?>"><?= ($bRow['qty_fco'] ?? 0) > 0 ? number_format((float)$bRow['qty_fco'], 0) : '-' ?></td>
+                                <td class="text-end font-monospace <?= ($bRow['qty_arrester'] ?? 0) > 0 ? 'fw-bold text-warning-emphasis' : 'text-muted' ?>"><?= ($bRow['qty_arrester'] ?? 0) > 0 ? number_format((float)$bRow['qty_arrester'], 0) : '-' ?></td>
+                                <td class="text-end font-monospace <?= ($bRow['qty_skun_konektor'] ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' ?>"><?= ($bRow['qty_skun_konektor'] ?? 0) > 0 ? number_format((float)$bRow['qty_skun_konektor'], 0) : '-' ?></td>
+                                <td class="text-end font-monospace <?= ($bRow['qty_gsw_ground'] ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' ?>"><?= ($bRow['qty_gsw_ground'] ?? 0) > 0 ? number_format((float)$bRow['qty_gsw_ground'], 0) : '-' ?></td>
+                                <td class="text-end font-monospace <?= ($bRow['qty_konduktor_m'] ?? 0) > 0 ? 'fw-bold text-primary' : 'text-muted' ?>"><?= ($bRow['qty_konduktor_m'] ?? 0) > 0 ? number_format((float)$bRow['qty_konduktor_m'], 0) : '-' ?></td>
+                                <td class="small text-muted font-monospace" style="font-size: 10px;" title="<?= esc($matFullStr) ?>">
+                                    <?= esc($matSummaryStr ?: '-') ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($bomMatrixRows)): ?>
+                            <tr>
+                                <td colspan="17" class="text-center text-muted py-4">Belum ada data temuan dan kebutuhan material pada cakupan ini.</td>
+                            </tr>
+                            <?php endif; ?>
+                        </tbody>
+                        <tfoot class="table-light fw-bold font-monospace" style="font-size: 11.5px;">
+                            <tr>
+                                <td colspan="6" class="text-end text-dark">TOTAL KEBUTUHAN MATERIAL (SESUAI FILTER):</td>
+                                <td class="text-end text-dark" id="bomTotTemuan"><?= number_format($totMatTemuan) ?></td>
+                                <td class="text-end text-dark" id="bomTotArmtie"><?= number_format($totMatArmtie, 0) ?></td>
+                                <td class="text-end text-dark" id="bomTotCrossarm"><?= number_format($totMatCrossarm, 0) ?></td>
+                                <td class="text-end text-dark" id="bomTotPin"><?= number_format($totMatPinIso, 0) ?></td>
+                                <td class="text-end text-dark" id="bomTotHang"><?= number_format($totMatHangIso, 0) ?></td>
+                                <td class="text-end text-danger" id="bomTotFco"><?= number_format($totMatFco, 0) ?></td>
+                                <td class="text-end text-warning-emphasis" id="bomTotArrester"><?= number_format($totMatArrester, 0) ?></td>
+                                <td class="text-end text-dark" id="bomTotSkun"><?= number_format($totMatSkun, 0) ?></td>
+                                <td class="text-end text-dark" id="bomTotGsw"><?= number_format($totMatGsw, 0) ?></td>
+                                <td class="text-end text-primary" id="bomTotCondM"><?= number_format($totMatCondM, 0) ?></td>
+                                <td class="text-muted small fw-normal">Rekap terstruktur</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: Rekapitulasi per Kode Material BOM Aktual (master_materials) -->
+            <div class="tab-pane fade" id="pane-bom-recap" role="tabpanel">
+                <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+                        <thead class="table-light sticky-top" style="font-size: 10.5px; text-transform: uppercase;">
+                            <tr>
+                                <th style="width: 40px;" class="text-center">#</th>
+                                <th>Kode Material BOM</th>
+                                <th>Uraian Nama Material Standar PLN</th>
+                                <th>Kategori</th>
+                                <th class="text-center">Spesifikasi Konduktor</th>
+                                <th class="text-end">Frekuensi Temuan</th>
+                                <th class="text-end">Total Kuantitas</th>
+                                <th class="text-center">Satuan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($bomSummaryByMat as $mIdx => $mSum): ?>
+                            <tr>
+                                <td class="text-center text-muted fw-bold"><?= $mIdx + 1 ?></td>
+                                <td><span class="badge bg-dark-subtle text-dark font-monospace"><?= esc($mSum['material_code'] ?? '-') ?></span></td>
+                                <td class="fw-semibold text-dark"><?= esc($mSum['nama_material'] ?? $mSum['material_name'] ?? '-') ?></td>
+                                <td><span class="badge bg-light text-secondary border"><?= esc($mSum['material_category'] ?? $mSum['category'] ?? '-') ?></span></td>
+                                <td class="text-center font-monospace small">
+                                    <?php if (!empty($mSum['conductor_type'])): ?>
+                                        <span class="badge bg-info-subtle text-info-emphasis border"><?= esc($mSum['conductor_type']) ?> <?= esc($mSum['conductor_size'] ?? '') ?> mm²</span>
+                                    <?php else: ?>
+                                        <span class="text-muted"><?= esc($mSum['nama_lapangan'] ?? 'Standar PLN') ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-end font-monospace"><?= number_format((int)($mSum['temuan_count'] ?? 0)) ?> temuan</td>
+                                <td class="text-end fw-bold text-primary font-monospace fs-6"><?= number_format((float)($mSum['total_qty'] ?? 0), 0) ?></td>
+                                <td class="text-center text-muted fw-semibold"><?= esc($mSum['satuan'] ?? $mSum['unit'] ?? 'Bh') ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: Standar BOM Konstruksi JTM (TM-1 s/d TM-11 dari Database) -->
+            <div class="tab-pane fade" id="pane-bom-std" role="tabpanel">
+                <div class="p-3 bg-light-subtle" style="max-height: 360px; overflow-y: auto;">
+                    <div class="row g-3">
+                        <?php foreach ($bomConstructions as $ctIdx => $ctData):
+                            $ctCode = $ctData['code'] ?? (is_string($ctIdx) ? $ctIdx : 'TM');
+                            $ctDesc = $ctData['name'] ?? $ctData['description'] ?? '';
+                        ?>
+                        <div class="col-xl-6 col-12">
+                            <div class="card border shadow-xs h-100">
+                                <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center border-bottom">
+                                    <div>
+                                        <span class="badge bg-primary text-white font-monospace me-1"><?= esc($ctCode) ?></span>
+                                        <strong class="text-dark" style="font-size: 12px;"><?= esc($ctDesc) ?></strong>
+                                    </div>
+                                    <span class="badge bg-light text-muted border" style="font-size: 10px;"><?= count($ctData['items'] ?? []) ?> Item BOM</span>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm table-striped mb-0" style="font-size: 11px;">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Kode Material</th>
+                                                <th>Nama Material</th>
+                                                <th>Kategori</th>
+                                                <th class="text-end">Qty Standar</th>
+                                                <th>Satuan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach (($ctData['items'] ?? []) as $bItem): ?>
+                                            <tr>
+                                                <td class="font-monospace text-muted"><?= esc($bItem['material_code'] ?? $bItem['code'] ?? '-') ?></td>
+                                                <td class="fw-medium text-dark"><?= esc($bItem['name'] ?? '-') ?></td>
+                                                <td><span class="badge bg-light text-secondary border" style="font-size:9.5px;"><?= esc($bItem['category'] ?? '-') ?></span></td>
+                                                <td class="text-end fw-bold font-monospace"><?= rtrim(rtrim(number_format((float)($bItem['quantity'] ?? $bItem['qty'] ?? 0), 2), '0'), '.') ?></td>
+                                                <td class="text-muted"><?= esc($bItem['unit'] ?? '-') ?></td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6C. ANALISIS KEANDALAN & GANGGUAN PENYULANG (SUMBER SAMA DENGAN /gangguan) -->
+    <!-- Grafik Gangguan Kumulatif (Perbandingan YoY) — Full-Width Card dengan Angka di Setiap Titik -->
+    <div class="card dah-card dah-cum-card shadow-sm border mb-3">
+        <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-chart-line"></i></span>
+                <div>
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 13.5px;">Gangguan Kumulatif (Perbandingan YoY)</h6>
+                    <small class="text-muted" style="font-size: 11px;">
+                        Akumulasi bulanan Jan–Des lintas tahun (<?= implode(', ', array_keys($cumulativeGangguanYoY ?? [$trendYear => []])) ?>) &bull; Sumber: Rekapitulasi Gangguan Penyulang
+                    </small>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-1.5">
+                <?php
+                    $yoyBadgeColors = [
+                        0 => 'bg-danger-subtle text-danger border-danger-subtle',
+                        1 => 'bg-info-subtle text-info border-info-subtle',
+                        2 => 'bg-warning-subtle text-warning-emphasis border-warning-subtle',
+                        3 => 'bg-success-subtle text-success border-success-subtle',
+                    ];
+                    $yoyIdx = 0;
+                    foreach (($cumulativeGangguanYoY ?? []) as $yKey => $yEntry):
+                        if (is_array($yEntry) && isset($yEntry['total']) && is_numeric($yEntry['total'])) {
+                            $yMax = (int)$yEntry['total'];
+                        } elseif (is_array($yEntry) && isset($yEntry['cumulative']) && is_array($yEntry['cumulative']) && !empty($yEntry['cumulative'])) {
+                            $yMax = (int)max($yEntry['cumulative']);
+                        } elseif (is_array($yEntry) && !empty($yEntry)) {
+                            $numericVals = array_filter($yEntry, 'is_numeric');
+                            $yMax = !empty($numericVals) ? (int)max($numericVals) : 0;
+                        } else {
+                            $yMax = 0;
+                        }
+                        $bCls = $yoyBadgeColors[$yoyIdx % count($yoyBadgeColors)];
+                        $yoyIdx++;
+                ?>
+                    <span class="badge border rounded-pill px-2.5 py-1 fw-bold font-monospace <?= $bCls ?>" style="font-size: 11px;">
+                        <?= (int)$yKey ?>: <?= number_format($yMax) ?> kali
+                    </span>
+                <?php endforeach; ?>
+                <a href="<?= site_url('gangguan?year_a=' . (int)($gangguanStats['year'] ?? $trendYear) . '&year_b=' . (int)($gangguanStats['last_year'] ?? ($trendYear - 1)) . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-1 fw-semibold ms-1" style="font-size: 11px;">
+                    <i class="fas fa-bolt me-1"></i> Detail YoY
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-2.5 d-flex align-items-center justify-content-center">
+            <div class="dah-cum-chart-box" id="cumulativeChartContainer">
+                <canvas id="cumulativeGangguanChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Baris Bawah Gangguan: Penyulang Gangguan Terbanyak (Kiri) & Penyebab Gangguan (Kanan) -->
+    <div class="row g-3 mb-4 align-items-stretch">
+        <!-- 6D. Penyulang Gangguan Terbanyak -->
+        <div class="col-lg-6 col-12">
+            <div class="card dah-card shadow-sm border h-100">
                 <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-bolt"></i></span>
                         <div>
                             <h6 class="fw-bold mb-0 text-dark" style="font-size: 13px;">Penyulang Gangguan Terbanyak</h6>
-                            <small class="text-muted" style="font-size: 11px;">Peringkat frekuensi trip tahun <?= (int)$trendYear ?></small>
+                            <small class="text-muted" style="font-size: 11px;">Peringkat frekuensi trip tahun <?= (int)$trendYear ?> (Sumber: Rekap Gangguan)</small>
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-1.5">
@@ -1007,14 +1447,14 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                    <div class="table-responsive" style="max-height: 290px; overflow-y: auto;">
                         <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
                             <thead class="table-light sticky-top" style="font-size: 11px; text-transform: uppercase;">
                                 <tr>
                                     <th style="width: 35px;" class="text-center">#</th>
                                     <th>Penyulang</th>
                                     <th>ULP</th>
-                                    <th class="text-end" style="width: 90px;">Total Gangguan</th>
+                                    <th class="text-end" style="width: 110px;">Total Gangguan</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1023,89 +1463,44 @@
                                     <td class="text-center text-muted fw-bold"><?= $rank + 1 ?></td>
                                     <td class="fw-semibold text-dark"><?= esc($row['feeder_name'] ?? '-') ?></td>
                                     <td class="text-muted small"><?= esc($row['nama_ulp'] ?? '-') ?></td>
-                                    <td class="text-end fw-bold text-danger"><?= (int)($row['cnt'] ?? 0) ?></td>
+                                    <td class="text-end fw-bold text-danger font-monospace"><?= (int)($row['cnt'] ?? 0) ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                                 <?php if (empty($topFeedersGangguan)): ?>
                                 <tr>
                                     <td colspan="4" class="text-center text-muted py-3 small">Tidak ada data gangguan untuk tahun <?= (int)$trendYear ?>.</td>
-                                </tr>
+                                                                </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- 6B. Gangguan Kumulatif Year-over-Year (Tepat di Bawah Penyulang Gangguan Terbanyak) -->
-            <div class="card dah-card dah-cum-card shadow-sm border">
-                <div class="card-header bg-white py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-chart-line"></i></span>
-                        <div>
-                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 13px;">Gangguan Kumulatif (Perbandingan YoY)</h6>
-                            <small class="text-muted" style="font-size: 11px;">Akumulasi bulanan Jan–Des lintas tahun (<?= implode(', ', array_keys($cumulativeGangguanYoY ?? [$trendYear => []])) ?>)</small>
-                        </div>
-                    </div>
-                    <div class="d-flex flex-wrap align-items-center gap-1.5">
-                        <?php
-                            $yoyBadgeColors = [
-                                0 => 'bg-danger-subtle text-danger border-danger-subtle',
-                                1 => 'bg-info-subtle text-info border-info-subtle',
-                                2 => 'bg-warning-subtle text-warning-emphasis border-warning-subtle',
-                                3 => 'bg-success-subtle text-success border-success-subtle',
-                            ];
-                            $yoyIdx = 0;
-                            foreach (($cumulativeGangguanYoY ?? []) as $yKey => $yEntry):
-                                if (is_array($yEntry) && isset($yEntry['total']) && is_numeric($yEntry['total'])) {
-                                    $yMax = (int)$yEntry['total'];
-                                } elseif (is_array($yEntry) && isset($yEntry['cumulative']) && is_array($yEntry['cumulative']) && !empty($yEntry['cumulative'])) {
-                                    $yMax = (int)max($yEntry['cumulative']);
-                                } elseif (is_array($yEntry) && !empty($yEntry)) {
-                                    $numericVals = array_filter($yEntry, 'is_numeric');
-                                    $yMax = !empty($numericVals) ? (int)max($numericVals) : 0;
-                                } else {
-                                    $yMax = 0;
-                                }
-                                $bCls = $yoyBadgeColors[$yoyIdx % count($yoyBadgeColors)];
-                                $yoyIdx++;
-                        ?>
-                            <span class="badge border rounded-pill px-2 py-1 fw-bold font-monospace <?= $bCls ?>" style="font-size: 10.5px;">
-                                <?= (int)$yKey ?>: <?= number_format($yMax) ?>
-                            </span>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <div class="card-body p-2.5 d-flex align-items-center justify-content-center">
-                    <div class="dah-cum-chart-box" id="cumulativeChartContainer">
-                        <canvas id="cumulativeGangguanChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 6C. Penyebab Gangguan (Tepat di Bawah Grafik Gangguan Kumulatif) -->
-            <?php
-                $causeYearsList = !empty($causeBreakdownByYear) ? array_keys($causeBreakdownByYear) : ($availableTrendYears ?? [(int)date('Y')]);
-                $initialCauseYear = in_array((int)$trendYear, array_map('intval', $causeYearsList), true) ? (int)$trendYear : (int)($causeYearsList[0] ?? date('Y'));
-                $rawInitialCause = $causeBreakdownByYear[$initialCauseYear] ?? [];
-                // Normalize both structured {total_events, items} and flat list shapes
-                if (is_array($rawInitialCause) && array_key_exists('items', $rawInitialCause)) {
-                    $initialCauseItems = is_array($rawInitialCause['items']) ? $rawInitialCause['items'] : [];
-                    $initialCauseTotal = isset($rawInitialCause['total_events'])
-                        ? (int)$rawInitialCause['total_events']
-                        : (int)array_sum(array_map(static fn($r) => (int)($r['count'] ?? $r['total'] ?? 0), $initialCauseItems));
-                    $initialCauseNote  = $rawInitialCause['source_note'] ?? null;
-                } elseif (is_array($rawInitialCause)) {
-                    $initialCauseItems = array_values($rawInitialCause);
-                    $initialCauseTotal = (int)array_sum(array_map(static fn($r) => (int)($r['count'] ?? $r['total'] ?? 0), $initialCauseItems));
-                    $initialCauseNote  = null;
-                } else {
-                    $initialCauseItems = [];
-                    $initialCauseTotal = 0;
-                    $initialCauseNote  = null;
-                }
-            ?>
-            <div class="card dah-card shadow-sm border">
+        <!-- 6E. Penyebab Gangguan -->
+        <?php
+            $causeYearsList = !empty($causeBreakdownByYear) ? array_keys($causeBreakdownByYear) : ($availableTrendYears ?? [(int)date('Y')]);
+            $initialCauseYear = in_array((int)$trendYear, array_map('intval', $causeYearsList), true) ? (int)$trendYear : (int)($causeYearsList[0] ?? date('Y'));
+            $rawInitialCause = $causeBreakdownByYear[$initialCauseYear] ?? [];
+            if (is_array($rawInitialCause) && array_key_exists('items', $rawInitialCause)) {
+                $initialCauseItems = is_array($rawInitialCause['items']) ? $rawInitialCause['items'] : [];
+                $initialCauseTotal = isset($rawInitialCause['total_events'])
+                    ? (int)$rawInitialCause['total_events']
+                    : (int)array_sum(array_map(static fn($r) => (int)($r['count'] ?? $r['total'] ?? 0), $initialCauseItems));
+                $initialCauseNote  = $rawInitialCause['source_note'] ?? null;
+            } elseif (is_array($rawInitialCause)) {
+                $initialCauseItems = array_values($rawInitialCause);
+                $initialCauseTotal = (int)array_sum(array_map(static fn($r) => (int)($r['count'] ?? $r['total'] ?? 0), $initialCauseItems));
+                $initialCauseNote  = null;
+            } else {
+                $initialCauseItems = [];
+                $initialCauseTotal = 0;
+                $initialCauseNote  = null;
+            }
+        ?>
+        <div class="col-lg-6 col-12">
+            <div class="card dah-card shadow-sm border h-100">
                 <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge bg-warning-subtle text-warning-emphasis p-2 rounded-2"><i class="fas fa-tags"></i></span>
@@ -1122,7 +1517,7 @@
                                 $cYrHasSource = is_array($cYrEntry) && array_key_exists('has_source', $cYrEntry) ? (bool)$cYrEntry['has_source'] : true;
                             ?>
                                 <option value="<?= (int)$cYr ?>" <?= ((int)$cYr === (int)$initialCauseYear) ? 'selected' : '' ?>>
-                                    <?= (int)$cYr ?><?= !$cYrHasSource ? ' (Belum Ada Histori Trip)' : '' ?>
+                                    <?= (int)$cYr ?><?= !$cYrHasSource ? ' (Belum Ada Log Detail Penyebab)' : '' ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -1149,7 +1544,7 @@
                                             ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5" style="font-size:10px;">TERPETAKAN</span>'
                                             : ($st === 'PARTIALLY_RESOLVED'
                                                 ? '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5" style="font-size:10px;">PARSIAL</span>'
-                                                : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-0.5" style="font-size:10px;">BELUM TERPETAKAN</span>');
+                                                : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-0.5" style="font-size:10px;">REKAP BULANAN</span>');
                                         $rowCount = (int)($cRow['count'] ?? $cRow['total'] ?? 0);
                                         $rowPct   = (float)($cRow['pct'] ?? ($initialCauseTotal > 0 ? round(($rowCount / $initialCauseTotal) * 100, 1) : 0));
                                     ?>
@@ -1183,64 +1578,6 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Kolom Kanan: Penyulang Temuan Inspeksi Terbanyak -->
-        <div class="col-lg-6 col-12">
-            <div class="card dah-card shadow-sm border h-100">
-                <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-info-subtle text-info p-2 rounded-2"><i class="fas fa-clipboard-list"></i></span>
-                        <div>
-                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 13px;">Penyulang Temuan Inspeksi Terbanyak</h6>
-                            <small class="text-muted" style="font-size: 11px;">Rincian pelaksana temuan aktif &bull; Klik baris untuk sorot peta</small>
-                        </div>
-                    </div>
-                    <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1 small">
-                        <?= count($topInspeksiPenyulang ?? []) ?> Penyulang
-                    </span>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 760px; overflow-y: auto;">
-                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
-                            <thead class="table-light sticky-top" style="font-size: 11px; text-transform: uppercase;">
-                                <tr>
-                                    <th style="width: 35px;" class="text-center">#</th>
-                                    <th>Penyulang</th>
-                                    <th class="text-end" style="width: 60px;" title="Temuan PDKB">PDKB</th>
-                                    <th class="text-end" style="width: 75px;" title="Temuan HAR Gardu">HAR Gardu</th>
-                                    <th class="text-end" style="width: 75px;" title="Temuan HAR ROW">HAR ROW</th>
-                                    <th class="text-end" style="width: 60px;" title="Total Temuan Aktif">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach (($topInspeksiPenyulang ?? []) as $rank => $row): ?>
-                                <tr style="cursor: pointer;" onclick="highlightFeederOnMap(<?= (int)$row['penyulang_id'] ?>, '<?= esc(addslashes($row['nama_penyulang'] ?? '')) ?>')" title="Klik untuk fokus ke titik penyulang di GIS Map">
-                                    <td class="text-center text-muted fw-bold"><?= $rank + 1 ?></td>
-                                    <td>
-                                        <div class="fw-semibold text-dark"><?= esc($row['nama_penyulang'] ?? '-') ?></div>
-                                        <div class="text-muted" style="font-size: 10px;"><i class="fas fa-location-dot text-primary me-1"></i>Lihat di GIS</div>
-                                    </td>
-                                    <td class="text-end"><span class="badge bg-light text-dark border"><?= (int)($row['pdkb'] ?? 0) ?></span></td>
-                                    <td class="text-end"><span class="badge bg-light text-dark border"><?= (int)($row['har_gardu'] ?? 0) ?></span></td>
-                                    <td class="text-end"><span class="badge bg-light text-dark border"><?= (int)($row['har_row'] ?? 0) ?></span></td>
-                                    <td class="text-end fw-bold text-info fs-6"><?= (int)($row['total'] ?? 0) ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                                <?php if (empty($topInspeksiPenyulang)): ?>
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-4 small">Tidak ada data temuan inspeksi aktif.</td>
-                                </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer bg-light-subtle py-2 px-3 border-top d-flex justify-content-between align-items-center">
-                    <span class="text-muted small" style="font-size: 11px;"><i class="fas fa-hand-pointer text-primary me-1"></i>Pilih penyulang untuk menandai lokasinya pada peta di atas.</span>
-                    <a href="<?= site_url('temuan') ?>" class="text-primary text-decoration-none fw-semibold small" style="font-size: 11px;">Semua Temuan <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
             </div>
         </div>
@@ -1441,7 +1778,7 @@
         </div>
     </div>
 
-    <!-- 8. CAPTIVE NON PENUGASAN — POTENSI COATING (AAAC OPERATIONAL MODULE) -->
+    <!-- 8. CAPTIVE NON PENUGASAN — POTENSI COATING (AAAC) & KONDUKTOR TIDAK STANDAR (< 150 MM2) -->
     <?php
         $coatingByFeeder   = $coatingSummary['by_feeder'] ?? [];
         $coatingTotalTitik = (int)($coatingSummary['total_titik'] ?? 0);
@@ -1450,20 +1787,35 @@
         $aaacPoolSpans     = (int)($coatingSummary['aaac_pool_spans'] ?? 0);
         $aaacPoolKms       = (float)($coatingSummary['aaac_pool_kms'] ?? 0.0);
         $aaacTopFeeders    = $coatingSummary['aaac_top_feeders'] ?? [];
+        $nonStdTitik       = (int)($coatingSummary['non_std_titik'] ?? 0);
+        $nonStdKm          = round(((float)($coatingSummary['non_std_meter'] ?? 0)) / 1000, 2);
+        $nonStdRows        = $coatingSummary['non_std_rows'] ?? [];
+        $sizeRecap         = $coatingSummary['size_recap'] ?? [];
     ?>
-    <div class="card dah-card shadow-sm border mb-4">
+    <div class="card dah-card shadow-sm border mb-4" id="captiveNonPenugasanCard">
         <div class="card-header bg-white py-3 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
             <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-warning-subtle text-warning-emphasis p-2 rounded-2"><i class="fas fa-highlighter fs-5"></i></span>
                 <div>
-                    <h5 class="fw-bold text-dark mb-0" style="font-size: 14px;">Captive Non Penugasan — Potensi Coating Konduktor (Khusus AAAC)</h5>
+                    <h5 class="fw-bold text-dark mb-0" style="font-size: 14px;">Captive Non Penugasan — Potensi Coating AAAC &amp; Konduktor Tidak Standar (&lt; 150 mm²)</h5>
                     <div class="small text-muted" style="font-size: 11px;">
-                        Rekapitulasi per penyulang untuk segmen transline <strong>AAAC</strong> aktif yang ditandai bisa coating &bull;
-                        <span class="text-secondary">Default: Tidak Bisa Coating (AAACS, MVTIC, XLPE dikecualikan)</span>
+                        Evaluasi segmen transline <strong>AAAC</strong> kandidat coating serta rekapitulasi konduktor ukuran tidak standar (<code>70 mm²</code> &amp; <code>110 mm²</code> vs standar <code>150 mm²</code> &amp; <code>240 mm²</code>)
                     </div>
                 </div>
             </div>
-            <div class="d-flex flex-wrap gap-2">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <ul class="nav nav-pills gap-1 bg-light p-1 rounded-pill border" role="tablist" style="font-size: 11px;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active rounded-pill py-1 px-2.5 fw-semibold" data-bs-toggle="pill" data-bs-target="#pane-captive-coating" type="button" role="tab">
+                            <i class="fas fa-brush me-1"></i>Potensi Coating AAAC
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill py-1 px-2.5 fw-semibold" data-bs-toggle="pill" data-bs-target="#pane-captive-nonstd" type="button" role="tab">
+                            <i class="fas fa-triangle-exclamation text-danger me-1"></i>Konduktor Tidak Standar &lt; 150 mm² (<?= number_format($nonStdTitik) ?> Segmen)
+                        </button>
+                    </li>
+                </ul>
                 <a class="btn btn-sm btn-warning text-dark fw-semibold rounded-pill px-3" href="<?= site_url('gis?captive_only=1' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>">
                     <i class="fas fa-map-location-dot me-1"></i> Tinjau di GIS
                 </a>
@@ -1482,29 +1834,7 @@
                         </div>
                         <div>
                             <div class="text-muted small fw-semibold" style="font-size: 11px;">Titik AAAC Ditandai Coating</div>
-                            <div class="fs-5 fw-bold text-dark font-monospace lh-1 mt-0.5"><?= number_format($coatingTotalTitik) ?> <small class="text-muted fw-normal" style="font-size:11px;">Segmen</small></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-sm-6 col-12">
-                    <div class="p-2.5 rounded-3 bg-white border h-100 d-flex align-items-center gap-2.5">
-                        <div class="rounded-2 bg-info-subtle text-info d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
-                            <i class="fas fa-ruler-horizontal"></i>
-                        </div>
-                        <div>
-                            <div class="text-muted small fw-semibold" style="font-size: 11px;">Total Jarak Potensi Coating</div>
-                            <div class="fs-5 fw-bold text-info font-monospace lh-1 mt-0.5"><?= number_format($coatingTotalKm, 2) ?> <small class="text-muted fw-normal" style="font-size:11px;">km (<?= number_format((float)($coatingSummary['total_meter'] ?? 0), 0) ?> m)</small></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-sm-6 col-12">
-                    <div class="p-2.5 rounded-3 bg-white border h-100 d-flex align-items-center gap-2.5">
-                        <div class="rounded-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
-                            <i class="fas fa-bolt"></i>
-                        </div>
-                        <div>
-                            <div class="text-muted small fw-semibold" style="font-size: 11px;">Penyulang Memiliki Kandidat</div>
-                            <div class="fs-5 fw-bold text-primary font-monospace lh-1 mt-0.5"><?= number_format($coatingFeederCnt) ?> <small class="text-muted fw-normal" style="font-size:11px;">Penyulang</small></div>
+                            <div class="fs-5 fw-bold text-dark font-monospace lh-1 mt-0.5"><?= number_format($coatingTotalTitik) ?> <small class="text-muted fw-normal" style="font-size:11px;">Segmen (<?= number_format($coatingTotalKm, 2) ?> km)</small></div>
                         </div>
                     </div>
                 </div>
@@ -1515,95 +1845,73 @@
                         </div>
                         <div>
                             <div class="text-muted small fw-semibold" style="font-size: 11px;">Populasi Transline AAAC Aktif</div>
-                            <div class="fs-5 fw-bold text-success font-monospace lh-1 mt-0.5"><?= number_format($aaacPoolKms, 2) ?> <small class="text-muted fw-normal" style="font-size:11px;">km (<?= number_format($aaacPoolSpans) ?> titik)</small></div>
+                            <div class="fs-5 fw-bold text-success font-monospace lh-1 mt-0.5"><?= number_format($aaacPoolKms, 2) ?> <small class="text-muted fw-normal" style="font-size:11px;">km (<?= number_format($aaacPoolSpans) ?> segmen)</small></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-sm-6 col-12">
+                    <div class="p-2.5 rounded-3 bg-white border h-100 d-flex align-items-center gap-2.5">
+                        <div class="rounded-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
+                            <i class="fas fa-ruler-combined"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-semibold" style="font-size: 11px;">Konduktor Tidak Standar (&lt;150 mm²)</div>
+                            <div class="fs-5 fw-bold text-danger font-monospace lh-1 mt-0.5"><?= number_format($nonStdKm, 2) ?> <small class="text-muted fw-normal" style="font-size:11px;">km (<?= number_format($nonStdTitik) ?> segmen)</small></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-sm-6 col-12">
+                    <div class="p-2 rounded-3 bg-white border h-100 d-flex flex-column justify-content-center">
+                        <div class="text-muted small fw-semibold mb-1" style="font-size: 10.5px;">Distribusi Ukuran Penampang (70 / 110 / 150 / 240 mm²):</div>
+                        <div class="d-flex flex-wrap gap-1">
+                            <?php foreach (['70', '110', '150', '240'] as $szKey):
+                                $szData = $sizeRecap[$szKey] ?? ['kms' => 0, 'temuan_cnt' => 0, 'is_standard' => ((int)$szKey >= 150)];
+                                $isStd  = (bool)($szData['is_standard'] ?? $szData['is_standar'] ?? ((int)$szKey >= 150));
+                                $szCls  = $isStd ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle';
+                            ?>
+                                <span class="badge border <?= $szCls ?> font-monospace" style="font-size: 9.5px;" title="Temuan pada ukuran <?= $szKey ?> mm²: <?= (int)$szData['temuan_cnt'] ?>">
+                                    <?= $szKey ?>mm²: <?= number_format((float)$szData['kms'], 1) ?>km (<?= (int)$szData['temuan_cnt'] ?>T)
+                                </span>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card-body p-0">
-            <?php if (!empty($coatingByFeeder)): ?>
-                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
-                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
-                        <thead class="table-light sticky-top" style="font-size: 11px; text-transform: uppercase;">
-                            <tr>
-                                <th style="width: 40px;" class="text-center">#</th>
-                                <th>ULP</th>
-                                <th>Penyulang</th>
-                                <th class="text-center">Konduktor</th>
-                                <th class="text-end">Titik Bisa Coating</th>
-                                <th class="text-end">Total Jarak Coating</th>
-                                <th class="text-center" style="width: 170px;">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($coatingByFeeder as $idx => $cf):
-                                $cfMeter = (float)($cf['total_meter'] ?? 0);
-                                $cfKm    = $cfMeter / 1000.0;
-                            ?>
-                            <tr>
-                                <td class="text-center text-muted fw-bold"><?= $idx + 1 ?></td>
-                                <td class="text-muted small"><?= esc($cf['nama_ulp'] ?? '-') ?></td>
-                                <td class="fw-bold text-dark"><?= esc($cf['nama_penyulang'] ?? '-') ?></td>
-                                <td class="text-center"><span class="badge bg-warning-subtle text-dark border border-warning-subtle font-monospace">AAAC</span></td>
-                                <td class="text-end fw-bold text-warning-emphasis font-monospace"><?= number_format((int)($cf['total_titik'] ?? 0)) ?> titik</td>
-                                <td class="text-end fw-bold text-info font-monospace"><?= number_format($cfKm, 2) ?> km <span class="text-muted fw-normal small">(<?= number_format($cfMeter, 0) ?> m)</span></td>
-                                <td class="text-center">
-                                    <a class="btn btn-xs btn-warning text-dark fw-semibold rounded-pill px-2.5 py-1" href="<?= site_url('gis?penyulang_id=' . (int)$cf['penyulang_id'] . '&captive_only=1') ?>">
-                                        <i class="fas fa-map-location-dot me-1"></i> Tinjau di GIS
-                                    </a>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php else: ?>
-                <div class="p-3">
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pb-2 mb-2 border-bottom">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1" style="font-size: 11px;">
-                                <i class="fas fa-circle-info me-1"></i> 0 Titik Ditandai Potensi Coating
-                            </span>
-                            <span class="text-muted small" style="font-size: 11.5px;">
-                                Belum ada segmen AAAC yang ditandai <code>POTENSI COATING</code>. Berikut daftar penyulang dengan populasi transline <strong>AAAC aktif</strong> siap ditinjau &amp; ditandai di GIS:
-                            </span>
-                        </div>
-                    </div>
-                    <?php if (!empty($aaacTopFeeders)): ?>
-                        <div class="table-responsive" style="max-height: 260px; overflow-y: auto;">
+        <div class="tab-content">
+            <!-- Pane 1: Potensi Coating AAAC -->
+            <div class="tab-pane fade show active" id="pane-captive-coating" role="tabpanel">
+                <div class="card-body p-0">
+                    <?php if (!empty($coatingByFeeder)): ?>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                             <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
-                                <thead class="table-light sticky-top" style="font-size: 10.5px; text-transform: uppercase;">
+                                <thead class="table-light sticky-top" style="font-size: 11px; text-transform: uppercase;">
                                     <tr>
-                                        <th style="width: 36px;" class="text-center">#</th>
+                                        <th style="width: 40px;" class="text-center">#</th>
                                         <th>ULP</th>
                                         <th>Penyulang</th>
-                                        <th class="text-center">Status Coating</th>
-                                        <th class="text-end">Segmen AAAC Aktif</th>
-                                        <th class="text-end">Panjang AAAC (km)</th>
-                                        <th class="text-center" style="width: 185px;">Tindakan di GIS</th>
+                                        <th class="text-center">Konduktor</th>
+                                        <th class="text-end">Titik Bisa Coating</th>
+                                        <th class="text-end">Total Jarak Coating</th>
+                                        <th class="text-center" style="width: 170px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($aaacTopFeeders as $aIdx => $af): ?>
+                                    <?php foreach ($coatingByFeeder as $idx => $cf):
+                                        $cfMeter = (float)($cf['total_meter'] ?? 0);
+                                        $cfKm    = $cfMeter / 1000.0;
+                                    ?>
                                     <tr>
-                                        <td class="text-center text-muted fw-bold"><?= $aIdx + 1 ?></td>
-                                        <td class="text-muted small"><?= esc($af['nama_ulp'] ?? '-') ?></td>
-                                        <td>
-                                            <span class="fw-bold text-dark"><?= esc($af['nama'] ?? '-') ?></span>
-                                            <?php if (!empty($af['gardu_induk'])): ?>
-                                                <span class="badge bg-light text-muted border ms-1" style="font-size: 9.5px;"><?= esc($af['gardu_induk']) ?></span>
-                                            <?php endif; ?>
-                                        </td>
+                                        <td class="text-center text-muted fw-bold"><?= $idx + 1 ?></td>
+                                        <td class="text-muted small"><?= esc($cf['nama_ulp'] ?? '-') ?></td>
+                                        <td class="fw-bold text-dark"><?= esc($cf['nama_penyulang'] ?? '-') ?></td>
+                                        <td class="text-center"><span class="badge bg-warning-subtle text-dark border border-warning-subtle font-monospace">AAAC</span></td>
+                                        <td class="text-end fw-bold text-warning-emphasis font-monospace"><?= number_format((int)($cf['total_titik'] ?? 0)) ?> titik</td>
+                                        <td class="text-end fw-bold text-info font-monospace"><?= number_format($cfKm, 2) ?> km <span class="text-muted fw-normal small">(<?= number_format($cfMeter, 0) ?> m)</span></td>
                                         <td class="text-center">
-                                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 10px;">Default: Tidak Bisa Coating</span>
-                                        </td>
-                                        <td class="text-end fw-semibold font-monospace"><?= number_format((int)($af['aaac_spans'] ?? 0)) ?> segmen</td>
-                                        <td class="text-end fw-bold text-warning-emphasis font-monospace"><?= number_format((float)($af['aaac_kms'] ?? 0), 2) ?> km</td>
-                                        <td class="text-center">
-                                            <a class="btn btn-xs btn-outline-warning text-dark fw-semibold rounded-pill px-2.5 py-0.5" href="<?= site_url('gis?penyulang_id=' . (int)$af['id'] . '&captive_only=1') ?>" title="Buka Penyulang di GIS untuk Menandai Segmen AAAC">
-                                                <i class="fas fa-highlighter text-warning me-1"></i> Buka &amp; Tandai di GIS
+                                            <a class="btn btn-xs btn-warning text-dark fw-semibold rounded-pill px-2.5 py-1" href="<?= site_url('gis?penyulang_id=' . (int)$cf['penyulang_id'] . '&captive_only=1') ?>">
+                                                <i class="fas fa-map-location-dot me-1"></i> Tinjau di GIS
                                             </a>
                                         </td>
                                     </tr>
@@ -1612,10 +1920,121 @@
                             </table>
                         </div>
                     <?php else: ?>
-                        <div class="text-muted small py-2">Tidak ada transline AAAC aktif pada cakupan ULP ini.</div>
+                        <div class="p-3">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pb-2 mb-2 border-bottom">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                        <i class="fas fa-circle-info me-1"></i> 0 Titik Ditandai Potensi Coating
+                                    </span>
+                                    <span class="text-muted small" style="font-size: 11.5px;">
+                                        Belum ada segmen AAAC yang ditandai <code>POTENSI COATING</code>. Berikut daftar penyulang dengan populasi transline <strong>AAAC aktif</strong> siap ditinjau &amp; ditandai di GIS:
+                                    </span>
+                                </div>
+                            </div>
+                            <?php if (!empty($aaacTopFeeders)): ?>
+                                <div class="table-responsive" style="max-height: 260px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+                                        <thead class="table-light sticky-top" style="font-size: 10.5px; text-transform: uppercase;">
+                                            <tr>
+                                                <th style="width: 36px;" class="text-center">#</th>
+                                                <th>ULP</th>
+                                                <th>Penyulang</th>
+                                                <th class="text-center">Status Coating</th>
+                                                <th class="text-end">Segmen AAAC Aktif</th>
+                                                <th class="text-end">Panjang AAAC (km)</th>
+                                                <th class="text-center" style="width: 185px;">Tindakan di GIS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($aaacTopFeeders as $aIdx => $af): ?>
+                                            <tr>
+                                                <td class="text-center text-muted fw-bold"><?= $aIdx + 1 ?></td>
+                                                <td class="text-muted small"><?= esc($af['nama_ulp'] ?? '-') ?></td>
+                                                <td>
+                                                    <span class="fw-bold text-dark"><?= esc($af['nama'] ?? '-') ?></span>
+                                                    <?php if (!empty($af['gardu_induk'])): ?>
+                                                        <span class="badge bg-light text-muted border ms-1" style="font-size: 9.5px;"><?= esc($af['gardu_induk']) ?></span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 10px;">Default: Tidak Bisa Coating</span>
+                                                </td>
+                                                <td class="text-end fw-semibold font-monospace"><?= number_format((int)($af['aaac_spans'] ?? 0)) ?> segmen</td>
+                                                <td class="text-end fw-bold text-warning-emphasis font-monospace"><?= number_format((float)($af['aaac_kms'] ?? 0), 2) ?> km</td>
+                                                <td class="text-center">
+                                                    <a class="btn btn-xs btn-outline-warning text-dark fw-semibold rounded-pill px-2.5 py-0.5" href="<?= site_url('gis?penyulang_id=' . (int)$af['id'] . '&captive_only=1') ?>" title="Buka Penyulang di GIS untuk Menandai Segmen AAAC">
+                                                        <i class="fas fa-highlighter text-warning me-1"></i> Buka &amp; Tandai di GIS
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-muted small py-2">Tidak ada transline AAAC aktif pada cakupan ULP ini.</div>
+                            <?php endif; ?>
+                        </div>
                     <?php endif; ?>
                 </div>
-            <?php endif; ?>
+            </div>
+
+            <!-- Pane 2: Konduktor Tidak Standar (< 150 mm²: 70 mm² & 110 mm²) -->
+            <div class="tab-pane fade" id="pane-captive-nonstd" role="tabpanel">
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+                            <thead class="table-light sticky-top" style="font-size: 10.5px; text-transform: uppercase;">
+                                <tr>
+                                    <th style="width: 36px;" class="text-center">#</th>
+                                    <th>Gardu Induk (GI)</th>
+                                    <th>ULP</th>
+                                    <th>Penyulang</th>
+                                    <th class="text-center">Jenis &amp; Ukuran Konduktor</th>
+                                    <th class="text-center">Status Standar</th>
+                                    <th class="text-end">Jumlah Segmen</th>
+                                    <th class="text-end">Panjang Jaringan</th>
+                                    <th class="text-center" style="width: 150px;">Aksi Peta</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($nonStdRows as $nsIdx => $nsRow):
+                                    $nsKm = ((float)($nsRow['total_meter'] ?? 0)) / 1000.0;
+                                ?>
+                                <tr>
+                                    <td class="text-center text-muted fw-bold"><?= $nsIdx + 1 ?></td>
+                                    <td><span class="badge bg-light text-dark border"><?= esc($nsRow['gardu_induk'] ?? '-') ?></span></td>
+                                    <td class="text-muted small"><?= esc($nsRow['nama_ulp'] ?? '-') ?></td>
+                                    <td class="fw-bold text-dark"><?= esc($nsRow['nama_penyulang'] ?? '-') ?></td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle font-monospace">
+                                            <?= esc($nsRow['conductor_type'] ?? 'AAAC') ?> <?= esc($nsRow['conductor_size'] ?? '70') ?> mm²
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5" style="font-size: 10px;">
+                                            Non-Standar (&lt; 150 mm²)
+                                        </span>
+                                    </td>
+                                    <td class="text-end fw-semibold font-monospace"><?= number_format((int)($nsRow['total_titik'] ?? 0)) ?> segmen</td>
+                                    <td class="text-end fw-bold text-danger font-monospace"><?= number_format($nsKm, 2) ?> km <span class="text-muted fw-normal small">(<?= number_format((float)($nsRow['total_meter'] ?? 0), 0) ?> m)</span></td>
+                                    <td class="text-center">
+                                        <a class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5" href="<?= site_url('gis?penyulang_id=' . (int)($nsRow['penyulang_id'] ?? 0)) ?>">
+                                            <i class="fas fa-map-location-dot me-1"></i> Lihat di GIS
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($nonStdRows)): ?>
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted py-4 small">Tidak ditemukan segmen konduktor di bawah 150 mm² pada cakupan ULP ini.</td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2286,7 +2705,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
-            var ySuggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.12) : 10;
+            var ySuggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.22) : 10;
+
+            var directPointLabelsPlugin = {
+                id: 'directPointLabels',
+                afterDatasetsDraw: function(chart) {
+                    var c = chart.ctx;
+                    c.save();
+                    c.font = '700 10px "JetBrains Mono", Consolas, monospace';
+                    c.textAlign = 'center';
+                    c.textBaseline = 'bottom';
+
+                    chart.data.datasets.forEach(function(ds, dsIdx) {
+                        var meta = chart.getDatasetMeta(dsIdx);
+                        if (!meta || meta.hidden) return;
+                        meta.data.forEach(function(pt, ptIdx) {
+                            var rawVal = ds.data[ptIdx];
+                            if (rawVal === null || typeof rawVal === 'undefined') return;
+                            var numVal = Number(rawVal) || 0;
+                            var txt = numVal.toLocaleString('id-ID');
+                            // Offset alternating series slightly so multi-year labels remain legible
+                            var yOffset = (dsIdx % 2 === 0) ? -7 : ((numVal === 0 && dsIdx > 0) ? -17 : 14);
+                            var drawY = Math.max(12, Math.min(chart.height - 18, pt.y + yOffset));
+                            c.lineWidth = 3;
+                            c.strokeStyle = 'rgba(255, 255, 255, 0.92)';
+                            c.strokeText(txt, pt.x, drawY);
+                            c.fillStyle = ds.borderColor || '#0f172a';
+                            c.fillText(txt, pt.x, drawY);
+                        });
+                    });
+                    c.restore();
+                }
+            };
 
             new Chart(ctx, {
                 type: 'line',
@@ -2294,6 +2744,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     labels: labels,
                     datasets: datasets
                 },
+                plugins: [directPointLabelsPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -2302,7 +2753,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         intersect: false
                     },
                     layout: {
-                        padding: { top: 4, right: 8, bottom: 2, left: 4 }
+                        padding: { top: 16, right: 16, bottom: 6, left: 8 }
                     },
                     plugins: {
                         legend: {
@@ -2343,7 +2794,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         x: {
                             grid: { display: false },
                             ticks: {
-                                font: { size: 11 }
+                                font: { size: 11, weight: '600' }
                             }
                         }
                     }
@@ -2356,6 +2807,86 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     })();
+
+    // 6B. Interactive Filter for Tabel Temuan dan Kebutuhan Material (BOM)
+    window.onBomCondTypeFilterChange = function() {
+        var typeSel = document.getElementById('bomFilterCondType');
+        var sizeSel = document.getElementById('bomFilterCondSize');
+        if (typeSel && sizeSel && typeSel.value) {
+            sizeSel.classList.add('border-primary');
+        } else if (sizeSel) {
+            sizeSel.classList.remove('border-primary');
+        }
+        window.applyBomMatrixFilter();
+    };
+
+    window.applyBomMatrixFilter = function() {
+        var giVal   = String((document.getElementById('bomFilterGi') || {}).value || '');
+        var ulpVal  = String((document.getElementById('bomFilterUlp') || {}).value || '');
+        var typeVal = String((document.getElementById('bomFilterCondType') || {}).value || '');
+        var sizeVal = String((document.getElementById('bomFilterCondSize') || {}).value || '');
+        var qVal    = String((document.getElementById('bomFilterSearch') || {}).value || '').trim().toLowerCase();
+
+        var rows = document.querySelectorAll('#bomMatrixTableBody .bom-matrix-row');
+        var segCount = 0, sumTemuan = 0, sumArm = 0, sumCross = 0, sumPin = 0, sumHang = 0, sumFco = 0, sumArr = 0, sumSkun = 0, sumGsw = 0, sumCondM = 0;
+
+        rows.forEach(function(r) {
+            var rGi   = String(r.getAttribute('data-gi') || '');
+            var rUlp  = String(r.getAttribute('data-ulp-id') || '');
+            var rType = String(r.getAttribute('data-cond-type') || '');
+            var rSize = String(r.getAttribute('data-cond-size') || '');
+            var rSrch = String(r.getAttribute('data-search') || '');
+
+            var ok = (!giVal || rGi === giVal)
+                  && (!ulpVal || rUlp === ulpVal)
+                  && (!typeVal || rType === typeVal)
+                  && (!sizeVal || rSize === sizeVal)
+                  && (!qVal || rSrch.indexOf(qVal) !== -1);
+
+            r.style.display = ok ? '' : 'none';
+            if (ok) {
+                segCount++;
+                sumTemuan += Number(r.getAttribute('data-temuan') || 0);
+                sumArm    += Number(r.getAttribute('data-armtie') || 0);
+                sumCross  += Number(r.getAttribute('data-crossarm') || 0);
+                sumPin    += Number(r.getAttribute('data-pin') || 0);
+                sumHang   += Number(r.getAttribute('data-hang') || 0);
+                sumFco    += Number(r.getAttribute('data-fco') || 0);
+                sumArr    += Number(r.getAttribute('data-arrester') || 0);
+                sumSkun   += Number(r.getAttribute('data-skun') || 0);
+                sumGsw    += Number(r.getAttribute('data-gsw') || 0);
+                sumCondM  += Number(r.getAttribute('data-condm') || 0);
+            }
+        });
+
+        var setTxt = function(id, v) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = Math.round(v).toLocaleString('id-ID');
+        };
+        setTxt('bomTotTemuan', sumTemuan);
+        setTxt('bomTotArmtie', sumArm);
+        setTxt('bomTotCrossarm', sumCross);
+        setTxt('bomTotPin', sumPin);
+        setTxt('bomTotHang', sumHang);
+        setTxt('bomTotFco', sumFco);
+        setTxt('bomTotArrester', sumArr);
+        setTxt('bomTotSkun', sumSkun);
+        setTxt('bomTotGsw', sumGsw);
+        setTxt('bomTotCondM', sumCondM);
+
+        var badge = document.getElementById('bomMatrixActiveCountBadge');
+        if (badge) {
+            badge.textContent = sumTemuan.toLocaleString('id-ID') + ' Temuan • ' + segCount.toLocaleString('id-ID') + ' Segmen';
+        }
+    };
+
+    window.resetBomMatrixFilter = function() {
+        ['bomFilterGi', 'bomFilterUlp', 'bomFilterCondType', 'bomFilterCondSize', 'bomFilterSearch'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        window.onBomCondTypeFilterChange();
+    };
 
     // 6C. Client-side Year Switcher for Penyebab Gangguan Module (supports both {total_events, items} and flat array payloads)
     window.causeBreakdownDataByYear = <?= json_encode($causeBreakdownByYear ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;

@@ -130,6 +130,15 @@ class MigrateController extends BaseController
                 $executed[] = 'add_transline_to_temuan_captive_k2k3';
             }
 
+            // Run EnhanceTemuanMaterialBomAndConductorSchema Migration
+            $enhanceBomMigFile = APPPATH . 'Database/Migrations/2026-10-20-000002_EnhanceTemuanMaterialBomAndConductorSchema.php';
+            if (file_exists($enhanceBomMigFile)) {
+                require_once $enhanceBomMigFile;
+                $enhBomMig = new \App\Database\Migrations\EnhanceTemuanMaterialBomAndConductorSchema();
+                $enhBomMig->up();
+                $executed[] = 'enhance_temuan_material_bom_and_conductor_schema';
+            }
+
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
             // governed reconciliation with deterministic identity proof, not pattern matching.

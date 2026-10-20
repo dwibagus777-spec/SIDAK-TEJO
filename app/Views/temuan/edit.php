@@ -141,19 +141,38 @@
                     </div>
 
                     <div class="row">
-                        <!-- Konduktor -->
-                        <div class="col-md-6 form-group mb-3">
-                            <label for="konduktor">Nama Konduktor <span class="text-danger">*</span></label>
-                            <input type="text" name="konduktor" id="konduktor" class="form-control <?= ($validation && $validation->hasError('konduktor')) ? 'is-invalid' : '' ?>"
-                                   placeholder="Contoh: A3CS 150mm"
-                                   value="<?= old('konduktor', esc($temuan['konduktor'])) ?>" required>
+                        <!-- Jenis Konduktor (AAAC / AAACS / MVTIC / XLPE) -->
+                        <div class="col-md-4 form-group mb-3">
+                            <label for="conductor_type">Jenis Konduktor <span class="text-danger">*</span></label>
+                            <?php $curCondType = strtoupper(trim((string)old('conductor_type', $temuan['conductor_type'] ?? 'AAAC'))); ?>
+                            <select name="conductor_type" id="conductor_type" class="form-control select2" required>
+                                <option value="">-- Pilih Jenis Konduktor --</option>
+                                <option value="AAAC"  <?= $curCondType === 'AAAC'  ? 'selected' : '' ?>>AAAC (Telanjang / Bare)</option>
+                                <option value="AAACS" <?= $curCondType === 'AAACS' ? 'selected' : '' ?>>AAACS (Half Insulated / A3CS)</option>
+                                <option value="MVTIC" <?= $curCondType === 'MVTIC' ? 'selected' : '' ?>>MVTIC (Twisted Insulated 20 kV)</option>
+                                <option value="XLPE"  <?= $curCondType === 'XLPE'  ? 'selected' : '' ?>>XLPE (Kabel Tanah / Udara 20 kV)</option>
+                            </select>
+                        </div>
+
+                        <!-- Ukuran Konduktor (70 / 110 / 150 / 240 mm²) -->
+                        <div class="col-md-4 form-group mb-3">
+                            <label for="conductor_size">Ukuran Konduktor (mm²) <span class="text-danger">*</span></label>
+                            <?php $curCondSize = preg_replace('/[^0-9]/', '', (string)old('conductor_size', $temuan['conductor_size'] ?? '150')); ?>
+                            <select name="conductor_size" id="conductor_size" class="form-control select2" required>
+                                <option value="">-- Pilih Ukuran (mm²) --</option>
+                                <option value="70"  <?= $curCondSize === '70'  ? 'selected' : '' ?>>70 mm² (Tidak Standar &lt; 150 mm²)</option>
+                                <option value="110" <?= $curCondSize === '110' ? 'selected' : '' ?>>110 mm² (Tidak Standar &lt; 150 mm²)</option>
+                                <option value="150" <?= $curCondSize === '150' ? 'selected' : '' ?>>150 mm² (Standar JTM PLN)</option>
+                                <option value="240" <?= $curCondSize === '240' ? 'selected' : '' ?>>240 mm² (Standar Feeder Utama / XLPE)</option>
+                            </select>
+                            <input type="hidden" name="konduktor" id="konduktor" value="<?= old('konduktor', esc($temuan['konduktor'])) ?>">
                             <?php if ($validation && $validation->hasError('konduktor')): ?>
-                                <div class="invalid-feedback"><?= $validation->getError('konduktor') ?></div>
+                                <div class="invalid-feedback d-block"><?= $validation->getError('konduktor') ?></div>
                             <?php endif; ?>
                         </div>
 
                         <!-- NOGA -->
-                        <div class="col-md-6 form-group mb-3">
+                        <div class="col-md-4 form-group mb-3">
                             <label for="noga">Nomor Gardu (NOGA)</label>
                             <input type="text" name="noga" id="noga" class="form-control <?= ($validation && $validation->hasError('noga')) ? 'is-invalid' : '' ?>"
                                    placeholder="Contoh: G.123 (Boleh kosong)"
@@ -164,24 +183,47 @@
                         </div>
                     </div>
 
-                    <!-- Material Dibutuhkan (Dynamic Repeater UI) -->
-                    <div class="form-group mb-4 p-3 rounded" style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px;">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                    <!-- Structured BOM Material Requirement Selector -->
+                    <div class="form-group mb-4 p-3 rounded" style="background-color: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 14px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-info-subtle">
                             <label class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
-                                <i class="fas fa-screwdriver-wrench text-primary me-1"></i> Material Dibutuhkan / Pohon <small class="text-muted">(Opsional)</small>
+                                <i class="fas fa-clipboard-list text-primary me-1"></i> Kebutuhan Material BOM Standar PLN <small class="text-muted">(Opsional)</small>
                             </label>
-                        </div>
-                        
-                        <div id="material-repeater-container" class="mb-2">
-                            <!-- Items added dynamically -->
+                            <span class="badge bg-primary text-white">Katalog BOM Resmi</span>
                         </div>
 
-                        <!-- Pill Add Button matching user screenshot -->
-                        <div class="text-center mt-2">
-                            <button type="button" id="btn-add-material" class="btn btn-outline-primary w-100 py-2 rounded-pill font-weight-bold" style="border-width: 2px; font-size: 14px; box-shadow: 0 2px 6px rgba(0, 94, 184, 0.08);">
-                                <i class="fas fa-plus-circle me-1"></i> Tambah Material
-                            </button>
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col-md-7">
+                                <label class="small fw-bold text-secondary mb-1">Pilih Material dari Katalog BOM PLN</label>
+                                <select id="edit_bom_material_select" class="form-control select2">
+                                    <option value="">-- Pilih Kode / Nama Material BOM --</option>
+                                    <?php foreach (($bomMaterialsCatalog ?? []) as $mItem): ?>
+                                        <option value="<?= (int)$mItem['id'] ?>"
+                                                data-code="<?= esc($mItem['material_code']) ?>"
+                                                data-name="<?= esc($mItem['nama_material']) ?>"
+                                                data-alias="<?= esc($mItem['nama_lapangan'] ?? '') ?>"
+                                                data-unit="<?= esc($mItem['satuan'] ?? 'buah') ?>">
+                                            [<?= esc($mItem['material_code']) ?>] <?= esc($mItem['nama_material']) ?><?= !empty($mItem['nama_lapangan']) ? ' (' . esc($mItem['nama_lapangan']) . ')' : '' ?> — (<?= esc($mItem['satuan'] ?? 'buah') ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-3 col-7">
+                                <label class="small fw-bold text-secondary mb-1">Kuantitas</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" min="0.01" id="edit_bom_qty_input" class="form-control" value="1">
+                                    <span class="input-group-text bg-white text-secondary small" id="edit_bom_unit_badge">buah</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-5">
+                                <button type="button" id="btn_add_edit_bom_item" class="btn btn-primary w-100 fw-bold">
+                                    <i class="fas fa-plus me-1"></i> Tambah
+                                </button>
+                            </div>
                         </div>
+
+                        <div id="edit_bom_selected_list" class="mt-2"></div>
+                        <input type="hidden" name="structured_materials_json" id="structured_materials_json" value="">
                         <input type="hidden" name="material" id="material-hidden-field" value="<?= esc($temuan['material']) ?>">
                     </div>
 
@@ -677,75 +719,137 @@
         });
 
         // ============================================================
-        // MATERIAL REPEATER JS (Custom Add & Remove Row UI)
+        // CASCADING KONDUKTOR & STRUCTURED BOM SELECTOR ON EDIT
         // ============================================================
-        function addMaterialRow(nama = '', jumlah = '') {
-            const rowHtml = `
-                <div class="material-item-row card mb-2 p-2 shadow-sm border-0 animate__animated animate__fadeIn" style="background: #ffffff; border-radius: 12px; border-left: 4px solid #005eb8 !important;">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-6 col-md-7">
-                            <label class="small text-muted font-weight-bold mb-1">Nama Material / Pohon</label>
-                            <input type="text" class="form-control form-control-sm input-nama-material" value="${nama}" placeholder="Contoh: Isolator Tumpu / Pohon Mangga">
-                        </div>
-                        <div class="col-4 col-md-4">
-                            <label class="small text-muted font-weight-bold mb-1">Jumlah</label>
-                            <input type="text" class="form-control form-control-sm input-jumlah-material" value="${jumlah}" placeholder="Contoh: 2 buah / 5 m">
-                        </div>
-                        <div class="col-2 col-md-1 text-end">
-                            <label class="small d-block mb-1">&nbsp;</label>
-                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-material border-0" title="Hapus"><i class="fas fa-trash-can"></i></button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            $('#material-repeater-container').append(rowHtml);
+        const editBomItems = <?= json_encode(array_map(static function ($row) {
+            return [
+                'material_id' => (int)($row['material_id'] ?? 0),
+                'code'        => (string)($row['canonical_code_snapshot'] ?? ''),
+                'name'        => (string)($row['canonical_name_snapshot'] ?? ''),
+                'unit'        => (string)($row['unit_snapshot'] ?? 'buah'),
+                'quantity'    => (float)($row['quantity'] ?? 1.0),
+            ];
+        }, $existingStructuredMaterials ?? []), JSON_UNESCAPED_UNICODE) ?>;
+
+        function syncEditKonduktor() {
+            const cType = ($('#conductor_type').val() || '').trim();
+            const cSize = ($('#conductor_size').val() || '').trim();
+            if (cType && cSize) {
+                $('#konduktor').val(cType + ' ' + cSize + ' mm²');
+            }
         }
 
-        // Pre-fill existing materials if present
-        const existingMaterialText = $('#material-hidden-field').val().trim();
-        if (existingMaterialText && existingMaterialText !== 'Tidak ada spesifikasi material') {
-            const lines = existingMaterialText.split('\n');
-            lines.forEach(line => {
-                let cleanLine = line.replace(/^- \s*/, '').trim();
-                if (cleanLine) {
-                    let match = cleanLine.match(/^(\d+\s*(?:buah|pcs|set|m|meter|batang|unit)?)\s+(.*)$/i);
-                    if (match) {
-                        addMaterialRow(match[2].trim(), match[1].trim());
-                    } else {
-                        addMaterialRow(cleanLine, '');
-                    }
-                }
+        function syncEditStructuredJson() {
+            const cType = ($('#conductor_type').val() || '').trim();
+            const cSize = ($('#conductor_size').val() || '').trim();
+            if (editBomItems.length > 0) {
+                $('#structured_materials_json').val(JSON.stringify({
+                    conductor_type: cType || null,
+                    conductor_size: cSize || null,
+                    materials: editBomItems.map(it => ({
+                        material_id: it.material_id,
+                        material_code: it.code,
+                        quantity: it.quantity
+                    }))
+                }));
+                $('#material-hidden-field').val(editBomItems.map(it => `[${it.code}] ${it.name}: ${it.quantity} ${it.unit}`).join(', '));
+            } else {
+                $('#structured_materials_json').val('');
+            }
+        }
+
+        function renderEditBomList() {
+            const $list = $('#edit_bom_selected_list');
+            $list.empty();
+            if (editBomItems.length === 0) {
+                $list.html('<div class="small text-muted fst-italic py-1">Belum ada material BOM terstruktur yang dipilih.</div>');
+                syncEditStructuredJson();
+                return;
+            }
+            let html = '<div class="table-responsive"><table class="table table-sm table-bordered bg-white mb-0 align-middle" style="font-size:12px;">';
+            html += '<thead class="table-light"><tr><th>Kode BOM</th><th>Nama Material Standar PLN</th><th class="text-center" style="width:130px;">Kuantitas</th><th class="text-center" style="width:50px;">Aksi</th></tr></thead><tbody>';
+            editBomItems.forEach(function(it, idx) {
+                html += `<tr>
+                    <td><code class="fw-bold text-primary">${it.code}</code></td>
+                    <td><span class="fw-semibold text-dark">${it.name}</span></td>
+                    <td class="text-center">
+                        <div class="input-group input-group-sm">
+                            <input type="number" step="0.01" min="0.01" class="form-control text-center edit-bom-row-qty" data-idx="${idx}" value="${it.quantity}">
+                            <span class="input-group-text bg-light">${it.unit}</span>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger border-0 btn-remove-edit-bom" data-idx="${idx}" title="Hapus"><i class="fas fa-trash-can"></i></button>
+                    </td>
+                </tr>`;
             });
+            html += '</tbody></table></div>';
+            $list.html(html);
+            syncEditStructuredJson();
         }
 
-        $('#btn-add-material').click(function() {
-            addMaterialRow();
+        $('#conductor_type, #conductor_size').on('change', function() {
+            syncEditKonduktor();
+            syncEditStructuredJson();
         });
 
-        $(document).on('click', '.btn-remove-material', function() {
-            $(this).closest('.material-item-row').remove();
+        $('#edit_bom_material_select').on('change', function() {
+            const unit = $(this).find('option:selected').data('unit') || 'buah';
+            $('#edit_bom_unit_badge').text(unit);
         });
+
+        $('#btn_add_edit_bom_item').on('click', function() {
+            const $sel = $('#edit_bom_material_select');
+            const matId = parseInt($sel.val() || '0', 10);
+            if (!matId) return;
+            const $opt = $sel.find('option:selected');
+            const qty = parseFloat($('#edit_bom_qty_input').val() || '1');
+            if (isNaN(qty) || qty <= 0) return;
+
+            const existingIdx = editBomItems.findIndex(x => x.material_id === matId);
+            if (existingIdx >= 0) {
+                editBomItems[existingIdx].quantity = parseFloat((editBomItems[existingIdx].quantity + qty).toFixed(2));
+            } else {
+                editBomItems.push({
+                    material_id: matId,
+                    code: $opt.data('code') || '',
+                    name: $opt.data('name') || '',
+                    unit: $opt.data('unit') || 'buah',
+                    quantity: qty
+                });
+            }
+            $sel.val('').trigger('change');
+            $('#edit_bom_qty_input').val('1');
+            renderEditBomList();
+        });
+
+        $(document).on('input', '.edit-bom-row-qty', function() {
+            const idx = parseInt($(this).data('idx'), 10);
+            const q = parseFloat($(this).val());
+            if (!isNaN(q) && q > 0 && editBomItems[idx]) {
+                editBomItems[idx].quantity = q;
+                syncEditStructuredJson();
+            }
+        });
+
+        $(document).on('click', '.btn-remove-edit-bom', function() {
+            const idx = parseInt($(this).data('idx'), 10);
+            if (!isNaN(idx)) {
+                editBomItems.splice(idx, 1);
+                renderEditBomList();
+            }
+        });
+
+        renderEditBomList();
+        syncEditKonduktor();
 
         $('form').on('submit', function() {
             const fileInput = document.getElementById('foto');
             if (fileInput && typeof editPhotoStore !== 'undefined' && editPhotoStore.files.length > 0) {
                 fileInput.files = editPhotoStore.files;
             }
-
-            let materialItems = [];
-            $('.material-item-row').each(function() {
-                const nama = $(this).find('.input-nama-material').val().trim();
-                const qty = $(this).find('.input-jumlah-material').val().trim();
-                if (nama !== '') {
-                    materialItems.push(qty ? `- ${qty} ${nama}` : `- ${nama}`);
-                }
-            });
-
-            if (materialItems.length > 0) {
-                $('#material-hidden-field').val(materialItems.join("\n"));
-            } else {
-                $('#material-hidden-field').val('Tidak ada spesifikasi material');
-            }
+            syncEditKonduktor();
+            syncEditStructuredJson();
         });
     });
 }

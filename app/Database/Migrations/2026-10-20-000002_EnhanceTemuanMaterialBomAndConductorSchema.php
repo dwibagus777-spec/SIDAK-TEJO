@@ -334,9 +334,11 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
             }
 
             $temuanQuery = $this->db->table('temuan')
-                ->where('deleted_at IS NULL')
+                ->where('deleted_at IS NULL', null, false)
+                ->where("(conductor_type IS NULL OR conductor_type = '' OR finding_component_key IS NULL)", null, false)
                 ->get();
             $temuanRows = ($temuanQuery && is_object($temuanQuery)) ? $temuanQuery->getResultArray() : [];
+            $batchMaterials = [];
 
             foreach ($temuanRows as $r) {
                 $tid = (int)$r['id'];
@@ -482,7 +484,7 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
                     $rawAssetId = (!empty($r['asset_id']) && (int)$r['asset_id'] > 0) ? (int)$r['asset_id'] : null;
                     $safeAssetId = ($rawAssetId !== null && isset($validAssetIds[$rawAssetId])) ? $rawAssetId : null;
 
-                    $this->db->table('temuan_materials')->insert([
+                    $batchMaterials[] = [
                         'temuan_id'               => $tid,
                         'asset_id'                => $safeAssetId,
                         'construction_type_id'    => $ctId,
@@ -498,8 +500,13 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
                         'created_by'              => !empty($r['created_by']) ? (int)$r['created_by'] : null,
                         'created_at'              => $r['created_at'] ?: $now,
                         'updated_at'              => $now,
-                    ]);
+                    ];
                     $existingTmMat[$dedupKey] = true;
+                }
+            }
+            if (!empty($batchMaterials)) {
+                foreach (array_chunk($batchMaterials, 150) as $chunk) {
+                    $this->db->table('temuan_materials')->insertBatch($chunk);
                 }
             }
         }

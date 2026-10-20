@@ -4007,7 +4007,11 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             if (!document.getElementById('kpi-total-temuan')) return;
             function refreshKpi() {
                 fetch('<?= site_url('dashboard/analytics-data') ?>')
-                    .then(function(r) { return r.json(); })
+                    .then(function(r) {
+                        if (!r.ok) return null;
+                        var ct = r.headers.get('content-type');
+                        return (ct && ct.includes('application/json')) ? r.json() : null;
+                    })
                     .then(function(resp) {
                         if (!resp || !resp.data) return;
                         var d = resp.data;

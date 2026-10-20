@@ -1562,36 +1562,49 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!str) return '';
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-});
 
-<script>
-(function() {
-    var cumData = <?php echo json_encode(array_values($cumulativeGangguan ?? array_fill(0, 12, 0))); ?>;
-    var labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    var ctx = document.getElementById('cumulativeGangguanChart');
-    if (!ctx) return;
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Kumulatif Gangguan',
-                data: cumData,
-                borderColor: '#ef4444',
-                backgroundColor: 'rgba(239,68,68,0.08)',
-                borderWidth: 2,
-                pointRadius: 4,
-                pointBackgroundColor: '#ef4444',
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { return 'Kumulatif: ' + c.parsed.y + ' gangguan'; } } } },
-            scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
-        }
-    });
-})();
+    // 6. Cumulative Gangguan Line Chart (12 Months Running Total)
+    (function initCumulativeChart() {
+        var cumData = <?php echo json_encode(array_values($cumulativeGangguan ?? array_fill(0, 12, 0))); ?>;
+        var labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        var ctx = document.getElementById('cumulativeGangguanChart');
+        if (!ctx || typeof Chart === 'undefined') return;
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Kumulatif Gangguan',
+                    data: cumData,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,0.08)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#ef4444',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(c) {
+                                return 'Kumulatif: ' + c.parsed.y + ' gangguan';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    })();
+});
 </script>
 <?= $this->endSection() ?>

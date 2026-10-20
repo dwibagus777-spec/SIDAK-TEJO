@@ -414,10 +414,14 @@ class Dashboard extends BaseController
         $assetsByPenyulang = array_column($assetCountRows, 'cnt', 'penyulang_id');
 
         // Build per-feeder and per-ULP aggregations
+        $hasGi = $db->tableExists('gardu_induk');
         $penyulangQuery = $db->table('penyulang p')
-            ->select('p.id, p.kode_penyulang, p.nama_penyulang, p.ulp_id, u.nama_ulp')
-            ->join('ulps u', 'p.ulp_id = u.id', 'left')
-            ->where('p.status', 'AKTIF');
+            ->select('p.id, p.kode_penyulang, p.nama_penyulang, p.ulp_id, u.nama_ulp' . ($hasGi ? ', gi.nama_gi as gardu_induk' : ''))
+            ->join('ulps u', 'p.ulp_id = u.id', 'left');
+        if ($hasGi) {
+            $penyulangQuery->join('gardu_induk gi', 'gi.id = p.gi_id', 'left');
+        }
+        $penyulangQuery->where("(p.status IS NULL OR UPPER(p.status) IN ('AKTIF', 'ACTIVE'))", null, false);
         if ($ulpIdFilter !== null) {
             $penyulangQuery->where('p.ulp_id', $ulpIdFilter);
         }
@@ -436,7 +440,7 @@ class Dashboard extends BaseController
                 'nama'          => $p['nama_penyulang'],
                 'ulp_id'        => $uid,
                 'nama_ulp'      => $p['nama_ulp'],
-                'gardu_induk'   => $giByFeeder[$fKey] ?? '-',
+                'gardu_induk'   => !empty($p['gardu_induk']) ? $p['gardu_induk'] : ($giByFeeder[$fKey] ?? '-'),
                 'aset'          => (int)($assetsByPenyulang[$pid] ?? 0),
                 'aaac_kms'      => $tl ? round((float)$tl['aaac_kms'], 2) : 0,
                 'aaacs_kms'     => $tl ? round((float)$tl['aaacs_kms'], 2) : 0,
@@ -490,12 +494,24 @@ class Dashboard extends BaseController
             'by_type'  => $assetByType,
         ];
 
-        // Cumulative gangguan per month for trend year
-        $ggnMonthlyRaw = $db->query(
-            "SELECT MONTH(event_date) mo, COUNT(*) cnt FROM historical_feeder_interruptions
-             WHERE event_date IS NOT NULL AND YEAR(event_date) = " . (int)$trendYear . "
-             GROUP BY mo ORDER BY mo ASC"
-        )->getResultArray();
+        // Cumulative gangguan per month for trend year (respecting ULP filter)
+        $ggnMonthlyBuilder = $db->table('historical_feeder_interruptions')
+            ->select('MONTH(event_date) mo, COUNT(*) cnt')
+            ->where('event_date IS NOT NULL')
+            ->where('YEAR(event_date)', (int)$trendYear);
+        if ($ulpIdFilter !== null) {
+            $interruptionFields = $db->getFieldNames('historical_feeder_interruptions');
+            if (in_array('ulp_id', $interruptionFields, true)) {
+                $ggnMonthlyBuilder->where('ulp_id', $ulpIdFilter);
+            } else {
+                $uRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
+                if ($uRow) {
+                    $cleanU = trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']));
+                    $ggnMonthlyBuilder->like('ulp_name', $cleanU);
+                }
+            }
+        }
+        $ggnMonthlyRaw = $ggnMonthlyBuilder->groupBy('mo')->orderBy('mo', 'ASC')->get()->getResultArray();
         $monthlyGangguan = array_fill(1, 12, 0);
         foreach ($ggnMonthlyRaw as $row) { $monthlyGangguan[(int)$row['mo']] = (int)$row['cnt']; }
         $cumulativeGangguan = [];

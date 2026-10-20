@@ -645,6 +645,10 @@ class Dashboard extends BaseController
             'total_items_qty'  => 0.0,
         ];
         if ($db->tableExists('temuan') && $db->tableExists('temuan_materials')) {
+            $hasTmCondType = $db->fieldExists('conductor_type', 'temuan');
+            $hasTmCondSize = $db->fieldExists('conductor_size', 'temuan');
+            $condTypeExpr  = $hasTmCondType ? "COALESCE(NULLIF(TRIM(t.conductor_type), ''), 'AAAC')" : "'AAAC'";
+            $condSizeExpr  = $hasTmCondSize ? "COALESCE(NULLIF(TRIM(t.conductor_size), ''), '150')" : "'150'";
             $tmRowsSql = "
                 SELECT
                     t.penyulang_id,
@@ -653,9 +657,9 @@ class Dashboard extends BaseController
                     COALESCE(s.nama_section, '-') AS nama_section,
                     t.ulp_id,
                     COALESCE(u.nama_ulp, '-') AS nama_ulp,
-                    COALESCE(gi.nama_gi, '-') AS nama_gi,
-                    COALESCE(NULLIF(TRIM(t.conductor_type), ''), 'AAAC') AS conductor_type,
-                    COALESCE(NULLIF(TRIM(t.conductor_size), ''), '150') AS conductor_size,
+                    '-' AS nama_gi,
+                    {$condTypeExpr} AS conductor_type,
+                    {$condSizeExpr} AS conductor_size,
                     COUNT(DISTINCT t.id) AS total_temuan,
                     SUM(CASE WHEN tm.canonical_code_snapshot = 'CANON-HDW-003' THEN tm.quantity ELSE 0 END) AS qty_armtie,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-001', 'CANON-HDW-013', 'CANON-HDW-014', 'CANON-HDW-019') THEN tm.quantity ELSE 0 END) AS qty_crossarm,
@@ -672,13 +676,13 @@ class Dashboard extends BaseController
                 LEFT JOIN penyulang p ON p.id = t.penyulang_id
                 LEFT JOIN sections s ON s.id = t.section_id
                 LEFT JOIN ulps u ON u.id = t.ulp_id
-                LEFT JOIN gardu_induk gi ON gi.id = p.gi_id
                 WHERE t.deleted_at IS NULL
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
-                GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp, gi.nama_gi, conductor_type, conductor_size
+                GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp, conductor_type, conductor_size
                 ORDER BY total_temuan DESC, p.nama_penyulang ASC, s.nama_section ASC
             ";
-            $tmMatrixRows = $db->query($tmRowsSql)->getResultArray();
+            $tmRowsQuery = $db->query($tmRowsSql);
+            $tmMatrixRows = ($tmRowsQuery && is_object($tmRowsQuery)) ? $tmRowsQuery->getResultArray() : [];
             $gisSet = [];
             foreach ($tmMatrixRows as &$tmr) {
                 $fKey = strtoupper(trim((string)$tmr['nama_penyulang']));
@@ -706,7 +710,7 @@ class Dashboard extends BaseController
             sort($temuanMaterialMatrix['gis_list']);
 
             // Aggregate totals by canonical BOM material code
-            $matRecapRows = $db->query("
+            $matRecapQuery = $db->query("
                 SELECT
                     tm.canonical_code_snapshot AS material_code,
                     tm.canonical_name_snapshot AS nama_material,
@@ -722,12 +726,12 @@ class Dashboard extends BaseController
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot, mm.nama_lapangan, mm.material_category
                 ORDER BY total_qty DESC
-            ")->getResultArray();
-            $temuanMaterialMatrix['summary_by_mat'] = $matRecapRows;
+            ");
+            $temuanMaterialMatrix['summary_by_mat'] = ($matRecapQuery && is_object($matRecapQuery)) ? $matRecapQuery->getResultArray() : [];
         }
 
         if ($db->tableExists('construction_types') && $db->tableExists('construction_bom_items')) {
-            $bomCtRows = $db->query("
+            $bomCtQuery = $db->query("
                 SELECT ct.id, ct.code, ct.name,
                        b.material_id, m.material_code, b.raw_material_name, b.material_alias, b.quantity, b.unit, b.component_category
                 FROM construction_types ct
@@ -735,7 +739,8 @@ class Dashboard extends BaseController
                 LEFT JOIN master_materials m ON m.id = b.material_id
                 WHERE ct.is_active = 1
                 ORDER BY ct.sort_order ASC, ct.id ASC, b.sort_order ASC, b.id ASC
-            ")->getResultArray();
+            ");
+            $bomCtRows = ($bomCtQuery && is_object($bomCtQuery)) ? $bomCtQuery->getResultArray() : [];
             $groupedBomCt = [];
             foreach ($bomCtRows as $bcr) {
                 $cCode = (string)$bcr['code'];
@@ -846,16 +851,16 @@ class Dashboard extends BaseController
             }
         }
         // Populate size_recap from gis_translines & temuan
-        if ($db->tableExists('gis_translines')) {
-            $tlSizeSql = "
+        if ($db->tableExists('gis_translines') && $db->fieldExists('conductor_size', 'gis_translines')) {
+            $tlSizeQuery = $db->query("
                 SELECT gt.conductor_size, COUNT(gt.id) AS spans, SUM(COALESCE(gt.distance_meters, 0))/1000 AS kms
                 FROM gis_translines gt
                 LEFT JOIN penyulang p ON p.id = gt.penyulang_id
-                WHERE (gt.status = 'ACTIVE' OR gt.is_active = 1) AND gt.deleted_at IS NULL
+                WHERE gt.deleted_at IS NULL
                 " . ($ulpIdFilter !== null ? " AND p.ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY gt.conductor_size
-            ";
-            foreach ($db->query($tlSizeSql)->getResultArray() as $tsr) {
+            ");
+            foreach (($tlSizeQuery && is_object($tlSizeQuery) ? $tlSizeQuery->getResultArray() : []) as $tsr) {
                 $sz = preg_replace('/[^0-9]/', '', (string)($tsr['conductor_size'] ?? '150'));
                 if (isset($coatingSummary['size_recap'][$sz])) {
                     $coatingSummary['size_recap'][$sz]['spans'] += (int)$tsr['spans'];
@@ -863,15 +868,15 @@ class Dashboard extends BaseController
                 }
             }
         }
-        if ($db->tableExists('temuan')) {
-            $tmSizeSql = "
+        if ($db->tableExists('temuan') && $db->fieldExists('conductor_size', 'temuan')) {
+            $tmSizeQuery = $db->query("
                 SELECT COALESCE(NULLIF(TRIM(conductor_size), ''), '150') AS sz, COUNT(id) AS cnt
                 FROM temuan
                 WHERE deleted_at IS NULL
                 " . ($ulpIdFilter !== null ? " AND ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY sz
-            ";
-            foreach ($db->query($tmSizeSql)->getResultArray() as $tmsr) {
+            ");
+            foreach (($tmSizeQuery && is_object($tmSizeQuery) ? $tmSizeQuery->getResultArray() : []) as $tmsr) {
                 $sz = preg_replace('/[^0-9]/', '', (string)$tmsr['sz']);
                 if (isset($coatingSummary['size_recap'][$sz])) {
                     $coatingSummary['size_recap'][$sz]['temuan_cnt'] += (int)$tmsr['cnt'];

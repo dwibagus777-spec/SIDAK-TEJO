@@ -23,14 +23,15 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
         // 1. Add conductor_type, conductor_size, finding_component_key to `temuan`
         if ($this->db->tableExists('temuan')) {
             if (!$this->db->fieldExists('conductor_type', 'temuan')) {
-                $this->forge->addColumn('temuan', [
-                    'conductor_type' => [
-                        'type'       => 'VARCHAR',
-                        'constraint' => 24,
-                        'null'       => true,
-                        'after'      => 'konduktor',
-                    ],
-                ]);
+                $colDef = [
+                    'type'       => 'VARCHAR',
+                    'constraint' => 24,
+                    'null'       => true,
+                ];
+                if ($this->db->fieldExists('konduktor', 'temuan')) {
+                    $colDef['after'] = 'konduktor';
+                }
+                $this->forge->addColumn('temuan', ['conductor_type' => $colDef]);
             }
             if (!$this->db->fieldExists('conductor_size', 'temuan')) {
                 $this->forge->addColumn('temuan', [
@@ -43,14 +44,15 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
                 ]);
             }
             if (!$this->db->fieldExists('finding_component_key', 'temuan')) {
-                $this->forge->addColumn('temuan', [
-                    'finding_component_key' => [
-                        'type'       => 'VARCHAR',
-                        'constraint' => 40,
-                        'null'       => true,
-                        'after'      => 'jenis_temuan',
-                    ],
-                ]);
+                $colDefKey = [
+                    'type'       => 'VARCHAR',
+                    'constraint' => 40,
+                    'null'       => true,
+                ];
+                if ($this->db->fieldExists('jenis_temuan', 'temuan')) {
+                    $colDefKey['after'] = 'jenis_temuan';
+                }
+                $this->forge->addColumn('temuan', ['finding_component_key' => $colDefKey]);
             }
         }
 
@@ -146,7 +148,8 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
         // 4. Populate `construction_bom_items` for TM-1 through TM-11 (matching both TM-1 and TM1)
         if ($this->db->tableExists('master_materials') && $this->db->tableExists('construction_types') && $this->db->tableExists('construction_bom_items')) {
             $matByCode = [];
-            foreach ($this->db->table('master_materials')->get()->getResultArray() as $m) {
+            $mmQ1 = $this->db->table('master_materials')->get();
+            foreach (($mmQ1 && is_object($mmQ1) ? $mmQ1->getResultArray() : []) as $m) {
                 $matByCode[$m['material_code']] = $m;
             }
 
@@ -297,13 +300,15 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
         // 5. Deterministic backfill of conductor_type, conductor_size, finding_component_key, and temuan_materials
         if ($this->db->tableExists('temuan') && $this->db->tableExists('temuan_materials') && $this->db->tableExists('master_materials')) {
             $matByCode = [];
-            foreach ($this->db->table('master_materials')->get()->getResultArray() as $m) {
+            $mmQ2 = $this->db->table('master_materials')->get();
+            foreach (($mmQ2 && is_object($mmQ2) ? $mmQ2->getResultArray() : []) as $m) {
                 $matByCode[$m['material_code']] = $m;
             }
 
             $ctByCode = [];
             if ($this->db->tableExists('construction_types')) {
-                foreach ($this->db->table('construction_types')->get()->getResultArray() as $ct) {
+                $ctQ = $this->db->table('construction_types')->get();
+                foreach (($ctQ && is_object($ctQ) ? $ctQ->getResultArray() : []) as $ct) {
                     $ctByCode[strtoupper($ct['code'])] = (int)$ct['id'];
                     $ctByCode[strtoupper(str_replace('-', '', $ct['code']))] = (int)$ct['id'];
                 }
@@ -311,14 +316,20 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
 
             // Dominant conductor per penyulang_id from gis_translines
             $feederConductorMap = [];
-            if ($this->db->tableExists('gis_translines')) {
-                $tlRows = $this->db->query("
-                    SELECT penyulang_id, conductor_type, conductor_size, COUNT(*) as cnt
+            if ($this->db->tableExists('gis_translines') && $this->db->fieldExists('conductor_type', 'gis_translines')) {
+                $hasTlSize = $this->db->fieldExists('conductor_size', 'gis_translines');
+                $hasTlDel  = $this->db->fieldExists('deleted_at', 'gis_translines');
+                $tlSizeSelect = $hasTlSize ? 'conductor_size' : "'150' AS conductor_size";
+                $tlSizeGroup  = $hasTlSize ? ', conductor_size' : '';
+                $tlWhere      = $hasTlDel ? 'deleted_at IS NULL AND penyulang_id IS NOT NULL' : 'penyulang_id IS NOT NULL';
+                $tlQuery = $this->db->query("
+                    SELECT penyulang_id, conductor_type, {$tlSizeSelect}, COUNT(*) as cnt
                     FROM gis_translines
-                    WHERE deleted_at IS NULL AND penyulang_id IS NOT NULL
-                    GROUP BY penyulang_id, conductor_type, conductor_size
+                    WHERE {$tlWhere}
+                    GROUP BY penyulang_id, conductor_type{$tlSizeGroup}
                     ORDER BY penyulang_id ASC, cnt DESC
-                ")->getResultArray();
+                ");
+                $tlRows = ($tlQuery && is_object($tlQuery)) ? $tlQuery->getResultArray() : [];
                 foreach ($tlRows as $tr) {
                     $pid = (int)$tr['penyulang_id'];
                     if (!isset($feederConductorMap[$pid])) {
@@ -336,21 +347,23 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
             // Valid asset_ids in `assets` table to satisfy FK constraint
             $validAssetIds = [];
             if ($this->db->tableExists('assets')) {
-                foreach ($this->db->table('assets')->select('id')->get()->getResultArray() as $aRow) {
+                $aQuery = $this->db->table('assets')->select('id')->get();
+                foreach (($aQuery && is_object($aQuery) ? $aQuery->getResultArray() : []) as $aRow) {
                     $validAssetIds[(int)$aRow['id']] = true;
                 }
             }
 
             // Existing temuan_materials map to avoid duplicates
             $existingTmMat = [];
-            foreach ($this->db->table('temuan_materials')->select('temuan_id, material_id')->get()->getResultArray() as $etm) {
+            $etmQuery = $this->db->table('temuan_materials')->select('temuan_id, material_id')->get();
+            foreach (($etmQuery && is_object($etmQuery) ? $etmQuery->getResultArray() : []) as $etm) {
                 $existingTmMat[(int)$etm['temuan_id'] . ':' . (int)$etm['material_id']] = true;
             }
 
-            $temuanRows = $this->db->table('temuan')
+            $temuanQuery = $this->db->table('temuan')
                 ->where('deleted_at IS NULL')
-                ->get()
-                ->getResultArray();
+                ->get();
+            $temuanRows = ($temuanQuery && is_object($temuanQuery)) ? $temuanQuery->getResultArray() : [];
 
             foreach ($temuanRows as $r) {
                 $tid = (int)$r['id'];

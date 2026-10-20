@@ -659,9 +659,9 @@ class AssetReconciliationService
         $affectedTranslinesTarget = [];
 
         if (!empty($ingestIds)) {
-            if ($this->db->tableExists('temuan')) {
+            if ($this->db->tableExists('temuan') && $this->db->fieldExists('asset_id', 'temuan')) {
                 $tRows = $this->db->table('temuan')
-                    ->select('id, asset_id, penyulang_id, judul')
+                    ->select('id, asset_id, penyulang_id, nomor_temuan')
                     ->whereIn('asset_id', $ingestIds)
                     ->get()->getResultArray();
                 foreach ($tRows as $tr) {
@@ -669,7 +669,7 @@ class AssetReconciliationService
                         'id'           => (int)$tr['id'],
                         'old_asset_id' => (int)$tr['asset_id'],
                         'new_asset_id' => (int)($pairMap[$tr['asset_id']] ?? 0),
-                        'judul'        => $tr['judul'] ?? '',
+                        'nomor_temuan' => $tr['nomor_temuan'] ?? '',
                     ];
                 }
             }

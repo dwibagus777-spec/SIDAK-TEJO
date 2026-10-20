@@ -760,11 +760,20 @@ class Api extends BaseController
      */
     public function reconcileKalisogoDuplicates()
     {
-        $isExecute = (bool)($this->request->getGetPost('execute') ?? false);
-        $service = new \App\Services\AssetReconciliationService();
-        $result = $service->reconcileKalisogoDuplicates($isExecute);
+        try {
+            $isExecute = (bool)($this->request->getGetPost('execute') ?? false);
+            $service = new \App\Services\AssetReconciliationService();
+            $result = $service->reconcileKalisogoDuplicates($isExecute);
 
-        $statusCode = (($result['status'] ?? '') === 'error') ? 500 : 200;
-        return $this->response->setStatusCode($statusCode)->setJSON($result);
+            $statusCode = (($result['status'] ?? '') === 'error') ? 400 : 200;
+            return $this->response->setStatusCode($statusCode)->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+                'file'    => basename($e->getFile()),
+                'line'    => $e->getLine(),
+            ]);
+        }
     }
 }

@@ -3387,8 +3387,8 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                     var detail = '';
                     var badgeReason = 'Gagal';
                     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                        detail = 'Izin mikrofon ditolak oleh pengguna atau sistem. Pastikan izin mikrofon telah diberikan di aplikasi Android atau peramban.';
-                        badgeReason = 'Izin Ditolak';
+                        detail = '<strong>Izin Mikrofon Diblokir oleh Peramban / Sistem.</strong><br><span class="d-block mt-1">Langkah mengaktifkan di peramban:</span><ol class="mb-1 ps-3 text-start small"><li>Klik ikon setelan/gembok di sebelah kiri URL <code>' + window.location.hostname + '</code>.</li><li>Ubah izin <strong>Mikrofon</strong> menjadi <strong>Izinkan (Allow)</strong>.</li><li>Muat ulang (refresh) halaman setelah mengubah izin.</li></ol>';
+                        badgeReason = 'Izin Diblokir';
                     } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
                         detail = 'Perangkat mikrofon fisik tidak terdeteksi pada perangkat ini. Pastikan mikrofon/headset terpasang.';
                         badgeReason = 'Mic Tidak Ada';

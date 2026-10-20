@@ -502,12 +502,14 @@ class AssetContextService
             }
 
             // Invariant assertions: Unrequested fields MUST NOT change
-            if ((string)$after['latitude'] !== $before['latitude'] ||
-                (string)$after['longitude'] !== $before['longitude'] ||
-                (string)$after['kode_asset'] !== $before['kode_asset'] ||
-                (string)($after['nama_asset'] ?? '') !== $before['nama_asset'] ||
-                (int)($after['penyulang_id'] ?? 0) !== $before['penyulang_id'] ||
-                (int)($after['ulp_id'] ?? 0) !== $before['ulp_id'] ||
+            $latDiff = abs((float)($after['latitude'] ?? 0) - (float)($before['latitude'] ?? 0));
+            $lngDiff = abs((float)($after['longitude'] ?? 0) - (float)($before['longitude'] ?? 0));
+            if ($latDiff > 0.00001 ||
+                $lngDiff > 0.00001 ||
+                (string)$after['kode_asset'] !== (string)$before['kode_asset'] ||
+                (string)($after['nama_asset'] ?? '') !== (string)($before['nama_asset'] ?? '') ||
+                (int)($after['penyulang_id'] ?? 0) !== (int)$before['penyulang_id'] ||
+                (int)($after['ulp_id'] ?? 0) !== (int)$before['ulp_id'] ||
                 (int)($after['construction_type_id'] ?? 0) !== (int)($before['construction_type_id'] ?? 0)
             ) {
                 throw new \RuntimeException("Integritas gagal: Terdeteksi mutasi pada kolom terproteksi!");

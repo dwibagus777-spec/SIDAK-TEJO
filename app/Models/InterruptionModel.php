@@ -231,6 +231,7 @@ class InterruptionModel extends Model
                 $result[] = [
                     'penyulang_id'   => $pId,
                     'nama_penyulang' => $dispName,
+                    'feeder_name'    => $dispName,
                     'nama_ulp'       => $dispUlp,
                     'cnt'            => (int)$r['cnt'],
                 ];

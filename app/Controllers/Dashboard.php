@@ -368,6 +368,21 @@ class Dashboard extends BaseController
             : [];
         $giByFeeder = array_column($giMapRows, 'gi_name', 'fdr');
 
+        // Augment GI mapping from historical interruption substations for unmapped or NULL gi_id feeders
+        if ($db->tableExists('historical_feeder_interruptions') && $db->fieldExists('substation_name', 'historical_feeder_interruptions')) {
+            $hGiRows = $db->query("SELECT UPPER(TRIM(feeder_name)) AS fdr, MAX(substation_name) AS gi_sub FROM historical_feeder_interruptions WHERE substation_name IS NOT NULL AND substation_name != '' GROUP BY UPPER(TRIM(feeder_name))")->getResultArray();
+            foreach ($hGiRows as $hr) {
+                $f = strtoupper(trim((string)$hr['fdr']));
+                $g = trim((string)$hr['gi_sub']);
+                if (!empty($g) && (!isset($giByFeeder[$f]) || empty($giByFeeder[$f]) || $giByFeeder[$f] === '-')) {
+                    if (!str_starts_with(strtoupper($g), 'GI ') && !str_starts_with(strtoupper($g), 'GARDU INDUK ')) {
+                        $g = 'GI ' . $g;
+                    }
+                    $giByFeeder[$f] = $g;
+                }
+            }
+        }
+
         $translineRows = $db->query("
             SELECT penyulang_id,
                 SUM(CASE WHEN UPPER(conductor_type) LIKE '%AAACS%' THEN distance_meters ELSE 0 END)/1000 as aaacs_kms,
@@ -414,13 +429,17 @@ class Dashboard extends BaseController
             $uid  = $p['ulp_id'];
             $fKey = strtoupper(trim($p['nama_penyulang']));
             $tl   = $translinesByPenyulang[$pid] ?? null;
+            $giResolved = !empty($p['gardu_induk']) ? $p['gardu_induk'] : ($giByFeeder[$fKey] ?? '-');
+            if ($giResolved !== '-' && !empty($giResolved) && !str_starts_with(strtoupper($giResolved), 'GI ') && !str_starts_with(strtoupper($giResolved), 'GARDU INDUK ')) {
+                $giResolved = 'GI ' . $giResolved;
+            }
             $row  = [
                 'id'            => $pid,
                 'kode'          => $p['kode_penyulang'],
                 'nama'          => $p['nama_penyulang'],
                 'ulp_id'        => $uid,
                 'nama_ulp'      => $p['nama_ulp'],
-                'gardu_induk'   => !empty($p['gardu_induk']) ? $p['gardu_induk'] : ($giByFeeder[$fKey] ?? '-'),
+                'gardu_induk'   => $giResolved,
                 'aset'          => (int)($assetsByPenyulang[$pid] ?? 0),
                 'aaac_kms'      => $tl ? round((float)$tl['aaac_kms'], 2) : 0,
                 'aaacs_kms'     => $tl ? round((float)$tl['aaacs_kms'], 2) : 0,
@@ -464,13 +483,71 @@ class Dashboard extends BaseController
         )->getResultArray();
         $assetByType  = array_column($assetSummaryRows, 'cnt', 'jenis_asset');
         $assetTotalAll = array_sum(array_column($assetSummaryRows, 'cnt'));
+        $jtmCount      = 0;
+        $keypointCount = 0;
+        $garduCount    = 0;
+        $trafoCount    = 0;
+        $pohonCount    = 0;
+
+        foreach ($assetSummaryRows as $asr) {
+            $rawType = strtoupper(trim((string)($asr['jenis_asset'] ?? '')));
+            $c = (int)($asr['cnt'] ?? 0);
+
+            if (preg_match('/(JTM|TIANG|SUTM|SKTM|POLE|CONDUCTOR|JARINGAN)/i', $rawType)) {
+                $jtmCount += $c;
+            }
+            if (preg_match('/(KEYPOINT|RECLOSER|LBS|SWITCH|DISCONNECT|SECTIONALIZER|FCO)/i', $rawType)) {
+                $keypointCount += $c;
+            }
+            if (preg_match('/(GARDU|GTT|SUBSTATION|PORTAL|CANTOL|KIOS)/i', $rawType)) {
+                $garduCount += $c;
+            }
+            if (preg_match('/(TRAFO|TRANSFORMATOR|GTT)/i', $rawType)) {
+                $trafoCount += $c;
+            }
+            if (preg_match('/(POHON|TREE|VEGETASI|ROW)/i', $rawType)) {
+                $pohonCount += $c;
+            }
+        }
+
+        if ($jtmCount === 0) {
+            $jtmCount = (int)($assetByType['JTM'] ?? 0);
+        }
+        if ($keypointCount === 0) {
+            $keypointCount = (int)($assetByType['RECLOSER_LBS'] ?? $assetByType['KEYPOINT'] ?? 0);
+        }
+        if ($garduCount === 0) {
+            $garduCount = (int)(($assetByType['GARDU_DISTRIBUSI_PORTAL'] ?? 0) + ($assetByType['GTT_GARDU_TRAFO_TIANG'] ?? 0) + ($assetByType['GARDU'] ?? 0));
+        }
+        if ($trafoCount === 0) {
+            $trafoCount = (int)($assetByType['GTT_GARDU_TRAFO_TIANG'] ?? $assetByType['TRAFO'] ?? 0);
+        }
+        if ($pohonCount === 0 && $db->tableExists('vegetation_observations')) {
+            $vegBuilder = $db->table('vegetation_observations');
+            if ($db->fieldExists('is_valid', 'vegetation_observations')) {
+                $vegBuilder->where('is_valid', 1);
+            }
+            if ($db->fieldExists('deleted_at', 'vegetation_observations')) {
+                $vegBuilder->where('deleted_at IS NULL');
+            }
+            if ($ulpIdFilter !== null) {
+                if ($db->fieldExists('ulp_id', 'vegetation_observations')) {
+                    $vegBuilder->where('ulp_id', (int)$ulpIdFilter);
+                } elseif ($db->fieldExists('asset_id', 'vegetation_observations') && $db->tableExists('assets')) {
+                    $vegBuilder->join('assets', 'assets.id = vegetation_observations.asset_id')
+                               ->where('assets.ulp_id', (int)$ulpIdFilter);
+                }
+            }
+            $pohonCount = (int)$vegBuilder->countAllResults();
+        }
+
         $assetSummary = [
             'total'    => $assetTotalAll,
-            'jtm'      => (int)($assetByType['JTM'] ?? 0),
-            'keypoint' => (int)($assetByType['RECLOSER_LBS'] ?? 0),
-            'gardu'    => (int)(($assetByType['GARDU_DISTRIBUSI_PORTAL'] ?? 0) + ($assetByType['GTT_GARDU_TRAFO_TIANG'] ?? 0)),
-            'trafo'    => (int)($assetByType['GTT_GARDU_TRAFO_TIANG'] ?? 0),
-            'pohon'    => (int)($db->tableExists('vegetation_observations') ? $db->table('vegetation_observations')->where('is_valid', 1)->countAllResults() : 0),
+            'jtm'      => $jtmCount,
+            'keypoint' => $keypointCount,
+            'gardu'    => $garduCount,
+            'trafo'    => $trafoCount,
+            'pohon'    => $pohonCount,
             'by_type'  => $assetByType,
         ];
 
@@ -703,6 +780,7 @@ class Dashboard extends BaseController
                 $tmr['qty_gsw_ground']    = (float)$tmr['qty_gsw_ground'];
                 $tmr['qty_konduktor_m']   = (float)$tmr['qty_konduktor_m'];
                 $temuanMaterialMatrix['total_temuan'] += $tmr['total_temuan'];
+                $temuanMaterialMatrix['total_items_qty'] += (float)($tmr['qty_armtie'] + $tmr['qty_crossarm'] + $tmr['qty_pin_isolator'] + $tmr['qty_hang_isolator'] + $tmr['qty_fco'] + $tmr['qty_arrester'] + $tmr['qty_skun_konektor'] + $tmr['qty_gsw_ground']);
             }
             unset($tmr);
             $temuanMaterialMatrix['rows'] = $tmMatrixRows;
@@ -728,6 +806,68 @@ class Dashboard extends BaseController
                 ORDER BY total_qty DESC
             ");
             $temuanMaterialMatrix['summary_by_mat'] = ($matRecapQuery && is_object($matRecapQuery)) ? $matRecapQuery->getResultArray() : [];
+            $matSummarySum = 0;
+            foreach ($temuanMaterialMatrix['summary_by_mat'] as $smRow) {
+                $matSummarySum += (float)($smRow['total_qty'] ?? 0);
+            }
+            if ($matSummarySum > 0) {
+                $temuanMaterialMatrix['total_items_qty'] = $matSummarySum;
+            }
+        }
+
+        // Resilient fallback: if temuan_materials is empty or being migrated, show temuan rows directly
+        if (empty($temuanMaterialMatrix['rows']) && $db->tableExists('temuan')) {
+            $fallbackSql = "
+                SELECT
+                    t.penyulang_id,
+                    COALESCE(p.nama_penyulang, '-') AS nama_penyulang,
+                    t.section_id,
+                    COALESCE(s.nama_section, '-') AS nama_section,
+                    t.ulp_id,
+                    COALESCE(u.nama_ulp, '-') AS nama_ulp,
+                    '-' AS nama_gi,
+                    'AAAC' AS conductor_type,
+                    '150' AS conductor_size,
+                    COUNT(DISTINCT t.id) AS total_temuan,
+                    0 AS qty_armtie,
+                    0 AS qty_crossarm,
+                    0 AS qty_pin_isolator,
+                    0 AS qty_hang_isolator,
+                    0 AS qty_fco,
+                    0 AS qty_arrester,
+                    0 AS qty_skun_konektor,
+                    0 AS qty_gsw_ground,
+                    0 AS qty_konduktor_m,
+                    '' AS rincian_material
+                FROM temuan t
+                LEFT JOIN penyulang p ON p.id = t.penyulang_id
+                LEFT JOIN sections s ON s.id = t.section_id
+                LEFT JOIN ulps u ON u.id = t.ulp_id
+                WHERE t.deleted_at IS NULL
+                " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
+                GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp
+                ORDER BY total_temuan DESC, p.nama_penyulang ASC, s.nama_section ASC
+            ";
+            $fbQuery = $db->query($fallbackSql);
+            if ($fbQuery && is_object($fbQuery)) {
+                $tmMatrixRows = $fbQuery->getResultArray();
+                $gisSet = [];
+                foreach ($tmMatrixRows as &$tmr) {
+                    $fKey = strtoupper(trim((string)$tmr['nama_penyulang']));
+                    if (($tmr['nama_gi'] === '-' || empty($tmr['nama_gi'])) && isset($giByFeeder[$fKey])) {
+                        $tmr['nama_gi'] = $giByFeeder[$fKey];
+                    }
+                    if ($tmr['nama_gi'] !== '-' && !empty($tmr['nama_gi'])) {
+                        $gisSet[$tmr['nama_gi']] = true;
+                    }
+                    $tmr['total_temuan'] = (int)$tmr['total_temuan'];
+                    $temuanMaterialMatrix['total_temuan'] += $tmr['total_temuan'];
+                }
+                unset($tmr);
+                $temuanMaterialMatrix['rows'] = $tmMatrixRows;
+                $temuanMaterialMatrix['gis_list'] = array_keys($gisSet);
+                sort($temuanMaterialMatrix['gis_list']);
+            }
         }
 
         if ($db->tableExists('construction_types') && $db->tableExists('construction_bom_items')) {

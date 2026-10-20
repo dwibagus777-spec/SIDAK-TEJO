@@ -1461,7 +1461,7 @@
                                 <?php foreach (($topFeedersGangguan ?? []) as $rank => $row): ?>
                                 <tr>
                                     <td class="text-center text-muted fw-bold"><?= $rank + 1 ?></td>
-                                    <td class="fw-semibold text-dark"><?= esc($row['feeder_name'] ?? '-') ?></td>
+                                    <td class="fw-semibold text-dark"><?= esc($row['nama_penyulang'] ?? $row['feeder_name'] ?? '-') ?></td>
                                     <td class="text-muted small"><?= esc($row['nama_ulp'] ?? '-') ?></td>
                                     <td class="text-end fw-bold text-danger font-monospace"><?= (int)($row['cnt'] ?? 0) ?></td>
                                 </tr>

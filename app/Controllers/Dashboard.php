@@ -520,7 +520,14 @@ class Dashboard extends BaseController
             $ulpWhereClause = " AND (" . implode(" OR ", $ulpConds) . ")";
         }
 
-        // All available years in historical_feeder_interruptions (or union with availableTrendYears)
+        // Distinct years that actually exist in historical_feeder_interruptions
+        $ggnYearsRaw = $db->tableExists('historical_feeder_interruptions')
+            ? $db->query("SELECT DISTINCT YEAR(event_date) AS yr FROM historical_feeder_interruptions WHERE event_date IS NOT NULL ORDER BY yr DESC")->getResultArray()
+            : [];
+        $availableInterruptionYears = array_values(array_unique(array_filter(array_map(static fn($r) => (int)($r['yr'] ?? 0), $ggnYearsRaw))));
+        rsort($availableInterruptionYears);
+
+        // All available years in historical_feeder_interruptions (union with availableTrendYears for full awareness)
         $ggnAllMonthlyRaw = $db->tableExists('historical_feeder_interruptions')
             ? $db->query(
                 "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo, COUNT(h.id) cnt
@@ -533,7 +540,7 @@ class Dashboard extends BaseController
             : [];
 
         $monthlyByYear = [];
-        foreach ($availableTrendYears as $yr) {
+        foreach ($availableInterruptionYears as $yr) {
             $monthlyByYear[(int)$yr] = array_fill(1, 12, 0);
         }
         foreach ($ggnAllMonthlyRaw as $row) {
@@ -556,13 +563,14 @@ class Dashboard extends BaseController
                 $runSum += (int)($monthsArr[$m] ?? 0);
                 $cumArr[$m] = $runSum;
             }
-            // Include years that have interruption data or match availableTrendYears
-            if ($runSum > 0 || in_array((int)$yr, $availableTrendYears, true)) {
+            // Only include years that actually have historical interruption records in the YoY chart/badges
+            if ($runSum > 0 || in_array((int)$yr, $availableInterruptionYears, true)) {
                 $cumulativeGangguanYoY[(int)$yr] = [
-                    'year'       => (int)$yr,
-                    'total'      => $runSum,
-                    'monthly'    => array_values($monthsArr),
-                    'cumulative' => array_values($cumArr),
+                    'year'          => (int)$yr,
+                    'total'         => (int)$runSum,
+                    'has_source'    => in_array((int)$yr, $availableInterruptionYears, true),
+                    'monthly'       => array_values($monthsArr),
+                    'cumulative'    => array_values($cumArr),
                 ];
             }
         }
@@ -642,12 +650,23 @@ class Dashboard extends BaseController
         foreach ($causeBreakdownByYear as $yr => $items) {
             $list = array_values($items);
             usort($list, fn($a, $b) => $b['count'] <=> $a['count']);
-            $totYr = array_sum(array_column($list, 'count'));
+            $totYr = (int)array_sum(array_column($list, 'count'));
             foreach ($list as &$it) {
-                $it['pct'] = $totYr > 0 ? round(($it['count'] / $totYr) * 100, 1) : 0.0;
+                $it['count'] = (int)$it['count'];
+                $it['total'] = (int)$it['count'];
+                $it['pct']   = $totYr > 0 ? round(($it['count'] / $totYr) * 100, 1) : 0.0;
             }
             unset($it);
-            $causeBreakdownByYear[$yr] = $list;
+            $hasSourceForYear = in_array((int)$yr, $availableInterruptionYears, true);
+            $causeBreakdownByYear[(int)$yr] = [
+                'year'         => (int)$yr,
+                'total_events' => $totYr,
+                'has_source'   => $hasSourceForYear,
+                'source_note'  => $hasSourceForYear
+                    ? null
+                    : 'Tahun ' . (int)$yr . ' tercatat pada data Temuan Inspeksi, namun belum ada impor histori trip di tabel Gangguan Penyulang.',
+                'items'        => $list,
+            ];
         }
 
         // Top 10 feeders by interruption count for trend year
@@ -780,9 +799,10 @@ class Dashboard extends BaseController
             'prefersCollapsed'      => $prefersCollapsed,
             'networkData'           => $networkData,
             'assetSummary'          => $assetSummary,
-            'cumulativeGangguan'    => $cumulativeGangguan,
-            'cumulativeGangguanYoY' => $cumulativeGangguanYoY,
-            'causeBreakdownByYear'  => $causeBreakdownByYear,
+            'availableInterruptionYears' => $availableInterruptionYears,
+            'cumulativeGangguan'         => $cumulativeGangguan,
+            'cumulativeGangguanYoY'      => $cumulativeGangguanYoY,
+            'causeBreakdownByYear'       => $causeBreakdownByYear,
             'topFeedersGangguan'    => $topFeedersGangguanRows,
             'topInspeksiPenyulang'  => $topInspeksiPenyulang,
             'coatingSummary'        => $coatingSummary,

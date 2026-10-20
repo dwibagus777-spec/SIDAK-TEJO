@@ -1056,19 +1056,28 @@
                                 3 => 'bg-success-subtle text-success border-success-subtle',
                             ];
                             $yoyIdx = 0;
-                            foreach (($cumulativeGangguanYoY ?? []) as $yKey => $yMonths):
-                                $yMax = !empty($yMonths) ? max($yMonths) : 0;
+                            foreach (($cumulativeGangguanYoY ?? []) as $yKey => $yEntry):
+                                if (is_array($yEntry) && isset($yEntry['total']) && is_numeric($yEntry['total'])) {
+                                    $yMax = (int)$yEntry['total'];
+                                } elseif (is_array($yEntry) && isset($yEntry['cumulative']) && is_array($yEntry['cumulative']) && !empty($yEntry['cumulative'])) {
+                                    $yMax = (int)max($yEntry['cumulative']);
+                                } elseif (is_array($yEntry) && !empty($yEntry)) {
+                                    $numericVals = array_filter($yEntry, 'is_numeric');
+                                    $yMax = !empty($numericVals) ? (int)max($numericVals) : 0;
+                                } else {
+                                    $yMax = 0;
+                                }
                                 $bCls = $yoyBadgeColors[$yoyIdx % count($yoyBadgeColors)];
                                 $yoyIdx++;
                         ?>
                             <span class="badge border rounded-pill px-2 py-1 fw-bold font-monospace <?= $bCls ?>" style="font-size: 10.5px;">
-                                <?= (int)$yKey ?>: <?= number_format((int)$yMax) ?>
+                                <?= (int)$yKey ?>: <?= number_format($yMax) ?>
                             </span>
                         <?php endforeach; ?>
                     </div>
                 </div>
                 <div class="card-body p-2.5 d-flex align-items-center justify-content-center">
-                    <div class="dah-cum-chart-box">
+                    <div class="dah-cum-chart-box" id="cumulativeChartContainer">
                         <canvas id="cumulativeGangguanChart"></canvas>
                     </div>
                 </div>
@@ -1078,7 +1087,23 @@
             <?php
                 $causeYearsList = !empty($causeBreakdownByYear) ? array_keys($causeBreakdownByYear) : ($availableTrendYears ?? [(int)date('Y')]);
                 $initialCauseYear = in_array((int)$trendYear, array_map('intval', $causeYearsList), true) ? (int)$trendYear : (int)($causeYearsList[0] ?? date('Y'));
-                $initialCauseData = $causeBreakdownByYear[$initialCauseYear] ?? ['total_events' => 0, 'items' => []];
+                $rawInitialCause = $causeBreakdownByYear[$initialCauseYear] ?? [];
+                // Normalize both structured {total_events, items} and flat list shapes
+                if (is_array($rawInitialCause) && array_key_exists('items', $rawInitialCause)) {
+                    $initialCauseItems = is_array($rawInitialCause['items']) ? $rawInitialCause['items'] : [];
+                    $initialCauseTotal = isset($rawInitialCause['total_events'])
+                        ? (int)$rawInitialCause['total_events']
+                        : (int)array_sum(array_map(static fn($r) => (int)($r['count'] ?? $r['total'] ?? 0), $initialCauseItems));
+                    $initialCauseNote  = $rawInitialCause['source_note'] ?? null;
+                } elseif (is_array($rawInitialCause)) {
+                    $initialCauseItems = array_values($rawInitialCause);
+                    $initialCauseTotal = (int)array_sum(array_map(static fn($r) => (int)($r['count'] ?? $r['total'] ?? 0), $initialCauseItems));
+                    $initialCauseNote  = null;
+                } else {
+                    $initialCauseItems = [];
+                    $initialCauseTotal = 0;
+                    $initialCauseNote  = null;
+                }
             ?>
             <div class="card dah-card shadow-sm border">
                 <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
@@ -1092,13 +1117,16 @@
                     <div class="d-flex align-items-center gap-2">
                         <label for="causeYearSelect" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">Tahun:</label>
                         <select id="causeYearSelect" aria-label="Pilih Tahun Penyebab Gangguan" class="form-select form-select-sm rounded-pill font-monospace" style="font-size: 11px; width: auto; padding: 2px 24px 2px 10px;" onchange="renderCauseBreakdownByYear(this.value)">
-                            <?php foreach ($causeYearsList as $cYr): ?>
-                                <option value="<?= (int)$cYr ?>" <?= ((int)$cYr === (int)$initialCauseYear) ? 'selected' : '' ?>><?= (int)$cYr ?></option>
+                            <?php foreach ($causeYearsList as $cYr):
+                                $cYrEntry = $causeBreakdownByYear[$cYr] ?? [];
+                                $cYrHasSource = is_array($cYrEntry) && array_key_exists('has_source', $cYrEntry) ? (bool)$cYrEntry['has_source'] : true;
+                            ?>
+                                <option value="<?= (int)$cYr ?>" <?= ((int)$cYr === (int)$initialCauseYear) ? 'selected' : '' ?>>
+                                    <?= (int)$cYr ?><?= !$cYrHasSource ? ' (Belum Ada Histori Trip)' : '' ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
-                        <span id="causeTotalBadge" class="badge bg-dark-subtle text-dark rounded-pill px-2.5 py-1 fw-bold font-monospace" style="font-size: 11px;">
-                            <?= number_format((int)($initialCauseData['total_events'] ?? 0)) ?> Kejadian
-                        </span>
+                        <span id="causeTotalBadge" class="badge bg-dark-subtle text-dark rounded-pill px-2.5 py-1 fw-bold font-monospace" style="font-size: 11px;"><?= number_format($initialCauseTotal) ?> Kejadian</span>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -1114,14 +1142,16 @@
                                 </tr>
                             </thead>
                             <tbody id="causeBreakdownTableBody">
-                                <?php if (!empty($initialCauseData['items'])): ?>
-                                    <?php foreach ($initialCauseData['items'] as $cIdx => $cRow):
+                                <?php if (!empty($initialCauseItems)): ?>
+                                    <?php foreach ($initialCauseItems as $cIdx => $cRow):
                                         $st = strtoupper((string)($cRow['mapping_status'] ?? 'RESOLVED'));
                                         $stBadge = $st === 'RESOLVED'
                                             ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5" style="font-size:10px;">TERPETAKAN</span>'
                                             : ($st === 'PARTIALLY_RESOLVED'
                                                 ? '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5" style="font-size:10px;">PARSIAL</span>'
                                                 : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-0.5" style="font-size:10px;">BELUM TERPETAKAN</span>');
+                                        $rowCount = (int)($cRow['count'] ?? $cRow['total'] ?? 0);
+                                        $rowPct   = (float)($cRow['pct'] ?? ($initialCauseTotal > 0 ? round(($rowCount / $initialCauseTotal) * 100, 1) : 0));
                                     ?>
                                     <tr>
                                         <td class="text-center text-muted fw-bold"><?= $cIdx + 1 ?></td>
@@ -1130,22 +1160,24 @@
                                             <div class="text-muted font-monospace" style="font-size: 10px;">
                                                 <?= esc($cRow['canonical_code'] ?? '-') ?>
                                                 <?php if (!empty($cRow['raw_samples'])): ?>
-                                                    &bull; <span class="text-secondary">Contoh: <?= esc($cRow['raw_samples']) ?></span>
+                                                    &bull; <span class="text-secondary">Contoh: <?= esc(mb_strlen((string)$cRow['raw_samples']) > 75 ? mb_substr((string)$cRow['raw_samples'], 0, 72) . '...' : (string)$cRow['raw_samples']) ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
                                         <td class="text-center"><?= $stBadge ?></td>
-                                        <td class="text-end fw-bold text-dark font-monospace"><?= number_format((int)($cRow['total'] ?? 0)) ?> <span class="text-muted fw-normal" style="font-size:10px;">(<?= number_format((float)($cRow['pct'] ?? 0), 1) ?>%)</span></td>
+                                        <td class="text-end fw-bold text-dark font-monospace"><?= number_format($rowCount) ?> <span class="text-muted fw-normal" style="font-size:10px;">(<?= number_format($rowPct, 1) ?>%)</span></td>
                                         <td>
                                             <div class="progress" style="height: 6px;">
-                                                <div class="progress-bar <?= $st === 'UNMAPPED' ? 'bg-secondary' : 'bg-danger' ?>" role="progressbar" style="width: <?= min(100, max(2, (float)($cRow['pct'] ?? 0))) ?>%"></div>
+                                                <div class="progress-bar <?= $st === 'UNMAPPED' ? 'bg-secondary' : 'bg-danger' ?>" role="progressbar" style="width: <?= min(100, max(2, $rowPct)) ?>%"></div>
                                             </div>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted py-3 small">Belum ada data histori gangguan untuk tahun <?= (int)$initialCauseYear ?>.</td>
+                                        <td colspan="5" class="text-center text-muted py-3 small">
+                                            <?= esc($initialCauseNote ?: ('Belum ada data histori gangguan untuk tahun ' . (int)$initialCauseYear . '.')) ?>
+                                        </td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -2172,131 +2204,189 @@ document.addEventListener('DOMContentLoaded', function() {
         var selectedTrendYear = <?= (int)($trendYear ?? date('Y')) ?>;
         var labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
         var ctx = document.getElementById('cumulativeGangguanChart');
+        var box = document.getElementById('cumulativeChartContainer');
         if (!ctx || typeof Chart === 'undefined') return;
         if (typeof Chart.getChart === 'function') {
             var prev = Chart.getChart(ctx);
             if (prev) prev.destroy();
         }
 
-        var palette = [
-            { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)', dash: [] },
-            { border: '#0284c7', bg: 'rgba(2, 132, 199, 0.06)', dash: [] },
-            { border: '#d97706', bg: 'rgba(217, 119, 6, 0.05)', dash: [5, 4] },
-            { border: '#16a34a', bg: 'rgba(22, 163, 74, 0.05)', dash: [3, 3] }
-        ];
-
-        var years = Object.keys(yoyRaw || {}).sort(function(a, b) { return Number(b) - Number(a); });
-        if (!years.length) {
-            yoyRaw = {};
-            yoyRaw[String(selectedTrendYear)] = fallbackSingle;
-            years = [String(selectedTrendYear)];
+        function extractSeriesArray(entry) {
+            if (Array.isArray(entry)) {
+                return entry.map(function(v) { return Number(v) || 0; });
+            }
+            if (entry && typeof entry === 'object') {
+                if (Array.isArray(entry.cumulative)) {
+                    return entry.cumulative.map(function(v) { return Number(v) || 0; });
+                }
+                if (Array.isArray(entry.monthly)) {
+                    var run = 0;
+                    return entry.monthly.map(function(v) {
+                        run += (Number(v) || 0);
+                        return run;
+                    });
+                }
+            }
+            return null;
         }
 
-        var maxVal = 0;
-        var datasets = years.map(function(yr, idx) {
-            var arr = (yoyRaw[yr] || []).map(function(v) { return Number(v) || 0; });
-            while (arr.length < 12) arr.push(arr.length ? arr[arr.length - 1] : 0);
-            var localMax = arr.length ? Math.max.apply(null, arr) : 0;
-            if (localMax > maxVal) maxVal = localMax;
-            var style = palette[idx % palette.length];
-            var isPrimaryYear = (Number(yr) === Number(selectedTrendYear)) || idx === 0;
-            return {
-                label: 'Tahun ' + yr + ' (Total: ' + localMax + ')',
-                data: arr,
-                borderColor: style.border,
-                backgroundColor: style.bg,
-                borderDash: style.dash,
-                borderWidth: isPrimaryYear ? 2.8 : 2.2,
-                pointRadius: isPrimaryYear ? 3.5 : 3,
-                pointHoverRadius: 5.5,
-                pointBackgroundColor: style.border,
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 1.5,
-                fill: idx === 0,
-                tension: 0.28
-            };
-        });
+        try {
+            var palette = [
+                { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)', dash: [] },
+                { border: '#0284c7', bg: 'rgba(2, 132, 199, 0.06)', dash: [] },
+                { border: '#d97706', bg: 'rgba(217, 119, 6, 0.05)', dash: [5, 4] },
+                { border: '#16a34a', bg: 'rgba(22, 163, 74, 0.05)', dash: [3, 3] }
+            ];
 
-        var ySuggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.12) : 10;
+            var years = Object.keys(yoyRaw || {}).sort(function(a, b) { return Number(b) - Number(a); });
+            var maxVal = 0;
+            var datasets = [];
 
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
+            years.forEach(function(yr, idx) {
+                var entry = yoyRaw[yr];
+                var arr = extractSeriesArray(entry);
+                if (!Array.isArray(arr)) return;
+                while (arr.length < 12) arr.push(arr.length ? arr[arr.length - 1] : 0);
+                var localMax = (entry && typeof entry === 'object' && typeof entry.total === 'number')
+                    ? Number(entry.total)
+                    : (arr.length ? Math.max.apply(null, arr) : 0);
+                if (localMax > maxVal) maxVal = localMax;
+                var style = palette[idx % palette.length];
+                var isPrimaryYear = (Number(yr) === Number(selectedTrendYear)) || idx === 0;
+                datasets.push({
+                    label: 'Tahun ' + yr + ' (Total: ' + localMax.toLocaleString('id-ID') + ')',
+                    data: arr.slice(0, 12),
+                    borderColor: style.border,
+                    backgroundColor: style.bg,
+                    borderDash: style.dash,
+                    borderWidth: isPrimaryYear ? 2.8 : 2.2,
+                    pointRadius: isPrimaryYear ? 3.5 : 3,
+                    pointHoverRadius: 5.5,
+                    pointBackgroundColor: style.border,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
+                    fill: idx === 0,
+                    tension: 0.28
+                });
+            });
+
+            if (!datasets.length && Array.isArray(fallbackSingle) && fallbackSingle.length) {
+                var fbArr = fallbackSingle.map(function(v) { return Number(v) || 0; });
+                var fbMax = Math.max.apply(null, fbArr);
+                if (fbMax > maxVal) maxVal = fbMax;
+                datasets.push({
+                    label: 'Tahun ' + selectedTrendYear + ' (Total: ' + fbMax.toLocaleString('id-ID') + ')',
+                    data: fbArr.slice(0, 12),
+                    borderColor: '#dc2626',
+                    backgroundColor: 'rgba(220, 38, 38, 0.10)',
+                    borderWidth: 2.8,
+                    pointRadius: 3.5,
+                    fill: true,
+                    tension: 0.28
+                });
+            }
+
+            var ySuggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.12) : 10;
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
                 },
-                layout: {
-                    padding: { top: 4, right: 8, bottom: 2, left: 4 }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        align: 'end',
-                        labels: {
-                            boxWidth: 12,
-                            boxHeight: 12,
-                            usePointStyle: true,
-                            pointStyle: 'circle',
-                            padding: 10,
-                            font: { size: 11, weight: '600' }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    layout: {
+                        padding: { top: 4, right: 8, bottom: 2, left: 4 }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                boxWidth: 12,
+                                boxHeight: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 10,
+                                font: { size: 11, weight: '600' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(c) {
+                                    return c.dataset.label.split(' (')[0] + ': ' + Number(c.parsed.y || 0).toLocaleString('id-ID') + ' gangguan kumulatif';
+                                }
+                            }
                         }
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: function(c) {
-                                return c.dataset.label.split(' (')[0] + ': ' + c.parsed.y + ' gangguan kumulatif';
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            min: 0,
+                            suggestedMax: ySuggestedMax,
+                            ticks: {
+                                precision: 0,
+                                maxTicksLimit: 6,
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.16)'
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 11 }
                             }
                         }
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        min: 0,
-                        suggestedMax: ySuggestedMax,
-                        ticks: {
-                            precision: 0,
-                            maxTicksLimit: 6,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            color: 'rgba(148, 163, 184, 0.16)'
-                        }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            font: { size: 11 }
-                        }
-                    }
                 }
+            });
+        } catch (chartErr) {
+            console.error('[SIDAK_CUMULATIVE_CHART_ERR]', chartErr);
+            if (box) {
+                box.innerHTML = '<div class="alert alert-warning py-2 px-3 small mb-0">Gagal memuat grafik Gangguan Kumulatif: ' + escHtml(chartErr.message || String(chartErr)) + '</div>';
             }
-        });
+        }
     })();
 
-    // 6C. Client-side Year Switcher for Penyebab Gangguan Module
+    // 6C. Client-side Year Switcher for Penyebab Gangguan Module (supports both {total_events, items} and flat array payloads)
     window.causeBreakdownDataByYear = <?= json_encode($causeBreakdownByYear ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
     window.renderCauseBreakdownByYear = function(year) {
         var yr = String(year || '');
-        var data = (window.causeBreakdownDataByYear && window.causeBreakdownDataByYear[yr]) || { total_events: 0, items: [] };
+        var raw = window.causeBreakdownDataByYear ? window.causeBreakdownDataByYear[yr] : null;
+        var items = [];
+        var totalEvents = 0;
+        var sourceNote = null;
+
+        if (Array.isArray(raw)) {
+            items = raw;
+            totalEvents = items.reduce(function(acc, r) { return acc + (Number(r.count ?? r.total ?? 0) || 0); }, 0);
+        } else if (raw && typeof raw === 'object') {
+            items = Array.isArray(raw.items) ? raw.items : [];
+            totalEvents = (typeof raw.total_events === 'number')
+                ? raw.total_events
+                : items.reduce(function(acc, r) { return acc + (Number(r.count ?? r.total ?? 0) || 0); }, 0);
+            sourceNote = raw.source_note || null;
+        }
+
         var titleEl = document.getElementById('causeYearTitleLabel');
         var badgeEl = document.getElementById('causeTotalBadge');
         var tbody   = document.getElementById('causeBreakdownTableBody');
         if (titleEl) titleEl.textContent = yr;
-        if (badgeEl) badgeEl.textContent = Number(data.total_events || 0).toLocaleString('id-ID') + ' Kejadian';
+        if (badgeEl) badgeEl.textContent = Number(totalEvents || 0).toLocaleString('id-ID') + ' Kejadian';
         if (!tbody) return;
 
-        var items = data.items || [];
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3 small">Belum ada data histori gangguan untuk tahun ' + escHtml(yr) + '.</td></tr>';
+            var emptyMsg = sourceNote || ('Belum ada data histori gangguan untuk tahun ' + yr + '.');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3 small">' + escHtml(emptyMsg) + '</td></tr>';
             return;
         }
 
@@ -2308,10 +2398,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 : (st === 'PARTIALLY_RESOLVED'
                     ? '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5" style="font-size:10px;">PARSIAL</span>'
                     : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-0.5" style="font-size:10px;">BELUM TERPETAKAN</span>');
-            var pct = Number(cRow.pct || 0);
+            var rowCount = Number(cRow.count ?? cRow.total ?? 0) || 0;
+            var pct = (typeof cRow.pct === 'number') ? cRow.pct : (totalEvents > 0 ? ((rowCount / totalEvents) * 100) : 0);
             var barW = Math.min(100, Math.max(2, pct));
             var barCls = st === 'UNMAPPED' ? 'bg-secondary' : 'bg-danger';
-            var rawText = cRow.raw_samples ? ' &bull; <span class="text-secondary">Contoh: ' + escHtml(cRow.raw_samples) + '</span>' : '';
+            var rawStr = String(cRow.raw_samples || '');
+            if (rawStr.length > 75) rawStr = rawStr.slice(0, 72) + '...';
+            var rawText = rawStr ? ' &bull; <span class="text-secondary">Contoh: ' + escHtml(rawStr) + '</span>' : '';
 
             html += '<tr>' +
                 '<td class="text-center text-muted fw-bold">' + (idx + 1) + '</td>' +
@@ -2320,7 +2413,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     '<div class="text-muted font-monospace" style="font-size: 10px;">' + escHtml(cRow.canonical_code || '-') + rawText + '</div>' +
                 '</td>' +
                 '<td class="text-center">' + stBadge + '</td>' +
-                '<td class="text-end fw-bold text-dark font-monospace">' + Number(cRow.total || 0).toLocaleString('id-ID') + ' <span class="text-muted fw-normal" style="font-size:10px;">(' + pct.toFixed(1) + '%)</span></td>' +
+                '<td class="text-end fw-bold text-dark font-monospace">' + rowCount.toLocaleString('id-ID') + ' <span class="text-muted fw-normal" style="font-size:10px;">(' + pct.toFixed(1) + '%)</span></td>' +
                 '<td><div class="progress" style="height: 6px;"><div class="progress-bar ' + barCls + '" role="progressbar" style="width: ' + barW + '%"></div></div></td>' +
             '</tr>';
         });

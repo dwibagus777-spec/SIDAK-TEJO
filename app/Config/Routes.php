@@ -151,6 +151,7 @@ $routes->post('api/v1/remediation/work-packages/(:num)/verify', 'RemediationCont
 $routes->delete('api/v1/remediation/work-packages/(:num)', 'RemediationController::deleteWorkPackage/$1');
 
 $routes->get('api/debug-assets', 'Api::debugAssets');
+$routes->get('api/debug-gangguan-captive', 'Api::debugGangguanAndCaptive');
 $routes->get('api/audit-asset-integrity', 'Api::auditAssetIntegrity');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');
@@ -691,6 +692,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('api/network/penyulang', 'Api::getNetworkPenyulangs');
     $routes->get('api/network/ulps', 'Api::getNetworkUlps');
     $routes->get('api/debug-assets', 'Api::debugAssets');
+$routes->get('api/debug-gangguan-captive', 'Api::debugGangguanAndCaptive');
     $routes->get('api/audit-asset-integrity', 'Api::auditAssetIntegrity');
 
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs

@@ -431,6 +431,73 @@ class Api extends BaseController
         ]);
     }
 
+    public function debugGangguanAndCaptive()
+    {
+        $db = \Config\Database::connect();
+        $im = new \App\Models\InterruptionModel();
+        $years = $im->getAvailableYears();
+        $m2026 = $im->getMonthlyByYear(2026);
+        $m2025 = $im->getMonthlyByYear(2025);
+        $m2024 = $im->getMonthlyByYear(2024);
+
+        $captiveBanjar = [];
+        if ($db->tableExists('captive_non_penugasan')) {
+            $captiveBanjar = $db->table('captive_non_penugasan')
+                ->where('penyulang_id', 15)
+                ->where('deleted_at IS NULL')
+                ->get()->getResultArray();
+        }
+
+        $translinesBanjar = [];
+        if ($db->tableExists('gis_translines')) {
+            $translinesBanjar = $db->table('gis_translines')
+                ->where('penyulang_id', 15)
+                ->where('deleted_at IS NULL')
+                ->get()->getResultArray();
+        }
+
+        // Unassigned assets pattern inspection
+        $unassignedSamples = $db->table('assets')
+            ->select('id, kode_asset, nama_asset, jenis_asset, ulp_id, penyulang_id, section_id, parent_asset_id, latitude, longitude, import_batch_id')
+            ->where('deleted_at IS NULL')
+            ->groupStart()->where('penyulang_id IS NULL')->orWhere('penyulang_id', 0)->groupEnd()
+            ->limit(20)
+            ->get()->getResultArray();
+
+        $unassignedPrefixes = $db->query("
+            SELECT SUBSTRING_INDEX(nama_asset, '_', 1) as prefix, COUNT(*) as cnt
+            FROM assets
+            WHERE deleted_at IS NULL AND (penyulang_id IS NULL OR penyulang_id = 0)
+            GROUP BY prefix
+            ORDER BY cnt DESC
+            LIMIT 30
+        ")->getResultArray();
+
+        $codePatterns = $db->query("
+            SELECT SUBSTRING_INDEX(kode_asset, '-', 3) as code_pfx, COUNT(*) as cnt
+            FROM assets
+            WHERE deleted_at IS NULL AND (penyulang_id IS NULL OR penyulang_id = 0)
+            GROUP BY code_pfx
+            ORDER BY cnt DESC
+            LIMIT 20
+        ")->getResultArray();
+
+        return $this->respond([
+            'years' => $years,
+            'm2026' => $m2026,
+            'm2025' => $m2025,
+            'm2024' => $m2024,
+            'sum2026' => array_sum($m2026),
+            'sum2025' => array_sum($m2025),
+            'sum2024' => array_sum($m2024),
+            'captiveBanjar' => $captiveBanjar,
+            'translinesBanjar' => $translinesBanjar,
+            'unassignedSamples' => $unassignedSamples,
+            'unassignedPrefixes' => $unassignedPrefixes,
+            'codePatterns' => $codePatterns,
+        ]);
+    }
+
     /**
      * GET /api/audit-asset-integrity
      * Forensic Asset Integrity Audit & Reconciliation (Strict Read-Only)

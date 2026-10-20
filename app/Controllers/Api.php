@@ -706,4 +706,42 @@ class Api extends BaseController
             ]);
         }
     }
+
+    /**
+     * POST/GET /api/asset-mapping/run
+     * Deterministic reconciliation execution with auto-backup.
+     */
+    public function runAssetMapping()
+    {
+        $isExecute    = (int)($this->request->getGetPost('execute') ?? 0) === 1;
+        $limit        = $this->request->getGetPost('limit') ? (int)$this->request->getGetPost('limit') : null;
+        $feederFilter = $this->request->getGetPost('feeder') ?? null;
+
+        $service = new \App\Services\AssetReconciliationService();
+        $result = $service->runDeterministicMapping($isExecute, $limit, $feederFilter);
+
+        $statusCode = ($result['status'] === 'error') ? 500 : 200;
+        return $this->response->setStatusCode($statusCode)->setJSON($result);
+    }
+
+    /**
+     * POST/GET /api/asset-mapping/rollback
+     * Restores asset mappings from a backup JSON.
+     */
+    public function rollbackAssetMapping()
+    {
+        $backupFile = (string)($this->request->getGetPost('backup') ?? $this->request->getGetPost('backup_file') ?? '');
+        if (empty($backupFile)) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'Parameter backup atau backup_file wajib diberikan.',
+            ]);
+        }
+
+        $service = new \App\Services\AssetReconciliationService();
+        $result = $service->rollbackDeterministicMapping($backupFile);
+
+        $statusCode = ($result['status'] === 'error') ? 500 : 200;
+        return $this->response->setStatusCode($statusCode)->setJSON($result);
+    }
 }

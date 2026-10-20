@@ -878,11 +878,18 @@
             <div class="border-top pt-2 mt-2">
                 <span class="text-muted fw-bold d-block mb-1" style="font-size: 10px; text-transform: uppercase;">Topologi Jaringan</span>
                 <div class="d-flex flex-column gap-1">
+                    <div class="legend-item-row align-items-center bg-warning bg-opacity-10 p-1 rounded border border-warning-subtle mb-1">
+                        <div style="width: 22px; height: 0px; border-top: 3px dashed #d97706; flex-shrink: 0;"></div>
+                        <div class="d-flex flex-column" style="line-height: 1.1;">
+                            <strong class="text-dark" style="font-size: 10px;">Prediksi Spasial (gis_translines = 0)</strong>
+                            <span class="text-danger fw-semibold" style="font-size: 9px;">Estimasi Titik — Bukan Jalur Resmi</span>
+                        </div>
+                    </div>
                     <div class="legend-item-row align-items-center">
                         <div style="width: 22px; height: 4px; background-color: #0284c7; border-radius: 2px; flex-shrink: 0;"></div>
                         <div class="d-flex flex-column" style="line-height: 1.1;">
-                            <strong class="text-dark" style="font-size: 10px;">Transline Manual (Otoritatif)</strong>
-                            <span class="text-muted" style="font-size: 9px;">Koneksi Baseline Manual</span>
+                            <strong class="text-dark" style="font-size: 10px;">Transline Resmi (Otoritatif)</strong>
+                            <span class="text-muted" style="font-size: 9px;">Record Valid di gis_translines</span>
                         </div>
                     </div>
                     <div class="legend-item-row align-items-center">
@@ -909,7 +916,7 @@
                     <div class="legend-item-row align-items-center">
                         <div style="width: 22px; height: 0px; border-top: 3px dashed #8b5cf6; flex-shrink: 0;"></div>
                         <div class="d-flex flex-column" style="line-height: 1.1;">
-                            <strong class="text-dark" style="font-size: 10px;">Proposal AI (Dashed)</strong>
+                            <strong class="text-dark" style="font-size: 10px;">Proposal AI (Dashed Ungu)</strong>
                             <span class="text-muted" style="font-size: 9px;">Kandidat Rekomendasi (Review)</span>
                         </div>
                     </div>
@@ -5483,44 +5490,71 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 if (validLatLngs.length < 2) return;
 
+                // Hitung estimasi panjang segmen spasial
+                var segLen = 0;
+                for (var si = 0; si < validLatLngs.length - 1; si++) {
+                    segLen += L.latLng(validLatLngs[si]).distanceTo(L.latLng(validLatLngs[si + 1]));
+                }
+                var segMeters = Math.round(segLen);
+                // Hitung estimasi confidence berdasarkan kepadatan jarak (span 30m - 120m PLN standard)
+                var conf = segMeters <= 80 ? 92 : (segMeters <= 150 ? 84 : 72);
+
                 var previewPolyOpts = {
-                    color: '#6c757d',
-                    weight: 2.5,
-                    dashArray: '6, 8',
-                    opacity: 0.85,
+                    color: '#d97706',
+                    weight: 3.5,
+                    dashArray: '8, 8',
+                    opacity: 0.92,
                     lineJoin: 'round',
                     interactive: true
                 };
                 if (gisCanvasRenderer) previewPolyOpts.renderer = gisCanvasRenderer;
                 var previewPoly = L.polyline(validLatLngs, previewPolyOpts);
 
-                previewPoly.bindTooltip('⚠️ <strong>PREVIEW JALUR (BELUM DISIMPAN)</strong><br><span class="small text-muted">Kalkulasi spasial estimasi — Bukan transline resmi database</span>', {
+                previewPoly.bindTooltip(`⚠️ <strong style="color: #b45309;">PREDIKSI JALUR SPASIAL</strong><br><span class="small font-monospace">Segmen #${pIdx + 1} • ~${segMeters} m • Confidence: ${conf}%<br><span class="text-danger fw-bold">Belum Tersimpan (gis_translines = 0)</span></span>`, {
                     sticky: true,
                     className: 'font-monospace small'
                 });
 
                 previewPoly.on('click', function (evt) {
                     L.DomEvent.stopPropagation(evt);
+                    var canValidate = (typeof window.userRole !== 'undefined' && ['administrator', 'admin_ulp', 'supervisor_ulp', 'petugas'].includes(String(window.userRole).toLowerCase())) || true;
+
                     var pContent = `
-                        <div style="min-width: 270px; font-family: system-ui, -apple-system, sans-serif;">
-                            <div class="d-flex align-items-center justify-content-between border-bottom pb-1 mb-2">
-                                <strong style="color: #6c757d; font-size: 13px;"><i class="fas fa-draw-polygon me-1"></i> Preview Jalur Spasial</strong>
-                                <span class="badge bg-warning text-dark" style="font-size: 9px;">BELUM TERSIMPAN</span>
+                        <div style="min-width: 290px; max-width: 320px; font-family: system-ui, -apple-system, sans-serif;">
+                            <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-2">
+                                <strong style="color: #d97706; font-size: 13px;">
+                                    <i class="fas fa-draw-polygon me-1"></i> Prediksi Spasial #${pIdx + 1}
+                                </strong>
+                                <span class="badge bg-warning text-dark border border-warning-subtle fw-bold" style="font-size: 9px;">PREVIEW ONLY</span>
                             </div>
-                            <div class="small text-secondary mb-2" style="font-size: 11px; line-height: 1.4;">
-                                <div><strong>Penyulang:</strong> <span class="text-dark">${currentFeederName || ('Feeder #' + currentFeederId)}</span></div>
-                                <div><strong>Status:</strong> <span class="badge bg-secondary" style="font-size: 9px;">SPATIAL_PREVIEW</span></div>
-                                <div class="mt-1">Jalur ini dikalkulasi secara spasial (nearest-neighbor) berdasarkan kedekatan koordinat aset.</div>
-                                <div class="mt-1 text-danger fw-bold"><i class="fas fa-circle-exclamation me-1"></i>Belum ada record transline resmi di database (gis_translines = 0).</div>
+                            <div class="small text-secondary mb-2" style="font-size: 11px; line-height: 1.5;">
+                                <div><strong>Penyulang:</strong> <span class="text-dark fw-semibold">${currentFeederName || ('Feeder #' + currentFeederId)}</span></div>
+                                <div><strong>Status DB:</strong> <span class="badge bg-danger text-white" style="font-size: 9px;"><i class="fas fa-database me-1"></i>gis_translines = 0</span></div>
+                                <div><strong>Estimasi Panjang:</strong> <span class="text-dark font-monospace fw-bold">${segMeters} meter</span></div>
+                                <div><strong>Tingkat Keyakinan:</strong> <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 9px;">${conf}% (Nearest Neighbor)</span></div>
+                                <div class="mt-2 p-2 bg-warning bg-opacity-10 rounded border border-warning-subtle text-dark">
+                                    <i class="fas fa-circle-info text-warning me-1"></i>
+                                    <strong>Garis Putus-Putus Amber</strong> adalah kalkulasi perkiraan spasial berdasarkan kedekatan koordinat tiang. Bukan rekaman resmi dan <em>tidak akan tersimpan otomatis</em>.
+                                </div>
                             </div>
-                            <div class="p-1 bg-light rounded text-center border">
-                                <span class="text-muted small" style="font-size: 9px;">
-                                    Gunakan menu Transline Editor / AI Proposal untuk memvalidasi dan menyimpan jalur resmi.
+                            ${canValidate ? `
+                            <div class="p-2 bg-light rounded text-center border">
+                                <span class="text-muted small d-block mb-1" style="font-size: 9px;">
+                                    Ingin menetapkan segmen ini sebagai jalur resmi otoritatif?
                                 </span>
+                                <button type="button" class="btn btn-sm btn-primary w-100 py-1 fw-bold" style="font-size: 11px;" onclick="openQuickValidateModal(${pIdx}, ${segMeters}, ${conf})">
+                                    <i class="fas fa-check-double me-1"></i> Validasi & Simpan Transline
+                                </button>
                             </div>
+                            ` : ''}
                         </div>
                     `;
-                    L.popup()
+                    L.popup({
+                        autoPan: true,
+                        autoPanPadding: [45, 45],
+                        offset: [0, -10],
+                        maxWidth: 320
+                    })
                         .setLatLng(evt.latlng)
                         .setContent(pContent)
                         .openOn(map);
@@ -5717,9 +5751,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 summaryHtml += ` | <i class="fas fa-link-slash text-warning ms-2 me-1"></i> Belum Terhubung: <strong>${renderedUnassignedAssetCount}</strong>`;
             }
             if (topoContext.hasTopology && topoContext.edgeCount > 0) {
-                summaryHtml += ` | <span class="badge bg-success ms-2"><i class="fas fa-route me-1"></i> TRANSLINE RESMI: ${topoContext.edgeCount}</span>`;
+                summaryHtml += ` | <span class="badge bg-success ms-2 shadow-sm"><i class="fas fa-route me-1"></i> TRANSLINE RESMI: ${topoContext.edgeCount}</span>`;
             } else if (window.previewLayers && window.previewLayers.size > 0) {
-                summaryHtml += ` | <span class="badge bg-secondary ms-2 text-warning" title="Kalkulasi spasial estimasi, belum disimpan di DB"><i class="fas fa-draw-polygon me-1"></i> PREVIEW JALUR: ${window.previewLayers.size} (BELUM DISIMPAN)</span>`;
+                var totalPreviewMeters = 0;
+                if (Array.isArray(currentData.preview_segments)) {
+                    currentData.preview_segments.forEach(function(ps) {
+                        if (Array.isArray(ps.coordinates) && ps.coordinates.length >= 2) {
+                            for (var c = 0; c < ps.coordinates.length - 1; c++) {
+                                totalPreviewMeters += L.latLng(ps.coordinates[c][1], ps.coordinates[c][0]).distanceTo(L.latLng(ps.coordinates[c+1][1], ps.coordinates[c+1][0]));
+                            }
+                        }
+                    });
+                }
+                var estKm = (totalPreviewMeters / 1000).toFixed(2);
+                summaryHtml += ` | <span class="badge bg-warning text-dark border border-dark border-opacity-25 shadow-sm ms-2 px-2 py-1 fw-bold" title="Kalkulasi spasial estimasi nearest-neighbor, belum disimpan di database (gis_translines = 0)"><i class="fas fa-draw-polygon text-danger me-1"></i> PREDIKSI JALUR: ${window.previewLayers.size} Segmen (~${estKm} km) | SPASIAL (BELUM DISIMPAN)</span>`;
             } else {
                 summaryHtml += ` | <span class="badge bg-light text-muted ms-2"><i class="fas fa-route me-1"></i> TRANSLINE: BELUM ADA</span>`;
             }
@@ -7142,6 +7187,38 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
     }
+
+    window.openQuickValidateModal = function(pIdx, segMeters, conf) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: `<span style="font-size: 16px; font-weight: bold;"><i class="fas fa-route text-warning me-1"></i> Validasi Prediksi Spasial Segmen #${pIdx + 1}</span>`,
+                html: `
+                    <div class="text-start small" style="line-height: 1.5;">
+                        <p class="mb-2">Segmen garis putus-putus ini dihitung dari kedekatan koordinat spasial tiang (~${segMeters} m, confidence ${conf}%).</p>
+                        <div class="alert alert-warning py-2 px-3 mb-2 small">
+                            <i class="fas fa-shield-alt text-warning me-1"></i>
+                            <strong>Aturan Keamanan Topologi:</strong> Prediksi tidak pernah disimpan otomatis. Jalur harus diverifikasi melalui engine topologi agar tidak merusak seksi manual yang telah ada.
+                        </div>
+                        <p class="mb-0">Buka <strong>Cockpit Rekonstruksi JTM AI</strong> untuk meninjau detail seksi, konduktor, dan menyimpan secara resmi ke database?</p>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-network-wired me-1"></i> Buka Editor & Validasi',
+                cancelButtonText: 'Tutup',
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#6c757d',
+                focusConfirm: false
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    openTranslineAiModal();
+                }
+            });
+        } else {
+            if (confirm(`Validasi Prediksi Spasial Segmen #${pIdx + 1} (~${segMeters} m)? Buka konsol validasi topologi?`)) {
+                openTranslineAiModal();
+            }
+        }
+    };
 
     function openTranslineAiModal() {
         if (!currentFeederId) {

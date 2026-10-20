@@ -519,6 +519,62 @@ class AssetReconciliationService
             }
         }
 
+        // 4D. Detailed audit of remaining ingest assets
+        $remainingIngestDetails = [];
+        foreach ($ingestList as $ing) {
+            $remainingIngestDetails[] = [
+                'id'          => (int)$ing['id'],
+                'kode_asset'  => $ing['kode_asset'],
+                'nama_asset'  => $ing['nama_asset'],
+                'jenis_asset' => $ing['jenis_asset'],
+                'lat'         => (float)$ing['latitude'],
+                'lng'         => (float)$ing['longitude'],
+                'created_at'  => $ing['created_at'],
+            ];
+        }
+
+        // 4E. Sequence analysis on legacy poles (AST-KALISOGO-KALISOGO_*)
+        $legacyPoleNums = [];
+        foreach ($legacyList as $leg) {
+            if (preg_match('/KALISOGO_([0-9]+)$/', (string)$leg['kode_asset'], $m)) {
+                $legacyPoleNums[] = (int)$m[1];
+            }
+        }
+        sort($legacyPoleNums);
+        $minPoleNum = !empty($legacyPoleNums) ? min($legacyPoleNums) : 0;
+        $maxPoleNum = !empty($legacyPoleNums) ? max($legacyPoleNums) : 0;
+        $missingPoleNums = [];
+        if ($maxPoleNum > 0) {
+            $poleSet = array_flip($legacyPoleNums);
+            for ($i = 1; $i <= $maxPoleNum; $i++) {
+                if (!isset($poleSet[$i])) {
+                    $missingPoleNums[] = $i;
+                }
+            }
+        }
+
+        // 4F. Other Kalisogo assets in database outside feeder 95
+        $otherKalisogoAssets = $this->db->table('assets')
+            ->select('id, kode_asset, nama_asset, jenis_asset, ulp_id, penyulang_id, section_id, latitude, longitude, deleted_at')
+            ->groupStart()
+                ->like('nama_asset', 'KALISOGO')
+                ->orLike('kode_asset', 'KALISOGO')
+            ->groupEnd()
+            ->where('penyulang_id !=', $feederId)
+            ->where('deleted_at IS NULL')
+            ->get()->getResultArray();
+
+        // 4G. Check gardu / trafo related to Kalisogo
+        $kalisogoGarduCount = 0;
+        if ($this->db->tableExists('gardu')) {
+            $kalisogoGarduCount = $this->db->table('gardu')
+                ->groupStart()
+                    ->like('nama_gardu', 'KALISOGO')
+                    ->orWhere('penyulang_id', $feederId)
+                ->groupEnd()
+                ->countAllResults();
+        }
+
         // 5. Check dependencies on ingest assets
         $ingestIds = array_column($ingestList, 'id');
         $temuanOnIngest = 0;
@@ -558,6 +614,17 @@ class AssetReconciliationService
                 'spatial_near_duplicates'    => count($spatialNearMatches),
                 'samples_exact_duplicates'   => array_slice($spatialExactMatches, 0, 10),
                 'samples_near_duplicates'    => array_slice($spatialNearMatches, 0, 5),
+                'remaining_ingest_details'   => $remainingIngestDetails,
+                'legacy_sequence' => [
+                    'min_pole_num'           => $minPoleNum,
+                    'max_pole_num'           => $maxPoleNum,
+                    'total_pole_count'       => count($legacyPoleNums),
+                    'missing_pole_nums_count'=> count($missingPoleNums),
+                    'missing_pole_nums'      => array_slice($missingPoleNums, 0, 20),
+                ],
+                'other_kalisogo_assets_count'=> count($otherKalisogoAssets),
+                'other_kalisogo_assets'      => $otherKalisogoAssets,
+                'kalisogo_gardu_count'       => $kalisogoGarduCount,
                 'dependencies' => [
                     'temuan_attached_to_ingest'    => $temuanOnIngest,
                     'translines_attached_to_ingest'=> $translineOnIngest,

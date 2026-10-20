@@ -8,7 +8,7 @@ class FaultLocatorWorkspaceService
 {
     protected $db;
     protected FaultLocationIntelligenceService $fliEngine;
-    protected string $topologySnapshotId = 'TOPOLOGY-20260928-245-81c43a7f';
+    protected string $topologySnapshotId = 'TOPOLOGY-20261021-SDA-PROD';
     protected string $engineVersion = 'FLI-1.0.0';
 
     public function __construct(?FaultLocationIntelligenceService $fliEngine = null)
@@ -18,15 +18,30 @@ class FaultLocatorWorkspaceService
     }
 
     /**
-     * Get operational summary & FLI engine baseline status
+     * Get operational summary & FLI engine baseline status from actual database tables
      */
     public function getOperationalSummary(): array
     {
-        $activeTl = 245;
-        $physicalTl = 254;
-        $activeAssets = 5236;
-        $physicalAssets = 5549;
-        $networkSpan = 9418.37;
+        $activeTl = 0;
+        $physicalTl = 0;
+        $networkSpan = 0.0;
+        if ($this->db->tableExists('gis_translines')) {
+            $activeTl = $this->db->table('gis_translines')->where('deleted_at IS NULL')->countAllResults();
+            $physicalTl = $this->db->table('gis_translines')->countAllResults();
+            $spanRow = $this->db->table('gis_translines')
+                ->where('deleted_at IS NULL')
+                ->selectSum('distance_meters', 'total_span')
+                ->get()
+                ->getRow();
+            $networkSpan = (float)($spanRow->total_span ?? 0.0);
+        }
+
+        $activeAssets = 0;
+        $physicalAssets = 0;
+        if ($this->db->tableExists('assets')) {
+            $activeAssets = $this->db->table('assets')->where('deleted_at IS NULL')->countAllResults();
+            $physicalAssets = $this->db->table('assets')->countAllResults();
+        }
 
         return [
             'engine_version'     => $this->engineVersion,
@@ -35,7 +50,7 @@ class FaultLocatorWorkspaceService
             'physical_translines'=> $physicalTl,
             'active_assets'      => $activeAssets,
             'physical_assets'    => $physicalAssets,
-            'network_span_meters'=> $networkSpan,
+            'network_span_meters'=> round($networkSpan, 2),
             'delta_topology'     => 0,
             'delta_assets'       => 0,
             'fli_engine_status'  => 'IMMUTABLE_READONLY_ACTIVE',
@@ -46,23 +61,110 @@ class FaultLocatorWorkspaceService
     }
 
     /**
-     * D3.4: Execute FLI-1.0.0 Fault Location Analysis
+     * Get list of real feeders from database
+     */
+    public function getFeeders(): array
+    {
+        if (!$this->db->tableExists('penyulang')) {
+            return [];
+        }
+
+        return $this->db->table('penyulang')
+            ->select('id, kode_penyulang, nama_penyulang, ulp_id')
+            ->orderBy('nama_penyulang', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Get recent interruptions from historical table
+     */
+    public function getRecentInterruptions(int $limit = 15): array
+    {
+        if (!$this->db->tableExists('historical_feeder_interruptions')) {
+            return [];
+        }
+
+        return $this->db->table('historical_feeder_interruptions')
+            ->select('id, penyulang_id, feeder_name, event_date, interruption_started_at, outage_duration_minutes, device_name, relay_trip_type, faulted_phase, fault_current_amperes, weather_condition, field_narrative_raw, asset_id')
+            ->orderBy('event_date', 'DESC')
+            ->orderBy('id', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * D3.4: Execute FLI-1.0.0 Fault Location Analysis with Real Topologic Geodesic Data
      */
     public function locateFault(array $telemetry): array
     {
-        $feederId      = $telemetry['feeder_id'] ?? 'F-CANDRAMAS';
+        $feederInput   = $telemetry['feeder_id'] ?? '1';
         $timestamp     = $telemetry['timestamp'] ?? date('Y-m-d H:i:s');
         $phase         = $telemetry['phase'] ?? 'R-N';
         $faultCurrentA = floatval($telemetry['fault_current_a'] ?? 1450.0);
         $relayDistanceM= floatval($telemetry['relay_distance_m'] ?? 1250.0);
         $relayType     = $telemetry['relay_type'] ?? 'OCR_GFR';
-        $deviceAssetId = $telemetry['device_asset_id'] ?? 'AST-REC-005';
+        $deviceAssetId = $telemetry['device_asset_id'] ?? 'GI_OUTGOING';
 
-        // 1. Calculate Deterministic Input Fingerprint
+        // 1. Resolve Penyulang
+        $feeder = null;
+        if (is_numeric($feederInput)) {
+            $feeder = $this->db->table('penyulang')->where('id', (int)$feederInput)->get()->getRowArray();
+        }
+        if (!$feeder) {
+            $feeder = $this->db->table('penyulang')
+                ->groupStart()
+                    ->where('kode_penyulang', (string)$feederInput)
+                    ->orWhere('nama_penyulang', (string)$feederInput)
+                    ->orLike('nama_penyulang', (string)$feederInput)
+                ->groupEnd()
+                ->get()
+                ->getRowArray();
+        }
+        if (!$feeder) {
+            $feeder = $this->db->table('penyulang')->orderBy('id', 'ASC')->get()->getRowArray() ?? [
+                'id' => 1,
+                'kode_penyulang' => 'PYL-001',
+                'nama_penyulang' => 'SIWALAN PANJI',
+                'ulp_id' => 1
+            ];
+        }
+
+        $penyulangId = (int)$feeder['id'];
+        $penyulangNama = $feeder['nama_penyulang'];
+        $penyulangKode = $feeder['kode_penyulang'];
+
+        // 2. Fetch Assets along this feeder
+        $assets = $this->db->table('assets')
+            ->select('id, kode_asset, nama_asset, jenis_asset, section_id, sequence_no, latitude, longitude')
+            ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->orderBy('sequence_no', 'ASC')
+            ->orderBy('id', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        // 3. Fetch Transline total length or estimate network span
+        $feederSpanRow = $this->db->table('gis_translines')
+            ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->selectSum('distance_meters', 'total_span')
+            ->get()
+            ->getRow();
+        $feederSpanMeters = (float)($feederSpanRow->total_span ?? 0.0);
+
+        if ($feederSpanMeters <= 0.0) {
+            $assetCount = count($assets);
+            $feederSpanMeters = max(1000.0, $assetCount * 45.0); // fallback ~45m avg pole span
+        }
+
+        // 4. Calculate Deterministic Input Fingerprint
         $inputData = [
             'topology_snapshot' => $this->topologySnapshotId,
             'engine_version'    => $this->engineVersion,
-            'feeder_id'         => $feederId,
+            'feeder_id'         => $penyulangId,
+            'feeder_name'       => $penyulangNama,
             'phase'             => $phase,
             'fault_current_a'   => $faultCurrentA,
             'relay_distance_m'  => $relayDistanceM,
@@ -72,78 +174,129 @@ class FaultLocatorWorkspaceService
         $inputCanonical = json_encode($inputData, JSON_UNESCAPED_SLASHES);
         $inputFingerprint = hash('sha256', $inputCanonical);
 
-        // 2. Execute Traversal & Outcome Decision Logic via FLI-1.0.0 Engine Rules
         $caseUuid = 'FLI-CASE-' . date('Ymd') . '-' . strtoupper(substr($inputFingerprint, 0, 8));
 
-        // Evaluate distance along network outcome
-        if ($relayDistanceM <= 0 || $relayDistanceM > 9418.37) {
+        // 5. Evaluate Traversal along Feeder Network
+        $candidateAssets = [];
+        $outcomeStatus = 'RESOLVED';
+        $confidence = 88.5;
+        $faultPointGeom = null;
+        $translineSegment = 'TL-' . $penyulangKode . '-PRIMARY';
+        $explanation = '';
+
+        if ($relayDistanceM <= 0 || $relayDistanceM > ($feederSpanMeters * 1.35)) {
             $outcomeStatus = 'UNRESOLVED';
             $confidence = 0.0;
-            $candidateAssets = [];
-            $translineSegment = null;
-            $faultPointGeom = null;
-            $explanation = 'Target relay distance (' . $relayDistanceM . 'm) exceeds total feeder network span (9,418.37m) or topology gap encountered.';
-        } elseif ($relayDistanceM >= 2000.0 && $relayDistanceM <= 3500.0) {
-            // Branch Ambiguity Junction (T-Off to Percabangan Utara & Selatan)
-            $outcomeStatus = 'DISTANCE_AMBIGUOUS';
-            $confidence = 68.5;
-            $candidateAssets = [
-                [
-                    'asset_id'      => 'AST-TRF-094',
-                    'asset_name'    => 'Trafo Distribusi 250kVA (Utara)',
-                    'section_id'    => 'SEC-CAND-02',
-                    'graph_dist_m'  => 2450.0,
-                    'delta_dist_m'  => 50.0,
-                    'confidence'    => 68.5
-                ],
-                [
-                    'asset_id'      => 'AST-LBS-018',
-                    'asset_name'    => 'LBS Motorized (Selatan)',
-                    'section_id'    => 'SEC-CAND-03',
-                    'graph_dist_m'  => 2480.0,
-                    'delta_dist_m'  => 20.0,
-                    'confidence'    => 65.0
-                ]
-            ];
-            $translineSegment = 'TL-CAND-SEC02-SEC03';
-            $faultPointGeom = ['lat' => -7.9520, 'lng' => 112.6320];
-            $explanation = 'Branching ambiguity detected at T-Off junction SEC-CAND-02/03. Multiple candidate paths exist at distance ' . $relayDistanceM . 'm.';
+            $explanation = "Jarak relay ({$relayDistanceM}m) melebihi jangkauan total konduktor penyulang {$penyulangNama} (" . number_format($feederSpanMeters, 1) . "m) atau di luar batas topologi.";
+        } elseif (empty($assets)) {
+            $outcomeStatus = 'UNRESOLVED';
+            $confidence = 0.0;
+            $explanation = "Penyulang {$penyulangNama} belum memiliki data aset konduktor/tiang terpetakan di database.";
         } else {
-            // Single Clear Candidate
-            $outcomeStatus = 'RESOLVED';
-            $confidence = 94.2;
-            $candidateAssets = [
-                [
-                    'asset_id'      => 'AST-TRF-094',
-                    'asset_name'    => 'Trafo Distribusi 250kVA',
-                    'section_id'    => 'SEC-CAND-01',
-                    'graph_dist_m'  => $relayDistanceM,
-                    'delta_dist_m'  => 12.5,
-                    'confidence'    => 94.2
-                ]
-            ];
-            $translineSegment = 'TL-CAND-SEC01-094';
-            $faultPointGeom = ['lat' => -7.9512, 'lng' => 112.6305];
-            $explanation = 'Unambiguous single candidate found along network traversal at distance ' . $relayDistanceM . 'm.';
+            // Compute cumulative distance along asset sequence
+            $cumDist = 0.0;
+            $step = count($assets) > 1 ? ($feederSpanMeters / max(1, count($assets) - 1)) : 45.0;
+
+            $scored = [];
+            foreach ($assets as $idx => $ast) {
+                $cumDist = $idx * $step;
+                $delta = abs($cumDist - $relayDistanceM);
+                $scored[] = [
+                    'asset'    => $ast,
+                    'graph_m'  => round($cumDist, 1),
+                    'delta_m'  => round($delta, 1),
+                    'section'  => $ast['section_id'] ?? 'SEC-01'
+                ];
+            }
+
+            usort($scored, function($a, $b) {
+                return $a['delta_m'] <=> $b['delta_m'];
+            });
+
+            // Inspect closest candidates within tolerance
+            $tolerance = 180.0; // +/- 180 meters
+            $topWindow = array_filter($scored, function($s) use ($tolerance) {
+                return $s['delta_m'] <= $tolerance;
+            });
+
+            if (empty($topWindow)) {
+                $topWindow = array_slice($scored, 0, 2);
+            }
+
+            // Check branch ambiguity: multiple distinct sections within tolerance
+            $sectionsInWindow = array_unique(array_column($topWindow, 'section'));
+            if (count($sectionsInWindow) > 1 && count($topWindow) > 1) {
+                $outcomeStatus = 'DISTANCE_AMBIGUOUS';
+                $confidence = 68.0;
+                $explanation = "Terdeteksi percabangan (T-Off) pada jarak " . number_format($relayDistanceM, 0) . "m antara section " . implode(', ', $sectionsInWindow) . ". Diperlukan konfirmasi visual tim patroli.";
+            } else {
+                $outcomeStatus = 'RESOLVED';
+                $confidence = 92.5;
+                $explanation = "Kandidat aset tunggal ditemukan sepanjang traversal topologi penyulang {$penyulangNama} pada jarak " . number_format($relayDistanceM, 0) . "m.";
+            }
+
+            foreach (array_slice($topWindow, 0, 3) as $candItem) {
+                $cAst = $candItem['asset'];
+                $candidateAssets[] = [
+                    'asset_id'      => $cAst['id'],
+                    'kode_asset'    => $cAst['kode_asset'],
+                    'asset_name'    => $cAst['nama_asset'] ?? $cAst['kode_asset'],
+                    'jenis_asset'   => $cAst['jenis_asset'],
+                    'section_id'    => $cAst['section_id'],
+                    'graph_dist_m'  => $candItem['graph_m'],
+                    'delta_dist_m'  => $candItem['delta_m'],
+                    'latitude'      => (float)$cAst['latitude'],
+                    'longitude'     => (float)$cAst['longitude'],
+                    'confidence'    => $confidence
+                ];
+            }
+
+            $primaryCandidate = $candidateAssets[0];
+            $faultLat = (float)$primaryCandidate['latitude'];
+            $faultLng = (float)$primaryCandidate['longitude'];
+
+            // Fallback to Sidoarjo coordinates if asset has 0 coordinates
+            if ($faultLat == 0.0 || $faultLng == 0.0) {
+                $faultLat = -7.4478;
+                $faultLng = 112.7183;
+            }
+
+            $faultPointGeom = ['lat' => $faultLat, 'lng' => $faultLng];
+            $translineSegment = 'TL-' . $penyulangKode . '-SEC' . ($primaryCandidate['section_id'] ?? '01');
         }
 
+        // Construct GIS deep-link
+        $targetAssetId = !empty($candidateAssets) ? $candidateAssets[0]['asset_id'] : '';
+        $targetLat = $faultPointGeom ? $faultPointGeom['lat'] : -7.4478;
+        $targetLng = $faultPointGeom ? $faultPointGeom['lng'] : 112.7183;
+        $gisUrl = site_url("gis?penyulang_id={$penyulangId}&asset_id={$targetAssetId}&lat={$targetLat}&lng={$targetLng}&zoom=19");
+
         $resultPayload = [
-            'case_uuid'          => $caseUuid,
-            'engine_version'     => $this->engineVersion,
-            'topology_snapshot'  => $this->topologySnapshotId,
-            'feeder_id'          => $feederId,
-            'device_asset_id'    => $deviceAssetId,
-            'relay_distance_m'   => $relayDistanceM,
-            'outcome_status'     => $outcomeStatus,
-            'confidence_percent' => $confidence,
-            'candidate_assets'   => $candidateAssets,
-            'transline_segment'  => $translineSegment,
-            'fault_point'        => $faultPointGeom,
-            'explanation'        => $explanation,
-            'input_fingerprint'  => $inputFingerprint
+            'case_uuid'                 => $caseUuid,
+            'engine_version'            => $this->engineVersion,
+            'topology_snapshot'         => $this->topologySnapshotId,
+            'feeder_id'                 => $penyulangId,
+            'feeder_code'               => $penyulangKode,
+            'feeder_name'               => $penyulangNama,
+            'device_asset_id'           => $deviceAssetId,
+            'relay_distance_m'          => $relayDistanceM,
+            'feeder_span_meters'        => round($feederSpanMeters, 1),
+            'outcome_status'            => $outcomeStatus,
+            'confidence_percent'        => $confidence,
+            'candidate_assets'          => $candidateAssets,
+            'transline_segment'         => $translineSegment,
+            'fault_point'               => $faultPointGeom,
+            'explanation'               => $explanation,
+            'input_fingerprint'         => $inputFingerprint,
+            'gis_url'                   => $gisUrl,
+            // Explicit calculation basis & telemetry transparency
+            'dasar_perhitungan'         => 'ESTIMASI_TOPOLOGI',
+            'dasar_perhitungan_label'   => 'Estimasi Topologi Jaringan (Jarak Kumulatif Konduktor / Feeder Traversal)',
+            'keterbatasan_telemetri'    => 'Data telemetri impedansi (profil loop R-X) belum tersedia pada relay lapangan OCR/GFR; penentuan jarak berbasis akumulasi panjang fisik segmen konduktor dan tiang GIS.',
+            'kebutuhan_akurasi_metrik'  => 'Untuk mencapai akurasi metrik presisi tinggi dibutuhkan: 1) Profil impedansi konduktor spesifik per section (Ohm/km), 2) Rekaman oscillography COMTRADE fasa-ke-tanah, 3) Koordinat pembumian netral trafo GI.'
         ];
 
-        // 3. Calculate Deterministic Output Fingerprint
+        // 6. Calculate Output Fingerprint & Bundle Hash
         ksort($resultPayload);
         $outputCanonical = json_encode($resultPayload, JSON_UNESCAPED_SLASHES);
         $outputFingerprint = hash('sha256', $outputCanonical);
@@ -168,7 +321,7 @@ class FaultLocatorWorkspaceService
             'case_uuid'      => $caseUuid,
             'work_package'   => 'EMERGENCY_FAULT_INVESTIGATION',
             'priority'       => 'P1_CRITICAL_OUTAGE',
-            'assigned_team'  => 'TIM_HAR_DISTRIBUSI_01',
+            'assigned_team'  => 'TIM_YANTEK_DISTRIBUSI_SIDOARJO',
             'governance_seal'=> 'B6_DISPATCH_SEALED',
             'created_at'     => $now
         ];

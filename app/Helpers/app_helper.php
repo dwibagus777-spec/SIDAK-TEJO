@@ -998,6 +998,18 @@ if (!function_exists('get_sidak_menu_registry')) {
                 'inRail'    => true,
                 'roles'     => null,
             ],
+            [
+                'id'        => 'fault-locator',
+                'name'      => 'Fault Locator Workspace',
+                'category'  => 'OPERATIONS',
+                'desc'      => 'Penentuan lokasi titik gangguan',
+                'href'      => site_url('fault-locator'),
+                'icon'      => 'fas fa-crosshairs',
+                'active'    => (bool)url_is('fault-locator*'),
+                'inRail'    => true,
+                'roles'     => null,
+            ],
+
 
 
             // REMEDIASI

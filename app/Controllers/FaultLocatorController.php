@@ -21,23 +21,30 @@ class FaultLocatorController extends BaseController
     public function workspace()
     {
         $summary = $this->service->getOperationalSummary();
+        $feeders = $this->service->getFeeders();
+        $interruptions = $this->service->getRecentInterruptions(20);
+
+        $defaultFeederId = !empty($feeders) ? $feeders[0]['id'] : '1';
+
         $defaultTelemetry = [
-            'feeder_id'        => 'F-CANDRAMAS',
+            'feeder_id'        => $defaultFeederId,
             'timestamp'        => date('Y-m-d H:i:s'),
             'phase'            => 'R-N',
             'fault_current_a'  => 1450.0,
             'relay_distance_m' => 1250.0,
             'relay_type'       => 'OCR_GFR',
-            'device_asset_id'  => 'AST-REC-005'
+            'device_asset_id'  => 'GI_OUTGOING'
         ];
 
         $initialResult = $this->service->locateFault($defaultTelemetry);
 
         $data = [
-            'title'     => 'Fault Locator Command Center Workspace (D3)',
-            'summary'   => $summary,
-            'telemetry' => $defaultTelemetry,
-            'result'    => $initialResult
+            'title'         => 'Fault Locator Command Center Workspace (D3)',
+            'summary'       => $summary,
+            'feeders'       => $feeders,
+            'interruptions' => $interruptions,
+            'telemetry'     => $defaultTelemetry,
+            'result'        => $initialResult
         ];
 
         return view('fault_locator/workspace', $data);
@@ -63,7 +70,7 @@ class FaultLocatorController extends BaseController
         $json = $this->request->getJSON(true) ?? $this->request->getPost();
 
         if (empty($json['feeder_id'])) {
-            $json['feeder_id'] = 'F-CANDRAMAS';
+            $json['feeder_id'] = '1';
         }
 
         $result = $this->service->locateFault($json);

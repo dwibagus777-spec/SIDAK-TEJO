@@ -162,24 +162,30 @@ class MainActivity : AppCompatActivity() {
                 callback?.invoke(origin, true, false)
             }
 
-            // Auto-grant WebRTC camera & audio permission on UI thread
+            // WebRTC permission request: Only allow AUDIO_CAPTURE for trusted application origin after OS permission granted
             override fun onPermissionRequest(request: PermissionRequest?) {
                 request?.let { req ->
                     runOnUiThread {
+                        val originUri = req.origin
+                        val host = originUri?.host?.lowercase(Locale.ROOT) ?: ""
+                        val isTrustedOrigin = host == "sidaktejo.site" || host.endsWith(".sidaktejo.site") || host == "localhost" || host == "127.0.0.1"
+
+                        if (!isTrustedOrigin) {
+                            req.deny()
+                            return@runOnUiThread
+                        }
+
                         val requestedResources = req.resources
                         val granted = mutableListOf<String>()
                         for (r in requestedResources) {
                             if (r == PermissionRequest.RESOURCE_AUDIO_CAPTURE) {
                                 if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                                     granted.add(r)
+                                } else {
+                                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                                 }
-                            } else if (r == PermissionRequest.RESOURCE_VIDEO_CAPTURE) {
-                                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                                    granted.add(r)
-                                }
-                            } else {
-                                granted.add(r)
                             }
+                            // Do not grant any other resource per security policy
                         }
                         if (granted.isNotEmpty()) {
                             req.grant(granted.toTypedArray())
@@ -330,6 +336,20 @@ class MainActivity : AppCompatActivity() {
         fun requestRecordAudioPermission() {
             runOnUiThread {
                 audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
+
+        @JavascriptInterface
+        fun openAppSettings() {
+            runOnUiThread {
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.fromParts("package", packageName, null)
+                    }
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

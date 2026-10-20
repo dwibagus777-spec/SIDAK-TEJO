@@ -3397,6 +3397,8 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             $('#btn-diag-request-android').on('click', function() {
                 if (window.AndroidBridge && typeof window.AndroidBridge.requestRecordAudioPermission === 'function') {
                     window.AndroidBridge.requestRecordAudioPermission();
+                } else if (window.AndroidBridge && typeof window.AndroidBridge.openAppSettings === 'function') {
+                    window.AndroidBridge.openAppSettings();
                 } else {
                     Swal.fire({
                         icon: 'info',

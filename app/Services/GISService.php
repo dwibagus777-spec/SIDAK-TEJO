@@ -132,6 +132,23 @@ class GISService
 
         // 1. Fetch Independent Feeder Network Topology Segments (MultiLineString Edge Tree)
         $segmentData = $this->assetRepository->getFeederNetworkSegments($penyulangId, $userUlpId);
+        if (!empty($filters['captive_only'])) {
+            $db = \Config\Database::connect();
+            $candidateIds = [];
+            if ($db->tableExists('captive_non_penugasan')) {
+                $candidateIds = array_map('intval', array_column($db->table('captive_non_penugasan')
+                    ->select('transline_id')->where('penyulang_id', $penyulangId)->where('jenis', 'COATING')
+                    ->where('status', 'POTENSI')->where('deleted_at IS NULL')->where('transline_id IS NOT NULL')->get()->getResultArray(), 'transline_id'));
+            }
+            $segmentData['edges'] = array_values(array_filter($segmentData['edges'] ?? [], static fn($edge) => in_array((int)($edge['transline_id'] ?? 0), $candidateIds, true)));
+            $segmentData['translines'] = array_values(array_filter($segmentData['translines'] ?? [], static fn($row) => in_array((int)($row['id'] ?? 0), $candidateIds, true)));
+            $segmentData['coordinates'] = array_values(array_column($segmentData['edges'], 'coordinates'));
+            if (!empty($segmentData['network_truth'])) {
+                $segmentData['network_truth']['authoritative_transline_count'] = count($segmentData['edges']);
+                $segmentData['network_truth']['has_authoritative_transline'] = count($segmentData['edges']) > 0;
+                $segmentData['network_truth']['topology_ready'] = count($segmentData['edges']) > 0;
+            }
+        }
         $nodes       = $segmentData['nodes'] ?? [];
         
         $minLat = 90.0; $maxLat = -90.0;

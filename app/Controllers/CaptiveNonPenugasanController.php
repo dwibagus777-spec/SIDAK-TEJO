@@ -14,16 +14,32 @@ class CaptiveNonPenugasanController extends BaseController
         $session = session();
         $db = Database::connect();
         $userUlpId = (int)($session->get('user_ulp_id') ?? $session->get('ulp_id') ?? 0) ?: null;
-        $ulps = $db->table('ulps')->select('id,nama_ulp')->orderBy('nama_ulp')->get()->getResultArray();
-        if ($userUlpId) $ulps = array_values(array_filter($ulps, static fn($u) => (int)$u['id'] === $userUlpId));
-        $feedersQuery = $db->table('penyulang')->select('id,ulp_id,nama_penyulang')->orderBy('nama_penyulang');
-        if ($userUlpId) $feedersQuery->where('ulp_id', $userUlpId);
-        $feeders = $feedersQuery->get()->getResultArray();
-        $sections = $db->table('sections')->select('id,penyulang_id,nama_section')->orderBy('nama_section')->get()->getResultArray();
-        $items = (new CaptiveNonPenugasanService($db))->list($userUlpId);
+
+        $ulps = [];
+        if ($db->tableExists('ulps')) {
+            $ulps = $db->table('ulps')->select('id,nama_ulp')->orderBy('nama_ulp')->get()->getResultArray();
+            if ($userUlpId) $ulps = array_values(array_filter($ulps, static fn($u) => (int)$u['id'] === $userUlpId));
+        }
+
+        $feeders = [];
+        if ($db->tableExists('penyulang')) {
+            $feedersQuery = $db->table('penyulang')->select('id,ulp_id,nama_penyulang')->orderBy('nama_penyulang');
+            if ($userUlpId) $feedersQuery->where('ulp_id', $userUlpId);
+            $feeders = $feedersQuery->get()->getResultArray();
+        }
+
+        $sections = [];
+        if ($db->tableExists('sections')) {
+            $sections = $db->table('sections')->select('id,penyulang_id,nama_section')->orderBy('nama_section')->get()->getResultArray();
+        }
+
+        $service = new CaptiveNonPenugasanService($db);
+        $service->ensureTableExists();
+        $items = $service->list($userUlpId);
+
         $translineId = (int)($this->request->getGet('transline_id') ?? 0);
         $selectedLine = null;
-        if ($translineId > 0) {
+        if ($translineId > 0 && $db->tableExists('gis_translines')) {
             $line = $db->table('gis_translines t')->select('t.id,t.penyulang_id,p.ulp_id')->join('penyulang p','p.id=t.penyulang_id','left')->where('t.id',$translineId)->where('t.is_active',1)->where('t.deleted_at IS NULL')->get()->getRowArray();
             if ($line && (!$userUlpId || (int)$line['ulp_id'] === $userUlpId)) {
                 $result = (new GisTranslineService($db))->getAuthoritativeTranslines(['penyulang_id' => (int)$line['penyulang_id']], $userUlpId);

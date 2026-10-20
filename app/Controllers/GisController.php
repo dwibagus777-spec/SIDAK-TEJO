@@ -166,7 +166,8 @@ class GisController extends BaseController
         $filters = [
             'penyulang_id' => $penyulangId,
             'zoom'         => $zoom,
-            'layers'       => $layers
+            'layers'       => $layers,
+            'captive_only' => (int)($this->request->getGet('captive_only') ?? 0) === 1,
         ];
 
         $userUlpId = session()->get('ulp_id');

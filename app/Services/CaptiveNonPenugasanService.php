@@ -15,10 +15,33 @@ class CaptiveNonPenugasanService
     public function __construct($db = null)
     {
         $this->db = $db ?? Database::connect();
+        $this->ensureTableExists();
+    }
+
+    public function ensureTableExists(): void
+    {
+        try {
+            if (!$this->db->tableExists('captive_non_penugasan')) {
+                $migFile = APPPATH . 'Database/Migrations/2026-10-20-000001_AddTranslineToTemuan.php';
+                if (file_exists($migFile)) {
+                    require_once $migFile;
+                    $mig = new \App\Database\Migrations\AddTranslineToTemuan();
+                    $mig->up();
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', '[CaptiveNonPenugasanService] ensureTableExists: ' . $e->getMessage());
+        }
     }
 
     public function list(?int $ulpId): array
     {
+        if (!$this->db->tableExists('captive_non_penugasan')) {
+            $this->ensureTableExists();
+            if (!$this->db->tableExists('captive_non_penugasan')) {
+                return [];
+            }
+        }
         $builder = $this->db->table('captive_non_penugasan c')
             ->select('c.*, u.nama_ulp, p.nama_penyulang')
             ->join('ulps u', 'u.id = c.ulp_id', 'left')

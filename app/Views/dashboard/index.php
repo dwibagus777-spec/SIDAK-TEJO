@@ -369,6 +369,24 @@
         <a href="<?= site_url('captive-non-penugasan') ?>" class="dah-quick-pill"><i class="fas fa-plug text-warning fs-6"></i><span>Captive Non Penugasan</span></a>
     </div>
 
+
+<!-- ASSET SUMMARY PANEL -->
+<div class="card dah-card mb-4">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+      <h6 class="fw-bold mb-0"><i class="fas fa-layer-group text-primary me-2"></i>Ringkasan Aset UP3 Sidoarjo<?php if (!empty($selectedUlpId) && !empty($ulpList)): ?> — <?php foreach ($ulpList as $u) { if ((int)$u['id'] === (int)$selectedUlpId) { echo esc($u['nama']); break; } } ?><?php endif; ?></h6>
+      <a href="<?= site_url('assets') ?>" class="btn btn-sm btn-outline-primary rounded-pill">Lihat Semua Aset</a>
+    </div>
+    <div class="row g-3">
+      <div class="col-auto"><div class="text-center px-3"><div class="fw-bold fs-5 text-dark"><?= number_format($assetSummary['total'] ?? 0) ?></div><div class="text-muted" style="font-size:11px">Total Aset</div></div></div>
+      <div class="col-auto"><div class="text-center px-3 border-start"><div class="fw-bold fs-5 text-primary"><?= number_format($assetSummary['jtm'] ?? 0) ?></div><div class="text-muted" style="font-size:11px">JTM</div></div></div>
+      <div class="col-auto"><div class="text-center px-3 border-start"><div class="fw-bold fs-5 text-info"><?= number_format($assetSummary['keypoint'] ?? 0) ?></div><div class="text-muted" style="font-size:11px">Keypoint (Recloser/LBS)</div></div></div>
+      <div class="col-auto"><div class="text-center px-3 border-start"><div class="fw-bold fs-5 text-warning"><?= number_format($assetSummary['gardu'] ?? 0) ?></div><div class="text-muted" style="font-size:11px">Gardu</div></div></div>
+      <div class="col-auto"><div class="text-center px-3 border-start"><div class="fw-bold fs-5 text-success"><?= number_format($assetSummary['trafo'] ?? 0) ?></div><div class="text-muted" style="font-size:11px">Trafo</div></div></div>
+      <div class="col-auto"><div class="text-center px-3 border-start"><div class="fw-bold fs-5 text-secondary"><?= number_format($assetSummary['pohon'] ?? 0) ?></div><div class="text-muted" style="font-size:11px">Pohon (ROW)</div></div></div>
+    </div>
+  </div>
+</div>
 <!-- 3. TOP 6 BENTO KPI CARDS (MATCHING REFERENCE IMAGE) -->
     <div class="row g-3 mb-4">
         <!-- 1. Total Temuan -->
@@ -942,7 +960,73 @@
     </div>
 
 
-    <!-- 7. ROW 5: JARINGAN UP3 SIDOARJO (DISTRIBUTION NETWORK TOPOLOGY) -->
+    
+    <!-- 6B. CUMULATIVE GANGGUAN CHART + FEEDER RANKINGS -->
+    <div class="row g-4 mb-4">
+        <!-- Cumulative Gangguan Line Chart -->
+        <div class="col-lg-5 col-12">
+            <div class="dah-card p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-chart-line text-danger me-2"></i>Gangguan Kumulatif <?= (int)$trendYear ?></h6>
+                    <span class="badge bg-danger-subtle text-danger"><?= array_sum(array_values($cumulativeGangguan ?? [])) > 0 ? number_format(max($cumulativeGangguan ?? [0])) . ' total' : '–' ?></span>
+                </div>
+                <canvas id="cumulativeGangguanChart" height="180"></canvas>
+            </div>
+        </div>
+        <!-- Feeder Rankings: Gangguan + Inspeksi -->
+        <div class="col-lg-7 col-12">
+            <div class="row g-4 h-100">
+                <!-- Top Penyulang by Gangguan -->
+                <div class="col-md-6 col-12">
+                    <div class="dah-card p-3 h-100">
+                        <h6 class="fw-bold mb-2 small text-dark"><i class="fas fa-bolt text-warning me-1"></i>Penyulang Gangguan Terbanyak <span class="text-muted fw-normal"><?= (int)$trendYear ?></span></h6>
+                        <div class="table-responsive" style="max-height:240px;overflow-y:auto">
+                        <table class="table table-sm align-middle mb-0" style="font-size:11px">
+                            <thead class="table-light sticky-top"><tr><th>#</th><th>Penyulang</th><th>ULP</th><th class="text-end">Gangguan</th></tr></thead>
+                            <tbody>
+                            <?php foreach (($topFeedersGangguan ?? []) as $rank => $row): ?>
+                            <tr>
+                                <td class="text-muted"><?= $rank + 1 ?></td>
+                                <td><?= esc($row['feeder_name'] ?? '-') ?></td>
+                                <td class="text-muted small"><?= esc($row['nama_ulp'] ?? '-') ?></td>
+                                <td class="text-end fw-bold text-danger"><?= (int)($row['cnt'] ?? 0) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($topFeedersGangguan)): ?><tr><td colspan="4" class="text-center text-muted py-3">Tidak ada data gangguan</td></tr><?php endif; ?>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- Top Penyulang by Inspeksi Temuan -->
+                <div class="col-md-6 col-12">
+                    <div class="dah-card p-3 h-100">
+                        <h6 class="fw-bold mb-2 small text-dark"><i class="fas fa-clipboard-list text-info me-1"></i>Penyulang Temuan Inspeksi Terbanyak</h6>
+                        <div class="table-responsive" style="max-height:240px;overflow-y:auto">
+                        <table class="table table-sm align-middle mb-0" style="font-size:11px">
+                            <thead class="table-light sticky-top"><tr><th>#</th><th>Penyulang</th><th class="text-end">PDKB</th><th class="text-end">HAR Gardu</th><th class="text-end">HAR ROW</th><th class="text-end">Total</th></tr></thead>
+                            <tbody>
+                            <?php foreach (($topInspeksiPenyulang ?? []) as $rank => $row): ?>
+                            <tr style="cursor:pointer" onclick="highlightFeederOnMap(<?= (int)$row['penyulang_id'] ?>, '<?= esc(addslashes($row['nama_penyulang'] ?? '')) ?>')" title="Tampilkan di peta">
+                                <td class="text-muted"><?= $rank + 1 ?></td>
+                                <td><?= esc($row['nama_penyulang'] ?? '-') ?></td>
+                                <td class="text-end"><?= (int)($row['pdkb'] ?? 0) ?></td>
+                                <td class="text-end"><?= (int)($row['har_gardu'] ?? 0) ?></td>
+                                <td class="text-end"><?= (int)($row['har_row'] ?? 0) ?></td>
+                                <td class="text-end fw-bold text-info"><?= (int)($row['total'] ?? 0) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($topInspeksiPenyulang)): ?><tr><td colspan="6" class="text-center text-muted py-3">Tidak ada data temuan</td></tr><?php endif; ?>
+                            </tbody>
+                        </table>
+                        </div>
+                        <div class="text-muted mt-1" style="font-size:10px"><i class="fas fa-hand-pointer me-1"></i>Klik baris untuk tampilkan di peta</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- 7. ROW 5: JARINGAN UP3 SIDOARJO (DISTRIBUTION NETWORK TOPOLOGY) -->
     <?php
             $networkRows = $networkData['feeders'] ?? [];
             $networkTotals = ['penyulang' => 0, 'aset' => 0, 'aaac_kms' => 0, 'aaacs_kms' => 0, 'mvtic_kms' => 0, 'xlpe_kms' => 0, 'gis' => []];
@@ -963,6 +1047,36 @@
         <?php foreach ($networkRows as $net): ?><tr><td><?= esc($net['gardu_induk'] ?? '-') ?></td><td><?= esc($net['nama_ulp'] ?? '-') ?></td><td><?= esc($net['nama'] ?? '-') ?> <span class="text-muted small"><?= esc($net['kode'] ?? '') ?></span></td><td><?= number_format((int)$net['aset']) ?></td><td><?= number_format((float)$net['aaac_kms'],2) ?></td><td><?= number_format((float)$net['aaacs_kms'],2) ?></td><td><?= number_format((float)$net['mvtic_kms'],2) ?></td><td><?= number_format((float)$net['xlpe_kms'],2) ?></td><td><a class="btn btn-sm btn-outline-secondary" href="<?= site_url('gis?penyulang_id=' . (int)$net['id']) ?>">GIS</a><?php if (!empty($net['captive_candidates'])): ?> <a class="btn btn-sm btn-warning" href="<?= site_url('gis?penyulang_id=' . (int)$net['id'] . '&captive_only=1') ?>">Potensi <?= (int)$net['captive_candidates'] ?></a><?php endif ?></td></tr><?php endforeach ?>
         <?php if (!$networkRows): ?><tr><td colspan="9" class="text-center text-muted">Data penyulang tidak tersedia dalam cakupan ini.</td></tr><?php endif ?>
         </tbody></table></div></div>
+    <!-- 8. CAPTIVE NON PENUGASAN — POTENSI COATING -->
+    <div class="card dah-card mb-4">
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <strong><i class="fas fa-highlighter text-warning me-2"></i>Captive Non Penugasan — Potensi Coating (AAAC)</strong>
+                <div class="small text-muted">Transline AAAC aktif yang ditandai bisa coating. Default: tidak bisa coating. AAACS/MVTIC/XLPE tidak bisa coating.</div>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-warning" href="<?= site_url('gis?captive_only=1' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>"><i class="fas fa-map-location-dot me-1"></i>Tinjau di GIS</a>
+                <a class="btn btn-sm btn-outline-primary" href="<?= site_url('captive-non-penugasan') ?>"><i class="fas fa-list me-1"></i>Kelola</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <?php if (($coatingSummary['total_titik'] ?? 0) > 0): ?>
+            <div class="d-flex flex-wrap gap-4 align-items-center">
+                <div class="text-center">
+                    <div class="fw-bold fs-4 text-warning"><?= number_format($coatingSummary['total_titik']) ?></div>
+                    <div class="text-muted small">Titik AAAC Potensi Coating</div>
+                </div>
+                <div class="text-center">
+                    <div class="fw-bold fs-4 text-info"><?= number_format(($coatingSummary['total_meter'] ?? 0) / 1000, 2) ?> km</div>
+                    <div class="text-muted small">Total Panjang Transline</div>
+                </div>
+            </div>
+            <?php else: ?>
+            <p class="text-muted mb-0 small"><i class="fas fa-info-circle me-1"></i>Belum ada transline AAAC yang ditandai potensi coating. Tandai melalui GIS pada transline AAAC aktif.</p>
+            <?php endif; ?>
+        </div>
+    </div>
+
 
 </div>
 
@@ -1543,5 +1657,36 @@ document.addEventListener('DOMContentLoaded', function() {
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 });
+
+<script>
+(function() {
+    var cumData = <?php echo json_encode(array_values($cumulativeGangguan ?? array_fill(0, 12, 0))); ?>;
+    var labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    var ctx = document.getElementById('cumulativeGangguanChart');
+    if (!ctx) return;
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Kumulatif Gangguan',
+                data: cumData,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239,68,68,0.08)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: '#ef4444',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { return 'Kumulatif: ' + c.parsed.y + ' gangguan'; } } } },
+            scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
+        }
+    });
+})();
+</script>
 </script>
 <?= $this->endSection() ?>

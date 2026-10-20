@@ -1030,6 +1030,7 @@
                 </div>
                 <i class="fas fa-chevron-right text-muted small"></i>
             </div>
+<?php if ($isAdmin): ?>
             <div class="sheet-action-item destructive" id="act-delete-connection">
                 <i class="fas fa-trash-alt text-danger fs-5"></i>
                 <div class="flex-grow-1">
@@ -1038,6 +1039,7 @@
                 </div>
                 <i class="fas fa-chevron-right text-danger small"></i>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

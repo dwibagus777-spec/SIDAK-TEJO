@@ -472,6 +472,79 @@ class Dashboard extends BaseController
         unset($u);
         $networkData = ['ulp_summary' => array_values($ulpAccum), 'feeders' => $networkFeeders, 'ulp_accum' => $ulpAccum];
 
+        // Asset summary: total per jenis_asset for the dashboard header panel
+        $assetSummaryRows = $db->query(
+            "SELECT jenis_asset, COUNT(*) cnt FROM assets WHERE deleted_at IS NULL"
+            . ($ulpIdFilter !== null ? " AND ulp_id = " . (int)$ulpIdFilter : "")
+            . " GROUP BY jenis_asset"
+        )->getResultArray();
+        $assetByType  = array_column($assetSummaryRows, 'cnt', 'jenis_asset');
+        $assetTotalAll = array_sum(array_column($assetSummaryRows, 'cnt'));
+        $assetSummary = [
+            'total'    => $assetTotalAll,
+            'jtm'      => (int)($assetByType['JTM'] ?? 0),
+            'keypoint' => (int)($assetByType['RECLOSER_LBS'] ?? 0),
+            'gardu'    => (int)(($assetByType['GARDU_DISTRIBUSI_PORTAL'] ?? 0) + ($assetByType['GTT_GARDU_TRAFO_TIANG'] ?? 0)),
+            'trafo'    => (int)($assetByType['GTT_GARDU_TRAFO_TIANG'] ?? 0),
+            'pohon'    => (int)($db->tableExists('vegetation_observations') ? $db->table('vegetation_observations')->where('is_valid', 1)->countAllResults() : 0),
+            'by_type'  => $assetByType,
+        ];
+
+        // Cumulative gangguan per month for trend year
+        $ggnMonthlyRaw = $db->query(
+            "SELECT MONTH(event_date) mo, COUNT(*) cnt FROM historical_feeder_interruptions
+             WHERE event_date IS NOT NULL AND YEAR(event_date) = " . (int)$trendYear . "
+             GROUP BY mo ORDER BY mo ASC"
+        )->getResultArray();
+        $monthlyGangguan = array_fill(1, 12, 0);
+        foreach ($ggnMonthlyRaw as $row) { $monthlyGangguan[(int)$row['mo']] = (int)$row['cnt']; }
+        $cumulativeGangguan = [];
+        $cumSum = 0;
+        for ($m = 1; $m <= 12; $m++) { $cumSum += $monthlyGangguan[$m]; $cumulativeGangguan[$m] = $cumSum; }
+
+        // Top 10 feeders by interruption count for trend year
+        $topFeedersGangguanRows = $db->query(
+            "SELECT h.feeder_name, p.id penyulang_id, p.nama_penyulang, u.nama_ulp, COUNT(h.id) cnt
+             FROM historical_feeder_interruptions h
+             LEFT JOIN penyulang p ON UPPER(TRIM(p.nama_penyulang)) = UPPER(TRIM(h.feeder_name))
+             LEFT JOIN ulps u ON p.ulp_id = u.id
+             WHERE h.event_date IS NOT NULL AND YEAR(h.event_date) = " . (int)$trendYear
+            . ($ulpIdFilter !== null ? " AND (u.id = " . (int)$ulpIdFilter . " OR u.id IS NULL)" : "")
+            . " GROUP BY h.feeder_name, p.id, p.nama_penyulang, u.nama_ulp ORDER BY cnt DESC LIMIT 10"
+        )->getResultArray();
+
+        // Top 10 feeders by active inspection findings with pelaksana breakdown
+        $temuanByPenyulangRaw = $db->query(
+            "SELECT t.penyulang_id, p.nama_penyulang,
+                    COUNT(*) total,
+                    SUM(CASE WHEN UPPER(t.pelaksana) LIKE '%PDKB%' THEN 1 ELSE 0 END) pdkb,
+                    SUM(CASE WHEN UPPER(t.pelaksana) LIKE '%HAR%GARDU%' OR t.pelaksana = 'HAR_GARDU' THEN 1 ELSE 0 END) har_gardu,
+                    SUM(CASE WHEN UPPER(t.pelaksana) LIKE '%HAR%ROW%' OR t.pelaksana = 'HAR_ROW' THEN 1 ELSE 0 END) har_row
+             FROM temuan t
+             LEFT JOIN penyulang p ON t.penyulang_id = p.id
+             WHERE t.deleted_at IS NULL AND t.status != 'SELESAI'"
+            . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "")
+            . " GROUP BY t.penyulang_id, p.nama_penyulang ORDER BY total DESC LIMIT 10"
+        )->getResultArray();
+        $topInspeksiPenyulang = array_map(fn($r) => [
+            'penyulang_id'  => (int)$r['penyulang_id'],
+            'nama_penyulang'=> $r['nama_penyulang'],
+            'total'         => (int)$r['total'],
+            'pdkb'          => (int)$r['pdkb'],
+            'har_gardu'     => (int)$r['har_gardu'],
+            'har_row'       => (int)$r['har_row'],
+        ], $temuanByPenyulangRaw);
+
+        // Captive coating summary
+        $coatingSummary = ['total_titik' => 0, 'total_meter' => 0.0];
+        if ($db->tableExists('captive_non_penugasan')) {
+            $coatingQ = $db->table('captive_non_penugasan')
+                ->select('COUNT(*) total_titik, SUM(distance_meters) total_meter')
+                ->where('jenis', 'COATING')->where('status', 'POTENSI')->where('deleted_at IS NULL');
+            if ($ulpIdFilter !== null) $coatingQ->where('ulp_id', $ulpIdFilter);
+            $cr = $coatingQ->get()->getRowArray();
+            $coatingSummary = ['total_titik' => (int)($cr['total_titik'] ?? 0), 'total_meter' => (float)($cr['total_meter'] ?? 0)];
+        }
         // Sidebar collapse preference: default TRUE (collapsed) unless user explicitly expanded
         $prefersCollapsed = $session->get('sidebar_collapsed') ?? true;
 
@@ -507,6 +580,11 @@ class Dashboard extends BaseController
             'trendComparison'     => $trendComparison,
             'prefersCollapsed'    => $prefersCollapsed,
             'networkData'         => $networkData,
+            'assetSummary'          => $assetSummary,
+            'cumulativeGangguan'    => $cumulativeGangguan,
+            'topFeedersGangguan'    => $topFeedersGangguanRows,
+            'topInspeksiPenyulang'  => $topInspeksiPenyulang,
+            'coatingSummary'        => $coatingSummary,
         ];
 
 

@@ -250,6 +250,41 @@
     body.dark-mode .dah-chip-gangguan .text-dark {
         color: #f1f5f9 !important;
     }
+    .dah-cum-card {
+        height: 310px !important;
+        max-height: 320px !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .dah-cum-chart-box {
+        position: relative !important;
+        width: 100% !important;
+        height: 225px !important;
+        max-height: 225px !important;
+        flex: 0 0 225px !important;
+        overflow: hidden;
+    }
+    .dah-cum-chart-box canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 225px !important;
+    }
+    @media (max-width: 767.98px) {
+        .dah-cum-card {
+            height: 260px !important;
+            max-height: 270px !important;
+        }
+        .dah-cum-chart-box {
+            height: 180px !important;
+            max-height: 180px !important;
+            flex: 0 0 180px !important;
+        }
+        .dah-cum-chart-box canvas {
+            max-height: 180px !important;
+        }
+    }
 </style>
 
 <div class="dah-container container-fluid py-3">
@@ -924,8 +959,8 @@
             </div>
 
             <!-- 6B. Gangguan Kumulatif (Tepat di Bawah Penyulang Gangguan Terbanyak) -->
-            <div class="card dah-card shadow-sm border">
-                <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
+            <div class="card dah-card dah-cum-card shadow-sm border">
+                <div class="card-header bg-white py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-chart-line"></i></span>
                         <div>
@@ -933,12 +968,21 @@
                             <small class="text-muted" style="font-size: 11px;">Akumulasi bulanan (Jan–Des)</small>
                         </div>
                     </div>
-                    <span class="badge bg-danger-subtle text-danger rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">
-                        <?= array_sum(array_values($cumulativeGangguan ?? [])) > 0 ? number_format(max($cumulativeGangguan ?? [0])) . ' Total' : '0 Total' ?>
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <select aria-label="Pilih Tahun Gangguan Kumulatif" class="form-select form-select-sm rounded-pill font-monospace" style="font-size: 11px; width: auto; padding: 2px 24px 2px 10px;" onchange="changeTrendYear(this.value)">
+                            <?php foreach ($availableTrendYears ?? [date('Y')] as $yr): ?>
+                                <option value="<?= $yr ?>" <?= ((int)($trendYear ?? date('Y')) === (int)$yr) ? 'selected' : '' ?>>
+                                    <?= $yr ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">
+                            <?= array_sum(array_values($cumulativeGangguan ?? [])) > 0 ? number_format(max($cumulativeGangguan ?? [0])) . ' Total' : '0 Total' ?>
+                        </span>
+                    </div>
                 </div>
-                <div class="card-body p-3">
-                    <div style="height: 165px; width: 100%;">
+                <div class="card-body p-2.5 d-flex align-items-center justify-content-center">
+                    <div class="dah-cum-chart-box">
                         <canvas id="cumulativeGangguanChart"></canvas>
                     </div>
                 </div>
@@ -1754,10 +1798,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 6. Cumulative Gangguan Line Chart (12 Months Running Total)
     (function initCumulativeChart() {
-        var cumData = <?php echo json_encode(array_values($cumulativeGangguan ?? array_fill(0, 12, 0))); ?>;
+        var rawCumData = <?php echo json_encode(array_values($cumulativeGangguan ?? array_fill(0, 12, 0))); ?>;
+        var cumData = (rawCumData || []).map(function(v) { return Number(v) || 0; });
+        var maxVal = cumData.length ? Math.max.apply(null, cumData) : 0;
+        var ySuggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.12) : 10;
         var labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
         var ctx = document.getElementById('cumulativeGangguanChart');
         if (!ctx || typeof Chart === 'undefined') return;
+        if (typeof Chart.getChart === 'function') {
+            var prev = Chart.getChart(ctx);
+            if (prev) prev.destroy();
+        }
         new Chart(ctx, {
             type: 'line',
             data: {
@@ -1766,10 +1817,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     label: 'Kumulatif Gangguan',
                     data: cumData,
                     borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239,68,68,0.08)',
-                    borderWidth: 2,
+                    backgroundColor: 'rgba(239,68,68,0.12)',
+                    borderWidth: 2.5,
                     pointRadius: 4,
+                    pointHoverRadius: 6,
                     pointBackgroundColor: '#ef4444',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
                     fill: true,
                     tension: 0.3
                 }]
@@ -1777,6 +1831,9 @@ document.addEventListener('DOMContentLoaded', function() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 8, right: 8, bottom: 2, left: 4 }
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -1788,8 +1845,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 },
                 scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 } },
-                    x: { grid: { display: false } }
+                    y: {
+                        beginAtZero: true,
+                        min: 0,
+                        suggestedMax: ySuggestedMax,
+                        ticks: {
+                            precision: 0,
+                            maxTicksLimit: 6,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.16)'
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 11 }
+                        }
+                    }
                 }
             }
         });

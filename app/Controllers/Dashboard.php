@@ -504,24 +504,29 @@ class Dashboard extends BaseController
             'by_type'  => $assetByType,
         ];
 
-        // Cumulative gangguan per month for trend year (respecting ULP filter)
-        $ggnMonthlyBuilder = $db->table('historical_feeder_interruptions')
-            ->select('MONTH(event_date) mo, COUNT(*) cnt')
-            ->where('event_date IS NOT NULL')
-            ->where('YEAR(event_date)', (int)$trendYear);
+        // Cumulative gangguan per month for trend year (respecting ULP filter consistently with feeder table)
+        $ulpWhereClause = "";
         if ($ulpIdFilter !== null) {
+            $uRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
+            $cleanU = $uRow ? $db->escapeLikeString(trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']))) : '';
             $interruptionFields = $db->getFieldNames('historical_feeder_interruptions');
+            $ulpConds = ["p.ulp_id = " . (int)$ulpIdFilter];
             if (in_array('ulp_id', $interruptionFields, true)) {
-                $ggnMonthlyBuilder->where('ulp_id', $ulpIdFilter);
-            } else {
-                $uRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
-                if ($uRow) {
-                    $cleanU = trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']));
-                    $ggnMonthlyBuilder->like('ulp_name', $cleanU);
-                }
+                $ulpConds[] = "h.ulp_id = " . (int)$ulpIdFilter;
             }
+            if ($cleanU !== '' && in_array('ulp_name', $interruptionFields, true)) {
+                $ulpConds[] = "h.ulp_name LIKE '%" . $cleanU . "%'";
+            }
+            $ulpWhereClause = " AND (" . implode(" OR ", $ulpConds) . ")";
         }
-        $ggnMonthlyRaw = $ggnMonthlyBuilder->groupBy('mo')->orderBy('mo', 'ASC')->get()->getResultArray();
+        $ggnMonthlyRaw = $db->query(
+            "SELECT MONTH(h.event_date) mo, COUNT(h.id) cnt
+             FROM historical_feeder_interruptions h
+             LEFT JOIN penyulang p ON UPPER(TRIM(p.nama_penyulang)) = UPPER(TRIM(h.feeder_name))
+             WHERE h.event_date IS NOT NULL AND YEAR(h.event_date) = " . (int)$trendYear
+            . $ulpWhereClause
+            . " GROUP BY MONTH(h.event_date) ORDER BY mo ASC"
+        )->getResultArray();
         $monthlyGangguan = array_fill(1, 12, 0);
         foreach ($ggnMonthlyRaw as $row) { $monthlyGangguan[(int)$row['mo']] = (int)$row['cnt']; }
         $cumulativeGangguan = [];

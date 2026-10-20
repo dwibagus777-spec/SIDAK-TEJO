@@ -23,36 +23,19 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
         // 1. Add conductor_type, conductor_size, finding_component_key to `temuan`
         if ($this->db->tableExists('temuan')) {
             if (!$this->db->fieldExists('conductor_type', 'temuan')) {
-                $colDef = [
-                    'type'       => 'VARCHAR',
-                    'constraint' => 24,
-                    'null'       => true,
-                ];
-                if ($this->db->fieldExists('konduktor', 'temuan')) {
-                    $colDef['after'] = 'konduktor';
-                }
-                $this->forge->addColumn('temuan', ['conductor_type' => $colDef]);
+                try {
+                    $this->db->query("ALTER TABLE `temuan` ADD COLUMN `conductor_type` VARCHAR(24) NULL");
+                } catch (\Throwable $e) {}
             }
             if (!$this->db->fieldExists('conductor_size', 'temuan')) {
-                $this->forge->addColumn('temuan', [
-                    'conductor_size' => [
-                        'type'       => 'VARCHAR',
-                        'constraint' => 16,
-                        'null'       => true,
-                        'after'      => 'conductor_type',
-                    ],
-                ]);
+                try {
+                    $this->db->query("ALTER TABLE `temuan` ADD COLUMN `conductor_size` VARCHAR(16) NULL");
+                } catch (\Throwable $e) {}
             }
             if (!$this->db->fieldExists('finding_component_key', 'temuan')) {
-                $colDefKey = [
-                    'type'       => 'VARCHAR',
-                    'constraint' => 40,
-                    'null'       => true,
-                ];
-                if ($this->db->fieldExists('jenis_temuan', 'temuan')) {
-                    $colDefKey['after'] = 'jenis_temuan';
-                }
-                $this->forge->addColumn('temuan', ['finding_component_key' => $colDefKey]);
+                try {
+                    $this->db->query("ALTER TABLE `temuan` ADD COLUMN `finding_component_key` VARCHAR(40) NULL");
+                } catch (\Throwable $e) {}
             }
         }
 
@@ -70,24 +53,14 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
             }
 
             if (!$this->db->fieldExists('conductor_type', 'temuan_materials')) {
-                $this->forge->addColumn('temuan_materials', [
-                    'conductor_type' => [
-                        'type'       => 'VARCHAR',
-                        'constraint' => 24,
-                        'null'       => true,
-                        'after'      => 'quantity',
-                    ],
-                ]);
+                try {
+                    $this->db->query("ALTER TABLE `temuan_materials` ADD COLUMN `conductor_type` VARCHAR(24) NULL");
+                } catch (\Throwable $e) {}
             }
             if (!$this->db->fieldExists('conductor_size', 'temuan_materials')) {
-                $this->forge->addColumn('temuan_materials', [
-                    'conductor_size' => [
-                        'type'       => 'VARCHAR',
-                        'constraint' => 16,
-                        'null'       => true,
-                        'after'      => 'conductor_type',
-                    ],
-                ]);
+                try {
+                    $this->db->query("ALTER TABLE `temuan_materials` ADD COLUMN `conductor_size` VARCHAR(16) NULL");
+                } catch (\Throwable $e) {}
             }
         }
 

@@ -1223,6 +1223,8 @@ class MigrateController extends BaseController
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'error'   => $e->getMessage(),
+                'file'    => basename($e->getFile()),
+                'line'    => $e->getLine(),
             ]);
         }
     }

@@ -417,7 +417,7 @@ class Dashboard extends BaseController
         $penyulangQuery = $db->table('penyulang p')
             ->select('p.id, p.kode_penyulang, p.nama_penyulang, p.ulp_id, u.nama_ulp')
             ->join('ulps u', 'p.ulp_id = u.id', 'left')
-            ->where('p.status', 'ACTIVE');
+            ->where('p.status', 'AKTIF');
         if ($ulpIdFilter !== null) {
             $penyulangQuery->where('p.ulp_id', $ulpIdFilter);
         }

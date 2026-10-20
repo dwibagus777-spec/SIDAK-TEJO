@@ -866,101 +866,7 @@
         </div>
     </div>
 
-    <!-- 6. ROW 4: MONTHLY FINDINGS TREND & AI PROGRAM RECOMMENDATIONS -->
-    <div class="row g-4 mb-4">
-        <!-- 6A. Trend Jumlah Temuan Bulanan -->
-        <div class="col-lg-8 col-12">
-            <div class="dah-card p-4 h-100">
-                <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
-                    <div>
-                        <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-chart-line text-primary me-2"></i>Trend Jumlah Temuan Bulanan</h6>
-                        <small class="text-muted" style="font-size: 11px;">Klik titik/bulan untuk membuka daftar temuan periode tersebut</small>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <!-- Dynamic Year Selector Dropdown -->
-                        <div class="d-flex align-items-center gap-1">
-                            <label for="trendYearSelect" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">Tahun:</label>
-                            <select id="trendYearSelect" class="form-select form-select-sm rounded-pill font-monospace" style="font-size: 11px; width: auto; padding: 2px 24px 2px 10px;" onchange="changeTrendYear(this.value)">
-                                <?php foreach ($availableTrendYears ?? [date('Y')] as $yr): ?>
-                                    <option value="<?= $yr ?>" <?= ((int)($trendYear ?? date('Y')) === (int)$yr) ? 'selected' : '' ?>>
-                                        <?= $yr ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <!-- Dynamic Comparison Badge (YoY / Same Period) -->
-                        <span class="badge <?= $trendComparison['badge_class'] ?? 'bg-light text-muted border' ?> rounded-pill px-3 py-1 fw-bold" style="font-size: 11px;">
-                            <?php if (!empty($trendComparison['available'])): ?>
-                                <i class="fas <?= ($trendComparison['pct'] < 0) ? 'fa-arrow-trend-down' : (($trendComparison['pct'] > 0) ? 'fa-arrow-trend-up' : 'fa-minus') ?> me-1"></i>
-                            <?php endif; ?>
-                            <?= esc($trendComparison['text'] ?? 'Data pembanding tidak tersedia') ?>
-                        </span>
-                    </div>
-                </div>
 
-
-                <div style="height: 220px; width: 100%;">
-                    <canvas id="monthlyTrendChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- 6B. Program & Rekomendasi (Actionable Engineering Recommendations) -->
-        <div class="col-lg-4 col-12">
-            <div class="dah-card p-4 h-100 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-wand-magic-sparkles text-purple me-2"></i>Program &amp; Rekomendasi</h6>
-                        <span class="badge bg-purple-subtle text-purple border border-purple-subtle rounded-pill" style="font-size: 10px;">AI Prescriptive</span>
-                    </div>
-
-                    <div class="space-y-3">
-                        <!-- Recommendation 1: Kritis Feeders -->
-                        <div class="p-2.5 rounded-3 border bg-light mb-2">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <i class="fas fa-circle-exclamation text-danger fs-6"></i>
-                                <span class="fw-bold text-dark" style="font-size: 11px;">Prioritas Perbaikan Penyulang KRITIS</span>
-                            </div>
-                            <p class="text-muted mb-0" style="font-size: 11px;">
-                                <?= $kritisCount ?> penyulang memerlukan penanganan segera untuk mencegah gangguan meluas.
-                            </p>
-                        </div>
-
-                        <!-- Recommendation 2: Inspection Focus -->
-                        <div class="p-2.5 rounded-3 border bg-light mb-2">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <i class="fas fa-screwdriver-wrench text-warning fs-6"></i>
-                                <span class="fw-bold text-dark" style="font-size: 11px;">Tingkatkan Inspeksi Sambungan Longgar</span>
-                            </div>
-                            <p class="text-muted mb-0" style="font-size: 11px;">
-                                Menyumbang lebih dari 35% temuan. Lakukan inspeksi termovisi berkala.
-                            </p>
-                        </div>
-
-                        <!-- Recommendation 3: Monitoring Sakit -->
-                        <div class="p-2.5 rounded-3 border bg-light mb-2">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <i class="fas fa-clipboard-check text-info fs-6"></i>
-                                <span class="fw-bold text-dark" style="font-size: 11px;">Monitoring Progres Penyulang SAKIT</span>
-                            </div>
-                            <p class="text-muted mb-0" style="font-size: 11px;">
-                                <?= $sakitCount ?> penyulang dalam status pengawasan ketat tim operasi.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-3 border-top border-light">
-                    <a href="<?= site_url('ai-center') ?>" class="btn btn-sm btn-dark w-100 rounded-pill py-2 fw-bold d-flex align-items-center justify-content-center gap-2" style="font-size: 12px;">
-                        <i class="fas fa-robot text-info"></i> Generate Rekomendasi AI
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    
     <!-- 6B. CUMULATIVE GANGGUAN CHART + FEEDER RANKINGS -->
     <div class="row g-4 mb-4">
         <!-- Cumulative Gangguan Line Chart -->
@@ -1687,6 +1593,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 })();
-</script>
 </script>
 <?= $this->endSection() ?>

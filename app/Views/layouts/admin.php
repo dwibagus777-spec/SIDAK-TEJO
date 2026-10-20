@@ -3266,7 +3266,14 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 }
 
                 // Layer 3: Hardware Microphone Stream (getUserMedia & Permission Query)
-                if (navigator.permissions && navigator.permissions.query) {
+                let micStreamStored = false;
+                try {
+                    micStreamStored = (localStorage.getItem('sidak_mic_stream_ready') === '1');
+                } catch(e) {}
+
+                if (window.isMicStreamReady || micStreamStored) {
+                    micStatus = 'granted';
+                } else if (navigator.permissions && navigator.permissions.query) {
                     try {
                         const p = await navigator.permissions.query({ name: 'microphone' });
                         micStatus = p.state;
@@ -3276,11 +3283,11 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 }
 
                 if (micStatus === 'granted') {
-                    $micBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Diizinkan');
+                    $micBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Siap');
                 } else if (micStatus === 'denied') {
                     $micBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Ditolak / Diblokir');
                 } else {
-                    $micBadge.attr('class', 'badge bg-warning text-dark').html('<i class="fas fa-question me-1"></i> Perlu Izin');
+                    $micBadge.attr('class', 'badge bg-warning text-dark').html('<i class="fas fa-clock me-1"></i> Perlu Izin');
                 }
 
                 // Layer 4: AI Speech Recognition
@@ -3333,8 +3340,11 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 }
 
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    var errorMsg = 'Peramban ini tidak mendukung API mikrofon atau tidak berjalan pada konteks aman (HTTPS).';
+                    var errorMsg = (!window.isSecureContext && location.protocol !== 'https:' && location.hostname !== 'localhost')
+                        ? 'Akses mikrofon memerlukan konteks aman HTTPS.'
+                        : 'Peramban ini tidak mendukung API MediaDevices/getUserMedia.';
                     $alertContainer.html('<div class="alert alert-danger py-2 px-3 small mb-0"><i class="fas fa-exclamation-circle me-1"></i> ' + errorMsg + '</div>');
+                    $micBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> API Tidak Didukung');
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({ icon: 'warning', title: 'Mikrofon Tidak Didukung', text: errorMsg, confirmButtonColor: '#005eb8' });
                     }
@@ -3344,40 +3354,63 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 let stream = null;
                 try {
                     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    // Cleanly stop all audio tracks immediately to ensure indicator doesn't linger
+                    window.isMicStreamReady = true;
+                    try { localStorage.setItem('sidak_mic_stream_ready', '1'); } catch(e) {}
+
+                    // Cleanly stop all audio tracks immediately to ensure hardware indicator doesn't linger
                     if (stream) {
                         stream.getTracks().forEach(function(track) {
                             try { track.stop(); } catch(e) {}
                         });
                     }
-                    $('#modalVoiceDiagnostic').modal('hide');
+
+                    // Explicitly update Layer 3 diagnostic badge to "Siap"
+                    $micBadge.attr('class', 'badge bg-success').html('<i class="fas fa-check me-1"></i> Siap');
+                    $alertContainer.html('<div class="alert alert-success py-2 px-3 small mb-0"><i class="fas fa-check-circle me-1"></i> Akses stream mikrofon berhasil! Semua layer diagnostik siap.</div>');
+
                     isContinuous = true;
                     initSpeechRecognition();
                     if (recognition) {
                         try { recognition.start(); } catch(e) {}
                     }
                     if (typeof Swal !== 'undefined') {
-                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Mikrofon Aktif', text: 'Voice AI siap mendengarkan', showConfirmButton: false, timer: 2500 });
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Mikrofon Siap', text: 'Voice AI siap mendengarkan', showConfirmButton: false, timer: 2000 });
                     }
+
+                    setTimeout(function() {
+                        $('#modalVoiceDiagnostic').modal('hide');
+                    }, 800);
                 } catch (err) {
+                    window.isMicStreamReady = false;
+                    try { localStorage.removeItem('sidak_mic_stream_ready'); } catch(e) {}
+
                     var detail = '';
+                    var badgeReason = 'Gagal';
                     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                        detail = 'Izin mikrofon ditolak oleh pengguna atau sistem. Klik ikon gembok/setelan situs pada bilah URL browser dan pilih "Izinkan" untuk Mikrofon.';
+                        detail = 'Izin mikrofon ditolak oleh pengguna atau sistem. Pastikan izin mikrofon telah diberikan di aplikasi Android atau peramban.';
+                        badgeReason = 'Izin Ditolak';
                     } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                        detail = 'Perangkat mikrofon fisik tidak terdeteksi pada perangkat ini. Pastikan headset atau mikrofon internal telah terpasang.';
+                        detail = 'Perangkat mikrofon fisik tidak terdeteksi pada perangkat ini. Pastikan mikrofon/headset terpasang.';
+                        badgeReason = 'Mic Tidak Ada';
                     } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
                         detail = 'Mikrofon sedang digunakan oleh aplikasi lain atau terjadi masalah perangkat keras.';
+                        badgeReason = 'Hardware Sibuk';
                     } else if (err.name === 'SecurityError') {
-                        detail = 'Akses mikrofon dibatasi karena halaman web tidak dibuka melalui protokol aman HTTPS atau localhost.';
+                        detail = 'Akses mikrofon dibatasi: halaman harus dibuka melalui domain tepercaya atau protokol aman (HTTPS).';
+                        badgeReason = 'Origin Dibatasi';
+                    } else if (err.name === 'AbortError') {
+                        detail = 'Permintaan stream mikrofon dibatalkan oleh peramban atau sistem.';
+                        badgeReason = 'Stream Dibatalkan';
                     } else {
                         detail = 'Gagal mengakses mikrofon: ' + (err.message || err.name || 'Terjadi kesalahan tidak terduga.');
+                        badgeReason = 'Stream Gagal (' + (err.name || 'Error') + ')';
                     }
 
                     $alertContainer.html('<div class="alert alert-warning py-2 px-3 small mb-0"><i class="fas fa-triangle-exclamation me-1"></i> ' + detail + '</div>');
-                    $micBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> Ditolak / Tidak Siap');
+                    $micBadge.attr('class', 'badge bg-danger').html('<i class="fas fa-times me-1"></i> ' + badgeReason);
                     
                     if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Akses Mikrofon', text: detail, confirmButtonColor: '#005eb8' });
+                        Swal.fire({ icon: 'warning', title: 'Akses Mikrofon Gagal', text: detail, confirmButtonColor: '#005eb8' });
                     }
                     console.warn('[VOICE_AI] getUserMedia error:', err);
                 } finally {
@@ -3409,8 +3442,14 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 }
             });
 
-            $('#btn-diag-request-mic').on('click', function() {
-                requestMicAccess();
+            $('#btn-diag-request-mic').on('click', async function() {
+                const $btn = $(this);
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Menghubungkan...');
+                try {
+                    await requestMicAccess();
+                } finally {
+                    $btn.prop('disabled', false).html('<i class="fas fa-microphone me-1"></i> Izinkan Mikrofon');
+                }
             });
 
             window.triggerGlobalVoiceMic = async function() {

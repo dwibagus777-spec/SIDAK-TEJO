@@ -500,7 +500,7 @@ class Dashboard extends BaseController
         )->getResultArray();
         $assetByType  = array_column($assetSummaryRows, 'cnt', 'jenis_asset');
         $assetTotalAll = array_sum(array_column($assetSummaryRows, 'cnt'));
-        $jtmCount      = 0;
+        $jtmCount      = (int)($assetByType['jtm_tiang'] ?? $assetByType['TIANG_BETON'] ?? 0);
         $keypointCount = 0;
         $garduCount    = 0;
         $trafoCount    = 0;
@@ -510,7 +510,7 @@ class Dashboard extends BaseController
             $rawType = strtoupper(trim((string)($asr['jenis_asset'] ?? '')));
             $c = (int)($asr['cnt'] ?? 0);
 
-            if (preg_match('/(JTM|TIANG|SUTM|SKTM|POLE|CONDUCTOR|JARINGAN)/i', $rawType)) {
+            if ($jtmCount === 0 && preg_match('/(TIANG|POLE)/i', $rawType)) {
                 $jtmCount += $c;
             }
             if (preg_match('/(KEYPOINT|RECLOSER|LBS|SWITCH|DISCONNECT|SECTIONALIZER|FCO)/i', $rawType)) {
@@ -528,7 +528,7 @@ class Dashboard extends BaseController
         }
 
         if ($jtmCount === 0) {
-            $jtmCount = (int)($assetByType['JTM'] ?? 0);
+            $jtmCount = (int)($assetByType['jtm_tiang'] ?? $assetByType['JTM'] ?? 0);
         }
         if ($keypointCount === 0) {
             $keypointCount = (int)($assetByType['RECLOSER_LBS'] ?? $assetByType['KEYPOINT'] ?? 0);
@@ -599,7 +599,8 @@ class Dashboard extends BaseController
                 $runSum += (int)($monthsArr[$m] ?? 0);
                 $cumArr[$m] = $runSum;
             }
-            if ($runSum > 0 || in_array((int)$yr, $availableInterruptionYears, true)) {
+            // Strict YoY parity: Only include years that have actual recorded interruption data or current year
+            if ($runSum > 0 || (int)$yr === (int)date('Y')) {
                 $cumulativeGangguanYoY[(int)$yr] = [
                     'year'       => (int)$yr,
                     'total'      => (int)$runSum,
@@ -712,7 +713,7 @@ class Dashboard extends BaseController
             "SELECT t.penyulang_id, p.nama_penyulang,
                     COUNT(*) total,
                     SUM(CASE WHEN UPPER(t.pelaksana) LIKE '%PDKB%' THEN 1 ELSE 0 END) pdkb,
-                    SUM(CASE WHEN UPPER(t.pelaksana) LIKE '%HAR%GARDU%' OR t.pelaksana = 'HAR_GARDU' THEN 1 ELSE 0 END) har_gardu,
+                    SUM(CASE WHEN UPPER(t.pelaksana) LIKE '%HAR%GTT%' OR UPPER(t.pelaksana) LIKE '%HAR%GARDU%' OR t.pelaksana = 'HAR_GARDU' OR t.pelaksana = 'HAR_GTT' THEN 1 ELSE 0 END) har_gardu,
                     SUM(CASE WHEN UPPER(t.pelaksana) LIKE '%HAR%ROW%' OR t.pelaksana = 'HAR_ROW' THEN 1 ELSE 0 END) har_row
              FROM temuan t
              LEFT JOIN penyulang p ON t.penyulang_id = p.id

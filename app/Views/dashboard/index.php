@@ -253,8 +253,7 @@
         color: #f1f5f9 !important;
     }
     .dah-cum-card {
-        height: 335px !important;
-        max-height: 345px !important;
+        min-height: 340px !important;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -262,29 +261,28 @@
     .dah-cum-chart-box {
         position: relative !important;
         width: 100% !important;
-        height: 255px !important;
-        max-height: 255px !important;
-        flex: 0 0 255px !important;
+        height: 300px !important;
+        max-height: 320px !important;
+        flex: 1 1 300px !important;
         overflow: hidden;
     }
     .dah-cum-chart-box canvas {
         display: block;
         width: 100% !important;
         height: 100% !important;
-        max-height: 255px !important;
+        max-height: 320px !important;
     }
     @media (max-width: 767.98px) {
         .dah-cum-card {
-            height: 280px !important;
-            max-height: 290px !important;
+            min-height: 290px !important;
         }
         .dah-cum-chart-box {
-            height: 200px !important;
-            max-height: 200px !important;
-            flex: 0 0 200px !important;
+            height: 240px !important;
+            max-height: 250px !important;
+            flex: 1 1 240px !important;
         }
         .dah-cum-chart-box canvas {
-            max-height: 200px !important;
+            max-height: 250px !important;
         }
     }
 </style>
@@ -476,7 +474,7 @@
           <div class="rounded-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-building-shield"></i></div>
           <div>
             <div class="fw-bold fs-5 text-warning lh-1 font-monospace"><?= number_format($assetSummary['gardu'] ?? 0) ?></div>
-            <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Gardu Distribusi</div>
+            <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Gardu</div>
           </div>
         </div>
       </div>
@@ -1402,6 +1400,9 @@
                             $yMax = !empty($numericVals) ? (int)max($numericVals) : 0;
                         } else {
                             $yMax = 0;
+                        }
+                        if ($yMax <= 0 && (int)$yKey !== (int)($trendYear ?? date('Y'))) {
+                            continue;
                         }
                         $bCls = $yoyBadgeColors[$yoyIdx % count($yoyBadgeColors)];
                         $yoyIdx++;
@@ -2741,6 +2742,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     chart.data.datasets.forEach(function(ds, dsIdx) {
                         var meta = chart.getDatasetMeta(dsIdx);
                         if (!meta || meta.hidden) return;
+                        // Avoid visual label collision in multi-year comparison: show direct labels on primary dataset
+                        if (dsIdx !== 0 && chart.data.datasets.length > 1) return;
                         meta.data.forEach(function(pt, ptIdx) {
                             var rawVal = ds.data[ptIdx];
                             if (rawVal === null || typeof rawVal === 'undefined') return;

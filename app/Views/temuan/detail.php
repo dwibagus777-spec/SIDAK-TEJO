@@ -746,8 +746,13 @@ $safetyAnalysis = $aiRecommendation['k2_k3_analysis'] ?? [];
                     <div class="col-md-6">
                         <table class="table table-sm table-borderless mb-0">
                             <tr>
-                                <th style="width: 140px;" class="text-muted">Gardu (NOGA)</th>
-                                <td>: <?= $temuan['noga'] ? esc($temuan['noga']) : '<span class="text-muted small">Tidak ada</span>' ?></td>
+                                <?php
+                                    $nogaVal = trim((string)($temuan['noga'] ?? ''));
+                                    $isPoleOrAsset = !empty($linkedAsset) || preg_match('/(TIANG|POLE|_[0-9]+)/i', $nogaVal);
+                                    $nogaLabel = $isPoleOrAsset ? 'Identitas Titik Aset' : 'Gardu (NOGA)';
+                                ?>
+                                <th style="width: 140px;" class="text-muted"><?= $nogaLabel ?></th>
+                                <td>: <?= $nogaVal ? esc($nogaVal) . ($isPoleOrAsset && !empty($linkedAsset) ? ' <span class="badge bg-success-subtle text-success border border-success-subtle ms-1 font-monospace" style="font-size: 10px;"><i class="fas fa-link me-0.5"></i> Terikat Master Asset</span>' : '') : '<span class="text-muted small">Tidak ada</span>' ?></td>
                             </tr>
                             <tr>
                                 <th class="text-muted">Waktu Mulai</th>

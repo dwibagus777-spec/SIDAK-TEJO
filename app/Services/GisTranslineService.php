@@ -424,7 +424,7 @@ class GisTranslineService
      * @param array|null $actor
      * @return array<string, mixed>
      */
-    public function updateSegmentGeometry(int $penyulangId, int $sourceId, int $targetId, array $geoJsonGeometry, ?array $actor = null): array
+    public function updateSegmentGeometry(int $penyulangId, int $sourceId, int $targetId, array $geoJsonGeometry, ?array $actor = null, ?int $explicitTranslineId = null, ?int $sectionId = null): array
     {
         $coords = $geoJsonGeometry['coordinates'] ?? [];
         if (empty($coords)) {
@@ -436,28 +436,42 @@ class GisTranslineService
         $this->db->transBegin();
         try {
             // Locate existing transline row
-            $row = $this->db->table('gis_translines')
-                ->groupStart()
-                    ->where('source_asset_id', $sourceId)->where('target_asset_id', $targetId)
-                ->groupEnd()
-                ->orGroupStart()
-                    ->where('source_asset_id', $targetId)->where('target_asset_id', $sourceId)
-                ->groupEnd()
-                ->where('penyulang_id', $penyulangId)
-                ->where('is_active', 1)
-                ->get()
-                ->getRowArray();
+            $row = null;
+            if ($explicitTranslineId !== null && $explicitTranslineId > 0) {
+                $row = $this->db->table('gis_translines')
+                    ->where('id', $explicitTranslineId)
+                    ->get()
+                    ->getRowArray();
+            }
+
+            if (!$row) {
+                $row = $this->db->table('gis_translines')
+                    ->groupStart()
+                        ->where('source_asset_id', $sourceId)->where('target_asset_id', $targetId)
+                    ->groupEnd()
+                    ->orGroupStart()
+                        ->where('source_asset_id', $targetId)->where('target_asset_id', $sourceId)
+                    ->groupEnd()
+                    ->where('penyulang_id', $penyulangId)
+                    ->where('is_active', 1)
+                    ->get()
+                    ->getRowArray();
+            }
 
             if ($row) {
-                $this->db->table('gis_translines')->where('id', $row['id'])->update([
+                $updateData = [
                     'geometry'   => json_encode($coords),
                     'updated_by' => $actorName,
                     'updated_at' => date('Y-m-d H:i:s'),
-                ]);
+                ];
+                if ($sectionId !== null && $this->db->fieldExists('section_id', 'gis_translines')) {
+                    $updateData['section_id'] = $sectionId;
+                }
+                $this->db->table('gis_translines')->where('id', $row['id'])->update($updateData);
                 $translineId = (int)$row['id'];
             } else {
                 // Create new record for this custom segment
-                $this->db->table('gis_translines')->insert([
+                $insertData = [
                     'transline_code'  => "TL-{$penyulangId}-{$sourceId}-{$targetId}",
                     'penyulang_id'    => $penyulangId,
                     'source_asset_id' => $sourceId,
@@ -468,8 +482,31 @@ class GisTranslineService
                     'is_active'       => 1,
                     'created_by'      => $actorName,
                     'created_at'      => date('Y-m-d H:i:s'),
-                ]);
+                ];
+                if ($sectionId !== null && $this->db->fieldExists('section_id', 'gis_translines')) {
+                    $insertData['section_id'] = $sectionId;
+                }
+                $this->db->table('gis_translines')->insert($insertData);
                 $translineId = (int)$this->db->insertID();
+            }
+
+            // If section_id was updated, ensure connected endpoints in assets table receive the section link
+            if ($sectionId !== null && $sectionId > 0 && $this->db->tableExists('assets')) {
+                foreach ([$sourceId, $targetId] as $endAssetId) {
+                    if ($endAssetId > 0) {
+                        $this->db->table('assets')
+                            ->where('id', $endAssetId)
+                            ->groupStart()
+                                ->where('section_id IS NULL')
+                                ->orWhere('section_id', 0)
+                            ->groupEnd()
+                            ->update([
+                                'section_id'                => $sectionId,
+                                'section_resolution_method' => 'MANUAL_GIS_TOPOLOGY',
+                                'updated_at'                => date('Y-m-d H:i:s'),
+                            ]);
+                    }
+                }
             }
 
             // Rebuild full derived topology snapshot
@@ -488,6 +525,84 @@ class GisTranslineService
             $this->db->transRollback();
             return ['status' => 'error', 'message' => 'Gagal memperbarui bentuk segmen: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Predict transline sections from GI / source through network adjacency continuity.
+     *
+     * @param int $penyulangId
+     * @return array<string, mixed>
+     */
+    public function predictTranslineSection(int $penyulangId): array
+    {
+        if (!$this->db->tableExists('gis_translines') || !$this->db->tableExists('assets')) {
+            return ['status' => 'error', 'message' => 'Tabel gis_translines atau assets tidak ditemukan.'];
+        }
+
+        // Fetch all active translines for this feeder
+        $translines = $this->db->table('gis_translines')
+            ->where('penyulang_id', $penyulangId)
+            ->where('is_active', 1)
+            ->where('deleted_at IS NULL')
+            ->get()->getResultArray();
+
+        // Fetch all assets with their current section_id
+        $assets = $this->db->table('assets')
+            ->select('id, section_id')
+            ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->get()->getResultArray();
+
+        $assetSectionMap = [];
+        foreach ($assets as $a) {
+            $assetSectionMap[(int)$a['id']] = $a['section_id'] !== null ? (int)$a['section_id'] : null;
+        }
+
+        // Build adjacency graph
+        $adjacency = [];
+        foreach ($translines as $tl) {
+            $s = (int)$tl['source_asset_id'];
+            $t = (int)$tl['target_asset_id'];
+            $adjacency[$s][] = $t;
+            $adjacency[$t][] = $s;
+        }
+
+        $predictions = [];
+        $unresolvedCount = 0;
+        foreach ($assetSectionMap as $aId => $sId) {
+            if ($sId === null || $sId === 0) {
+                $unresolvedCount++;
+                // Check neighbors
+                $neighborSections = [];
+                foreach ($adjacency[$aId] ?? [] as $neighborId) {
+                    $nSec = $assetSectionMap[$neighborId] ?? null;
+                    if ($nSec !== null && $nSec > 0) {
+                        $neighborSections[] = $nSec;
+                    }
+                }
+                if (!empty($neighborSections)) {
+                    $counts = array_count_values($neighborSections);
+                    arsort($counts);
+                    $predictedSectionId = key($counts);
+                    $confidence = round(current($counts) / count($neighborSections), 2);
+                    $predictions[$aId] = [
+                        'asset_id'             => $aId,
+                        'predicted_section_id' => $predictedSectionId,
+                        'confidence'           => $confidence,
+                        'resolution_source'    => 'TOPOLOGY_ADJACENCY_CONTINUITY'
+                    ];
+                }
+            }
+        }
+
+        return [
+            'status'           => 'success',
+            'penyulang_id'     => $penyulangId,
+            'total_assets'     => count($assets),
+            'unresolved_count' => $unresolvedCount,
+            'predicted_count'  => count($predictions),
+            'predictions'      => $predictions,
+        ];
     }
 
     /**

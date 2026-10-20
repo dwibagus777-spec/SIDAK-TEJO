@@ -306,13 +306,17 @@ class GISService
         if (in_array('TEMUAN', $layerFilter) && $penyulangId > 0) {
             $db = \Config\Database::connect();
             if ($db->tableExists('temuan')) {
-                $temuanRows = $db->table('temuan')
-                    ->where('penyulang_id', $penyulangId)
-                    ->where('deleted_at IS NULL')
-                    ->where('latitude !=', 0)
-                    ->where('longitude !=', 0)
-                    ->where('latitude IS NOT NULL')
-                    ->where('longitude IS NOT NULL')
+                $temuanRows = $db->table('temuan t')
+                    ->select('t.*, u.nama_ulp, p.nama_penyulang, s.nama_section')
+                    ->join('ulps u', 't.ulp_id = u.id', 'left')
+                    ->join('penyulang p', 't.penyulang_id = p.id', 'left')
+                    ->join('sections s', 't.section_id = s.id', 'left')
+                    ->where('t.penyulang_id', $penyulangId)
+                    ->where('t.deleted_at IS NULL')
+                    ->where('t.latitude !=', 0)
+                    ->where('t.longitude !=', 0)
+                    ->where('t.latitude IS NOT NULL')
+                    ->where('t.longitude IS NOT NULL')
                     ->get()
                     ->getResultArray();
 
@@ -344,6 +348,14 @@ class GISService
                             'prioritas'             => $t['prioritas'] ?? 'NORMAL',
                             'status'                => $t['status'] ?? 'BELUM',
                             'detail_temuan'         => $t['detail_temuan'] ?? '',
+                            'pelaksana'             => $t['pelaksana'] ?? '-',
+                            'nama_ulp'              => $t['nama_ulp'] ?? '-',
+                            'nama_penyulang'        => $t['nama_penyulang'] ?? '-',
+                            'nama_section'          => $t['nama_section'] ?? '-',
+                            'konduktor'             => $t['konduktor'] ?? '-',
+                            'tanggal_temuan'        => $t['tanggal_temuan'] ?? '-',
+                            'foto_path'             => $t['foto_path'] ?? '',
+                            'detail_url'            => site_url('temuan/detail/' . $t['id']),
                             'penyulang_id'          => (int)$t['penyulang_id'],
                             'selected_penyulang_id' => $penyulangId,
                             'record_penyulang_id'   => (int)$t['penyulang_id'],

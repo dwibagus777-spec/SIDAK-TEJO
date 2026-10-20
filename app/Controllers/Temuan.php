@@ -455,6 +455,33 @@ class Temuan extends BaseController
         }
         $assetId = ($assetIdInput !== '' && is_numeric($assetIdInput)) ? (int)$assetIdInput : null;
 
+        // Auto-reconcile asset_id if pole name was mistakenly entered into noga field
+        if ($assetId === null && !empty($data['noga'])) {
+            $db = \Config\Database::connect();
+            if ($db->tableExists('assets')) {
+                $nogaTrim = trim($data['noga']);
+                $qb = $db->table('assets')
+                    ->where('deleted_at IS NULL')
+                    ->groupStart()
+                        ->where('nama_asset', $nogaTrim)
+                        ->orWhere('kode_asset', $nogaTrim)
+                    ->groupEnd();
+                if (!empty($data['penyulang_id'])) {
+                    $qb->where('penyulang_id', (int)$data['penyulang_id']);
+                }
+                $matchedAsset = $qb->get()->getRowArray();
+                if ($matchedAsset) {
+                    $assetId = (int)$matchedAsset['id'];
+                    if (empty($data['latitude']) && !empty($matchedAsset['latitude'])) {
+                        $data['latitude'] = (float)$matchedAsset['latitude'];
+                    }
+                    if (empty($data['longitude']) && !empty($matchedAsset['longitude'])) {
+                        $data['longitude'] = (float)$matchedAsset['longitude'];
+                    }
+                }
+            }
+        }
+
         // INVARIANT 2: If asset_id is provided, conditionally validate existence and topological compatibility
         if ($assetId !== null && $assetId > 0) {
             $db = \Config\Database::connect();
@@ -700,6 +727,30 @@ class Temuan extends BaseController
                 ->where('a.id', (int)$temuan['asset_id'])
                 ->get()
                 ->getRowArray();
+        }
+
+        // Auto-reconcile linked asset if asset_id is NULL but noga or defect_location_code matches an asset
+        if (empty($linkedAsset) && (!empty($temuan['noga']) || !empty($temuan['defect_location_code'])) && $db->tableExists('assets')) {
+            $searchCode = trim((string)($temuan['noga'] ?: $temuan['defect_location_code']));
+            $ab = $db->table('assets a')
+                ->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section, ct.construction_code, ct.construction_name')
+                ->join('ulps u', 'u.id = a.ulp_id', 'left')
+                ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+                ->join('sections s', 's.id = a.section_id', 'left')
+                ->join('construction_types ct', 'ct.id = a.construction_type_id', 'left')
+                ->where('a.deleted_at IS NULL')
+                ->groupStart()
+                    ->where('a.nama_asset', $searchCode)
+                    ->orWhere('a.kode_asset', $searchCode)
+                ->groupEnd();
+            if (!empty($temuan['penyulang_id'])) {
+                $ab->where('a.penyulang_id', (int)$temuan['penyulang_id']);
+            }
+            $linkedAsset = $ab->get()->getRowArray();
+            if ($linkedAsset && empty($temuan['asset_id'])) {
+                $db->table('temuan')->where('id', $id)->update(['asset_id' => $linkedAsset['id']]);
+                $temuan['asset_id'] = $linkedAsset['id'];
+            }
         }
 
         $trace = [
@@ -977,6 +1028,27 @@ class Temuan extends BaseController
         // CR-HOTFIX-02 Part B: Coordinate Invariant on Update
         $assetIdInput = $this->request->getPost('asset_id') ?: $this->request->getPost('authoritative_asset_id') ?: ($temuan['asset_id'] ?? null);
         $assetId = (!empty($assetIdInput) && is_numeric($assetIdInput)) ? (int)$assetIdInput : null;
+
+        // Auto-reconcile asset_id if pole name was entered into noga field
+        if ($assetId === null && !empty($data['noga'])) {
+            $db = \Config\Database::connect();
+            if ($db->tableExists('assets')) {
+                $nogaTrim = trim($data['noga']);
+                $qb = $db->table('assets')
+                    ->where('deleted_at IS NULL')
+                    ->groupStart()
+                        ->where('nama_asset', $nogaTrim)
+                        ->orWhere('kode_asset', $nogaTrim)
+                    ->groupEnd();
+                if (!empty($data['penyulang_id'])) {
+                    $qb->where('penyulang_id', (int)$data['penyulang_id']);
+                }
+                $matchedAsset = $qb->get()->getRowArray();
+                if ($matchedAsset) {
+                    $assetId = (int)$matchedAsset['id'];
+                }
+            }
+        }
         if ($assetId !== null && $assetId > 0) {
             if ($db->tableExists('assets')) {
                 $assetRow = $db->table('assets')->where('id', $assetId)->get()->getRowArray();

@@ -14,6 +14,23 @@
         --gis-mob-bottom-nav: 62px;
     }
 
+    /* Captive AAAC Candidate Transline Pulse (Reduced-Motion Compliant) */
+    @keyframes captivePulseGlow {
+        0% { stroke: #f59e0b; stroke-opacity: 0.95; stroke-width: 5.5px; filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.6)); }
+        50% { stroke: #d97706; stroke-opacity: 0.60; stroke-width: 7.5px; filter: drop-shadow(0 0 7px rgba(217, 119, 6, 0.9)); }
+        100% { stroke: #f59e0b; stroke-opacity: 0.95; stroke-width: 5.5px; filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.6)); }
+    }
+    .transline-captive-pulse {
+        animation: captivePulseGlow 2.2s infinite ease-in-out;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .transline-captive-pulse {
+            animation: none !important;
+            stroke: #d97706 !important;
+            stroke-width: 5.5px !important;
+        }
+    }
+
     /* Container Master */
     .gis-master-container {
         position: relative;
@@ -5154,18 +5171,30 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         var marker = L.marker([lat, lng], { icon: customIcon });
+        var detailLink = props.detail_url || ('<?= site_url('temuan/detail/') ?>' + (props.finding_id || props.id));
         marker.bindPopup(`
-            <div class="p-2" style="max-width: 260px; font-family: system-ui, sans-serif;">
-                <div class="d-flex align-items-center justify-content-between mb-1">
-                    <span class="badge bg-danger font-monospace" style="font-size: 10px;">TEMUAN INSPEKSI</span>
-                    <span class="badge bg-dark font-monospace" style="font-size: 10px;">${props.prioritas || 'NORMAL'}</span>
+            <div class="p-2" style="max-width: 300px; font-family: system-ui, sans-serif; line-height: 1.4;">
+                <div class="d-flex align-items-center justify-content-between mb-1 pb-1 border-bottom">
+                    <span class="badge bg-danger font-monospace" style="font-size: 10px;"><i class="fas fa-triangle-exclamation me-1"></i> TEMUAN INSPEKSI</span>
+                    <span class="badge ${props.prioritas === 'EMERGENCY' ? 'bg-danger' : (props.prioritas === 'HIGH' ? 'bg-warning text-dark' : 'bg-secondary')} font-monospace" style="font-size: 10px;">${props.prioritas || 'NORMAL'}</span>
                 </div>
-                <strong class="d-block text-dark font-monospace small mb-1">${props.nomor_temuan || '-'}</strong>
-                <p class="small text-secondary mb-1" style="font-size: 11px;">${props.detail_temuan || props.jenis_temuan || '-'}</p>
-                <div class="d-flex justify-content-between small text-muted border-top pt-1" style="font-size: 10px;">
-                    <span>Status:</span>
-                    <strong class="${props.status === 'SELESAI' ? 'text-success' : 'text-danger'}">${props.status || 'BELUM'}</strong>
+                <div class="d-flex align-items-center justify-content-between my-1">
+                    <strong class="text-dark font-monospace" style="font-size: 12px;">${props.nomor_temuan || '-'}</strong>
+                    <span class="badge ${props.status === 'SELESAI' ? 'bg-success' : 'bg-danger'}" style="font-size: 10px;">${props.status || 'BELUM'}</span>
                 </div>
+                <div class="small fw-semibold text-primary mb-1">${props.jenis_temuan || 'Temuan Jaringan'}</div>
+                <p class="small text-secondary mb-2" style="font-size: 11px; max-height: 60px; overflow-y: auto;">${props.detail_temuan || '-'}</p>
+                <div class="bg-light p-2 rounded border mb-2" style="font-size: 10.5px;">
+                    <div><span class="text-muted">ULP:</span> <strong>${props.nama_ulp || '-'}</strong></div>
+                    <div><span class="text-muted">Penyulang:</span> <strong>${props.nama_penyulang || '-'}</strong></div>
+                    <div><span class="text-muted">Section:</span> <strong>${props.nama_section || '-'}</strong></div>
+                    <div><span class="text-muted">Pelaksana:</span> <strong>${props.pelaksana || '-'}</strong></div>
+                    <div><span class="text-muted">Konduktor:</span> <strong>${props.konduktor || '-'}</strong></div>
+                    <div><span class="text-muted">Tanggal:</span> <strong>${props.tanggal_temuan || '-'}</strong></div>
+                </div>
+                <a href="${detailLink}" target="_blank" class="btn btn-primary btn-sm w-100 py-1 text-center fw-semibold rounded-pill" style="font-size: 11px;">
+                    <i class="fas fa-arrow-up-right-from-square me-1"></i> Buka Detail Temuan
+                </a>
             </div>
         `);
 
@@ -5286,20 +5315,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
             var createdBy = tl.created_by || '';
             var isCaptiveView = new URLSearchParams(window.location.search).get('captive_only') === '1';
+            var condTypeUpper = String(tl.conductor_type || '').toUpperCase();
+            var isAaacCandidate = condTypeUpper.includes('AAAC') && !condTypeUpper.includes('AAACS');
+            var isCandidateCoating = isCaptiveView && isAaacCandidate;
+
             var isTl04 = createdBy.includes('ENGINE=TL04') || createdBy.includes('TL-04');
             var isTl03 = !isTl04 && createdBy.includes('ENGINE=TL03');
             var isTl02 = !isTl04 && !isTl03 && (createdBy.includes('RUN:') || createdBy.includes('AI') || createdBy.includes('TL-02') || createdBy.includes('TL02'));
-            var lineColor = isCaptiveView ? '#f59e0b' : (isTl04 ? '#10b981' : (isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7')));
-            var lineWeight = isCaptiveView ? 5.5 : (isTl04 ? 4.5 : (isTl03 ? 4.0 : 3.5));
+            var lineColor = isCandidateCoating ? '#f59e0b' : (isTl04 ? '#10b981' : (isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7')));
+            var lineWeight = isCandidateCoating ? 5.5 : (isTl04 ? 4.5 : (isTl03 ? 4.0 : 3.5));
 
             var visPolyOpts = {
                 color: lineColor,
                 weight: lineWeight,
-                opacity: 0.9,
+                opacity: isCandidateCoating ? 0.95 : 0.85,
                 lineJoin: 'round',
                 interactive: false
             };
-            if (gisCanvasRenderer) visPolyOpts.renderer = gisCanvasRenderer;
+            if (isCandidateCoating) {
+                visPolyOpts.className = 'transline-captive-pulse';
+            } else if (gisCanvasRenderer) {
+                visPolyOpts.renderer = gisCanvasRenderer;
+            }
             var visiblePoly = L.polyline(latLngs, visPolyOpts);
 
             visiblePoly.feature = {

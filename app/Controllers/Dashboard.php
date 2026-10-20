@@ -70,19 +70,29 @@ class Dashboard extends BaseController
         // Fetch All Dashboard Analytics Data (System-scoped or ULP-scoped, preventing empty role stats)
         $db = \Config\Database::connect();
 
-        // Available years in temuan database
+        // Available years in temuan & historical_feeder_interruptions database
         $yearsQuery = $db->table('temuan')
             ->select('DISTINCT YEAR(tanggal_temuan) as yr')
             ->where('tanggal_temuan IS NOT NULL')
             ->where('deleted_at IS NULL')
-            ->orderBy('yr', 'DESC')
             ->get()->getResultArray();
-        $availableTrendYears = array_values(array_filter(array_map(fn($r) => (int)$r['yr'], $yearsQuery)));
+        $yearsGgnQuery = $db->tableExists('historical_feeder_interruptions')
+            ? $db->table('historical_feeder_interruptions')
+                ->select('DISTINCT YEAR(event_date) as yr')
+                ->where('event_date IS NOT NULL')
+                ->get()->getResultArray()
+            : [];
+        $allYears = array_merge(
+            array_map(fn($r) => (int)$r['yr'], $yearsQuery),
+            array_map(fn($r) => (int)$r['yr'], $yearsGgnQuery)
+        );
+        $availableTrendYears = array_values(array_unique(array_filter($allYears)));
+        rsort($availableTrendYears);
         if (empty($availableTrendYears)) {
             $availableTrendYears = [(int)date('Y'), (int)date('Y') - 1];
         }
 
-        $trendYear = $this->request->getGet('trend_year') ? (int)$this->request->getGet('trend_year') : ($this->request->getGet('year') ? (int)$this->request->getGet('year') : (int)date('Y'));
+        $trendYear = $this->request->getGet('trend_year') ? (int)$this->request->getGet('trend_year') : ($this->request->getGet('year') ? (int)$this->request->getGet('year') : ($availableTrendYears[0] ?? (int)date('Y')));
         if (!in_array($trendYear, $availableTrendYears)) {
             $trendYear = $availableTrendYears[0] ?? (int)date('Y');
         }

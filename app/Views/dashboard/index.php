@@ -867,93 +867,282 @@
     </div>
 
 
-    <!-- 6B. CUMULATIVE GANGGUAN CHART + FEEDER RANKINGS -->
-    <div class="row g-4 mb-4">
-        <!-- Cumulative Gangguan Line Chart -->
-        <div class="col-lg-5 col-12">
-            <div class="dah-card p-4 h-100">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-chart-line text-danger me-2"></i>Gangguan Kumulatif <?= (int)$trendYear ?></h6>
-                    <span class="badge bg-danger-subtle text-danger"><?= array_sum(array_values($cumulativeGangguan ?? [])) > 0 ? number_format(max($cumulativeGangguan ?? [0])) . ' total' : '–' ?></span>
+        <!-- 6. ANALISIS KEANDALAN GANGGUAN & TEMUAN INSPEKSI -->
+    <div class="row g-3 mb-4 align-items-start">
+        <!-- Kolom Kiri: Modul Gangguan (Penyulang Terbanyak + Tepat di bawahnya Gangguan Kumulatif) -->
+        <div class="col-lg-6 col-12 d-flex flex-column gap-3">
+            <!-- 6A. Penyulang Gangguan Terbanyak -->
+            <div class="card dah-card shadow-sm border">
+                <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-bolt"></i></span>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 13px;">Penyulang Gangguan Terbanyak</h6>
+                            <small class="text-muted" style="font-size: 11px;">Peringkat frekuensi trip tahun <?= (int)$trendYear ?></small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-1.5">
+                        <label for="trendYearSelectGangguan" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">Tahun:</label>
+                        <select id="trendYearSelectGangguan" class="form-select form-select-sm rounded-pill font-monospace" style="font-size: 11px; width: auto; padding: 2px 24px 2px 10px;" onchange="changeTrendYear(this.value)">
+                            <?php foreach ($availableTrendYears ?? [date('Y')] as $yr): ?>
+                                <option value="<?= $yr ?>" <?= ((int)($trendYear ?? date('Y')) === (int)$yr) ? 'selected' : '' ?>>
+                                    <?= $yr ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
-                <canvas id="cumulativeGangguanChart" height="180"></canvas>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+                            <thead class="table-light sticky-top" style="font-size: 11px; text-transform: uppercase;">
+                                <tr>
+                                    <th style="width: 35px;" class="text-center">#</th>
+                                    <th>Penyulang</th>
+                                    <th>ULP</th>
+                                    <th class="text-end" style="width: 90px;">Total Gangguan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach (($topFeedersGangguan ?? []) as $rank => $row): ?>
+                                <tr>
+                                    <td class="text-center text-muted fw-bold"><?= $rank + 1 ?></td>
+                                    <td class="fw-semibold text-dark"><?= esc($row['feeder_name'] ?? '-') ?></td>
+                                    <td class="text-muted small"><?= esc($row['nama_ulp'] ?? '-') ?></td>
+                                    <td class="text-end fw-bold text-danger"><?= (int)($row['cnt'] ?? 0) ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($topFeedersGangguan)): ?>
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3 small">Tidak ada data gangguan untuk tahun <?= (int)$trendYear ?>.</td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6B. Gangguan Kumulatif (Tepat di Bawah Penyulang Gangguan Terbanyak) -->
+            <div class="card dah-card shadow-sm border">
+                <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-chart-line"></i></span>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 13px;">Gangguan Kumulatif <?= (int)$trendYear ?></h6>
+                            <small class="text-muted" style="font-size: 11px;">Akumulasi bulanan (Jan–Des)</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-danger-subtle text-danger rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">
+                        <?= array_sum(array_values($cumulativeGangguan ?? [])) > 0 ? number_format(max($cumulativeGangguan ?? [0])) . ' Total' : '0 Total' ?>
+                    </span>
+                </div>
+                <div class="card-body p-3">
+                    <div style="height: 165px; width: 100%;">
+                        <canvas id="cumulativeGangguanChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
-        <!-- Feeder Rankings: Gangguan + Inspeksi -->
-        <div class="col-lg-7 col-12">
-            <div class="row g-4 h-100">
-                <!-- Top Penyulang by Gangguan -->
-                <div class="col-md-6 col-12">
-                    <div class="dah-card p-3 h-100">
-                        <h6 class="fw-bold mb-2 small text-dark"><i class="fas fa-bolt text-warning me-1"></i>Penyulang Gangguan Terbanyak <span class="text-muted fw-normal"><?= (int)$trendYear ?></span></h6>
-                        <div class="table-responsive" style="max-height:240px;overflow-y:auto">
-                        <table class="table table-sm align-middle mb-0" style="font-size:11px">
-                            <thead class="table-light sticky-top"><tr><th>#</th><th>Penyulang</th><th>ULP</th><th class="text-end">Gangguan</th></tr></thead>
+
+        <!-- Kolom Kanan: Penyulang Temuan Inspeksi Terbanyak -->
+        <div class="col-lg-6 col-12">
+            <div class="card dah-card shadow-sm border h-100">
+                <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-info-subtle text-info p-2 rounded-2"><i class="fas fa-clipboard-list"></i></span>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 13px;">Penyulang Temuan Inspeksi Terbanyak</h6>
+                            <small class="text-muted" style="font-size: 11px;">Rincian pelaksana temuan aktif &bull; Klik baris untuk sorot peta</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1 small">
+                        <?= count($topInspeksiPenyulang ?? []) ?> Penyulang
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+                            <thead class="table-light sticky-top" style="font-size: 11px; text-transform: uppercase;">
+                                <tr>
+                                    <th style="width: 35px;" class="text-center">#</th>
+                                    <th>Penyulang</th>
+                                    <th class="text-end" style="width: 60px;" title="Temuan PDKB">PDKB</th>
+                                    <th class="text-end" style="width: 75px;" title="Temuan HAR Gardu">HAR Gardu</th>
+                                    <th class="text-end" style="width: 75px;" title="Temuan HAR ROW">HAR ROW</th>
+                                    <th class="text-end" style="width: 60px;" title="Total Temuan Aktif">Total</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                            <?php foreach (($topFeedersGangguan ?? []) as $rank => $row): ?>
-                            <tr>
-                                <td class="text-muted"><?= $rank + 1 ?></td>
-                                <td><?= esc($row['feeder_name'] ?? '-') ?></td>
-                                <td class="text-muted small"><?= esc($row['nama_ulp'] ?? '-') ?></td>
-                                <td class="text-end fw-bold text-danger"><?= (int)($row['cnt'] ?? 0) ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <?php if (empty($topFeedersGangguan)): ?><tr><td colspan="4" class="text-center text-muted py-3">Tidak ada data gangguan</td></tr><?php endif; ?>
+                                <?php foreach (($topInspeksiPenyulang ?? []) as $rank => $row): ?>
+                                <tr style="cursor: pointer;" onclick="highlightFeederOnMap(<?= (int)$row['penyulang_id'] ?>, '<?= esc(addslashes($row['nama_penyulang'] ?? '')) ?>')" title="Klik untuk fokus ke titik penyulang di GIS Map">
+                                    <td class="text-center text-muted fw-bold"><?= $rank + 1 ?></td>
+                                    <td>
+                                        <div class="fw-semibold text-dark"><?= esc($row['nama_penyulang'] ?? '-') ?></div>
+                                        <div class="text-muted" style="font-size: 10px;"><i class="fas fa-location-dot text-primary me-1"></i>Lihat di GIS</div>
+                                    </td>
+                                    <td class="text-end"><span class="badge bg-light text-dark border"><?= (int)($row['pdkb'] ?? 0) ?></span></td>
+                                    <td class="text-end"><span class="badge bg-light text-dark border"><?= (int)($row['har_gardu'] ?? 0) ?></span></td>
+                                    <td class="text-end"><span class="badge bg-light text-dark border"><?= (int)($row['har_row'] ?? 0) ?></span></td>
+                                    <td class="text-end fw-bold text-info fs-6"><?= (int)($row['total'] ?? 0) ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($topInspeksiPenyulang)): ?>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4 small">Tidak ada data temuan inspeksi aktif.</td>
+                                </tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
-                        </div>
                     </div>
                 </div>
-                <!-- Top Penyulang by Inspeksi Temuan -->
-                <div class="col-md-6 col-12">
-                    <div class="dah-card p-3 h-100">
-                        <h6 class="fw-bold mb-2 small text-dark"><i class="fas fa-clipboard-list text-info me-1"></i>Penyulang Temuan Inspeksi Terbanyak</h6>
-                        <div class="table-responsive" style="max-height:240px;overflow-y:auto">
-                        <table class="table table-sm align-middle mb-0" style="font-size:11px">
-                            <thead class="table-light sticky-top"><tr><th>#</th><th>Penyulang</th><th class="text-end">PDKB</th><th class="text-end">HAR Gardu</th><th class="text-end">HAR ROW</th><th class="text-end">Total</th></tr></thead>
-                            <tbody>
-                            <?php foreach (($topInspeksiPenyulang ?? []) as $rank => $row): ?>
-                            <tr style="cursor:pointer" onclick="highlightFeederOnMap(<?= (int)$row['penyulang_id'] ?>, '<?= esc(addslashes($row['nama_penyulang'] ?? '')) ?>')" title="Tampilkan di peta">
-                                <td class="text-muted"><?= $rank + 1 ?></td>
-                                <td><?= esc($row['nama_penyulang'] ?? '-') ?></td>
-                                <td class="text-end"><?= (int)($row['pdkb'] ?? 0) ?></td>
-                                <td class="text-end"><?= (int)($row['har_gardu'] ?? 0) ?></td>
-                                <td class="text-end"><?= (int)($row['har_row'] ?? 0) ?></td>
-                                <td class="text-end fw-bold text-info"><?= (int)($row['total'] ?? 0) ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <?php if (empty($topInspeksiPenyulang)): ?><tr><td colspan="6" class="text-center text-muted py-3">Tidak ada data temuan</td></tr><?php endif; ?>
-                            </tbody>
-                        </table>
-                        </div>
-                        <div class="text-muted mt-1" style="font-size:10px"><i class="fas fa-hand-pointer me-1"></i>Klik baris untuk tampilkan di peta</div>
-                    </div>
+                <div class="card-footer bg-light-subtle py-2 px-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-muted small" style="font-size: 11px;"><i class="fas fa-hand-pointer text-primary me-1"></i>Pilih penyulang untuk menandai lokasinya pada peta di atas.</span>
+                    <a href="<?= site_url('temuan') ?>" class="text-primary text-decoration-none fw-semibold small" style="font-size: 11px;">Semua Temuan <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
             </div>
         </div>
     </div>
-<!-- 7. ROW 5: JARINGAN UP3 SIDOARJO (DISTRIBUTION NETWORK TOPOLOGY) -->
+
+    <!-- 7. ROW 5: JARINGAN DISTRIBUSI UP3 SIDOARJO (RESTRUCTURED MODULE) -->
     <?php
-            $networkRows = $networkData['feeders'] ?? [];
-            $networkTotals = ['penyulang' => 0, 'aset' => 0, 'aaac_kms' => 0, 'aaacs_kms' => 0, 'mvtic_kms' => 0, 'xlpe_kms' => 0, 'gis' => []];
-            foreach (($networkData['ulp_summary'] ?? []) as $networkSummary) {
-                if (!empty($selectedUlpId) && (int)($networkSummary['ulp_id'] ?? 0) !== (int)$selectedUlpId) continue;
-                foreach ($networkTotals as $field => &$value) {
-                    if (isset($networkSummary[$field]) && is_numeric($networkSummary[$field])) $value += $networkSummary[$field];
-                }
-                unset($value);
-                $networkTotals['gis'] = array_values(array_unique(array_merge($networkTotals['gis'], $networkSummary['gis'] ?? [])));
+        $networkRows = $networkData['feeders'] ?? [];
+        $networkTotals = ['penyulang' => 0, 'aset' => 0, 'aaac_kms' => 0, 'aaacs_kms' => 0, 'mvtic_kms' => 0, 'xlpe_kms' => 0, 'gis' => []];
+        foreach (($networkData['ulp_summary'] ?? []) as $networkSummary) {
+            if (!empty($selectedUlpId) && (int)($networkSummary['ulp_id'] ?? 0) !== (int)$selectedUlpId) continue;
+            foreach ($networkTotals as $field => &$value) {
+                if (isset($networkSummary[$field]) && is_numeric($networkSummary[$field])) $value += $networkSummary[$field];
             }
-            $networkMaxKm = max(0.01, (float)$networkTotals['aaac_kms'], (float)$networkTotals['aaacs_kms'], (float)$networkTotals['mvtic_kms'], (float)$networkTotals['xlpe_kms']);
-        ?>
-        <div class="card dah-card mb-4"><div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2"><div><strong>Jaringan UP3 Sidoarjo</strong><div class="small text-muted">GI, ULP, jumlah aset, dan panjang transline aktif dari database GIS</div></div><a class="btn btn-sm btn-outline-primary" href="<?= site_url('captive-non-penugasan') ?>">Kelola potensi coating</a></div>
-        <div class="card-body border-bottom"><div class="d-flex flex-wrap gap-4 mb-3 small"><span><strong>Gardu Induk:</strong> <?= esc(implode(', ', $networkTotals['gis']) ?: '-') ?></span><span><strong>Penyulang:</strong> <?= number_format((int)$networkTotals['penyulang']) ?></span><span><strong>Aset:</strong> <?= number_format((int)$networkTotals['aset']) ?></span></div>
-            <?php foreach (['aaac_kms' => 'AAAC', 'aaacs_kms' => 'AAACS', 'mvtic_kms' => 'MVTIC', 'xlpe_kms' => 'XLPE'] as $metric => $label): ?><?php $percent = min(100, (float)$networkTotals[$metric] / $networkMaxKm * 100); ?><div class="d-flex align-items-center gap-2 small mb-2"><span style="width:52px"><?= esc($label) ?></span><div class="progress flex-grow-1" style="height:9px"><div class="progress-bar bg-info" role="progressbar" style="width:<?= esc((string)$percent) ?>%" aria-valuenow="<?= esc((string)$percent) ?>" aria-valuemin="0" aria-valuemax="100"></div></div><strong style="width:90px;text-align:right"><?= number_format((float)$networkTotals[$metric], 2) ?> km</strong></div><?php endforeach ?>
-        </div><div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0"><thead><tr><th>Gardu Induk</th><th>ULP</th><th>Penyulang</th><th>Aset</th><th>AAAC (km)</th><th>AAACS (km)</th><th>MVTIC (km)</th><th>XLPE (km)</th><th></th></tr></thead><tbody>
-        <?php foreach ($networkRows as $net): ?><tr><td><?= esc($net['gardu_induk'] ?? '-') ?></td><td><?= esc($net['nama_ulp'] ?? '-') ?></td><td><?= esc($net['nama'] ?? '-') ?> <span class="text-muted small"><?= esc($net['kode'] ?? '') ?></span></td><td><?= number_format((int)$net['aset']) ?></td><td><?= number_format((float)$net['aaac_kms'],2) ?></td><td><?= number_format((float)$net['aaacs_kms'],2) ?></td><td><?= number_format((float)$net['mvtic_kms'],2) ?></td><td><?= number_format((float)$net['xlpe_kms'],2) ?></td><td><a class="btn btn-sm btn-outline-secondary" href="<?= site_url('gis?penyulang_id=' . (int)$net['id']) ?>">GIS</a><?php if (!empty($net['captive_candidates'])): ?> <a class="btn btn-sm btn-warning" href="<?= site_url('gis?penyulang_id=' . (int)$net['id'] . '&captive_only=1') ?>">Potensi <?= (int)$net['captive_candidates'] ?></a><?php endif ?></td></tr><?php endforeach ?>
-        <?php if (!$networkRows): ?><tr><td colspan="9" class="text-center text-muted">Data penyulang tidak tersedia dalam cakupan ini.</td></tr><?php endif ?>
-        </tbody></table></div></div>
-    <!-- 8. CAPTIVE NON PENUGASAN — POTENSI COATING -->
+            unset($value);
+            $networkTotals['gis'] = array_values(array_unique(array_merge($networkTotals['gis'], $networkSummary['gis'] ?? [])));
+        }
+        $networkMaxKm = max(0.01, (float)$networkTotals['aaac_kms'], (float)$networkTotals['aaacs_kms'], (float)$networkTotals['mvtic_kms'], (float)$networkTotals['xlpe_kms']);
+    ?>
+    <div class="card dah-card shadow-sm border mb-4">
+        <div class="card-header bg-white py-3 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary-subtle text-primary p-2 rounded-2"><i class="fas fa-network-wired fs-5"></i></span>
+                <div>
+                    <h5 class="fw-bold text-dark mb-0" style="font-size: 14px;">Jaringan Distribusi UP3 Sidoarjo</h5>
+                    <div class="small text-muted" style="font-size: 11px;">Topologi Gardu Induk, ULP, Penyulang, dan Rekapitulasi Konduktor GIS</div>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-primary rounded-pill px-3" href="<?= site_url('captive-non-penugasan') ?>">
+                    <i class="fas fa-highlighter me-1 text-warning"></i> Kelola Potensi Coating
+                </a>
+            </div>
+        </div>
+        
+        <!-- Summary Stats Ribbon -->
+        <div class="card-body bg-light-subtle py-3 px-3 border-bottom">
+            <div class="row g-2 align-items-center">
+                <div class="col-xl-4 col-12">
+                    <div class="p-2.5 rounded-3 bg-white border h-100">
+                        <div class="text-muted small fw-semibold mb-1" style="font-size: 11px;"><i class="fas fa-industry text-primary me-1"></i>Gardu Induk (GI) Terhubung:</div>
+                        <div class="d-flex flex-wrap gap-1">
+                            <?php if (!empty($networkTotals['gis'])): ?>
+                                <?php foreach ($networkTotals['gis'] as $giName): ?>
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1" style="font-size: 11px;"><?= esc($giName) ?></span>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <span class="text-muted small">–</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-sm-6 col-12">
+                    <div class="p-2.5 rounded-3 bg-white border text-center h-100">
+                        <div class="text-muted small fw-semibold" style="font-size: 11px;">Total Penyulang</div>
+                        <div class="fs-4 fw-bold text-dark"><?= number_format((int)$networkTotals['penyulang']) ?></div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-sm-6 col-12">
+                    <div class="p-2.5 rounded-3 bg-white border text-center h-100">
+                        <div class="text-muted small fw-semibold" style="font-size: 11px;">Total Aset Jaringan</div>
+                        <div class="fs-4 fw-bold text-primary"><?= number_format((int)$networkTotals['aset']) ?></div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-12">
+                    <div class="p-2.5 rounded-3 bg-white border h-100">
+                        <div class="text-muted small fw-semibold mb-1.5" style="font-size: 11px;"><i class="fas fa-bolt text-warning me-1"></i>Total Panjang Konduktor Aktif (km):</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2 py-1" style="font-size: 11px;">
+                                <strong>AAAC:</strong> <?= number_format((float)$networkTotals['aaac_kms'], 2) ?> km
+                            </span>
+                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" style="font-size: 11px;">
+                                <strong>AAACS:</strong> <?= number_format((float)$networkTotals['aaacs_kms'], 2) ?> km
+                            </span>
+                            <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-2 py-1" style="font-size: 11px;">
+                                <strong>MVTIC:</strong> <?= number_format((float)$networkTotals['mvtic_kms'], 2) ?> km
+                            </span>
+                            <span class="badge bg-secondary-subtle text-dark border border-secondary-subtle px-2 py-1" style="font-size: 11px;">
+                                <strong>XLPE:</strong> <?= number_format((float)$networkTotals['xlpe_kms'], 2) ?> km
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feeder Details Table -->
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+                    <thead class="table-light sticky-top" style="font-size: 11px; text-transform: uppercase;">
+                        <tr>
+                            <th>Gardu Induk</th>
+                            <th>ULP</th>
+                            <th>Penyulang</th>
+                            <th class="text-end">Aset</th>
+                            <th class="text-end text-warning-emphasis">AAAC (km)</th>
+                            <th class="text-end">AAACS (km)</th>
+                            <th class="text-end">MVTIC (km)</th>
+                            <th class="text-end">XLPE (km)</th>
+                            <th class="text-center" style="width: 140px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($networkRows as $net): ?>
+                        <tr>
+                            <td class="fw-semibold text-dark"><?= esc($net['gardu_induk'] ?? '-') ?></td>
+                            <td class="text-muted small"><?= esc($net['nama_ulp'] ?? '-') ?></td>
+                            <td>
+                                <span class="fw-bold text-dark"><?= esc($net['nama'] ?? '-') ?></span>
+                                <?php if (!empty($net['kode'])): ?>
+                                    <span class="text-muted small font-monospace d-block" style="font-size: 10px;"><?= esc($net['kode']) ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-end fw-semibold"><?= number_format((int)$net['aset']) ?></td>
+                            <td class="text-end fw-bold text-warning-emphasis"><?= number_format((float)$net['aaac_kms'], 2) ?></td>
+                            <td class="text-end text-muted"><?= number_format((float)$net['aaacs_kms'], 2) ?></td>
+                            <td class="text-end text-muted"><?= number_format((float)$net['mvtic_kms'], 2) ?></td>
+                            <td class="text-end text-muted"><?= number_format((float)$net['xlpe_kms'], 2) ?></td>
+                            <td class="text-center">
+                                <div class="d-inline-flex gap-1">
+                                    <a class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0.5" href="<?= site_url('gis?penyulang_id=' . (int)$net['id']) ?>" title="Buka di GIS">
+                                        <i class="fas fa-map-location-dot me-0.5"></i> GIS
+                                    </a>
+                                    <?php if (!empty($net['captive_candidates'])): ?>
+                                        <a class="btn btn-xs btn-warning rounded-pill px-2 py-0.5 text-dark fw-bold" href="<?= site_url('gis?penyulang_id=' . (int)$net['id'] . '&captive_only=1') ?>" title="Tinjau Potensi Coating">
+                                            <i class="fas fa-brush me-0.5"></i> <?= (int)$net['captive_candidates'] ?>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php if (!$networkRows): ?>
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">Data penyulang tidak tersedia dalam cakupan ini.</td>
+                        </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<!-- 8. CAPTIVE NON PENUGASAN — POTENSI COATING -->
     <div class="card dah-card mb-4">
         <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>

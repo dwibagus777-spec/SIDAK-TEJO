@@ -51,6 +51,54 @@ class GisController extends BaseController
 
         $selectedPenyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
         $selectedPlanningId  = (int)($this->request->getGet('planning_id') ?? 0);
+        $selectedUlpId       = (int)($this->request->getGet('ulp_id') ?? 0);
+        $captiveOnly         = (int)($this->request->getGet('captive_only') ?? 0) === 1;
+
+        if ($captiveOnly && $selectedPenyulangId <= 0) {
+            if ($db->tableExists('captive_non_penugasan')) {
+                $cQ = $db->table('captive_non_penugasan c')
+                    ->select('c.penyulang_id, p.ulp_id')
+                    ->join('penyulang p', 'p.id = c.penyulang_id', 'left')
+                    ->where('c.jenis', 'COATING')
+                    ->where('c.status', 'POTENSI')
+                    ->where('c.deleted_at IS NULL')
+                    ->where('c.penyulang_id IS NOT NULL');
+                if ($selectedUlpId > 0) {
+                    $cQ->where('p.ulp_id', $selectedUlpId);
+                }
+                $cRow = $cQ->orderBy('c.id', 'DESC')->get()->getRowArray();
+                if (!empty($cRow['penyulang_id'])) {
+                    $selectedPenyulangId = (int)$cRow['penyulang_id'];
+                    if ($selectedUlpId <= 0 && !empty($cRow['ulp_id'])) {
+                        $selectedUlpId = (int)$cRow['ulp_id'];
+                    }
+                }
+            }
+            if ($selectedPenyulangId <= 0 && $db->tableExists('gis_translines') && $db->tableExists('penyulang')) {
+                $tQ = $db->table('gis_translines t')
+                    ->select('t.penyulang_id, p.ulp_id, COUNT(t.id) AS cnt')
+                    ->join('penyulang p', 'p.id = t.penyulang_id', 'inner')
+                    ->where('t.is_active', 1)
+                    ->where('UPPER(TRIM(t.conductor_type))', 'AAAC');
+                if ($selectedUlpId > 0) {
+                    $tQ->where('p.ulp_id', $selectedUlpId);
+                }
+                $tRow = $tQ->groupBy('t.penyulang_id, p.ulp_id')->orderBy('cnt', 'DESC')->get()->getRowArray();
+                if (!empty($tRow['penyulang_id'])) {
+                    $selectedPenyulangId = (int)$tRow['penyulang_id'];
+                    if ($selectedUlpId <= 0 && !empty($tRow['ulp_id'])) {
+                        $selectedUlpId = (int)$tRow['ulp_id'];
+                    }
+                }
+            }
+        }
+
+        if ($selectedPenyulangId > 0 && $selectedUlpId <= 0 && $db->tableExists('penyulang')) {
+            $pRow = $db->table('penyulang')->select('ulp_id')->where('id', $selectedPenyulangId)->get()->getRowArray();
+            if (!empty($pRow['ulp_id'])) {
+                $selectedUlpId = (int)$pRow['ulp_id'];
+            }
+        }
 
         $session = session();
         $rawRole = (string)($session->get('user_role') ?? $session->get('role') ?? $session->get('level') ?? 'PETUGAS_LAPANGAN');
@@ -71,6 +119,8 @@ class GisController extends BaseController
             'ulps'                => $ulps,
             'penyulangs'          => [], // Initial load: EMPTY array for Penyulangs!
             'selectedPenyulangId' => $selectedPenyulangId,
+            'selectedUlpId'       => $selectedUlpId,
+            'captiveOnly'         => $captiveOnly,
             'selectedPlanningId'  => $selectedPlanningId,
             'legendItems'         => $legendItems,
             'userRole'            => $userRole,

@@ -504,7 +504,7 @@ class Dashboard extends BaseController
             'by_type'  => $assetByType,
         ];
 
-        // Cumulative gangguan per month for trend year (respecting ULP filter consistently with feeder table)
+        // Cumulative gangguan per month (YoY multi-year series + selected year, respecting ULP filter consistently)
         $ulpWhereClause = "";
         if ($ulpIdFilter !== null) {
             $uRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
@@ -519,19 +519,136 @@ class Dashboard extends BaseController
             }
             $ulpWhereClause = " AND (" . implode(" OR ", $ulpConds) . ")";
         }
-        $ggnMonthlyRaw = $db->query(
-            "SELECT MONTH(h.event_date) mo, COUNT(h.id) cnt
-             FROM historical_feeder_interruptions h
-             LEFT JOIN penyulang p ON UPPER(TRIM(p.nama_penyulang)) = UPPER(TRIM(h.feeder_name))
-             WHERE h.event_date IS NOT NULL AND YEAR(h.event_date) = " . (int)$trendYear
-            . $ulpWhereClause
-            . " GROUP BY MONTH(h.event_date) ORDER BY mo ASC"
-        )->getResultArray();
-        $monthlyGangguan = array_fill(1, 12, 0);
-        foreach ($ggnMonthlyRaw as $row) { $monthlyGangguan[(int)$row['mo']] = (int)$row['cnt']; }
-        $cumulativeGangguan = [];
-        $cumSum = 0;
-        for ($m = 1; $m <= 12; $m++) { $cumSum += $monthlyGangguan[$m]; $cumulativeGangguan[$m] = $cumSum; }
+
+        // All available years in historical_feeder_interruptions (or union with availableTrendYears)
+        $ggnAllMonthlyRaw = $db->tableExists('historical_feeder_interruptions')
+            ? $db->query(
+                "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo, COUNT(h.id) cnt
+                 FROM historical_feeder_interruptions h
+                 LEFT JOIN penyulang p ON UPPER(TRIM(p.nama_penyulang)) = UPPER(TRIM(h.feeder_name))
+                 WHERE h.event_date IS NOT NULL" . $ulpWhereClause . "
+                 GROUP BY YEAR(h.event_date), MONTH(h.event_date)
+                 ORDER BY yr DESC, mo ASC"
+            )->getResultArray()
+            : [];
+
+        $monthlyByYear = [];
+        foreach ($availableTrendYears as $yr) {
+            $monthlyByYear[(int)$yr] = array_fill(1, 12, 0);
+        }
+        foreach ($ggnAllMonthlyRaw as $row) {
+            $yr = (int)$row['yr'];
+            $mo = (int)$row['mo'];
+            if ($yr > 0 && $mo >= 1 && $mo <= 12) {
+                if (!isset($monthlyByYear[$yr])) {
+                    $monthlyByYear[$yr] = array_fill(1, 12, 0);
+                }
+                $monthlyByYear[$yr][$mo] = (int)$row['cnt'];
+            }
+        }
+        krsort($monthlyByYear);
+
+        $cumulativeGangguanYoY = [];
+        foreach ($monthlyByYear as $yr => $monthsArr) {
+            $runSum = 0;
+            $cumArr = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $runSum += (int)($monthsArr[$m] ?? 0);
+                $cumArr[$m] = $runSum;
+            }
+            // Include years that have interruption data or match availableTrendYears
+            if ($runSum > 0 || in_array((int)$yr, $availableTrendYears, true)) {
+                $cumulativeGangguanYoY[(int)$yr] = [
+                    'year'       => (int)$yr,
+                    'total'      => $runSum,
+                    'monthly'    => array_values($monthsArr),
+                    'cumulative' => array_values($cumArr),
+                ];
+            }
+        }
+        $cumulativeGangguan = $cumulativeGangguanYoY[$trendYear]['cumulative'] ?? array_fill(0, 12, 0);
+
+        // Cause Breakdown ("Penyebab Sesuai Kode Gangguan") per year from official dictionary & canonical taxonomy
+        $canonicalCauseMap = [
+            'CAUSE_ANIMAL_CONTACT'              => ['category' => 'ANIMAL_CONTACT',          'label' => 'Sentuhan Binatang (Tikus/Burung/Bunglon/Ular)', 'badge' => 'warning'],
+            'CAUSE_VEGETATION_ROW'              => ['category' => 'VEGETATION_ROW',          'label' => 'Pohon / Ranting / Vegetasi (ROW)',              'badge' => 'success'],
+            'CAUSE_EQUIPMENT_FAILURE'           => ['category' => 'EQUIPMENT_FAILURE',       'label' => 'Kegagalan Komponen / Material Distribusi',      'badge' => 'danger'],
+            'CAUSE_THIRD_PARTY_OBJECT'          => ['category' => 'THIRD_PARTY_OBJECT',      'label' => 'Benda Asing / Aktivitas Pihak Ketiga (Layangan/Bangunan)', 'badge' => 'info'],
+            'CAUSE_LIGHTNING_SURGE'             => ['category' => 'LIGHTNING_WEATHER',       'label' => 'Sambaran Petir / Force Majeure Cuaca',          'badge' => 'primary'],
+            'CAUSE_CUSTOMER_IML_FAULT'          => ['category' => 'CUSTOMER_IML_FAULT',      'label' => 'Instalasi Milik Langganan (IML) / Overload',    'badge' => 'secondary'],
+            'CAUSE_CONDUCTOR_GSW_SNAP'          => ['category' => 'CONDUCTOR_GSW_SNAP',      'label' => 'Konduktor SUTM / Jumper / GSW Putus atau Lepas','badge' => 'danger'],
+            'CAUSE_CABLE_TERMINATION_FAULT'     => ['category' => 'CABLE_TERMINATION_FAULT', 'label' => 'Kegagalan Isolasi Kabel / Terminasi / Jointing','badge' => 'purple'],
+            'CAUSE_UNKNOWN_UNDER_INVESTIGATION' => ['category' => 'UNKNOWN_INVESTIGATION',   'label' => 'Belum Diketahui / Nihil Temuan Patroli',        'badge' => 'secondary'],
+            'CAUSE_UNMAPPED_ADVISORY'           => ['category' => 'UNMAPPED',                'label' => 'Belum Terpetakan (Unmapped Kode Sumber)',       'badge' => 'dark'],
+        ];
+        if ($db->tableExists('cause_code_dictionary')) {
+            $dictRows = $db->query("SELECT canonical_cause_code, MAX(cause_category) AS cat, MIN(cause_label) AS lbl FROM cause_code_dictionary WHERE is_active = 1 GROUP BY canonical_cause_code")->getResultArray();
+            foreach ($dictRows as $dr) {
+                $cCode = (string)$dr['canonical_cause_code'];
+                if (!isset($canonicalCauseMap[$cCode]) && $cCode !== '') {
+                    $canonicalCauseMap[$cCode] = [
+                        'category' => (string)$dr['cat'],
+                        'label'    => (string)$dr['lbl'],
+                        'badge'    => 'info',
+                    ];
+                }
+            }
+        }
+
+        $causeRawRows = $db->tableExists('historical_feeder_interruptions')
+            ? $db->query(
+                "SELECT YEAR(h.event_date) yr,
+                        COALESCE(NULLIF(TRIM(h.cause_canonical_code), ''), 'CAUSE_UNKNOWN_UNDER_INVESTIGATION') AS canonical_code,
+                        COALESCE(NULLIF(TRIM(h.cause_category), ''), 'UNKNOWN_INVESTIGATION') AS cause_category,
+                        COALESCE(NULLIF(TRIM(h.cause_mapping_status), ''), 'RESOLVED') AS mapping_status,
+                        GROUP_CONCAT(DISTINCT NULLIF(TRIM(h.cause_raw), '') ORDER BY h.cause_raw SEPARATOR ', ') AS raw_samples,
+                        COUNT(h.id) AS cnt
+                 FROM historical_feeder_interruptions h
+                 LEFT JOIN penyulang p ON UPPER(TRIM(p.nama_penyulang)) = UPPER(TRIM(h.feeder_name))
+                 WHERE h.event_date IS NOT NULL" . $ulpWhereClause . "
+                 GROUP BY YEAR(h.event_date), canonical_code, cause_category, mapping_status
+                 ORDER BY yr DESC, cnt DESC"
+            )->getResultArray()
+            : [];
+
+        $causeBreakdownByYear = [];
+        foreach ($availableTrendYears as $yr) {
+            $causeBreakdownByYear[(int)$yr] = [];
+        }
+        foreach ($causeRawRows as $cRow) {
+            $yr = (int)$cRow['yr'];
+            $code = (string)$cRow['canonical_code'];
+            $status = (string)$cRow['mapping_status'];
+            $cnt = (int)$cRow['cnt'];
+            $meta = $canonicalCauseMap[$code] ?? [
+                'category' => (string)$cRow['cause_category'],
+                'label'    => 'Kode Belum Terpetakan: ' . $code,
+                'badge'    => 'dark',
+            ];
+            $key = $code . '|' . $status;
+            if (!isset($causeBreakdownByYear[$yr][$key])) {
+                $causeBreakdownByYear[$yr][$key] = [
+                    'canonical_code' => $code,
+                    'category'       => $meta['category'],
+                    'label'          => $meta['label'],
+                    'badge'          => $meta['badge'],
+                    'mapping_status' => $status,
+                    'raw_samples'    => (string)($cRow['raw_samples'] ?? ''),
+                    'count'          => 0,
+                ];
+            }
+            $causeBreakdownByYear[$yr][$key]['count'] += $cnt;
+        }
+        foreach ($causeBreakdownByYear as $yr => $items) {
+            $list = array_values($items);
+            usort($list, fn($a, $b) => $b['count'] <=> $a['count']);
+            $totYr = array_sum(array_column($list, 'count'));
+            foreach ($list as &$it) {
+                $it['pct'] = $totYr > 0 ? round(($it['count'] / $totYr) * 100, 1) : 0.0;
+            }
+            unset($it);
+            $causeBreakdownByYear[$yr] = $list;
+        }
 
         // Top 10 feeders by interruption count for trend year
         $topFeedersGangguanRows = $db->query(
@@ -540,7 +657,7 @@ class Dashboard extends BaseController
              LEFT JOIN penyulang p ON UPPER(TRIM(p.nama_penyulang)) = UPPER(TRIM(h.feeder_name))
              LEFT JOIN ulps u ON p.ulp_id = u.id
              WHERE h.event_date IS NOT NULL AND YEAR(h.event_date) = " . (int)$trendYear
-            . ($ulpIdFilter !== null ? " AND (u.id = " . (int)$ulpIdFilter . " OR u.id IS NULL)" : "")
+            . $ulpWhereClause
             . " GROUP BY h.feeder_name, p.id, p.nama_penyulang, u.nama_ulp ORDER BY cnt DESC LIMIT 10"
         )->getResultArray();
 
@@ -566,53 +683,106 @@ class Dashboard extends BaseController
             'har_row'       => (int)$r['har_row'],
         ], $temuanByPenyulangRaw);
 
-        // Captive coating summary
-        $coatingSummary = ['total_titik' => 0, 'total_meter' => 0.0];
+        // Captive coating summary + per-feeder operational breakdown (AAAC only)
+        $coatingSummary = [
+            'total_titik'     => 0,
+            'total_meter'     => 0.0,
+            'total_penyulang' => 0,
+            'by_feeder'       => [],
+            'aaac_pool_spans' => 0,
+            'aaac_pool_kms'   => 0.0,
+            'aaac_top_feeders'=> [],
+        ];
         if ($db->tableExists('captive_non_penugasan')) {
-            $coatingQ = $db->table('captive_non_penugasan')
-                ->select('COUNT(*) total_titik, SUM(distance_meters) total_meter')
-                ->where('jenis', 'COATING')->where('status', 'POTENSI')->where('deleted_at IS NULL');
-            if ($ulpIdFilter !== null) $coatingQ->where('ulp_id', $ulpIdFilter);
-            $cr = $coatingQ->get()->getRowArray();
-            $coatingSummary = ['total_titik' => (int)($cr['total_titik'] ?? 0), 'total_meter' => (float)($cr['total_meter'] ?? 0)];
+            $coatingWhere = "c.jenis = 'COATING' AND c.status = 'POTENSI' AND c.deleted_at IS NULL"
+                . " AND (c.conductor_type IS NULL OR (UPPER(c.conductor_type) LIKE '%AAAC%' AND UPPER(c.conductor_type) NOT LIKE '%AAACS%'))";
+            if ($ulpIdFilter !== null) {
+                $coatingWhere .= " AND c.ulp_id = " . (int)$ulpIdFilter;
+            }
+            $coatingByFeederRows = $db->query(
+                "SELECT c.penyulang_id,
+                        COALESCE(p.nama_penyulang, CONCAT('Penyulang #', c.penyulang_id)) AS nama_penyulang,
+                        p.kode_penyulang,
+                        c.ulp_id,
+                        COALESCE(u.nama_ulp, '-') AS nama_ulp,
+                        COUNT(c.id) AS total_titik,
+                        SUM(COALESCE(c.distance_meters, 0)) AS total_meter,
+                        MAX(c.conductor_size) AS conductor_size,
+                        MAX(c.target_conductor_type) AS target_conductor_type
+                 FROM captive_non_penugasan c
+                 LEFT JOIN penyulang p ON p.id = c.penyulang_id
+                 LEFT JOIN ulps u ON u.id = COALESCE(c.ulp_id, p.ulp_id)
+                 WHERE " . $coatingWhere . "
+                 GROUP BY c.penyulang_id, p.nama_penyulang, p.kode_penyulang, c.ulp_id, u.nama_ulp
+                 ORDER BY total_meter DESC, total_titik DESC"
+            )->getResultArray();
+
+            $totTitik = 0;
+            $totMeter = 0.0;
+            foreach ($coatingByFeederRows as &$cf) {
+                $cf['penyulang_id'] = (int)$cf['penyulang_id'];
+                $cf['ulp_id']       = (int)$cf['ulp_id'];
+                $cf['total_titik']  = (int)$cf['total_titik'];
+                $cf['total_meter']  = (float)$cf['total_meter'];
+                $cf['total_km']     = round($cf['total_meter'] / 1000, 3);
+                $totTitik += $cf['total_titik'];
+                $totMeter += $cf['total_meter'];
+            }
+            unset($cf);
+            $coatingSummary['total_titik']     = $totTitik;
+            $coatingSummary['total_meter']     = $totMeter;
+            $coatingSummary['total_penyulang'] = count($coatingByFeederRows);
+            $coatingSummary['by_feeder']       = $coatingByFeederRows;
         }
+        // Calculate total eligible AAAC pool from gis_translines (respecting ULP filter)
+        foreach ($networkFeeders as $nf) {
+            if (($nf['aaac_kms'] ?? 0) > 0) {
+                $coatingSummary['aaac_pool_kms']   += (float)$nf['aaac_kms'];
+                $coatingSummary['aaac_pool_spans'] += (int)($nf['spans'] ?? 0);
+                $coatingSummary['aaac_top_feeders'][] = $nf;
+            }
+        }
+        $coatingSummary['aaac_pool_kms'] = round($coatingSummary['aaac_pool_kms'], 2);
+
         // Sidebar collapse preference: default TRUE (collapsed) unless user explicitly expanded
         $prefersCollapsed = $session->get('sidebar_collapsed') ?? true;
 
         $viewParams = [
-            'userName'            => $session->get('user_name') ?: 'Petugas',
-            'userRole'            => $role,
-            'canInput'            => $canInput,
-            'canEdit'             => $canEdit,
-            'canDelete'           => $canDelete,
-            'canApprove'          => $canApprove,
-            'canMonitoring'       => $canMonitoring,
-            'stats'               => $stats,
-            'assetHealthData'     => $assetHealthData,
-            'gangguanStats'       => $gangguanStats,
-            'ulpsList'            => $ulpsList,
-            'selectedUlpId'       => $ulpIdFilter,
-            'woStats'             => $woStats,
-            'assetStats'          => $assetStats,
-            'monthlyData'         => $monthlyData,
-            'ulpData'             => $ulpData,
-            'penyulangData'       => $penyulangData,
-            'penyulangRanking'    => $penyulangRanking,
-            'pelaksanaData'       => $pelaksanaData,
-            'prioritasData'       => $prioritasData,
-            'potensiGangguanData' => $potensiGangguanData,
-            'mapPins'             => $mapPins,
-            'topInputOfficers'    => $topInputOfficers,
-            'topUpdateOfficers'   => $topUpdateOfficers,
-            'monthFilter'         => $monthFilter,
-            'yearFilter'          => $yearFilter,
-            'availableTrendYears' => $availableTrendYears,
-            'trendYear'           => $trendYear,
-            'trendComparison'     => $trendComparison,
-            'prefersCollapsed'    => $prefersCollapsed,
-            'networkData'         => $networkData,
+            'userName'              => $session->get('user_name') ?: 'Petugas',
+            'userRole'              => $role,
+            'canInput'              => $canInput,
+            'canEdit'               => $canEdit,
+            'canDelete'             => $canDelete,
+            'canApprove'            => $canApprove,
+            'canMonitoring'         => $canMonitoring,
+            'stats'                 => $stats,
+            'assetHealthData'       => $assetHealthData,
+            'gangguanStats'         => $gangguanStats,
+            'ulpsList'              => $ulpsList,
+            'selectedUlpId'         => $ulpIdFilter,
+            'woStats'               => $woStats,
+            'assetStats'            => $assetStats,
+            'monthlyData'           => $monthlyData,
+            'ulpData'               => $ulpData,
+            'penyulangData'         => $penyulangData,
+            'penyulangRanking'      => $penyulangRanking,
+            'pelaksanaData'         => $pelaksanaData,
+            'prioritasData'         => $prioritasData,
+            'potensiGangguanData'   => $potensiGangguanData,
+            'mapPins'               => $mapPins,
+            'topInputOfficers'      => $topInputOfficers,
+            'topUpdateOfficers'     => $topUpdateOfficers,
+            'monthFilter'           => $monthFilter,
+            'yearFilter'            => $yearFilter,
+            'availableTrendYears'   => $availableTrendYears,
+            'trendYear'             => $trendYear,
+            'trendComparison'       => $trendComparison,
+            'prefersCollapsed'      => $prefersCollapsed,
+            'networkData'           => $networkData,
             'assetSummary'          => $assetSummary,
             'cumulativeGangguan'    => $cumulativeGangguan,
+            'cumulativeGangguanYoY' => $cumulativeGangguanYoY,
+            'causeBreakdownByYear'  => $causeBreakdownByYear,
             'topFeedersGangguan'    => $topFeedersGangguanRows,
             'topInspeksiPenyulang'  => $topInspeksiPenyulang,
             'coatingSummary'        => $coatingSummary,

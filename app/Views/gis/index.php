@@ -593,8 +593,11 @@
                 <select id="setup-ulp-select" class="form-select form-select-sm fw-bold border-secondary rounded-3 py-2">
                     <option value="">-- Pilih ULP --</option>
                     <?php if (!empty($ulps)): ?>
+                        <?php
+                            $effectiveSetupUlpId = !empty($selectedUlpId) ? (int)$selectedUlpId : (($selectedPenyulangId === 0) ? 1 : 0);
+                        ?>
                         <?php foreach ($ulps as $u): ?>
-                            <option value="<?= $u['id'] ?>" <?= ($selectedPenyulangId === 0 && $u['id'] == 1) ? 'selected' : '' ?>>
+                            <option value="<?= $u['id'] ?>" <?= ((int)$u['id'] === (int)$effectiveSetupUlpId) ? 'selected' : '' ?>>
                                 <?= esc($u['nama_ulp']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -3201,7 +3204,17 @@ document.addEventListener("DOMContentLoaded", function () {
                         drawerSelect.appendChild(optDrawer);
                     });
 
-                    if (autoSelectFirst) {
+                    var urlPreselectFeeder = <?= (int)($selectedPenyulangId ?? 0) ?>;
+                    if (urlPreselectFeeder > 0 && res.penyulangs.some(p => Number(p.id) === urlPreselectFeeder)) {
+                        setupFeederSelect.value = String(urlPreselectFeeder);
+                        if (!window._autoOpenedPreselectedFeeder) {
+                            window._autoOpenedPreselectedFeeder = true;
+                            setTimeout(function () {
+                                var openBtn = document.getElementById('btn-setup-open-map');
+                                if (openBtn) openBtn.click();
+                            }, 80);
+                        }
+                    } else if (autoSelectFirst) {
                         setupFeederSelect.value = res.penyulangs[0].id;
                     }
                 }
@@ -5272,11 +5285,12 @@ document.addEventListener("DOMContentLoaded", function () {
             var translineCode = tl.transline_code || `TL-${currentFeederId}-${tId}`;
 
             var createdBy = tl.created_by || '';
+            var isCaptiveView = new URLSearchParams(window.location.search).get('captive_only') === '1';
             var isTl04 = createdBy.includes('ENGINE=TL04') || createdBy.includes('TL-04');
             var isTl03 = !isTl04 && createdBy.includes('ENGINE=TL03');
             var isTl02 = !isTl04 && !isTl03 && (createdBy.includes('RUN:') || createdBy.includes('AI') || createdBy.includes('TL-02') || createdBy.includes('TL02'));
-            var lineColor = isTl04 ? '#10b981' : (isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7'));
-            var lineWeight = isTl04 ? 4.5 : (isTl03 ? 4.0 : 3.5);
+            var lineColor = isCaptiveView ? '#f59e0b' : (isTl04 ? '#10b981' : (isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7')));
+            var lineWeight = isCaptiveView ? 5.5 : (isTl04 ? 4.5 : (isTl03 ? 4.0 : 3.5));
 
             var visPolyOpts = {
                 color: lineColor,

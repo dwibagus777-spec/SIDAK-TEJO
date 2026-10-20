@@ -140,8 +140,18 @@ class GISService
                     ->select('transline_id')->where('penyulang_id', $penyulangId)->where('jenis', 'COATING')
                     ->where('status', 'POTENSI')->where('deleted_at IS NULL')->where('transline_id IS NOT NULL')->get()->getResultArray(), 'transline_id'));
             }
-            $segmentData['edges'] = array_values(array_filter($segmentData['edges'] ?? [], static fn($edge) => in_array((int)($edge['transline_id'] ?? 0), $candidateIds, true)));
-            $segmentData['translines'] = array_values(array_filter($segmentData['translines'] ?? [], static fn($row) => in_array((int)($row['id'] ?? 0), $candidateIds, true)));
+            if (!empty($candidateIds)) {
+                $segmentData['edges'] = array_values(array_filter($segmentData['edges'] ?? [], static fn($edge) => in_array((int)($edge['transline_id'] ?? 0), $candidateIds, true)));
+                $segmentData['translines'] = array_values(array_filter($segmentData['translines'] ?? [], static fn($row) => in_array((int)($row['id'] ?? 0), $candidateIds, true)));
+            } else {
+                // Fallback: when no segment is marked POTENSI yet, filter to eligible AAAC translines so operators can review & mark them
+                $isEligibleAaac = static function (array $item): bool {
+                    $ct = strtoupper(trim((string)($item['conductor_type'] ?? $item['conductor_label'] ?? '')));
+                    return str_contains($ct, 'AAAC') && !str_contains($ct, 'AAACS') && !str_contains($ct, 'AAAC-S');
+                };
+                $segmentData['edges'] = array_values(array_filter($segmentData['edges'] ?? [], $isEligibleAaac));
+                $segmentData['translines'] = array_values(array_filter($segmentData['translines'] ?? [], $isEligibleAaac));
+            }
             $segmentData['coordinates'] = array_values(array_column($segmentData['edges'], 'coordinates'));
             if (!empty($segmentData['network_truth'])) {
                 $segmentData['network_truth']['authoritative_transline_count'] = count($segmentData['edges']);

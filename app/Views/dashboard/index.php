@@ -1248,7 +1248,11 @@
                                 <td class="text-end font-monospace <?= ($bRow['qty_gsw_ground'] ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' ?>"><?= ($bRow['qty_gsw_ground'] ?? 0) > 0 ? number_format((float)$bRow['qty_gsw_ground'], 0) : '-' ?></td>
                                 <td class="text-end font-monospace <?= ($bRow['qty_konduktor_m'] ?? 0) > 0 ? 'fw-bold text-primary' : 'text-muted' ?>"><?= ($bRow['qty_konduktor_m'] ?? 0) > 0 ? number_format((float)$bRow['qty_konduktor_m'], 0) : '-' ?></td>
                                 <td class="small text-muted font-monospace" style="font-size: 10px;" title="<?= esc($matFullStr) ?>">
-                                    <?= esc($matSummaryStr ?: '-') ?>
+                                    <?php if (!empty($matSummaryStr)): ?>
+                                        <?= esc($matSummaryStr) ?>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Belum Ada Rincian BOM</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

@@ -744,4 +744,27 @@ class Api extends BaseController
         $statusCode = ($result['status'] === 'error') ? 500 : 200;
         return $this->response->setStatusCode($statusCode)->setJSON($result);
     }
+
+    /**
+     * GET /api/audit-kalisogo-reconciliation
+     */
+    public function auditKalisogo()
+    {
+        $service = new \App\Services\AssetReconciliationService();
+        return $this->response->setJSON($service->auditKalisogo());
+    }
+
+    /**
+     * GET/POST /api/reconcile-kalisogo-duplicates
+     * Safely canonicalizes duplicate Kalisogo ingest assets.
+     */
+    public function reconcileKalisogoDuplicates()
+    {
+        $isExecute = (bool)($this->request->getGetPost('execute') ?? false);
+        $service = new \App\Services\AssetReconciliationService();
+        $result = $service->reconcileKalisogoDuplicates($isExecute);
+
+        $statusCode = (($result['status'] ?? '') === 'error') ? 500 : 200;
+        return $this->response->setStatusCode($statusCode)->setJSON($result);
+    }
 }

@@ -201,9 +201,18 @@ class ServerSideAssetIngestEngine
                         $classification = 'EXACT_CANONICAL_CODE';
                         $counts['matched_existing']++;
                     } else {
-                        $status = 'CANDIDATE_NEW_ASSET';
-                        $classification = 'CANDIDATE_NEW_ASSET';
-                        $counts['candidate_new_asset']++;
+                        // Enforce natural identity and coordinate proximity matching to prevent duplicate insertion
+                        $matchResult = $this->matchExistingAsset($row);
+                        if (($matchResult['status'] ?? '') === 'MATCHED_EXISTING') {
+                            $status = 'MATCHED_EXISTING';
+                            $matchedAssetId = $matchResult['matched_asset_id'];
+                            $classification = $matchResult['classification'];
+                            $counts['matched_existing']++;
+                        } else {
+                            $status = 'CANDIDATE_NEW_ASSET';
+                            $classification = 'CANDIDATE_NEW_ASSET';
+                            $counts['candidate_new_asset']++;
+                        }
                     }
                 }
 

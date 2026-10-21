@@ -1324,6 +1324,25 @@ class TranslineProposalReviewService
             ];
         }
 
+        // 5. Strict JTM Pole Validation
+        $srcCheck = GisTranslineService::isJtmPoleAsset($sourceAsset);
+        if (!$srcCheck['valid']) {
+            return [
+                'valid'       => false,
+                'reason_code' => 'SOURCE_NOT_JTM_POLE',
+                'message'     => "Aset sumber [{$sourceAsset['kode_asset']}] ditolak: " . $srcCheck['reason'],
+            ];
+        }
+
+        $tgtCheck = GisTranslineService::isJtmPoleAsset($targetAsset);
+        if (!$tgtCheck['valid']) {
+            return [
+                'valid'       => false,
+                'reason_code' => 'TARGET_NOT_JTM_POLE',
+                'message'     => "Aset target [{$targetAsset['kode_asset']}] ditolak: " . $tgtCheck['reason'],
+            ];
+        }
+
         return [
             'valid'        => true,
             'reason_code'  => 'ENDPOINT_VALID',

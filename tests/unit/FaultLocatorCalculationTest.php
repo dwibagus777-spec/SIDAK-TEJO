@@ -41,7 +41,6 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
 
     public function testGroundFaultWithoutReactanceReturnsDataTidakCukup(): void
     {
-        // Ground fault 1-LG with NGR 40 Ohm
         $telemetry = [
             'feeder_id'        => 1,
             'source_type'      => 'GI',
@@ -57,18 +56,16 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
 
         $this->assertSame('DATA_TIDAK_CUKUP', $res['calculation_status']);
         $this->assertSame('DATA_TIDAK_CUKUP', $res['outcome_status']);
-        $this->assertSame('NGR_40_OHM_PHYSICAL_LIMITATION', $res['dasar_perhitungan']);
+        $this->assertSame('NGR_GROUND_FAULT_INDETERMINATE', $res['dasar_perhitungan']);
         $this->assertNotEmpty($res['missing_parameters']);
-        $this->assertStringContainsString('NGR 40 Ohm', $res['explanation']);
+        $this->assertStringContainsString('NGR', $res['formula_derivation']);
     }
 
-    public function testSymmetrical3PhaseCalculatesImpedanceDistance(): void
+    public function testSymmetrical3PhaseWithoutVoltageReturnsDataTidakCukupWithIdealComplexSimulation(): void
     {
-        // 3-PH with 1500A on AAAC 150 (Z1 = 0.408 Ohm/km)
-        // V_LN = 11,547.0 V
-        // Z_loop = 11547 / 1500 ≈ 7.698 Ohm
-        // Z_line = 7.698 - 0.5 = 7.198 Ohm
-        // distKm = 7.198 / 0.408 ≈ 17.64 km
+        // 3-PH with 1500A on AAAC 150 (r1 = 0.233, x1 = 0.335 Ohm/km)
+        // With only currents and no voltage phasors, physical engineering requires DATA_TIDAK_CUKUP
+        // and low confidence with an explicit theoretical quadratic derivation.
         $telemetry = [
             'feeder_id'        => 1,
             'source_type'      => 'GI',
@@ -82,10 +79,12 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
 
         $res = $this->service->locateFault($telemetry);
 
-        $this->assertSame('CALCULATED_ELECTRICAL_IMPEDANCE', $res['calculation_status']);
-        $this->assertSame('IMPEDANCE_3PH_SYMMETRICAL', $res['dasar_perhitungan']);
+        $this->assertSame('DATA_TIDAK_CUKUP', $res['calculation_status']);
+        $this->assertSame('SIMULASI_IDEAL_BOLTED_3PH', $res['dasar_perhitungan']);
+        $this->assertLessThanOrEqual(40.0, $res['confidence_percent']);
+        $this->assertNotEmpty($res['missing_parameters']);
         $this->assertGreaterThan(5000.0, $res['calculated_distance_m']);
-        $this->assertStringContainsString('11,547', $res['formula_derivation']);
+        $this->assertStringContainsString('Persamaan Kuadrat Impedansi Kompleks', $res['formula_derivation']);
     }
 
     public function testRelayAidedDirectDistanceTakesPrecedence(): void
@@ -97,7 +96,7 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
             'current_s'        => 0.0,
             'current_t'        => 0.0,
             'current_n'        => 275.0,
-            'relay_distance_m' => 1850.0, // Explicitly measured by numeric relay
+            'relay_distance_m' => 1850.0, // Measured by field numeric distance relay
             'conductor_type'   => 'AAAC 150 mm²',
         ];
 
@@ -106,5 +105,6 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
         $this->assertSame('CALCULATED_RELAY_AIDED', $res['calculation_status']);
         $this->assertSame('RELAY_DISTANCE_MEASUREMENT', $res['dasar_perhitungan']);
         $this->assertEquals(1850.0, $res['calculated_distance_m']);
+        $this->assertGreaterThanOrEqual(90.0, $res['confidence_percent']);
     }
 }

@@ -836,6 +836,16 @@ class OneShotNetworkIngestionService
                     continue; // Skip without error (idempotent)
                 }
 
+                // Invariant guard: Ensure both endpoints are valid JTM poles
+                $sAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, jenis_asset')->where('id', $cand['source_asset_id'])->get()->getRowArray();
+                $tAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, jenis_asset')->where('id', $cand['target_asset_id'])->get()->getRowArray();
+                if ($sAsset && !GisTranslineService::isJtmPoleAsset($sAsset)['valid']) {
+                    continue;
+                }
+                if ($tAsset && !GisTranslineService::isJtmPoleAsset($tAsset)['valid']) {
+                    continue;
+                }
+
                 $insertData = [
                     'transline_code'     => 'TL-' . $cand['penyulang_id'] . '-' . $cand['source_asset_id'] . '-' . $cand['target_asset_id'],
                     'penyulang_id'       => $cand['penyulang_id'],

@@ -918,6 +918,7 @@ class AssetReconciliationService
 
         // Group by 7-column composite key
         $groups = [];
+        $feederBreakdown = [];
         foreach ($assets as $ast) {
             $unitName = 'UP3 SIDOARJO';
             $ulpName = trim((string)($ast['nama_ulp'] ?? ''));
@@ -935,6 +936,17 @@ class AssetReconciliationService
             $normFeeder  = strtoupper(trim(preg_replace('/\s+/', ' ', $feederName)));
             $normAsset   = strtoupper(trim(preg_replace('/\s+/', ' ', $assetName)));
             $normSection = strtoupper(trim(preg_replace('/\s+/', ' ', $sectionName)));
+
+            $fName = !empty($normFeeder) ? $normFeeder : 'TANPA_PENYULANG';
+            if (!isset($feederBreakdown[$fName])) {
+                $feederBreakdown[$fName] = [
+                    'ulp'              => $normUlp ?: 'TANPA_ULP',
+                    'total_active'     => 0,
+                    'duplicate_groups' => 0,
+                    'duplicates_count' => 0,
+                ];
+            }
+            $feederBreakdown[$fName]['total_active']++;
 
             $compositeKey = "{$normUnit}|{$normUlp}|{$normFeeder}|{$normAsset}|{$normSection}|{$lat}|{$lng}";
 
@@ -1064,8 +1076,16 @@ class AssetReconciliationService
                 ];
 
                 $totalDuplicateRecords += count($duplicates);
+
+                $fName = $g['keys_detail']['penyulang'] ?: 'TANPA_PENYULANG';
+                if (isset($feederBreakdown[$fName])) {
+                    $feederBreakdown[$fName]['duplicate_groups']++;
+                    $feederBreakdown[$fName]['duplicates_count'] += count($duplicates);
+                }
             }
         }
+
+        ksort($feederBreakdown);
 
         return [
             'status'                   => 'success',
@@ -1074,6 +1094,7 @@ class AssetReconciliationService
             'total_active_assets'      => $totalActive,
             'duplicate_groups_count'   => count($duplicateGroups),
             'duplicate_records_count'  => $totalDuplicateRecords,
+            'feeder_breakdown'         => $feederBreakdown,
             'groups'                   => $duplicateGroups,
         ];
     }
@@ -1102,6 +1123,7 @@ class AssetReconciliationService
                 'duplicate_groups_found'           => 0,
                 'duplicate_records_to_soft_delete' => 0,
                 'projected_active_after'           => $audit['total_active_assets'],
+                'actual_active_after'              => $audit['total_active_assets'],
                 'dependencies_to_reroute'          => [
                     'temuan_count'                   => 0,
                     'translines_source_count'        => 0,

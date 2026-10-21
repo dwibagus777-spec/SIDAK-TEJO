@@ -39,6 +39,35 @@ class AuditAssetCompositeCommand extends BaseCommand
         CLI::newLine();
 
         $service = new AssetReconciliationService();
+        $db = \Config\Database::connect();
+
+        $overallStats = $db->query("
+            SELECT 
+                COUNT(*) AS total_assets,
+                SUM(CASE WHEN deleted_at IS NULL THEN 1 ELSE 0 END) AS active_assets,
+                SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END) AS soft_deleted_assets
+            FROM assets
+        ")->getRowArray();
+
+        $delMethods = $db->query("
+            SELECT COALESCE(NULLIF(section_resolution_method, ''), 'MANUAL_OR_LEGACY') AS reason, COUNT(*) as cnt
+            FROM assets
+            WHERE deleted_at IS NOT NULL
+            GROUP BY reason
+        ")->getResultArray();
+
+        CLI::write("Status Keseluruhan Tabel Assets:", 'white');
+        CLI::write(sprintf("  • Total Seluruh Record Aset : %s unit", number_format($overallStats['total_assets'])), 'cyan');
+        CLI::write(sprintf("  • Aset Aktif Operasional    : %s unit", number_format($overallStats['active_assets'])), 'green');
+        CLI::write(sprintf("  • Aset Soft-Deleted (Arsip) : %s unit", number_format($overallStats['soft_deleted_assets'])), 'yellow');
+        if (!empty($delMethods)) {
+            CLI::write("  • Komposisi Alasan Soft-Delete Sebelumnya:", 'light_gray');
+            foreach ($delMethods as $dm) {
+                CLI::write(sprintf("      - %-35s : %s unit", $dm['reason'], number_format($dm['cnt'])), 'light_gray');
+            }
+        }
+        CLI::newLine();
+
         $result = $service->reconcileComposite7KeyDuplicates($isExecute, $feederFilter);
 
         if (($result['status'] ?? '') === 'error') {
@@ -52,6 +81,25 @@ class AuditAssetCompositeCommand extends BaseCommand
         CLI::write("  • Record Duplikat Redundan    : " . number_format($result['duplicate_records_to_soft_delete'] ?? 0) . " unit", 'light_gray');
         CLI::write("  • Relasi Temuan Dialihkan    : " . number_format($result['dependencies_to_reroute']['temuan_count'] ?? 0) . " baris", 'magenta');
         CLI::write("  • Relasi Transline Dialihkan  : " . number_format(($result['dependencies_to_reroute']['translines_source_count'] ?? 0) + ($result['dependencies_to_reroute']['translines_target_count'] ?? 0)) . " segmen", 'magenta');
+        CLI::newLine();
+
+        if (!empty($result['feeder_breakdown'])) {
+            CLI::write("Rincian Audit per Penyulang (Seluruh ULP):", 'white');
+            CLI::write(sprintf("  %-25s | %-16s | %10s | %10s | %10s", "NAMA PENYULANG", "ULP", "AKTIF AWAL", "KEL. DUP", "REDUNDAN"), 'yellow');
+            CLI::write(str_repeat("-", 82), 'yellow');
+            foreach ($result['feeder_breakdown'] as $fName => $fStats) {
+                $color = ($fStats['duplicate_groups'] > 0) ? 'red' : 'green';
+                CLI::write(sprintf("  %-25s | %-16s | %10s | %10s | %10s",
+                    substr($fName, 0, 25),
+                    substr($fStats['ulp'], 0, 16),
+                    number_format($fStats['total_active']),
+                    number_format($fStats['duplicate_groups']),
+                    number_format($fStats['duplicates_count'])
+                ), $color);
+            }
+            CLI::write(str_repeat("-", 82), 'yellow');
+            CLI::newLine();
+        }
 
         if (!empty($result['duplicate_groups_detail'])) {
             CLI::newLine();

@@ -598,26 +598,39 @@ class PlnStandardBomRuleService
 
         // Check if any candidate name matches pole keywords in detail_temuan
         $detailText = strtoupper((string)($temuan['detail_temuan'] ?? ''));
+        $nameMatches = [];
         foreach ($candidates as &$c) {
             $c['distance_meters'] = round((float)$c['distance_meters'], 1);
             $cName = strtoupper($c['nama_asset']);
             $cCode = strtoupper($c['kode_asset']);
             $c['name_match'] = false;
-            if (str_contains($detailText, $cName) || str_contains($detailText, $cCode)) {
+            if ((!empty($cName) && str_contains($detailText, $cName)) || (!empty($cCode) && str_contains($detailText, $cCode))) {
                 $c['name_match'] = true;
+                $nameMatches[] = $c;
             }
         }
         unset($c);
 
-        $isDeterministic = (count($candidates) === 1 && $candidates[0]['distance_meters'] <= 25.0);
-        $isAmbiguous = (count($candidates) > 1);
+        $deterministicCandidate = null;
+        if (count($nameMatches) === 1) {
+            $isDeterministic = true;
+            $deterministicCandidate = $nameMatches[0];
+        } elseif (count($candidates) === 1 && $candidates[0]['distance_meters'] <= 25.0) {
+            $isDeterministic = true;
+            $deterministicCandidate = $candidates[0];
+        } else {
+            $isDeterministic = false;
+        }
+
+        $isAmbiguous = (count($candidates) > 1 && !$isDeterministic);
 
         return [
-            'status'           => 'success',
-            'candidates_count' => count($candidates),
-            'is_deterministic' => $isDeterministic,
-            'is_ambiguous'     => $isAmbiguous,
-            'candidates'       => $candidates,
+            'status'                  => 'success',
+            'candidates_count'        => count($candidates),
+            'is_deterministic'        => $isDeterministic,
+            'is_ambiguous'            => $isAmbiguous,
+            'deterministic_candidate' => $deterministicCandidate,
+            'candidates'              => $candidates,
         ];
     }
 
@@ -783,6 +796,159 @@ class PlnStandardBomRuleService
             'pruned_translines'      => $prunedCount,
             'blocked_proposals'      => $proposalBlockedCount,
             'sample_cross_feeders'   => array_slice($illegalRows, 0, 10),
+        ];
+    }
+
+    /**
+     * Audits and optionally reconciles all legacy findings unlinked to authoritative assets.
+     *
+     * @param bool $isExecute
+     * @param float $radiusMeters
+     * @return array<string, mixed>
+     */
+    public function auditAndReconcileLegacyFindings(bool $isExecute = false, float $radiusMeters = 50.0): array
+    {
+        $allFindings = $this->db->table('temuan')
+            ->select('id, nomor_temuan, ulp_id, penyulang_id, section_id, asset_id, jenis_temuan, detail_temuan, noga, latitude, longitude, pelaksana')
+            ->where('deleted_at IS NULL')
+            ->orderBy('id', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $totalEvaluated = count($allFindings);
+        $alreadyLinked = 0;
+        $unlinkedCount = 0;
+        $noCoordinatesCount = 0;
+        $noCandidatesCount = 0;
+        $ambiguousCount = 0;
+        $deterministicCount = 0;
+        $autoLinkedCount = 0;
+        $ambiguousList = [];
+        $deterministicList = [];
+        $pelaksanaBreakdown = [];
+
+        foreach ($allFindings as $f) {
+            $pel = !empty($f['pelaksana']) ? strtoupper(trim($f['pelaksana'])) : 'TIDAK_TERCATAT';
+            if (!isset($pelaksanaBreakdown[$pel])) {
+                $pelaksanaBreakdown[$pel] = ['total' => 0, 'linked' => 0, 'unlinked' => 0, 'ambiguous' => 0, 'no_coord' => 0, 'no_candidate' => 0];
+            }
+            $pelaksanaBreakdown[$pel]['total']++;
+
+            if (!empty($f['asset_id']) && (int)$f['asset_id'] > 0) {
+                $alreadyLinked++;
+                $pelaksanaBreakdown[$pel]['linked']++;
+                continue;
+            }
+
+            $unlinkedCount++;
+            $pelaksanaBreakdown[$pel]['unlinked']++;
+
+            $lat = (float)($f['latitude'] ?? 0);
+            $lng = (float)($f['longitude'] ?? 0);
+
+            if ($lat == 0.0 || $lng == 0.0) {
+                $noCoordinatesCount++;
+                $pelaksanaBreakdown[$pel]['no_coord']++;
+                continue;
+            }
+
+            $candResult = $this->findCandidateAssets($f, $radiusMeters);
+            $cCount = $candResult['candidates_count'];
+
+            if ($cCount === 0) {
+                $noCandidatesCount++;
+                $pelaksanaBreakdown[$pel]['no_candidate']++;
+            } elseif ($candResult['is_deterministic']) {
+                $deterministicCount++;
+                $detCand = $candResult['deterministic_candidate'];
+                $item = [
+                    'temuan_id'      => (int)$f['id'],
+                    'nomor_temuan'   => $f['nomor_temuan'],
+                    'pelaksana'      => $f['pelaksana'],
+                    'detail_temuan'  => $f['detail_temuan'],
+                    'asset_id'       => (int)$detCand['id'],
+                    'kode_asset'     => $detCand['kode_asset'],
+                    'nama_asset'     => $detCand['nama_asset'],
+                    'distance_m'     => $detCand['distance_meters'],
+                    'match_reason'   => !empty($detCand['name_match']) ? 'Kecocokan Identitas Aset pada Deskripsi' : 'Tepat Satu Tiang dalam Radius Valid (<=25m)',
+                ];
+                $deterministicList[] = $item;
+
+                if ($isExecute) {
+                    $linkRes = $this->linkFindingToAsset((int)$f['id'], (int)$detCand['id']);
+                    if (($linkRes['status'] ?? '') === 'success') {
+                        $autoLinkedCount++;
+                    }
+                }
+            } else {
+                $ambiguousCount++;
+                $pelaksanaBreakdown[$pel]['ambiguous']++;
+                $candSummary = [];
+                foreach ($candResult['candidates'] as $c) {
+                    $candSummary[] = [
+                        'id'         => (int)$c['id'],
+                        'kode_asset' => $c['kode_asset'],
+                        'nama_asset' => $c['nama_asset'],
+                        'distance_m' => $c['distance_meters'],
+                        'section'    => $c['nama_section'] ?? '-',
+                    ];
+                }
+                $ambiguousList[] = [
+                    'temuan_id'     => (int)$f['id'],
+                    'nomor_temuan'  => $f['nomor_temuan'],
+                    'pelaksana'     => $f['pelaksana'],
+                    'detail_temuan' => $f['detail_temuan'],
+                    'coordinates'   => "{$f['latitude']}, {$f['longitude']}",
+                    'reason'        => sprintf("%d tiang terdeteksi dalam radius %.0fm tanpa identitas spesifik", $cCount, $radiusMeters),
+                    'candidates'    => $candSummary,
+                ];
+            }
+        }
+
+        // Specifically inspect key sample findings: #160, and #656, #657 if present
+        $sampleFindings = [];
+        $sampleIds = [160, 656, 657];
+        foreach ($sampleIds as $sid) {
+            $sf = $this->db->table('temuan')->where('id', $sid)->get()->getRowArray();
+            if ($sf) {
+                $bom = $this->resolveBomFromFinding($sf);
+                $cands = $this->findCandidateAssets($sf, $radiusMeters);
+                $sampleFindings[$sid] = [
+                    'found'                   => true,
+                    'nomor_temuan'            => $sf['nomor_temuan'],
+                    'pelaksana'               => $sf['pelaksana'],
+                    'detail_temuan'           => $sf['detail_temuan'],
+                    'noga_raw'                => $sf['noga'],
+                    'noga_clean'              => $this->sanitizeNoga($sf['noga'] ?? null, $sf['detail_temuan'] ?? ''),
+                    'asset_id'                => $sf['asset_id'],
+                    'bom_status'              => $bom['mapping_status'],
+                    'bom_component'           => $bom['finding_component_key'],
+                    'bom_materials'           => $bom['materials'],
+                    'candidate_count'         => $cands['candidates_count'] ?? 0,
+                    'is_deterministic'        => $cands['is_deterministic'] ?? false,
+                    'is_ambiguous'            => $cands['is_ambiguous'] ?? false,
+                    'candidates'              => $cands['candidates'] ?? [],
+                ];
+            } else {
+                $sampleFindings[$sid] = ['found' => false];
+            }
+        }
+
+        return [
+            'status'               => 'success',
+            'is_execute'           => $isExecute,
+            'total_findings'       => $totalEvaluated,
+            'already_linked'       => $alreadyLinked,
+            'unlinked_count'       => $unlinkedCount,
+            'no_coordinates'       => $noCoordinatesCount,
+            'no_candidate_radius'  => $noCandidatesCount,
+            'ambiguous_count'      => $ambiguousCount,
+            'deterministic_count'  => $deterministicCount,
+            'auto_linked_count'    => $autoLinkedCount,
+            'pelaksana_breakdown'  => $pelaksanaBreakdown,
+            'ambiguous_samples'    => array_slice($ambiguousList, 0, 10),
+            'deterministic_samples'=> array_slice($deterministicList, 0, 10),
+            'samples_verified'     => $sampleFindings,
         ];
     }
 }

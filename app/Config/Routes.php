@@ -161,6 +161,8 @@ $routes->get('api/audit-composite7', 'Api::auditComposite7');
 $routes->match(['GET', 'POST'], 'api/reconcile-composite7', 'Api::reconcileComposite7');
 $routes->get('api/finding-link-audit', 'Api::findingLinkAudit');
 $routes->match(['GET', 'POST'], 'api/finding-link-reconcile', 'Api::findingLinkReconcile');
+$routes->get('api/finding-links-audit', 'Api::findingLinksAudit');
+$routes->match(['GET', 'POST'], 'api/finding-links-reconcile', 'Api::findingLinksAudit');
 $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::translineAuditCrossfeeder');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');
@@ -711,6 +713,8 @@ $routes->get('api/audit-composite7', 'Api::auditComposite7');
 $routes->match(['GET', 'POST'], 'api/reconcile-composite7', 'Api::reconcileComposite7');
 $routes->get('api/finding-link-audit', 'Api::findingLinkAudit');
 $routes->match(['GET', 'POST'], 'api/finding-link-reconcile', 'Api::findingLinkReconcile');
+$routes->get('api/finding-links-audit', 'Api::findingLinksAudit');
+$routes->match(['GET', 'POST'], 'api/finding-links-reconcile', 'Api::findingLinksAudit');
 $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::translineAuditCrossfeeder');
 
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs

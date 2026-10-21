@@ -70,4 +70,36 @@ class PlnStandardBomRuleServiceTest extends CIUnitTestCase
         $this->assertEmpty($bom['materials']);
         $this->assertStringContainsString('Perlu Verifikasi', $bom['formatted_summary']);
     }
+
+    public function testDeterministicVsAmbiguousCandidateDetection()
+    {
+        $service = new PlnStandardBomRuleService();
+
+        // 1. Single candidate within 25 meters -> deterministic
+        $finding = [
+            'id'            => 101,
+            'detail_temuan' => 'Hotspot skun jumperan',
+            'latitude'      => -7.4300,
+            'longitude'     => 112.7300,
+            'penyulang_id'  => 1,
+        ];
+
+        // 2. Candidate with name match in text -> deterministic even if multiple
+        $findingWithName = [
+            'id'            => 102,
+            'detail_temuan' => 'Hotspot jumperan pada tiang GEDANGAN_42 fasa R',
+            'latitude'      => -7.4300,
+            'longitude'     => 112.7300,
+            'penyulang_id'  => 1,
+        ];
+
+        $bomHar = $service->resolveBomFromFinding([
+            'id'            => 201,
+            'jenis_temuan'  => 'ANOMALI',
+            'detail_temuan' => 'Cross arm unp bengkok tertimpa ranting',
+            'pelaksana'     => 'HAR Konstruksi',
+        ]);
+        $this->assertSame('RESOLVED', $bomHar['mapping_status']);
+        $this->assertSame('CROSSARM', $bomHar['finding_component_key']);
+    }
 }

@@ -918,4 +918,25 @@ class Api extends BaseController
             ]);
         }
     }
+
+    /**
+     * GET /api/finding-links-audit
+     * POST /api/finding-links-reconcile
+     * Full batch audit and deterministic asset linking across all legacy findings.
+     */
+    public function findingLinksAudit()
+    {
+        try {
+            $isExecute = (bool)($this->request->getGetPost('execute') ?? false);
+            $radius = (float)($this->request->getGetPost('radius') ?? 50.0);
+            $service = new \App\Services\PlnStandardBomRuleService();
+            $result = $service->auditAndReconcileLegacyFindings($isExecute, $radius);
+            return $this->response->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
 }

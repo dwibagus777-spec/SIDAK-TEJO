@@ -139,10 +139,10 @@ class BatchTranslineValidationService
             }
 
             // 5. Distance & Spatial Span Firewalls
-            $latA = (float)($srcAsset['latitude'] ?? 0);
-            $lonA = (float)($srcAsset['longitude'] ?? 0);
-            $latB = (float)($tgtAsset['latitude'] ?? 0);
-            $lonB = (float)($tgtAsset['longitude'] ?? 0);
+            $latA = (float)($srcAsset['latitude'] ?? $srcAsset['lat'] ?? 0);
+            $lonA = (float)($srcAsset['longitude'] ?? $srcAsset['lng'] ?? 0);
+            $latB = (float)($tgtAsset['latitude'] ?? $tgtAsset['lat'] ?? 0);
+            $lonB = (float)($tgtAsset['longitude'] ?? $tgtAsset['lng'] ?? 0);
 
             if (abs($latA) < 0.0001 || abs($lonA) < 0.0001 || abs($latB) < 0.0001 || abs($lonB) < 0.0001) {
                 $summary['rejected_count']++;
@@ -507,6 +507,8 @@ class BatchTranslineValidationService
                     'ulp_id'       => (int)($p['ulp_id'] ?? 0),
                     'lat'          => $lat,
                     'lng'          => $lng,
+                    'latitude'     => $lat,
+                    'longitude'    => $lng,
                 ];
             }
         }

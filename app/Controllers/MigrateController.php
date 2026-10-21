@@ -4067,12 +4067,46 @@ class MigrateController extends BaseController
                 $m29 = ($db->tableExists('temuan_materials') && $t29) ? $db->table('temuan_materials')->where('temuan_id', 29)->get()->getResultArray() : [];
             }
 
+            // Check what columns historical_feeder_interruptions has
+            $colsHfi = $db->tableExists('historical_feeder_interruptions') ? $db->getFieldNames('historical_feeder_interruptions') : [];
+            $currentDiag = [];
+            if ($db->tableExists('historical_feeder_interruptions')) {
+                // Check possible current columns
+                $candidateCols = [];
+                foreach ($colsHfi as $col) {
+                    if (stripos($col, 'amper') !== false || stripos($col, 'current') !== false || stripos($col, 'arus') !== false) {
+                        $candidateCols[] = $col;
+                    }
+                }
+                $currentDiag['candidate_columns'] = $candidateCols;
+
+                // Inspect 2025 and 2026 counts
+                foreach (['2025', '2026'] as $yr) {
+                    $yrStats = [
+                        'total_interruptions' => (int)($db->query("SELECT COUNT(*) cnt FROM historical_feeder_interruptions WHERE YEAR(event_date) = {$yr}")->getRowArray()['cnt'] ?? 0),
+                    ];
+                    if ($db->fieldExists('fault_current_amperes', 'historical_feeder_interruptions')) {
+                        $yrStats['fault_current_amperes_non_zero'] = (int)($db->query("SELECT COUNT(*) cnt FROM historical_feeder_interruptions WHERE YEAR(event_date) = {$yr} AND fault_current_amperes > 0")->getRowArray()['cnt'] ?? 0);
+                        $yrStats['fault_current_amperes_avg'] = (float)($db->query("SELECT AVG(fault_current_amperes) avg_val FROM historical_feeder_interruptions WHERE YEAR(event_date) = {$yr} AND fault_current_amperes > 0")->getRowArray()['avg_val'] ?? 0);
+                    }
+                    if ($db->fieldExists('raw_payload_json', 'historical_feeder_interruptions')) {
+                        $yrStats['raw_has_amper'] = (int)($db->query("SELECT COUNT(*) cnt FROM historical_feeder_interruptions WHERE YEAR(event_date) = {$yr} AND (raw_payload_json LIKE '%amper%' OR raw_payload_json LIKE '%AMPER%')")->getRowArray()['cnt'] ?? 0);
+                    }
+                    $currentDiag['stats_' . $yr] = $yrStats;
+                }
+
+                // Sample rows with raw_payload_json
+                $currentDiag['samples_2026'] = $db->query("SELECT id, event_date, feeder_name, fault_current_amperes, relay_trip_type, SUBSTRING(raw_payload_json, 1, 300) raw_snippet FROM historical_feeder_interruptions WHERE YEAR(event_date) = 2026 LIMIT 5")->getResultArray();
+                $currentDiag['samples_2025'] = $db->query("SELECT id, event_date, feeder_name, fault_current_amperes, relay_trip_type, SUBSTRING(raw_payload_json, 1, 300) raw_snippet FROM historical_feeder_interruptions WHERE YEAR(event_date) = 2025 LIMIT 5")->getResultArray();
+            }
+
             // Check what columns temuan_materials has
             $colsTm = $db->tableExists('temuan_materials') ? $db->getFieldNames('temuan_materials') : [];
 
             return $this->response->setJSON([
                 'status' => 'success',
                 'timestamp' => date('Y-m-d H:i:s'),
+                'current_diag' => $currentDiag,
                 'cols_temuan_materials' => $colsTm,
                 'diag_result' => $diagResult,
                 'master_materials' => $allMats,

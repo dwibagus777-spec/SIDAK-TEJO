@@ -1139,7 +1139,8 @@ class MigrateController extends BaseController
 
             // Seed Default Network Baseline if empty
             if ($db->tableExists('network_baselines')) {
-                $baseCheck = $db->query("SELECT id FROM network_baselines LIMIT 1")->getResultArray();
+                $baseCheckRes = $db->query("SELECT id FROM network_baselines LIMIT 1");
+                $baseCheck = ($baseCheckRes && is_object($baseCheckRes)) ? $baseCheckRes->getResultArray() : [];
                 if (empty($baseCheck)) {
                     $db->query("INSERT INTO `network_baselines` (`name`, `network_type`, `status`, `created_at`, `updated_at`) VALUES ('Baseline JTM Sidoarjo Kota (Feeder GEDANGAN)', 'JTM', 'ACTIVE', NOW(), NOW())");
                 }
@@ -1147,12 +1148,15 @@ class MigrateController extends BaseController
 
             // Sync active assets into baseline_assets if baseline has no assets attached
             if ($db->tableExists('network_baselines') && $db->tableExists('baseline_assets') && $db->tableExists('assets')) {
-                $baselines = $db->query("SELECT id FROM `network_baselines`")->getResultArray();
+                $baselinesRes = $db->query("SELECT id FROM `network_baselines`");
+                $baselines = ($baselinesRes && is_object($baselinesRes)) ? $baselinesRes->getResultArray() : [];
                 foreach ($baselines as $b) {
                     $bId = (int)$b['id'];
-                    $bAssetCheck = $db->query("SELECT id FROM `baseline_assets` WHERE `baseline_id` = {$bId} LIMIT 1")->getResultArray();
+                    $bAssetCheckRes = $db->query("SELECT id FROM `baseline_assets` WHERE `baseline_id` = {$bId} LIMIT 1");
+                    $bAssetCheck = ($bAssetCheckRes && is_object($bAssetCheckRes)) ? $bAssetCheckRes->getResultArray() : [];
                     if (empty($bAssetCheck)) {
-                        $assets = $db->query("SELECT id FROM `assets` WHERE `status` != 'DELETED' ORDER BY `id` ASC")->getResultArray();
+                        $assetsRes = $db->query("SELECT id FROM `assets` WHERE `deleted_at` IS NULL ORDER BY `id` ASC");
+                        $assets = ($assetsRes && is_object($assetsRes)) ? $assetsRes->getResultArray() : [];
                         $seq = 1;
                         foreach ($assets as $ast) {
                             $aId = (int)$ast['id'];
@@ -1164,13 +1168,22 @@ class MigrateController extends BaseController
             }
 
             $db->resetDataCache();
-            $relColumns = $db->query("SHOW COLUMNS FROM asset_relationships")->getResultArray();
-            $relColumnNames = array_column($relColumns, 'Field');
-            $assetColumns = $db->query("SHOW COLUMNS FROM assets")->getResultArray();
-            $assetColumnNames = array_column($assetColumns, 'Field');
-            $baseColumns = $db->query("SHOW COLUMNS FROM network_baselines")->getResultArray();
-            $baseColumnNames = array_column($baseColumns, 'Field');
-            $historyCheck = $db->query("SHOW TABLES LIKE 'asset_history'")->getResultArray();
+            $relColumnNames = [];
+            if ($db->tableExists('asset_relationships')) {
+                $q = $db->query("SHOW COLUMNS FROM asset_relationships");
+                $relColumnNames = ($q && is_object($q)) ? array_column($q->getResultArray(), 'Field') : [];
+            }
+            $assetColumnNames = [];
+            if ($db->tableExists('assets')) {
+                $q = $db->query("SHOW COLUMNS FROM assets");
+                $assetColumnNames = ($q && is_object($q)) ? array_column($q->getResultArray(), 'Field') : [];
+            }
+            $baseColumnNames = [];
+            if ($db->tableExists('network_baselines')) {
+                $q = $db->query("SHOW COLUMNS FROM network_baselines");
+                $baseColumnNames = ($q && is_object($q)) ? array_column($q->getResultArray(), 'Field') : [];
+            }
+            $historyCheck = $db->tableExists('asset_history') ? [1] : [];
 
             // STORAGE CAPABILITY AUDIT (TEST S1, S2, S3, S4)
             $persistentParent = '/home/u532206332/domains/sidaktejo.site/';

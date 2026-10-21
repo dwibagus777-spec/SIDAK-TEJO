@@ -235,7 +235,8 @@ class GisTranslineService
             ORDER BY tl.penyulang_id ASC, tl.id ASC
         ";
 
-        $translines = $this->db->query($sql)->getResultArray();
+        $res = $this->db->query($sql);
+        $translines = ($res && is_object($res)) ? $res->getResultArray() : [];
         $invalidSegments = [];
         $reanchorProposals = [];
         $now = date('Y-m-d H:i:s');

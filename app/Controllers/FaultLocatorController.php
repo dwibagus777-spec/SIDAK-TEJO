@@ -4,15 +4,21 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Services\FaultLocatorWorkspaceService;
+use App\Services\FaultFeedbackCalibrationService;
+use App\Services\FeederNetworkReadinessService;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class FaultLocatorController extends BaseController
 {
     protected $service;
+    protected $calibrationService;
+    protected $readinessService;
 
     public function __construct()
     {
         $this->service = new FaultLocatorWorkspaceService();
+        $this->calibrationService = new FaultFeedbackCalibrationService();
+        $this->readinessService = new FeederNetworkReadinessService();
     }
 
     /**
@@ -46,6 +52,9 @@ class FaultLocatorController extends BaseController
         ];
 
         $initialResult = $this->service->locateFault($defaultTelemetry);
+        $caseHistory = $this->service->getCaseHistory(null, 15);
+        $calibrationSummary = $this->calibrationService->getFeedbackDatasetSummary();
+        $readinessSummary = $this->readinessService->auditAllFeeders($defaultUlpId);
 
         $data = [
             'title'              => 'Fault Locator Command Center Workspace (D3)',
@@ -56,7 +65,10 @@ class FaultLocatorController extends BaseController
             'conductorCatalog'   => FaultLocatorWorkspaceService::CONDUCTOR_CATALOG,
             'interruptions'      => $interruptions,
             'telemetry'          => $defaultTelemetry,
-            'result'             => $initialResult
+            'result'             => $initialResult,
+            'caseHistory'        => $caseHistory,
+            'calibrationSummary' => $calibrationSummary,
+            'readinessSummary'   => $readinessSummary,
         ];
 
         return view('fault_locator/workspace', $data);
@@ -143,6 +155,109 @@ class FaultLocatorController extends BaseController
         return $this->response->setJSON([
             'status' => 'success',
             'data'   => $bundle
+        ]);
+    }
+
+    /**
+     * API: Save Fault Analysis Case (Track A)
+     */
+    public function saveCase(): ResponseInterface
+    {
+        $json = $this->request->getJSON(true) ?? $this->request->getPost();
+        if (empty($json)) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'Data hasil analisis gangguan wajib dikirim.'
+            ]);
+        }
+
+        $user = session()->get('user') ?? ['username' => 'OPERATOR'];
+        $result = $this->service->saveFaultCase($json, $user);
+
+        return $this->response->setJSON($result);
+    }
+
+    /**
+     * API: Record Field Inspection Outcome (Track A & B)
+     * Positive: CONFIRMED (found_asset_id, component_damaged, etc.)
+     * Negative: NOT_FOUND (inspected_area_notes, not_found_reason)
+     * Ambiguous: AMBIGUOUS
+     */
+    public function recordOutcome(): ResponseInterface
+    {
+        $json = $this->request->getJSON(true) ?? $this->request->getPost();
+        $caseId = !empty($json['case_id']) ? (int)$json['case_id'] : 0;
+
+        if ($caseId <= 0) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'ID kasus gangguan (case_id) tidak valid.'
+            ]);
+        }
+
+        $user = session()->get('user') ?? ['username' => 'PETUGAS_PATROLI'];
+        $result = $this->service->recordFieldOutcome($caseId, $json, $user);
+
+        return $this->response->setJSON($result);
+    }
+
+    /**
+     * API: Get Historical Cases List
+     */
+    public function caseHistory(): ResponseInterface
+    {
+        $penyulangId = $this->request->getGet('penyulang_id');
+        $limit = (int)($this->request->getGet('limit') ?? 25);
+        $cases = $this->service->getCaseHistory($penyulangId ? (int)$penyulangId : null, $limit);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $cases
+        ]);
+    }
+
+    /**
+     * API: Get Detailed Case Information
+     */
+    public function caseDetails(int $id): ResponseInterface
+    {
+        $details = $this->service->getCaseDetails($id);
+        if (!$details) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 'error',
+                'message' => 'Kasus gangguan tidak ditemukan.'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $details
+        ]);
+    }
+
+    /**
+     * API: Controlled AI Feedback Calibration Status (Track B)
+     */
+    public function calibrationStatus(): ResponseInterface
+    {
+        $summary = $this->calibrationService->getFeedbackDatasetSummary();
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $summary
+        ]);
+    }
+
+    /**
+     * API: Feeder Readiness and Transline Integrity Audit (Track C)
+     */
+    public function feederReadiness(): ResponseInterface
+    {
+        $ulpId = $this->request->getGet('ulp_id');
+        $report = $this->readinessService->auditAllFeeders($ulpId ? (int)$ulpId : null);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $report
         ]);
     }
 }

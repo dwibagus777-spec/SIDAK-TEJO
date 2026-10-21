@@ -1265,4 +1265,10 @@ $routes->get('api/fault-locator/protection-devices/(:num)', 'FaultLocatorControl
 $routes->post('api/fault-locator/locate', 'FaultLocatorController::locateFault');
 $routes->post('api/fault-locator/dispatch', 'FaultLocatorController::dispatch');
 $routes->get('api/fault-locator/forensic-bundle/(:any)', 'FaultLocatorController::forensicBundle/$1');
+$routes->post('api/fault-locator/save-case', 'FaultLocatorController::saveCase');
+$routes->post('api/fault-locator/record-outcome', 'FaultLocatorController::recordOutcome');
+$routes->get('api/fault-locator/case-history', 'FaultLocatorController::caseHistory');
+$routes->get('api/fault-locator/case-details/(:num)', 'FaultLocatorController::caseDetails/$1');
+$routes->get('api/fault-locator/calibration-status', 'FaultLocatorController::calibrationStatus');
+$routes->get('api/fault-locator/feeder-readiness', 'FaultLocatorController::feederReadiness');
 

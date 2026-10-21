@@ -484,6 +484,9 @@
                             <strong class="text-light">Teruskan Hasil Gangguan ke Tim Lapangan & GIS</strong>
                         </div>
                         <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm fw-bold" id="btnSaveCase">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Kasus
+                            </button>
                             <a id="btnOpenGis" href="<?= esc($result['gis_url'] ?? site_url('gis')) ?>" target="_blank" class="btn btn-outline-info btn-sm fw-bold">
                                 <i class="fa-solid fa-map-location-dot me-1"></i> Buka di Peta GIS
                             </a>
@@ -557,6 +560,276 @@
                 </div>
             </div>
 
+            <!-- Controlled AI Feedback Calibration & Feeder Readiness (Track B & C) -->
+            <div class="card-fl">
+                <div class="card-fl-header">
+                    <span><i class="fa-solid fa-brain text-warning me-2"></i> Kalibrasi AI Umpan Balik Terkontrol & Kesiapan Jaringan Penyulang</span>
+                    <span class="badge <?= ($calibrationSummary['is_calibration_unlocked'] ?? false) ? 'bg-success' : 'bg-warning text-dark' ?>">
+                        <i class="fa-solid fa-shield-halved me-1"></i> <?= esc($calibrationSummary['calibration_status'] ?? 'DATA_COLLECTION_MODE') ?>
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <div class="kpi-box">
+                                <div class="kpi-value text-warning"><?= esc($calibrationSummary['confirmed_samples'] ?? 0) ?> / <?= esc($calibrationSummary['min_required_samples'] ?? 15) ?></div>
+                                <div class="kpi-label">Sampel Terkonfirmasi</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="kpi-box">
+                                <div class="kpi-value text-info"><?= ($calibrationSummary['mean_absolute_error_meters'] !== null) ? number_format($calibrationSummary['mean_absolute_error_meters'], 1) . ' m' : 'N/A' ?></div>
+                                <div class="kpi-label">Mean Absolute Error (MAE)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="kpi-box">
+                                <div class="kpi-value text-success"><?= esc($calibrationSummary['accuracy_rate_percent'] ?? 0) ?>%</div>
+                                <div class="kpi-label">Akurasi Toleransi (≤250m)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="kpi-box">
+                                <div class="kpi-value text-light"><?= esc($readinessSummary['summary']['ready_count'] ?? 0) ?> / <?= esc($readinessSummary['summary']['total_feeders'] ?? 134) ?></div>
+                                <div class="kpi-label">Penyulang Siap Terverifikasi</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-3 bg-dark border border-secondary mb-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <strong class="text-light small"><i class="fa-solid fa-layer-group text-info me-1"></i> Segregasi Kumpulan Data Lapangan (Audit Trail)</strong>
+                            <span class="badge bg-secondary font-monospace" style="font-size:0.75rem;">Model: <?= esc($calibrationSummary['active_model_version'] ?? 'CALIB-V1-PHYSICS-BASELINE') ?></span>
+                        </div>
+                        <div class="row g-2 text-center small">
+                            <div class="col-3">
+                                <div class="p-2 border border-success rounded bg-dark">
+                                    <div class="text-success fw-bold"><?= esc($calibrationSummary['segregated_datasets']['CONFIRMED'] ?? 0) ?></div>
+                                    <div class="text-secondary" style="font-size:0.7rem;">TERKONFIRMASI</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 border border-danger rounded bg-dark">
+                                    <div class="text-danger fw-bold"><?= esc($calibrationSummary['segregated_datasets']['NOT_FOUND'] ?? 0) ?></div>
+                                    <div class="text-secondary" style="font-size:0.7rem;">TIDAK DITEMUKAN</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 border border-warning rounded bg-dark">
+                                    <div class="text-warning fw-bold"><?= esc($calibrationSummary['segregated_datasets']['AMBIGUOUS_VERIFIED'] ?? 0) ?></div>
+                                    <div class="text-secondary" style="font-size:0.7rem;">AMBIGU / VERIFIKASI</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 border border-info rounded bg-dark">
+                                    <div class="text-info fw-bold"><?= esc($calibrationSummary['case_follow_up_statuses']['MENUNGGU_PEMERIKSAAN'] ?? 0) ?></div>
+                                    <div class="text-secondary" style="font-size:0.7rem;">MENUNGGU PATROLI</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-secondary" style="font-size:0.75rem;">
+                            <i class="fa-solid fa-lock text-warning me-1"></i> <strong>Invarian Kalibrasi:</strong> Formula fisika 20 kV baseline terlindungi secara deterministik dari perubahan liar. Parameter hanya dapat dikalibrasi setelah minimal 15 sampel lapangan terkonfirmasi terkumpul.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historical Fault Cases & Patrol Findings (Track A) -->
+            <div class="card-fl">
+                <div class="card-fl-header">
+                    <span><i class="fa-solid fa-clock-rotate-left text-info me-2"></i> Riwayat Kasus Analisis & Rekam Hasil Patroli Lapangan</span>
+                    <span class="badge bg-dark border border-secondary text-light" id="caseHistoryCount">
+                        <?= count($caseHistory ?? []) ?> Kasus
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-custom-dark table-sm table-bordered align-middle mb-0" id="tableCaseHistory">
+                            <thead>
+                                <tr>
+                                    <th style="width: 14%">No. Kasus</th>
+                                    <th style="width: 16%">Penyulang & Sumber</th>
+                                    <th style="width: 14%">Arus Gangguan</th>
+                                    <th style="width: 12%">Prediksi Jarak</th>
+                                    <th style="width: 16%">Status Patroli</th>
+                                    <th style="width: 16%">Hasil Temuan Lapangan</th>
+                                    <th style="width: 12%">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="caseHistoryBody">
+                                <?php if (!empty($caseHistory)): ?>
+                                    <?php foreach ($caseHistory as $c): ?>
+                                        <tr>
+                                            <td class="font-monospace text-info small fw-bold"><?= esc($c['case_number']) ?></td>
+                                            <td>
+                                                <div class="text-light fw-bold"><?= esc($c['nama_penyulang'] ?? 'Feeder #' . $c['penyulang_id']) ?></div>
+                                                <div class="text-secondary" style="font-size:0.72rem;"><?= esc($c['source_type']) ?> &bull; <?= esc($c['fault_type']) ?></div>
+                                            </td>
+                                            <td>
+                                                <span class="text-warning small"><?= number_format($c['current_r'] ?? 0) ?> / <?= number_format($c['current_s'] ?? 0) ?> / <?= number_format($c['current_t'] ?? 0) ?> A</span>
+                                                <div class="text-secondary" style="font-size:0.72rem;">N: <?= number_format($c['current_n'] ?? 0) ?> A</div>
+                                            </td>
+                                            <td class="fw-bold text-light"><?= number_format($c['target_distance_meters'] ?? 0, 1) ?> m</td>
+                                            <td>
+                                                <?php
+                                                    $st = $c['follow_up_status'] ?? 'MENUNGGU_PEMERIKSAAN';
+                                                    $badgeClass = 'bg-secondary';
+                                                    if ($st === 'GANGGUAN_DITEMUKAN') $badgeClass = 'bg-success';
+                                                    elseif ($st === 'TIDAK_DITEMUKAN') $badgeClass = 'bg-danger';
+                                                    elseif ($st === 'PERLU_VERIFIKASI') $badgeClass = 'bg-warning text-dark';
+                                                ?>
+                                                <span class="badge <?= $badgeClass ?> small"><?= esc(str_replace('_', ' ', $st)) ?></span>
+                                            </td>
+                                            <td class="small">
+                                                <?php if (!empty($c['latest_finding'])): ?>
+                                                    <?php $lf = $c['latest_finding']; ?>
+                                                    <?php if ($lf['outcome_type'] === 'CONFIRMED'): ?>
+                                                        <strong class="text-success"><i class="fa-solid fa-check me-1"></i><?= esc($lf['component_damaged'] ?: 'Ditemukan') ?></strong>
+                                                        <div class="text-secondary" style="font-size:0.7rem;">&Delta; Jarak: <?= esc($lf['distance_error_meters']) ?>m</div>
+                                                    <?php elseif ($lf['outcome_type'] === 'NOT_FOUND'): ?>
+                                                        <strong class="text-danger"><i class="fa-solid fa-xmark me-1"></i>Tidak Ditemukan</strong>
+                                                        <div class="text-secondary" style="font-size:0.7rem;"><?= esc($lf['not_found_reason'] ?: 'Penyisiran nihil') ?></div>
+                                                    <?php else: ?>
+                                                        <span class="text-warning"><?= esc($lf['outcome_type']) ?></span>
+                                                    <?php endif; ?>
+                                                <?php else: ?>
+                                                    <span class="text-secondary">Belum ada inspeksi</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-outline-warning btn-sm py-0 px-2 btn-record-outcome" data-case-id="<?= esc($c['id']) ?>" data-case-number="<?= esc($c['case_number']) ?>" data-feeder-name="<?= esc($c['nama_penyulang'] ?? '') ?>">
+                                                    <i class="fa-solid fa-clipboard-check me-1"></i> Catat
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="7" class="text-center text-secondary py-3">Belum ada riwayat kasus analisis gangguan tersimpan.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Catat Hasil Patroli / Outcome Lapangan -->
+            <div class="modal fade" id="modalRecordOutcome" tabindex="-1" aria-labelledby="modalRecordOutcomeLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content bg-dark text-light border border-secondary">
+                        <div class="modal-header border-secondary">
+                            <h5 class="modal-title text-warning" id="modalRecordOutcomeLabel">
+                                <i class="fa-solid fa-clipboard-check me-2"></i> Rekam Hasil Patroli Lapangan
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <form id="formRecordOutcome">
+                                <input type="hidden" id="modalCaseId" name="case_id">
+
+                                <div class="alert alert-dark border border-secondary p-3 mb-3">
+                                    <div class="row g-2 small">
+                                        <div class="col-md-6">No. Kasus: <strong class="text-info" id="modalCaseNumberDisplay">-</strong></div>
+                                        <div class="col-md-6">Penyulang: <strong class="text-light" id="modalFeederDisplay">-</strong></div>
+                                    </div>
+                                </div>
+
+                                <!-- Jenis Hasil Outcome -->
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small fw-bold">HASIL TEMUAN PATROLI LAPANGAN</label>
+                                    <div class="d-flex gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="outcomeType" id="outConfirmed" value="CONFIRMED" checked>
+                                            <label class="form-check-label text-success fw-bold small" for="outConfirmed">
+                                                <i class="fa-solid fa-circle-check me-1"></i> Gangguan Ditemukan
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="outcomeType" id="outNotFound" value="NOT_FOUND">
+                                            <label class="form-check-label text-danger fw-bold small" for="outNotFound">
+                                                <i class="fa-solid fa-circle-xmark me-1"></i> Tidak Ditemukan (Nihil)
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="outcomeType" id="outAmbiguous" value="AMBIGUOUS">
+                                            <label class="form-check-label text-warning fw-bold small" for="outAmbiguous">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Perlu Verifikasi Lanjutan
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bagian Jika Gangguan Ditemukan (CONFIRMED) -->
+                                <div id="sectionConfirmed">
+                                    <div class="mb-3">
+                                        <label class="form-label text-secondary small">DESKRIPSI KERUSAKAN KOMPONEN</label>
+                                        <input type="text" class="form-control bg-dark text-light border-secondary" id="modalComponentDamaged" placeholder="Contoh: Bunglon menempel pada pin isolator fasa R / Flashover kawat">
+                                    </div>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label text-secondary small">ID ASET TIANG TERDAPAT GANGGUAN (OPSIONAL)</label>
+                                            <input type="number" class="form-control bg-dark text-light border-secondary" id="modalFoundAssetId" placeholder="Masukkan Asset ID jika diketahui">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label text-secondary small">JARAK LAPANGAN AKTUAL (METER)</label>
+                                            <input type="number" class="form-control bg-dark text-light border-secondary" id="modalActualDistanceM" placeholder="Jarak speedometer / GPS dari acuan">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="modalIsComponentMatch" checked>
+                                            <label class="form-check-label text-light small" for="modalIsComponentMatch">
+                                                Kerusakan komponen sesuai dengan klasifikasi gangguan sistem
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bagian Jika Tidak Ditemukan (NOT_FOUND) -->
+                                <div id="sectionNotFound" style="display: none;">
+                                    <div class="mb-3">
+                                        <label class="form-label text-secondary small">JALUR / BENTANG YANG TELAH DISISIR</label>
+                                        <textarea class="form-control bg-dark text-light border-secondary" id="modalInspectedAreaNotes" rows="2" placeholder="Catat tiang awal sampai tiang akhir yang telah dipatroli secara visual"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label text-secondary small">ALASAN GANGGUAN TIDAK DITEMUKAN</label>
+                                        <select class="form-select bg-dark text-light border-secondary" id="modalNotFoundReason">
+                                            <option value="SURJA_PETIR_HILANG_SENDIRI">Surja Petir / Gangguan Temporer Hilang Sendiri</option>
+                                            <option value="BINATANG_TERLEPAS">Binatang / Sentuhan Dahan Pohon Lepas Sendiri</option>
+                                            <option value="ROW_BERSIH_TIDAK_ADA_FLASH">ROW Bersih & Tidak Ada Bekas Flashover</option>
+                                            <option value="KENDALA_MEDAN_AKSES">Kendala Akses Medan / Malam Hari</option>
+                                            <option value="LAINNYA">Lainnya</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Meta Data Petugas & Waktu -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-secondary small">NAMA PETUGAS PATROLI / YANTEK</label>
+                                        <input type="text" class="form-control bg-dark text-light border-secondary" id="modalTechnicianName" value="TIM_YANTEK_DISTRIBUSI">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-secondary small">WAKTU PEMERIKSAAN</label>
+                                        <input type="datetime-local" class="form-control bg-dark text-light border-secondary" id="modalInspectedAt" value="<?= date('Y-m-d\TH:i') ?>">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small">CATATAN TEMUAN PATROLI</label>
+                                    <textarea class="form-control bg-dark text-light border-secondary" id="modalFindingNotes" rows="2" placeholder="Catatan detail temuan patroli di lapangan..."></textarea>
+                                </div>
+
+                                <button type="button" class="btn btn-warning w-100 fw-bold py-2" id="btnSubmitOutcome">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> SIMPAN HASIL PEMERIKSAAN
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>
@@ -570,6 +843,7 @@
     let currentGisUrl = '<?= esc($result['gis_url'] ?? site_url('gis')) ?>';
     let currentLat = <?= ($result['fault_point'] && isset($result['fault_point']['lat'])) ? (float)$result['fault_point']['lat'] : -7.4478 ?>;
     let currentLng = <?= ($result['fault_point'] && isset($result['fault_point']['lng'])) ? (float)$result['fault_point']['lng'] : 112.7183 ?>;
+    let lastCalculatedResult = <?= json_encode($result) ?>;
 
     // Initialize Leaflet Map
     const map = L.map('miniMap').setView([currentLat, currentLng], 16);
@@ -771,7 +1045,130 @@
         }
     });
 
+    // Save Case Action (Track A)
+    document.getElementById('btnSaveCase').addEventListener('click', async function() {
+        if (!lastCalculatedResult) {
+            alert('Belum ada hasil analisis gangguan yang dapat disimpan.');
+            return;
+        }
+
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...';
+
+        try {
+            const res = await fetch('<?= site_url('api/fault-locator/save-case') ?>', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(lastCalculatedResult)
+            });
+            const json = await res.json();
+            if (json.status === 'success') {
+                alert('Kasus Gangguan ' + (json.case_number || '') + ' berhasil disimpan!');
+                window.location.reload();
+            } else {
+                alert('Gagal menyimpan kasus: ' + (json.message || 'Unknown error'));
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Terjadi kesalahan saat menyimpan kasus gangguan.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> Simpan Kasus';
+        }
+    });
+
+    // Outcome Type Toggle in Modal
+    document.querySelectorAll('input[name="outcomeType"]').forEach(r => {
+        r.addEventListener('change', function() {
+            const secConf = document.getElementById('sectionConfirmed');
+            const secNotFound = document.getElementById('sectionNotFound');
+            if (this.value === 'CONFIRMED') {
+                secConf.style.display = 'block';
+                secNotFound.style.display = 'none';
+            } else if (this.value === 'NOT_FOUND') {
+                secConf.style.display = 'none';
+                secNotFound.style.display = 'block';
+            } else {
+                secConf.style.display = 'block';
+                secNotFound.style.display = 'none';
+            }
+        });
+    });
+
+    // Open Record Outcome Modal
+    document.querySelectorAll('.btn-record-outcome').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const caseId = this.getAttribute('data-case-id');
+            const caseNum = this.getAttribute('data-case-number');
+            const feederName = this.getAttribute('data-feeder-name');
+
+            document.getElementById('modalCaseId').value = caseId;
+            document.getElementById('modalCaseNumberDisplay').innerText = caseNum;
+            document.getElementById('modalFeederDisplay').innerText = feederName;
+
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRecordOutcome'));
+            modal.show();
+        });
+    });
+
+    // Submit Patrol Outcome (Track A & B)
+    document.getElementById('btnSubmitOutcome').addEventListener('click', async function() {
+        const caseId = document.getElementById('modalCaseId').value;
+        if (!caseId) {
+            alert('Kasus tidak valid.');
+            return;
+        }
+
+        const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
+        const payload = {
+            case_id: parseInt(caseId),
+            outcome_type: outcomeType,
+            technician_name: document.getElementById('modalTechnicianName').value,
+            inspected_at: document.getElementById('modalInspectedAt').value,
+            finding_notes: document.getElementById('modalFindingNotes').value,
+        };
+
+        if (outcomeType === 'CONFIRMED') {
+            const astId = document.getElementById('modalFoundAssetId').value;
+            const actDist = document.getElementById('modalActualDistanceM').value;
+            payload.found_asset_id = astId ? parseInt(astId) : null;
+            payload.actual_distance_m = actDist ? parseFloat(actDist) : null;
+            payload.component_damaged = document.getElementById('modalComponentDamaged').value;
+            payload.is_component_match = document.getElementById('modalIsComponentMatch').checked ? 1 : 0;
+        } else if (outcomeType === 'NOT_FOUND') {
+            payload.inspected_area_notes = document.getElementById('modalInspectedAreaNotes').value;
+            payload.not_found_reason = document.getElementById('modalNotFoundReason').value;
+        }
+
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...';
+
+        try {
+            const res = await fetch('<?= site_url('api/fault-locator/record-outcome') ?>', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (json.status === 'success') {
+                alert('Hasil patroli lapangan berhasil dicatat!\nStatus: ' + json.follow_up_status);
+                window.location.reload();
+            } else {
+                alert('Gagal mencatat hasil: ' + (json.message || 'Unknown error'));
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Terjadi kesalahan saat menyimpan hasil patroli.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> SIMPAN HASIL PEMERIKSAAN';
+        }
+    });
+
     function updateResultUI(data) {
+        lastCalculatedResult = data;
         currentCaseUuid = data.case_uuid;
         currentGisUrl = data.gis_url;
 

@@ -475,7 +475,7 @@ class PlnStandardBomRuleService
         foreach ($bomResult['materials'] as $item) {
             $materialId = $matIdMap[$item['canonical_code']] ?? null;
             if (!$materialId) {
-                $mRow = $this->db->table('master_materials')->where('canonical_code', $item['canonical_code'])->get()->getRowArray();
+                $mRow = $this->db->table('master_materials')->where('material_code', $item['canonical_code'])->get()->getRowArray();
                 if ($mRow) {
                     $materialId = (int)$mRow['id'];
                 } else {

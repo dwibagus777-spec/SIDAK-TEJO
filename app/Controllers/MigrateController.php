@@ -4009,7 +4009,7 @@ class MigrateController extends BaseController
             }
 
             // Check what master_materials has
-            $allMats = $db->table('master_materials')->select('id, canonical_code, nama_material, satuan')->get()->getResultArray();
+            $allMats = $db->table('master_materials')->select('id, material_code, nama_material, satuan')->get()->getResultArray();
 
             // 1. Assets count
             $activeAssets = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();

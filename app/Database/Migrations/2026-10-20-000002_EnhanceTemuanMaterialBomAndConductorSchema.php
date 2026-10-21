@@ -452,9 +452,14 @@ class EnhanceTemuanMaterialBomAndConductorSchema extends Migration
                     if (strtoupper((string)$r['jenis_temuan']) === 'HOTSPOT') {
                         $matchedCodes['CANON-HDW-025'] = 1.0;
                         $primaryKey = 'SKUN_KONEKTOR';
+                    } elseif (strtoupper((string)$r['jenis_temuan']) === 'ROW' || preg_match('/(pohon|bambu|sono|mangga|ranting|tumbang|dahan|row)/i', (string)$r['detail_temuan'])) {
+                        // ROW findings are operational tree pruning / clearance - require 0 physical pole hardware
+                        $matchedCodes = [];
+                        $primaryKey = 'ROW';
                     } else {
-                        $matchedCodes['CANON-HDW-003'] = 1.0;
-                        $primaryKey = 'KONSTRUKSI_LAIN';
+                        // Unmatched findings require field verification rather than arbitrary hardware assignment
+                        $matchedCodes = [];
+                        $primaryKey = 'PERLU_VERIFIKASI';
                     }
                 }
 

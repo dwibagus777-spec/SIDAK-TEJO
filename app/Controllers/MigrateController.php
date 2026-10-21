@@ -4154,4 +4154,169 @@ class MigrateController extends BaseController
             ]);
         }
     }
+
+    public function reconcileAmperAndBom()
+    {
+        $db = \Config\Database::connect('default');
+        try {
+            // 1. Part A: Backfill fault_current_amperes from reference JSON
+            $refPath = APPPATH . 'Database/Seeds/interruption_amper_reference.json';
+            $refItems = file_exists($refPath) ? json_decode(file_get_contents($refPath), true) : [];
+
+            $amperMatched = 0;
+            $amperUpdated = 0;
+            $amperSkipped = 0;
+            $updatedIds = [];
+
+            if (!empty($refItems) && $db->tableExists('historical_feeder_interruptions') && $db->fieldExists('fault_current_amperes', 'historical_feeder_interruptions')) {
+                // Pre-fetch historical interruptions for 2025 and 2026
+                $hfiRows = $db->query("SELECT id, event_date, UPPER(TRIM(feeder_name)) fdr, interruption_started_at, raw_payload_json, fault_current_amperes FROM historical_feeder_interruptions WHERE YEAR(event_date) IN (2025, 2026)")->getResultArray();
+
+                // Group by date + feeder
+                $grouped = [];
+                foreach ($hfiRows as $h) {
+                    $key = $h['event_date'] . '|' . $h['fdr'];
+                    $grouped[$key][] = $h;
+                }
+
+                $hasKwh = $db->fieldExists('energy_not_supplied_kwh', 'historical_feeder_interruptions');
+
+                foreach ($refItems as $item) {
+                    $valA = isset($item['a']) ? (float)$item['a'] : null;
+                    if ($valA === null || $valA <= 0) {
+                        $amperSkipped++;
+                        continue;
+                    }
+
+                    $dateKey = $item['d'] . '|' . strtoupper(trim((string)$item['f']));
+                    if (!isset($grouped[$dateKey]) || empty($grouped[$dateKey])) {
+                        continue;
+                    }
+
+                    // Best match among candidates on same date & feeder
+                    $candidates = &$grouped[$dateKey];
+                    $targetIndex = null;
+
+                    if (count($candidates) === 1) {
+                        $targetIndex = 0;
+                    } else {
+                        // Match by jam_lepas or narrative
+                        $jlClean = !empty($item['jl']) ? str_replace('.', ':', $item['jl']) : null;
+                        $narrSnippet = !empty($item['n']) ? trim((string)$item['n']) : null;
+
+                        foreach ($candidates as $cIdx => $cand) {
+                            if (in_array($cand['id'], $updatedIds, true)) {
+                                continue;
+                            }
+
+                            $matchedByDetail = false;
+                            if ($jlClean && !empty($cand['interruption_started_at']) && str_contains($cand['interruption_started_at'], $jlClean)) {
+                                $matchedByDetail = true;
+                            } elseif ($narrSnippet && !empty($cand['raw_payload_json']) && stripos($cand['raw_payload_json'], $narrSnippet) !== false) {
+                                $matchedByDetail = true;
+                            }
+
+                            if ($matchedByDetail) {
+                                $targetIndex = $cIdx;
+                                break;
+                            }
+                        }
+
+                        // If not specifically matched by detail, take first unassigned candidate
+                        if ($targetIndex === null) {
+                            foreach ($candidates as $cIdx => $cand) {
+                                if (!in_array($cand['id'], $updatedIds, true)) {
+                                    $targetIndex = $cIdx;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if ($targetIndex !== null) {
+                        $targetRow = $candidates[$targetIndex];
+                        $targetId = (int)$targetRow['id'];
+
+                        $upd = ['fault_current_amperes' => $valA];
+                        if ($hasKwh && !empty($item['k']) && (float)$item['k'] > 0) {
+                            $upd['energy_not_supplied_kwh'] = (float)$item['k'];
+                        }
+
+                        $db->table('historical_feeder_interruptions')->where('id', $targetId)->update($upd);
+                        $updatedIds[] = $targetId;
+                        $amperMatched++;
+                        $amperUpdated++;
+                    }
+                }
+            }
+
+            // Stats after update
+            $stats2025 = $db->tableExists('historical_feeder_interruptions') ? $db->query("SELECT COUNT(*) total, COUNT(CASE WHEN fault_current_amperes > 0 THEN 1 END) non_zero, ROUND(AVG(NULLIF(fault_current_amperes, 0)), 1) avg_curr FROM historical_feeder_interruptions WHERE YEAR(event_date) = 2025")->getRowArray() : [];
+            $stats2026 = $db->tableExists('historical_feeder_interruptions') ? $db->query("SELECT COUNT(*) total, COUNT(CASE WHEN fault_current_amperes > 0 THEN 1 END) non_zero, ROUND(AVG(NULLIF(fault_current_amperes, 0)), 1) avg_curr FROM historical_feeder_interruptions WHERE YEAR(event_date) = 2026")->getRowArray() : [];
+
+            $monthly2025 = $db->tableExists('historical_feeder_interruptions') ? $db->query("SELECT MONTH(event_date) mo, COUNT(*) cnt, COUNT(CASE WHEN fault_current_amperes > 0 THEN 1 END) cnt_curr, ROUND(AVG(NULLIF(fault_current_amperes, 0)), 1) avg_curr FROM historical_feeder_interruptions WHERE YEAR(event_date) = 2025 GROUP BY mo ORDER BY mo")->getResultArray() : [];
+            $monthly2026 = $db->tableExists('historical_feeder_interruptions') ? $db->query("SELECT MONTH(event_date) mo, COUNT(*) cnt, COUNT(CASE WHEN fault_current_amperes > 0 THEN 1 END) cnt_curr, ROUND(AVG(NULLIF(fault_current_amperes, 0)), 1) avg_curr FROM historical_feeder_interruptions WHERE YEAR(event_date) = 2026 GROUP BY mo ORDER BY mo")->getResultArray() : [];
+
+            // 2. Part B: Audit & Clean 20 Arm Ties on Kahuripan
+            $kFeeder = $db->table('penyulang')->like('nama_penyulang', 'KAHURIPAN')->get()->getRowArray();
+            $kAudit = [];
+            $kDeletedCount = 0;
+            $kUpdatedTemuanCount = 0;
+
+            if ($kFeeder && $db->tableExists('temuan') && $db->tableExists('temuan_materials')) {
+                $armTies = $db->query("SELECT tm.id tm_id, tm.temuan_id, t.nomor_temuan, t.jenis_temuan, t.detail_temuan, tm.canonical_code_snapshot, tm.quantity, tm.source_mode FROM temuan_materials tm JOIN temuan t ON t.id = tm.temuan_id WHERE t.penyulang_id = " . (int)$kFeeder['id'] . " AND t.deleted_at IS NULL AND tm.canonical_code_snapshot = 'CANON-HDW-003' AND tm.source_mode = 'BOM_CLASSIFIED'")->getResultArray();
+
+                $kAudit['found_arm_ties'] = count($armTies);
+                $kAudit['records'] = $armTies;
+
+                $tmIdsToDelete = array_map(fn($r) => (int)$r['tm_id'], $armTies);
+                $temuanIdsToUpdate = array_values(array_unique(array_map(fn($r) => (int)$r['temuan_id'], $armTies)));
+
+                if (!empty($tmIdsToDelete)) {
+                    $db->table('temuan_materials')->whereIn('id', $tmIdsToDelete)->delete();
+                    $kDeletedCount = count($tmIdsToDelete);
+                }
+
+                if (!empty($temuanIdsToUpdate)) {
+                    $db->table('temuan')->whereIn('id', $temuanIdsToUpdate)->update([
+                        'finding_component_key' => 'ROW',
+                        'material' => 'PERLU VERIFIKASI LAPANGAN (Pekerjaan ROW / Pemangkasan Pohon)'
+                    ]);
+                    $kUpdatedTemuanCount = count($temuanIdsToUpdate);
+                }
+
+                // Verify Kahuripan status
+                $kAudit['remaining_arm_ties'] = (int)($db->query("SELECT COUNT(*) cnt FROM temuan_materials tm JOIN temuan t ON t.id = tm.temuan_id WHERE t.penyulang_id = " . (int)$kFeeder['id'] . " AND t.deleted_at IS NULL AND tm.canonical_code_snapshot = 'CANON-HDW-003'")->getRowArray()['cnt'] ?? 0);
+                $kAudit['remaining_materials'] = (int)($db->query("SELECT COUNT(*) cnt FROM temuan_materials tm JOIN temuan t ON t.id = tm.temuan_id WHERE t.penyulang_id = " . (int)$kFeeder['id'] . " AND t.deleted_at IS NULL")->getRowArray()['cnt'] ?? 0);
+                $kAudit['total_temuan'] = (int)($db->query("SELECT COUNT(*) cnt FROM temuan WHERE penyulang_id = " . (int)$kFeeder['id'] . " AND deleted_at IS NULL")->getRowArray()['cnt'] ?? 0);
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'interruption_reconciliation' => [
+                    'reference_rows' => count($refItems),
+                    'matched' => $amperMatched,
+                    'updated' => $amperUpdated,
+                    'stats_2025' => $stats2025,
+                    'stats_2026' => $stats2026,
+                    'monthly_2025' => $monthly2025,
+                    'monthly_2026' => $monthly2026,
+                ],
+                'kahuripan_arm_tie_reconciliation' => [
+                    'audit' => $kAudit,
+                    'arm_ties_deleted' => $kDeletedCount,
+                    'temuan_updated' => $kUpdatedTemuanCount,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(200)->setJSON([
+                'status' => 'error_caught',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => explode("\n", $e->getTraceAsString()),
+            ]);
+        }
+    }
 }

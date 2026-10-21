@@ -98,8 +98,7 @@
                                 <option value="">-- Pilih Pelaksana --</option>
                                 <?php $pl = old('pelaksana', $temuan['pelaksana']); ?>
                                 <option value="PDKB"          <?= $pl === 'PDKB'          ? 'selected' : '' ?>>PDKB</option>
-                                <option value="HAR GARDU"      <?= $pl === 'HAR GARDU'      ? 'selected' : '' ?>>HAR GARDU</option>
-                                <option value="HAR GTT"        <?= $pl === 'HAR GTT'        ? 'selected' : '' ?>>HAR GTT</option>
+                                <option value="HAR GTT"        <?= ($pl === 'HAR GTT' || $pl === 'HAR GARDU') ? 'selected' : '' ?>>HAR GTT</option>
                                 <option value="HAR KONSTRUKSI" <?= $pl === 'HAR KONSTRUKSI' ? 'selected' : '' ?>>HAR KONSTRUKSI</option>
                                 <option value="HAR ROW"        <?= $pl === 'HAR ROW'        ? 'selected' : '' ?>>HAR ROW</option>
                                 <option value="HAR CRANE"      <?= $pl === 'HAR CRANE'      ? 'selected' : '' ?>>HAR CRANE</option>

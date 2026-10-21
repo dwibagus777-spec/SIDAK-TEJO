@@ -636,7 +636,7 @@ class Laporan extends BaseController
             $builder = $db->table('temuan t');
             $builder->select('t.id, t.noga, t.detail_temuan, t.tanggal_temuan as tgl_input, s.nama_section');
             $builder->join('sections s', 't.section_id = s.id', 'left');
-            $builder->where('t.pelaksana', 'HAR GARDU');
+            $builder->whereIn('t.pelaksana', ['HAR GTT', 'HAR GARDU']);
             $builder->groupStart()
                 ->like('t.detail_temuan', 'nameplate')
                 ->orLike('t.detail_temuan', 'nemplate')

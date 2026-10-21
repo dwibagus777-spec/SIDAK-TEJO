@@ -987,7 +987,7 @@
                 <span class="badge bg-info-subtle text-info p-2 rounded-2"><i class="fas fa-clipboard-list"></i></span>
                 <div>
                     <h6 class="fw-bold mb-0 text-dark" style="font-size: 13.5px;">Penyulang Temuan Inspeksi Terbanyak</h6>
-                    <small class="text-muted" style="font-size: 11px;">Rincian pelaksana temuan aktif (PDKB, HAR Gardu, HAR ROW) &bull; Klik baris untuk sorot peta GIS</small>
+                    <small class="text-muted" style="font-size: 11px;">Rincian pelaksana temuan aktif (PDKB, HAR GTT, HAR ROW) &bull; Klik baris untuk sorot peta GIS</small>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
@@ -1007,7 +1007,7 @@
                             <th style="width: 40px;" class="text-center">#</th>
                             <th>Penyulang</th>
                             <th class="text-end" style="width: 110px;" title="Temuan PDKB">PDKB</th>
-                            <th class="text-end" style="width: 110px;" title="Temuan HAR Gardu">HAR Gardu</th>
+                            <th class="text-end" style="width: 110px;" title="Temuan HAR GTT">HAR GTT</th>
                             <th class="text-end" style="width: 110px;" title="Temuan HAR ROW">HAR ROW</th>
                             <th class="text-end" style="width: 110px;" title="Total Temuan Aktif">Total Temuan</th>
                         </tr>
@@ -1293,13 +1293,26 @@
                                 <th>Uraian Nama Material Standar PLN</th>
                                 <th>Kategori</th>
                                 <th class="text-center">Spesifikasi Konduktor</th>
-                                <th class="text-end">Frekuensi Temuan</th>
-                                <th class="text-end">Total Kuantitas</th>
+                                <th class="text-end">Frekuensi</th>
+                                <th class="text-end text-primary" title="Total Kebutuhan Fisik Material Standar PLN">Total Kebutuhan</th>
+                                <th class="text-end text-success" title="Material yang Telah Nyata Digunakan pada Realisasi Pekerjaan">Sudah Digunakan</th>
+                                <th class="text-end text-danger" title="Sisa Kebutuhan Material (Hanya berkurang bila pemakaian nyata dicatat)">Sisa Kebutuhan</th>
                                 <th class="text-center">Satuan</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($bomSummaryByMat as $mIdx => $mSum): ?>
+                            <?php 
+                            $grandTotReq = 0.0;
+                            $grandTotUsed = 0.0;
+                            $grandTotRem = 0.0;
+                            foreach ($bomSummaryByMat as $mIdx => $mSum): 
+                                $tQty = (float)($mSum['total_qty'] ?? 0);
+                                $uQty = (float)($mSum['total_used_qty'] ?? 0);
+                                $rQty = (float)($mSum['sisa_qty'] ?? max(0.0, $tQty - $uQty));
+                                $grandTotReq += $tQty;
+                                $grandTotUsed += $uQty;
+                                $grandTotRem += $rQty;
+                            ?>
                             <tr>
                                 <td class="text-center text-muted fw-bold"><?= $mIdx + 1 ?></td>
                                 <td><span class="badge bg-dark-subtle text-dark font-monospace"><?= esc($mSum['material_code'] ?? '-') ?></span></td>
@@ -1312,12 +1325,34 @@
                                         <span class="text-muted"><?= esc($mSum['nama_lapangan'] ?? 'Standar PLN') ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-end font-monospace"><?= number_format((int)($mSum['temuan_count'] ?? 0)) ?> temuan</td>
-                                <td class="text-end fw-bold text-primary font-monospace fs-6"><?= number_format((float)($mSum['total_qty'] ?? 0), 0) ?></td>
+                                <td class="text-end font-monospace"><?= number_format((int)($mSum['temuan_count'] ?? 0)) ?></td>
+                                <td class="text-end fw-bold text-primary font-monospace"><?= number_format($tQty, 0) ?></td>
+                                <td class="text-end font-monospace <?= $uQty > 0 ? 'fw-bold text-success' : 'text-muted' ?>">
+                                    <?= $uQty > 0 ? number_format($uQty, 0) : '0' ?>
+                                </td>
+                                <td class="text-end font-monospace <?= $rQty > 0 ? 'fw-bold text-danger' : 'text-success' ?>">
+                                    <?= number_format($rQty, 0) ?>
+                                </td>
                                 <td class="text-center text-muted fw-semibold"><?= esc($mSum['satuan'] ?? $mSum['unit'] ?? 'Bh') ?></td>
                             </tr>
                             <?php endforeach; ?>
+                            <?php if (empty($bomSummaryByMat)): ?>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted py-3">Belum ada rincian transaksi material BOM.</td>
+                            </tr>
+                            <?php endif; ?>
                         </tbody>
+                        <?php if (!empty($bomSummaryByMat)): ?>
+                        <tfoot class="table-light fw-bold font-monospace" style="font-size: 11.5px;">
+                            <tr>
+                                <td colspan="6" class="text-end text-dark">TOTAL AKUMULASI MATERIAL:</td>
+                                <td class="text-end text-primary"><?= number_format($grandTotReq, 0) ?></td>
+                                <td class="text-end text-success"><?= number_format($grandTotUsed, 0) ?></td>
+                                <td class="text-end text-danger"><?= number_format($grandTotRem, 0) ?></td>
+                                <td class="text-center text-muted">-</td>
+                            </tr>
+                        </tfoot>
+                        <?php endif; ?>
                     </table>
                 </div>
             </div>
@@ -2739,25 +2774,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 afterDatasetsDraw: function(chart) {
                     var c = chart.ctx;
                     c.save();
-                    c.font = '700 10px "JetBrains Mono", Consolas, monospace';
+                    c.font = '700 9.5px "JetBrains Mono", Consolas, monospace';
                     c.textAlign = 'center';
-                    c.textBaseline = 'bottom';
+
+                    var ds0Meta = chart.getDatasetMeta(0);
+                    var ds1Meta = chart.data.datasets.length > 1 ? chart.getDatasetMeta(1) : null;
 
                     chart.data.datasets.forEach(function(ds, dsIdx) {
                         var meta = chart.getDatasetMeta(dsIdx);
                         if (!meta || meta.hidden) return;
-                        // Avoid visual label collision in multi-year comparison: show direct labels on primary dataset
-                        if (dsIdx !== 0 && chart.data.datasets.length > 1) return;
+
                         meta.data.forEach(function(pt, ptIdx) {
                             var rawVal = ds.data[ptIdx];
                             if (rawVal === null || typeof rawVal === 'undefined') return;
                             var numVal = Number(rawVal) || 0;
                             var txt = numVal.toLocaleString('id-ID');
-                            // Offset alternating series slightly so multi-year labels remain legible
-                            var yOffset = (dsIdx % 2 === 0) ? -7 : ((numVal === 0 && dsIdx > 0) ? -17 : 14);
-                            var drawY = Math.max(12, Math.min(chart.height - 18, pt.y + yOffset));
-                            c.lineWidth = 3;
-                            c.strokeStyle = 'rgba(255, 255, 255, 0.92)';
+
+                            // Determine intelligent vertical offset and baseline to prevent overlap
+                            var isAbove = true;
+                            if (chart.data.datasets.length > 1 && ds0Meta && ds1Meta && ds0Meta.data[ptIdx] && ds1Meta.data[ptIdx]) {
+                                var y0 = ds0Meta.data[ptIdx].y;
+                                var y1 = ds1Meta.data[ptIdx].y;
+                                if (Math.abs(y0 - y1) < 18) {
+                                    // Points are vertically close: higher value (lower y) goes above, lower value goes below
+                                    if (dsIdx === 0) {
+                                        isAbove = (y0 <= y1);
+                                    } else {
+                                        isAbove = (y1 < y0);
+                                    }
+                                } else {
+                                    // Separated enough: ds 0 above, ds 1 below for visual rhythm
+                                    isAbove = (dsIdx === 0);
+                                }
+                            } else {
+                                isAbove = (dsIdx === 0);
+                            }
+
+                            c.textBaseline = isAbove ? 'bottom' : 'top';
+                            var yOffset = isAbove ? -6 : 6;
+                            var drawY = pt.y + yOffset;
+
+                            // Clamp within chart drawing canvas
+                            if (drawY < 12) {
+                                drawY = 12;
+                                c.textBaseline = 'top';
+                            } else if (drawY > chart.height - 14) {
+                                drawY = chart.height - 14;
+                                c.textBaseline = 'bottom';
+                            }
+
+                            c.lineWidth = 3.5;
+                            c.strokeStyle = 'rgba(255, 255, 255, 0.95)';
                             c.strokeText(txt, pt.x, drawY);
                             c.fillStyle = ds.borderColor || '#0f172a';
                             c.fillText(txt, pt.x, drawY);

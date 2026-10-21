@@ -405,6 +405,22 @@ class PlnStandardBomRuleService
 
         $this->db->transStart();
 
+        // 0. Cache existing used_quantity and work_status to guarantee work progress is NEVER lost during reload/sync
+        $existingUsage = [];
+        $prevRows = $this->db->table('temuan_materials')
+            ->where('temuan_id', $temuanId)
+            ->get()
+            ->getResultArray();
+        foreach ($prevRows as $pr) {
+            $code = $pr['canonical_code_snapshot'] ?? '';
+            if (!empty($code)) {
+                $existingUsage[$code] = [
+                    'used_quantity' => (float)($pr['used_quantity'] ?? 0.0),
+                    'work_status'   => (string)($pr['work_status'] ?? 'PENDING'),
+                ];
+            }
+        }
+
         // 1. Delete previous automated BOM entries for this finding (idempotency guarantee)
         $this->db->table('temuan_materials')
             ->where('temuan_id', $temuanId)
@@ -433,6 +449,10 @@ class PlnStandardBomRuleService
                 $materialId = 15;
             }
 
+            $priorUsage = $existingUsage[$item['canonical_code']] ?? null;
+            $usedQty = $priorUsage ? $priorUsage['used_quantity'] : 0.00;
+            $workStatus = $priorUsage ? $priorUsage['work_status'] : 'PENDING';
+
             $this->db->table('temuan_materials')->insert([
                 'temuan_id'               => $temuanId,
                 'asset_id'                => !empty($temuan['asset_id']) ? (int)$temuan['asset_id'] : null,
@@ -442,6 +462,8 @@ class PlnStandardBomRuleService
                 'canonical_name_snapshot' => $item['canonical_name'],
                 'unit_snapshot'           => $item['unit'],
                 'quantity'                => (float)$item['quantity'],
+                'used_quantity'           => $usedQty,
+                'work_status'             => $workStatus,
                 'conductor_type'          => $bomResult['conductor_type'],
                 'conductor_size'          => $bomResult['conductor_size'],
                 'justification_note'      => $item['justification'],
@@ -949,6 +971,130 @@ class PlnStandardBomRuleService
             'ambiguous_samples'    => array_slice($ambiguousList, 0, 10),
             'deterministic_samples'=> array_slice($deterministicList, 0, 10),
             'samples_verified'     => $sampleFindings,
+        ];
+    }
+
+    /**
+     * Records actual material consumption/usage during field work execution.
+     *
+     * Invariant: Administrative completion (setting temuan.status = 'SELESAI') without
+     * actual material usage entry does NOT reduce material requirement.
+     * Only actual recorded usage decrements remaining demand (sisa kebutuhan).
+     *
+     * @param int $temuanId
+     * @param array<int, array<string, mixed>> $usages List of ['material_id' => int, 'canonical_code' => string, 'used_quantity' => float]
+     * @param string $workStatus Status e.g. 'PARTIAL', 'COMPLETED', 'PENDING'
+     * @return array<string, mixed>
+     */
+    public function recordMaterialUsage(int $temuanId, array $usages, string $workStatus = 'COMPLETED'): array
+    {
+        $temuan = $this->db->table('temuan')->where('id', $temuanId)->get()->getRowArray();
+        if (!$temuan) {
+            return ['status' => 'error', 'message' => "Temuan #{$temuanId} tidak ditemukan."];
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $updatedCount = 0;
+        $totalRecorded = 0.0;
+
+        $this->db->transStart();
+
+        foreach ($usages as $usage) {
+            $usedQty = (float)($usage['used_quantity'] ?? 0.0);
+            if ($usedQty < 0.0) {
+                continue;
+            }
+
+            $qb = $this->db->table('temuan_materials')->where('temuan_id', $temuanId);
+            if (!empty($usage['material_id'])) {
+                $qb->where('material_id', (int)$usage['material_id']);
+            } elseif (!empty($usage['canonical_code'])) {
+                $qb->where('canonical_code_snapshot', trim((string)$usage['canonical_code']));
+            } elseif (!empty($usage['id'])) {
+                $qb->where('id', (int)$usage['id']);
+            } else {
+                continue;
+            }
+
+            $qb->update([
+                'used_quantity' => $usedQty,
+                'work_status'   => $workStatus,
+                'updated_at'    => $now,
+            ]);
+
+            $updatedCount++;
+            $totalRecorded += $usedQty;
+        }
+
+        $this->db->transComplete();
+
+        $progress = $this->calculateFindingBomProgress($temuanId);
+
+        return [
+            'status'         => $this->db->transStatus() ? 'success' : 'error',
+            'temuan_id'      => $temuanId,
+            'items_updated'  => $updatedCount,
+            'total_used_qty' => $totalRecorded,
+            'progress'       => $progress,
+        ];
+    }
+
+    /**
+     * Calculates dynamic BOM requirement & fulfillment progress for a finding.
+     *
+     * @param int $temuanId
+     * @return array<string, mixed>
+     */
+    public function calculateFindingBomProgress(int $temuanId): array
+    {
+        if (!$this->db->tableExists('temuan_materials')) {
+            return [
+                'temuan_id'            => $temuanId,
+                'total_kebutuhan'      => 0.0,
+                'sudah_digunakan'      => 0.0,
+                'sisa_kebutuhan'       => 0.0,
+                'fulfillment_status'   => 'BELUM_DIGUNAKAN',
+                'is_material_recorded' => false,
+                'items'                => [],
+            ];
+        }
+
+        $rows = $this->db->table('temuan_materials')
+            ->where('temuan_id', $temuanId)
+            ->get()
+            ->getResultArray();
+
+        $totalKebutuhan = 0.0;
+        $sudahDigunakan = 0.0;
+        $sisaKebutuhan  = 0.0;
+
+        foreach ($rows as $r) {
+            $qty = (float)($r['quantity'] ?? 0.0);
+            $used = (float)($r['used_quantity'] ?? 0.0);
+            $rem = max(0.0, $qty - $used);
+
+            $totalKebutuhan += $qty;
+            $sudahDigunakan += $used;
+            $sisaKebutuhan  += $rem;
+        }
+
+        $fulfillment = 'BELUM_DIGUNAKAN';
+        if ($totalKebutuhan > 0.0) {
+            if ($sisaKebutuhan <= 0.0 && $sudahDigunakan >= $totalKebutuhan) {
+                $fulfillment = 'TERPENUHI_LENGKAP';
+            } elseif ($sudahDigunakan > 0.0) {
+                $fulfillment = 'TERPENUHI_SEBAGIAN';
+            }
+        }
+
+        return [
+            'temuan_id'            => $temuanId,
+            'total_kebutuhan'      => $totalKebutuhan,
+            'sudah_digunakan'      => $sudahDigunakan,
+            'sisa_kebutuhan'       => $sisaKebutuhan,
+            'fulfillment_status'   => $fulfillment,
+            'is_material_recorded' => $sudahDigunakan > 0.0,
+            'items'                => $rows,
         ];
     }
 }

@@ -192,8 +192,7 @@
                             <select name="pelaksana" id="pelaksana" class="form-control select2 <?= ($validation && $validation->hasError('pelaksana')) ? 'is-invalid' : '' ?>" required>
                                 <option value="">-- Pilih Pelaksana --</option>
                                 <option value="PDKB" <?= old('pelaksana') === 'PDKB' ? 'selected' : '' ?>>PDKB</option>
-                                <option value="HAR GARDU" <?= old('pelaksana') === 'HAR GARDU' ? 'selected' : '' ?>>HAR GARDU</option>
-                                <option value="HAR GTT" <?= old('pelaksana') === 'HAR GTT' ? 'selected' : '' ?>>HAR GTT</option>
+                                <option value="HAR GTT" <?= (old('pelaksana') === 'HAR GTT' || old('pelaksana') === 'HAR GARDU') ? 'selected' : '' ?>>HAR GTT</option>
                                 <option value="HAR KONSTRUKSI" <?= old('pelaksana') === 'HAR KONSTRUKSI' ? 'selected' : '' ?>>HAR KONSTRUKSI</option>
                                 <option value="HAR ROW" <?= old('pelaksana') === 'HAR ROW' ? 'selected' : '' ?>>HAR ROW</option>
                                 <option value="HAR CRANE" <?= old('pelaksana') === 'HAR CRANE' ? 'selected' : '' ?>>HAR CRANE</option>

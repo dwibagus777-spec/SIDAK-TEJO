@@ -1546,7 +1546,6 @@
                         <select id="gis-modal-pelaksana" class="form-select" required>
                             <option value="">-- Pilih --</option>
                             <option value="PDKB">PDKB</option>
-                            <option value="HAR GARDU">HAR GARDU</option>
                             <option value="HAR GTT">HAR GTT</option>
                             <option value="HAR KONSTRUKSI">HAR KONSTRUKSI</option>
                             <option value="HAR ROW">HAR ROW</option>

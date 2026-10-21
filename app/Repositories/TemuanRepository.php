@@ -322,19 +322,24 @@ class TemuanRepository extends BaseRepository
 
             $roleMap = [
                 'pdkb'           => 'PDKB',
-                'har_gardu'      => 'HAR GARDU',
+                'har_gardu'      => ['HAR GTT', 'HAR GARDU'],
+                'har_gtt'        => ['HAR GTT', 'HAR GARDU'],
                 'har_konstruksi' => 'HAR KONSTRUKSI',
                 'har_row'        => 'HAR ROW',
                 'yantek'         => 'YANTEK'
             ];
             if ($roleFilter && isset($roleMap[$roleFilter])) {
-                $builder->where('pelaksana', $roleMap[$roleFilter]);
+                if (is_array($roleMap[$roleFilter])) {
+                    $builder->whereIn('pelaksana', $roleMap[$roleFilter]);
+                } else {
+                    $builder->where('pelaksana', $roleMap[$roleFilter]);
+                }
             }
 
             $builder->select("
                 COUNT(*) AS total,
                 SUM(CASE WHEN pelaksana = 'PDKB' THEN 1 ELSE 0 END) AS pdkb,
-                SUM(CASE WHEN pelaksana = 'HAR GARDU' THEN 1 ELSE 0 END) AS har_gardu,
+                SUM(CASE WHEN pelaksana IN ('HAR GTT', 'HAR GARDU') THEN 1 ELSE 0 END) AS har_gardu,
                 SUM(CASE WHEN pelaksana = 'HAR KONSTRUKSI' THEN 1 ELSE 0 END) AS har_konstruksi,
                 SUM(CASE WHEN pelaksana = 'HAR ROW' THEN 1 ELSE 0 END) AS har_row,
                 SUM(CASE WHEN pelaksana = 'HAR CRANE' THEN 1 ELSE 0 END) AS har_crane,
@@ -557,13 +562,18 @@ class TemuanRepository extends BaseRepository
             }
             $roleMap = [
                 'pdkb'           => 'PDKB',
-                'har_gardu'      => 'HAR GARDU',
+                'har_gardu'      => ['HAR GTT', 'HAR GARDU'],
+                'har_gtt'        => ['HAR GTT', 'HAR GARDU'],
                 'har_konstruksi' => 'HAR KONSTRUKSI',
                 'har_row'        => 'HAR ROW',
                 'yantek'         => 'YANTEK'
             ];
             if (isset($roleMap[$roleLower])) {
-                $builder->where('temuan.pelaksana', $roleMap[$roleLower]);
+                if (is_array($roleMap[$roleLower])) {
+                    $builder->whereIn('temuan.pelaksana', $roleMap[$roleLower]);
+                } else {
+                    $builder->where('temuan.pelaksana', $roleMap[$roleLower]);
+                }
             }
             if ($roleLower === 'inspeksi') {
                 $builder->where("temuan.status != 'SELESAI'");

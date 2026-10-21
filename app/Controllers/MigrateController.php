@@ -4030,11 +4030,16 @@ class MigrateController extends BaseController
         $syncResult = null;
         if ($this->request->getGet('sync_bom') === '1') {
             $ruleService = new \App\Services\PlnStandardBomRuleService();
-            $sync29 = $ruleService->syncTemuanMaterials(29, true);
+            try {
+                $sync29 = $ruleService->syncTemuanMaterials(29, true);
+            } catch (\Throwable $e29) {
+                $sync29 = ['status' => 'exception', 'message' => $e29->getMessage(), 'trace' => $e29->getFile() . ':' . $e29->getLine()];
+            }
             $batchRes = $ruleService->batchSyncBom(true);
             $syncResult = [
                 'sync_29' => $sync29,
                 'batch_sync' => $batchRes,
+                'master_sample' => $db->query("SELECT id, canonical_code, nama_material FROM master_materials WHERE canonical_code IN ('CANON-MAT-001', 'CANON-ACC-012') OR id IN (15, 30)")->getResultArray(),
             ];
             $m29 = ($db->tableExists('temuan_materials') && $t29) ? $db->table('temuan_materials')->where('temuan_id', 29)->get()->getResultArray() : [];
         }

@@ -450,6 +450,8 @@ class PlnStandardBomRuleService
         }
 
         // 1. Delete previous automated BOM entries for this finding (idempotency guarantee)
+        $this->db->transStart();
+
         $this->db->table('temuan_materials')
             ->where('temuan_id', $temuanId)
             ->groupStart()
@@ -473,8 +475,13 @@ class PlnStandardBomRuleService
         foreach ($bomResult['materials'] as $item) {
             $materialId = $matIdMap[$item['canonical_code']] ?? null;
             if (!$materialId) {
-                // If material code not in master_materials, use fallback ID 15 or 1
-                $materialId = 15;
+                $mRow = $this->db->table('master_materials')->where('canonical_code', $item['canonical_code'])->get()->getRowArray();
+                if ($mRow) {
+                    $materialId = (int)$mRow['id'];
+                } else {
+                    $firstMat = $this->db->table('master_materials')->select('id')->limit(1)->get()->getRowArray();
+                    $materialId = $firstMat ? (int)$firstMat['id'] : 1;
+                }
             }
 
             $priorUsage = $existingUsage[$item['canonical_code']] ?? null;

@@ -148,6 +148,24 @@ class MigrateController extends BaseController
                 $executed[] = 'enhance_temuan_material_bom_and_conductor';
             }
 
+            // Run EnhanceFaultCasesAndActualFindings Migration (Track A & B Fault Locator telemetry & outcomes)
+            $enhanceFaultMigFile = APPPATH . 'Database/Migrations/2026-10-21-000004_EnhanceFaultCasesAndActualFindings.php';
+            if (file_exists($enhanceFaultMigFile)) {
+                require_once $enhanceFaultMigFile;
+                $efMig = new \App\Database\Migrations\EnhanceFaultCasesAndActualFindings();
+                $efMig->up();
+                $executed[] = 'enhance_fault_cases_and_actual_findings';
+            }
+
+            // Run MakeDeviceAssetIdNullable Migration (Relax device & event FKs)
+            $makeDevNullMigFile = APPPATH . 'Database/Migrations/2026-10-21-000005_MakeDeviceAssetIdNullable.php';
+            if (file_exists($makeDevNullMigFile)) {
+                require_once $makeDevNullMigFile;
+                $devNullMig = new \App\Database\Migrations\MakeDeviceAssetIdNullable();
+                $devNullMig->up();
+                $executed[] = 'make_device_asset_id_nullable';
+            }
+
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
             // governed reconciliation with deterministic identity proof, not pattern matching.

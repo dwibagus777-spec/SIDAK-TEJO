@@ -147,7 +147,7 @@ class FaultLocatorWorkspaceService
         }
 
         $builder = $this->db->table('penyulang')
-            ->select('id, kode_penyulang, nama_penyulang, ulp_id, gardu_induk_id, panjang_jtm');
+            ->select('id, kode_penyulang, nama_penyulang, ulp_id');
 
         if ($ulpId !== null && $ulpId > 0) {
             $builder->where('ulp_id', $ulpId);
@@ -430,7 +430,8 @@ class FaultLocatorWorkspaceService
                 ->get()
                 ->getRowArray();
 
-            $anchorDesc = "Gardu Induk (Pangkal Penyulang) -> Tiang JTM Pertama [{$anchorPole['kode_asset']}]";
+            $anchorPoleKode = $anchorPole['kode_asset'] ?? 'PANGKAL_PENYULANG';
+            $anchorDesc = "Gardu Induk (Pangkal Penyulang) -> Tiang JTM Pertama [{$anchorPoleKode}]";
         }
 
         $anchorPoleId = (int)($anchorPole['id'] ?? 0);

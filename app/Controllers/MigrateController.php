@@ -4319,4 +4319,155 @@ class MigrateController extends BaseController
             ]);
         }
     }
+
+    public function auditBomPelaksanaAllFeeders()
+    {
+        try {
+            $db = \Config\Database::connect('default');
+
+            // 1. Pelaksana Distribution in Temuan (Active)
+            $pelaksanaDist = $db->query("
+                SELECT COALESCE(NULLIF(TRIM(pelaksana), ''), 'TIDAK_TERCATAT') as pelaksana_val,
+                       COUNT(*) as cnt
+                FROM temuan
+                WHERE deleted_at IS NULL
+                GROUP BY pelaksana_val
+                ORDER BY cnt DESC
+            ")->getResultArray();
+
+            // 2. Jenis Temuan Distribution
+            $jenisDist = $db->query("
+                SELECT COALESCE(NULLIF(TRIM(jenis_temuan), ''), 'TIDAK_TERCATAT') as jenis_val,
+                       COUNT(*) as cnt
+                FROM temuan
+                WHERE deleted_at IS NULL
+                GROUP BY jenis_val
+                ORDER BY cnt DESC
+            ")->getResultArray();
+
+            // 3. Cross Distribution: Pelaksana vs Jenis Temuan
+            $crossDist = $db->query("
+                SELECT COALESCE(NULLIF(TRIM(pelaksana), ''), 'TIDAK_TERCATAT') as pelaksana_val,
+                       COALESCE(NULLIF(TRIM(jenis_temuan), ''), 'TIDAK_TERCATAT') as jenis_val,
+                       COUNT(*) as cnt
+                FROM temuan
+                WHERE deleted_at IS NULL
+                GROUP BY pelaksana_val, jenis_val
+                ORDER BY pelaksana_val ASC, cnt DESC
+            ")->getResultArray();
+
+            // 4. Materials linked to Temuan grouped by Pelaksana & source_mode
+            $matByPelaksana = [];
+            if ($db->tableExists('temuan_materials')) {
+                $matByPelaksana = $db->query("
+                    SELECT COALESCE(NULLIF(TRIM(t.pelaksana), ''), 'TIDAK_TERCATAT') as pelaksana_val,
+                           tm.source_mode,
+                           COUNT(DISTINCT t.id) as temuan_cnt,
+                           COUNT(tm.id) as material_rows,
+                           ROUND(SUM(tm.quantity), 1) as total_qty
+                    FROM temuan_materials tm
+                    JOIN temuan t ON t.id = tm.temuan_id
+                    WHERE t.deleted_at IS NULL
+                    GROUP BY pelaksana_val, tm.source_mode
+                    ORDER BY pelaksana_val ASC, total_qty DESC
+                ")->getResultArray();
+            }
+
+            // 5. Check any remaining synthetic Arm Ties (CANON-HDW-003) with BOM_CLASSIFIED across all feeders
+            $syntheticArmTiesAll = [];
+            if ($db->tableExists('temuan_materials')) {
+                $syntheticArmTiesAll = $db->query("
+                    SELECT tm.id as tm_id, tm.temuan_id, t.nomor_temuan, p.nama_penyulang, t.jenis_temuan, t.pelaksana, t.detail_temuan,
+                           tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.quantity, tm.source_mode
+                    FROM temuan_materials tm
+                    JOIN temuan t ON t.id = tm.temuan_id
+                    LEFT JOIN penyulang p ON p.id = t.penyulang_id
+                    WHERE t.deleted_at IS NULL
+                      AND tm.canonical_code_snapshot = 'CANON-HDW-003'
+                      AND tm.source_mode = 'BOM_CLASSIFIED'
+                ")->getResultArray();
+            }
+
+            // 6. Feeder-by-Feeder Audit Breakdown
+            $feederAuditRows = $db->query("
+                SELECT
+                    p.id as feeder_id,
+                    p.nama_penyulang,
+                    u.nama_ulp,
+                    COUNT(DISTINCT t.id) as total_active_temuan,
+                    COUNT(DISTINCT CASE WHEN UPPER(TRIM(COALESCE(t.pelaksana, ''))) = 'PDKB' THEN t.id END) as pdkb_temuan,
+                    COUNT(DISTINCT CASE WHEN UPPER(TRIM(COALESCE(t.pelaksana, ''))) IN ('HAR KONSTRUKSI', 'HAR_KONSTRUKSI', 'HARKON') THEN t.id END) as harkon_temuan,
+                    COUNT(DISTINCT CASE WHEN UPPER(TRIM(COALESCE(t.pelaksana, ''))) NOT IN ('PDKB', 'HAR KONSTRUKSI', 'HAR_KONSTRUKSI', 'HARKON') THEN t.id END) as other_temuan,
+                    COUNT(DISTINCT CASE WHEN UPPER(TRIM(COALESCE(t.pelaksana, ''))) IN ('PDKB', 'HAR KONSTRUKSI', 'HAR_KONSTRUKSI', 'HARKON') THEN t.id END) as qualifying_temuan,
+                    COUNT(DISTINCT CASE WHEN tm.id IS NOT NULL AND UPPER(TRIM(COALESCE(t.pelaksana, ''))) IN ('PDKB', 'HAR KONSTRUKSI', 'HAR_KONSTRUKSI', 'HARKON') THEN tm.id END) as qualifying_materials_count,
+                    COUNT(DISTINCT CASE WHEN tm.id IS NOT NULL AND UPPER(TRIM(COALESCE(t.pelaksana, ''))) NOT IN ('PDKB', 'HAR KONSTRUKSI', 'HAR_KONSTRUKSI', 'HARKON') THEN tm.id END) as non_qualifying_materials_count,
+                    ROUND(SUM(CASE WHEN UPPER(TRIM(COALESCE(t.pelaksana, ''))) IN ('PDKB', 'HAR KONSTRUKSI', 'HAR_KONSTRUKSI', 'HARKON') THEN tm.quantity ELSE 0 END), 1) as qualifying_materials_qty,
+                    ROUND(SUM(CASE WHEN UPPER(TRIM(COALESCE(t.pelaksana, ''))) NOT IN ('PDKB', 'HAR KONSTRUKSI', 'HAR_KONSTRUKSI', 'HARKON') THEN tm.quantity ELSE 0 END), 1) as non_qualifying_materials_qty
+                FROM penyulang p
+                LEFT JOIN ulps u ON u.id = p.ulp_id
+                LEFT JOIN temuan t ON t.penyulang_id = p.id AND t.deleted_at IS NULL
+                LEFT JOIN temuan_materials tm ON tm.temuan_id = t.id
+                GROUP BY p.id, p.nama_penyulang, u.nama_ulp
+                HAVING total_active_temuan > 0
+                ORDER BY qualifying_temuan DESC, total_active_temuan DESC
+            ")->getResultArray();
+
+            // 7. Canonical Material Code Breakdown for Qualifying (PDKB + HAR KONSTRUKSI) vs Non-Qualifying
+            $canonicalQualifying = [];
+            $canonicalNonQualifying = [];
+            if ($db->tableExists('temuan_materials')) {
+                $canonicalQualifying = $db->query("
+                    SELECT tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot,
+                           COUNT(DISTINCT tm.temuan_id) as temuan_cnt,
+                           ROUND(SUM(tm.quantity), 1) as total_qty
+                    FROM temuan_materials tm
+                    JOIN temuan t ON t.id = tm.temuan_id
+                    WHERE t.deleted_at IS NULL
+                      AND UPPER(TRIM(COALESCE(t.pelaksana, ''))) IN ('PDKB', 'HAR KONSTRUKSI', 'HAR_KONSTRUKSI', 'HARKON')
+                    GROUP BY tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot
+                    ORDER BY total_qty DESC
+                ")->getResultArray();
+
+                $canonicalNonQualifying = $db->query("
+                    SELECT tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot,
+                           tm.source_mode,
+                           COUNT(DISTINCT tm.temuan_id) as temuan_cnt,
+                           ROUND(SUM(tm.quantity), 1) as total_qty
+                    FROM temuan_materials tm
+                    JOIN temuan t ON t.id = tm.temuan_id
+                    WHERE t.deleted_at IS NULL
+                      AND UPPER(TRIM(COALESCE(t.pelaksana, ''))) NOT IN ('PDKB', 'HAR KONSTRUKSI', 'HAR_KONSTRUKSI', 'HARKON')
+                    GROUP BY tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot, tm.source_mode
+                    ORDER BY total_qty DESC
+                ")->getResultArray();
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'audit' => [
+                    'pelaksana_distribution' => $pelaksanaDist,
+                    'jenis_distribution' => $jenisDist,
+                    'cross_distribution' => $crossDist,
+                    'materials_by_pelaksana' => $matByPelaksana,
+                    'synthetic_arm_ties_all_feeders' => [
+                        'count' => count($syntheticArmTiesAll),
+                        'records' => $syntheticArmTiesAll,
+                    ],
+                    'feeders_count' => count($feederAuditRows),
+                    'feeders_summary' => $feederAuditRows,
+                    'canonical_materials_qualifying' => $canonicalQualifying,
+                    'canonical_materials_non_qualifying' => $canonicalNonQualifying,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(200)->setJSON([
+                'status' => 'error_caught',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => explode("\n", $e->getTraceAsString()),
+            ]);
+        }
+    }
 }

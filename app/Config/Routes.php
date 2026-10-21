@@ -36,6 +36,9 @@ $routes->get('master-assets/audit-synthetic-duplicates', 'MigrateController::aud
 $routes->match(['GET', 'POST'], 'master-assets/execute-synthetic-dedup', 'MigrateController::executeSyntheticDedup');
 $routes->get('master-assets/audit-row-bom', 'MigrateController::auditRowAndBomProduction');
 $routes->match(['GET', 'POST'], 'master-assets/reconcile-amper-and-bom', 'MigrateController::reconcileAmperAndBom');
+$routes->get('master-assets/audit-bom-pelaksana', 'MigrateController::auditBomPelaksanaAllFeeders');
+$routes->match(['GET', 'POST'], 'master-assets/dryrun-bom-pelaksana', 'MigrateController::dryRunReconcileBomPelaksana');
+$routes->match(['GET', 'POST'], 'master-assets/execute-bom-pelaksana', 'MigrateController::executeReconcileBomPelaksana');
 
 // Phase B.3: Network Intelligence Platform Routes (Strictly Read-Only)
 $routes->get('network-intelligence/audit', 'NetworkIntelligenceController::b3Audit');

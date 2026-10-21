@@ -507,6 +507,363 @@ class GlobalAssetDeduplicationService
     }
 
     /**
+     * Audits coordinate-matched duplicate assets where synthetic placeholders (NEW_INGESTED_ASSET_*
+     * or empty/hash placeholders) coexist with canonical field-named assets on the same feeder.
+     */
+    public function auditSyntheticDuplicates(?string $feederFilter = null): array
+    {
+        if (!$this->db->tableExists('assets')) {
+            return ['status' => 'error', 'message' => 'Tabel assets tidak ditemukan.'];
+        }
+
+        $builder = $this->db->table('assets a')
+            ->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.ulp_id, a.penyulang_id, a.section_id, a.latitude, a.longitude, a.created_at, u.nama_ulp, p.nama_penyulang, s.nama_section')
+            ->join('ulps u', 'u.id = a.ulp_id', 'left')
+            ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+            ->join('sections s', 's.id = a.section_id', 'left')
+            ->where('a.deleted_at IS NULL');
+
+        if (!empty($feederFilter)) {
+            $builder->groupStart()
+                ->where('p.nama_penyulang', $feederFilter)
+                ->orLike('p.nama_penyulang', $feederFilter)
+                ->groupEnd();
+        }
+
+        $assets = $builder->get()->getResultArray();
+        $totalActive = count($assets);
+
+        $coordGroups = [];
+        $feederTotals = [];
+        $tiangTypes = ['jtm_tiang', 'TIANG_BETON', 'TIANG_BESI', 'JTM'];
+
+        foreach ($assets as $ast) {
+            $fName = trim((string)($ast['nama_penyulang'] ?? 'TANPA_PENYULANG'));
+            $lat = number_format((float)$ast['latitude'], 6, '.', '');
+            $lng = number_format((float)$ast['longitude'], 6, '.', '');
+
+            if (!isset($feederTotals[$fName])) {
+                $feederTotals[$fName] = [
+                    'feeder'            => $fName,
+                    'total_active'      => 0,
+                    'total_tiang_jtm'   => 0,
+                    'synthetic_dup_cnt' => 0,
+                ];
+            }
+            $feederTotals[$fName]['total_active']++;
+            if (in_array($ast['jenis_asset'], $tiangTypes, true)) {
+                $feederTotals[$fName]['total_tiang_jtm']++;
+            }
+
+            $groupKey = "{$fName}|{$lat}|{$lng}";
+            $coordGroups[$groupKey][] = $ast;
+        }
+
+        $dupGroupsOnly = array_filter($coordGroups, fn($g) => count($g) > 1);
+        $dupAssetIds = [];
+        foreach ($dupGroupsOnly as $g) {
+            foreach ($g as $item) {
+                $dupAssetIds[] = (int)$item['id'];
+            }
+        }
+
+        $dependencies = !empty($dupAssetIds) ? $this->fetchAssetDependencies($dupAssetIds) : [];
+
+        $duplicateGroups = [];
+        $totalSyntheticDups = 0;
+        $syntheticDupIds = [];
+
+        foreach ($dupGroupsOnly as $key => $records) {
+            foreach ($records as &$r) {
+                $rId = (int)$r['id'];
+                $r['dependencies'] = $dependencies[$rId] ?? [
+                    'temuan_count'            => 0,
+                    'temuan_materials_count'  => 0,
+                    'translines_source_count' => 0,
+                    'translines_target_count' => 0,
+                    'accessories_count'       => 0,
+                    'fault_outcomes_count'    => 0,
+                    'total_dependencies'      => 0,
+                ];
+                $name = trim((string)($r['nama_asset'] ?? ''));
+                $code = trim((string)($r['kode_asset'] ?? ''));
+                $r['is_synthetic'] = (
+                    $name === '' ||
+                    stripos($name, 'NEW_INGESTED_ASSET') === 0 ||
+                    (stripos($code, 'AST-') === 0 && preg_match('/-[0-9A-F]{8}$/i', $code) && stripos($name, 'NEW_INGESTED') === 0)
+                );
+            }
+            unset($r);
+
+            $canonicalCandidates = array_values(array_filter($records, fn($r) => !$r['is_synthetic']));
+            $syntheticCandidates = array_values(array_filter($records, fn($r) => $r['is_synthetic']));
+
+            if (!empty($syntheticCandidates)) {
+                if (!empty($canonicalCandidates)) {
+                    usort($canonicalCandidates, function ($a, $b) {
+                        if ($b['dependencies']['total_dependencies'] !== $a['dependencies']['total_dependencies']) {
+                            return $b['dependencies']['total_dependencies'] <=> $a['dependencies']['total_dependencies'];
+                        }
+                        return $a['id'] <=> $b['id'];
+                    });
+                    $canonical = $canonicalCandidates[0];
+                    $dupsToPurge = $syntheticCandidates;
+                } else {
+                    usort($syntheticCandidates, function ($a, $b) {
+                        if ($b['dependencies']['total_dependencies'] !== $a['dependencies']['total_dependencies']) {
+                            return $b['dependencies']['total_dependencies'] <=> $a['dependencies']['total_dependencies'];
+                        }
+                        return $a['id'] <=> $b['id'];
+                    });
+                    $canonical = $syntheticCandidates[0];
+                    $dupsToPurge = array_slice($syntheticCandidates, 1);
+                }
+
+                if (!empty($dupsToPurge)) {
+                    $duplicateGroups[] = [
+                        'group_key'           => $key,
+                        'feeder'              => $canonical['nama_penyulang'] ?? 'UNKNOWN',
+                        'latitude'            => $canonical['latitude'],
+                        'longitude'           => $canonical['longitude'],
+                        'canonical_record'    => $canonical,
+                        'duplicate_records'   => $dupsToPurge,
+                        'retained_canonicals' => $canonicalCandidates,
+                    ];
+                    $totalSyntheticDups += count($dupsToPurge);
+                    foreach ($dupsToPurge as $d) {
+                        $syntheticDupIds[] = (int)$d['id'];
+                        $fName = $canonical['nama_penyulang'] ?? 'TANPA_PENYULANG';
+                        if (isset($feederTotals[$fName])) {
+                            $feederTotals[$fName]['synthetic_dup_cnt']++;
+                        }
+                    }
+                }
+            }
+        }
+
+        ksort($feederTotals);
+
+        return [
+            'status'                       => 'success',
+            'audit_timestamp'              => date('Y-m-d H:i:s'),
+            'feeder_filter'                => $feederFilter ?: 'ALL_FEEDERS',
+            'total_active_assets'          => $totalActive,
+            'coordinate_duplicate_groups'  => count($duplicateGroups),
+            'synthetic_duplicates_count'   => $totalSyntheticDups,
+            'projected_active_after'       => $totalActive - $totalSyntheticDups,
+            'feeder_summary'               => $feederTotals,
+            'groups'                       => $duplicateGroups,
+            'synthetic_dup_ids'            => $syntheticDupIds,
+        ];
+    }
+
+    /**
+     * Executes or simulates (dry-run) coordinate-matched synthetic placeholder deduplication.
+     */
+    public function executeSyntheticDeduplication(bool $isExecute = false, ?string $feederFilter = null): array
+    {
+        $audit = $this->auditSyntheticDuplicates($feederFilter);
+        if ($audit['status'] !== 'success') {
+            return $audit;
+        }
+
+        if ($audit['synthetic_duplicates_count'] === 0) {
+            return array_merge($audit, [
+                'mode'                             => $isExecute ? 'LIVE_EXECUTION' : 'DRY_RUN',
+                'total_active_before'              => $audit['total_active_assets'],
+                'duplicate_records_to_soft_delete' => 0,
+                'projected_active_after'           => $audit['total_active_assets'],
+                'actual_active_after'              => $audit['total_active_assets'],
+                'dependencies_to_reroute'          => [
+                    'temuan_count'                   => 0,
+                    'temuan_materials_count'         => 0,
+                    'translines_source_count'        => 0,
+                    'translines_target_count'        => 0,
+                    'accessories_count'              => 0,
+                    'fault_outcomes_count'           => 0,
+                ],
+                'message'                          => 'Tidak ada duplikat synthetic placeholder yang ditemukan.',
+                'soft_deleted_count'               => 0,
+                'backup_file'                      => null,
+                'verified_clean'                   => true,
+            ]);
+        }
+
+        $dupIdsToSoftDelete = [];
+        $rerouteTemuan = [];
+        $rerouteTemuanMaterials = [];
+        $rerouteTlSource = [];
+        $rerouteTlTarget = [];
+        $rerouteAccessories = [];
+        $rerouteFaultOutcomes = [];
+        $backupRecords = [];
+
+        foreach ($audit['groups'] as $group) {
+            $canonId = (int)$group['canonical_record']['id'];
+            foreach ($group['duplicate_records'] as $dup) {
+                $dupId = (int)$dup['id'];
+                $dupIdsToSoftDelete[] = $dupId;
+                $backupRecords[] = [
+                    'duplicate_id'     => $dupId,
+                    'canonical_id'     => $canonId,
+                    'group_key'        => $group['group_key'],
+                    'kode_asset'       => $dup['kode_asset'] ?? '',
+                    'nama_asset'       => $dup['nama_asset'] ?? '',
+                ];
+
+                $deps = $dup['dependencies'];
+                if ($deps['temuan_count'] > 0) {
+                    $rerouteTemuan[] = ['old_id' => $dupId, 'new_id' => $canonId];
+                }
+                if ($deps['temuan_materials_count'] > 0) {
+                    $rerouteTemuanMaterials[] = ['old_id' => $dupId, 'new_id' => $canonId];
+                }
+                if ($deps['translines_source_count'] > 0) {
+                    $rerouteTlSource[] = ['old_id' => $dupId, 'new_id' => $canonId];
+                }
+                if ($deps['translines_target_count'] > 0) {
+                    $rerouteTlTarget[] = ['old_id' => $dupId, 'new_id' => $canonId];
+                }
+                if ($deps['accessories_count'] > 0) {
+                    $rerouteAccessories[] = ['old_id' => $dupId, 'new_id' => $canonId];
+                }
+                if ($deps['fault_outcomes_count'] > 0) {
+                    $rerouteFaultOutcomes[] = ['old_id' => $dupId, 'new_id' => $canonId];
+                }
+            }
+        }
+
+        $dryRunSummary = [
+            'mode'                             => $isExecute ? 'LIVE_EXECUTION' : 'DRY_RUN',
+            'filter_feeder'                    => $feederFilter ?: 'ALL_FEEDERS',
+            'total_active_before'              => $audit['total_active_assets'],
+            'coordinate_duplicate_groups'      => $audit['coordinate_duplicate_groups'],
+            'duplicate_records_to_soft_delete' => count($dupIdsToSoftDelete),
+            'projected_active_after'           => $audit['total_active_assets'] - count($dupIdsToSoftDelete),
+            'dependencies_to_reroute'          => [
+                'temuan_count'                   => count($rerouteTemuan),
+                'temuan_materials_count'         => count($rerouteTemuanMaterials),
+                'translines_source_count'        => count($rerouteTlSource),
+                'translines_target_count'        => count($rerouteTlTarget),
+                'accessories_count'              => count($rerouteAccessories),
+                'fault_outcomes_count'           => count($rerouteFaultOutcomes),
+            ],
+            'duplicate_groups_sample'          => array_slice($audit['groups'], 0, 10),
+        ];
+
+        if (!$isExecute) {
+            return array_merge($dryRunSummary, [
+                'status'  => 'success',
+                'message' => 'Simulasi dry-run deduplikasi synthetic selesai. Tidak ada data yang dimutasi.',
+            ]);
+        }
+
+        // Live Execution: Save JSON backup first
+        $backupDir = WRITEPATH . 'backups';
+        if (!is_dir($backupDir)) {
+            @mkdir($backupDir, 0755, true);
+        }
+        $backupFile = $backupDir . '/dedup_synthetic_backup_' . date('Ymd_His') . '.json';
+        $backupPayload = [
+            'timestamp'             => date('Y-m-d H:i:s'),
+            'operation'             => 'SYNTHETIC_ASSET_COORDINATE_DEDUPLICATION',
+            'feeder_filter'         => $feederFilter,
+            'summary'               => $dryRunSummary,
+            'records'               => $backupRecords,
+            'rerouted_dependencies' => [
+                'temuan'           => $rerouteTemuan,
+                'temuan_materials' => $rerouteTemuanMaterials,
+                'translines_src'   => $rerouteTlSource,
+                'translines_tgt'   => $rerouteTlTarget,
+                'accessories'      => $rerouteAccessories,
+                'fault_outcomes'   => $rerouteFaultOutcomes,
+            ],
+            'soft_deleted_ids'      => $dupIdsToSoftDelete,
+        ];
+
+        $written = file_put_contents($backupFile, json_encode($backupPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        $this->db->transBegin();
+        try {
+            // 1. Reroute temuan
+            foreach ($rerouteTemuan as $rt) {
+                $this->db->table('temuan')->where('asset_id', $rt['old_id'])->update(['asset_id' => $rt['new_id']]);
+            }
+
+            // 2. Reroute temuan_materials
+            if ($this->db->tableExists('temuan_materials')) {
+                foreach ($rerouteTemuanMaterials as $rm) {
+                    $this->db->table('temuan_materials')->where('asset_id', $rm['old_id'])->update(['asset_id' => $rm['new_id']]);
+                }
+            }
+
+            // 3. Reroute translines
+            if ($this->db->tableExists('gis_translines')) {
+                foreach ($rerouteTlSource as $rs) {
+                    $this->db->table('gis_translines')->where('source_asset_id', $rs['old_id'])->update(['source_asset_id' => $rs['new_id']]);
+                }
+                foreach ($rerouteTlTarget as $rtg) {
+                    $this->db->table('gis_translines')->where('target_asset_id', $rtg['old_id'])->update(['target_asset_id' => $rtg['new_id']]);
+                }
+                // Purge degenerate self-loops (source_asset_id == target_asset_id) resulting from deduplication
+                $this->db->query("DELETE FROM gis_translines WHERE source_asset_id = target_asset_id");
+            }
+
+            // 4. Reroute jtm_accessories
+            if ($this->db->tableExists('jtm_accessories')) {
+                foreach ($rerouteAccessories as $ra) {
+                    $this->db->table('jtm_accessories')->where('asset_id', $ra['old_id'])->update(['asset_id' => $ra['new_id']]);
+                }
+            }
+
+            // 5. Reroute fault_actual_findings
+            if ($this->db->tableExists('fault_actual_findings')) {
+                foreach ($rerouteFaultOutcomes as $rf) {
+                    $this->db->table('fault_actual_findings')->where('found_asset_id', $rf['old_id'])->update(['found_asset_id' => $rf['new_id']]);
+                }
+            }
+
+            // 6. Transactional Soft Delete
+            $now = date('Y-m-d H:i:s');
+            $chunks = array_chunk($dupIdsToSoftDelete, 250);
+            foreach ($chunks as $chunk) {
+                $this->db->table('assets')
+                    ->whereIn('id', $chunk)
+                    ->update([
+                        'deleted_at'                => $now,
+                        'section_resolution_method' => 'DEDUP_SYNTHETIC_COORDS',
+                    ]);
+            }
+
+            if ($this->db->transStatus() === false) {
+                throw new \RuntimeException('Database transaction reported error.');
+            }
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            return [
+                'status'  => 'error',
+                'message' => 'Synthetic deduplication failed and rolled back: ' . $e->getMessage(),
+                'backup'  => $backupFile,
+            ];
+        }
+
+        // Post-verification
+        $postAudit = $this->auditSyntheticDuplicates($feederFilter);
+        $verifiedClean = ($postAudit['synthetic_duplicates_count'] === 0);
+
+        return array_merge($dryRunSummary, [
+            'status'              => 'success',
+            'backup_file'         => $backupFile,
+            'backup_bytes'        => $written,
+            'soft_deleted_count'  => count($dupIdsToSoftDelete),
+            'actual_active_after' => $postAudit['total_active_assets'],
+            'verified_clean'      => $verifiedClean,
+        ]);
+    }
+
+    /**
      * Restores state from a deduplication backup file.
      */
     public function rollback(string $backupFilename): array

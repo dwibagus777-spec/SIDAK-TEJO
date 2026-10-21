@@ -340,8 +340,28 @@ class ServerSideAssetIngestEngine
             }
         }
 
-        // Rule 3: Coordinate Proximity Match (< 1.0 meter)
+        // Rule 3: Coordinate Proximity & Exact Geodetic Match
         if ($lat !== null && $lng !== null) {
+            $lat6 = round($lat, 6);
+            $lng6 = round($lng, 6);
+
+            // 3a. Exact coordinate match (rounded to 6 decimals)
+            $exactBuilder = $this->db->table('assets a')
+                ->select('a.id, a.nama_asset')
+                ->where('ROUND(a.latitude, 6) =', $lat6)
+                ->where('ROUND(a.longitude, 6) =', $lng6)
+                ->where('a.deleted_at IS NULL');
+            
+            $exactMatch = $exactBuilder->get()->getRowArray();
+            if ($exactMatch) {
+                return [
+                    'status'           => 'MATCHED_EXISTING',
+                    'matched_asset_id' => (int)$exactMatch['id'],
+                    'classification'   => 'EXACT_COORDINATE_MATCH',
+                ];
+            }
+
+            // 3b. Proximity match (< 1.0 meter)
             $sql = "SELECT id, (6371000 * acos(LEAST(1.0, GREATEST(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist_m 
                     FROM assets 
                     WHERE deleted_at IS NULL 
@@ -464,9 +484,33 @@ class ServerSideAssetIngestEngine
                     $sourceConductor = $raw['konduktor'] ?? $raw['conductor'] ?? null;
                     $conductorResolved = $this->resolveConductorMaterial($sourceConductor);
 
+                    // Coordinate anti-duplication safeguard
+                    $lat6 = round((float)$r['latitude'], 6);
+                    $lng6 = round((float)$r['longitude'], 6);
+                    $pId = $resolvedFk['penyulang_id'] ?? null;
+
+                    if ($pId !== null) {
+                        $existingAtCoords = $this->db->table('assets')
+                            ->select('id')
+                            ->where('penyulang_id', $pId)
+                            ->where('ROUND(latitude, 6) =', $lat6)
+                            ->where('ROUND(longitude, 6) =', $lng6)
+                            ->where('deleted_at IS NULL')
+                            ->get()->getRowArray();
+                        if ($existingAtCoords) {
+                            continue;
+                        }
+                    }
+
+                    // Asset name handling: NEVER generate synthetic placeholder NEW_INGESTED_ASSET_*
+                    $assetName = !empty($r['asset_name']) ? trim($r['asset_name']) : (!empty($raw['nama_asset']) ? trim($raw['nama_asset']) : null);
+                    if (empty($assetName) || stripos($assetName, 'NEW_INGESTED_ASSET') === 0) {
+                        $assetName = "AST-{$feederPrefix}-{$identityHash}";
+                    }
+
                     $assetsToInsert[] = [
                         'kode_asset'   => !empty($raw['kode_asset']) ? $raw['kode_asset'] : "AST-{$feederPrefix}-{$identityHash}",
-                        'nama_asset'   => !empty($r['asset_name']) ? $r['asset_name'] : null,
+                        'nama_asset'   => $assetName,
                         'jenis_asset'  => $raw['jenis_asset'] ?? $raw['jenis'] ?? 'JTM_COMPONENT',
                         'penyulang_id' => $resolvedFk['penyulang_id'] ?? null,
                         'ulp_id'       => $resolvedFk['ulp_id'] ?? null,

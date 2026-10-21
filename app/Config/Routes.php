@@ -31,6 +31,9 @@ $routes->get('master-assets/audit-global-duplicates', 'MigrateController::auditG
 $routes->match(['GET', 'POST'], 'master-assets/execute-global-dedup', 'MigrateController::executeGlobalDedup');
 $routes->match(['GET', 'POST'], 'master-assets/reconcile-non-pole-translines', 'MigrateController::reconcileNonPoleTranslinesAction');
 $routes->get('master-assets/direct-audit-summary', 'MigrateController::directAuditSummary');
+$routes->get('master-assets/audit-temuan-forensics', 'MigrateController::auditTemuanForensics');
+$routes->get('master-assets/audit-synthetic-duplicates', 'MigrateController::auditSyntheticDuplicates');
+$routes->match(['GET', 'POST'], 'master-assets/execute-synthetic-dedup', 'MigrateController::executeSyntheticDedup');
 
 // Phase B.3: Network Intelligence Platform Routes (Strictly Read-Only)
 $routes->get('network-intelligence/audit', 'NetworkIntelligenceController::b3Audit');

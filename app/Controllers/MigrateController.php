@@ -3846,4 +3846,116 @@ class MigrateController extends BaseController
         $svc = new \App\Services\GisTranslineService();
         return $this->response->setJSON($svc->reconcileNonPoleTranslines($execute));
     }
+
+    public function auditSyntheticDuplicates()
+    {
+        $feeder = $this->request->getGet('feeder');
+        $svc = new \App\Services\GlobalAssetDeduplicationService();
+        return $this->response->setJSON($svc->auditSyntheticDuplicates($feeder ? (string)$feeder : null));
+    }
+
+    public function executeSyntheticDedup()
+    {
+        $feeder = $this->request->getGet('feeder') ?? $this->request->getPost('feeder');
+        $execute = (bool)($this->request->getGet('execute') ?? $this->request->getPost('execute') ?? false);
+        $svc = new \App\Services\GlobalAssetDeduplicationService();
+        return $this->response->setJSON($svc->executeSyntheticDeduplication($execute, $feeder ? (string)$feeder : null));
+    }
+
+    public function auditTemuanForensics()
+    {
+        $db = \Config\Database::connect('default');
+
+        // 1. Direct query on temuan table for 656 and 657 (active and soft-deleted)
+        $temuanDirect = [];
+        if ($db->tableExists('temuan')) {
+            $temuanDirect = $db->query("SELECT * FROM temuan WHERE id IN (656, 657)")->getResultArray();
+        }
+
+        // 2. Query surrounding ID window
+        $temuanSurrounding = [];
+        if ($db->tableExists('temuan')) {
+            $temuanSurrounding = $db->query("SELECT id, nomor_temuan, judul, status, deleted_at, created_at, updated_at FROM temuan WHERE id BETWEEN 645 AND 670 ORDER BY id ASC")->getResultArray();
+        }
+
+        // 3. Table status (Auto_increment, Rows)
+        $status = $db->query("SHOW TABLE STATUS LIKE 'temuan'")->getRowArray();
+
+        // 4. Min, Max, Count, Soft-deleted
+        $stats = [];
+        if ($db->tableExists('temuan')) {
+            $stats = $db->query("SELECT 
+                MIN(id) as min_id, 
+                MAX(id) as max_id, 
+                COUNT(*) as total_rows,
+                COUNT(CASE WHEN deleted_at IS NULL THEN 1 END) as active_rows,
+                COUNT(CASE WHEN deleted_at IS NOT NULL THEN 1 END) as soft_deleted_rows
+            FROM temuan")->getRowArray();
+        }
+
+        // 5. Check all related tables for references to temuan_id 656 or 657
+        $references = [];
+        $checkTables = [
+            'temuan_materials' => 'temuan_id',
+            'tindak_lanjut'    => 'temuan_id',
+            'temuan_arsip'     => 'id',
+            'temuan_history'   => 'temuan_id',
+            'log_aktivitas'    => 'record_id',
+            'audit_trail'      => 'entity_id',
+            'fault_dispatches' => 'temuan_id',
+            'work_orders'      => 'temuan_id',
+            'penawaran'        => 'temuan_id',
+            'spkpo'            => 'temuan_id',
+            'inspeksi_detail'  => 'temuan_id',
+        ];
+        foreach ($checkTables as $tbl => $col) {
+            if ($db->tableExists($tbl)) {
+                try {
+                    $q = $db->query("SELECT * FROM `{$tbl}` WHERE `{$col}` IN (656, 657)");
+                    if ($q && !is_bool($q)) {
+                        $res = $q->getResultArray();
+                        if (!empty($res)) {
+                            $references[$tbl] = $res;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // ignore column mismatch
+                }
+            }
+        }
+
+        // 6. Check backups and logs in writable directory
+        $backupMatches = [];
+        $scanDirs = [WRITEPATH . 'backups', WRITEPATH . 'audits', WRITEPATH . 'logs'];
+        foreach ($scanDirs as $sDir) {
+            if (is_dir($sDir)) {
+                $files = scandir($sDir);
+                foreach ($files as $f) {
+                    if ($f === '.' || $f === '..') continue;
+                    $fp = $sDir . '/' . $f;
+                    if (is_file($fp) && filesize($fp) < 5000000) { // < 5MB
+                        $content = @file_get_contents($fp);
+                        if (str_contains($content, '656') || str_contains($content, '657')) {
+                            preg_match_all('/.{0,50}(?:656|657).{0,50}/', $content, $m);
+                            $backupMatches[$f] = array_slice($m[0] ?? [], 0, 5);
+                        }
+                    }
+                }
+            }
+        }
+
+        return $this->response->setJSON([
+            'status'                   => 'success',
+            'timestamp'                => date('Y-m-d H:i:s'),
+            'table_status'             => [
+                'Rows'           => $status['Rows'] ?? null,
+                'Auto_increment' => $status['Auto_increment'] ?? null,
+            ],
+            'temuan_stats'             => $stats,
+            'direct_match_656_657'     => $temuanDirect,
+            'surrounding_ids'          => $temuanSurrounding,
+            'related_table_references' => $references,
+            'backup_log_matches'       => $backupMatches,
+        ]);
+    }
 }

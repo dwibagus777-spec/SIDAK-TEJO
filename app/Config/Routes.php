@@ -1260,6 +1260,8 @@ $routes->get('api/transline-completion/forensic-bundle/(:any)', 'TranslineConnec
 $routes->get('fault-locator', 'FaultLocatorController::workspace');
 $routes->get('fault-locator/workspace', 'FaultLocatorController::workspace');
 $routes->get('api/fault-locator/summary', 'FaultLocatorController::summary');
+$routes->get('api/fault-locator/feeders-by-ulp/(:num)', 'FaultLocatorController::feedersByUlp/$1');
+$routes->get('api/fault-locator/protection-devices/(:num)', 'FaultLocatorController::protectionDevices/$1');
 $routes->post('api/fault-locator/locate', 'FaultLocatorController::locateFault');
 $routes->post('api/fault-locator/dispatch', 'FaultLocatorController::dispatch');
 $routes->get('api/fault-locator/forensic-bundle/(:any)', 'FaultLocatorController::forensicBundle/$1');

@@ -110,6 +110,16 @@ class TranslineAutoCompletionService
             return ['valid' => false, 'reason' => 'CROSS_ULP_ILLEGAL_RELATIONSHIP', 'details' => compact('sUlp', 'tUlp')];
         }
 
+        // Gate 8: JTM Pole Asset Validation (strictly prohibit trees, substations, switches, etc. as transline endpoints)
+        $sCheck = GisTranslineService::isJtmPoleAsset($source);
+        if (!$sCheck['valid']) {
+            return ['valid' => false, 'reason' => 'SOURCE_NOT_JTM_POLE: ' . $sCheck['reason'], 'details' => compact('source')];
+        }
+        $tCheck = GisTranslineService::isJtmPoleAsset($target);
+        if (!$tCheck['valid']) {
+            return ['valid' => false, 'reason' => 'TARGET_NOT_JTM_POLE: ' . $tCheck['reason'], 'details' => compact('target')];
+        }
+
         // Calculate Haversine distance
         $earthRadius = 6371000.0;
         $dLat = deg2rad($latB - $latA);

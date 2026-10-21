@@ -16,35 +16,47 @@ class FaultLocatorController extends BaseController
     }
 
     /**
-     * Render Fault Locator Command Center Workspace UI (D3-G01 & D3-G02 & D3-G03)
+     * Render Fault Locator Command Center Workspace UI
      */
     public function workspace()
     {
         $summary = $this->service->getOperationalSummary();
-        $feeders = $this->service->getFeeders();
+        $ulps = $this->service->getUlps();
+        $defaultUlpId = !empty($ulps) ? (int)$ulps[0]['id'] : null;
+
+        $feeders = $this->service->getFeeders($defaultUlpId);
+        $defaultFeederId = !empty($feeders) ? (int)$feeders[0]['id'] : 1;
+
+        $protectionDevices = $this->service->getProtectionDevices($defaultFeederId);
         $interruptions = $this->service->getRecentInterruptions(20);
 
-        $defaultFeederId = !empty($feeders) ? $feeders[0]['id'] : '1';
-
         $defaultTelemetry = [
-            'feeder_id'        => $defaultFeederId,
-            'timestamp'        => date('Y-m-d H:i:s'),
-            'phase'            => 'R-N',
-            'fault_current_a'  => 1450.0,
-            'relay_distance_m' => 1250.0,
-            'relay_type'       => 'OCR_GFR',
-            'device_asset_id'  => 'GI_OUTGOING'
+            'ulp_id'               => $defaultUlpId,
+            'feeder_id'            => $defaultFeederId,
+            'source_type'          => 'GI',
+            'protection_device_id' => !empty($protectionDevices) ? $protectionDevices[0]['id'] : null,
+            'fault_time'           => date('Y-m-d H:i:s'),
+            'current_r'            => 1450.0,
+            'current_s'            => 1420.0,
+            'current_t'            => 1440.0,
+            'current_n'            => 15.0,
+            'relay_distance_m'     => null,
+            'relay_type'           => 'OCR_GFR',
+            'conductor_type'       => 'AAAC 150 mm²',
         ];
 
         $initialResult = $this->service->locateFault($defaultTelemetry);
 
         $data = [
-            'title'         => 'Fault Locator Command Center Workspace (D3)',
-            'summary'       => $summary,
-            'feeders'       => $feeders,
-            'interruptions' => $interruptions,
-            'telemetry'     => $defaultTelemetry,
-            'result'        => $initialResult
+            'title'              => 'Fault Locator Command Center Workspace (D3)',
+            'summary'            => $summary,
+            'ulps'               => $ulps,
+            'feeders'            => $feeders,
+            'protectionDevices'  => $protectionDevices,
+            'conductorCatalog'   => FaultLocatorWorkspaceService::CONDUCTOR_CATALOG,
+            'interruptions'      => $interruptions,
+            'telemetry'          => $defaultTelemetry,
+            'result'             => $initialResult
         ];
 
         return view('fault_locator/workspace', $data);
@@ -63,7 +75,31 @@ class FaultLocatorController extends BaseController
     }
 
     /**
-     * API: Execute FLI-1.0.0 Fault Location Calculation
+     * API: Cascading Feeders by ULP
+     */
+    public function feedersByUlp(int $ulpId): ResponseInterface
+    {
+        $feeders = $this->service->getFeeders($ulpId);
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $feeders
+        ]);
+    }
+
+    /**
+     * API: Cascading Protection Devices by Feeder
+     */
+    public function protectionDevices(int $penyulangId): ResponseInterface
+    {
+        $devices = $this->service->getProtectionDevices($penyulangId);
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $devices
+        ]);
+    }
+
+    /**
+     * API: Execute Fault Location Calculation
      */
     public function locateFault(): ResponseInterface
     {

@@ -42,6 +42,151 @@ class GisTranslineService
     }
 
     /**
+     * Strict JTM Pole Validation.
+     *
+     * Rule: Translines MUST ONLY connect physical JTM pole assets.
+     * Non-pole assets such as ROW trees (POHON_ROW), substations/transformers (GARDU, GTT),
+     * switching/protection devices (RECLOSER, LBS, PMCB), and conductors cannot be nodes of translines.
+     *
+     * @param array|null $asset
+     * @return array<string, mixed> ['valid' => bool, 'reason' => string, 'type' => string]
+     */
+    public static function isJtmPoleAsset(?array $asset): array
+    {
+        if (!$asset || empty($asset['id'])) {
+            return [
+                'valid'  => false,
+                'reason' => 'Data aset tidak ditemukan di database.',
+            ];
+        }
+
+        $jenis = strtoupper(trim((string)($asset['jenis_asset'] ?? '')));
+        $nama  = strtoupper(trim((string)($asset['nama_asset'] ?? '')));
+        $kode  = strtoupper(trim((string)($asset['kode_asset'] ?? '')));
+
+        // 1. Explicitly prohibited non-JTM pole types
+        $prohibitedPatterns = [
+            'POHON'     => 'Pohon / Vegetasi ROW',
+            'ROW'       => 'Pohon ROW',
+            'GARDU'     => 'Gardu Distribusi / Trafo',
+            'GTT'       => 'Gardu Trafo Tiang',
+            'TRAFO'     => 'Transformator Distribusi',
+            'RECLOSER'  => 'Recloser Proteksi',
+            'LBS'       => 'Load Break Switch (LBS)',
+            'PMCB'      => 'Pole Mounted Circuit Breaker (PMCB)',
+            'KONDUKTOR' => 'Entitas Konduktor Terpisah',
+            'KABEL'     => 'Kabel Jaringan',
+            'GI'        => 'Gardu Induk',
+        ];
+
+        foreach ($prohibitedPatterns as $pattern => $label) {
+            if (str_contains($jenis, $pattern)) {
+                return [
+                    'valid'  => false,
+                    'reason' => "Tipe aset '{$jenis}' merupakan {$label}, bukan tiang JTM fisik. Transline hanya boleh menghubungkan tiang JTM.",
+                ];
+            }
+        }
+
+        // 2. Recognized authoritative JTM pole types
+        $validPoleTypes = [
+            'TIANG_BETON',
+            'TIANG_BESI',
+            'TIANG_KAYU',
+            'TIANG',
+            'JTM',
+            'POLE',
+        ];
+
+        if (in_array($jenis, $validPoleTypes, true)) {
+            return [
+                'valid'  => true,
+                'reason' => 'VALID_JTM_POLE',
+                'type'   => $jenis,
+            ];
+        }
+
+        // 3. Backward-compatible fallback for legacy unclassified poles
+        if (empty($jenis) && (str_contains($nama, 'TIANG') || str_contains($kode, 'T-') || str_contains($kode, 'TIANG'))) {
+            return [
+                'valid'  => true,
+                'reason' => 'VALID_LEGACY_POLE_BY_NAME',
+                'type'   => 'TIANG',
+            ];
+        }
+
+        return [
+            'valid'  => false,
+            'reason' => "Tipe aset '{$jenis}' tidak terdaftar sebagai tiang JTM valid.",
+        ];
+    }
+
+    /**
+     * Resolves a non-pole source asset (e.g., GI or Protection Device) to its nearest verified JTM pole.
+     *
+     * Invariant: Never create a transline between GI/protection and a pole.
+     * Instead, link the calculation/context via spatial & network relationship.
+     */
+    public function resolveSourceContextToNearestJtmPole(int $sourceAssetId, int $penyulangId): ?array
+    {
+        $asset = $this->db->table('assets')->where('id', $sourceAssetId)->get()->getRowArray();
+        if (!$asset) {
+            return null;
+        }
+
+        $check = self::isJtmPoleAsset($asset);
+        if ($check['valid']) {
+            return [
+                'source_type'             => 'JTM_POLE',
+                'source_asset'            => $asset,
+                'anchor_pole_asset'       => $asset,
+                'distance_to_pole_meters' => 0.0,
+            ];
+        }
+
+        // Find nearest valid JTM pole on the same feeder
+        $poles = $this->db->table('assets')
+            ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->groupStart()
+                ->whereIn('jenis_asset', ['TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE'])
+                ->orWhere('jenis_asset IS NULL')
+            ->groupEnd()
+            ->get()
+            ->getResultArray();
+
+        $nearestPole = null;
+        $minDist = PHP_FLOAT_MAX;
+        $srcLat = (float)($asset['latitude'] ?? 0);
+        $srcLng = (float)($asset['longitude'] ?? 0);
+
+        foreach ($poles as $p) {
+            $pLat = (float)($p['latitude'] ?? 0);
+            $pLng = (float)($p['longitude'] ?? 0);
+            if ($pLat == 0.0 || $pLng == 0.0 || $srcLat == 0.0 || $srcLng == 0.0) {
+                continue;
+            }
+            $d = $this->haversineDistance($srcLat, $srcLng, $pLat, $pLng);
+            if ($d < $minDist) {
+                $minDist = $d;
+                $nearestPole = $p;
+            }
+        }
+
+        if (!$nearestPole && !empty($poles)) {
+            $nearestPole = $poles[0];
+            $minDist = 0.0;
+        }
+
+        return [
+            'source_type'             => 'DEVICE_CONTEXT',
+            'source_asset'            => $asset,
+            'anchor_pole_asset'       => $nearestPole,
+            'distance_to_pole_meters' => round($minDist, 2),
+        ];
+    }
+
+    /**
      * Get all active transline segments for a feeder
      *
      * @param int $feederId
@@ -137,13 +282,30 @@ class GisTranslineService
             ];
         }
 
-        $sourceAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, latitude, longitude, penyulang_id')->where('id', $sourceId)->get()->getRowArray();
-        $targetAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, latitude, longitude, penyulang_id')->where('id', $targetId)->get()->getRowArray();
+        $sourceAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, jenis_asset, latitude, longitude, penyulang_id')->where('id', $sourceId)->get()->getRowArray();
+        $targetAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, jenis_asset, latitude, longitude, penyulang_id')->where('id', $targetId)->get()->getRowArray();
 
         if (!$sourceAsset || !$targetAsset) {
             return [
                 'status'  => 'error',
                 'message' => 'Aset sumber atau target tidak ditemukan.'
+            ];
+        }
+
+        // Strict JTM Pole Validation: Transline MUST ONLY connect physical JTM poles
+        $srcPoleCheck = self::isJtmPoleAsset($sourceAsset);
+        if (!$srcPoleCheck['valid']) {
+            return [
+                'status'  => 'error',
+                'message' => "Aset sumber [{$sourceAsset['kode_asset']}] ditolak: " . $srcPoleCheck['reason']
+            ];
+        }
+
+        $tgtPoleCheck = self::isJtmPoleAsset($targetAsset);
+        if (!$tgtPoleCheck['valid']) {
+            return [
+                'status'  => 'error',
+                'message' => "Aset target [{$targetAsset['kode_asset']}] ditolak: " . $tgtPoleCheck['reason']
             ];
         }
 
@@ -429,6 +591,22 @@ class GisTranslineService
         $coords = $geoJsonGeometry['coordinates'] ?? [];
         if (empty($coords)) {
             return ['status' => 'error', 'message' => 'Koordinat segmen tidak boleh kosong.'];
+        }
+
+        // Strict JTM Pole Validation: Transline MUST ONLY connect physical JTM poles
+        $sourceAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, jenis_asset')->where('id', $sourceId)->get()->getRowArray();
+        $targetAsset = $this->db->table('assets')->select('id, nama_asset, kode_asset, jenis_asset')->where('id', $targetId)->get()->getRowArray();
+        if ($sourceAsset) {
+            $srcPoleCheck = self::isJtmPoleAsset($sourceAsset);
+            if (!$srcPoleCheck['valid']) {
+                return ['status' => 'error', 'message' => "Aset sumber [{$sourceAsset['kode_asset']}] ditolak: " . $srcPoleCheck['reason']];
+            }
+        }
+        if ($targetAsset) {
+            $tgtPoleCheck = self::isJtmPoleAsset($targetAsset);
+            if (!$tgtPoleCheck['valid']) {
+                return ['status' => 'error', 'message' => "Aset target [{$targetAsset['kode_asset']}] ditolak: " . $tgtPoleCheck['reason']];
+            }
         }
 
         $actorName = $actor['name'] ?? 'SYSTEM';

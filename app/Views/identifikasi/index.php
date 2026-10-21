@@ -62,8 +62,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-transparent border-top">
+                <div class="card-footer bg-transparent border-top d-flex justify-content-between align-items-center">
                     <button type="submit" class="btn btn-warning text-dark font-weight-bold"><i class="fas fa-brain mr-1"></i> Mulai Analisis Gangguan</button>
+                    <a href="<?= site_url('fault-locator') ?>" class="btn btn-outline-danger"><i class="fas fa-crosshairs me-1"></i> Buka Fault Locator Command Center</a>
                 </div>
             </form>
         </div>

@@ -2384,7 +2384,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                             <span><i class="fas fa-brain me-1 text-purple"></i> AI & INTELLIGENCE</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
-                        <div class="collapse <?= (url_is('ai*') || url_is('sidak-ai*') || url_is('ranking*')) ? 'show' : '' ?>" id="group-ai">
+                        <div class="collapse <?= (url_is('ai*') || url_is('sidak-ai*') || url_is('ranking*') || url_is('identifikasi*') || url_is('fault-locator*')) ? 'show' : '' ?>" id="group-ai">
                             <li class="nav-item <?= (url_is('ai-copilot*') || url_is('sidak-ai*')) ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('ai-copilot') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-robot text-info"></i></span>
@@ -2395,6 +2395,18 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                 <a class="nav-link" href="<?= site_url('ai-center') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-brain text-purple"></i></span>
                                     <span class="nav-link-title">AI Center & Predictive Engine</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('identifikasi*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('identifikasi') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-bolt text-warning"></i></span>
+                                    <span class="nav-link-title">Identifikasi Gangguan</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= url_is('fault-locator*') ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('fault-locator') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-link-icon fas fa-crosshairs text-danger"></i></span>
+                                    <span class="nav-link-title">Fault Locator</span>
                                 </a>
                             </li>
                             <li class="nav-item <?= url_is('ranking*') ? 'active' : '' ?>">
@@ -5303,6 +5315,8 @@ $sidakMenuData = [
             'items' => [
                 ['href' => site_url('ai-copilot'), 'icon' => 'fas fa-robot', 'text' => 'SIDAK AI Copilot', 'active' => (bool)url_is('ai-copilot*')],
                 ['href' => site_url('ai-center'), 'icon' => 'fas fa-brain', 'text' => 'AI Center & Predictive', 'active' => (bool)url_is('ai-center*')],
+                ['href' => site_url('identifikasi'), 'icon' => 'fas fa-bolt', 'text' => 'Identifikasi Gangguan', 'active' => (bool)url_is('identifikasi*')],
+                ['href' => site_url('fault-locator'), 'icon' => 'fas fa-crosshairs', 'text' => 'Fault Locator', 'active' => (bool)url_is('fault-locator*')],
                 ['href' => site_url('ranking'), 'icon' => 'fas fa-medal', 'text' => 'Auto Ranking', 'active' => (bool)url_is('ranking*')],
             ]
         ]]

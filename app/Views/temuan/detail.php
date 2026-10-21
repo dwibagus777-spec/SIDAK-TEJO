@@ -656,8 +656,22 @@ $safetyAnalysis = $aiRecommendation['k2_k3_analysis'] ?? [];
                                 <small class="text-muted">Konteks Otoritatif Jaringan PLN UP3 Sidoarjo</small>
                             </div>
                         </div>
-                        <?php if (!empty($linkedAsset)): ?>
-                        <a href="<?= site_url('gis?asset_id=' . $linkedAsset['id']) ?>" target="_blank" class="btn btn-success btn-sm font-weight-bold shadow-sm" style="border-radius: 8px;">
+                        <?php
+                            $gisParams = [
+                                'penyulang_id' => $linkedAsset['penyulang_id'] ?? $temuan['penyulang_id'] ?? '',
+                                'section_id'   => $linkedAsset['section_id'] ?? $temuan['section_id'] ?? '',
+                                'lat'          => $linkedAsset['latitude'] ?? $temuan['latitude'] ?? '',
+                                'lng'          => $linkedAsset['longitude'] ?? $temuan['longitude'] ?? '',
+                                'zoom'         => 19,
+                            ];
+                            if (!empty($linkedAsset['id'])) {
+                                $gisParams['asset_id'] = $linkedAsset['id'];
+                                $gisParams['focus_asset_id'] = $linkedAsset['id'];
+                            }
+                            $gisUrl = site_url('gis') . '?' . http_build_query(array_filter($gisParams, static fn($v) => $v !== '' && $v !== null));
+                        ?>
+                        <?php if (!empty($gisParams['lat']) && !empty($gisParams['lng']) && (float)$gisParams['lat'] != 0.0): ?>
+                        <a href="<?= esc($gisUrl) ?>" target="_blank" class="btn btn-success btn-sm font-weight-bold shadow-sm" style="border-radius: 8px;">
                             <i class="fas fa-map-location-dot me-1"></i> 📍 Lihat di GIS
                         </a>
                         <?php endif; ?>
@@ -696,8 +710,51 @@ $safetyAnalysis = $aiRecommendation['k2_k3_analysis'] ?? [];
                             </div>
                         </div>
                         <?php else: ?>
-                        <div class="p-2 text-center text-muted small">
-                            <i class="fas fa-circle-info me-1"></i> Temuan ini belum terikat secara spesifik ke aset tiang/gardu jaringan (Temuan Terbuka).
+                        <div class="p-3 rounded bg-white border">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                <div class="text-secondary small">
+                                    <i class="fas fa-circle-exclamation text-warning me-1"></i> Temuan ini belum terikat secara spesifik ke aset tiang jaringan resmi.
+                                </div>
+                            </div>
+                            <?php if (!empty($candidateAssets['candidates'])): ?>
+                            <div class="mt-2 pt-2 border-top">
+                                <div class="small fw-bold text-primary mb-2">
+                                    <i class="fas fa-location-crosshairs me-1"></i> Rekomendasi Kandidat Tiang di Penyulang <?= esc($temuan['nama_penyulang']) ?>:
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0" style="font-size: 11px;">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Kode Aset</th>
+                                                <th>Nama Aset</th>
+                                                <th>Jarak</th>
+                                                <th>Section</th>
+                                                <th class="text-end">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($candidateAssets['candidates'] as $cand): ?>
+                                            <tr>
+                                                <td><span class="badge bg-dark font-monospace"><?= esc($cand['kode_asset']) ?></span></td>
+                                                <td class="fw-bold text-dark"><?= esc($cand['nama_asset']) ?></td>
+                                                <td><span class="badge bg-<?= (float)$cand['distance_meters'] <= 25 ? 'success' : 'secondary' ?>"><?= number_format((float)$cand['distance_meters'], 1) ?> meter</span></td>
+                                                <td><?= esc($cand['nama_section'] ?: '-') ?></td>
+                                                <td class="text-end">
+                                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 11px;" onclick="linkFindingToPole(<?= (int)$temuan['id'] ?>, <?= (int)$cand['id'] ?>)">
+                                                        <i class="fas fa-link me-1"></i> Tautkan
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <?php else: ?>
+                            <div class="text-muted small">
+                                Koordinat temuan: <code><?= esc($temuan['latitude'] ?: '0') ?>, <?= esc($temuan['longitude'] ?: '0') ?></code>. Gunakan GIS untuk memetakan tiang baru.
+                            </div>
+                            <?php endif; ?>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -748,11 +805,10 @@ $safetyAnalysis = $aiRecommendation['k2_k3_analysis'] ?? [];
                             <tr>
                                 <?php
                                     $nogaVal = trim((string)($temuan['noga'] ?? ''));
-                                    $isPoleOrAsset = !empty($linkedAsset) || preg_match('/(TIANG|POLE|_[0-9]+)/i', $nogaVal);
-                                    $nogaLabel = $isPoleOrAsset ? 'Identitas Titik Aset' : 'Gardu (NOGA)';
+                                    $hasGardu = ($nogaVal !== '' && !preg_match('/^[0-9]+$/', $nogaVal) && !preg_match('/^(tiang|pole|ast-|#)/i', $nogaVal));
                                 ?>
-                                <th style="width: 140px;" class="text-muted"><?= $nogaLabel ?></th>
-                                <td>: <?= $nogaVal ? esc($nogaVal) . ($isPoleOrAsset && !empty($linkedAsset) ? ' <span class="badge bg-success-subtle text-success border border-success-subtle ms-1 font-monospace" style="font-size: 10px;"><i class="fas fa-link me-0.5"></i> Terikat Master Asset</span>' : '') : '<span class="text-muted small">Tidak ada</span>' ?></td>
+                                <th style="width: 140px;" class="text-muted">Nomor Gardu (NOGA)</th>
+                                <td>: <?= $hasGardu ? '<span class="fw-bold text-dark font-monospace">' . esc($nogaVal) . '</span> <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1 font-monospace" style="font-size: 10px;"><i class="fas fa-bolt me-1"></i> Gardu Distribusi</span>' : '<span class="text-muted small">Bukan Temuan Gardu (Tiang SUTM)</span>' ?></td>
                             </tr>
                             <tr>
                                 <th class="text-muted">Waktu Mulai</th>
@@ -774,11 +830,16 @@ $safetyAnalysis = $aiRecommendation['k2_k3_analysis'] ?? [];
 
                 <!-- Material & Damage Cards -->
                 <div class="mb-4">
-                    <h6 class="font-weight-bold text-primary mb-2" style="font-size: 14px;">
-                        <i class="fas fa-screwdriver-wrench me-2"></i> Material Dibutuhkan:
-                    </h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="font-weight-bold text-primary mb-0" style="font-size: 14px;">
+                            <i class="fas fa-screwdriver-wrench me-2"></i> Kebutuhan Material Standar PLN (BOM):
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" style="font-size: 11px;" onclick="reSyncBom(<?= (int)$temuan['id'] ?>)">
+                            <i class="fas fa-wand-magic-sparkles me-1"></i> Hitung BOM Otomatis
+                        </button>
+                    </div>
                     <div class="p-3 rounded-3" style="background-color: #f1f5f9; border-left: 4px solid #005eb8; font-size: 13px; font-weight: 600; color: #0f172a; white-space: pre-wrap; line-height: 1.6;">
-                        <?= esc($temuan['material']) ?: '<span class="text-muted font-italic">Tidak ada spesifikasi material</span>' ?>
+                        <?= esc($temuan['material']) ?: '<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> Perlu Verifikasi Lapangan (Belum Terpetakan ke Katalog Standar)</span>' ?>
                     </div>
 
                     <?php if (!empty($structuredMaterials)): ?>
@@ -1780,5 +1841,57 @@ $safetyAnalysis = $aiRecommendation['k2_k3_analysis'] ?? [];
             }
         });
     });
+
+    function linkFindingToPole(temuanId, assetId) {
+        if (!confirm('Tautkan temuan ini ke tiang terpilih? Koordinat temuan akan disinkronkan dengan tiang.')) return;
+        
+        var fd = new FormData();
+        fd.append('temuan_id', temuanId);
+        fd.append('asset_id', assetId);
+        fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+        fetch('<?= site_url('temuan/link-asset') ?>', {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.status === 'success') {
+                alert(res.message);
+                window.location.reload();
+            } else {
+                alert('Gagal: ' + (res.message || 'Terjadi kesalahan'));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Kendala jaringan saat menautkan aset.');
+        });
+    }
+
+    function reSyncBom(temuanId) {
+        var fd = new FormData();
+        fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+        fetch('<?= site_url('temuan/sync-bom/') ?>' + temuanId, {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.status === 'success') {
+                alert('BOM berhasil dihitung ulang: ' + res.materials_count + ' material tersimpan.');
+                window.location.reload();
+            } else {
+                alert('Gagal: ' + (res.message || 'Terjadi kesalahan'));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Kendala jaringan saat sinkronisasi BOM.');
+        });
+    }
 </script>
 <?= $this->endSection() ?>

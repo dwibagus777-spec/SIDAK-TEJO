@@ -817,4 +817,105 @@ class Api extends BaseController
             ]);
         }
     }
+
+    /**
+     * GET /api/finding-link-audit
+     * Audits finding NOGA cleanliness, BOM resolution, and candidate pole matches.
+     */
+    public function findingLinkAudit()
+    {
+        try {
+            $id = $this->request->getGet('id');
+            $feederId = $this->request->getGet('feeder_id');
+            $service = new \App\Services\PlnStandardBomRuleService();
+
+            if (!empty($id)) {
+                $db = \Config\Database::connect();
+                $temuan = $db->table('temuan')->where('id', (int)$id)->get()->getRowArray();
+                if (!$temuan) {
+                    return $this->response->setStatusCode(404)->setJSON([
+                        'status'  => 'error',
+                        'message' => "Temuan #{$id} tidak ditemukan.",
+                    ]);
+                }
+                $bom = $service->resolveBomFromFinding($temuan);
+                $cleanNoga = $service->sanitizeNoga($temuan['noga'] ?? null, $temuan['detail_temuan'] ?? '');
+                $candidates = $service->findCandidateAssets($temuan, 150.0);
+
+                return $this->response->setJSON([
+                    'status'            => 'success',
+                    'finding'           => $temuan,
+                    'clean_noga'        => $cleanNoga,
+                    'bom_resolution'    => $bom,
+                    'candidate_assets'  => $candidates,
+                ]);
+            }
+
+            $result = $service->batchSyncBom(false, $feederId ? (int)$feederId : null);
+            return $this->response->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * POST /api/finding-link-reconcile
+     * Persists standard PLN BOM, sanitizes invalid NOGA, and executes deterministic pole links.
+     */
+    public function findingLinkReconcile()
+    {
+        try {
+            $id = $this->request->getGetPost('id');
+            $isExecute = (bool)($this->request->getGetPost('execute') ?? false);
+            $feederId = $this->request->getGetPost('feeder_id');
+            $service = new \App\Services\PlnStandardBomRuleService();
+
+            if (!empty($id)) {
+                $syncRes = $service->syncTemuanMaterials((int)$id, true);
+                if ($isExecute) {
+                    $db = \Config\Database::connect();
+                    $temuan = $db->table('temuan')->where('id', (int)$id)->get()->getRowArray();
+                    if ($temuan && empty($temuan['asset_id'])) {
+                        $cand = $service->findCandidateAssets($temuan, 50.0);
+                        if ($cand['is_deterministic']) {
+                            $targetAsset = $cand['candidates'][0];
+                            $linkRes = $service->linkFindingToAsset((int)$id, (int)$targetAsset['id']);
+                            $syncRes['deterministic_link'] = $linkRes;
+                        }
+                    }
+                }
+                return $this->response->setJSON($syncRes);
+            }
+
+            $result = $service->batchSyncBom($isExecute, $feederId ? (int)$feederId : null);
+            return $this->response->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * GET/POST /api/transline-audit-crossfeeder
+     * Audits and optionally prunes cross-feeder transline connections.
+     */
+    public function translineAuditCrossfeeder()
+    {
+        try {
+            $isExecute = (bool)($this->request->getGetPost('execute') ?? false);
+            $service = new \App\Services\PlnStandardBomRuleService();
+            $result = $service->auditCrossFeederTranslines($isExecute);
+            return $this->response->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
 }

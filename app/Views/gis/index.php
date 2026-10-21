@@ -7861,17 +7861,36 @@ document.addEventListener("DOMContentLoaded", function () {
     const focusZoom = parseInt(urlParams.get('zoom')) || 19;
     const isUpdated = urlParams.get('updated');
 
-    if (focusAssetId && parseInt(focusAssetId) > 0) {
+    var hasFocusCoords = (!isNaN(focusLat) && !isNaN(focusLng) && focusLat !== 0 && focusLng !== 0);
+    var hasFocusAsset = (focusAssetId && parseInt(focusAssetId, 10) > 0);
+
+    if (hasFocusCoords || hasFocusAsset) {
         setTimeout(function () {
-            if (map && !isNaN(focusLat) && !isNaN(focusLng) && focusLat !== 0 && focusLng !== 0) {
+            if (map && hasFocusCoords) {
                 map.flyTo([focusLat, focusLng], focusZoom, {
                     animate: true,
                     duration: 1.2
                 });
+
+                // Drop temporary pulsing inspection target marker
+                var targetPin = L.circleMarker([focusLat, focusLng], {
+                    radius: 12,
+                    fillColor: '#ef4444',
+                    color: '#ffffff',
+                    weight: 3,
+                    opacity: 1,
+                    fillOpacity: 0.85
+                }).addTo(map);
+                targetPin.bindPopup(`
+                    <div class="p-1 text-center font-monospace small">
+                        <strong class="text-danger"><i class="fas fa-location-dot me-1"></i> FOKUS INSPEKSI TEMUAN</strong><br>
+                        <span>Lat: ${focusLat.toFixed(6)}, Lng: ${focusLng.toFixed(6)}</span>
+                    </div>
+                `).openPopup();
             }
 
-            if (typeof openAssetContextDrawer === 'function') {
-                openAssetContextDrawer(parseInt(focusAssetId));
+            if (hasFocusAsset && typeof openAssetContextDrawer === 'function') {
+                openAssetContextDrawer(parseInt(focusAssetId, 10));
             }
 
             if (isUpdated === '1' && typeof Swal !== 'undefined') {
@@ -7890,7 +7909,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
                 }
             }
-        }, 500);
+        }, 600);
     }
 
 });

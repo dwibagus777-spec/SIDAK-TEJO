@@ -159,6 +159,9 @@ $routes->get('api/audit-kalisogo-reconciliation', 'Api::auditKalisogo');
 $routes->match(['GET', 'POST'], 'api/reconcile-kalisogo-duplicates', 'Api::reconcileKalisogoDuplicates');
 $routes->get('api/audit-composite7', 'Api::auditComposite7');
 $routes->match(['GET', 'POST'], 'api/reconcile-composite7', 'Api::reconcileComposite7');
+$routes->get('api/finding-link-audit', 'Api::findingLinkAudit');
+$routes->match(['GET', 'POST'], 'api/finding-link-reconcile', 'Api::findingLinkReconcile');
+$routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::translineAuditCrossfeeder');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');
 $routes->get('api/system/version', 'Api::version');
@@ -706,6 +709,9 @@ $routes->get('api/audit-kalisogo-reconciliation', 'Api::auditKalisogo');
 $routes->match(['GET', 'POST'], 'api/reconcile-kalisogo-duplicates', 'Api::reconcileKalisogoDuplicates');
 $routes->get('api/audit-composite7', 'Api::auditComposite7');
 $routes->match(['GET', 'POST'], 'api/reconcile-composite7', 'Api::reconcileComposite7');
+$routes->get('api/finding-link-audit', 'Api::findingLinkAudit');
+$routes->match(['GET', 'POST'], 'api/finding-link-reconcile', 'Api::findingLinkReconcile');
+$routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::translineAuditCrossfeeder');
 
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
     $routes->get('gis/api-penyulangs', 'GisController::apiPenyulangs');
@@ -875,6 +881,9 @@ $routes->match(['GET', 'POST'], 'api/reconcile-composite7', 'Api::reconcileCompo
     $routes->post('temuan/store', 'Temuan::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/lookup', 'Temuan::lookup');
     $routes->get('temuan/detail/(:num)', 'Temuan::detail/$1');
+    $routes->post('temuan/link-asset', 'Temuan::linkAsset', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('temuan/sync-bom/(:num)', 'Temuan::syncBom/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->get('temuan/candidates/(:num)', 'Temuan::getCandidateAssets/$1');
     $routes->post('temuan/tindak-lanjut/(:num)', 'Temuan::tindakLanjut/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->match(['GET', 'POST'], 'temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/edit/(:num)', 'Temuan::edit/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);

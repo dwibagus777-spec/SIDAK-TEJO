@@ -413,7 +413,7 @@ class Temuan extends BaseController
             'konduktor'             => $konduktorText,
             'conductor_type'        => $conductorTypePost,
             'conductor_size'        => $conductorSizePost,
-            'noga'                  => trim($this->request->getPost('noga')) ?: null,
+            'noga'                  => (new \App\Services\PlnStandardBomRuleService())->sanitizeNoga($this->request->getPost('noga'), $this->request->getPost('detail_temuan')),
             'material'              => $materialInput,
             'detail_temuan'         => trim($this->request->getPost('detail_temuan')),
             'alamat'                => trim($this->request->getPost('alamat')),
@@ -553,6 +553,14 @@ class Temuan extends BaseController
                     $txResult = $txService->persistDirectBomMaterials($structuredData, $session->get('user_id') ? (int)$session->get('user_id') : null);
                     if (($txResult['status'] ?? '') !== 'SUCCESS') {
                         log_message('error', '[MR01_TX_FAIL] Temuan #' . $insertedId . ': ' . ($txResult['message'] ?? 'Unknown error'));
+                    }
+                } else {
+                    // Auto-classify and persist PLN Standard BOM requirements
+                    try {
+                        $bomRuleService = new \App\Services\PlnStandardBomRuleService();
+                        $bomRuleService->syncTemuanMaterials((int)$insertedId);
+                    } catch (\Throwable $eBom) {
+                        log_message('error', '[BOM_AUTO_RULE_ERR] ' . $eBom->getMessage());
                     }
                 }
 
@@ -753,6 +761,18 @@ class Temuan extends BaseController
             }
         }
 
+        // Load candidate assets if unlinked
+        $candidateAssets = [];
+        if (empty($linkedAsset)) {
+            try {
+                $bomRuleService = new \App\Services\PlnStandardBomRuleService($db);
+                $candidateAssets = $bomRuleService->findCandidateAssets($temuan, 150.0);
+            } catch (\Throwable $eCand) {
+                log_message('warning', '[CANDIDATE_POLE_ERR] ' . $eCand->getMessage());
+                $candidateAssets = [];
+            }
+        }
+
         $trace = [
             'ROUTE_TRACE_2026'      => 'temuan/detail/' . $id,
             'CONTROLLER_TRACE_2026' => __METHOD__ . ' (' . realpath(__FILE__) . ')',
@@ -772,6 +792,7 @@ class Temuan extends BaseController
             'structuredMaterials' => $structuredMaterials,
             'accessories'         => $accessories,
             'linkedAsset'         => $linkedAsset,
+            'candidateAssets'     => $candidateAssets,
             'trace'               => $trace
         ]);
     }
@@ -1016,7 +1037,7 @@ class Temuan extends BaseController
             'konduktor'             => $konduktorText,
             'conductor_type'        => $conductorTypePost,
             'conductor_size'        => $conductorSizePost,
-            'noga'                  => trim($this->request->getPost('noga')) ?: null,
+            'noga'                  => (new \App\Services\PlnStandardBomRuleService())->sanitizeNoga($this->request->getPost('noga'), $this->request->getPost('detail_temuan')),
             'material'              => $materialInput,
             'detail_temuan'         => trim($this->request->getPost('detail_temuan')),
             'alamat'                => trim($this->request->getPost('alamat')),
@@ -1080,6 +1101,14 @@ class Temuan extends BaseController
                     $decoded['conductor_size']   = $conductorSizePost;
                     $decoded['replace_existing'] = true;
                     $txService->persistDirectBomMaterials($decoded, $session->get('user_id') ? (int)$session->get('user_id') : null);
+                }
+            } else {
+                // Auto-sync standard PLN BOM requirements on update
+                try {
+                    $bomRuleService = new \App\Services\PlnStandardBomRuleService();
+                    $bomRuleService->syncTemuanMaterials((int)$id);
+                } catch (\Throwable $eBom) {
+                    log_message('error', '[BOM_AUTO_UPDATE_ERR] ' . $eBom->getMessage());
                 }
             }
             return redirect()->to(site_url('temuan/detail/' . $id))->with('success', $res['message']);
@@ -1816,5 +1845,65 @@ class Temuan extends BaseController
 
         return $this->response->setHeader('Content-Type', 'application/json')
                               ->setBody(json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * POST /temuan/link-asset
+     * Links a finding to a verified network pole asset.
+     */
+    public function linkAsset()
+    {
+        $id = (int)($this->request->getPost('temuan_id') ?? 0);
+        $assetId = (int)($this->request->getPost('asset_id') ?? 0);
+
+        if ($id <= 0 || $assetId <= 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'message' => 'Parameter temuan_id atau asset_id tidak valid.',
+            ]);
+        }
+
+        $session = session();
+        $userId = $session->get('user_id') ? (int)$session->get('user_id') : null;
+
+        $service = new \App\Services\PlnStandardBomRuleService();
+        $result = $service->linkFindingToAsset($id, $assetId, $userId);
+
+        $code = ($result['status'] === 'success') ? 200 : 400;
+        return $this->response->setStatusCode($code)->setJSON($result);
+    }
+
+    /**
+     * POST /temuan/sync-bom/(:num)
+     * Re-runs the standard PLN BOM rule engine for a finding.
+     */
+    public function syncBom(int $id)
+    {
+        $service = new \App\Services\PlnStandardBomRuleService();
+        $result = $service->syncTemuanMaterials($id, true);
+
+        $code = ($result['status'] === 'success') ? 200 : 400;
+        return $this->response->setStatusCode($code)->setJSON($result);
+    }
+
+    /**
+     * GET /temuan/candidates/(:num)
+     * Returns candidate network poles for an unlinked finding.
+     */
+    public function getCandidateAssets(int $id)
+    {
+        $db = \Config\Database::connect();
+        $temuan = $db->table('temuan')->where('id', $id)->get()->getRowArray();
+        if (!$temuan) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 'error',
+                'message' => 'Temuan tidak ditemukan.',
+            ]);
+        }
+
+        $service = new \App\Services\PlnStandardBomRuleService($db);
+        $result = $service->findCandidateAssets($temuan, 250.0);
+
+        return $this->response->setJSON($result);
     }
 }

@@ -54,6 +54,22 @@ class GisController extends BaseController
         $selectedUlpId       = (int)($this->request->getGet('ulp_id') ?? 0);
         $captiveOnly         = (int)($this->request->getGet('captive_only') ?? 0) === 1;
 
+        $selectedAssetId = (int)($this->request->getGet('asset_id') ?? $this->request->getGet('focus_asset_id') ?? 0);
+        if ($selectedAssetId > 0 && $selectedPenyulangId <= 0 && $db->tableExists('assets')) {
+            $aRow = $db->table('assets a')
+                ->select('a.penyulang_id, p.ulp_id')
+                ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+                ->where('a.id', $selectedAssetId)
+                ->get()
+                ->getRowArray();
+            if (!empty($aRow['penyulang_id'])) {
+                $selectedPenyulangId = (int)$aRow['penyulang_id'];
+                if ($selectedUlpId <= 0 && !empty($aRow['ulp_id'])) {
+                    $selectedUlpId = (int)$aRow['ulp_id'];
+                }
+            }
+        }
+
         if ($captiveOnly && $selectedPenyulangId <= 0) {
             if ($db->tableExists('captive_non_penugasan')) {
                 $cQ = $db->table('captive_non_penugasan c')

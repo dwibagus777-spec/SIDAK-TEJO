@@ -107,4 +107,30 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
         $this->assertEquals(1850.0, $res['calculated_distance_m']);
         $this->assertGreaterThanOrEqual(90.0, $res['confidence_percent']);
     }
+
+    public function testFeederWithoutPolesOrTranslinesReturnsDataTidakCukupZeroDistance(): void
+    {
+        // Feeder without physical spans/poles (such as Citra Fajar or unmapped feeder)
+        // Ensure distance is strictly 0.0 m, calculation_status is DATA_TIDAK_CUKUP,
+        // and dasar_perhitungan is TOPOLOGI_BELUM_TERSEDIA (no phantom 18,713.6 m).
+        $telemetry = [
+            'feeder_id'        => 999999, // unmapped feeder
+            'source_type'      => 'GI',
+            'current_r'        => 1500.0,
+            'current_s'        => 1500.0,
+            'current_t'        => 1500.0,
+            'current_n'        => 5.0,
+            'relay_distance_m' => null,
+            'conductor_type'   => 'AAAC 150 mm²',
+        ];
+
+        $res = $this->service->locateFault($telemetry);
+
+        $this->assertSame('DATA_TIDAK_CUKUP', $res['calculation_status']);
+        $this->assertSame('TOPOLOGI_BELUM_TERSEDIA', $res['dasar_perhitungan']);
+        $this->assertEquals(0.0, $res['calculated_distance_m']);
+        $this->assertEquals(0.0, $res['confidence_percent']);
+        $this->assertEmpty($res['pole_sequence']);
+        $this->assertEmpty($res['candidate_assets']);
+    }
 }

@@ -557,7 +557,7 @@ if (!function_exists('get_photo_url')) {
             }
         }
 
-        return base_url('foto/' . rawurlencode($relativeName));
+        return $placeholder;
     }
 }
 

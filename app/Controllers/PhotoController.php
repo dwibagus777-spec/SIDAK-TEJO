@@ -67,6 +67,14 @@ class PhotoController extends BaseController
             }
         }
 
+        $placeholder = FCPATH . 'assets/img/no-image.png';
+        if (is_file($placeholder) && is_readable($placeholder)) {
+            return $this->response
+                ->setHeader('Content-Type', 'image/png')
+                ->setHeader('Cache-Control', 'public, max-age=86400')
+                ->setBody(file_get_contents($placeholder));
+        }
+
         return $this->response->setStatusCode(404);
     }
 }

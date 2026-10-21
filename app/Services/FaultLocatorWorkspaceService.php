@@ -362,12 +362,21 @@ class FaultLocatorWorkspaceService
                 ->getRowArray();
         }
         if (!$feeder) {
-            $feeder = $this->db->table('penyulang')->orderBy('id', 'ASC')->get()->getRowArray() ?? [
-                'id' => 1,
-                'kode_penyulang' => 'PYL-001',
-                'nama_penyulang' => 'SIWALAN PANJI',
-                'ulp_id' => 1
-            ];
+            if (!empty($feederInput)) {
+                $feeder = [
+                    'id'             => is_numeric($feederInput) ? (int)$feederInput : 0,
+                    'kode_penyulang' => 'UNKNOWN',
+                    'nama_penyulang' => is_string($feederInput) ? $feederInput : ('Penyulang #' . $feederInput),
+                    'ulp_id'         => (int)($ulpInput ?? 1)
+                ];
+            } else {
+                $feeder = $this->db->table('penyulang')->orderBy('id', 'ASC')->get()->getRowArray() ?? [
+                    'id' => 1,
+                    'kode_penyulang' => 'PYL-001',
+                    'nama_penyulang' => 'SIWALAN PANJI',
+                    'ulp_id' => 1
+                ];
+            }
         }
 
         $penyulangId   = (int)$feeder['id'];
@@ -436,6 +445,20 @@ class FaultLocatorWorkspaceService
 
         $anchorPoleId = (int)($anchorPole['id'] ?? 0);
 
+        // Pre-flight check: Feeder Physical Network Availability Safeguard
+        $translineCount = $this->db->table('gis_translines')
+            ->where('penyulang_id', $penyulangId)
+            ->where('is_active', 1)
+            ->where('deleted_at IS NULL')
+            ->countAllResults();
+
+        $assetCount = $this->db->table('assets')
+            ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->countAllResults();
+
+        $hasTopology = ($translineCount > 0 && $assetCount > 0 && $anchorPoleId > 0);
+
         // 5. Rigorous Electrical Calculation & Physics Telemetry Checks
         $calculationStatus = 'RESOLVED';
         $dasarPerhitungan = 'ESTIMASI_TOPOLOGI';
@@ -446,7 +469,20 @@ class FaultLocatorWorkspaceService
         $confidence = 0.0;
         $explanation = '';
 
-        if ($relayDistanceIn !== null && $relayDistanceIn > 0) {
+        if (!$hasTopology) {
+            $calculationStatus = 'DATA_TIDAK_CUKUP';
+            $dasarPerhitungan = 'TOPOLOGI_BELUM_TERSEDIA';
+            $dasarPerhitunganLabel = "DATA TIDAK CUKUP: Penyulang {$penyulangNama} belum memiliki data topologi span/tiang JTM resmi ({$translineCount} span / {$assetCount} tiang)";
+            $formulaDerivation = "Penyulang [{$penyulangNama}] memiliki {$translineCount} transline aktif dan {$assetCount} tiang JTM terdaftar. Perhitungan jarak gangguan dihentikan pada 0.0 m untuk mencegah hasil estimasi fiktif.";
+            $missingParameters = [
+                "Topologi transline resmi untuk penyulang {$penyulangNama} belum terpetakan di sistem (0 segmen)",
+                "Data aset tiang JTM resmi belum lengkap ({$assetCount} tiang)",
+                "Peralatan proteksi/pangkal penyulang belum terhubung ke graf transline resmi"
+            ];
+            $calculatedDistanceM = 0.0;
+            $confidence = 0.0;
+            $explanation = "Penyulang {$penyulangNama} belum memiliki topologi transline dan tiang JTM resmi di sistem (0 span / {$assetCount} tiang). Silakan petakan aset tiang JTM dan transline penyulang ini terlebih dahulu sebelum menjalankan Fault Locator.";
+        } elseif ($relayDistanceIn !== null && $relayDistanceIn > 0) {
             // Case A: Relay distance measurement available directly from numeric relay
             $calculatedDistanceM = round($relayDistanceIn, 1);
             $calculationStatus = 'CALCULATED_RELAY_AIDED';
@@ -1066,10 +1102,13 @@ class FaultLocatorWorkspaceService
 
         foreach ($cases as &$c) {
             // Guarantee human-readable, non-placeholder feeder display
-            if (empty($c['nama_penyulang'])) {
-                $c['nama_penyulang'] = !empty($c['penyulang_id'])
-                    ? 'Penyulang ID #' . $c['penyulang_id']
-                    : 'Penyulang Belum Terdefinisi (Data Uji/Arsip)';
+            if (empty($c['nama_penyulang']) || str_starts_with((string)$c['nama_penyulang'], 'Feeder #')) {
+                if (!empty($c['penyulang_id'])) {
+                    $pyl = $this->db->table('penyulang')->where('id', (int)$c['penyulang_id'])->get()->getRowArray();
+                    $c['nama_penyulang'] = $pyl['nama_penyulang'] ?? ('Penyulang ID #' . $c['penyulang_id']);
+                } else {
+                    $c['nama_penyulang'] = 'Penyulang Belum Terdefinisi (Data Uji/Arsip)';
+                }
             }
 
             // Distinguish zero from unmeasured/missing currents

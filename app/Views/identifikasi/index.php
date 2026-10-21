@@ -223,7 +223,7 @@
                                             if (!empty($photos)):
                                                 $firstPhoto = get_photo_url($photos[0], $row['foto_path'] ?? 'foto/');
                                             ?>
-                                                <img src="<?= $firstPhoto ?>" class="img-preview" style="height: 40px; width: 40px;" onclick="openPhotoModal('<?= $firstPhoto ?>')" alt="Thumbnail">
+                                                <img src="<?= $firstPhoto ?>" class="img-preview" style="height: 40px; width: 40px;" onclick="openPhotoModal('<?= $firstPhoto ?>')" alt="Thumbnail" onerror="this.onerror=null;this.src='<?= base_url('assets/img/no-image.png') ?>';">
                                             <?php else: ?>
                                                 <span class="text-muted small">No photo</span>
                                             <?php endif; ?>
@@ -256,7 +256,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center p-3">
-                <img id="modal-img-preview" src="" style="max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 8px;">
+                <img id="modal-img-preview" src="" style="max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 8px;" onerror="this.onerror=null;this.src='<?= base_url('assets/img/no-image.png') ?>';">
             </div>
             <div class="modal-footer border-top d-flex justify-content-end">
                 <a href="" id="btn-download-photo" download class="btn btn-sm btn-success font-weight-bold"><i class="fas fa-download mr-1"></i> Unduh Foto</a>

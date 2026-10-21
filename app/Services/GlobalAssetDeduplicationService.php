@@ -60,6 +60,8 @@ class GlobalAssetDeduplicationService
         $groups = [];
         $feederBreakdown = [];
 
+        $tiangTypes = ['jtm_tiang', 'TIANG_BETON', 'TIANG_BESI', 'JTM'];
+
         foreach ($assets as $ast) {
             $unitName    = 'UP3 SIDOARJO';
             $ulpName     = trim((string)($ast['nama_ulp'] ?? ''));
@@ -79,13 +81,18 @@ class GlobalAssetDeduplicationService
             $fKey = !empty($normFeeder) ? $normFeeder : 'TANPA_PENYULANG';
             if (!isset($feederBreakdown[$fKey])) {
                 $feederBreakdown[$fKey] = [
-                    'ulp'              => $normUlp ?: 'TANPA_ULP',
-                    'total_active'     => 0,
-                    'duplicate_groups' => 0,
-                    'duplicates_count' => 0,
+                    'ulp'                  => $normUlp ?: 'TANPA_ULP',
+                    'total_active'         => 0,
+                    'total_tiang_jtm'      => 0,
+                    'duplicate_groups'     => 0,
+                    'duplicates_count'     => 0,
+                    'clean_active_assets'  => 0,
                 ];
             }
             $feederBreakdown[$fKey]['total_active']++;
+            if (in_array($ast['jenis_asset'], $tiangTypes, true)) {
+                $feederBreakdown[$fKey]['total_tiang_jtm']++;
+            }
 
             $compositeKey = "{$normUnit}|{$normUlp}|{$normFeeder}|{$normAsset}|{$normSection}|{$lat}|{$lng}";
 
@@ -182,15 +189,112 @@ class GlobalAssetDeduplicationService
             }
         }
 
+        // Calculate clean_active_assets and totals
+        $totalTiangJtmAll = 0;
+        foreach ($feederBreakdown as $fName => &$fInfo) {
+            $fInfo['clean_active_assets'] = $fInfo['total_active'] - $fInfo['duplicates_count'];
+            $totalTiangJtmAll += $fInfo['total_tiang_jtm'];
+        }
+        unset($fInfo);
+
         ksort($feederBreakdown);
+
+        // GEMPOLSARI forensics (to explain the 684 CSV vs 1,345 DB count)
+        $gempolForensics = null;
+        if (empty($feederFilter) || stripos($feederFilter, 'GEMPOL') !== false) {
+            $gempolJenisRes = $this->db->query("SELECT a.jenis_asset, COUNT(DISTINCT a.id) as cnt 
+                FROM assets a 
+                LEFT JOIN penyulang p ON p.id = a.penyulang_id
+                WHERE p.nama_penyulang = 'GEMPOLSARI' AND a.deleted_at IS NULL 
+                GROUP BY a.jenis_asset");
+            $gempolJenis = is_object($gempolJenisRes) ? $gempolJenisRes->getResultArray() : [];
+
+            $gempolPatternsRes = $this->db->query("SELECT 
+                CASE 
+                    WHEN a.nama_asset LIKE 'GEMPOLSARI_%' THEN 'GEMPOLSARI_N (CSV Tiang)'
+                    WHEN a.nama_asset LIKE 'AST-%' THEN 'AST-PORONG-... (Standard Tag)'
+                    ELSE 'OTHER_NAMING'
+                END as pattern_name,
+                COUNT(DISTINCT a.id) as cnt,
+                MIN(a.id) as min_id,
+                MAX(a.id) as max_id,
+                MIN(a.created_at) as min_created,
+                MAX(a.created_at) as max_created
+                FROM assets a 
+                LEFT JOIN penyulang p ON p.id = a.penyulang_id
+                WHERE p.nama_penyulang = 'GEMPOLSARI' AND a.deleted_at IS NULL 
+                GROUP BY pattern_name");
+            $gempolPatterns = is_object($gempolPatternsRes) ? $gempolPatternsRes->getResultArray() : [];
+
+            $gempolSamplesRes = $this->db->query("SELECT a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.section_id, s.nama_section, a.latitude, a.longitude, a.created_at, a.import_batch_id 
+                FROM assets a 
+                LEFT JOIN penyulang p ON p.id = a.penyulang_id
+                LEFT JOIN sections s ON s.id = a.section_id
+                WHERE p.nama_penyulang = 'GEMPOLSARI' AND a.deleted_at IS NULL 
+                ORDER BY a.id ASC LIMIT 10");
+            $gempolSamples = is_object($gempolSamplesRes) ? $gempolSamplesRes->getResultArray() : [];
+
+            // 6-col duplicate check without section
+            $gempolDup6Res = $this->db->query("SELECT 
+                UPPER(TRIM(a.nama_asset)) as nama_asset,
+                ROUND(a.latitude, 6) as latitude,
+                ROUND(a.longitude, 6) as longitude,
+                COUNT(DISTINCT a.id) as group_count,
+                GROUP_CONCAT(a.id ORDER BY a.id ASC) as asset_ids
+                FROM assets a
+                LEFT JOIN penyulang p ON p.id = a.penyulang_id
+                WHERE p.nama_penyulang = 'GEMPOLSARI' AND a.deleted_at IS NULL
+                GROUP BY UPPER(TRIM(a.nama_asset)), ROUND(a.latitude, 6), ROUND(a.longitude, 6)
+                HAVING group_count > 1");
+            $gempolDup6 = is_object($gempolDup6Res) ? $gempolDup6Res->getResultArray() : [];
+
+            // Coordinate duplicates
+            $gempolDupCoordRes = $this->db->query("SELECT 
+                ROUND(a.latitude, 6) as latitude,
+                ROUND(a.longitude, 6) as longitude,
+                COUNT(DISTINCT a.id) as group_count,
+                GROUP_CONCAT(a.id ORDER BY a.id ASC) as asset_ids,
+                GROUP_CONCAT(a.nama_asset SEPARATOR ' | ') as names
+                FROM assets a
+                LEFT JOIN penyulang p ON p.id = a.penyulang_id
+                WHERE p.nama_penyulang = 'GEMPOLSARI' AND a.deleted_at IS NULL
+                GROUP BY ROUND(a.latitude, 6), ROUND(a.longitude, 6)
+                HAVING group_count > 1");
+            $gempolDupCoord = is_object($gempolDupCoordRes) ? $gempolDupCoordRes->getResultArray() : [];
+
+            $gempolForensics = [
+                'feeder'                         => 'GEMPOLSARI',
+                'csv_row_count'                  => 684,
+                'db_total_active'                => $feederBreakdown['GEMPOLSARI']['total_active'] ?? 0,
+                'db_total_tiang_jtm'             => $feederBreakdown['GEMPOLSARI']['total_tiang_jtm'] ?? 0,
+                'jenis_asset_breakdown'          => $gempolJenis,
+                'naming_patterns'                => $gempolPatterns,
+                'duplicate_groups_7col'          => $feederBreakdown['GEMPOLSARI']['duplicate_groups'] ?? 0,
+                'duplicate_groups_6col_no_sec'   => count($gempolDup6),
+                'duplicate_groups_coords_only'   => count($gempolDupCoord),
+                'sample_records'                 => $gempolSamples,
+                'sample_coord_conflicts'         => array_slice($gempolDupCoord, 0, 5),
+            ];
+        }
 
         return [
             'status'                  => 'success',
             'audit_timestamp'         => date('Y-m-d H:i:s'),
             'filter_feeder'           => $feederFilter ?: 'ALL_FEEDERS',
             'total_active_assets'     => $totalActive,
+            'total_tiang_jtm'         => $totalTiangJtmAll,
             'duplicate_groups_count'  => count($duplicateGroups),
             'duplicate_records_count' => $totalDuplicateRecords,
+            'clean_active_assets'     => $totalActive - $totalDuplicateRecords,
+            'totals_summary'          => [
+                'total_feeders'           => count($feederBreakdown),
+                'total_active_all'        => $totalActive,
+                'total_tiang_jtm_all'     => $totalTiangJtmAll,
+                'total_duplicate_groups'  => count($duplicateGroups),
+                'total_duplicate_records' => $totalDuplicateRecords,
+                'total_clean_assets'      => $totalActive - $totalDuplicateRecords,
+            ],
+            'gempol_forensics'        => $gempolForensics,
             'feeder_breakdown'        => $feederBreakdown,
             'groups'                  => $duplicateGroups,
         ];

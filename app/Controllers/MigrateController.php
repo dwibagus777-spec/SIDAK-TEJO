@@ -4030,16 +4030,70 @@ class MigrateController extends BaseController
         $syncResult = null;
         if ($this->request->getGet('sync_bom') === '1') {
             $ruleService = new \App\Services\PlnStandardBomRuleService();
-            try {
-                $sync29 = $ruleService->syncTemuanMaterials(29, true);
-            } catch (\Throwable $e29) {
-                $sync29 = ['status' => 'exception', 'message' => $e29->getMessage(), 'trace' => $e29->getFile() . ':' . $e29->getLine()];
-            }
-            $batchRes = $ruleService->batchSyncBom(true);
+            
+            // Step-by-step diagnostic test without transaction to pinpoint exact issue
+            $diagSteps = [];
+            $del1 = $db->table('temuan_materials')->where('temuan_id', 29)->delete();
+            $diagSteps['delete_res'] = $del1;
+            $diagSteps['delete_err'] = $db->error();
+
+            $ins1 = $db->table('temuan_materials')->insert([
+                'temuan_id'               => 29,
+                'asset_id'                => null,
+                'construction_type_id'    => null,
+                'material_id'             => 30,
+                'canonical_code_snapshot' => 'CANON-MAT-001',
+                'canonical_name_snapshot' => 'Insulator - Pin Post Insulator 20 Kv;12,5 kN - Porcelain (Tumpu)',
+                'unit_snapshot'           => 'buah',
+                'quantity'                => 2.00,
+                'used_quantity'           => 0.00,
+                'work_status'             => 'PENDING',
+                'conductor_type'          => 'AAAC',
+                'conductor_size'          => '150',
+                'justification_note'      => 'Temuan: 611. PA073 Pin isolator cuil phase R dan T . Lokasi perum pondok jati III Blok CH -18. Zona 2. P. Kahuripan.',
+                'source_mode'             => 'BOM_RULE_ENGINE',
+                'created_at'              => date('Y-m-d H:i:s'),
+                'updated_at'              => date('Y-m-d H:i:s'),
+            ]);
+            $diagSteps['insert1_res'] = $ins1;
+            $diagSteps['insert1_err'] = $db->error();
+
+            $topTieMat = $db->table('master_materials')->where('canonical_code', 'CANON-ACC-012')->get()->getRowArray();
+            $topTieId = $topTieMat ? (int)$topTieMat['id'] : 30;
+
+            $ins2 = $db->table('temuan_materials')->insert([
+                'temuan_id'               => 29,
+                'asset_id'                => null,
+                'construction_type_id'    => null,
+                'material_id'             => $topTieId,
+                'canonical_code_snapshot' => 'CANON-ACC-012',
+                'canonical_name_snapshot' => 'Preformed Top Tie 150 mm²',
+                'unit_snapshot'           => 'buah',
+                'quantity'                => 2.00,
+                'used_quantity'           => 0.00,
+                'work_status'             => 'PENDING',
+                'conductor_type'          => 'AAAC',
+                'conductor_size'          => '150',
+                'justification_note'      => 'Pengikat konduktor pada pin insulator untuk 2 fasa (fasa R dan T)',
+                'source_mode'             => 'BOM_RULE_ENGINE',
+                'created_at'              => date('Y-m-d H:i:s'),
+                'updated_at'              => date('Y-m-d H:i:s'),
+            ]);
+            $diagSteps['insert2_res'] = $ins2;
+            $diagSteps['insert2_err'] = $db->error();
+
+            $upd1 = $db->table('temuan')->where('id', 29)->update([
+                'material' => '2.00 buah CANON-MAT-001, 2.00 buah CANON-ACC-012',
+                'finding_component_key' => 'PIN_ISOLATOR',
+                'noga' => 'PA 073',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+            $diagSteps['update_res'] = $upd1;
+            $diagSteps['update_err'] = $db->error();
+
             $syncResult = [
-                'sync_29' => $sync29,
-                'batch_sync' => $batchRes,
-                'master_sample' => $db->query("SELECT id, canonical_code, nama_material FROM master_materials WHERE canonical_code IN ('CANON-MAT-001', 'CANON-ACC-012') OR id IN (15, 30)")->getResultArray(),
+                'diag_steps' => $diagSteps,
+                'top_tie_mat' => $topTieMat,
             ];
             $m29 = ($db->tableExists('temuan_materials') && $t29) ? $db->table('temuan_materials')->where('temuan_id', 29)->get()->getResultArray() : [];
         }

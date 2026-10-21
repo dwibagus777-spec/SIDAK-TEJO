@@ -2356,116 +2356,124 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
 
     // 2. Feeder Status Donut Chart with onClick Drill-Down
-    var donutCtx = document.getElementById('feederStatusDonutChart');
-    if (donutCtx) {
-        new Chart(donutCtx.getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Sehat', 'Kronis', 'Sakit', 'Kritis'],
-                datasets: [{
-                    data: [<?= $sehatCount ?>, <?= $kronisCount ?>, <?= $sakitCount ?>, <?= $kritisCount ?>],
-                    backgroundColor: ['#22c55e', '#f59e0b', '#f97316', '#ef4444'],
-                    borderWidth: 2,
-                    borderColor: '#ffffff',
-                    hoverOffset: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '72%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(ctx) {
-                                return ctx.label + ': ' + ctx.raw + ' Penyulang (Klik untuk daftar)';
+    try {
+        var donutCtx = document.getElementById('feederStatusDonutChart');
+        if (donutCtx) {
+            new Chart(donutCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Sehat', 'Kronis', 'Sakit', 'Kritis'],
+                    datasets: [{
+                        data: [<?= $sehatCount ?>, <?= $kronisCount ?>, <?= $sakitCount ?>, <?= $kritisCount ?>],
+                        backgroundColor: ['#22c55e', '#f59e0b', '#f97316', '#ef4444'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ctx.label + ': ' + ctx.raw + ' Penyulang (Klik untuk daftar)';
+                                }
                             }
                         }
-                    }
-                },
-                onClick: function(evt, elements) {
-                    if (!elements || !elements.length) return;
-                    var statusMap = ['SEHAT', 'KRONIS', 'SAKIT', 'KRITIS'];
-                    var idx = elements[0].index;
-                    if (statusMap[idx]) {
-                        showFeederListByStatus(statusMap[idx]);
+                    },
+                    onClick: function(evt, elements) {
+                        if (!elements || !elements.length) return;
+                        var statusMap = ['SEHAT', 'KRONIS', 'SAKIT', 'KRITIS'];
+                        var idx = elements[0].index;
+                        if (statusMap[idx]) {
+                            showFeederListByStatus(statusMap[idx]);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
+    } catch (eDonut) {
+        console.warn('[Dashboard] FeederStatusDonut error:', eDonut);
     }
 
     // 3. Monthly Trend Line Chart (Real DB data)
-    var trendCtx = document.getElementById('monthlyTrendChart');
-    if (trendCtx) {
-        <?php
-            // Build 12-slot monthly array for selected trend year
-            $selectedTrendYear = (int)($trendYear ?? date('Y'));
-            $monthlySlots = array_fill(1, 12, 0);
-            foreach (($monthlyData ?? []) as $md) {
-                $parts = explode('-', $md['bulan'] ?? '');
-                if (count($parts) === 2 && (int)$parts[0] === $selectedTrendYear) {
-                    $monthlySlots[(int)$parts[1]] = (int)($md['total'] ?? 0);
-                }
-            }
-            $monthlyValues = array_values($monthlySlots);
-        ?>
-        new Chart(trendCtx.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
-                datasets: [{
-                    label: 'Jumlah Temuan (<?= $selectedTrendYear ?>)',
-                    data: <?= json_encode($monthlyValues) ?>,
-                    borderColor: '#0284c7',
-                    backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                    borderWidth: 2.5,
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#0284c7',
-                    pointHoverRadius: 8,
-                    pointHoverBackgroundColor: '#0369a1'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                onClick: function(evt, elements) {
-                    if (elements && elements.length > 0) {
-                        var clickedMonth = elements[0].index + 1;
-                        var targetUrl = '<?= site_url('temuan') ?>?year=<?= $selectedTrendYear ?>&month=' + clickedMonth + '<?= !empty($selectedUlpId) ? ('&ulp_id=' . $selectedUlpId) : '' ?>';
-                        window.location.href = targetUrl;
+    try {
+        var trendCtx = document.getElementById('monthlyTrendChart');
+        if (trendCtx) {
+            <?php
+                // Build 12-slot monthly array for selected trend year
+                $selectedTrendYear = (int)($trendYear ?? date('Y'));
+                $monthlySlots = array_fill(1, 12, 0);
+                foreach (($monthlyData ?? []) as $md) {
+                    $parts = explode('-', $md['bulan'] ?? '');
+                    if (count($parts) === 2 && (int)$parts[0] === $selectedTrendYear) {
+                        $monthlySlots[(int)$parts[1]] = (int)($md['total'] ?? 0);
                     }
+                }
+                $monthlyValues = array_values($monthlySlots);
+            ?>
+            new Chart(trendCtx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+                    datasets: [{
+                        label: 'Jumlah Temuan (<?= $selectedTrendYear ?>)',
+                        data: <?= json_encode($monthlyValues) ?>,
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#0284c7',
+                        pointHoverRadius: 8,
+                        pointHoverBackgroundColor: '#0369a1'
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: { boxWidth: 12, font: { size: 11 } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: function(evt, elements) {
+                        if (elements && elements.length > 0) {
+                            var clickedMonth = elements[0].index + 1;
+                            var targetUrl = '<?= site_url('temuan') ?>?year=<?= $selectedTrendYear ?>&month=' + clickedMonth + '<?= !empty($selectedUlpId) ? ('&ulp_id=' . $selectedUlpId) : '' ?>';
+                            window.location.href = targetUrl;
+                        }
                     },
-                    tooltip: {
-                        callbacks: {
-                            afterLabel: function() {
-                                return 'Klik untuk buka temuan bulan ini';
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { boxWidth: 12, font: { size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function() {
+                                    return 'Klik untuk buka temuan bulan ini';
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(226, 232, 240, 0.6)' },
-                        ticks: { font: { size: 10 } }
                     },
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 10 } }
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(226, 232, 240, 0.6)' },
+                            ticks: { font: { size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
+    } catch (eTrend) {
+        console.warn('[Dashboard] MonthlyTrend error:', eTrend);
     }
 
     window.changeTrendYear = function(newYear) {
@@ -2480,64 +2488,68 @@ document.addEventListener('DOMContentLoaded', function() {
     var map = null;
     var markerLayers = [];
 
-    if (mapContainer && typeof L !== 'undefined') {
-        map = L.map('dahGisMap', {
-            zoomControl: false,
-            attributionControl: false
-        }).setView([-7.4726, 112.6675], 11);
+    try {
+        if (mapContainer && typeof L !== 'undefined') {
+            map = L.map('dahGisMap', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([-7.4726, 112.6675], 11);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18
-        }).addTo(map);
-
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-        // Real temuan pins from DB (prioritas, status, and linked feeder)
-        <?php
-            $safePins = array_map(function($p) {
-                return [
-                    'id'           => (int)$p['id'],
-                    'label'        => (string)($p['nomor_temuan'] ?? 'T-' . $p['id']),
-                    'lat'          => (float)$p['latitude'],
-                    'lng'          => (float)$p['longitude'],
-                    'status'       => strtoupper((string)($p['status'] ?? 'BELUM')),
-                    'prio'         => strtoupper((string)($p['prioritas'] ?? 'MEDIUM')),
-                    'penyulang_id' => (int)($p['penyulang_id'] ?? 0),
-                    'penyulang'    => (string)($p['nama_penyulang'] ?? '-'),
-                    'detail'       => mb_substr((string)($p['detail_temuan'] ?? $p['alamat'] ?? ''), 0, 100, 'UTF-8'),
-                ];
-            }, $mapPins ?? []);
-            $pinsJson = json_encode($safePins, JSON_INVALID_UTF8_SUBSTITUTE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
-            if ($pinsJson === false || empty($pinsJson)) {
-                $pinsJson = '[]';
-            }
-        ?>
-        var mapPins = <?= $pinsJson ?>;
-
-        mapPins.forEach(function(f) {
-            var color = '#0ea5e9'; // default = MEDIUM
-            if (f.prio === 'EMERGENCY') color = '#ef4444';
-            else if (f.prio === 'HIGH') color = '#f97316';
-            else if (f.prio === 'LOW') color = '#22c55e';
-            var radius = f.prio === 'EMERGENCY' ? 9 : (f.prio === 'HIGH' ? 7 : 5);
-
-            var circle = L.circleMarker([f.lat, f.lng], {
-                radius: radius,
-                fillColor: color,
-                color: '#ffffff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.85
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18
             }).addTo(map);
 
-            circle.feederId = f.penyulang_id;
-            circle.pinData = f;
-            markerLayers.push(circle);
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            circle.on('click', function() {
-                updateGisPopupCard(f);
+            // Real temuan pins from DB (prioritas, status, and linked feeder)
+            <?php
+                $safePins = array_map(function($p) {
+                    return [
+                        'id'           => (int)$p['id'],
+                        'label'        => (string)($p['nomor_temuan'] ?? 'T-' . $p['id']),
+                        'lat'          => (float)$p['latitude'],
+                        'lng'          => (float)$p['longitude'],
+                        'status'       => strtoupper((string)($p['status'] ?? 'BELUM')),
+                        'prio'         => strtoupper((string)($p['prioritas'] ?? 'MEDIUM')),
+                        'penyulang_id' => (int)($p['penyulang_id'] ?? 0),
+                        'penyulang'    => (string)($p['nama_penyulang'] ?? '-'),
+                        'detail'       => mb_substr((string)($p['detail_temuan'] ?? $p['alamat'] ?? ''), 0, 100, 'UTF-8'),
+                    ];
+                }, $mapPins ?? []);
+                $pinsJson = json_encode($safePins, JSON_INVALID_UTF8_SUBSTITUTE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
+                if ($pinsJson === false || empty($pinsJson)) {
+                    $pinsJson = '[]';
+                }
+            ?>
+            var mapPins = <?= $pinsJson ?>;
+
+            mapPins.forEach(function(f) {
+                var color = '#0ea5e9'; // default = MEDIUM
+                if (f.prio === 'EMERGENCY') color = '#ef4444';
+                else if (f.prio === 'HIGH') color = '#f97316';
+                else if (f.prio === 'LOW') color = '#22c55e';
+                var radius = f.prio === 'EMERGENCY' ? 9 : (f.prio === 'HIGH' ? 7 : 5);
+
+                var circle = L.circleMarker([f.lat, f.lng], {
+                    radius: radius,
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.85
+                }).addTo(map);
+
+                circle.feederId = f.penyulang_id;
+                circle.pinData = f;
+                markerLayers.push(circle);
+
+                circle.on('click', function() {
+                    updateGisPopupCard(f);
+                });
             });
-        });
+        }
+    } catch (eGis) {
+        console.warn('[Dashboard] GIS map error:', eGis);
     }
 
     function updateGisPopupCard(f) {
@@ -2792,35 +2804,36 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.updateYoYComparisonChart = function() {
-        var selA = document.getElementById('yoyYearA');
-        var selB = document.getElementById('yoyYearB');
-        var yrA = selA ? parseInt(selA.value, 10) : new Date().getFullYear();
-        var yrB = selB ? parseInt(selB.value, 10) : (new Date().getFullYear() - 1);
+        try {
+            var selA = document.getElementById('yoyYearA');
+            var selB = document.getElementById('yoyYearB');
+            var yrA = selA ? parseInt(selA.value, 10) : new Date().getFullYear();
+            var yrB = selB ? parseInt(selB.value, 10) : (new Date().getFullYear() - 1);
 
-        // Update detail link href to maintain seamless synchronization with /gangguan page
-        var btnDetail = document.getElementById('btnDetailYoy');
-        if (btnDetail) {
-            btnDetail.href = '<?= site_url("gangguan") ?>?year_a=' + yrA + '&year_b=' + yrB + '<?= !empty($selectedUlpId) ? "&ulp_id=" . (int)$selectedUlpId : "" ?>';
-        }
+            // Update detail link href to maintain seamless synchronization with /gangguan page
+            var btnDetail = document.getElementById('btnDetailYoy');
+            if (btnDetail) {
+                btnDetail.href = '<?= site_url("gangguan") ?>?year_a=' + yrA + '&year_b=' + yrB + '<?= !empty($selectedUlpId) ? "&ulp_id=" . (int)$selectedUlpId : "" ?>';
+            }
 
-        var labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-        var ctx = document.getElementById('cumulativeGangguanChart');
-        var overlay = document.getElementById('chartNoDataOverlay');
-        var overlayMsg = document.getElementById('chartNoDataMsg');
-        if (!ctx || typeof Chart === 'undefined') return;
+            var labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+            var ctx = document.getElementById('cumulativeGangguanChart');
+            var overlay = document.getElementById('chartNoDataOverlay');
+            var overlayMsg = document.getElementById('chartNoDataMsg');
+            if (!ctx || typeof Chart === 'undefined') return;
 
-        if (window.yoyChartInstance) {
-            window.yoyChartInstance.destroy();
-            window.yoyChartInstance = null;
-        }
+            if (window.yoyChartInstance) {
+                window.yoyChartInstance.destroy();
+                window.yoyChartInstance = null;
+            }
 
-        var metric = window.currentYoYMetric || 'trips';
-        var datasets = [];
-        var yTitle = 'Total Trip Kumulatif';
-        var maxVal = 0;
-        var hasValidData = false;
-        var chartType = 'line';
-        var indexAxis = 'x';
+            var metric = window.currentYoYMetric || 'trips';
+            var datasets = [];
+            var yTitle = 'Total Trip Kumulatif';
+            var maxVal = 0;
+            var hasValidData = false;
+            var chartType = 'line';
+            var indexAxis = 'x';
 
         var yoyData = (window.yoyPayload && window.yoyPayload.yoy) ? window.yoyPayload.yoy : {};
         var entryA = yoyData[yrA] || null;
@@ -3249,23 +3262,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-                            precision: metric === 'current' ? 1 : 0,
-                            maxTicksLimit: 6,
-                            font: { size: 10.5 }
-                        },
-                        grid: {
-                            color: 'rgba(148, 163, 184, 0.16)'
-                        }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            font: { size: 10.5, weight: '600' }
-                        }
-                    }
-                }
-            }
-        });
+        } catch (eYoY) {
+            console.warn('[Dashboard] updateYoYComparisonChart error:', eYoY);
+        }
     };
 
     function array_fill_null(len) {

@@ -3826,6 +3826,24 @@ class MigrateController extends BaseController
         GROUP BY pattern_group", [$feeder]);
         $patternGroups = is_object($patternRes) ? $patternRes->getResultArray() : [];
 
+        // 8. Transline audit per feeder
+        $translinesByFeeder = [];
+        $totalActiveTranslines = 0;
+        if ($db->tableExists('gis_translines')) {
+            $tlRes = $db->query("SELECT 
+                COALESCE(p.nama_penyulang, 'TANPA_PENYULANG') as nama_penyulang,
+                COUNT(gt.id) as total_active_transline
+            FROM gis_translines gt
+            LEFT JOIN penyulang p ON p.id = gt.penyulang_id
+            WHERE (gt.deleted_at IS NULL OR gt.deleted_at = '0000-00-00 00:00:00') AND gt.is_active = 1
+            GROUP BY p.nama_penyulang
+            ORDER BY p.nama_penyulang ASC");
+            if (is_object($tlRes)) {
+                $translinesByFeeder = $tlRes->getResultArray();
+                $totalActiveTranslines = array_sum(array_column($translinesByFeeder, 'total_active_transline'));
+            }
+        }
+
         return $this->response->setJSON([
             'status' => 'success',
             'feeder' => $feeder,
@@ -3844,8 +3862,11 @@ class MigrateController extends BaseController
                 'feeders_count' => count($totals),
                 'total_active_all' => array_sum(array_column($totals, 'total_active_assets')),
                 'total_tiang_jtm_all' => array_sum(array_column($totals, 'total_tiang_jtm')),
+                'total_active_translines' => $totalActiveTranslines,
             ],
             'totals_per_feeder' => $totals,
+            'translines_total' => $totalActiveTranslines,
+            'translines_by_feeder' => $translinesByFeeder,
         ]);
     }
 
@@ -4801,7 +4822,9 @@ class MigrateController extends BaseController
             if ($n !== '') {
                 $fId = (int)($er['penyulang_id'] ?? 0);
                 $existingByName["{$fId}|{$n}"] = (int)$er['id'];
-                $existingByName["0|{$n}"] = (int)$er['id'];
+                if ($fId === 0) {
+                    $existingByName["0|{$n}"] = (int)$er['id'];
+                }
             }
             if ($er['lat'] !== null && $er['lng'] !== null) {
                 $cKey = "{$er['lat']}_{$er['lng']}_" . strtolower(trim((string)$er['jenis_asset']));
@@ -4975,10 +4998,21 @@ class MigrateController extends BaseController
                 // Deduplication Check
                 $lowerName = strtolower($assetName);
                 $fCheckKey = ($feederId ?? 0) . "|{$lowerName}";
-                $globalCheckKey = "0|{$lowerName}";
                 $coordKey = round($lat, 5) . '_' . round($lng, 5) . '_' . strtolower($cfg['category']);
 
-                if (isset($existingByName[$fCheckKey]) || isset($existingByName[$globalCheckKey]) || isset($existingByCoord[$coordKey])) {
+                $isDuplicate = false;
+                if ($feederId > 0) {
+                    if (isset($existingByName[$fCheckKey]) || isset($existingByCoord[$coordKey])) {
+                        $isDuplicate = true;
+                    }
+                } else {
+                    $globalCheckKey = "0|{$lowerName}";
+                    if (isset($existingByName[$globalCheckKey]) || isset($existingByCoord[$coordKey])) {
+                        $isDuplicate = true;
+                    }
+                }
+
+                if ($isDuplicate) {
                     $stats['duplicate_count']++;
                     continue;
                 }
@@ -5029,7 +5063,11 @@ class MigrateController extends BaseController
                     'status'          => 'OPERASIONAL',
                 ];
 
-                $existingByName[$fCheckKey] = true;
+                if ($feederId > 0) {
+                    $existingByName[$fCheckKey] = true;
+                } else {
+                    $existingByName["0|{$lowerName}"] = true;
+                }
                 $existingByCoord[$coordKey] = true;
             }
 

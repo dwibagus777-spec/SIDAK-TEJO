@@ -471,6 +471,7 @@ class PlnStandardBomRuleService
         $insertedCount = 0;
         $totalQty = 0.0;
         $now = date('Y-m-d H:i:s');
+        $validTmFields = $this->db->tableExists('temuan_materials') ? $this->db->getFieldNames('temuan_materials') : [];
 
         foreach ($bomResult['materials'] as $item) {
             $materialId = $matIdMap[$item['canonical_code']] ?? null;
@@ -488,7 +489,7 @@ class PlnStandardBomRuleService
             $usedQty = $priorUsage ? $priorUsage['used_quantity'] : 0.00;
             $workStatus = $priorUsage ? $priorUsage['work_status'] : 'PENDING';
 
-            $this->db->table('temuan_materials')->insert([
+            $insertData = [
                 'temuan_id'               => $temuanId,
                 'asset_id'                => !empty($temuan['asset_id']) ? (int)$temuan['asset_id'] : null,
                 'construction_type_id'    => $constructionTypeId,
@@ -505,7 +506,14 @@ class PlnStandardBomRuleService
                 'source_mode'             => 'BOM_RULE_ENGINE',
                 'created_at'              => $now,
                 'updated_at'              => $now,
-            ]);
+            ];
+
+            // Protect against missing optional schema columns
+            if (!empty($validTmFields)) {
+                $insertData = array_intersect_key($insertData, array_flip($validTmFields));
+            }
+
+            $this->db->table('temuan_materials')->insert($insertData);
 
             $insertedCount++;
             $totalQty += (float)$item['quantity'];
@@ -520,6 +528,11 @@ class PlnStandardBomRuleService
             'noga'                  => $cleanNoga,
             'updated_at'            => $now,
         ];
+
+        $validTemuanFields = $this->db->tableExists('temuan') ? $this->db->getFieldNames('temuan') : [];
+        if (!empty($validTemuanFields)) {
+            $updateTemuan = array_intersect_key($updateTemuan, array_flip($validTemuanFields));
+        }
 
         $this->db->table('temuan')->where('id', $temuanId)->update($updateTemuan);
 

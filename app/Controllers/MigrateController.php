@@ -4067,10 +4067,13 @@ class MigrateController extends BaseController
                 $m29 = ($db->tableExists('temuan_materials') && $t29) ? $db->table('temuan_materials')->where('temuan_id', 29)->get()->getResultArray() : [];
             }
 
+            // Check what columns temuan_materials has
+            $colsTm = $db->tableExists('temuan_materials') ? $db->getFieldNames('temuan_materials') : [];
+
             return $this->response->setJSON([
                 'status' => 'success',
                 'timestamp' => date('Y-m-d H:i:s'),
-                'cols_mat' => $colsMat,
+                'cols_temuan_materials' => $colsTm,
                 'diag_result' => $diagResult,
                 'master_materials' => $allMats,
                 'assets' => [

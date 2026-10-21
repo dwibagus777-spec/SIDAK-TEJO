@@ -519,9 +519,10 @@ class PlnStandardBomRuleService
         $this->db->transComplete();
 
         if ($this->db->transStatus() === false) {
+            $err = $this->db->error();
             return [
                 'status'  => 'error',
-                'message' => 'Gagal menyimpan transaksi BOM ke database.',
+                'message' => 'Gagal menyimpan transaksi BOM ke database: ' . ($err['message'] ?? 'unknown'),
             ];
         }
 

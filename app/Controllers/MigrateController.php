@@ -4047,12 +4047,14 @@ class MigrateController extends BaseController
             // 5. Kahuripan Temuan & Materials
             $kTemuan = [];
             $kMats = [];
+            $kArmTies = [];
             if ($db->tableExists('temuan')) {
                 $kFeeder = $db->table('penyulang')->like('nama_penyulang', 'KAHURIPAN')->get()->getRowArray();
                 if ($kFeeder) {
                     $kTemuan = $db->table('temuan')->where('penyulang_id', $kFeeder['id'])->where('deleted_at IS NULL')->get()->getResultArray();
                     if ($db->tableExists('temuan_materials')) {
                         $kMats = $db->query("SELECT tm.*, t.detail_temuan FROM temuan_materials tm JOIN temuan t ON t.id = tm.temuan_id WHERE t.penyulang_id = " . (int)$kFeeder['id'] . " AND t.deleted_at IS NULL")->getResultArray();
+                        $kArmTies = $db->query("SELECT tm.id as tm_id, tm.temuan_id, t.nomor_temuan, t.jenis_temuan, t.finding_component_key, t.detail_temuan, tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.quantity, tm.justification_note, tm.source_mode, tm.created_at FROM temuan_materials tm JOIN temuan t ON t.id = tm.temuan_id WHERE t.penyulang_id = " . (int)$kFeeder['id'] . " AND t.deleted_at IS NULL AND tm.canonical_code_snapshot = 'CANON-HDW-003'")->getResultArray();
                     }
                 }
             }
@@ -4070,6 +4072,11 @@ class MigrateController extends BaseController
             // Check what columns historical_feeder_interruptions has
             $colsHfi = $db->tableExists('historical_feeder_interruptions') ? $db->getFieldNames('historical_feeder_interruptions') : [];
             $currentDiag = [];
+            $currentDiag['csv_exists'] = file_exists(WRITEPATH . 'uploads/google_sheet_raw_gangguan_cr01_phase3.csv');
+            if ($currentDiag['csv_exists']) {
+                $currentDiag['csv_size'] = filesize(WRITEPATH . 'uploads/google_sheet_raw_gangguan_cr01_phase3.csv');
+            }
+            $currentDiag['upload_files'] = is_dir(WRITEPATH . 'uploads') ? scandir(WRITEPATH . 'uploads') : [];
             if ($db->tableExists('historical_feeder_interruptions')) {
                 // Check possible current columns
                 $candidateCols = [];
@@ -4132,6 +4139,8 @@ class MigrateController extends BaseController
                 'kahuripan' => [
                     'temuan_count' => count($kTemuan),
                     'materials_count' => count($kMats),
+                    'arm_tie_count' => count($kArmTies),
+                    'arm_ties' => $kArmTies,
                     'materials' => $kMats,
                 ]
             ]);

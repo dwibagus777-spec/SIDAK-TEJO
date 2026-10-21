@@ -4729,4 +4729,427 @@ class MigrateController extends BaseController
             ]);
         }
     }
+
+    /**
+     * Webhook/Endpoint: Execute Batch Ingest Assets (Keypoint, Gardu, Trafo, JTM) on Production
+     */
+    public function executeBatchIngestAssets()
+    {
+        @set_time_limit(300);
+        @ini_set('memory_limit', '512M');
+
+        $db = \Config\Database::connect('default');
+        $isExecute = ($this->request->getGet('execute') === '1' || $this->request->getGet('execute') === 'true' || $this->request->getMethod() === 'post');
+        $mode = $isExecute ? 'EXECUTE' : 'DRY_RUN';
+
+        // 1. Initial State Breakdown
+        $initialRows = $db->query("SELECT jenis_asset, COUNT(*) cnt FROM assets WHERE deleted_at IS NULL GROUP BY jenis_asset ORDER BY cnt DESC")->getResultArray();
+        $initialBreakdown = array_column($initialRows, 'cnt', 'jenis_asset');
+        $initialTotal = array_sum(array_column($initialRows, 'cnt'));
+
+        // 2. Preload Feeders & ULPs
+        $dbFeeders = $db->table('penyulang')->select('id, kode_penyulang, nama_penyulang, ulp_id')->get()->getResultArray();
+        $normFunc = function(string $name): string {
+            $n = strtoupper(trim($name));
+            $n = preg_replace('/^(PENYULANG|FEEDER|P\.)\s+/i', '', $n);
+            $n = preg_replace('/[^A-Z0-9]/', '', $n);
+            return $n;
+        };
+
+        $dbFeederMap = [];
+        foreach ($dbFeeders as $df) {
+            $norm = $normFunc($df['nama_penyulang']);
+            $dbFeederMap[$norm][] = $df;
+        }
+
+        $dbUlps = $db->table('ulps')->select('id, nama_ulp')->get()->getResultArray();
+        $dbUlpMap = [];
+        foreach ($dbUlps as $du) {
+            $norm = $normFunc(str_ireplace('ULP', '', $du['nama_ulp']));
+            $dbUlpMap[$norm] = (int)$du['id'];
+        }
+
+        $feederAliases = [
+            'SWALUH'              => 'SUWALUH',
+            'SURYAMULTICEMERLANG' => 'SMC',
+            'MUTIARACITRAASRI'    => 'MCA',
+            'POKPHAND2'           => 'PHOKPHAND2',
+            'GLAGAHARUM'          => 'GLAGAHARUM',
+            'JAVAPACIFIK1'        => 'JAVAPASIFIK1',
+            'JAVAPACIFIK2'        => 'JAVAPASIFIK2',
+            'JAVAPACIFIK3'        => 'JAVAPASIFIK3',
+            'JAVAPACIFIK4'        => 'JAVAPASIFIK4',
+            'JAVAPASIFIC1'        => 'JAVAPASIFIK1',
+            'JAVAPASIFIC2'        => 'JAVAPASIFIK2',
+            'JAVAPASIFIC3'        => 'JAVAPASIFIK3',
+            'JAVAPASIFIC4'        => 'JAVAPASIFIK4',
+            'PERMATAHIJAUBARU'    => 'PERMATAHIJAU',
+        ];
+
+        // 3. Preload In-Memory Lookups for O(1) Instant Deduplication
+        $existingRows = $db->query(
+            "SELECT id, nama_asset, jenis_asset, penyulang_id, ROUND(latitude, 5) lat, ROUND(longitude, 5) lng 
+             FROM assets WHERE deleted_at IS NULL"
+        )->getResultArray();
+
+        $existingByName = [];
+        $existingByCoord = [];
+        $existingPolesByFeeder = [];
+
+        foreach ($existingRows as $er) {
+            $n = strtolower(trim((string)$er['nama_asset']));
+            if ($n !== '') {
+                $fId = (int)($er['penyulang_id'] ?? 0);
+                $existingByName["{$fId}|{$n}"] = (int)$er['id'];
+                $existingByName["0|{$n}"] = (int)$er['id'];
+            }
+            if ($er['lat'] !== null && $er['lng'] !== null) {
+                $cKey = "{$er['lat']}_{$er['lng']}_" . strtolower(trim((string)$er['jenis_asset']));
+                $existingByCoord[$cKey] = (int)$er['id'];
+            }
+
+            $rawJ = strtoupper(trim((string)$er['jenis_asset']));
+            if (in_array($rawJ, ['JTM', 'TIANG_BETON', 'TIANG_BESI', 'TIANG', 'JTM_TIANG'])) {
+                $fId = (int)($er['penyulang_id'] ?? 0);
+                if ($fId > 0 && $er['lat'] !== null && $er['lng'] !== null) {
+                    $existingPolesByFeeder[$fId][] = [
+                        'id'  => (int)$er['id'],
+                        'lat' => (float)$er['lat'],
+                        'lng' => (float)$er['lng'],
+                    ];
+                }
+            }
+        }
+
+        // 4. File Configurations
+        $dataDir = APPPATH . 'Database/Seeds/data/';
+        if (!is_dir($dataDir)) {
+            $dataDir = FCPATH . '../';
+        }
+
+        $fileConfigs = [
+            'recloser' => [
+                'file'     => $dataDir . 'asset-statistics-SIDOARJO-jtm_recloser.csv',
+                'category' => 'RECLOSER',
+                'is_csv'   => true,
+                'link_pole'=> true,
+            ],
+            'pmcb' => [
+                'file'     => $dataDir . 'asset-statistics-SIDOARJO-jtm_pmcb.csv',
+                'category' => 'PMCB',
+                'is_csv'   => true,
+                'link_pole'=> true,
+            ],
+            'gardu' => [
+                'file'     => $dataDir . 'asset-statistics-SIDOARJO-jtm_gardu.csv',
+                'category' => 'jtm_gardu',
+                'is_csv'   => true,
+                'link_pole'=> true,
+            ],
+            'trafo' => [
+                'file'     => $dataDir . 'asset-statistics-SIDOARJO-jtm_trafo.csv',
+                'category' => 'jtm_trafo',
+                'is_csv'   => true,
+                'link_pole'=> true,
+            ],
+            'jtm' => [
+                'file'     => file_exists($dataDir . 'JTM.csv') ? ($dataDir . 'JTM.csv') : ($dataDir . 'JTM.xlsx'),
+                'category' => 'jtm_tiang',
+                'is_csv'   => file_exists($dataDir . 'JTM.csv'),
+                'link_pole'=> false,
+            ],
+        ];
+
+        $filesProcessed = [];
+        $totalInserted = 0;
+        $totalLinked = 0;
+
+        // Backup before mutations if execute
+        $backupFile = null;
+        if ($isExecute) {
+            $backupFile = WRITEPATH . 'backup_assets_' . date('Ymd_His') . '.json';
+            $r = $db->table('asset_relationships')->where('is_active', 1)->get()->getResultArray();
+            file_put_contents($backupFile, json_encode(['assets' => $existingRows, 'rels' => $r]));
+        }
+
+        $now = date('Y-m-d H:i:s');
+
+        foreach ($fileConfigs as $key => $cfg) {
+            $filePath = $cfg['file'];
+            if (!file_exists($filePath)) {
+                $filesProcessed[$key] = ['status' => 'FILE_NOT_FOUND', 'path' => $filePath];
+                continue;
+            }
+
+            // Parse file rows
+            $rawRows = [];
+            if ($cfg['is_csv']) {
+                $h = fopen($filePath, 'r');
+                $bom = fread($h, 3);
+                if ($bom !== "\xEF\xBB\xBF") rewind($h);
+                fgetcsv($h); // header
+                $rn = 2;
+                while (($data = fgetcsv($h)) !== false) {
+                    if (count($data) >= 7) {
+                        $rawRows[] = [
+                            'row_num'    => $rn++,
+                            'ulp_name'   => trim($data[1] ?? ''),
+                            'feeder_name'=> trim($data[2] ?? ''),
+                            'asset_name' => trim($data[3] ?? ''),
+                            'section'    => trim($data[4] ?? ''),
+                            'lat'        => is_numeric($data[5] ?? null) ? (float)$data[5] : (is_numeric($data[4] ?? null) ? (float)$data[4] : null),
+                            'lng'        => is_numeric($data[6] ?? null) ? (float)$data[6] : (is_numeric($data[5] ?? null) ? (float)$data[5] : null),
+                            'constr'     => trim($data[8] ?? $data[7] ?? ''),
+                        ];
+                    }
+                }
+                fclose($h);
+            } else {
+                // PhpSpreadsheet for XLSX
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($filePath);
+                $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, false, false);
+                unset($spreadsheet);
+                for ($r = 1; $r < count($sheetData); $r++) {
+                    $row = $sheetData[$r];
+                    if (!empty($row[3])) {
+                        $rawRows[] = [
+                            'row_num'    => $r + 1,
+                            'ulp_name'   => trim((string)($row[1] ?? '')),
+                            'feeder_name'=> trim((string)($row[2] ?? '')),
+                            'asset_name' => trim((string)($row[3] ?? '')),
+                            'section'    => '',
+                            'lat'        => is_numeric($row[4] ?? null) ? (float)$row[4] : null,
+                            'lng'        => is_numeric($row[5] ?? null) ? (float)$row[5] : null,
+                            'constr'     => trim((string)($row[7] ?? '')),
+                        ];
+                    }
+                }
+            }
+
+            $stats = [
+                'source_count'    => count($rawRows),
+                'valid_count'     => 0,
+                'duplicate_count' => 0,
+                'rejected_count'  => 0,
+                'linked_pole_count'=> 0,
+                'inserted_count'  => 0,
+                'exceptions'      => [],
+            ];
+
+            $validPayloads = [];
+
+            foreach ($rawRows as $r) {
+                $assetName  = $r['asset_name'];
+                $feederName = $r['feeder_name'];
+                $ulpName    = $r['ulp_name'];
+                $lat        = $r['lat'];
+                $lng        = $r['lng'];
+                $constr     = $r['constr'];
+
+                if ($assetName === '' || $lat === null || $lng === null || abs($lat) < 0.0001 || abs($lng) < 0.0001) {
+                    $stats['rejected_count']++;
+                    continue;
+                }
+
+                // Match Feeder
+                $normFeeder = $normFunc($feederName);
+                $feederId = null;
+                if (isset($dbFeederMap[$normFeeder]) && count($dbFeederMap[$normFeeder]) === 1) {
+                    $feederId = (int)$dbFeederMap[$normFeeder][0]['id'];
+                } elseif (isset($feederAliases[$normFeeder]) && isset($dbFeederMap[$feederAliases[$normFeeder]])) {
+                    $feederId = (int)$dbFeederMap[$feederAliases[$normFeeder]][0]['id'];
+                } else {
+                    $stats['exceptions'][] = "Feeder '{$feederName}' -> ULP Unassigned";
+                }
+
+                // Match ULP
+                $normUlp = $normFunc(str_ireplace('ULP', '', $ulpName));
+                $ulpId = $dbUlpMap[$normUlp] ?? null;
+                if (!$ulpId && $feederId) {
+                    $fRow = $db->table('penyulang')->select('ulp_id')->where('id', $feederId)->get()->getRowArray();
+                    if ($fRow && !empty($fRow['ulp_id'])) $ulpId = (int)$fRow['ulp_id'];
+                }
+
+                // Deduplication Check
+                $lowerName = strtolower($assetName);
+                $fCheckKey = ($feederId ?? 0) . "|{$lowerName}";
+                $globalCheckKey = "0|{$lowerName}";
+                $coordKey = round($lat, 5) . '_' . round($lng, 5) . '_' . strtolower($cfg['category']);
+
+                if (isset($existingByName[$fCheckKey]) || isset($existingByName[$globalCheckKey]) || isset($existingByCoord[$coordKey])) {
+                    $stats['duplicate_count']++;
+                    continue;
+                }
+
+                // Determine Canonical Category
+                $finalCategory = $cfg['category'];
+                if ($key === 'pmcb') {
+                    if (preg_match('/\bGH\b|GARDU\s*HUBUNG/i', strtoupper($assetName))) {
+                        $finalCategory = 'GH';
+                    } else {
+                        $finalCategory = 'PMCB';
+                    }
+                }
+
+                // Pole Linking
+                $parentPoleId = null;
+                if ($cfg['link_pole'] && $feederId && !empty($existingPolesByFeeder[$feederId])) {
+                    $bestDist = 50.0;
+                    $bestPoleId = null;
+                    foreach ($existingPolesByFeeder[$feederId] as $p) {
+                        $dLat = deg2rad($p['lat'] - $lat);
+                        $dLon = deg2rad($p['lng'] - $lng);
+                        $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad($lat)) * cos(deg2rad($p['lat'])) * sin($dLon / 2) * sin($dLon / 2);
+                        $d = 6371000.0 * 2 * atan2(sqrt($a), sqrt(1 - $a));
+                        if ($d < $bestDist) {
+                            $bestDist = $d;
+                            $bestPoleId = $p['id'];
+                        }
+                    }
+                    if ($bestPoleId !== null) {
+                        $parentPoleId = $bestPoleId;
+                        $stats['linked_pole_count']++;
+                        $totalLinked++;
+                    }
+                }
+
+                $stats['valid_count']++;
+                $validPayloads[] = [
+                    'nama_asset'      => $assetName,
+                    'jenis_asset'     => $finalCategory,
+                    'penyulang_id'    => $feederId,
+                    'ulp_id'          => $ulpId,
+                    'lokasi'          => !empty($r['section']) ? ('Section ' . $r['section']) : null,
+                    'latitude'        => $lat,
+                    'longitude'       => $lng,
+                    'type'            => $constr ?: null,
+                    'parent_asset_id' => $parentPoleId,
+                    'status'          => 'OPERASIONAL',
+                ];
+
+                $existingByName[$fCheckKey] = true;
+                $existingByCoord[$coordKey] = true;
+            }
+
+            // Insert into Database
+            if ($isExecute && !empty($validPayloads)) {
+                $db->transBegin();
+                try {
+                    $chunks = array_chunk($validPayloads, 250);
+                    foreach ($chunks as $chunk) {
+                        foreach ($chunk as $item) {
+                            $fPrefix = $item['penyulang_id'] ? ("F" . $item['penyulang_id']) : 'UNAS';
+                            $catPrefix = strtoupper(substr($item['jenis_asset'], 0, 4));
+                            $hash = strtoupper(substr(md5($item['nama_asset'] . $item['latitude'] . $item['longitude']), 0, 6));
+                            $kodeAsset = "AST-{$catPrefix}-{$fPrefix}-{$hash}";
+
+                            $db->table('assets')->insert([
+                                'kode_asset'      => $kodeAsset,
+                                'nama_asset'      => $item['nama_asset'],
+                                'jenis_asset'     => $item['jenis_asset'],
+                                'penyulang_id'    => $item['penyulang_id'],
+                                'ulp_id'          => $item['ulp_id'],
+                                'lokasi'          => $item['lokasi'],
+                                'latitude'        => $item['latitude'],
+                                'longitude'       => $item['longitude'],
+                                'type'            => $item['type'],
+                                'parent_asset_id' => $item['parent_asset_id'],
+                                'status'          => $item['status'],
+                                'created_at'      => $now,
+                                'updated_at'      => $now,
+                            ]);
+                            $newId = (int)$db->insertID();
+
+                            if ($newId > 0 && !empty($item['parent_asset_id']) && $db->tableExists('asset_relationships')) {
+                                $db->table('asset_relationships')->insert([
+                                    'source_asset_id'   => $newId,
+                                    'target_asset_id'   => $item['parent_asset_id'],
+                                    'relationship_type' => 'MOUNTED_ON_POLE',
+                                    'parent_asset_id'   => $item['parent_asset_id'],
+                                    'child_asset_id'    => $newId,
+                                    'source'            => 'AUTO_INGEST',
+                                    'confidence_score'  => 1.0,
+                                    'is_active'         => 1,
+                                    'created_at'        => $now,
+                                ]);
+                            }
+
+                            if ($item['jenis_asset'] === 'jtm_tiang' && $item['penyulang_id']) {
+                                $existingPolesByFeeder[$item['penyulang_id']][] = [
+                                    'id'  => $newId,
+                                    'lat' => $item['latitude'],
+                                    'lng' => $item['longitude'],
+                                ];
+                            }
+                            $stats['inserted_count']++;
+                            $totalInserted++;
+                        }
+                    }
+                    $db->transCommit();
+                } catch (\Throwable $e) {
+                    $db->transRollback();
+                    $stats['insert_error'] = $e->getMessage();
+                }
+            }
+
+            $stats['exceptions_sample'] = array_slice(array_values(array_unique($stats['exceptions'])), 0, 5);
+            unset($stats['exceptions']);
+            $filesProcessed[$key] = $stats;
+        }
+
+        // 5. Final State Breakdown & Dashboard Reconciliation
+        $finalRows = $db->query("SELECT jenis_asset, COUNT(*) cnt FROM assets WHERE deleted_at IS NULL GROUP BY jenis_asset ORDER BY cnt DESC")->getResultArray();
+        $finalBreakdown = array_column($finalRows, 'cnt', 'jenis_asset');
+        $finalTotal = array_sum(array_column($finalRows, 'cnt'));
+
+        $jtmCount      = 0;
+        $keypointCount = 0;
+        $garduCount    = 0;
+        $trafoCount    = 0;
+        $pohonCount    = 0;
+
+        foreach ($finalRows as $asr) {
+            $rawType = strtoupper(trim((string)($asr['jenis_asset'] ?? '')));
+            $c = (int)($asr['cnt'] ?? 0);
+
+            if (preg_match('/(KEYPOINT|RECLOSER|PMCB|GH|LBS|ASS|SWITCH|DISCONNECT|SECTIONALIZER|FCO)/i', $rawType)) {
+                $keypointCount += $c;
+            } elseif (preg_match('/(TRAFO|TRANSFORMATOR|TRANSFORMER)/i', $rawType)) {
+                $trafoCount += $c;
+            } elseif (preg_match('/(GARDU|SUBSTATION|PORTAL|CANTOL|KIOS|KUBIKEL|GTT)/i', $rawType)) {
+                $garduCount += $c;
+            } elseif (preg_match('/(POHON|TREE|VEGETASI|ROW)/i', $rawType)) {
+                $pohonCount += $c;
+            } elseif (preg_match('/(TIANG|POLE|JTM|SUTM|SKTM|CONDUCTOR)/i', $rawType) || $rawType === '') {
+                $jtmCount += $c;
+            } else {
+                $jtmCount += $c;
+            }
+        }
+
+        return $this->response->setJSON([
+            'status'           => 'success',
+            'mode'             => $mode,
+            'timestamp'        => date('Y-m-d H:i:s'),
+            'backup_file'      => $backupFile,
+            'files_processed'  => $filesProcessed,
+            'total_inserted'   => $totalInserted,
+            'total_pole_linked'=> $totalLinked,
+            'initial_breakdown'=> $initialBreakdown,
+            'initial_total'    => $initialTotal,
+            'final_breakdown'  => $finalBreakdown,
+            'final_total'      => $finalTotal,
+            'dashboard_reconciled' => [
+                'total_aset'   => $finalTotal,
+                'tiang_jtm'    => $jtmCount,
+                'keypoint'     => $keypointCount,
+                'gardu'        => $garduCount,
+                'trafo'        => $trafoCount,
+                'sum_check'    => ($jtmCount + $keypointCount + $garduCount + $trafoCount),
+                'is_consistent'=> (($jtmCount + $keypointCount + $garduCount + $trafoCount) === $finalTotal),
+            ],
+        ]);
+    }
 }

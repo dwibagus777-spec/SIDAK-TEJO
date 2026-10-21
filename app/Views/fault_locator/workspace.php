@@ -236,7 +236,18 @@
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </select>
-                            <div class="form-text text-secondary small">Filter otomatis disesuaikan saat ULP diubah.</div>
+                            <div class="form-text text-secondary small">Penyulang aktif tersinkronisasi otomatis dengan ULP yang dipilih.</div>
+                            
+                            <!-- Feeder Network Context Banner -->
+                            <div id="feederContextBanner" class="p-2.5 rounded-3 bg-dark border border-secondary mt-2" style="font-size:0.75rem;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-info fw-bold"><i class="fa-solid fa-network-wired me-1"></i> Topologi &amp; Konduktor Resmi</span>
+                                    <span id="feederReadinessPill" class="badge bg-secondary-subtle text-light border border-secondary">Memuat...</span>
+                                </div>
+                                <div id="feederContextDetails" class="text-secondary small">
+                                    Pilih penyulang untuk memuat topologi transline resmi dan tipe konduktor otomatis.
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Sumber Acuan Gangguan: GI vs Peralatan Proteksi -->
@@ -253,10 +264,15 @@
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="sourceType" id="srcProtection" value="PROTECTION">
-                                <label class="form-check-label text-light small" for="srcProtection">
+                                <label class="form-check-label text-light small" for="srcProtection" id="srcProtectionLabel">
                                     <strong>Dari Peralatan Proteksi (Recloser / PMCB / LBS)</strong>
-                                    <div class="text-secondary" style="font-size:0.75rem;">Berawal dari tiang JTM terverifikasi terdekat dari peralatan proteksi tersebut.</div>
+                                    <div class="text-secondary" style="font-size:0.75rem;">Berawal dari tiang JTM tempat peralatan proteksi terpasang (perangkat bukan node transline).</div>
                                 </label>
+                            </div>
+
+                            <!-- Notice jika perangkat proteksi belum ada -->
+                            <div id="noProtectionNotice" class="alert alert-dark border border-warning-subtle text-warning small py-2 px-3 mt-2 mb-0" style="display: none; font-size: 0.75rem;">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Data aset proteksi (Recloser / PMCB / LBS) belum tersedia untuk penyulang ini. Perhitungan didukung penuh menggunakan titik acuan <strong>Gardu Induk (GI) Pangkal</strong>.
                             </div>
 
                             <!-- Dropdown Peralatan Proteksi (Visible if PROTECTION chosen) -->
@@ -662,14 +678,35 @@
                                         <tr>
                                             <td class="font-monospace text-info small fw-bold"><?= esc($c['case_number']) ?></td>
                                             <td>
-                                                <div class="text-light fw-bold"><?= esc($c['nama_penyulang'] ?? 'Feeder #' . $c['penyulang_id']) ?></div>
-                                                <div class="text-secondary" style="font-size:0.72rem;"><?= esc($c['source_type']) ?> &bull; <?= esc($c['fault_type']) ?></div>
+                                                <?php
+                                                    $fdrName = !empty($c['nama_penyulang']) 
+                                                        ? $c['nama_penyulang'] 
+                                                        : (!empty($c['penyulang_id']) ? 'Penyulang ID #' . $c['penyulang_id'] : 'Penyulang Belum Terdefinisi (Data Uji/Arsip)');
+                                                    $rCurr = (float)($c['current_r'] ?? 0);
+                                                    $sCurr = (float)($c['current_s'] ?? 0);
+                                                    $tCurr = (float)($c['current_t'] ?? 0);
+                                                    $nCurr = (float)($c['current_n'] ?? 0);
+                                                    $hasCurrent = ($rCurr > 0 || $sCurr > 0 || $tCurr > 0 || $nCurr > 0);
+                                                ?>
+                                                <div class="text-light fw-bold"><?= esc($fdrName) ?></div>
+                                                <div class="text-secondary" style="font-size:0.72rem;"><?= esc($c['source_type'] ?: 'GI') ?> &bull; <?= esc($c['fault_type'] ?: '1-PHASE') ?></div>
                                             </td>
                                             <td>
-                                                <span class="text-warning small"><?= number_format($c['current_r'] ?? 0) ?> / <?= number_format($c['current_s'] ?? 0) ?> / <?= number_format($c['current_t'] ?? 0) ?> A</span>
-                                                <div class="text-secondary" style="font-size:0.72rem;">N: <?= number_format($c['current_n'] ?? 0) ?> A</div>
+                                                <?php if ($hasCurrent): ?>
+                                                    <span class="text-warning small"><?= number_format($rCurr, 1) ?> / <?= number_format($sCurr, 1) ?> / <?= number_format($tCurr, 1) ?> A</span>
+                                                    <div class="text-secondary" style="font-size:0.72rem;">N: <?= number_format($nCurr, 1) ?> A</div>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary-subtle text-secondary border small">Tanpa Telemetri Arus</span>
+                                                <?php endif; ?>
                                             </td>
-                                            <td class="fw-bold text-light"><?= number_format($c['target_distance_meters'] ?? 0, 1) ?> m</td>
+                                            <td class="fw-bold text-light">
+                                                <?php if (($c['target_distance_meters'] ?? 0) > 0): ?>
+                                                    <div><?= number_format($c['target_distance_meters'], 1) ?> m</div>
+                                                    <div class="text-secondary fw-normal" style="font-size:0.68rem;">&plusmn; <?= number_format($c['distance_tolerance_meters'] ?? 250, 0) ?> m</div>
+                                                <?php else: ?>
+                                                    <span class="text-muted small">-</span>
+                                                <?php endif; ?>
+                                            </td>
                                             <td>
                                                 <?php
                                                     $st = $c['follow_up_status'] ?? 'MENUNGGU_PEMERIKSAAN';
@@ -928,37 +965,102 @@
     });
 
     // Cascading: Change Feeder -> Update Protection Devices
-    document.getElementById('feederId').addEventListener('change', async function() {
-        const feederId = this.value;
+    // Cascading: Change Feeder -> Update Network Context, Official Conductor & Protection Devices
+    async function loadFeederNetworkContext(feederId) {
         const devSelect = document.getElementById('protectionDeviceId');
-        devSelect.innerHTML = '<option value="">-- Memuat Perangkat... --</option>';
+        const contextDetails = document.getElementById('feederContextDetails');
+        const readinessPill = document.getElementById('feederReadinessPill');
+        const noProtNotice = document.getElementById('noProtectionNotice');
+        const srcProtRadio = document.getElementById('srcProtection');
+        const srcGIRadio = document.getElementById('srcGI');
+        const protContainer = document.getElementById('protectionDeviceContainer');
+        const conductorSelect = document.getElementById('conductorType');
+
+        devSelect.innerHTML = '<option value="">-- Memuat Perangkat Proteksi... --</option>';
+        contextDetails.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Mengambil topologi resmi dan konduktor...';
 
         if (!feederId) {
             devSelect.innerHTML = '<option value="">-- Pilih Penyulang Dahulu --</option>';
+            contextDetails.innerHTML = 'Pilih penyulang untuk memuat topologi transline resmi dan tipe konduktor otomatis.';
+            readinessPill.className = 'badge bg-secondary-subtle text-light border border-secondary';
+            readinessPill.innerText = 'Pilih Penyulang';
             return;
         }
 
         try {
-            const res = await fetch('<?= site_url('api/fault-locator/protection-devices') ?>/' + feederId);
+            const res = await fetch('<?= site_url('api/fault-locator/feeder-network-context') ?>/' + feederId);
             const json = await res.json();
             if (json.status === 'success' && json.data) {
-                devSelect.innerHTML = '<option value="">-- Pilih Perangkat Proteksi --</option>';
-                if (json.data.length === 0) {
-                    devSelect.innerHTML = '<option value="">Tidak ada perangkat proteksi terdaftar pada penyulang ini</option>';
+                const data = json.data;
+
+                // 1. Auto-select official conductor in dropdown
+                if (data.conductor && data.conductor.official_type) {
+                    conductorSelect.value = data.conductor.official_type;
+                }
+
+                // 2. Render Topology Context Banner
+                const topo = data.topology;
+                if (topo.is_topology_ready) {
+                    readinessPill.className = 'badge bg-success-subtle text-success border border-success';
+                    readinessPill.innerText = 'TOPOLOGI SIAP';
+                } else if (topo.valid_jtm_poles_count > 0) {
+                    readinessPill.className = 'badge bg-warning-subtle text-warning border border-warning';
+                    readinessPill.innerText = 'TOPOLOGI PARSIAL';
                 } else {
-                    json.data.forEach(d => {
+                    readinessPill.className = 'badge bg-danger-subtle text-danger border border-danger';
+                    readinessPill.innerText = 'BELUM ADA TIANG';
+                }
+
+                contextDetails.innerHTML = `
+                    <div class="text-light fw-semibold">
+                        Bentang JTM: <span class="text-info">${topo.total_span_km} km</span> (${topo.segment_count} segmen) &bull; 
+                        Tiang JTM: <span class="text-success">${topo.valid_jtm_poles_count} tiang</span> &bull; 
+                        Section: <span class="text-warning">${topo.sections_count}</span>
+                    </div>
+                    <div class="text-secondary mt-0.5" style="font-size:0.7rem;">
+                        Konduktor Resmi: <strong class="text-light">${data.conductor.official_type}</strong> (Sumber: ${data.conductor.source})
+                    </div>
+                `;
+
+                // 3. Populate Protection Devices (without generating fake nodes)
+                const prot = data.protection_devices;
+                devSelect.innerHTML = '<option value="">-- Pilih Perangkat Proteksi --</option>';
+
+                if (prot.available && prot.devices.length > 0) {
+                    srcProtRadio.disabled = false;
+                    noProtNotice.style.display = 'none';
+                    prot.devices.forEach(d => {
                         const opt = document.createElement('option');
                         opt.value = d.id;
-                        opt.innerText = d.kode_asset + ' - ' + d.nama_asset + ' (' + d.jenis_asset + ')';
+                        opt.innerText = d.display_label;
                         devSelect.appendChild(opt);
                     });
+                } else {
+                    // No protection assets registered on this feeder: state clearly & rely on GI
+                    srcProtRadio.disabled = true;
+                    if (srcProtRadio.checked) {
+                        srcGIRadio.checked = true;
+                        protContainer.style.display = 'none';
+                    }
+                    noProtNotice.style.display = 'block';
+                    noProtNotice.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> ' + prot.message;
+                    devSelect.innerHTML = '<option value="">Data perangkat proteksi belum tersedia</option>';
                 }
             }
         } catch(e) {
-            console.error('Error fetching protection devices:', e);
-            devSelect.innerHTML = '<option value="">Gagal memuat perangkat proteksi</option>';
+            console.error('Error loading feeder network context:', e);
+            contextDetails.innerHTML = '<span class="text-danger">Gagal memuat konteks topologi resmi.</span>';
         }
+    }
+
+    document.getElementById('feederId').addEventListener('change', function() {
+        loadFeederNetworkContext(this.value);
     });
+
+    // Auto-load context on initial render if feeder is selected
+    if (document.getElementById('feederId').value) {
+        loadFeederNetworkContext(document.getElementById('feederId').value);
+    }
 
     // Toggle Source Type UI
     document.querySelectorAll('input[name="sourceType"]').forEach(radio => {

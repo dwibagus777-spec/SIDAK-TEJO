@@ -1271,4 +1271,6 @@ $routes->get('api/fault-locator/case-history', 'FaultLocatorController::caseHist
 $routes->get('api/fault-locator/case-details/(:num)', 'FaultLocatorController::caseDetails/$1');
 $routes->get('api/fault-locator/calibration-status', 'FaultLocatorController::calibrationStatus');
 $routes->get('api/fault-locator/feeder-readiness', 'FaultLocatorController::feederReadiness');
+$routes->get('api/fault-locator/feeder-network-context/(:num)', 'FaultLocatorController::feederNetworkContext/$1');
+$routes->match(['GET', 'POST'], 'api/fault-locator/archive-proto-cases', 'FaultLocatorController::archiveProtoCases');
 

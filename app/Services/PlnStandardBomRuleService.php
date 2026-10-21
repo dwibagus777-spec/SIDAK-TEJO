@@ -572,6 +572,122 @@ class PlnStandardBomRuleService
     }
 
     /**
+     * Aggregates canonical BOM material demand with actual usage and remaining requirements.
+     * Guaranteed synchronization between matrix and recap:
+     * - Reads from temuan_materials if populated
+     * - Seamlessly evaluates rule engine if temuan_materials is empty or being synced
+     * - Transparently includes unmapped findings as `PERLU_VERIFIKASI` so no findings are omitted.
+     *
+     * @param int|null $ulpId
+     * @return array<int, array<string, mixed>>
+     */
+    public function getCanonicalBomMaterialSummary(?int $ulpId = null): array
+    {
+        $hasMaterialsTable = $this->db->tableExists('temuan_materials');
+        $materialsCount = $hasMaterialsTable ? $this->db->table('temuan_materials')->countAllResults() : 0;
+
+        $summary = [];
+        $unmappedCount = 0;
+
+        if ($hasMaterialsTable && $materialsCount > 0) {
+            $sql = "
+                SELECT
+                    tm.canonical_code_snapshot AS material_code,
+                    tm.canonical_name_snapshot AS nama_material,
+                    tm.unit_snapshot AS satuan,
+                    COALESCE(mm.nama_lapangan, tm.canonical_name_snapshot) AS nama_lapangan,
+                    COALESCE(mm.material_category, 'HARDWARE') AS material_category,
+                    COUNT(DISTINCT tm.temuan_id) AS temuan_count,
+                    SUM(tm.quantity) AS total_qty,
+                    SUM(COALESCE(tm.used_quantity, 0)) AS total_used_qty,
+                    SUM(GREATEST(0, tm.quantity - COALESCE(tm.used_quantity, 0))) AS sisa_qty
+                FROM temuan_materials tm
+                INNER JOIN temuan t ON t.id = tm.temuan_id AND t.deleted_at IS NULL
+                LEFT JOIN master_materials mm ON mm.id = tm.material_id
+                WHERE 1=1
+                " . ($ulpId !== null && $ulpId > 0 ? " AND t.ulp_id = " . (int)$ulpId : "") . "
+                GROUP BY tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot, mm.nama_lapangan, mm.material_category
+                ORDER BY total_qty DESC
+            ";
+            $res = $this->db->query($sql);
+            if ($res && is_object($res)) {
+                $summary = $res->getResultArray();
+            }
+
+            // Count findings that have NO materials in temuan_materials
+            $unmappedRes = $this->db->query("
+                SELECT COUNT(DISTINCT t.id) as unmapped_cnt
+                FROM temuan t
+                LEFT JOIN temuan_materials tm ON tm.temuan_id = t.id
+                WHERE t.deleted_at IS NULL AND tm.id IS NULL
+                " . ($ulpId !== null && $ulpId > 0 ? " AND t.ulp_id = " . (int)$ulpId : "") . "
+            ");
+            $unmappedCount = (int)($unmappedRes->getRowArray()['unmapped_cnt'] ?? 0);
+        } else {
+            // Dynamic evaluation fallback directly from findings
+            $builder = $this->db->table('temuan')->where('deleted_at IS NULL');
+            if ($ulpId !== null && $ulpId > 0) {
+                $builder->where('ulp_id', $ulpId);
+            }
+            $findings = $builder->get()->getResultArray();
+
+            $recapMap = [];
+            foreach ($findings as $f) {
+                $bom = $this->resolveBomFromFinding($f);
+                if ($bom['mapping_status'] === 'RESOLVED' && !empty($bom['materials'])) {
+                    foreach ($bom['materials'] as $item) {
+                        $code = $item['canonical_code'];
+                        if (!isset($recapMap[$code])) {
+                            $recapMap[$code] = [
+                                'material_code'     => $code,
+                                'nama_material'     => $item['canonical_name'],
+                                'nama_lapangan'     => $item['canonical_name'],
+                                'material_category' => $item['category'] ?? 'HARDWARE',
+                                'satuan'            => $item['unit'] ?? 'buah',
+                                'temuan_ids'        => [],
+                                'total_qty'         => 0.0,
+                                'total_used_qty'    => 0.0,
+                                'sisa_qty'          => 0.0,
+                            ];
+                        }
+                        $recapMap[$code]['temuan_ids'][$f['id']] = true;
+                        $recapMap[$code]['total_qty'] += (float)$item['quantity'];
+                        $recapMap[$code]['sisa_qty'] += (float)$item['quantity'];
+                    }
+                } else {
+                    $unmappedCount++;
+                }
+            }
+
+            foreach ($recapMap as &$rm) {
+                $rm['temuan_count'] = count($rm['temuan_ids']);
+                unset($rm['temuan_ids']);
+            }
+            unset($rm);
+
+            usort($recapMap, fn($a, $b) => $b['total_qty'] <=> $a['total_qty']);
+            $summary = array_values($recapMap);
+        }
+
+        // Always append PERLU_VERIFIKASI if any findings lack standard BOM mapping
+        if ($unmappedCount > 0) {
+            $summary[] = [
+                'material_code'      => 'PERLU_VERIFIKASI',
+                'nama_material'      => 'Temuan Lapangan Belum Terpetakan ke Material Standar',
+                'nama_lapangan'      => 'Menunggu Verifikasi Standar Konstruksi Lapangan',
+                'material_category'  => 'UNMAPPED',
+                'satuan'             => 'Titik',
+                'temuan_count'       => $unmappedCount,
+                'total_qty'          => (float)$unmappedCount,
+                'total_used_qty'     => 0.0,
+                'sisa_qty'           => (float)$unmappedCount,
+            ];
+        }
+
+        return $summary;
+    }
+
+    /**
      * Finds nearest candidate poles in the same feeder for an unlinked finding.
      *
      * @param array<string, mixed> $temuan

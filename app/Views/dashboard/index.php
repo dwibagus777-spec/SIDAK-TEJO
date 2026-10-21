@@ -1315,9 +1315,23 @@
                             ?>
                             <tr>
                                 <td class="text-center text-muted fw-bold"><?= $mIdx + 1 ?></td>
-                                <td><span class="badge bg-dark-subtle text-dark font-monospace"><?= esc($mSum['material_code'] ?? '-') ?></span></td>
+                                <td>
+                                    <?php if (($mSum['material_code'] ?? '') === 'PERLU_VERIFIKASI'): ?>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning font-monospace">
+                                            <i class="fas fa-triangle-exclamation me-1"></i>PERLU_VERIFIKASI
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-dark-subtle text-dark font-monospace"><?= esc($mSum['material_code'] ?? '-') ?></span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="fw-semibold text-dark"><?= esc($mSum['nama_material'] ?? $mSum['material_name'] ?? '-') ?></td>
-                                <td><span class="badge bg-light text-secondary border"><?= esc($mSum['material_category'] ?? $mSum['category'] ?? '-') ?></span></td>
+                                <td>
+                                    <?php if (($mSum['material_code'] ?? '') === 'PERLU_VERIFIKASI'): ?>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning">UNMAPPED</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-light text-secondary border"><?= esc($mSum['material_category'] ?? $mSum['category'] ?? '-') ?></span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="text-center font-monospace small">
                                     <?php if (!empty($mSum['conductor_type'])): ?>
                                         <span class="badge bg-info-subtle text-info-emphasis border"><?= esc($mSum['conductor_type']) ?> <?= esc($mSum['conductor_size'] ?? '') ?> mm²</span>

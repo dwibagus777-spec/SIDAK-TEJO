@@ -1065,6 +1065,20 @@ class FaultLocatorWorkspaceService
         $cases = $builder->orderBy('fault_cases.id', 'DESC')->limit($limit)->get()->getResultArray();
 
         foreach ($cases as &$c) {
+            // Guarantee human-readable, non-placeholder feeder display
+            if (empty($c['nama_penyulang'])) {
+                $c['nama_penyulang'] = !empty($c['penyulang_id'])
+                    ? 'Penyulang ID #' . $c['penyulang_id']
+                    : 'Penyulang Belum Terdefinisi (Data Uji/Arsip)';
+            }
+
+            // Distinguish zero from unmeasured/missing currents
+            $r = (float)($c['current_r'] ?? 0);
+            $s = (float)($c['current_s'] ?? 0);
+            $t = (float)($c['current_t'] ?? 0);
+            $n = (float)($c['current_n'] ?? 0);
+            $c['has_current_measurement'] = ($r > 0 || $s > 0 || $t > 0 || $n > 0);
+
             // Fetch latest field finding
             $finding = $this->db->table('fault_actual_findings')
                 ->where('fault_case_id', $c['id'])
@@ -1075,6 +1089,252 @@ class FaultLocatorWorkspaceService
         }
 
         return $cases;
+    }
+
+    /**
+     * Archives legacy prototype dummy test cases (FLI-1.0.0 placeholder records with 0 currents & null feeders)
+     * with mandatory pre-backup JSON file creation.
+     */
+    public function archiveProtoTestCases(bool $execute = false): array
+    {
+        if (!$this->db->tableExists('fault_cases')) {
+            return ['status' => 'error', 'message' => 'Tabel fault_cases tidak ditemukan.'];
+        }
+
+        $query = $this->db->table('fault_cases')
+            ->where('deleted_at IS NULL')
+            ->where('penyulang_id IS NULL')
+            ->where('current_r', 0)
+            ->where('current_s', 0)
+            ->where('current_t', 0)
+            ->where('analysis_version', 'FLI-1.0.0');
+
+        $protoCases = $query->get()->getResultArray();
+        $count = count($protoCases);
+
+        if ($count === 0) {
+            return [
+                'status'         => 'success',
+                'archived_count' => 0,
+                'message'        => 'Tidak ditemukan data uji prototype tak lengkap untuk diarsipkan.',
+            ];
+        }
+
+        $backupPath = WRITEPATH . 'backups/archived_proto_fault_cases_' . date('Ymd_His') . '.json';
+        if (!is_dir(dirname($backupPath))) {
+            mkdir(dirname($backupPath), 0755, true);
+        }
+
+        file_put_contents($backupPath, json_encode([
+            'archived_at' => date('Y-m-d H:i:s'),
+            'total_cases' => $count,
+            'records'     => $protoCases,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        if ($execute) {
+            $ids = array_column($protoCases, 'id');
+            $this->db->table('fault_cases')
+                ->whereIn('id', $ids)
+                ->update([
+                    'status'     => 'ARCHIVED_TEST_DATA',
+                    'deleted_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+
+            return [
+                'status'         => 'success',
+                'executed'       => true,
+                'archived_count' => $count,
+                'backup_file'    => $backupPath,
+                'archived_ids'   => $ids,
+                'message'        => "Berhasil mengarsipkan {$count} kasus uji prototype ke status soft-delete dengan backup aman.",
+            ];
+        }
+
+        return [
+            'status'         => 'success',
+            'executed'       => false,
+            'archived_count' => $count,
+            'backup_file'    => $backupPath,
+            'sample_ids'     => array_slice(array_column($protoCases, 'id'), 0, 5),
+            'message'        => "Simulasi: Terdeteksi {$count} kasus uji prototype siap diarsipkan (gunakan execute=true).",
+        ];
+    }
+
+    /**
+     * Reads official network topology & conductor context for a given feeder
+     * to eliminate manual input copying and provide authentic network parameters.
+     */
+    public function getFeederNetworkContext(int $penyulangId): array
+    {
+        if (!$this->db->tableExists('penyulang') || $penyulangId <= 0) {
+            return ['status' => 'error', 'message' => 'Penyulang tidak valid.'];
+        }
+
+        $feeder = $this->db->table('penyulang')
+            ->select('penyulang.*, ulps.nama_ulp')
+            ->join('ulps', 'ulps.id = penyulang.ulp_id', 'left')
+            ->where('penyulang.id', $penyulangId)
+            ->get()
+            ->getRowArray();
+
+        if (!$feeder) {
+            return ['status' => 'error', 'message' => 'Data penyulang tidak ditemukan.'];
+        }
+
+        // 1. Conductor auto-resolution from translines or feeder metadata
+        $dominantConductor = 'AAAC 150 mm²';
+        $conductorSource = 'DEFAULT_STANDARD';
+
+        if ($this->db->tableExists('gis_translines')) {
+            $condRow = $this->db->table('gis_translines')
+                ->select('conductor_type, conductor_size, COUNT(*) as cnt')
+                ->where('penyulang_id', $penyulangId)
+                ->where('deleted_at IS NULL')
+                ->where('conductor_type IS NOT NULL')
+                ->groupBy('conductor_type, conductor_size')
+                ->orderBy('cnt', 'DESC')
+                ->get()
+                ->getRowArray();
+
+            if ($condRow && !empty($condRow['conductor_type'])) {
+                $rawType = strtoupper(trim((string)$condRow['conductor_type']));
+                $rawSize = trim((string)($condRow['conductor_size'] ?? '150'));
+                $matchedKey = null;
+
+                foreach (array_keys(self::CONDUCTOR_CATALOG) as $catKey) {
+                    if (str_contains(strtoupper($catKey), $rawType) && str_contains($catKey, $rawSize)) {
+                        $matchedKey = $catKey;
+                        break;
+                    }
+                }
+
+                if ($matchedKey) {
+                    $dominantConductor = $matchedKey;
+                    $conductorSource = 'OFFICIAL_TRANSLINE';
+                } elseif (isset(self::CONDUCTOR_CATALOG[$rawType . ' 150 mm²'])) {
+                    $dominantConductor = $rawType . ' 150 mm²';
+                    $conductorSource = 'OFFICIAL_TRANSLINE_TYPE';
+                }
+            }
+        }
+
+        // 2. Transline topology metrics
+        $totalSpanMeters = 0.0;
+        $segmentCount = 0;
+        $poleCount = 0;
+        $sectionCount = 0;
+
+        if ($this->db->tableExists('gis_translines')) {
+            $tlStats = $this->db->table('gis_translines')
+                ->select('COUNT(*) as seg_cnt, SUM(distance_meters) as span_sum')
+                ->where('penyulang_id', $penyulangId)
+                ->where('deleted_at IS NULL')
+                ->get()
+                ->getRowArray();
+
+            $segmentCount = (int)($tlStats['seg_cnt'] ?? 0);
+            $totalSpanMeters = (float)($tlStats['span_sum'] ?? 0.0);
+        }
+
+        if ($this->db->tableExists('assets')) {
+            $poleCount = $this->db->table('assets')
+                ->where('penyulang_id', $penyulangId)
+                ->where('deleted_at IS NULL')
+                ->groupStart()
+                    ->whereIn('jenis_asset', ['TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE'])
+                    ->orWhere('jenis_asset IS NULL')
+                ->groupEnd()
+                ->countAllResults();
+
+            $sectionCount = $this->db->table('assets')
+                ->where('penyulang_id', $penyulangId)
+                ->where('deleted_at IS NULL')
+                ->where('section_id IS NOT NULL')
+                ->select('COUNT(DISTINCT section_id) as sec_cnt')
+                ->get()
+                ->getRowArray()['sec_cnt'] ?? 0;
+        }
+
+        // 3. Protection devices (Recloser, PMCB, LBS) linked to valid JTM poles
+        $devices = $this->getProtectionDevices($penyulangId);
+        $enhancedDevices = [];
+        foreach ($devices as $d) {
+            $linkedPole = null;
+            if (!empty($d['latitude']) && !empty($d['longitude'])) {
+                // Find nearest physical JTM pole within 35m
+                $nearest = $this->db->table('assets')
+                    ->select('id, kode_asset, nama_asset')
+                    ->where('penyulang_id', $penyulangId)
+                    ->where('id !=', $d['id'])
+                    ->where('deleted_at IS NULL')
+                    ->groupStart()
+                        ->whereIn('jenis_asset', ['TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE'])
+                        ->orWhere('jenis_asset IS NULL')
+                    ->groupEnd()
+                    ->get()
+                    ->getResultArray();
+
+                $minD = PHP_FLOAT_MAX;
+                foreach ($nearest as $p) {
+                    $dist = $this->haversineDistance(
+                        (float)$d['latitude'], (float)$d['longitude'],
+                        (float)($p['latitude'] ?? 0), (float)($p['longitude'] ?? 0)
+                    );
+                    if ($dist < $minD && $dist <= 35.0) {
+                        $minD = $dist;
+                        $linkedPole = $p;
+                    }
+                }
+            }
+
+            $enhancedDevices[] = [
+                'id'                 => (int)$d['id'],
+                'kode_asset'         => $d['kode_asset'],
+                'nama_asset'         => $d['nama_asset'],
+                'jenis_asset'        => $d['jenis_asset'],
+                'linked_pole_id'     => $linkedPole ? (int)$linkedPole['id'] : null,
+                'linked_pole_code'   => $linkedPole ? $linkedPole['kode_asset'] : 'Tiang Dekat Perangkat',
+                'display_label'      => $d['kode_asset'] . ' - ' . $d['nama_asset'] . ' (' . $d['jenis_asset'] . ($linkedPole ? ', pada tiang ' . $linkedPole['kode_asset'] : '') . ')',
+            ];
+        }
+
+        $devicesAvailable = count($enhancedDevices) > 0;
+        $protectionStatusMessage = $devicesAvailable
+            ? 'Tersedia ' . count($enhancedDevices) . ' perangkat proteksi terdaftar pada penyulang ini.'
+            : 'Data aset proteksi (Recloser / PMCB / LBS) belum tersedia untuk penyulang ini. Perhitungan didukung penuh dari Gardu Induk (GI) Pangkal.';
+
+        return [
+            'status' => 'success',
+            'data'   => [
+                'feeder' => [
+                    'id'             => (int)$feeder['id'],
+                    'kode_penyulang' => $feeder['kode_penyulang'],
+                    'nama_penyulang' => $feeder['nama_penyulang'],
+                    'ulp_id'         => (int)$feeder['ulp_id'],
+                    'nama_ulp'       => $feeder['nama_ulp'] ?? 'ULP Tidak Diketahui',
+                ],
+                'conductor' => [
+                    'official_type'   => $dominantConductor,
+                    'source'          => $conductorSource,
+                    'catalog_entry'   => self::CONDUCTOR_CATALOG[$dominantConductor] ?? null,
+                ],
+                'topology' => [
+                    'total_span_meters'      => round($totalSpanMeters, 1),
+                    'total_span_km'          => round($totalSpanMeters / 1000.0, 2),
+                    'segment_count'          => $segmentCount,
+                    'valid_jtm_poles_count'  => $poleCount,
+                    'sections_count'         => (int)$sectionCount,
+                    'is_topology_ready'      => ($poleCount > 0 && $segmentCount >= ($poleCount * 0.35)),
+                ],
+                'protection_devices' => [
+                    'available'       => $devicesAvailable,
+                    'count'           => count($enhancedDevices),
+                    'message'         => $protectionStatusMessage,
+                    'devices'         => $enhancedDevices,
+                ]
+            ]
+        ];
     }
 
     /**

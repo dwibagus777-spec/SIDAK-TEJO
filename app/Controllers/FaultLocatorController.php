@@ -260,4 +260,24 @@ class FaultLocatorController extends BaseController
             'data'   => $report
         ]);
     }
+
+    /**
+     * API: Automatic Feeder Network Context & Conductor Resolution
+     */
+    public function feederNetworkContext(int $penyulangId): ResponseInterface
+    {
+        $context = $this->service->getFeederNetworkContext($penyulangId);
+        $status = ($context['status'] ?? '') === 'error' ? 404 : 200;
+        return $this->response->setStatusCode($status)->setJSON($context);
+    }
+
+    /**
+     * API: Archive Prototype Dummy Test Cases
+     */
+    public function archiveProtoCases(): ResponseInterface
+    {
+        $isExecute = (bool)($this->request->getGetPost('execute') ?? false);
+        $result = $this->service->archiveProtoTestCases($isExecute);
+        return $this->response->setJSON($result);
+    }
 }

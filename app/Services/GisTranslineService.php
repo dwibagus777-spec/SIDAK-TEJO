@@ -187,6 +187,173 @@ class GisTranslineService
     }
 
     /**
+     * Audits and safely reconciles non-pole translines with JSON backup and deterministic re-anchoring.
+     * Segments pointing to non-pole devices (Recloser, LBS, GTT, Pohon) are re-anchored to the nearest JTM pole
+     * on the same feeder (<= 35m) or safely deactivated if no pole exists, preserving full lineage and rollback.
+     */
+    public function reconcileNonPoleTranslines(bool $execute = false): array
+    {
+        if (!$this->db->tableExists('gis_translines')) {
+            return ['status' => 'error', 'message' => 'Tabel gis_translines tidak ditemukan.'];
+        }
+
+        $sql = "
+            SELECT 
+                tl.id,
+                tl.transline_code,
+                tl.penyulang_id,
+                tl.source_asset_id,
+                tl.target_asset_id,
+                tl.distance_meters,
+                tl.conductor_type,
+                tl.conductor_size,
+                p.nama_penyulang,
+                sa.kode_asset AS source_code,
+                sa.nama_asset AS source_name,
+                sa.jenis_asset AS source_jenis,
+                sa.latitude AS source_lat,
+                sa.longitude AS source_lng,
+                sa.penyulang_id AS source_penyulang_id,
+                ta.kode_asset AS target_code,
+                ta.nama_asset AS target_name,
+                ta.jenis_asset AS target_jenis,
+                ta.latitude AS target_lat,
+                ta.longitude AS target_lng,
+                ta.penyulang_id AS target_penyulang_id
+            FROM gis_translines tl
+            LEFT JOIN penyulang p ON p.id = tl.penyulang_id
+            LEFT JOIN assets sa ON sa.id = tl.source_asset_id
+            LEFT JOIN assets ta ON ta.id = tl.target_asset_id
+            WHERE tl.deleted_at IS NULL
+            ORDER BY tl.penyulang_id ASC, tl.id ASC
+        ";
+
+        $translines = $this->db->query($sql)->getResultArray();
+        $invalidSegments = [];
+        $reanchorProposals = [];
+        $now = date('Y-m-d H:i:s');
+
+        foreach ($translines as $tl) {
+            $srcAsset = [
+                'id'          => $tl['source_asset_id'],
+                'kode_asset'  => $tl['source_code'],
+                'nama_asset'  => $tl['source_name'],
+                'jenis_asset' => $tl['source_jenis'],
+                'latitude'    => $tl['source_lat'],
+                'longitude'   => $tl['source_lng'],
+            ];
+            $tgtAsset = [
+                'id'          => $tl['target_asset_id'],
+                'kode_asset'  => $tl['target_code'],
+                'nama_asset'  => $tl['target_name'],
+                'jenis_asset' => $tl['target_jenis'],
+                'latitude'    => $tl['target_lat'],
+                'longitude'   => $tl['target_lng'],
+            ];
+
+            $srcCheck = self::isJtmPoleAsset($srcAsset);
+            $tgtCheck = self::isJtmPoleAsset($tgtAsset);
+
+            if (!$srcCheck['valid'] || !$tgtCheck['valid']) {
+                $feederId = (int)$tl['penyulang_id'];
+                $actionType = 'REANCHOR';
+                $newSrcId = (int)$tl['source_asset_id'];
+                $newTgtId = (int)$tl['target_asset_id'];
+                $resolutionNotes = [];
+
+                if (!$srcCheck['valid']) {
+                    $res = $this->resolveSourceContextToNearestJtmPole($newSrcId, $feederId);
+                    if ($res && !empty($res['anchor_pole_asset']['id'])) {
+                        $newSrcId = (int)$res['anchor_pole_asset']['id'];
+                        $resolutionNotes[] = "Source re-anchored from non-pole #{$tl['source_asset_id']} ({$tl['source_code']}) to pole #{$newSrcId} ({$res['anchor_pole_asset']['kode_asset']})";
+                    } else {
+                        $actionType = 'DEACTIVATE';
+                        $resolutionNotes[] = "No nearby JTM pole found for source #{$tl['source_asset_id']} ({$tl['source_code']})";
+                    }
+                }
+
+                if (!$tgtCheck['valid']) {
+                    $res = $this->resolveSourceContextToNearestJtmPole($newTgtId, $feederId);
+                    if ($res && !empty($res['anchor_pole_asset']['id'])) {
+                        $newTgtId = (int)$res['anchor_pole_asset']['id'];
+                        $resolutionNotes[] = "Target re-anchored from non-pole #{$tl['target_asset_id']} ({$tl['target_code']}) to pole #{$newTgtId} ({$res['anchor_pole_asset']['kode_asset']})";
+                    } else {
+                        $actionType = 'DEACTIVATE';
+                        $resolutionNotes[] = "No nearby JTM pole found for target #{$tl['target_asset_id']} ({$tl['target_code']})";
+                    }
+                }
+
+                // Disallow self-loops if source and target resolve to same pole
+                if ($newSrcId === $newTgtId) {
+                    $actionType = 'DEACTIVATE';
+                    $resolutionNotes[] = "Source and target resolved to the same pole #{$newSrcId}; deactivating zero-length loop.";
+                }
+
+                $invalidSegments[] = [
+                    'transline_id'      => (int)$tl['id'],
+                    'transline_code'    => $tl['transline_code'],
+                    'feeder_id'         => $feederId,
+                    'feeder_name'       => $tl['nama_penyulang'] ?? "Feeder #{$feederId}",
+                    'original_source'   => ['id' => $tl['source_asset_id'], 'code' => $tl['source_code'], 'type' => $tl['source_jenis'], 'reason' => $srcCheck['reason'] ?? 'VALID'],
+                    'original_target'   => ['id' => $tl['target_asset_id'], 'code' => $tl['target_code'], 'type' => $tl['target_jenis'], 'reason' => $tgtCheck['reason'] ?? 'VALID'],
+                    'action'            => $actionType,
+                    'new_source_id'     => $newSrcId,
+                    'new_target_id'     => $newTgtId,
+                    'resolution_notes'  => implode('; ', $resolutionNotes),
+                ];
+            }
+        }
+
+        $count = count($invalidSegments);
+        $backupPath = WRITEPATH . 'backups/non_pole_transline_reconciliation_' . date('Ymd_His') . '.json';
+        if (!is_dir(dirname($backupPath))) {
+            mkdir(dirname($backupPath), 0755, true);
+        }
+
+        file_put_contents($backupPath, json_encode([
+            'audited_at'          => $now,
+            'total_violations'    => $count,
+            'violations_snapshot' => $invalidSegments,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        if ($execute && $count > 0) {
+            $this->db->transStart();
+            foreach ($invalidSegments as $inv) {
+                if ($inv['action'] === 'REANCHOR') {
+                    $newCode = 'TL-' . $inv['feeder_id'] . '-' . $inv['new_source_id'] . '-' . $inv['new_target_id'];
+                    $this->db->table('gis_translines')->where('id', $inv['transline_id'])->update([
+                        'source_asset_id' => $inv['new_source_id'],
+                        'target_asset_id' => $inv['new_target_id'],
+                        'transline_code'  => $newCode,
+                        'notes'           => $inv['resolution_notes'],
+                        'updated_at'      => $now,
+                    ]);
+                } else {
+                    $this->db->table('gis_translines')->where('id', $inv['transline_id'])->update([
+                        'is_active'  => 0,
+                        'status'     => 'DEACTIVATED_NON_POLE',
+                        'deleted_at' => $now,
+                        'notes'      => $inv['resolution_notes'],
+                        'updated_at' => $now,
+                    ]);
+                }
+            }
+            $this->db->transComplete();
+        }
+
+        return [
+            'status'            => 'success',
+            'executed'          => $execute,
+            'total_violations'  => $count,
+            'backup_file'       => $backupPath,
+            'sample_violations' => array_slice($invalidSegments, 0, 10),
+            'message'           => $execute
+                ? "Berhasil merekonsiliasi {$count} segmen transline non-tiang dengan aman ke tiang JTM dan backup JSON."
+                : "Terdeteksi {$count} segmen transline non-tiang siap direkonsiliasi.",
+        ];
+    }
+
+    /**
      * Get all active transline segments for a feeder
      *
      * @param int $feederId

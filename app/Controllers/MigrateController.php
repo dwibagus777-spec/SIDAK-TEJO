@@ -166,6 +166,42 @@ class MigrateController extends BaseController
                 $executed[] = 'make_device_asset_id_nullable';
             }
 
+            // Phase D3 Hotfix: Archive Proto Dummy Test Cases (FLI-1.0.0 with 0 currents & null feeder)
+            try {
+                $flSvc = new \App\Services\FaultLocatorWorkspaceService();
+                $protoArchRes = $flSvc->archiveProtoTestCases(true);
+                if (($protoArchRes['archived_count'] ?? 0) > 0) {
+                    $executed[] = 'archived_proto_test_cases_' . $protoArchRes['archived_count'];
+                }
+            } catch (\Throwable $eProto) {}
+
+            // Phase D3 Hotfix: Reconcile 22 non-pole transline violations into nearest physical JTM poles
+            try {
+                $gisTlSvc = new \App\Services\GisTranslineService();
+                $tlReanchorRes = $gisTlSvc->reconcileNonPoleTranslines(true);
+                if (($tlReanchorRes['total_violations'] ?? 0) > 0) {
+                    $executed[] = 'reconciled_non_pole_translines_' . $tlReanchorRes['total_violations'];
+                }
+            } catch (\Throwable $eTl) {}
+
+            // Phase D3 Hotfix: Sync PLN standard BOM requirements to temuan_materials
+            try {
+                $bomSvc = new \App\Services\PlnStandardBomRuleService();
+                $bomSyncRes = $bomSvc->batchSyncBom(true);
+                if (($bomSyncRes['total_evaluated'] ?? 0) > 0) {
+                    $executed[] = 'synced_pln_standard_bom_' . $bomSyncRes['total_items_generated'];
+                }
+            } catch (\Throwable $eBom) {}
+
+            // Phase D3 Hotfix: Reconcile ROW findings to POHON_ROW assets and observations
+            try {
+                $rowSvc = new \App\Services\RowTreeAssetService();
+                $rowSyncRes = $rowSvc->reconcileRowFindings(true);
+                if (($rowSyncRes['total_row_findings'] ?? 0) > 0) {
+                    $executed[] = 'reconciled_row_trees_' . $rowSyncRes['unique_trees_count'];
+                }
+            } catch (\Throwable $eRow) {}
+
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
             // governed reconciliation with deterministic identity proof, not pattern matching.

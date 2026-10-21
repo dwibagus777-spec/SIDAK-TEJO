@@ -810,34 +810,19 @@ class Dashboard extends BaseController
             $temuanMaterialMatrix['gis_list'] = array_keys($gisSet);
             sort($temuanMaterialMatrix['gis_list']);
 
-            // Aggregate totals by canonical BOM material code with demand vs usage tracking
-            $matRecapQuery = $db->query("
-                SELECT
-                    tm.canonical_code_snapshot AS material_code,
-                    tm.canonical_name_snapshot AS nama_material,
-                    tm.unit_snapshot AS satuan,
-                    COALESCE(mm.nama_lapangan, tm.canonical_name_snapshot) AS nama_lapangan,
-                    COALESCE(mm.material_category, 'HARDWARE') AS material_category,
-                    COUNT(DISTINCT tm.temuan_id) AS temuan_count,
-                    SUM(tm.quantity) AS total_qty,
-                    SUM(COALESCE(tm.used_quantity, 0)) AS total_used_qty,
-                    SUM(GREATEST(0, tm.quantity - COALESCE(tm.used_quantity, 0))) AS sisa_qty
-                FROM temuan_materials tm
-                INNER JOIN temuan t ON t.id = tm.temuan_id AND t.deleted_at IS NULL
-                LEFT JOIN master_materials mm ON mm.id = tm.material_id
-                WHERE 1=1
-                " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
-                GROUP BY tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot, mm.nama_lapangan, mm.material_category
-                ORDER BY total_qty DESC
-            ");
-            $temuanMaterialMatrix['summary_by_mat'] = ($matRecapQuery && is_object($matRecapQuery)) ? $matRecapQuery->getResultArray() : [];
+            // Aggregate totals by canonical BOM material code with demand vs usage tracking via rule engine
+            $bomRuleService = new \App\Services\PlnStandardBomRuleService();
+            $temuanMaterialMatrix['summary_by_mat'] = $bomRuleService->getCanonicalBomMaterialSummary($ulpIdFilter !== null ? (int)$ulpIdFilter : null);
+
             $matSummarySum = 0;
             $matUsedSum = 0;
             $matSisaSum = 0;
             foreach ($temuanMaterialMatrix['summary_by_mat'] as $smRow) {
-                $matSummarySum += (float)($smRow['total_qty'] ?? 0);
-                $matUsedSum += (float)($smRow['total_used_qty'] ?? 0);
-                $matSisaSum += (float)($smRow['sisa_qty'] ?? 0);
+                if (($smRow['material_code'] ?? '') !== 'PERLU_VERIFIKASI') {
+                    $matSummarySum += (float)($smRow['total_qty'] ?? 0);
+                    $matUsedSum += (float)($smRow['total_used_qty'] ?? 0);
+                    $matSisaSum += (float)($smRow['sisa_qty'] ?? 0);
+                }
             }
             if ($matSummarySum > 0) {
                 $temuanMaterialMatrix['total_items_qty'] = $matSummarySum;

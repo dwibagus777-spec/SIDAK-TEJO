@@ -139,6 +139,15 @@ class MigrateController extends BaseController
                 $executed[] = 'create_temuan_materials_table';
             }
 
+            // Run PopulateAuthoritativeJtmBom Migration (Seeds standard materials CANON-* and TM construction BOM)
+            $popBomMigFile = APPPATH . 'Database/Migrations/2026-09-22-000003_PopulateAuthoritativeJtmBom.php';
+            if (file_exists($popBomMigFile)) {
+                require_once $popBomMigFile;
+                $popBomMig = new \App\Database\Migrations\PopulateAuthoritativeJtmBom();
+                $popBomMig->up();
+                $executed[] = 'populate_authoritative_jtm_bom';
+            }
+
             // Run EnhanceTemuanMaterialBomAndConductorSchema Migration (BOM & Conductor standards)
             $enhanceBomMigFile = APPPATH . 'Database/Migrations/2026-10-20-000002_EnhanceTemuanMaterialBomAndConductorSchema.php';
             if (file_exists($enhanceBomMigFile)) {
@@ -3982,6 +3991,22 @@ class MigrateController extends BaseController
     {
         try {
             $db = \Config\Database::connect('default');
+
+            // Ensure master_materials is seeded if empty
+            if ($db->tableExists('master_materials') && $db->table('master_materials')->countAllResults() === 0) {
+                $popBomMigFile = APPPATH . 'Database/Migrations/2026-09-22-000003_PopulateAuthoritativeJtmBom.php';
+                if (file_exists($popBomMigFile)) {
+                    require_once $popBomMigFile;
+                    $popBomMig = new \App\Database\Migrations\PopulateAuthoritativeJtmBom();
+                    $popBomMig->up();
+                }
+                $enhanceBomMigFile = APPPATH . 'Database/Migrations/2026-10-20-000002_EnhanceTemuanMaterialBomAndConductorSchema.php';
+                if (file_exists($enhanceBomMigFile)) {
+                    require_once $enhanceBomMigFile;
+                    $bomMig = new \App\Database\Migrations\EnhanceTemuanMaterialBomAndConductorSchema();
+                    $bomMig->up();
+                }
+            }
 
             // Check what master_materials has
             $allMats = $db->table('master_materials')->select('id, canonical_code, nama_material, satuan')->get()->getResultArray();

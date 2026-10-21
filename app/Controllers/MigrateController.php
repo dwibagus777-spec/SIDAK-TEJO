@@ -3980,152 +3980,105 @@ class MigrateController extends BaseController
 
     public function auditRowAndBomProduction()
     {
-        $db = \Config\Database::connect('default');
+        try {
+            $db = \Config\Database::connect('default');
 
-        // 1. Assets count
-        $activeAssets = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
-        $deletedAssets = $db->table('assets')->where('deleted_at IS NOT NULL')->countAllResults();
-        $assetTypes = $db->query("SELECT jenis_asset, COUNT(*) cnt FROM assets WHERE deleted_at IS NULL GROUP BY jenis_asset")->getResultArray();
+            // Check what master_materials has
+            $allMats = $db->table('master_materials')->select('id, canonical_code, nama_material, satuan')->get()->getResultArray();
 
-        // 2. Vegetation Observations
-        $vegCount = $db->tableExists('vegetation_observations') ? $db->table('vegetation_observations')->countAllResults() : 0;
-        $vegValid = ($db->tableExists('vegetation_observations') && $db->fieldExists('is_valid', 'vegetation_observations'))
-            ? $db->table('vegetation_observations')->where('is_valid', 1)->countAllResults() : 0;
+            // 1. Assets count
+            $activeAssets = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
+            $deletedAssets = $db->table('assets')->where('deleted_at IS NOT NULL')->countAllResults();
+            $assetTypes = $db->query("SELECT jenis_asset, COUNT(*) cnt FROM assets WHERE deleted_at IS NULL GROUP BY jenis_asset")->getResultArray();
 
-        // 3. ROW Temuan
-        $rowTemuan = [];
-        $rowTemuanCount = 0;
-        if ($db->tableExists('temuan')) {
-            $cols = $db->getFieldNames('temuan');
-            $pParts = [];
-            foreach (['jenis_temuan', 'detail_temuan', 'deskripsi'] as $c) {
-                if (in_array($c, $cols, true)) {
-                    $pParts[] = "{$c} LIKE '%pohon%' OR {$c} LIKE '%row%' OR {$c} LIKE '%vegetasi%'";
+            // 2. Vegetation Observations
+            $vegCount = $db->tableExists('vegetation_observations') ? $db->table('vegetation_observations')->countAllResults() : 0;
+            $vegValid = ($db->tableExists('vegetation_observations') && $db->fieldExists('is_valid', 'vegetation_observations'))
+                ? $db->table('vegetation_observations')->where('is_valid', 1)->countAllResults() : 0;
+
+            // 3. ROW Temuan
+            $rowTemuan = [];
+            $rowTemuanCount = 0;
+            if ($db->tableExists('temuan')) {
+                $cols = $db->getFieldNames('temuan');
+                $pParts = [];
+                foreach (['jenis_temuan', 'detail_temuan', 'deskripsi'] as $c) {
+                    if (in_array($c, $cols, true)) {
+                        $pParts[] = "{$c} LIKE '%pohon%' OR {$c} LIKE '%row%' OR {$c} LIKE '%vegetasi%'";
+                    }
+                }
+                if (!empty($pParts)) {
+                    $pSql = implode(' OR ', $pParts);
+                    $rowTemuanCount = (int)($db->query("SELECT COUNT(*) cnt FROM temuan WHERE deleted_at IS NULL AND ({$pSql})")->getRowArray()['cnt'] ?? 0);
+                    $rowTemuan = $db->query("SELECT id, nomor_temuan, penyulang_id, asset_id, detail_temuan, latitude, longitude FROM temuan WHERE deleted_at IS NULL AND ({$pSql}) LIMIT 10")->getResultArray();
                 }
             }
-            if (!empty($pParts)) {
-                $pSql = implode(' OR ', $pParts);
-                $rowTemuanCount = (int)($db->query("SELECT COUNT(*) cnt FROM temuan WHERE deleted_at IS NULL AND ({$pSql})")->getRowArray()['cnt'] ?? 0);
-                $rowTemuan = $db->query("SELECT id, nomor_temuan, penyulang_id, asset_id, detail_temuan, latitude, longitude FROM temuan WHERE deleted_at IS NULL AND ({$pSql}) LIMIT 10")->getResultArray();
-            }
-        }
 
-        // 4. Temuan #29
-        $t29 = $db->tableExists('temuan') ? $db->table('temuan')->where('id', 29)->get()->getRowArray() : null;
-        $m29 = ($db->tableExists('temuan_materials') && $t29) ? $db->table('temuan_materials')->where('temuan_id', 29)->get()->getResultArray() : [];
-
-        // 5. Kahuripan Temuan & Materials
-        $kTemuan = [];
-        $kMats = [];
-        if ($db->tableExists('temuan')) {
-            $kFeeder = $db->table('penyulang')->like('nama_penyulang', 'KAHURIPAN')->get()->getRowArray();
-            if ($kFeeder) {
-                $kTemuan = $db->table('temuan')->where('penyulang_id', $kFeeder['id'])->where('deleted_at IS NULL')->get()->getResultArray();
-                if ($db->tableExists('temuan_materials')) {
-                    $kMats = $db->query("SELECT tm.*, t.detail_temuan FROM temuan_materials tm JOIN temuan t ON t.id = tm.temuan_id WHERE t.penyulang_id = " . (int)$kFeeder['id'] . " AND t.deleted_at IS NULL")->getResultArray();
-                }
-            }
-        }
-
-        $syncResult = null;
-        if ($this->request->getGet('sync_bom') === '1') {
-            $ruleService = new \App\Services\PlnStandardBomRuleService();
-            
-            // Step-by-step diagnostic test without transaction to pinpoint exact issue
-            $diagSteps = [];
-            $del1 = $db->table('temuan_materials')->where('temuan_id', 29)->delete();
-            $diagSteps['delete_res'] = $del1;
-            $diagSteps['delete_err'] = $db->error();
-
-            $ins1 = $db->table('temuan_materials')->insert([
-                'temuan_id'               => 29,
-                'asset_id'                => null,
-                'construction_type_id'    => null,
-                'material_id'             => 30,
-                'canonical_code_snapshot' => 'CANON-MAT-001',
-                'canonical_name_snapshot' => 'Insulator - Pin Post Insulator 20 Kv;12,5 kN - Porcelain (Tumpu)',
-                'unit_snapshot'           => 'buah',
-                'quantity'                => 2.00,
-                'used_quantity'           => 0.00,
-                'work_status'             => 'PENDING',
-                'conductor_type'          => 'AAAC',
-                'conductor_size'          => '150',
-                'justification_note'      => 'Temuan: 611. PA073 Pin isolator cuil phase R dan T . Lokasi perum pondok jati III Blok CH -18. Zona 2. P. Kahuripan.',
-                'source_mode'             => 'BOM_RULE_ENGINE',
-                'created_at'              => date('Y-m-d H:i:s'),
-                'updated_at'              => date('Y-m-d H:i:s'),
-            ]);
-            $diagSteps['insert1_res'] = $ins1;
-            $diagSteps['insert1_err'] = $db->error();
-
-            $topTieMat = $db->table('master_materials')->where('canonical_code', 'CANON-ACC-012')->get()->getRowArray();
-            $topTieId = $topTieMat ? (int)$topTieMat['id'] : 30;
-
-            $ins2 = $db->table('temuan_materials')->insert([
-                'temuan_id'               => 29,
-                'asset_id'                => null,
-                'construction_type_id'    => null,
-                'material_id'             => $topTieId,
-                'canonical_code_snapshot' => 'CANON-ACC-012',
-                'canonical_name_snapshot' => 'Preformed Top Tie 150 mm²',
-                'unit_snapshot'           => 'buah',
-                'quantity'                => 2.00,
-                'used_quantity'           => 0.00,
-                'work_status'             => 'PENDING',
-                'conductor_type'          => 'AAAC',
-                'conductor_size'          => '150',
-                'justification_note'      => 'Pengikat konduktor pada pin insulator untuk 2 fasa (fasa R dan T)',
-                'source_mode'             => 'BOM_RULE_ENGINE',
-                'created_at'              => date('Y-m-d H:i:s'),
-                'updated_at'              => date('Y-m-d H:i:s'),
-            ]);
-            $diagSteps['insert2_res'] = $ins2;
-            $diagSteps['insert2_err'] = $db->error();
-
-            $upd1 = $db->table('temuan')->where('id', 29)->update([
-                'material' => '2.00 buah CANON-MAT-001, 2.00 buah CANON-ACC-012',
-                'finding_component_key' => 'PIN_ISOLATOR',
-                'noga' => 'PA 073',
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-            $diagSteps['update_res'] = $upd1;
-            $diagSteps['update_err'] = $db->error();
-
-            $syncResult = [
-                'diag_steps' => $diagSteps,
-                'top_tie_mat' => $topTieMat,
-            ];
+            // 4. Temuan #29
+            $t29 = $db->tableExists('temuan') ? $db->table('temuan')->where('id', 29)->get()->getRowArray() : null;
             $m29 = ($db->tableExists('temuan_materials') && $t29) ? $db->table('temuan_materials')->where('temuan_id', 29)->get()->getResultArray() : [];
-        }
 
-        return $this->response->setJSON([
-            'status' => 'success',
-            'timestamp' => date('Y-m-d H:i:s'),
-            'sync_result' => $syncResult,
-            'assets' => [
-                'active' => $activeAssets,
-                'deleted' => $deletedAssets,
-                'total' => $activeAssets + $deletedAssets,
-                'by_type' => $assetTypes,
-            ],
-            'vegetation' => [
-                'table_exists' => $db->tableExists('vegetation_observations'),
-                'total_observations' => $vegCount,
-                'valid_observations' => $vegValid,
-            ],
-            'row_temuan' => [
-                'count' => $rowTemuanCount,
-                'samples' => $rowTemuan,
-            ],
-            'temuan_29' => [
-                'record' => $t29,
-                'materials' => $m29,
-            ],
-            'kahuripan' => [
-                'temuan_count' => count($kTemuan),
-                'materials_count' => count($kMats),
-                'materials' => $kMats,
-            ]
-        ]);
+            // 5. Kahuripan Temuan & Materials
+            $kTemuan = [];
+            $kMats = [];
+            if ($db->tableExists('temuan')) {
+                $kFeeder = $db->table('penyulang')->like('nama_penyulang', 'KAHURIPAN')->get()->getRowArray();
+                if ($kFeeder) {
+                    $kTemuan = $db->table('temuan')->where('penyulang_id', $kFeeder['id'])->where('deleted_at IS NULL')->get()->getResultArray();
+                    if ($db->tableExists('temuan_materials')) {
+                        $kMats = $db->query("SELECT tm.*, t.detail_temuan FROM temuan_materials tm JOIN temuan t ON t.id = tm.temuan_id WHERE t.penyulang_id = " . (int)$kFeeder['id'] . " AND t.deleted_at IS NULL")->getResultArray();
+                    }
+                }
+            }
+
+            $diagResult = null;
+            if ($this->request->getGet('sync_bom') === '1') {
+                $ruleService = new \App\Services\PlnStandardBomRuleService();
+                $sync29 = $ruleService->syncTemuanMaterials(29, true);
+                $diagResult = [
+                    'sync_29' => $sync29,
+                ];
+                $m29 = ($db->tableExists('temuan_materials') && $t29) ? $db->table('temuan_materials')->where('temuan_id', 29)->get()->getResultArray() : [];
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'diag_result' => $diagResult,
+                'master_materials' => $allMats,
+                'assets' => [
+                    'active' => $activeAssets,
+                    'deleted' => $deletedAssets,
+                    'total' => $activeAssets + $deletedAssets,
+                    'by_type' => $assetTypes,
+                ],
+                'vegetation' => [
+                    'table_exists' => $db->tableExists('vegetation_observations'),
+                    'total_observations' => $vegCount,
+                    'valid_observations' => $vegValid,
+                ],
+                'row_temuan' => [
+                    'count' => $rowTemuanCount,
+                    'samples' => $rowTemuan,
+                ],
+                'temuan_29' => [
+                    'record' => $t29,
+                    'materials' => $m29,
+                ],
+                'kahuripan' => [
+                    'temuan_count' => count($kTemuan),
+                    'materials_count' => count($kMats),
+                    'materials' => $kMats,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(200)->setJSON([
+                'status' => 'error_caught',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => explode("\n", $e->getTraceAsString()),
+            ]);
+        }
     }
 }

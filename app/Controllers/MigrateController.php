@@ -3875,7 +3875,27 @@ class MigrateController extends BaseController
         // 2. Query surrounding ID window
         $temuanSurrounding = [];
         if ($db->tableExists('temuan')) {
-            $temuanSurrounding = $db->query("SELECT id, nomor_temuan, judul, status, deleted_at, created_at, updated_at FROM temuan WHERE id BETWEEN 645 AND 670 ORDER BY id ASC")->getResultArray();
+            $temuanSurrounding = $db->query("SELECT * FROM temuan WHERE id BETWEEN 645 AND 670 ORDER BY id ASC")->getResultArray();
+        }
+
+        // 2b. Query by noga, nomor_temuan, or detail_temuan matching 656 or 657
+        $fieldMatches = [];
+        if ($db->tableExists('temuan')) {
+            $sql = "SELECT id, nomor_temuan, noga, detail_temuan, status, deleted_at, created_at, updated_at 
+                    FROM temuan 
+                    WHERE noga IN ('656', '657') 
+                       OR nomor_temuan LIKE '%656%' 
+                       OR nomor_temuan LIKE '%657%' 
+                       OR detail_temuan LIKE '%656%' 
+                       OR detail_temuan LIKE '%657%'";
+            try {
+                $res = $db->query($sql);
+                if ($res && !is_bool($res)) {
+                    $fieldMatches = $res->getResultArray();
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
         }
 
         // 3. Table status (Auto_increment, Rows)
@@ -3953,6 +3973,7 @@ class MigrateController extends BaseController
             ],
             'temuan_stats'             => $stats,
             'direct_match_656_657'     => $temuanDirect,
+            'field_matches_656_657'    => $fieldMatches,
             'surrounding_ids'          => $temuanSurrounding,
             'related_table_references' => $references,
             'backup_log_matches'       => $backupMatches,

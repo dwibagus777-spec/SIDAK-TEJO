@@ -776,4 +776,45 @@ class Api extends BaseController
             ]);
         }
     }
+
+    /**
+     * GET /api/audit-composite7
+     * Audits duplicate assets on 7-column composite key.
+     */
+    public function auditComposite7()
+    {
+        try {
+            $feeder = $this->request->getGet('feeder');
+            $service = new \App\Services\AssetReconciliationService();
+            $result = $service->auditComposite7KeyDuplicates($feeder);
+            return $this->response->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * GET/POST /api/reconcile-composite7
+     * Safely reconciles duplicate assets on 7-column composite key with backup and FK rerouting.
+     */
+    public function reconcileComposite7()
+    {
+        try {
+            $isExecute = (bool)($this->request->getGetPost('execute') ?? false);
+            $feeder = $this->request->getGetPost('feeder');
+            $service = new \App\Services\AssetReconciliationService();
+            $result = $service->reconcileComposite7KeyDuplicates($isExecute, $feeder);
+
+            $statusCode = (($result['status'] ?? '') === 'error') ? 400 : 200;
+            return $this->response->setStatusCode($statusCode)->setJSON($result);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
 }

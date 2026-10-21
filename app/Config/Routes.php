@@ -157,6 +157,8 @@ $routes->match(['GET', 'POST'], 'api/asset-mapping/run', 'Api::runAssetMapping')
 $routes->match(['GET', 'POST'], 'api/asset-mapping/rollback', 'Api::rollbackAssetMapping');
 $routes->get('api/audit-kalisogo-reconciliation', 'Api::auditKalisogo');
 $routes->match(['GET', 'POST'], 'api/reconcile-kalisogo-duplicates', 'Api::reconcileKalisogoDuplicates');
+$routes->get('api/audit-composite7', 'Api::auditComposite7');
+$routes->match(['GET', 'POST'], 'api/reconcile-composite7', 'Api::reconcileComposite7');
 $routes->get('api/debug-filter', 'Api::debugFilter');
 $routes->get('api/forensic-asset-trace', 'Api::forensicTrace');
 $routes->get('api/system/version', 'Api::version');
@@ -702,6 +704,8 @@ $routes->match(['GET', 'POST'], 'api/asset-mapping/run', 'Api::runAssetMapping')
 $routes->match(['GET', 'POST'], 'api/asset-mapping/rollback', 'Api::rollbackAssetMapping');
 $routes->get('api/audit-kalisogo-reconciliation', 'Api::auditKalisogo');
 $routes->match(['GET', 'POST'], 'api/reconcile-kalisogo-duplicates', 'Api::reconcileKalisogoDuplicates');
+$routes->get('api/audit-composite7', 'Api::auditComposite7');
+$routes->match(['GET', 'POST'], 'api/reconcile-composite7', 'Api::reconcileComposite7');
 
     // Release v2.1.0 - GIS GeoJSON & Network Topology APIs
     $routes->get('gis/api-penyulangs', 'GisController::apiPenyulangs');

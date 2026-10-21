@@ -85,15 +85,31 @@ class AssetImportService
         $penyulangMap = $this->getPenyulangLookupMap();
         $sectionMap   = $this->getSectionLookupMap();
 
-        // Fetch existing asset codes for uniqueness check
+        // Fetch existing asset codes and 7-column composite keys for idempotency and uniqueness check
         $existingCodes = [];
+        $existingCompositeKeys = [];
         if ($db->tableExists('assets')) {
-            $query = $db->table('assets')->select('kode_asset')->where('deleted_at IS NULL')->get();
+            $query = $db->table('assets a')
+                ->select('a.kode_asset, a.nama_asset, a.ulp_id, a.penyulang_id, a.section_id, a.latitude, a.longitude, u.nama_ulp, p.nama_penyulang, s.nama_section')
+                ->join('ulps u', 'u.id = a.ulp_id', 'left')
+                ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+                ->join('sections s', 's.id = a.section_id', 'left')
+                ->where('a.deleted_at IS NULL')
+                ->get();
             if ($query && method_exists($query, 'getResultArray')) {
                 foreach ($query->getResultArray() as $r) {
                     if (!empty($r['kode_asset'])) {
                         $existingCodes[strtoupper(trim($r['kode_asset']))] = true;
                     }
+                    $lat = number_format((float)$r['latitude'], 6, '.', '');
+                    $lng = number_format((float)$r['longitude'], 6, '.', '');
+                    $sec = $r['nama_section'] ?: ($r['section_id'] ? (string)$r['section_id'] : '');
+                    $cKey = strtoupper(trim(preg_replace('/\s+/', ' ', ($r['nama_ulp'] ?? '')))) . '|' .
+                            strtoupper(trim(preg_replace('/\s+/', ' ', ($r['nama_penyulang'] ?? '')))) . '|' .
+                            strtoupper(trim(preg_replace('/\s+/', ' ', ($r['nama_asset'] ?? '')))) . '|' .
+                            strtoupper(trim(preg_replace('/\s+/', ' ', $sec))) . '|' .
+                            $lat . '|' . $lng;
+                    $existingCompositeKeys[$cKey] = true;
                 }
             }
         }
@@ -208,6 +224,19 @@ class AssetImportService
                 }
             }
 
+            // Invariant: Idempotent Import Protection on 7-Column Composite Key
+            $rowLat = $latitude !== '' ? number_format((float)$latitude, 6, '.', '') : '0.000000';
+            $rowLng = $longitude !== '' ? number_format((float)$longitude, 6, '.', '') : '0.000000';
+            $rowCKey = strtoupper(trim(preg_replace('/\s+/', ' ', $ulpName))) . '|' .
+                       strtoupper(trim(preg_replace('/\s+/', ' ', $penyulangName))) . '|' .
+                       strtoupper(trim(preg_replace('/\s+/', ' ', $namaAsset))) . '|' .
+                       strtoupper(trim(preg_replace('/\s+/', ' ', $sectionName))) . '|' .
+                       $rowLat . '|' . $rowLng;
+
+            if (isset($existingCompositeKeys[$rowCKey])) {
+                $errors[] = "Aset dengan identitas fisik identik (ULP + Penyulang + Nama Aset + Section + Koordinat) sudah terdaftar di database (duplikat).";
+            }
+
             if (!empty($errors)) {
                 $errorReport[] = [
                     'baris'      => $rowNum,
@@ -218,8 +247,9 @@ class AssetImportService
                 continue;
             }
 
-            // Mark code as used in current batch
+            // Mark code and composite key as used in current batch
             $existingCodes[strtoupper($kodeAsset)] = true;
+            $existingCompositeKeys[$rowCKey] = true;
 
             $validBatch[] = [
                 'kode_asset'      => $kodeAsset,

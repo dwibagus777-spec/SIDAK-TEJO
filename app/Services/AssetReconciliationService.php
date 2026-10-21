@@ -882,4 +882,359 @@ class AssetReconciliationService
             'verified_clean'        => ($activeAfter === ($totalAssigned - count($exactPairs))),
         ]);
     }
+
+    /**
+     * Audit assets with exact 7-column composite key:
+     * Nama Unit + Nama ULP + Nama Penyulang + Nama Aset + Section + Latitude + Longitude
+     *
+     * Invariants:
+     * - Coordinates compared at exact source precision (string/decimal).
+     * - Strings normalized (uppercase, single-spaced).
+     * - Zero location-proximity tolerance; strictly identical values.
+     * - Read-only (0 mutations).
+     */
+    public function auditComposite7KeyDuplicates(?string $feederFilter = null): array
+    {
+        if (!$this->db->tableExists('assets')) {
+            return ['status' => 'error', 'message' => 'Table assets does not exist.'];
+        }
+
+        $builder = $this->db->table('assets a')
+            ->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.ulp_id, a.penyulang_id, a.section_id, a.latitude, a.longitude, a.section_resolution_method, a.created_at, u.nama_ulp, p.nama_penyulang, s.nama_section')
+            ->join('ulps u', 'u.id = a.ulp_id', 'left')
+            ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+            ->join('sections s', 's.id = a.section_id', 'left')
+            ->where('a.deleted_at IS NULL');
+
+        if (!empty($feederFilter)) {
+            $builder->groupStart()
+                ->where('p.nama_penyulang', $feederFilter)
+                ->orLike('p.nama_penyulang', $feederFilter)
+                ->groupEnd();
+        }
+
+        $assets = $builder->get()->getResultArray();
+        $totalActive = count($assets);
+
+        // Group by 7-column composite key
+        $groups = [];
+        foreach ($assets as $ast) {
+            $unitName = 'UP3 SIDOARJO';
+            $ulpName = trim((string)($ast['nama_ulp'] ?? ''));
+            $feederName = trim((string)($ast['nama_penyulang'] ?? ''));
+            $assetName = trim((string)($ast['nama_asset'] ?? ''));
+            $sectionName = trim((string)($ast['nama_section'] ?? ($ast['section_id'] ? (string)$ast['section_id'] : '')));
+            
+            // Format coordinates at source precision (6 decimals)
+            $lat = number_format((float)$ast['latitude'], 6, '.', '');
+            $lng = number_format((float)$ast['longitude'], 6, '.', '');
+
+            // Normalization: uppercase, trim, collapse multiple whitespace
+            $normUnit    = strtoupper(trim(preg_replace('/\s+/', ' ', $unitName)));
+            $normUlp     = strtoupper(trim(preg_replace('/\s+/', ' ', $ulpName)));
+            $normFeeder  = strtoupper(trim(preg_replace('/\s+/', ' ', $feederName)));
+            $normAsset   = strtoupper(trim(preg_replace('/\s+/', ' ', $assetName)));
+            $normSection = strtoupper(trim(preg_replace('/\s+/', ' ', $sectionName)));
+
+            $compositeKey = "{$normUnit}|{$normUlp}|{$normFeeder}|{$normAsset}|{$normSection}|{$lat}|{$lng}";
+
+            if (!isset($groups[$compositeKey])) {
+                $groups[$compositeKey] = [
+                    'composite_key' => $compositeKey,
+                    'keys_detail'   => [
+                        'unit'       => $normUnit,
+                        'ulp'        => $normUlp,
+                        'penyulang'  => $normFeeder,
+                        'nama_asset' => $normAsset,
+                        'section'    => $normSection,
+                        'latitude'   => $lat,
+                        'longitude'  => $lng,
+                    ],
+                    'records' => [],
+                ];
+            }
+            $groups[$compositeKey]['records'][] = $ast;
+        }
+
+        // Filter for true duplicates (> 1 record in group)
+        $duplicateGroups = [];
+        $totalDuplicateRecords = 0;
+
+        // Gather all asset IDs in duplicate groups to query dependencies efficiently
+        $allDupAssetIds = [];
+        foreach ($groups as $compKey => $g) {
+            if (count($g['records']) > 1) {
+                foreach ($g['records'] as $r) {
+                    $allDupAssetIds[] = (int)$r['id'];
+                }
+            }
+        }
+
+        // Query temuan & translines dependencies
+        $temuanCounts = [];
+        $tlSourceCounts = [];
+        $tlTargetCounts = [];
+
+        if (!empty($allDupAssetIds)) {
+            if ($this->db->tableExists('temuan') && $this->db->fieldExists('asset_id', 'temuan')) {
+                $tRows = $this->db->table('temuan')
+                    ->select('asset_id, COUNT(*) as cnt')
+                    ->whereIn('asset_id', $allDupAssetIds)
+                    ->groupBy('asset_id')
+                    ->get()->getResultArray();
+                foreach ($tRows as $tr) {
+                    $temuanCounts[(int)$tr['asset_id']] = (int)$tr['cnt'];
+                }
+            }
+
+            if ($this->db->tableExists('gis_translines')) {
+                $sRows = $this->db->table('gis_translines')
+                    ->select('source_asset_id, COUNT(*) as cnt')
+                    ->whereIn('source_asset_id', $allDupAssetIds)
+                    ->groupBy('source_asset_id')
+                    ->get()->getResultArray();
+                foreach ($sRows as $sr) {
+                    $tlSourceCounts[(int)$sr['source_asset_id']] = (int)$sr['cnt'];
+                }
+
+                $tgRows = $this->db->table('gis_translines')
+                    ->select('target_asset_id, COUNT(*) as cnt')
+                    ->whereIn('target_asset_id', $allDupAssetIds)
+                    ->groupBy('target_asset_id')
+                    ->get()->getResultArray();
+                foreach ($tgRows as $tgr) {
+                    $tlTargetCounts[(int)$tgr['target_asset_id']] = (int)$tgr['cnt'];
+                }
+            }
+        }
+
+        foreach ($groups as $compKey => $g) {
+            if (count($g['records']) > 1) {
+                $recordsWithDeps = [];
+                foreach ($g['records'] as $r) {
+                    $aid = (int)$r['id'];
+                    $tCnt  = $temuanCounts[$aid] ?? 0;
+                    $tlSrc = $tlSourceCounts[$aid] ?? 0;
+                    $tlTgt = $tlTargetCounts[$aid] ?? 0;
+                    $totDeps = $tCnt + $tlSrc + $tlTgt;
+
+                    $recordsWithDeps[] = [
+                        'id'                        => $aid,
+                        'kode_asset'                => $r['kode_asset'],
+                        'nama_asset'                => $r['nama_asset'],
+                        'jenis_asset'               => $r['jenis_asset'],
+                        'section_id'                => $r['section_id'],
+                        'created_at'                => $r['created_at'],
+                        'section_resolution_method' => $r['section_resolution_method'],
+                        'dependencies' => [
+                            'temuan_count'            => $tCnt,
+                            'translines_source_count' => $tlSrc,
+                            'translines_target_count' => $tlTgt,
+                            'total_dependencies'      => $totDeps,
+                        ],
+                    ];
+                }
+
+                // Deterministic Canonical Selection:
+                // 1. Record with most dependencies
+                // 2. Legacy code pattern over hash pattern
+                // 3. Lowest ID (created first)
+                usort($recordsWithDeps, function($a, $b) {
+                    if ($b['dependencies']['total_dependencies'] !== $a['dependencies']['total_dependencies']) {
+                        return $b['dependencies']['total_dependencies'] <=> $a['dependencies']['total_dependencies'];
+                    }
+                    $isBHash = preg_match('/-[0-9A-F]{8}$/i', $b['kode_asset']) ? 1 : 0;
+                    $isAHash = preg_match('/-[0-9A-F]{8}$/i', $a['kode_asset']) ? 1 : 0;
+                    if ($isAHash !== $isBHash) {
+                        return $isAHash <=> $isBHash; // non-hash first
+                    }
+                    return $a['id'] <=> $b['id']; // lowest ID first
+                });
+
+                $canonical = $recordsWithDeps[0];
+                $duplicates = array_slice($recordsWithDeps, 1);
+
+                $duplicateGroups[] = [
+                    'composite_key'        => $compKey,
+                    'keys_detail'          => $g['keys_detail'],
+                    'record_count'         => count($recordsWithDeps),
+                    'canonical_record'     => $canonical,
+                    'duplicate_records'    => $duplicates,
+                    'all_record_ids'       => array_column($recordsWithDeps, 'id'),
+                ];
+
+                $totalDuplicateRecords += count($duplicates);
+            }
+        }
+
+        return [
+            'status'                   => 'success',
+            'audit_timestamp'          => date('Y-m-d H:i:s'),
+            'filter_feeder'            => $feederFilter ?: 'ALL_FEEDERS',
+            'total_active_assets'      => $totalActive,
+            'duplicate_groups_count'   => count($duplicateGroups),
+            'duplicate_records_count'  => $totalDuplicateRecords,
+            'groups'                   => $duplicateGroups,
+        ];
+    }
+
+    /**
+     * Safely reconcile and canonicalize duplicate assets matched on 7-column composite key.
+     *
+     * Invariants:
+     * 1. Only canonicalize records with identical 7-column composite keys.
+     * 2. Re-route any foreign keys (temuan, gis_translines) to canonical asset ID first.
+     * 3. Take pre-mutation JSON snapshot backup before any modification.
+     * 4. Soft-delete redundant duplicate row (deleted_at = NOW()).
+     * 5. Never perform irreversible DELETE or CASCADE.
+     */
+    public function reconcileComposite7KeyDuplicates(bool $isExecute = false, ?string $feederFilter = null): array
+    {
+        $audit = $this->auditComposite7KeyDuplicates($feederFilter);
+        if ($audit['status'] !== 'success') {
+            return $audit;
+        }
+
+        if ($audit['duplicate_groups_count'] === 0) {
+            return array_merge($audit, [
+                'mode'                             => $isExecute ? 'LIVE_EXECUTION' : 'DRY_RUN',
+                'total_active_before'              => $audit['total_active_assets'],
+                'duplicate_groups_found'           => 0,
+                'duplicate_records_to_soft_delete' => 0,
+                'projected_active_after'           => $audit['total_active_assets'],
+                'dependencies_to_reroute'          => [
+                    'temuan_count'                   => 0,
+                    'translines_source_count'        => 0,
+                    'translines_target_count'        => 0,
+                ],
+                'duplicate_groups_detail'          => [],
+                'message'                          => 'Tidak ditemukan duplikat pada 7 kunci komposit. Data aset sudah bersih.',
+                'soft_deleted_count'               => 0,
+                'backup_file'                      => null,
+                'verified_clean'                   => true,
+            ]);
+        }
+
+        // Prepare execution list
+        $dupIdsToSoftDelete = [];
+        $rerouteTemuan = [];
+        $rerouteTlSource = [];
+        $rerouteTlTarget = [];
+        $backupRecords = [];
+
+        foreach ($audit['groups'] as $group) {
+            $canonId = (int)$group['canonical_record']['id'];
+            foreach ($group['duplicate_records'] as $dup) {
+                $dupId = (int)$dup['id'];
+                $dupIdsToSoftDelete[] = $dupId;
+                $backupRecords[] = [
+                    'duplicate_id'     => $dupId,
+                    'canonical_id'     => $canonId,
+                    'composite_key'    => $group['composite_key'],
+                    'kode_asset'       => $dup['kode_asset'],
+                    'nama_asset'       => $dup['nama_asset'],
+                ];
+
+                if ($dup['dependencies']['temuan_count'] > 0) {
+                    $rerouteTemuan[] = ['old_id' => $dupId, 'new_id' => $canonId];
+                }
+                if ($dup['dependencies']['translines_source_count'] > 0) {
+                    $rerouteTlSource[] = ['old_id' => $dupId, 'new_id' => $canonId];
+                }
+                if ($dup['dependencies']['translines_target_count'] > 0) {
+                    $rerouteTlTarget[] = ['old_id' => $dupId, 'new_id' => $canonId];
+                }
+            }
+        }
+
+        $dryRunSummary = [
+            'mode'                             => $isExecute ? 'LIVE_EXECUTION' : 'DRY_RUN',
+            'filter_feeder'                    => $feederFilter ?: 'ALL_FEEDERS',
+            'total_active_before'              => $audit['total_active_assets'],
+            'duplicate_groups_found'           => $audit['duplicate_groups_count'],
+            'duplicate_records_to_soft_delete' => count($dupIdsToSoftDelete),
+            'projected_active_after'           => $audit['total_active_assets'] - count($dupIdsToSoftDelete),
+            'dependencies_to_reroute'          => [
+                'temuan_count'                   => count($rerouteTemuan),
+                'translines_source_count'        => count($rerouteTlSource),
+                'translines_target_count'        => count($rerouteTlTarget),
+            ],
+            'duplicate_groups_detail'          => $audit['groups'],
+        ];
+
+        if (!$isExecute) {
+            return array_merge($dryRunSummary, [
+                'status'  => 'success',
+                'message' => 'Simulasi (Dry-Run) selesai. Database tidak dimutasi.',
+            ]);
+        }
+
+        // LIVE EXECUTION
+        $backupDir = WRITEPATH . 'backups';
+        if (!is_dir($backupDir)) {
+            @mkdir($backupDir, 0755, true);
+        }
+        $backupFile = $backupDir . '/dedup_composite7_backup_' . date('Ymd_His') . '.json';
+        $backupPayload = [
+            'timestamp'       => date('Y-m-d H:i:s'),
+            'operation'       => 'DEDUPLICATION_COMPOSITE_7_KEY',
+            'feeder_filter'   => $feederFilter,
+            'summary'         => $dryRunSummary,
+            'records'         => $backupRecords,
+            'rollback_plan'   => 'UPDATE assets SET deleted_at = NULL, section_resolution_method = NULL WHERE id IN (' . implode(',', $dupIdsToSoftDelete) . ')',
+        ];
+        $written = file_put_contents($backupFile, json_encode($backupPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        $this->db->transBegin();
+        try {
+            // 1. Reroute dependencies
+            foreach ($rerouteTemuan as $rt) {
+                $this->db->table('temuan')->where('asset_id', $rt['old_id'])->update(['asset_id' => $rt['new_id']]);
+            }
+            foreach ($rerouteTlSource as $rs) {
+                $this->db->table('gis_translines')->where('source_asset_id', $rs['old_id'])->update(['source_asset_id' => $rs['new_id']]);
+            }
+            foreach ($rerouteTlTarget as $rtg) {
+                $this->db->table('gis_translines')->where('target_asset_id', $rtg['old_id'])->update(['target_asset_id' => $rtg['new_id']]);
+            }
+
+            // 2. Soft delete duplicates
+            $now = date('Y-m-d H:i:s');
+            $chunks = array_chunk($dupIdsToSoftDelete, 250);
+            foreach ($chunks as $chunk) {
+                $this->db->table('assets')
+                    ->whereIn('id', $chunk)
+                    ->update([
+                        'deleted_at'                => $now,
+                        'section_resolution_method' => 'DUPLICATE_COMPOSITE7_CANONICALIZED',
+                    ]);
+            }
+
+            if ($this->db->transStatus() === false) {
+                throw new \RuntimeException('Database transaction reported failure.');
+            }
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            return [
+                'status'  => 'error',
+                'message' => 'Transaction failed: ' . $e->getMessage(),
+                'backup'  => $backupFile,
+            ];
+        }
+
+        // Post-verification
+        $postAudit = $this->auditComposite7KeyDuplicates($feederFilter);
+        $verifiedClean = ($postAudit['duplicate_groups_count'] === 0);
+
+        return array_merge($dryRunSummary, [
+            'status'              => 'success',
+            'backup_file'         => $backupFile,
+            'backup_bytes'        => $written,
+            'soft_deleted_count'  => count($dupIdsToSoftDelete),
+            'actual_active_after' => $postAudit['total_active_assets'],
+            'verified_clean'      => $verifiedClean,
+        ]);
+    }
 }

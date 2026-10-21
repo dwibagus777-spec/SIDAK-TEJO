@@ -500,7 +500,7 @@ class Dashboard extends BaseController
         )->getResultArray();
         $assetByType  = array_column($assetSummaryRows, 'cnt', 'jenis_asset');
         $assetTotalAll = array_sum(array_column($assetSummaryRows, 'cnt'));
-        $jtmCount      = (int)($assetByType['jtm_tiang'] ?? $assetByType['TIANG_BETON'] ?? 0);
+        $jtmCount      = 0;
         $keypointCount = 0;
         $garduCount    = 0;
         $trafoCount    = 0;
@@ -510,35 +510,33 @@ class Dashboard extends BaseController
             $rawType = strtoupper(trim((string)($asr['jenis_asset'] ?? '')));
             $c = (int)($asr['cnt'] ?? 0);
 
-            if ($jtmCount === 0 && preg_match('/(TIANG|POLE)/i', $rawType)) {
-                $jtmCount += $c;
-            }
-            if (preg_match('/(KEYPOINT|RECLOSER|LBS|SWITCH|DISCONNECT|SECTIONALIZER|FCO)/i', $rawType)) {
+            // Mutually exclusive classification hierarchy:
+            // 1. Keypoint / Switching / Protection Equipment
+            if (preg_match('/(KEYPOINT|RECLOSER|PMCB|GH|LBS|ASS|SWITCH|DISCONNECT|SECTIONALIZER|FCO)/i', $rawType)) {
                 $keypointCount += $c;
             }
-            if (preg_match('/(GARDU|GTT|SUBSTATION|PORTAL|CANTOL|KIOS)/i', $rawType)) {
-                $garduCount += $c;
-            }
-            if (preg_match('/(TRAFO|TRANSFORMATOR|GTT)/i', $rawType)) {
+            // 2. Trafo / Transformer
+            elseif (preg_match('/(TRAFO|TRANSFORMATOR|TRANSFORMER)/i', $rawType)) {
                 $trafoCount += $c;
             }
-            if (preg_match('/(POHON|TREE|VEGETASI|ROW)/i', $rawType)) {
+            // 3. Gardu / Substation / GTT (Substation portal/cantol/kios/gardu)
+            elseif (preg_match('/(GARDU|SUBSTATION|PORTAL|CANTOL|KIOS|KUBIKEL|GTT)/i', $rawType)) {
+                $garduCount += $c;
+            }
+            // 4. Pohon / ROW / Vegetasi
+            elseif (preg_match('/(POHON|TREE|VEGETASI|ROW)/i', $rawType)) {
                 $pohonCount += $c;
+            }
+            // 5. Tiang / Pole / JTM / Conductor / Overhead Line
+            elseif (preg_match('/(TIANG|POLE|JTM|SUTM|SKTM|CONDUCTOR)/i', $rawType) || $rawType === '') {
+                $jtmCount += $c;
+            }
+            // Default physical fallback: counts as JTM
+            else {
+                $jtmCount += $c;
             }
         }
 
-        if ($jtmCount === 0) {
-            $jtmCount = (int)($assetByType['jtm_tiang'] ?? $assetByType['JTM'] ?? 0);
-        }
-        if ($keypointCount === 0) {
-            $keypointCount = (int)($assetByType['RECLOSER_LBS'] ?? $assetByType['KEYPOINT'] ?? 0);
-        }
-        if ($garduCount === 0) {
-            $garduCount = (int)(($assetByType['GARDU_DISTRIBUSI_PORTAL'] ?? 0) + ($assetByType['GTT_GARDU_TRAFO_TIANG'] ?? 0) + ($assetByType['GARDU'] ?? 0));
-        }
-        if ($trafoCount === 0) {
-            $trafoCount = (int)($assetByType['GTT_GARDU_TRAFO_TIANG'] ?? $assetByType['TRAFO'] ?? 0);
-        }
         if ($pohonCount === 0 && $db->tableExists('vegetation_observations')) {
             $vegBuilder = $db->table('vegetation_observations');
             if ($db->fieldExists('deleted_at', 'vegetation_observations')) {

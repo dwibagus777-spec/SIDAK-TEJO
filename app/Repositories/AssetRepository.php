@@ -775,20 +775,20 @@ return [
             $includeSwitchEquipment = false;
 
             if (in_array('JTM', $layers)) {
-                $allowedJenisList = array_merge($allowedJenisList, ['JTM', 'TIANG', 'TIANG_BETON', 'TIANG_BESI', 'CONDUCTOR_JTM', 'jtm_tiang']);
+                $allowedJenisList = array_merge($allowedJenisList, ['JTM', 'TIANG', 'TIANG_BETON', 'TIANG_BESI', 'CONDUCTOR_JTM', 'jtm_tiang', 'TIANG_JTM', 'TIANG_KAYU', 'POLE']);
             }
             if (in_array('GARDU', $layers)) {
-                $allowedJenisList = array_merge($allowedJenisList, ['GARDU', 'SUBSTATION', 'GARDU_DISTRIBUSI_PORTAL', 'GARDU_CANTOL', 'GARDU_PORTAL']);
+                $allowedJenisList = array_merge($allowedJenisList, ['GARDU', 'SUBSTATION', 'GARDU_DISTRIBUSI_PORTAL', 'GARDU_CANTOL', 'GARDU_PORTAL', 'jtm_gardu', 'GD_PORTAL', 'GD_CANTOL', 'GD_BETON', 'GD_KIOS']);
             }
             if (in_array('TRAFO', $layers)) {
-                $allowedJenisList = array_merge($allowedJenisList, ['TRAFO', 'TRANSFORMER', 'GTT', 'GTT_GARDU_TRAFO_TIANG']);
+                $allowedJenisList = array_merge($allowedJenisList, ['TRAFO', 'TRANSFORMER', 'GTT', 'GTT_GARDU_TRAFO_TIANG', 'jtm_trafo', 'TRANSFORMATOR']);
             }
             if (in_array('KUBIKEL', $layers)) {
                 $allowedJenisList[] = 'KUBIKEL';
             }
             if (in_array('SWITCH', $layers)) {
                 $includeSwitchEquipment = true;
-                $allowedJenisList = array_merge($allowedJenisList, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION', 'RECLOSER_LBS', 'SAKLAR_FUSE_CUTOUT']);
+                $allowedJenisList = array_merge($allowedJenisList, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION', 'RECLOSER_LBS', 'SAKLAR_FUSE_CUTOUT', 'PMCB', 'GH', 'ASS', 'KEYPOINT', 'jtm_pmcb', 'jtm_recloser']);
             }
 
             if (empty($allowedJenisList)) {
@@ -796,11 +796,15 @@ return [
             }
 
             $hasSeqCol = $db->fieldExists('sequence_no', 'assets');
+            $hasParentCol = $db->fieldExists('parent_asset_id', 'assets');
 
             $builder = $db->table('assets a');
             $selectFields = 'a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.type, a.status, a.latitude, a.longitude, a.lokasi, a.penyulang_id, a.ulp_id, ct.name as construction_name, ct.code as construction_code';
             if ($hasSeqCol) {
                 $selectFields .= ', a.sequence_no';
+            }
+            if ($hasParentCol) {
+                $selectFields .= ', a.parent_asset_id';
             }
             $builder->select($selectFields);
             $builder->join('construction_types ct', 'a.construction_type_id = ct.id', 'left');

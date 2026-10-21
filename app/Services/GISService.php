@@ -43,14 +43,14 @@ class GISService
         $visual = $this->visualRegistry->resolveVisual($jenis, $type, $kode);
 
         // Level 1 Priority: Primary Asset Category Family
-        if ($jenis === 'TRAFO') {
+        if ($jenis === 'TRAFO' || $jenis === 'JTM_TRAFO' || $jenis === 'TRANSFORMATOR') {
             $legacy = [
                 'shape'      => 'trafo',
                 'icon_class' => 'fa-bolt',
                 'color'      => '#d97706',
                 'label'      => 'TRAFO'
             ];
-        } elseif ($jenis === 'GARDU') {
+        } elseif ($jenis === 'GARDU' || $jenis === 'JTM_GARDU') {
             $legacy = [
                 'shape'      => 'gardu',
                 'icon_class' => 'fa-building-columns',
@@ -64,11 +64,11 @@ class GISService
                 'color'      => '#475569',
                 'label'      => 'KUBIKEL'
             ];
-        } elseif ($jenis === 'LBS' || $jenis === 'LBSM' || $jenis === 'RECLOSER' || $jenis === 'SECTIONALIZER') {
+        } elseif (in_array($jenis, ['LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PMCB', 'GH', 'ASS', 'KEYPOINT', 'JTM_PMCB', 'JTM_RECLOSER', 'RECLOSER_LBS', 'SWITCH'])) {
             $legacy = [
                 'shape'      => 'switch',
                 'icon_class' => 'fa-toggle-on',
-                'color'      => '#dc2626',
+                'color'      => '#7c3aed',
                 'label'      => $jenis
             ];
         } elseif (str_contains($type, 'PMS') || str_contains($type, 'PEMISAH')) {
@@ -238,12 +238,21 @@ class GISService
             $jenis = strtoupper(trim((string)($asset['jenis_asset'] ?? 'JTM')));
             $constrName = $asset['construction_code'] ?? $asset['type'] ?? $asset['construction_name'] ?? $jenis;
 
-            if ($jenis === 'GARDU' || str_contains($constrName, 'TM-8') || str_contains($constrName, 'TM-9') || str_contains($constrName, 'GTT') || str_contains($constrName, 'GARDU')) {
-                $stats['gardu_count']++;
-            } elseif ($jenis === 'TRAFO' || str_contains($constrName, 'DISTRIBUSI') || str_contains($constrName, 'TRAFO')) {
-                $stats['trafo_count']++;
-            } elseif (in_array($jenis, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER']) || str_contains($constrName, 'PMS') || str_contains($constrName, 'PMT') || str_contains($constrName, 'LBS') || str_contains($constrName, 'REC')) {
+            $isSwitch = in_array($jenis, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION', 'RECLOSER_LBS', 'PMCB', 'GH', 'ASS', 'KEYPOINT', 'JTM_PMCB', 'JTM_RECLOSER'])
+                || str_contains($constrName, 'PMS') || str_contains($constrName, 'PMT') || str_contains($constrName, 'LBS') || str_contains($constrName, 'REC') || str_contains($constrName, 'PMCB');
+
+            $isGardu = in_array($jenis, ['GARDU', 'SUBSTATION', 'JTM_GARDU', 'GARDU_DISTRIBUSI_PORTAL', 'GARDU_CANTOL', 'GARDU_PORTAL'])
+                || str_contains($constrName, 'TM-8') || str_contains($constrName, 'TM-9') || str_contains($constrName, 'GTT') || str_contains($constrName, 'GARDU');
+
+            $isTrafo = in_array($jenis, ['TRAFO', 'TRANSFORMER', 'JTM_TRAFO', 'TRANSFORMATOR'])
+                || str_contains($constrName, 'DISTRIBUSI') || str_contains($constrName, 'TRAFO');
+
+            if ($isSwitch) {
                 $stats['switch_count']++;
+            } elseif ($isGardu) {
+                $stats['gardu_count']++;
+            } elseif ($isTrafo) {
+                $stats['trafo_count']++;
             } else {
                 $stats['jtm_count']++;
             }
@@ -275,6 +284,7 @@ class GISService
                     'kode_asset'            => $asset['kode_asset'],
                     'nama_asset'            => $asset['nama_asset'],
                     'jenis_asset'           => $jenis,
+                    'parent_asset_id'       => !empty($asset['parent_asset_id']) ? (int)$asset['parent_asset_id'] : null,
                     'penyulang_id'          => $assetPenyulangId,
                     'ulp_id'                => $assetUlpId,
                     'selected_penyulang_id' => $penyulangId,

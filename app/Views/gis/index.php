@@ -3449,6 +3449,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (markerCluster && typeof markerCluster.clearLayers === 'function') markerCluster.clearLayers();
             if (translinePolylineLayer && typeof translinePolylineLayer.clearLayers === 'function') translinePolylineLayer.clearLayers();
             if (previewPolylineLayer && typeof previewPolylineLayer.clearLayers === 'function') previewPolylineLayer.clearLayers();
+            if (typeof equipmentLinkLayer !== 'undefined' && equipmentLinkLayer && typeof equipmentLinkLayer.clearLayers === 'function') equipmentLinkLayer.clearLayers();
             if (findingLayer && typeof findingLayer.clearLayers === 'function') findingLayer.clearLayers();
             if (proposalsPreviewLayer && typeof proposalsPreviewLayer.clearLayers === 'function') proposalsPreviewLayer.clearLayers();
         }
@@ -3526,6 +3527,8 @@ document.addEventListener("DOMContentLoaded", function () {
         previewPolylineLayer = L.featureGroup().addTo(map);
         previewConnectionLayer = L.featureGroup().addTo(map);
         segmentEditLayer = L.featureGroup().addTo(map);
+        equipmentLinkLayer = L.featureGroup().addTo(map);
+        window.equipmentLinkLayer = equipmentLinkLayer;
         proposalsPreviewLayer = L.featureGroup().addTo(map);
         findingLayer = L.featureGroup().addTo(map);
 
@@ -3644,7 +3647,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Protection: PMCB / Recloser
-        if (constr.includes('REC') || constr.includes('PMCB') || name.includes('RECLOSER') || name.includes('PMCB') || type === 'RECLOSER') {
+        if (constr.includes('REC') || constr.includes('PMCB') || name.includes('RECLOSER') || name.includes('PMCB') || type.includes('REC') || type.includes('PMCB') || type === 'RECLOSER' || type === 'PMCB' || type === 'JTM_PMCB' || type === 'JTM_RECLOSER') {
             return {
                 iconUrl: basePath + 'pmcb-rec.png',
                 iconKey: 'SWITCH_RECLOSER',
@@ -3798,6 +3801,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var lat = geom.coordinates[1];
         var lng = geom.coordinates[0];
+        // If equipment has parent pole, apply small visual offset so both equipment and mounted pole are visible
+        var rawJ = (props.jenis_asset || '').toUpperCase();
+        if (props.parent_asset_id && (['PMCB','RECLOSER','LBS','LBSM','GH','ASS','SWITCH','KEYPOINT','JTM_PMCB','JTM_RECLOSER'].includes(rawJ) || rawJ.includes('GARDU') || rawJ.includes('TRAFO'))) {
+            lat += 0.00006;
+            lng += 0.00006;
+        }
         var assetId = props.id ? String(props.id) : null;
 
         var resolved = resolveAssetIcon(props, visual);
@@ -5819,12 +5828,18 @@ document.addEventListener("DOMContentLoaded", function () {
         var feederAssetIds = [];
         var unassignedAssetIds = [];
         var findingIds = [];
+        var allAssetCoordsMap = new Map();
+        var equipmentToLink = [];
 
         rawFeatures.forEach(function (f) {
             var norm = normalizeAssetFeature(f);
             var props = norm.properties || {};
             var geom  = norm.geometry || {};
             var entityType = props.entity_type || 'ASSET';
+
+            if (geom.coordinates && isValidLatLng(geom.coordinates[1], geom.coordinates[0])) {
+                allAssetCoordsMap.set(Number(props.id), [geom.coordinates[1], geom.coordinates[0]]);
+            }
 
             // 1. STRICT FINDING LAYER
             if (entityType === 'TEMUAN') {
@@ -5844,9 +5859,9 @@ document.addEventListener("DOMContentLoaded", function () {
             var constr = (props.construction_type || '').toUpperCase();
             var scope = props.asset_scope || 'FEEDER';
 
-            var isSwitchType = ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION'].includes(jenis) || strContainsAny(constr, ['PMS', 'PMT', 'LBS', 'REC']);
-            var isGarduType  = ['GARDU', 'SUBSTATION'].includes(jenis) || strContainsAny(constr, ['TM-8', 'TM-9', 'GTT', 'GARDU']);
-            var isTrafoType  = ['TRAFO', 'TRANSFORMER'].includes(jenis) || strContainsAny(constr, ['DISTRIBUSI', 'TRAFO']);
+            var isSwitchType = ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION', 'PMCB', 'GH', 'ASS', 'KEYPOINT', 'JTM_PMCB', 'JTM_RECLOSER', 'RECLOSER_LBS'].includes(jenis) || strContainsAny(constr, ['PMS', 'PMT', 'LBS', 'REC', 'PMCB', 'GH']) || strContainsAny(jenis, ['REC', 'PMCB', 'LBS', 'SWITCH', 'KEYPOINT', 'ASS', 'GH']);
+            var isGarduType  = ['GARDU', 'SUBSTATION', 'JTM_GARDU', 'GARDU_DISTRIBUSI_PORTAL', 'GARDU_CANTOL', 'GARDU_PORTAL'].includes(jenis) || strContainsAny(constr, ['TM-8', 'TM-9', 'GTT', 'GARDU']) || strContainsAny(jenis, ['GARDU']);
+            var isTrafoType  = ['TRAFO', 'TRANSFORMER', 'JTM_TRAFO', 'TRANSFORMATOR'].includes(jenis) || strContainsAny(constr, ['DISTRIBUSI', 'TRAFO']) || strContainsAny(jenis, ['TRAFO']);
             var isJtmType    = !isSwitchType && !isGarduType && !isTrafoType;
 
             var shouldRender = false;
@@ -5873,9 +5888,40 @@ document.addEventListener("DOMContentLoaded", function () {
                     else if (isTrafoType) renderedTrafo++;
                     else if (isSwitchType) renderedSwitch++;
                     else renderedJtm++;
+
+                    if ((isSwitchType || isGarduType || isTrafoType) && props.parent_asset_id) {
+                        equipmentToLink.push({
+                            id: props.id,
+                            parent_id: Number(props.parent_asset_id),
+                            latlng: [geom.coordinates[1], geom.coordinates[0]],
+                            jenis: jenis,
+                            nama: props.nama_asset
+                        });
+                    }
                 }
             }
         });
+
+        // 3. Render Equipment Connector Lines to Mounted Tiang / Transline
+        if (typeof equipmentLinkLayer !== 'undefined' && equipmentLinkLayer) {
+            equipmentLinkLayer.clearLayers();
+            equipmentToLink.forEach(function (eq) {
+                var parentCoord = allAssetCoordsMap.get(eq.parent_id);
+                if (parentCoord && isValidLatLng(parentCoord[0], parentCoord[1])) {
+                    var connectorLine = L.polyline([eq.latlng, parentCoord], {
+                        color: '#7c3aed',
+                        weight: 2.5,
+                        dashArray: '5, 5',
+                        opacity: 0.85
+                    });
+                    connectorLine.bindTooltip(
+                        `<b>${eq.nama || eq.jenis}</b><br><span style="font-size:10px;color:#6d28d9">Terhubung ke Tiang #${eq.parent_id}</span>`,
+                        { sticky: true }
+                    );
+                    equipmentLinkLayer.addLayer(connectorLine);
+                }
+            });
+        }
 
         // 📡 Honest Empty State Check (Only show if both Feeder and Unassigned Master Assets are 0)
         var emptyFeederBanner = document.getElementById('gis-empty-feeder-banner');

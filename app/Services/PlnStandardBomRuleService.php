@@ -737,7 +737,8 @@ class PlnStandardBomRuleService
               AND (a1.penyulang_id != a2.penyulang_id OR t.penyulang_id != a1.penyulang_id OR t.penyulang_id != a2.penyulang_id)
         ";
 
-        $illegalRows = $this->db->query($sql)->getResultArray();
+        $resTl = $this->db->query($sql);
+        $illegalRows = ($resTl && is_object($resTl)) ? $resTl->getResultArray() : [];
         $count = count($illegalRows);
         $prunedCount = 0;
 
@@ -752,23 +753,24 @@ class PlnStandardBomRuleService
 
         // Also check proposals
         $proposalBlockedCount = 0;
-        if ($this->db->tableExists('gis_transline_proposals')) {
+        if ($this->db->tableExists('gis_transline_proposals') && $this->db->fieldExists('start_asset_id', 'gis_transline_proposals')) {
             $sqlProp = "
                 SELECT tp.id
                 FROM gis_transline_proposals tp
-                JOIN assets a1 ON a1.id = tp.source_asset_id
-                JOIN assets a2 ON a2.id = tp.target_asset_id
+                JOIN assets a1 ON a1.id = tp.start_asset_id
+                JOIN assets a2 ON a2.id = tp.end_asset_id
                 WHERE a1.penyulang_id != a2.penyulang_id
-                  AND tp.canonical_operational_state != 'BLOCKED'
+                  AND tp.status != 'REJECTED'
             ";
-            $badProps = $this->db->query($sqlProp)->getResultArray();
+            $resProp = $this->db->query($sqlProp);
+            $badProps = ($resProp && is_object($resProp)) ? $resProp->getResultArray() : [];
             if ($isExecute && !empty($badProps)) {
                 $propIds = array_column($badProps, 'id');
                 $this->db->table('gis_transline_proposals')
                     ->whereIn('id', $propIds)
                     ->update([
-                        'canonical_operational_state' => 'BLOCKED',
-                        'anomaly_reason'              => 'Cross-feeder connection between different feeders is forbidden.',
+                        'status'           => 'REJECTED',
+                        'rejection_reason' => 'Cross-feeder connection between different feeders is forbidden.',
                     ]);
                 $proposalBlockedCount = count($badProps);
             }

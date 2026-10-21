@@ -147,8 +147,24 @@ class PlnStandardBomRuleService
         $items = [];
         $primaryKey = null;
 
+        // Tree / Vegetation / ROW findings require 0 physical pole hardware
+        $isTreeFinding = preg_match('/\b(pohon|bambu|sono|mangga|ranting|dahan|tumbang|rabas)\b/i', $txt)
+            || strtoupper((string)($temuan['jenis_temuan'] ?? '')) === 'ROW';
+
+        if ($isTreeFinding || strtoupper((string)($temuan['jenis_temuan'] ?? '')) === 'ROW') {
+            return [
+                'mapping_status'        => 'PERLU_VERIFIKASI',
+                'finding_component_key' => 'ROW',
+                'construction_code'     => null,
+                'conductor_type'        => $conductorType,
+                'conductor_size'        => $conductorSize,
+                'materials'             => [],
+                'formatted_summary'     => 'PERLU VERIFIKASI LAPANGAN (Pekerjaan ROW / Pemangkasan Pohon)',
+            ];
+        }
+
         // 1. LIGHTNING ARRESTER (LA)
-        if (preg_match('/\b(arrester|la\b|lightning|penangkal\s*petir)\b/i', $txt)) {
+        if (preg_match('/\b(arrester|araster|arester|la\b|lightning|penangkal\s*petir)\b/i', $txt)) {
             $primaryKey = 'ARRESTER';
             $isSinglePhase = (bool)preg_match('/\b(phase|fasa|phasa)\s*[rst]\b/i', $txt)
                 || (bool)preg_match('/\b(1\s*(?:set|buah|unit|phase|fasa))\b/i', $txt);
@@ -183,7 +199,7 @@ class PlnStandardBomRuleService
         }
 
         // 2. PIN / POST INSULATOR (ISOLATOR TUMPU)
-        if (preg_match('/\b(pin\s*isolator|isolator\s*pin|pin\s*post|isolator\s*tumpu|pin\s*bantu|isolator\s*(?:retak|pecah|flash|fong))\b/i', $txt)) {
+        if (preg_match('/\b(pin\s*isolator|isolator\s*pin|pin\s*post|isolator\s*tumpu|pin\s*bantu|isolator\s*(?:retak|pecah|flash|flas|fong)|pin.*(?:flash|flas|retak|pecah|rusak))\b/i', $txt)) {
             if (!$primaryKey) $primaryKey = 'PIN_ISOLATOR';
             $pinQty = self::extractPhaseCount($txt, 1.0);
 
@@ -206,7 +222,7 @@ class PlnStandardBomRuleService
         }
 
         // 3. STRAIN / HANG INSULATOR (ISOLATOR TARIK)
-        if (preg_match('/\b(hang\s*isolator|isolator\s*hang|strain\s*insulator|isolator\s*tarik|piring)\b/i', $txt)) {
+        if (preg_match('/\b(hang\s*isolator|isolator\s*hang|strain\s*insulator|isolator\s*tarik|piring|hang.*(?:flash|flas|retak|pecah|rusak))\b/i', $txt)) {
             if (!$primaryKey) $primaryKey = 'HANG_ISOLATOR';
             $hangQty = self::extractPhaseCount($txt, 1.0);
 
@@ -242,7 +258,7 @@ class PlnStandardBomRuleService
         }
 
         // 5. CROSS ARM / TRAVERS
-        if (preg_match('/\b(cross\s*arm|crossarm|travers|kanal|unp|traves)\b/i', $txt)) {
+        if (preg_match('/\b(cross\s*arm|crossarm|cros\s*arm|crosarm|travers|traves|kanal|unp)\b/i', $txt)) {
             if (!$primaryKey) $primaryKey = 'CROSSARM';
             $items[] = [
                 'canonical_code' => 'CANON-HDW-001',
@@ -267,6 +283,42 @@ class PlnStandardBomRuleService
                 'quantity'       => 2.0,
                 'category'       => 'BAUT_DAN_MUR',
                 'justification'  => 'Baut pengikat arm tie ke travers',
+            ];
+        }
+
+        // 5B. STANDALONE ARM TIE (Penopang travers keropos/patah)
+        if (preg_match('/\b(arm\s*tie|armtie|armty|arm\s*ty)\b/i', $txt) && !preg_match('/\b(cross\s*arm|crossarm|cros\s*arm|crosarm|travers|traves|kanal|unp)\b/i', $txt)) {
+            if (!$primaryKey) $primaryKey = 'ARM_TIE';
+            $tieQty = self::extractPhaseCount($txt, 1.0);
+            $items[] = [
+                'canonical_code' => 'CANON-HDW-003',
+                'canonical_name' => 'Arm Tie Type 750 - 3/4"',
+                'unit'           => 'buah',
+                'quantity'       => $tieQty,
+                'category'       => 'CROSS_ARM_TRAVERS',
+                'justification'  => 'Penggantian arm tie penopang travers keropos (' . (int)$tieQty . ' buah)',
+            ];
+            $items[] = [
+                'canonical_code' => 'CANON-HDW-005',
+                'canonical_name' => 'Bolt & Nut M.16 x 50',
+                'unit'           => 'buah',
+                'quantity'       => $tieQty,
+                'category'       => 'BAUT_DAN_MUR',
+                'justification'  => 'Baut pengikat arm tie ke travers',
+            ];
+        }
+
+        // 5C. STANDALONE TOP TIE (Pengikat Konduktor ke Pin Post)
+        if (preg_match('/\b(top\s*tie|toptie|top\s*ties)\b/i', $txt) && !preg_match('/\b(pin\s*isolator|isolator\s*pin|pin\s*post)\b/i', $txt)) {
+            if (!$primaryKey) $primaryKey = 'TOP_TIE';
+            $ttQty = self::extractPhaseCount($txt, 1.0);
+            $items[] = [
+                'canonical_code' => 'CANON-ACC-012',
+                'canonical_name' => 'Preformed Top Tie 150mm (Semi Cond/non metalic/Composite)',
+                'unit'           => 'buah',
+                'quantity'       => $ttQty,
+                'category'       => 'PENGIKAT',
+                'justification'  => 'Penggantian preformed top tie lepas/putus (' . (int)$ttQty . ' phasa)',
             ];
         }
 
@@ -314,8 +366,8 @@ class PlnStandardBomRuleService
             ];
         }
 
-        // 8. CONDUCTOR (RANTAS / ANDONGAN / MEKAR)
-        if (preg_match('/\b(konduktor|kawat|kabel|rantas|mekar|andongan|putus)\b/i', $txt)) {
+        // 8. CONDUCTOR (RANTAS / ANDONGAN / MEKAR) - Exclude tree findings & top ties
+        if (preg_match('/\b(konduktor|kawat\s*rantas|kabel\s*rantas|rantas|mekar|andongan|(?:kawat|konduktor|kabel)\s*putus)\b/i', $txt) && !preg_match('/\b(top\s*tie|toptie|top\s*ties)\b/i', $txt)) {
             if (!$primaryKey) $primaryKey = 'KONDUKTOR';
             $condMatCode = "MAT-COND-{$conductorType}-{$conductorSize}";
             $items[] = [
@@ -628,15 +680,19 @@ class PlnStandardBomRuleService
      * - Transparently includes unmapped findings as `PERLU_VERIFIKASI` so no findings are omitted.
      *
      * @param int|null $ulpId
+     * @param bool $onlyQualifyingPelaksana Only include PDKB and HAR KONSTRUKSI
      * @return array<int, array<string, mixed>>
      */
-    public function getCanonicalBomMaterialSummary(?int $ulpId = null): array
+    public function getCanonicalBomMaterialSummary(?int $ulpId = null, bool $onlyQualifyingPelaksana = true): array
     {
         $hasMaterialsTable = $this->db->tableExists('temuan_materials');
         $materialsCount = $hasMaterialsTable ? $this->db->table('temuan_materials')->countAllResults() : 0;
 
         $summary = [];
         $unmappedCount = 0;
+        $pelaksanaClause = $onlyQualifyingPelaksana
+            ? " AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI') "
+            : "";
 
         if ($hasMaterialsTable && $materialsCount > 0) {
             $sql = "
@@ -651,7 +707,7 @@ class PlnStandardBomRuleService
                     SUM(COALESCE(tm.used_quantity, 0)) AS total_used_qty,
                     SUM(GREATEST(0, tm.quantity - COALESCE(tm.used_quantity, 0))) AS sisa_qty
                 FROM temuan_materials tm
-                INNER JOIN temuan t ON t.id = tm.temuan_id AND t.deleted_at IS NULL
+                INNER JOIN temuan t ON t.id = tm.temuan_id AND t.deleted_at IS NULL {$pelaksanaClause}
                 LEFT JOIN master_materials mm ON mm.id = tm.material_id
                 WHERE 1=1
                 " . ($ulpId !== null && $ulpId > 0 ? " AND t.ulp_id = " . (int)$ulpId : "") . "
@@ -668,7 +724,7 @@ class PlnStandardBomRuleService
                 SELECT COUNT(DISTINCT t.id) as unmapped_cnt
                 FROM temuan t
                 LEFT JOIN temuan_materials tm ON tm.temuan_id = t.id
-                WHERE t.deleted_at IS NULL AND tm.id IS NULL
+                WHERE t.deleted_at IS NULL {$pelaksanaClause} AND tm.id IS NULL
                 " . ($ulpId !== null && $ulpId > 0 ? " AND t.ulp_id = " . (int)$ulpId : "") . "
             ");
             $unmappedCount = (int)($unmappedRes->getRowArray()['unmapped_cnt'] ?? 0);
@@ -677,6 +733,9 @@ class PlnStandardBomRuleService
         if (empty($summary)) {
             // Dynamic evaluation fallback directly from findings
             $builder = $this->db->table('temuan')->where('deleted_at IS NULL');
+            if ($onlyQualifyingPelaksana) {
+                $builder->whereIn("REPLACE(UPPER(TRIM(COALESCE(pelaksana, ''))), '_', ' ')", ['PDKB', 'HAR KONSTRUKSI']);
+            }
             if ($ulpId !== null && $ulpId > 0) {
                 $builder->where('ulp_id', $ulpId);
             }

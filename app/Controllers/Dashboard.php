@@ -882,6 +882,7 @@ class Dashboard extends BaseController
                 LEFT JOIN sections s ON s.id = t.section_id
                 LEFT JOIN ulps u ON u.id = t.ulp_id
                 WHERE t.deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI')
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp, conductor_type, conductor_size
                 ORDER BY total_temuan DESC, p.nama_penyulang ASC, s.nama_section ASC
@@ -1028,6 +1029,7 @@ class Dashboard extends BaseController
                 LEFT JOIN sections s ON s.id = t.section_id
                 LEFT JOIN ulps u ON u.id = t.ulp_id
                 WHERE t.deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI')
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp
                 ORDER BY total_temuan DESC, p.nama_penyulang ASC, s.nama_section ASC

@@ -4470,4 +4470,263 @@ class MigrateController extends BaseController
             ]);
         }
     }
+
+    public function dryRunReconcileBomPelaksana()
+    {
+        try {
+            $db = \Config\Database::connect('default');
+
+            // 1. Candidate Non-Qualifying automated BOM rows to purge
+            $candNonQualifying = $db->query("
+                SELECT tm.id as tm_id, tm.temuan_id, t.nomor_temuan, p.nama_penyulang, t.pelaksana, t.jenis_temuan, t.detail_temuan,
+                       tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.quantity, tm.source_mode
+                FROM temuan_materials tm
+                JOIN temuan t ON t.id = tm.temuan_id
+                LEFT JOIN penyulang p ON p.id = t.penyulang_id
+                WHERE t.deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') NOT IN ('PDKB', 'HAR KONSTRUKSI')
+                  AND tm.source_mode = 'BOM_CLASSIFIED'
+            ")->getResultArray();
+
+            // 2. Candidate Qualifying bogus Arm Tie fallback rows to purge
+            $candBogusArmties = $db->query("
+                SELECT tm.id as tm_id, tm.temuan_id, t.nomor_temuan, p.nama_penyulang, t.pelaksana, t.jenis_temuan, t.detail_temuan,
+                       tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.quantity, tm.source_mode
+                FROM temuan_materials tm
+                JOIN temuan t ON t.id = tm.temuan_id
+                LEFT JOIN penyulang p ON p.id = t.penyulang_id
+                WHERE t.deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI')
+                  AND tm.canonical_code_snapshot = 'CANON-HDW-003'
+                  AND tm.source_mode = 'BOM_CLASSIFIED'
+                  AND t.detail_temuan NOT REGEXP '(arm[[:space:]]*tie|armtie|armty|cross[[:space:]]*arm|cros[[:space:]]*arm|crossarm|crosarm|travers|traves|kanal|unp)'
+            ")->getResultArray();
+
+            // 3. Candidate Qualifying findings that need authoritative standard BOM re-sync
+            $syncCandidateIds = array_unique(array_map(fn($r) => (int)$r['temuan_id'], $candBogusArmties));
+            $bomRuleService = new \App\Services\PlnStandardBomRuleService();
+            $resyncProjections = [];
+
+            foreach ($syncCandidateIds as $fId) {
+                $fRow = $db->table('temuan')->where('id', $fId)->get()->getRowArray();
+                if ($fRow) {
+                    $resolved = $bomRuleService->resolveBomFromFinding($fRow);
+                    $resyncProjections[] = [
+                        'temuan_id'     => $fId,
+                        'nomor_temuan'  => $fRow['nomor_temuan'],
+                        'detail_temuan' => $fRow['detail_temuan'],
+                        'mapping_status'=> $resolved['mapping_status'],
+                        'new_component' => $resolved['finding_component_key'],
+                        'new_materials' => $resolved['materials'],
+                        'summary'       => $resolved['formatted_summary'],
+                    ];
+                }
+            }
+
+            // Summary of projected changes
+            $totalTmToDelete = count($candNonQualifying) + count($candBogusArmties);
+            $totalTemuanToUpdate = count(array_unique(array_merge(
+                array_map(fn($r) => (int)$r['temuan_id'], $candNonQualifying),
+                array_map(fn($r) => (int)$r['temuan_id'], $candBogusArmties)
+            )));
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'mode'   => 'DRY_RUN',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'dry_run_summary' => [
+                    'non_qualifying_material_rows_to_delete' => count($candNonQualifying),
+                    'bogus_armtie_qualifying_rows_to_delete' => count($candBogusArmties),
+                    'total_material_rows_to_delete'          => $totalTmToDelete,
+                    'qualifying_temuan_to_resync'            => count($resyncProjections),
+                    'total_impacted_temuan'                  => $totalTemuanToUpdate,
+                ],
+                'candidates_non_qualifying_sample' => array_slice($candNonQualifying, 0, 10),
+                'candidates_bogus_armties_all'      => $candBogusArmties,
+                'qualifying_resync_projections'     => $resyncProjections,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(200)->setJSON([
+                'status' => 'error_caught',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => explode("\n", $e->getTraceAsString()),
+            ]);
+        }
+    }
+
+    public function executeReconcileBomPelaksana()
+    {
+        try {
+            $db = \Config\Database::connect('default');
+
+            // 1. Identify Candidate Non-Qualifying automated BOM rows to purge
+            $candNonQualifying = $db->query("
+                SELECT tm.id as tm_id, tm.temuan_id, t.nomor_temuan, p.nama_penyulang, t.pelaksana, t.jenis_temuan, t.detail_temuan,
+                       tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.quantity, tm.source_mode
+                FROM temuan_materials tm
+                JOIN temuan t ON t.id = tm.temuan_id
+                LEFT JOIN penyulang p ON p.id = t.penyulang_id
+                WHERE t.deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') NOT IN ('PDKB', 'HAR KONSTRUKSI')
+                  AND tm.source_mode = 'BOM_CLASSIFIED'
+            ")->getResultArray();
+
+            // 2. Identify Candidate Qualifying bogus Arm Tie fallback rows to purge
+            $candBogusArmties = $db->query("
+                SELECT tm.id as tm_id, tm.temuan_id, t.nomor_temuan, p.nama_penyulang, t.pelaksana, t.jenis_temuan, t.detail_temuan,
+                       tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.quantity, tm.source_mode
+                FROM temuan_materials tm
+                JOIN temuan t ON t.id = tm.temuan_id
+                LEFT JOIN penyulang p ON p.id = t.penyulang_id
+                WHERE t.deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI')
+                  AND tm.canonical_code_snapshot = 'CANON-HDW-003'
+                  AND tm.source_mode = 'BOM_CLASSIFIED'
+                  AND t.detail_temuan NOT REGEXP '(arm[[:space:]]*tie|armtie|armty|cross[[:space:]]*arm|cros[[:space:]]*arm|crossarm|crosarm|travers|traves|kanal|unp)'
+            ")->getResultArray();
+
+            // 3. CREATE FULL BACKUP BEFORE ANY MUTATION
+            $backupDir = WRITEPATH . 'backups/';
+            if (!is_dir($backupDir)) {
+                @mkdir($backupDir, 0775, true);
+            }
+            $backupFilename = 'bom_pelaksana_backup_' . date('Ymd_His') . '.json';
+            $backupFilepath = $backupDir . $backupFilename;
+
+            $allTmRowsBefore = $db->table('temuan_materials')->get()->getResultArray();
+            $allImpactedTemuanIds = array_unique(array_merge(
+                array_map(fn($r) => (int)$r['temuan_id'], $candNonQualifying),
+                array_map(fn($r) => (int)$r['temuan_id'], $candBogusArmties)
+            ));
+
+            $impactedTemuanBefore = !empty($allImpactedTemuanIds)
+                ? $db->table('temuan')->whereIn('id', $allImpactedTemuanIds)->get()->getResultArray()
+                : [];
+
+            $backupPayload = [
+                'created_at'             => date('Y-m-d H:i:s'),
+                'total_temuan_materials' => count($allTmRowsBefore),
+                'total_impacted_temuan'  => count($impactedTemuanBefore),
+                'temuan_materials'       => $allTmRowsBefore,
+                'temuan'                 => $impactedTemuanBefore,
+            ];
+            file_put_contents($backupFilepath, json_encode($backupPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+            // 4. TRANSACTIONAL MUTATION
+            $db->transBegin();
+
+            // A. Delete non-qualifying automated rows
+            $delNonQualifyingIds = array_map(fn($r) => (int)$r['tm_id'], $candNonQualifying);
+            $deletedNonQualifyingCount = 0;
+            if (!empty($delNonQualifyingIds)) {
+                $db->table('temuan_materials')->whereIn('id', $delNonQualifyingIds)->delete();
+                $deletedNonQualifyingCount = count($delNonQualifyingIds);
+            }
+
+            // Update non-qualifying temuan status
+            $nonQualTemuanIds = array_unique(array_map(fn($r) => (int)$r['temuan_id'], $candNonQualifying));
+            if (!empty($nonQualTemuanIds)) {
+                // For ROW findings:
+                $db->table('temuan')
+                    ->whereIn('id', $nonQualTemuanIds)
+                    ->where('pelaksana', 'HAR ROW')
+                    ->update([
+                        'finding_component_key' => 'ROW',
+                        'material' => 'PERLU VERIFIKASI LAPANGAN (Pekerjaan ROW / Pemangkasan Pohon)'
+                    ]);
+                // For other non-qualifying:
+                $db->table('temuan')
+                    ->whereIn('id', $nonQualTemuanIds)
+                    ->where('pelaksana !=', 'HAR ROW')
+                    ->update([
+                        'finding_component_key' => 'PERLU_VERIFIKASI',
+                        'material' => 'PERLU VERIFIKASI LAPANGAN (Pekerjaan Non-PDKB/Konstruksi)'
+                    ]);
+            }
+
+            // B. Delete qualifying bogus Arm Tie rows
+            $delBogusArmtieIds = array_map(fn($r) => (int)$r['tm_id'], $candBogusArmties);
+            $deletedBogusArmtieCount = 0;
+            if (!empty($delBogusArmtieIds)) {
+                $db->table('temuan_materials')->whereIn('id', $delBogusArmtieIds)->delete();
+                $deletedBogusArmtieCount = count($delBogusArmtieIds);
+            }
+
+            // C. Authoritative standard re-sync for qualifying findings that had bogus Arm Ties
+            $syncCandidateIds = array_unique(array_map(fn($r) => (int)$r['temuan_id'], $candBogusArmties));
+            $bomRuleService = new \App\Services\PlnStandardBomRuleService();
+            $resyncedDetails = [];
+
+            foreach ($syncCandidateIds as $fId) {
+                $res = $bomRuleService->syncTemuanMaterials($fId, true);
+                $resyncedDetails[] = [
+                    'temuan_id'   => $fId,
+                    'result'      => $res,
+                ];
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                return $this->response->setStatusCode(500)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Transaction failed during reconciliation. Changes rolled back.',
+                ]);
+            }
+
+            $db->transCommit();
+
+            // 5. POST-VERIFICATION METRICS
+            $postSummaryByMat = $bomRuleService->getCanonicalBomMaterialSummary(null, true);
+            $postArmTiesAll = (int)($db->query("
+                SELECT COUNT(*) cnt
+                FROM temuan_materials tm
+                JOIN temuan t ON t.id = tm.temuan_id
+                WHERE t.deleted_at IS NULL
+                  AND tm.canonical_code_snapshot = 'CANON-HDW-003'
+                  AND tm.source_mode = 'BOM_CLASSIFIED'
+                  AND t.detail_temuan NOT REGEXP '(arm[[:space:]]*tie|armtie|armty|cross[[:space:]]*arm|cros[[:space:]]*arm|crossarm|crosarm|travers|traves|kanal|unp)'
+            ")->getRowArray()['cnt'] ?? 0);
+
+            $postNonQualMaterials = (int)($db->query("
+                SELECT COUNT(*) cnt
+                FROM temuan_materials tm
+                JOIN temuan t ON t.id = tm.temuan_id
+                WHERE t.deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') NOT IN ('PDKB', 'HAR KONSTRUKSI')
+            ")->getRowArray()['cnt'] ?? 0);
+
+            $qualifyingTemuanCount = (int)($db->query("
+                SELECT COUNT(*) cnt
+                FROM temuan
+                WHERE deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI')
+            ")->getRowArray()['cnt'] ?? 0);
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'mode'   => 'MUTATION_EXECUTED',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'backup_file' => $backupFilename,
+                'execution_summary' => [
+                    'non_qualifying_materials_deleted' => $deletedNonQualifyingCount,
+                    'bogus_armties_deleted'            => $deletedBogusArmtieCount,
+                    'qualifying_findings_resynced'     => count($resyncedDetails),
+                    'remaining_bogus_armties'          => $postArmTiesAll,
+                    'remaining_non_qualifying_materials' => $postNonQualMaterials,
+                    'total_qualifying_temuan'          => $qualifyingTemuanCount,
+                ],
+                'post_bom_canonical_summary' => $postSummaryByMat,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(200)->setJSON([
+                'status' => 'error_caught',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => explode("\n", $e->getTraceAsString()),
+            ]);
+        }
+    }
 }

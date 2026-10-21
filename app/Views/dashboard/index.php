@@ -1077,7 +1077,7 @@
                     <div>
                         <h5 class="fw-bold text-dark mb-0" style="font-size: 14px;">Tabel Temuan dan Kebutuhan Material (Standar BOM Konstruksi PLN)</h5>
                         <div class="small text-muted" style="font-size: 11px;">
-                            Rekapitulasi temuan per GI, ULP, Penyulang, Section, Spesifikasi Konduktor (<code>AAAC</code>, <code>AAACS</code>, <code>MVTIC</code>, <code>XLPE</code> &bull; <code>70</code>, <code>110</code>, <code>150</code>, <code>240 mm²</code>), serta rincian kebutuhan material BOM aktual
+                            Rekapitulasi temuan aktif khusus pelaksana <strong>PDKB</strong> &amp; <strong>HAR KONSTRUKSI</strong> per GI, ULP, Penyulang, Section, Spesifikasi Konduktor (<code>AAAC</code>, <code>AAACS</code>, <code>MVTIC</code>, <code>XLPE</code> &bull; <code>70</code>, <code>110</code>, <code>150</code>, <code>240 mm²</code>), serta rincian kebutuhan material BOM aktual
                         </div>
                     </div>
                 </div>
@@ -1150,7 +1150,7 @@
                     <i class="fas fa-rotate-left"></i> Reset
                 </button>
                 <span class="ms-auto badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 font-monospace" style="font-size: 11px;" id="bomMatrixActiveCountBadge">
-                    <?= number_format($totMatTemuan) ?> Temuan &bull; <?= count($bomMatrixRows) ?> Segmen
+                    <?= number_format($totMatTemuan) ?> Temuan (PDKB &amp; HAR KONSTRUKSI) &bull; <?= count($bomMatrixRows) ?> Penyulang
                 </span>
             </div>
         </div>

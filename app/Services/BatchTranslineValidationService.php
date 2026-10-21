@@ -440,7 +440,7 @@ class BatchTranslineValidationService
             $fNameRow = $this->db->table('penyulang')->select('nama_penyulang')->where('id', $fScanId)->get()->getRowArray();
             $feederName = $fNameRow['nama_penyulang'] ?? "Penyulang #{$fScanId}";
 
-            // 1. Physical radial spans between valid JTM poles
+            // Physical radial spans between valid JTM poles (O(N) with 2D spatial grid)
             $spans = $this->discoverRadialSpansForFeeder($fScanId, $seenCandidateKeys);
             foreach ($spans as $sp) {
                 $candidates[] = [
@@ -455,40 +455,6 @@ class BatchTranslineValidationService
                     'source_asset'    => $sp['source_asset'],
                     'target_asset'    => $sp['target_asset'],
                 ];
-            }
-
-            // 2. TranslineNetworkCompletionEngine candidates
-            try {
-                $graph = $engine->buildGraph($fScanId);
-                $discovered = $engine->discoverCandidates($graph);
-
-                foreach ($discovered as $disc) {
-                    $sId = (int)$disc['source_asset_id'];
-                    $tId = (int)$disc['target_asset_id'];
-                    $candKey = min($sId, $tId) . '-' . max($sId, $tId);
-                    if (isset($seenCandidateKeys[$candKey])) {
-                        continue;
-                    }
-                    $seenCandidateKeys[$candKey] = true;
-
-                    // Only candidates that passed basic gates
-                    if (!empty($disc['gate_valid']) || !empty($disc['is_auto_complete'])) {
-                        $candidates[] = [
-                            'id'              => null,
-                            'penyulang_id'    => $fScanId,
-                            'nama_penyulang'  => $graph['assets'][$sId]['penyulang_name'] ?? $feederName,
-                            'source_asset_id' => $sId,
-                            'target_asset_id' => $tId,
-                            'distance_meters' => (float)$disc['distance_meters'],
-                            'conductor_type'  => $disc['conductor_type'] ?? 'AAACS',
-                            'conductor_size'  => $disc['conductor_size'] ?? '150 mm²',
-                            'source_asset'    => $graph['assets'][$sId] ?? null,
-                            'target_asset'    => $graph['assets'][$tId] ?? null,
-                        ];
-                    }
-                }
-            } catch (\Throwable $e) {
-                // Feeder without sufficient topology graph or invalid geometry skipped safely
             }
         }
 

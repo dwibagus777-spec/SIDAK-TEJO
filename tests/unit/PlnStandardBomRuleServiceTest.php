@@ -102,4 +102,48 @@ class PlnStandardBomRuleServiceTest extends CIUnitTestCase
         $this->assertSame('RESOLVED', $bomHar['mapping_status']);
         $this->assertSame('CROSSARM', $bomHar['finding_component_key']);
     }
+
+    public function testVegetationRowReturnsZeroMaterials()
+    {
+        $service = new PlnStandardBomRuleService();
+        $rowFinding = [
+            'id'            => 301,
+            'jenis_temuan'  => 'ROW',
+            'detail_temuan' => 'Pohon mangga mendekati jaringan 1.5 meter',
+            'pelaksana'     => 'HAR ROW',
+        ];
+
+        $bom = $service->resolveBomFromFinding($rowFinding);
+        $this->assertSame('PERLU_VERIFIKASI', $bom['mapping_status']);
+        $this->assertEmpty($bom['materials']);
+    }
+
+    public function testStandaloneArmTieAndTopTieRules()
+    {
+        $service = new PlnStandardBomRuleService();
+
+        // Arm tie test
+        $armTieFinding = [
+            'id'            => 401,
+            'jenis_temuan'  => 'ANOMALI',
+            'detail_temuan' => 'Arm tie bengkok fasa R',
+            'pelaksana'     => 'PDKB',
+        ];
+        $bomArm = $service->resolveBomFromFinding($armTieFinding);
+        $this->assertSame('RESOLVED', $bomArm['mapping_status']);
+        $codesArm = array_column($bomArm['materials'], 'canonical_code');
+        $this->assertContains('CANON-HDW-003', $codesArm);
+
+        // Top tie test
+        $topTieFinding = [
+            'id'            => 402,
+            'jenis_temuan'  => 'ANOMALI',
+            'detail_temuan' => 'Top tie putus fasa S',
+            'pelaksana'     => 'HAR KONSTRUKSI',
+        ];
+        $bomTop = $service->resolveBomFromFinding($topTieFinding);
+        $this->assertSame('RESOLVED', $bomTop['mapping_status']);
+        $codesTop = array_column($bomTop['materials'], 'canonical_code');
+        $this->assertContains('CANON-ACC-012', $codesTop);
+    }
 }

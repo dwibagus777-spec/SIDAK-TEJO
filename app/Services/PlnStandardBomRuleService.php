@@ -148,10 +148,14 @@ class PlnStandardBomRuleService
         $primaryKey = null;
 
         // Tree / Vegetation / ROW findings require 0 physical pole hardware
-        $isTreeFinding = preg_match('/\b(pohon|bambu|sono|mangga|ranting|dahan|tumbang|rabas)\b/i', $txt)
-            || strtoupper((string)($temuan['jenis_temuan'] ?? '')) === 'ROW';
+        $pelaksanaUpper = strtoupper(str_replace('_', ' ', trim((string)($temuan['pelaksana'] ?? ''))));
+        $jenisUpper = strtoupper(trim((string)($temuan['jenis_temuan'] ?? '')));
+        $hasTreeWord = (bool)preg_match('/\b(pohon|bambu|sono|mangga|ranting|dahan|tumbang|rabas)\b/i', $txt);
+        $hasHardwareWord = (bool)preg_match('/\b(arrester|araster|arester|la\b|penangkal\s*petir|isolator|pin\s*post|cross\s*arm|crossarm|travers|fco|cut\s*out|konektor|connector|jumper|skun|lug|pg\s*clamp|guy\s*wire|treckschor|trekschor|grounding|arm\s*tie|top\s*tie)\b/i', $txt);
 
-        if ($isTreeFinding || strtoupper((string)($temuan['jenis_temuan'] ?? '')) === 'ROW') {
+        $isTreeFinding = ($pelaksanaUpper === 'HAR ROW' || $jenisUpper === 'ROW' || ($hasTreeWord && !$hasHardwareWord));
+
+        if ($isTreeFinding) {
             return [
                 'mapping_status'        => 'PERLU_VERIFIKASI',
                 'finding_component_key' => 'ROW',
@@ -159,7 +163,7 @@ class PlnStandardBomRuleService
                 'conductor_type'        => $conductorType,
                 'conductor_size'        => $conductorSize,
                 'materials'             => [],
-                'formatted_summary'     => 'PERLU VERIFIKASI LAPANGAN (Pekerjaan ROW / Pemangkasan Pohon)',
+                'formatted_summary'     => 'Perlu Verifikasi Lapangan (Pekerjaan ROW / Pemangkasan Pohon)',
             ];
         }
 

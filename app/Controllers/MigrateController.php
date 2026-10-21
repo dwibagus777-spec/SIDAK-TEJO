@@ -1282,6 +1282,7 @@ class MigrateController extends BaseController
             return $this->response->setJSON([
                 'db_name'                   => $db->getDatabase(),
                 'executed_bom_migration'    => in_array('enhance_temuan_material_bom_and_conductor_schema', $executed, true),
+                'executed_items'            => $executed,
                 'asset_history_exist'       => count($historyCheck) > 0,
                 'network_type_present'      => in_array('network_type', $baseColumnNames),
                 'installation_date_present' => in_array('installation_date', $assetColumnNames),
@@ -3659,5 +3660,27 @@ class MigrateController extends BaseController
             }
         }
         closedir($dir);
+    }
+
+    public function auditGlobalDuplicates()
+    {
+        $feeder = $this->request->getGet('feeder');
+        $svc = new \App\Services\GlobalAssetDeduplicationService();
+        return $this->response->setJSON($svc->auditDuplicates($feeder ? (string)$feeder : null));
+    }
+
+    public function executeGlobalDedup()
+    {
+        $feeder = $this->request->getGet('feeder') ?? $this->request->getPost('feeder');
+        $execute = (bool)($this->request->getGet('execute') ?? $this->request->getPost('execute') ?? false);
+        $svc = new \App\Services\GlobalAssetDeduplicationService();
+        return $this->response->setJSON($svc->executeDeduplication($execute, $feeder ? (string)$feeder : null));
+    }
+
+    public function reconcileNonPoleTranslinesAction()
+    {
+        $execute = (bool)($this->request->getGet('execute') ?? $this->request->getPost('execute') ?? false);
+        $svc = new \App\Services\GisTranslineService();
+        return $this->response->setJSON($svc->reconcileNonPoleTranslines($execute));
     }
 }

@@ -247,6 +247,27 @@
                                 <div id="feederContextDetails" class="text-secondary small">
                                     Pilih penyulang untuk memuat topologi transline resmi dan tipe konduktor otomatis.
                                 </div>
+                                <div id="feederSegmentsCollapse" class="collapse mt-2 pt-2 border-top border-secondary">
+                                    <div class="fw-semibold text-light mb-1" style="font-size:0.72rem;">
+                                        <i class="fa-solid fa-layer-group text-info me-1"></i> Urutan Tiang &amp; Spesifikasi Konduktor Per Segmen:
+                                    </div>
+                                    <div class="table-responsive" style="max-height: 180px; overflow-y: auto;">
+                                        <table class="table table-dark table-sm table-bordered align-middle mb-0" style="font-size:0.68rem;">
+                                            <thead class="table-secondary text-dark sticky-top">
+                                                <tr>
+                                                    <th style="width: 8%;">#</th>
+                                                    <th style="width: 25%;">Dari Tiang</th>
+                                                    <th style="width: 25%;">Ke Tiang</th>
+                                                    <th class="text-end" style="width: 14%;">Bentang</th>
+                                                    <th style="width: 28%;">Konduktor</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="feederSegmentsPreviewBody">
+                                                <tr><td colspan="5" class="text-center text-secondary py-2">Belum ada segmen terpilih</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1011,16 +1032,61 @@
                     readinessPill.innerText = 'BELUM ADA TIANG';
                 }
 
+                let condHtml = '';
+                if (data.conductor.is_hybrid && data.conductor.breakdown && data.conductor.breakdown.length > 0) {
+                    const breakdownPills = data.conductor.breakdown.map(b => 
+                        `<span class="badge bg-secondary-subtle text-light border border-secondary me-1 py-0 px-1.5" style="font-size:0.68rem;">${b.label}: ${b.distance_km} km (${b.percentage}%)</span>`
+                    ).join('');
+                    condHtml = `
+                        <div class="mt-1">
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle me-1 py-0.5 px-2" style="font-size:0.68rem;">
+                                <i class="fa-solid fa-code-branch me-1"></i> Jalur Multi-Konduktor (Hybrid)
+                            </span>
+                            <div class="mt-1 d-flex flex-wrap gap-1">${breakdownPills}</div>
+                        </div>
+                    `;
+                } else {
+                    condHtml = `
+                        <div class="text-secondary mt-0.5" style="font-size:0.7rem;">
+                            Konduktor Dominan Resmi: <strong class="text-light">${data.conductor.official_type}</strong> (Sumber: ${data.conductor.source})
+                        </div>
+                    `;
+                }
+
                 contextDetails.innerHTML = `
                     <div class="text-light fw-semibold">
                         Bentang JTM: <span class="text-info">${topo.total_span_km} km</span> (${topo.segment_count} segmen) &bull; 
                         Tiang JTM: <span class="text-success">${topo.valid_jtm_poles_count} tiang</span> &bull; 
                         Section: <span class="text-warning">${topo.sections_count}</span>
                     </div>
-                    <div class="text-secondary mt-0.5" style="font-size:0.7rem;">
-                        Konduktor Resmi: <strong class="text-light">${data.conductor.official_type}</strong> (Sumber: ${data.conductor.source})
-                    </div>
+                    ${condHtml}
+                    ${topo.segment_count > 0 ? `
+                        <div class="mt-1.5">
+                            <button class="btn btn-xs btn-outline-info py-0 px-2 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#feederSegmentsCollapse" aria-expanded="false" style="font-size:0.68rem;">
+                                <i class="fa-solid fa-table-list me-1"></i> Tampilkan Rincian Konduktor Per Segmen (${topo.segment_count})
+                            </button>
+                        </div>
+                    ` : ''}
                 `;
+
+                // Populate Segments Preview Table
+                const segTbody = document.getElementById('feederSegmentsPreviewBody');
+                if (data.segments_preview && data.segments_preview.length > 0) {
+                    segTbody.innerHTML = '';
+                    data.segments_preview.forEach((s, idx) => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="text-center font-monospace">${idx + 1}</td>
+                            <td class="font-monospace text-light">${s.source_kode}</td>
+                            <td class="font-monospace text-light">${s.target_kode}</td>
+                            <td class="text-end fw-bold text-info">${Number(s.distance_meters).toFixed(1)}m</td>
+                            <td><span class="badge bg-secondary-subtle text-light border border-secondary" style="font-size:0.65rem;">${s.conductor_type} ${s.conductor_size}</span></td>
+                        `;
+                        segTbody.appendChild(tr);
+                    });
+                } else {
+                    segTbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary py-2">Belum ada segmen transline tiang JTM terpetakan untuk penyulang ini.</td></tr>';
+                }
 
                 // 3. Populate Protection Devices (without generating fake nodes)
                 const prot = data.protection_devices;

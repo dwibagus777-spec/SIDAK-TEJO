@@ -884,6 +884,28 @@ class Dashboard extends BaseController
                 $temuanMaterialMatrix['gis_list'] = array_keys($gisSet);
                 sort($temuanMaterialMatrix['gis_list']);
             }
+
+            // Invariant: summary_by_mat and demand/used/sisa totals are always canonical and never empty
+            if (empty($temuanMaterialMatrix['summary_by_mat'])) {
+                $bomRuleService = new \App\Services\PlnStandardBomRuleService();
+                $temuanMaterialMatrix['summary_by_mat'] = $bomRuleService->getCanonicalBomMaterialSummary($ulpIdFilter !== null ? (int)$ulpIdFilter : null);
+
+                $matSummarySum = 0;
+                $matUsedSum = 0;
+                $matSisaSum = 0;
+                foreach ($temuanMaterialMatrix['summary_by_mat'] as $smRow) {
+                    if (($smRow['material_code'] ?? '') !== 'PERLU_VERIFIKASI') {
+                        $matSummarySum += (float)($smRow['total_qty'] ?? 0);
+                        $matUsedSum += (float)($smRow['total_used_qty'] ?? 0);
+                        $matSisaSum += (float)($smRow['sisa_qty'] ?? 0);
+                    }
+                }
+                if ($matSummarySum > 0) {
+                    $temuanMaterialMatrix['total_items_qty'] = $matSummarySum;
+                    $temuanMaterialMatrix['total_used_qty']  = $matUsedSum;
+                    $temuanMaterialMatrix['total_sisa_qty']  = $matSisaSum;
+                }
+            }
         }
 
         if ($db->tableExists('construction_types') && $db->tableExists('construction_bom_items')) {

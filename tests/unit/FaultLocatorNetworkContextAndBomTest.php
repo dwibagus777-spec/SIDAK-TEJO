@@ -46,6 +46,9 @@ class FaultLocatorNetworkContextAndBomTest extends CIUnitTestCase
 
         $this->assertEquals($penyulangId, $data['feeder']['id']);
         $this->assertArrayHasKey('official_type', $data['conductor']);
+        $this->assertArrayHasKey('is_hybrid', $data['conductor']);
+        $this->assertArrayHasKey('breakdown', $data['conductor']);
+        $this->assertArrayHasKey('segments_preview', $data);
         $this->assertArrayHasKey('total_span_meters', $data['topology']);
         $this->assertArrayHasKey('valid_jtm_poles_count', $data['topology']);
         $this->assertArrayHasKey('available', $data['protection_devices']);

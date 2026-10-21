@@ -173,16 +173,23 @@ class GisTranslineService
             }
         }
 
-        if (!$nearestPole && !empty($poles)) {
-            $nearestPole = $poles[0];
-            $minDist = 0.0;
+        if ($nearestPole && $minDist <= 35.0) {
+            return [
+                'source_type'             => 'DEVICE_CONTEXT',
+                'source_asset'            => $asset,
+                'anchor_pole_asset'       => $nearestPole,
+                'distance_to_pole_meters' => round($minDist, 2),
+                'verified'                => true,
+            ];
         }
 
         return [
-            'source_type'             => 'DEVICE_CONTEXT',
+            'source_type'             => 'UNVERIFIED',
             'source_asset'            => $asset,
-            'anchor_pole_asset'       => $nearestPole,
-            'distance_to_pole_meters' => round($minDist, 2),
+            'anchor_pole_asset'       => null,
+            'distance_to_pole_meters' => ($minDist !== PHP_FLOAT_MAX) ? round($minDist, 2) : null,
+            'verified'                => false,
+            'reason'                  => 'Jarak ke tiang JTM terdekat melebihi batas fisik 35m atau section tidak terbukti.',
         ];
     }
 
@@ -263,23 +270,23 @@ class GisTranslineService
 
                 if (!$srcCheck['valid']) {
                     $res = $this->resolveSourceContextToNearestJtmPole($newSrcId, $feederId);
-                    if ($res && !empty($res['anchor_pole_asset']['id'])) {
+                    if ($res && !empty($res['anchor_pole_asset']['id']) && !empty($res['verified'])) {
                         $newSrcId = (int)$res['anchor_pole_asset']['id'];
                         $resolutionNotes[] = "Source re-anchored from non-pole #{$tl['source_asset_id']} ({$tl['source_code']}) to pole #{$newSrcId} ({$res['anchor_pole_asset']['kode_asset']})";
                     } else {
-                        $actionType = 'DEACTIVATE';
-                        $resolutionNotes[] = "No nearby JTM pole found for source #{$tl['source_asset_id']} ({$tl['source_code']})";
+                        $actionType = 'REVIEW_REQUIRED';
+                        $resolutionNotes[] = "Tidak ada tiang JTM terverifikasi (<= 35m & seksi sama) untuk source #{$tl['source_asset_id']} ({$tl['source_code']}). Dimasukkan ke daftar review.";
                     }
                 }
 
                 if (!$tgtCheck['valid']) {
                     $res = $this->resolveSourceContextToNearestJtmPole($newTgtId, $feederId);
-                    if ($res && !empty($res['anchor_pole_asset']['id'])) {
+                    if ($res && !empty($res['anchor_pole_asset']['id']) && !empty($res['verified'])) {
                         $newTgtId = (int)$res['anchor_pole_asset']['id'];
                         $resolutionNotes[] = "Target re-anchored from non-pole #{$tl['target_asset_id']} ({$tl['target_code']}) to pole #{$newTgtId} ({$res['anchor_pole_asset']['kode_asset']})";
                     } else {
-                        $actionType = 'DEACTIVATE';
-                        $resolutionNotes[] = "No nearby JTM pole found for target #{$tl['target_asset_id']} ({$tl['target_code']})";
+                        $actionType = 'REVIEW_REQUIRED';
+                        $resolutionNotes[] = "Tidak ada tiang JTM terverifikasi (<= 35m & seksi sama) untuk target #{$tl['target_asset_id']} ({$tl['target_code']}). Dimasukkan ke daftar review.";
                     }
                 }
 
@@ -328,12 +335,18 @@ class GisTranslineService
                         'notes'           => $inv['resolution_notes'],
                         'updated_at'      => $now,
                     ]);
-                } else {
+                } elseif ($inv['action'] === 'DEACTIVATE') {
                     $this->db->table('gis_translines')->where('id', $inv['transline_id'])->update([
                         'is_active'  => 0,
                         'status'     => 'DEACTIVATED_NON_POLE',
                         'deleted_at' => $now,
                         'notes'      => $inv['resolution_notes'],
+                        'updated_at' => $now,
+                    ]);
+                } else {
+                    // REVIEW_REQUIRED: preserve transline intact, record audit review note
+                    $this->db->table('gis_translines')->where('id', $inv['transline_id'])->update([
+                        'notes'      => '[REVIEW_REQUIRED] ' . $inv['resolution_notes'],
                         'updated_at' => $now,
                     ]);
                 }

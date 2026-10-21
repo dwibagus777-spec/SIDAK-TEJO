@@ -1,8 +1,8 @@
 # SIDAK TEJO - Skills
 
-Skills in `.kilo/skills/` (15 folders). Select only what the current task requires and read its `SKILL.md` before acting.
+Skills in `.kilo/skills/` (16 folders). Select only what the current task requires and read its `SKILL.md` before acting.
 
-## Inventory (15 Skills)
+## Inventory (16 Skills)
 
 - [code-graph-rag](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\code-graph-rag\SKILL.md): Use when a SIDAK TEJO change spans files or you need lightweight repository tracing across routes, controllers, services, models, views, or tests before editing.
 - [context7-cli](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\context7-cli\SKILL.md): Use when the user mentions `ctx7` or `context7`, needs current external library documentation via the `ctx7` CLI, or wants to configure Context7 MCP.
@@ -19,14 +19,16 @@ Skills in `.kilo/skills/` (15 folders). Select only what the current task requir
 - [reverse-engineer-anything](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\reverse-engineer-anything\SKILL.md): Use when reverse engineering shipped binaries, APK/ASAR/packages, firmware, bytecode, recorded network/crash captures, or runtime targets with REA (skip for ordinary source-repo analysis).
 - [router](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\router\SKILL.md): Use only when a task spans several areas and it is unclear which SIDAK TEJO project skills to combine before acting.
 - [superpowers](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\superpowers\SKILL.md): Use when starting a conversation to check whether a specialized project skill applies, while honoring explicit user and `AGENTS.md` token-saving constraints.
+- [ui-ux-pro-max](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\ui-ux-pro-max\SKILL.md): Use when designing, building, reviewing, or fixing interfaces across web, mobile, and desktop with design intelligence: layout, accessibility (contrast 4.5:1, touch target ≥44px), typography, color palettes, responsive UX, and visual Polish.
 
 ## Token-Saving & Execution Rules
 
-1. **Select only relevant skills:** Pick only the 1–2 skills that directly match the task; never load all 15 `SKILL.md` files at once.
+1. **Select only relevant skills:** Pick only the 1–2 skills that directly match the task; never load all 16 `SKILL.md` files at once.
 2. **Read before use:** Read the selected `SKILL.md` once before applying its workflow; do not re-read or repeat instructions already in context.
 3. **Prefer the most specific skill when overlapping:**
    - For ordinary SIDAK TEJO cross-file tracing, use `code-graph-rag` (lightweight `rg`/file tracing) instead of heavy `/graphify` builds or `reverse-engineer-anything`.
    - Use `database-architecture` for migrations, schema changes, and query optimization.
+   - Use `ui-ux-pro-max` or `frontend-design` for UI/UX enhancements and visual design decisions.
    - Use `graphify` only when `graphify-out/` already exists or the user explicitly wants a knowledge-graph build/query.
    - Use `reverse-engineer-anything` only for compiled/packaged artifacts, APKs, captures, or runtime targets—never for normal PHP/JS source files in this repo.
    - Skip `router` and `superpowers` overhead when the target domain skill (`omniroute`, `frontend-design`, `ponytail`, etc.) is already obvious.

@@ -1219,11 +1219,14 @@ class FaultLocatorWorkspaceService
             }
         }
 
-        // 2. Transline topology metrics
+        // 2. Transline topology metrics & Conductor Breakdown
         $totalSpanMeters = 0.0;
         $segmentCount = 0;
         $poleCount = 0;
         $sectionCount = 0;
+        $condBreakdown = [];
+        $segmentsList = [];
+        $isHybrid = false;
 
         if ($this->db->tableExists('gis_translines')) {
             $tlStats = $this->db->table('gis_translines')
@@ -1235,6 +1238,61 @@ class FaultLocatorWorkspaceService
 
             $segmentCount = (int)($tlStats['seg_cnt'] ?? 0);
             $totalSpanMeters = (float)($tlStats['span_sum'] ?? 0.0);
+
+            // Detailed conductor breakdown per segment type & size
+            $breakdownRows = $this->db->table('gis_translines')
+                ->select("COALESCE(NULLIF(TRIM(conductor_type), ''), 'AAAC') as c_type, COALESCE(NULLIF(TRIM(conductor_size), ''), '150 mm²') as c_size, COUNT(*) as span_cnt, SUM(distance_meters) as span_len")
+                ->where('penyulang_id', $penyulangId)
+                ->where('deleted_at IS NULL')
+                ->groupBy('c_type, c_size')
+                ->orderBy('span_len', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            foreach ($breakdownRows as $br) {
+                $rawT = strtoupper(trim((string)$br['c_type']));
+                $rawS = trim((string)$br['c_size']);
+                $distM = (float)($br['span_len'] ?? 0);
+                $pct = $totalSpanMeters > 0 ? round(($distM / $totalSpanMeters) * 100, 1) : 0.0;
+                $label = $rawT . (str_contains($rawS, 'mm') ? ' ' . $rawS : ' ' . $rawS . ' mm²');
+
+                $condBreakdown[] = [
+                    'label'          => $label,
+                    'type'           => $rawT,
+                    'size'           => $rawS,
+                    'spans'          => (int)$br['span_cnt'],
+                    'distance_m'     => round($distM, 1),
+                    'distance_km'    => round($distM / 1000.0, 2),
+                    'percentage'     => $pct,
+                ];
+            }
+
+            if (count($condBreakdown) > 1) {
+                $isHybrid = true;
+            }
+
+            // Sequential segment preview with exact conductor per segment
+            $segmentsQuery = $this->db->query("
+                SELECT 
+                    tl.id,
+                    tl.transline_code,
+                    tl.distance_meters,
+                    COALESCE(NULLIF(TRIM(tl.conductor_type), ''), 'AAAC') as conductor_type,
+                    COALESCE(NULLIF(TRIM(tl.conductor_size), ''), '150 mm²') as conductor_size,
+                    COALESCE(sa.kode_asset, CONCAT('TIANG-#', tl.source_asset_id)) as source_kode,
+                    COALESCE(sa.nama_asset, 'Tiang Sumber') as source_nama,
+                    COALESCE(ta.kode_asset, CONCAT('TIANG-#', tl.target_asset_id)) as target_kode,
+                    COALESCE(ta.nama_asset, 'Tiang Target') as target_nama,
+                    COALESCE(s.nama_section, '-') as nama_section
+                FROM gis_translines tl
+                LEFT JOIN assets sa ON sa.id = tl.source_asset_id
+                LEFT JOIN assets ta ON ta.id = tl.target_asset_id
+                LEFT JOIN sections s ON s.id = sa.section_id
+                WHERE tl.penyulang_id = " . (int)$penyulangId . " AND tl.deleted_at IS NULL
+                ORDER BY tl.id ASC
+                LIMIT 50
+            ");
+            $segmentsList = ($segmentsQuery && is_object($segmentsQuery)) ? $segmentsQuery->getResultArray() : [];
         }
 
         if ($this->db->tableExists('assets')) {
@@ -1315,10 +1373,13 @@ class FaultLocatorWorkspaceService
                     'nama_ulp'       => $feeder['nama_ulp'] ?? 'ULP Tidak Diketahui',
                 ],
                 'conductor' => [
-                    'official_type'   => $dominantConductor,
-                    'source'          => $conductorSource,
-                    'catalog_entry'   => self::CONDUCTOR_CATALOG[$dominantConductor] ?? null,
+                    'official_type'       => $dominantConductor,
+                    'source'              => $conductorSource,
+                    'is_hybrid'           => $isHybrid,
+                    'breakdown'           => $condBreakdown,
+                    'catalog_entry'       => self::CONDUCTOR_CATALOG[$dominantConductor] ?? null,
                 ],
+                'segments_preview' => $segmentsList,
                 'topology' => [
                     'total_span_meters'      => round($totalSpanMeters, 1),
                     'total_span_km'          => round($totalSpanMeters / 1000.0, 2),

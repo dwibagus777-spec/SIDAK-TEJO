@@ -5254,7 +5254,7 @@ class MigrateController extends BaseController
 
         $finalCount = $db->table('gis_translines')->where('deleted_at IS NULL')->countAllResults();
 
-        // Also reconcile keypoint & equipment mounting relationships to nearest JTM pole
+        // Also reconcile keypoint mounting relationships to nearest JTM pole
         $equipmentReconciled = 0;
         if ($isExecute) {
             $now = date('Y-m-d H:i:s');
@@ -5263,10 +5263,7 @@ class MigrateController extends BaseController
                 FROM assets 
                 WHERE deleted_at IS NULL 
                   AND (parent_asset_id IS NULL OR parent_asset_id = 0)
-                  AND (
-                    jenis_asset IN ('RECLOSER', 'PMCB', 'GH', 'LBS', 'LBSM', 'ASS', 'jtm_gardu', 'jtm_trafo')
-                    OR jenis_asset LIKE '%gardu%' OR jenis_asset LIKE '%trafo%'
-                  )
+                  AND jenis_asset IN ('RECLOSER', 'PMCB', 'GH', 'LBS', 'LBSM', 'ASS')
             ")->getResultArray();
 
             foreach ($equipmentRows as $eq) {

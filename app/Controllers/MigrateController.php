@@ -4881,6 +4881,12 @@ class MigrateController extends BaseController
                 'is_csv'   => file_exists($dataDir . 'JTM.csv'),
                 'link_pole'=> false,
             ],
+            'parin_jtm' => [
+                'file'     => $dataDir . 'PARIN_JTM.csv',
+                'category' => 'jtm_tiang',
+                'is_csv'   => true,
+                'link_pole'=> false,
+            ],
         ];
 
         $filesProcessed = [];
@@ -4910,19 +4916,40 @@ class MigrateController extends BaseController
                 $h = fopen($filePath, 'r');
                 $bom = fread($h, 3);
                 if ($bom !== "\xEF\xBB\xBF") rewind($h);
-                fgetcsv($h); // header
+                $header = fgetcsv($h); // header
+                $hMap = [];
+                if (is_array($header)) {
+                    foreach ($header as $cIdx => $cName) {
+                        $normH = strtolower(trim(preg_replace('/[^a-zA-Z0-9]/', '', (string)$cName)));
+                        $hMap[$normH] = $cIdx;
+                    }
+                }
                 $rn = 2;
                 while (($data = fgetcsv($h)) !== false) {
-                    if (count($data) >= 7) {
+                    if (count($data) >= 5) {
+                        $ulpVal = isset($hMap['namaulp']) ? ($data[$hMap['namaulp']] ?? '') : ($data[1] ?? '');
+                        $fVal   = isset($hMap['namapenyulang']) ? ($data[$hMap['namapenyulang']] ?? '') : ($data[2] ?? '');
+                        $aVal   = isset($hMap['namaaset']) ? ($data[$hMap['namaaset']] ?? '') : ($data[3] ?? '');
+                        $secVal = isset($hMap['section']) ? ($data[$hMap['section']] ?? '') : '';
+
+                        $latIdx = $hMap['latitude'] ?? ($hMap['lat'] ?? null);
+                        $lngIdx = $hMap['longitude'] ?? ($hMap['lng'] ?? ($hMap['long'] ?? null));
+
+                        $lat = ($latIdx !== null && is_numeric($data[$latIdx] ?? null)) ? (float)$data[$latIdx] : (is_numeric($data[5] ?? null) ? (float)$data[5] : (is_numeric($data[4] ?? null) ? (float)$data[4] : null));
+                        $lng = ($lngIdx !== null && is_numeric($data[$lngIdx] ?? null)) ? (float)$data[$lngIdx] : (is_numeric($data[6] ?? null) ? (float)$data[6] : (is_numeric($data[5] ?? null) ? (float)$data[5] : null));
+
+                        $constrIdx = $hMap['konstruksi'] ?? ($hMap['construction'] ?? null);
+                        $constrVal = ($constrIdx !== null) ? ($data[$constrIdx] ?? '') : (trim($data[8] ?? $data[7] ?? ''));
+
                         $rawRows[] = [
                             'row_num'    => $rn++,
-                            'ulp_name'   => trim($data[1] ?? ''),
-                            'feeder_name'=> trim($data[2] ?? ''),
-                            'asset_name' => trim($data[3] ?? ''),
-                            'section'    => trim($data[4] ?? ''),
-                            'lat'        => is_numeric($data[5] ?? null) ? (float)$data[5] : (is_numeric($data[4] ?? null) ? (float)$data[4] : null),
-                            'lng'        => is_numeric($data[6] ?? null) ? (float)$data[6] : (is_numeric($data[5] ?? null) ? (float)$data[5] : null),
-                            'constr'     => trim($data[8] ?? $data[7] ?? ''),
+                            'ulp_name'   => trim((string)$ulpVal),
+                            'feeder_name'=> trim((string)$fVal),
+                            'asset_name' => trim((string)$aVal),
+                            'section'    => trim((string)$secVal),
+                            'lat'        => $lat,
+                            'lng'        => $lng,
+                            'constr'     => trim((string)$constrVal),
                         ];
                     }
                 }
@@ -5188,6 +5215,128 @@ class MigrateController extends BaseController
                 'sum_check'    => ($jtmCount + $keypointCount + $garduCount + $trafoCount),
                 'is_consistent'=> (($jtmCount + $keypointCount + $garduCount + $trafoCount) === $finalTotal),
             ],
+        ]);
+    }
+
+    /**
+     * Webhook/Endpoint: Execute Batch Transline Validation & Persistence for All Feeders on Production
+     */
+    public function executeBatchTranslines()
+    {
+        @set_time_limit(600);
+        @ini_set('memory_limit', '512M');
+
+        $db = \Config\Database::connect('default');
+        $isExecute = ($this->request->getGet('execute') === '1' || $this->request->getGet('execute') === 'true' || $this->request->getMethod() === 'post');
+        $feederIdParam = (int)($this->request->getGet('penyulang_id') ?? $this->request->getPost('penyulang_id') ?? 0);
+        $penyulangId = $feederIdParam > 0 ? $feederIdParam : null;
+
+        $service = new \App\Services\BatchTranslineValidationService($db);
+
+        // Pre-count existing translines
+        $initialCount = $db->table('gis_translines')->where('deleted_at IS NULL')->countAllResults();
+
+        if ($isExecute) {
+            try {
+                $batchResult = $service->executeBatch($penyulangId, 'ADMIN_BATCH');
+            } catch (\Throwable $e) {
+                return $this->response->setStatusCode(500)->setJSON([
+                    'status'  => 'error',
+                    'message' => $e->getMessage(),
+                ]);
+            }
+        } else {
+            $batchResult = [
+                'status'  => 'DRY_RUN',
+                'summary' => $service->dryRun($penyulangId),
+            ];
+        }
+
+        $finalCount = $db->table('gis_translines')->where('deleted_at IS NULL')->countAllResults();
+
+        // Also reconcile keypoint & equipment mounting relationships to nearest JTM pole
+        $equipmentReconciled = 0;
+        if ($isExecute) {
+            $now = date('Y-m-d H:i:s');
+            $equipmentRows = $db->query("
+                SELECT id, jenis_asset, penyulang_id, latitude, longitude 
+                FROM assets 
+                WHERE deleted_at IS NULL 
+                  AND (parent_asset_id IS NULL OR parent_asset_id = 0)
+                  AND (
+                    jenis_asset IN ('RECLOSER', 'PMCB', 'GH', 'LBS', 'LBSM', 'ASS', 'jtm_gardu', 'jtm_trafo')
+                    OR jenis_asset LIKE '%gardu%' OR jenis_asset LIKE '%trafo%'
+                  )
+            ")->getResultArray();
+
+            foreach ($equipmentRows as $eq) {
+                $fId = (int)($eq['penyulang_id'] ?? 0);
+                $lat = (float)($eq['latitude'] ?? 0);
+                $lng = (float)($eq['longitude'] ?? 0);
+                if ($fId <= 0 || abs($lat) < 0.001 || abs($lng) < 0.001) continue;
+
+                // Find nearest JTM pole in same feeder within 50m
+                $nearestPole = $db->query("
+                    SELECT id, 
+                           (6371000 * 2 * ASIN(SQRT(POWER(SIN(RADIANS(latitude - ?)/2), 2) + COS(RADIANS(?)) * COS(RADIANS(latitude)) * POWER(SIN(RADIANS(longitude - ?)/2), 2)))) AS dist
+                    FROM assets
+                    WHERE penyulang_id = ?
+                      AND deleted_at IS NULL
+                      AND jenis_asset IN ('jtm_tiang', 'TIANG_BETON', 'TIANG_BESI', 'TIANG', 'JTM', 'POLE')
+                    HAVING dist <= 50.0
+                    ORDER BY dist ASC
+                    LIMIT 1
+                ", [$lat, $lat, $lng, $fId])->getRowArray();
+
+                if ($nearestPole && !empty($nearestPole['id'])) {
+                    $pId = (int)$nearestPole['id'];
+                    $eqId = (int)$eq['id'];
+                    $db->table('assets')->where('id', $eqId)->update(['parent_asset_id' => $pId, 'updated_at' => $now]);
+                    if ($db->tableExists('asset_relationships')) {
+                        $existsRel = $db->table('asset_relationships')
+                            ->where('source_asset_id', $eqId)
+                            ->where('target_asset_id', $pId)
+                            ->countAllResults();
+                        if ($existsRel === 0) {
+                            $db->table('asset_relationships')->insert([
+                                'source_asset_id'   => $eqId,
+                                'target_asset_id'   => $pId,
+                                'relationship_type' => 'MOUNTED_ON_POLE',
+                                'parent_asset_id'   => $pId,
+                                'child_asset_id'    => $eqId,
+                                'source'            => 'AUTO_INGEST',
+                                'confidence_score'  => 1.0,
+                                'is_active'         => 1,
+                                'created_at'        => $now,
+                            ]);
+                        }
+                    }
+                    $equipmentReconciled++;
+                }
+            }
+        }
+
+        // Summary of translines per feeder
+        $translinesPerFeeder = $db->query("
+            SELECT t.penyulang_id, p.nama_penyulang, COUNT(*) cnt 
+            FROM gis_translines t 
+            LEFT JOIN penyulang p ON p.id = t.penyulang_id 
+            WHERE t.deleted_at IS NULL 
+            GROUP BY t.penyulang_id, p.nama_penyulang 
+            ORDER BY cnt DESC
+        ")->getResultArray();
+
+        return $this->response->setJSON([
+            'status'                 => 'success',
+            'mode'                   => $isExecute ? 'EXECUTE' : 'DRY_RUN',
+            'timestamp'              => date('Y-m-d H:i:s'),
+            'initial_translines'     => $initialCount,
+            'final_translines'       => $finalCount,
+            'newly_saved'            => ($finalCount - $initialCount),
+            'equipment_reconciled'   => $equipmentReconciled,
+            'batch_result'           => $batchResult,
+            'feeders_with_translines'=> count($translinesPerFeeder),
+            'top_feeders'            => array_slice($translinesPerFeeder, 0, 10),
         ]);
     }
 }

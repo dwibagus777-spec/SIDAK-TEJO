@@ -107,6 +107,14 @@ class TranslineNetworkCompletionEngine
     /**
      * Build in-memory Graph G(V,E) for a given feeder or globally
      */
+    public function buildFeederGraph(int $penyulangId): array
+    {
+        return $this->buildGraph($penyulangId);
+    }
+
+    /**
+     * Build in-memory Graph G(V,E) for a given feeder or globally
+     */
     public function buildGraph(?int $penyulangId = null, array $extraTranslines = []): array
     {
         // 1. Authoritative Assets (Strict Read-Only)
@@ -279,8 +287,8 @@ class TranslineNetworkCompletionEngine
                         (float)$cAsset['latitude'], (float)$cAsset['longitude']
                     );
 
-                    // Allow chain connection within normal distribution span
-                    if ($dist <= 55.0 && $dist < $minDist) {
+                    // Allow chain connection within normal distribution span (up to hard ceiling)
+                    if ($dist <= self::HARD_MAX_SPAN_METERS && $dist < $minDist) {
                         $minDist = $dist;
                         $bestNeighbor = $candidateId;
                     }

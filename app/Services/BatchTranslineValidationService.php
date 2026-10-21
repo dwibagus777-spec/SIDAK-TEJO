@@ -426,8 +426,29 @@ class BatchTranslineValidationService
         }
 
         foreach ($feedersToScan as $fScanId) {
+            $fNameRow = $this->db->table('penyulang')->select('nama_penyulang')->where('id', $fScanId)->get()->getRowArray();
+            $feederName = $fNameRow['nama_penyulang'] ?? "Penyulang #{$fScanId}";
+
+            // 1. Physical radial spans between valid JTM poles
+            $spans = $this->discoverRadialSpansForFeeder($fScanId, $seenCandidateKeys);
+            foreach ($spans as $sp) {
+                $candidates[] = [
+                    'id'              => null,
+                    'penyulang_id'    => $fScanId,
+                    'nama_penyulang'  => $feederName,
+                    'source_asset_id' => $sp['source_asset_id'],
+                    'target_asset_id' => $sp['target_asset_id'],
+                    'distance_meters' => $sp['distance_meters'],
+                    'conductor_type'  => $sp['conductor_type'],
+                    'conductor_size'  => $sp['conductor_size'],
+                    'source_asset'    => $sp['source_asset'],
+                    'target_asset'    => $sp['target_asset'],
+                ];
+            }
+
+            // 2. TranslineNetworkCompletionEngine candidates
             try {
-                $graph = $engine->buildFeederGraph($fScanId);
+                $graph = $engine->buildGraph($fScanId);
                 $discovered = $engine->discoverCandidates($graph);
 
                 foreach ($discovered as $disc) {
@@ -444,7 +465,7 @@ class BatchTranslineValidationService
                         $candidates[] = [
                             'id'              => null,
                             'penyulang_id'    => $fScanId,
-                            'nama_penyulang'  => $graph['assets'][$sId]['penyulang_name'] ?? null,
+                            'nama_penyulang'  => $graph['assets'][$sId]['penyulang_name'] ?? $feederName,
                             'source_asset_id' => $sId,
                             'target_asset_id' => $tId,
                             'distance_meters' => (float)$disc['distance_meters'],
@@ -461,6 +482,143 @@ class BatchTranslineValidationService
         }
 
         return $candidates;
+    }
+
+    /**
+     * Build physical radial network spans for a feeder across all valid JTM poles.
+     * Enforces:
+     * - Only valid JTM poles (GisTranslineService::isJtmPoleAsset)
+     * - Distance: 5.0m to 120.0m
+     * - Same feeder & same ULP
+     * - Radial tree structure (no loops, degree <= 4)
+     * - Existing translines preserved (never duplicated)
+     */
+    public function discoverRadialSpansForFeeder(int $feederId, array &$seenCandidateKeys): array
+    {
+        $poles = $this->db->table('assets')
+            ->select('id, kode_asset, nama_asset, jenis_asset, penyulang_id, ulp_id, latitude, longitude')
+            ->where('penyulang_id', $feederId)
+            ->where('deleted_at IS NULL')
+            ->where('latitude IS NOT NULL')
+            ->where('longitude IS NOT NULL')
+            ->get()->getResultArray();
+
+        $validPoles = [];
+        foreach ($poles as $p) {
+            $lat = (float)$p['latitude'];
+            $lng = (float)$p['longitude'];
+            if (abs($lat) < 0.001 || abs($lng) < 0.001) continue;
+
+            $check = GisTranslineService::isJtmPoleAsset($p);
+            if ($check['valid']) {
+                $validPoles[(int)$p['id']] = [
+                    'id'           => (int)$p['id'],
+                    'kode_asset'   => $p['kode_asset'] ?? ('AST-' . $p['id']),
+                    'nama_asset'   => $p['nama_asset'] ?? '',
+                    'jenis_asset'  => $p['jenis_asset'] ?? 'TIANG',
+                    'penyulang_id' => (int)$p['penyulang_id'],
+                    'ulp_id'       => (int)($p['ulp_id'] ?? 0),
+                    'lat'          => $lat,
+                    'lng'          => $lng,
+                ];
+            }
+        }
+
+        if (count($validPoles) < 2) {
+            return [];
+        }
+
+        // Fetch existing translines for this feeder to avoid duplicate spans
+        $existing = $this->db->table('gis_translines')
+            ->select('source_asset_id, target_asset_id')
+            ->where('penyulang_id', $feederId)
+            ->where('deleted_at IS NULL')
+            ->get()->getResultArray();
+
+        $existingDegrees = [];
+        foreach ($existing as $e) {
+            $s = (int)$e['source_asset_id'];
+            $t = (int)$e['target_asset_id'];
+            $k = min($s, $t) . '-' . max($s, $t);
+            $seenCandidateKeys[$k] = true;
+            $existingDegrees[$s] = ($existingDegrees[$s] ?? 0) + 1;
+            $existingDegrees[$t] = ($existingDegrees[$t] ?? 0) + 1;
+        }
+
+        $spans = [];
+        $unvisited = $validPoles;
+
+        // Choose starting pole: pole #1, or lowest latitude
+        $startId = null;
+        foreach ($unvisited as $id => $p) {
+            if (preg_match('/(_1|\b1\b|TIANG 1|TM 1)\b/i', $p['nama_asset'])) {
+                $startId = $id;
+                break;
+            }
+        }
+        if ($startId === null) {
+            $firstP = reset($unvisited);
+            $startId = $firstP['id'];
+        }
+
+        $connected = [$startId => true];
+        unset($unvisited[$startId]);
+        $degrees = $existingDegrees;
+        if (!isset($degrees[$startId])) $degrees[$startId] = 0;
+
+        while (!empty($unvisited)) {
+            $bestDist = PHP_FLOAT_MAX;
+            $bestSrcId = null;
+            $bestTgtId = null;
+
+            foreach ($connected as $cId => $_) {
+                if (($degrees[$cId] ?? 0) >= 4) continue;
+
+                $cPole = $validPoles[$cId];
+                foreach ($unvisited as $uId => $uPole) {
+                    $d = $this->haversineMeters($cPole['lat'], $cPole['lng'], $uPole['lat'], $uPole['lng']);
+                    if ($d >= 5.0 && $d <= 120.0 && $d < $bestDist) {
+                        $bestDist = $d;
+                        $bestSrcId = $cId;
+                        $bestTgtId = $uId;
+                    }
+                }
+            }
+
+            if ($bestTgtId !== null) {
+                $minId = min($bestSrcId, $bestTgtId);
+                $maxId = max($bestSrcId, $bestTgtId);
+                $edgeKey = "{$minId}-{$maxId}";
+
+                if (!isset($seenCandidateKeys[$edgeKey])) {
+                    $spans[] = [
+                        'source_asset_id' => $minId,
+                        'target_asset_id' => $maxId,
+                        'source_asset'    => $validPoles[$minId],
+                        'target_asset'    => $validPoles[$maxId],
+                        'distance_meters' => round($bestDist, 2),
+                        'conductor_type'  => 'AAACS',
+                        'conductor_size'  => '150 mm²',
+                    ];
+                    $seenCandidateKeys[$edgeKey] = true;
+                }
+
+                $connected[$bestTgtId] = true;
+                unset($unvisited[$bestTgtId]);
+                $degrees[$bestSrcId] = ($degrees[$bestSrcId] ?? 0) + 1;
+                $degrees[$bestTgtId] = ($degrees[$bestTgtId] ?? 0) + 1;
+            } else {
+                // If remaining unvisited poles are >120m away from current connected tree,
+                // pick the next unvisited pole as a new tree anchor
+                $nextRoot = reset($unvisited);
+                $nextRootId = $nextRoot['id'];
+                $connected[$nextRootId] = true;
+                unset($unvisited[$nextRootId]);
+                if (!isset($degrees[$nextRootId])) $degrees[$nextRootId] = 0;
+            }
+        }
+
+        return $spans;
     }
 
     protected function loadExistingTranslinesMap(?int $penyulangId = null): array

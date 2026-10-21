@@ -30,6 +30,7 @@ $routes->get('master-assets/b22-production-lock', 'MigrateController::b22Product
 $routes->get('master-assets/audit-global-duplicates', 'MigrateController::auditGlobalDuplicates');
 $routes->match(['GET', 'POST'], 'master-assets/execute-global-dedup', 'MigrateController::executeGlobalDedup');
 $routes->match(['GET', 'POST'], 'master-assets/reconcile-non-pole-translines', 'MigrateController::reconcileNonPoleTranslinesAction');
+$routes->get('master-assets/direct-audit-summary', 'MigrateController::directAuditSummary');
 
 // Phase B.3: Network Intelligence Platform Routes (Strictly Read-Only)
 $routes->get('network-intelligence/audit', 'NetworkIntelligenceController::b3Audit');

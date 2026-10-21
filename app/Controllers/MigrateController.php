@@ -3690,6 +3690,156 @@ class MigrateController extends BaseController
         return $this->response->setJSON($svc->executeDeduplication($execute, $feeder ? (string)$feeder : null));
     }
 
+    public function directAuditSummary()
+    {
+        $db = \Config\Database::connect('default');
+        $feeder = $this->request->getGet('feeder') ?? 'GEMPOLSARI';
+
+        // 1. Total assets active and tiang JTM count per feeder with COUNT(DISTINCT assets.id)
+        $totalsQuery = "SELECT 
+            COALESCE(u.nama_ulp, 'TANPA_ULP') as nama_ulp,
+            COALESCE(p.nama_penyulang, 'TANPA_PENYULANG') as nama_penyulang,
+            COUNT(DISTINCT a.id) as total_active_assets,
+            COUNT(DISTINCT CASE WHEN a.jenis_asset IN ('jtm_tiang', 'TIANG_BETON', 'TIANG_BESI', 'JTM') THEN a.id END) as total_tiang_jtm
+        FROM assets a
+        LEFT JOIN ulps u ON u.id = a.ulp_id
+        LEFT JOIN penyulang p ON p.id = a.penyulang_id
+        WHERE a.deleted_at IS NULL
+        GROUP BY u.nama_ulp, p.nama_penyulang
+        ORDER BY p.nama_penyulang ASC";
+        $totalsRes = $db->query($totalsQuery);
+        $totals = is_object($totalsRes) ? $totalsRes->getResultArray() : [];
+
+        // 2. Specific inspection for target feeder (e.g. GEMPOLSARI)
+        $targetBreakdownRes = $db->query("SELECT a.jenis_asset, COUNT(DISTINCT a.id) as cnt 
+            FROM assets a 
+            LEFT JOIN penyulang p ON p.id = a.penyulang_id
+            WHERE p.nama_penyulang = ? AND a.deleted_at IS NULL 
+            GROUP BY a.jenis_asset", [$feeder]);
+        $targetBreakdown = is_object($targetBreakdownRes) ? $targetBreakdownRes->getResultArray() : [];
+
+        $targetSamplesRes = $db->query("SELECT a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.section_id, s.nama_section, a.latitude, a.longitude, a.created_at, a.import_batch_id 
+            FROM assets a 
+            LEFT JOIN penyulang p ON p.id = a.penyulang_id
+            LEFT JOIN sections s ON s.id = a.section_id
+            WHERE p.nama_penyulang = ? AND a.deleted_at IS NULL 
+            ORDER BY a.id ASC LIMIT 20", [$feeder]);
+        $targetSamples = is_object($targetSamplesRes) ? $targetSamplesRes->getResultArray() : [];
+
+        // 3. Strict 7-column SQL aggregation duplicate check across the entire database
+        $dup7ColQuery = "SELECT 
+            UPPER(TRIM(COALESCE(u.nama_ulp, ''))) as nama_ulp,
+            UPPER(TRIM(COALESCE(p.nama_penyulang, ''))) as nama_penyulang,
+            UPPER(TRIM(a.nama_asset)) as nama_asset,
+            UPPER(TRIM(COALESCE(s.nama_section, CAST(a.section_id AS CHAR), ''))) as section,
+            ROUND(a.latitude, 6) as latitude,
+            ROUND(a.longitude, 6) as longitude,
+            COUNT(DISTINCT a.id) as group_count,
+            GROUP_CONCAT(a.id ORDER BY a.id ASC) as asset_ids
+        FROM assets a
+        LEFT JOIN ulps u ON u.id = a.ulp_id
+        LEFT JOIN penyulang p ON p.id = a.penyulang_id
+        LEFT JOIN sections s ON s.id = a.section_id
+        WHERE a.deleted_at IS NULL
+        GROUP BY 
+            UPPER(TRIM(COALESCE(u.nama_ulp, ''))),
+            UPPER(TRIM(COALESCE(p.nama_penyulang, ''))),
+            UPPER(TRIM(a.nama_asset)),
+            UPPER(TRIM(COALESCE(s.nama_section, CAST(a.section_id AS CHAR), ''))),
+            ROUND(a.latitude, 6),
+            ROUND(a.longitude, 6)
+        HAVING group_count > 1";
+        $dup7Res = $db->query($dup7ColQuery);
+        $dup7Col = is_object($dup7Res) ? $dup7Res->getResultArray() : [];
+
+        // 4. Duplicate check on 6 columns (WITHOUT Section) for target feeder
+        $dup6ColRes = $db->query("SELECT 
+            UPPER(TRIM(a.nama_asset)) as nama_asset,
+            ROUND(a.latitude, 6) as latitude,
+            ROUND(a.longitude, 6) as longitude,
+            COUNT(DISTINCT a.id) as group_count,
+            GROUP_CONCAT(a.id ORDER BY a.id ASC) as asset_ids,
+            GROUP_CONCAT(COALESCE(a.section_id, 'NULL')) as section_ids
+        FROM assets a
+        LEFT JOIN penyulang p ON p.id = a.penyulang_id
+        WHERE p.nama_penyulang = ? AND a.deleted_at IS NULL
+        GROUP BY 
+            UPPER(TRIM(a.nama_asset)),
+            ROUND(a.latitude, 6),
+            ROUND(a.longitude, 6)
+        HAVING group_count > 1", [$feeder]);
+        $dup6Col = is_object($dup6ColRes) ? $dup6ColRes->getResultArray() : [];
+
+        // 5. Duplicate check on coordinates only in target feeder
+        $dupCoordRes = $db->query("SELECT 
+            ROUND(a.latitude, 6) as latitude,
+            ROUND(a.longitude, 6) as longitude,
+            COUNT(DISTINCT a.id) as group_count,
+            GROUP_CONCAT(a.id ORDER BY a.id ASC) as asset_ids,
+            GROUP_CONCAT(a.nama_asset SEPARATOR ' | ') as names
+        FROM assets a
+        LEFT JOIN penyulang p ON p.id = a.penyulang_id
+        WHERE p.nama_penyulang = ? AND a.deleted_at IS NULL
+        GROUP BY 
+            ROUND(a.latitude, 6),
+            ROUND(a.longitude, 6)
+        HAVING group_count > 1", [$feeder]);
+        $dupCoord = is_object($dupCoordRes) ? $dupCoordRes->getResultArray() : [];
+
+        // 6. Duplicate check on nama_asset only in target feeder
+        $dupNameRes = $db->query("SELECT 
+            UPPER(TRIM(a.nama_asset)) as nama_asset,
+            COUNT(DISTINCT a.id) as group_count,
+            GROUP_CONCAT(a.id ORDER BY a.id ASC) as asset_ids,
+            GROUP_CONCAT(ROUND(a.latitude, 6) SEPARATOR ' | ') as lats
+        FROM assets a
+        LEFT JOIN penyulang p ON p.id = a.penyulang_id
+        WHERE p.nama_penyulang = ? AND a.deleted_at IS NULL
+        GROUP BY UPPER(TRIM(a.nama_asset))
+        HAVING group_count > 1", [$feeder]);
+        $dupName = is_object($dupNameRes) ? $dupNameRes->getResultArray() : [];
+
+        // 7. Check pattern distribution of nama_asset in target feeder
+        $patternRes = $db->query("SELECT 
+            CASE 
+                WHEN a.nama_asset LIKE 'GEMPOLSARI_%' THEN 'GEMPOLSARI_N (CSV Pattern)'
+                WHEN a.nama_asset LIKE 'AST-%' THEN 'AST-PORONG-... (Standard Tag Pattern)'
+                ELSE 'OTHER_PATTERN'
+            END as pattern_group,
+            COUNT(*) as cnt,
+            MIN(a.id) as min_id,
+            MAX(a.id) as max_id,
+            MIN(a.created_at) as min_created,
+            MAX(a.created_at) as max_created
+        FROM assets a
+        LEFT JOIN penyulang p ON p.id = a.penyulang_id
+        WHERE p.nama_penyulang = ? AND a.deleted_at IS NULL
+        GROUP BY pattern_group", [$feeder]);
+        $patternGroups = is_object($patternRes) ? $patternRes->getResultArray() : [];
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'feeder' => $feeder,
+            'target_breakdown_by_jenis' => $targetBreakdown,
+            'target_pattern_groups' => $patternGroups,
+            'target_samples' => $targetSamples,
+            'dup_7_col_all_feeders_count' => count($dup7Col),
+            'dup_7_col_all_feeders_samples' => array_slice($dup7Col, 0, 10),
+            'dup_6_col_target_count' => count($dup6Col),
+            'dup_6_col_target_samples' => array_slice($dup6Col, 0, 10),
+            'dup_coord_target_count' => count($dupCoord),
+            'dup_coord_target_samples' => array_slice($dupCoord, 0, 10),
+            'dup_name_target_count' => count($dupName),
+            'dup_name_target_samples' => array_slice($dupName, 0, 10),
+            'totals_summary' => [
+                'feeders_count' => count($totals),
+                'total_active_all' => array_sum(array_column($totals, 'total_active_assets')),
+                'total_tiang_jtm_all' => array_sum(array_column($totals, 'total_tiang_jtm')),
+            ],
+            'totals_per_feeder' => $totals,
+        ]);
+    }
+
     public function reconcileNonPoleTranslinesAction()
     {
         $execute = (bool)($this->request->getGet('execute') ?? $this->request->getPost('execute') ?? false);

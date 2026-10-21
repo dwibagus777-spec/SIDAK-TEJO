@@ -66,17 +66,21 @@ class GisTranslineService
 
         // 1. Explicitly prohibited non-JTM pole types
         $prohibitedPatterns = [
-            'POHON'     => 'Pohon / Vegetasi ROW',
-            'ROW'       => 'Pohon ROW',
-            'GARDU'     => 'Gardu Distribusi / Trafo',
-            'GTT'       => 'Gardu Trafo Tiang',
-            'TRAFO'     => 'Transformator Distribusi',
-            'RECLOSER'  => 'Recloser Proteksi',
-            'LBS'       => 'Load Break Switch (LBS)',
-            'PMCB'      => 'Pole Mounted Circuit Breaker (PMCB)',
-            'KONDUKTOR' => 'Entitas Konduktor Terpisah',
-            'KABEL'     => 'Kabel Jaringan',
-            'GI'        => 'Gardu Induk',
+            'POHON'         => 'Pohon / Vegetasi ROW',
+            'ROW'           => 'Pohon ROW',
+            'GARDU'         => 'Gardu Distribusi / Trafo',
+            'GTT'           => 'Gardu Trafo Tiang',
+            'TRAFO'         => 'Transformator Distribusi',
+            'RECLOSER'      => 'Recloser Proteksi',
+            'LBS'           => 'Load Break Switch (LBS)',
+            'LBSM'          => 'Load Break Switch Motorized (LBSM)',
+            'PMCB'          => 'Pole Mounted Circuit Breaker (PMCB)',
+            'GH'            => 'Gardu Hubung (GH)',
+            'ASS'           => 'Automatic Section Switch (ASS)',
+            'SECTIONALIZER' => 'Automatic Sectionalizer',
+            'KONDUKTOR'     => 'Entitas Konduktor Terpisah',
+            'KABEL'         => 'Kabel Jaringan',
+            'GI'            => 'Gardu Induk',
         ];
 
         foreach ($prohibitedPatterns as $pattern => $label) {
@@ -95,6 +99,7 @@ class GisTranslineService
             'TIANG_KAYU',
             'TIANG',
             'JTM',
+            'JTM_TIANG',
             'POLE',
         ];
 

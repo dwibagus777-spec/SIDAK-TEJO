@@ -834,6 +834,11 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     $routes->get('gis/api-proposal-workbench/(:num)', 'GisController::apiProposalWorkbenchDetail/$1');
     $routes->get('gis/api-proposal-exception-queue', 'GisController::apiProposalExceptionQueue');
 
+    // Batch Transline Validation & Single Segment Persistence
+    $routes->get('gis/api-batch-transline/dry-run', 'GisController::apiBatchTranslineDryRun');
+    $routes->post('gis/api-batch-transline/execute', 'GisController::apiBatchTranslineExecute');
+    $routes->post('gis/api-validate-transline-segment', 'GisController::apiValidateTranslineSegment');
+
     // Phase 19 - AI Predictive Maintenance & Decision Support
     $routes->get('ai-predictive', 'AiPredictiveController::index');
     $routes->get('ai-predictive/api-data', 'AiPredictiveController::apiData');

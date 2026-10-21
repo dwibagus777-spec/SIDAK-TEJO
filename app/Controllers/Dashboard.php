@@ -711,6 +711,29 @@ class Dashboard extends BaseController
                 }
                 $monthlyCauseByYear[$cy][$cat][$cm] = (int)$ccr['cnt'];
             }
+
+            // 4. Switching Device Type (PMT vs RECL-PMCB)
+            $monthlyDeviceByYear = [];
+            if ($db->fieldExists('switching_device_type', 'historical_feeder_interruptions')) {
+                $devRows = $db->query(
+                    "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo,
+                            COALESCE(NULLIF(TRIM(h.switching_device_type), ''), 'TIDAK_TERCATAT') dev_type,
+                            COUNT(h.id) cnt
+                     FROM historical_feeder_interruptions h
+                     WHERE h.event_date IS NOT NULL " . $ulpWhereClause . "
+                     GROUP BY yr, mo, dev_type
+                     ORDER BY yr DESC, mo ASC"
+                )->getResultArray();
+                foreach ($devRows as $dr) {
+                    $dy = (int)$dr['yr'];
+                    $dm = (int)$dr['mo'];
+                    $dtype = (string)$dr['dev_type'];
+                    if (!isset($monthlyDeviceByYear[$dy][$dtype])) {
+                        $monthlyDeviceByYear[$dy][$dtype] = array_fill(1, 12, null);
+                    }
+                    $monthlyDeviceByYear[$dy][$dtype][$dm] = (int)$dr['cnt'];
+                }
+            }
         }
 
         $interruptionMetricsPayload = [
@@ -718,6 +741,7 @@ class Dashboard extends BaseController
             'fault_current' => array_map('array_values', $monthlyFaultCurrentByYear),
             'relay'         => array_map(fn($arr) => array_map('array_values', $arr), $monthlyRelayByYear),
             'cause'         => array_map(fn($arr) => array_map('array_values', $arr), $monthlyCauseByYear),
+            'device'        => array_map(fn($arr) => array_map('array_values', $arr), $monthlyDeviceByYear ?? []),
             'years'         => array_values($availableInterruptionYears),
         ];
 

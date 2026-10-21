@@ -1522,6 +1522,9 @@
                     <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-light text-dark" id="btnMetricCurrent" onclick="switchYoYMetric('current', this)">
                         <i class="fas fa-bolt me-1"></i>Arus Gangguan (A)
                     </button>
+                    <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-light text-dark" id="btnMetricDevice" onclick="switchYoYMetric('device', this)">
+                        <i class="fas fa-toggle-on me-1"></i>PMT &bull; RECL/PMCB
+                    </button>
                 </div>
 
                 <div class="d-flex align-items-center gap-1.5">
@@ -2816,12 +2819,16 @@ document.addEventListener('DOMContentLoaded', function() {
         var yTitle = 'Total Trip Kumulatif';
         var maxVal = 0;
         var hasValidData = false;
+        var chartType = 'line';
+        var indexAxis = 'x';
 
         var yoyData = (window.yoyPayload && window.yoyPayload.yoy) ? window.yoyPayload.yoy : {};
         var entryA = yoyData[yrA] || null;
         var entryB = yoyData[yrB] || null;
 
         if (metric === 'trips') {
+            chartType = 'line';
+            indexAxis = 'x';
             yTitle = 'Gangguan Kumulatif (Trip)';
             var dataA = (entryA && Array.isArray(entryA.cumulative)) ? entryA.cumulative : array_fill_null(12);
             var dataB = (entryB && Array.isArray(entryB.cumulative)) ? entryB.cumulative : array_fill_null(12);
@@ -2881,6 +2888,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
         } else if (metric === 'current') {
+            chartType = 'bar';
+            indexAxis = 'x';
             yTitle = 'Rata-rata Arus Gangguan (Ampere)';
             var currMap = (window.yoyPayload && window.yoyPayload.fault_current) ? window.yoyPayload.fault_current : {};
             var dataA = (currMap && currMap[yrA]) ? currMap[yrA] : array_fill_null(12);
@@ -2906,100 +2915,183 @@ document.addEventListener('DOMContentLoaded', function() {
             maxVal = Math.max(getArrayMax(dataA), getArrayMax(dataB));
 
             datasets.push({
-                label: 'Arus Gangguan ' + yrA + (avgA ? ' (Rata-rata: ' + avgA + ' A)' : ' (N/A)'),
+                label: 'Arus ' + yrA + (avgA ? ' (Rata-rata: ' + avgA + ' A)' : ' (N/A)'),
                 data: dataA,
-                borderColor: '#e11d48',
-                backgroundColor: 'rgba(225, 29, 72, 0.08)',
-                borderWidth: 2.5,
-                pointRadius: 4,
-                spanGaps: false
+                backgroundColor: '#e11d48',
+                borderRadius: 4,
+                borderWidth: 0
             });
             datasets.push({
-                label: 'Arus Gangguan ' + yrB + (avgB ? ' (Rata-rata: ' + avgB + ' A)' : ' (N/A)'),
+                label: 'Arus ' + yrB + (avgB ? ' (Rata-rata: ' + avgB + ' A)' : ' (N/A)'),
                 data: dataB,
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.05)',
-                borderWidth: 2.2,
-                pointRadius: 3.5,
-                borderDash: [4, 4],
-                spanGaps: false
+                backgroundColor: '#2563eb',
+                borderRadius: 4,
+                borderWidth: 0
             });
 
         } else if (metric === 'relay') {
-            yTitle = 'Frekuensi Kerja Proteksi / Rele';
+            chartType = 'bar';
+            indexAxis = 'y';
+            yTitle = 'Jenis Proteksi / Rele Trip';
             var relayMap = (window.yoyPayload && window.yoyPayload.relay) ? window.yoyPayload.relay : {};
             var relaysA = relayMap[yrA] || {};
             var relaysB = relayMap[yrB] || {};
-            var allRelayTypes = Object.keys(Object.assign({}, relaysA, relaysB));
+            var allRelayTypes = Object.keys(Object.assign({}, relaysA, relaysB)).filter(function(k) { return k !== 'TIDAK_TERCATAT' && k !== ''; });
 
-            var colors = ['#dc2626', '#0284c7', '#d97706', '#16a34a', '#8b5cf6', '#ec4899'];
-            var cIdx = 0;
+            var totalA = 0;
+            var totalB = 0;
+            var relayScores = [];
+
             allRelayTypes.forEach(function(rType) {
-                if (rType === 'TIDAK_TERCATAT') return;
                 var arrA = relaysA[rType] || array_fill_null(12);
                 var arrB = relaysB[rType] || array_fill_null(12);
-                var totA = arrA.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
-                var totB = arrB.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
-                if (totA > 0 || totB > 0) hasValidData = true;
-                maxVal = Math.max(maxVal, getArrayMax(arrA), getArrayMax(arrB));
+                var sumA = arrA.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+                var sumB = arrB.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+                totalA += sumA;
+                totalB += sumB;
+                relayScores.push({ type: rType, sumA: sumA, sumB: sumB, total: sumA + sumB });
+            });
 
-                var col = colors[cIdx % colors.length];
-                cIdx++;
-                datasets.push({
-                    label: rType + ' ' + yrA + ' (' + totA + ')',
-                    data: arrA,
-                    borderColor: col,
-                    borderWidth: 2.4,
-                    pointRadius: 3.5,
-                    spanGaps: false
-                });
-                datasets.push({
-                    label: rType + ' ' + yrB + ' (' + totB + ')',
-                    data: arrB,
-                    borderColor: col,
-                    borderDash: [5, 4],
-                    borderWidth: 1.8,
-                    pointRadius: 3,
-                    spanGaps: false
-                });
+            relayScores.sort(function(a, b) { return b.total - a.total; });
+            labels = relayScores.map(function(s) { return s.type; });
+            var barDataA = relayScores.map(function(s) { return s.sumA; });
+            var barDataB = relayScores.map(function(s) { return s.sumB; });
+
+            if (totalA > 0 || totalB > 0) hasValidData = true;
+            maxVal = Math.max(getArrayMax(barDataA), getArrayMax(barDataB));
+
+            var badgeA = document.getElementById('badgeYearA');
+            var badgeB = document.getElementById('badgeYearB');
+            var badgeDiff = document.getElementById('badgeDiffYoY');
+            if (badgeA) badgeA.textContent = yrA + ': ' + totalA.toLocaleString('id-ID') + ' kerja';
+            if (badgeB) badgeB.textContent = yrB + ': ' + totalB.toLocaleString('id-ID') + ' kerja';
+            if (badgeDiff) {
+                badgeDiff.textContent = 'Top Rele: ' + (relayScores[0] ? relayScores[0].type : '-');
+                badgeDiff.className = 'badge border rounded-pill px-2 py-1 fw-bold font-monospace bg-light text-dark';
+            }
+
+            datasets.push({
+                label: 'Tahun ' + yrA + ' (Total: ' + totalA + ')',
+                data: barDataA,
+                backgroundColor: '#dc2626',
+                borderRadius: 4,
+                borderWidth: 0
+            });
+            datasets.push({
+                label: 'Tahun ' + yrB + ' (Total: ' + totalB + ')',
+                data: barDataB,
+                backgroundColor: '#0284c7',
+                borderRadius: 4,
+                borderWidth: 0
             });
 
         } else if (metric === 'cause') {
+            chartType = 'bar';
+            indexAxis = 'y';
             yTitle = 'Trip Berdasarkan Kategori Penyebab';
             var causeMap = (window.yoyPayload && window.yoyPayload.cause) ? window.yoyPayload.cause : {};
             var causesA = causeMap[yrA] || {};
             var causesB = causeMap[yrB] || {};
-            var allCats = Object.keys(Object.assign({}, causesA, causesB));
+            var allCats = Object.keys(Object.assign({}, causesA, causesB)).filter(function(k) { return k !== ''; });
 
-            var colors = ['#16a34a', '#d97706', '#dc2626', '#0284c7', '#7c3aed', '#059669'];
-            var cIdx = 0;
+            var totalA = 0;
+            var totalB = 0;
+            var causeScores = [];
+
             allCats.forEach(function(cat) {
                 var arrA = causesA[cat] || array_fill_null(12);
                 var arrB = causesB[cat] || array_fill_null(12);
-                var totA = arrA.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
-                var totB = arrB.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
-                if (totA > 0 || totB > 0) hasValidData = true;
-                maxVal = Math.max(maxVal, getArrayMax(arrA), getArrayMax(arrB));
+                var sumA = arrA.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+                var sumB = arrB.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+                totalA += sumA;
+                totalB += sumB;
+                causeScores.push({ cat: cat, sumA: sumA, sumB: sumB, total: sumA + sumB });
+            });
 
-                var col = colors[cIdx % colors.length];
-                cIdx++;
-                datasets.push({
-                    label: cat + ' ' + yrA + ' (' + totA + ')',
-                    data: arrA,
-                    borderColor: col,
-                    borderWidth: 2.4,
-                    pointRadius: 3.5,
-                    spanGaps: false
-                });
-                datasets.push({
-                    label: cat + ' ' + yrB + ' (' + totB + ')',
-                    data: arrB,
-                    borderColor: col,
-                    borderDash: [5, 4],
-                    borderWidth: 1.8,
-                    pointRadius: 3,
-                    spanGaps: false
-                });
+            causeScores.sort(function(a, b) { return b.total - a.total; });
+            labels = causeScores.map(function(s) { 
+                var cName = s.cat.replace(/_/g, ' ');
+                return cName.length > 25 ? cName.substr(0, 25) + '...' : cName;
+            });
+            var barDataA = causeScores.map(function(s) { return s.sumA; });
+            var barDataB = causeScores.map(function(s) { return s.sumB; });
+
+            if (totalA > 0 || totalB > 0) hasValidData = true;
+            maxVal = Math.max(getArrayMax(barDataA), getArrayMax(barDataB));
+
+            var badgeA = document.getElementById('badgeYearA');
+            var badgeB = document.getElementById('badgeYearB');
+            var badgeDiff = document.getElementById('badgeDiffYoY');
+            if (badgeA) badgeA.textContent = yrA + ': ' + totalA.toLocaleString('id-ID') + ' trip';
+            if (badgeB) badgeB.textContent = yrB + ': ' + totalB.toLocaleString('id-ID') + ' trip';
+            if (badgeDiff) {
+                badgeDiff.textContent = 'Top: ' + (causeScores[0] ? causeScores[0].cat : '-');
+                badgeDiff.className = 'badge border rounded-pill px-2 py-1 fw-bold font-monospace bg-light text-dark';
+            }
+
+            datasets.push({
+                label: 'Tahun ' + yrA + ' (Total: ' + totalA + ')',
+                data: barDataA,
+                backgroundColor: '#dc2626',
+                borderRadius: 4,
+                borderWidth: 0
+            });
+            datasets.push({
+                label: 'Tahun ' + yrB + ' (Total: ' + totalB + ')',
+                data: barDataB,
+                backgroundColor: '#0284c7',
+                borderRadius: 4,
+                borderWidth: 0
+            });
+
+        } else if (metric === 'device') {
+            chartType = 'bar';
+            indexAxis = 'x';
+            yTitle = 'Peralatan Trip (PMT vs RECL/PMCB)';
+            var devMap = (window.yoyPayload && window.yoyPayload.device) ? window.yoyPayload.device : {};
+            var devsA = devMap[yrA] || {};
+            var devsB = devMap[yrB] || {};
+
+            var devKeys = ['PMT', 'RECL-PMCB'];
+            labels = ['PMT (Gardu Induk)', 'RECL / PMCB (Jaringan JTM)'];
+
+            var barDataA = devKeys.map(function(k) {
+                var arr = devsA[k] || [];
+                return arr.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+            });
+            var barDataB = devKeys.map(function(k) {
+                var arr = devsB[k] || [];
+                return arr.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+            });
+
+            var totalA = barDataA.reduce(function(a, b) { return a + b; }, 0);
+            var totalB = barDataB.reduce(function(a, b) { return a + b; }, 0);
+            if (totalA > 0 || totalB > 0) hasValidData = true;
+            maxVal = Math.max(getArrayMax(barDataA), getArrayMax(barDataB));
+
+            var badgeA = document.getElementById('badgeYearA');
+            var badgeB = document.getElementById('badgeYearB');
+            var badgeDiff = document.getElementById('badgeDiffYoY');
+            if (badgeA) badgeA.textContent = yrA + ': PMT ' + barDataA[0] + ' | RECL ' + barDataA[1];
+            if (badgeB) badgeB.textContent = yrB + ': PMT ' + barDataB[0] + ' | RECL ' + barDataB[1];
+            if (badgeDiff) {
+                badgeDiff.textContent = 'Metrik: PMT vs RECL/PMCB';
+                badgeDiff.className = 'badge border rounded-pill px-2 py-1 fw-bold font-monospace bg-light text-dark';
+            }
+
+            datasets.push({
+                label: 'Tahun ' + yrA + ' (Total: ' + totalA + ')',
+                data: barDataA,
+                backgroundColor: '#dc2626',
+                borderRadius: 4,
+                borderWidth: 0
+            });
+            datasets.push({
+                label: 'Tahun ' + yrB + ' (Total: ' + totalB + ')',
+                data: barDataB,
+                backgroundColor: '#0284c7',
+                borderRadius: 4,
+                borderWidth: 0
             });
         }
 
@@ -3014,58 +3106,55 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var ySuggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.25) : 10;
 
-        // Custom plugin: draws point labels on vertices with collision avoidance (higher point above, lower point below)
+        // Custom plugin: draws point labels on vertices/bars with clean legibility
         var directPointLabelsPlugin = {
             id: 'directPointLabels',
             afterDatasetsDraw: function(chart) {
                 var c = chart.ctx;
                 c.save();
                 c.font = '700 9.5px "JetBrains Mono", Consolas, monospace';
-                c.textAlign = 'center';
 
-                var ds0Meta = chart.getDatasetMeta(0);
-                var ds1Meta = chart.data.datasets.length > 1 ? chart.getDatasetMeta(1) : null;
+                var isHoriz = (chart.config.options.indexAxis === 'y');
+                var isLine = (chart.config.type === 'line');
 
                 chart.data.datasets.forEach(function(ds, dsIdx) {
                     var meta = chart.getDatasetMeta(dsIdx);
                     if (!meta || meta.hidden) return;
 
-                    meta.data.forEach(function(pt, ptIdx) {
+                    meta.data.forEach(function(elem, ptIdx) {
                         var rawVal = ds.data[ptIdx];
                         if (rawVal === null || typeof rawVal === 'undefined' || isNaN(rawVal)) return;
                         var numVal = Number(rawVal);
+                        if (numVal <= 0 && metric !== 'trips') return;
+
                         var txt = (metric === 'current' && numVal > 0) ? numVal.toFixed(1) + 'A' : Math.round(numVal).toLocaleString('id-ID');
 
-                        var isAbove = true;
-                        if (chart.data.datasets.length > 1 && ds0Meta && ds1Meta && ds0Meta.data[ptIdx] && ds1Meta.data[ptIdx]) {
-                            var y0 = ds0Meta.data[ptIdx].y;
-                            var y1 = ds1Meta.data[ptIdx].y;
-                            if (Math.abs(y0 - y1) < 18) {
-                                isAbove = (dsIdx === 0 ? (y0 <= y1) : (y1 < y0));
-                            } else {
-                                isAbove = (dsIdx === 0);
-                            }
-                        } else {
-                            isAbove = (dsIdx === 0);
-                        }
-
-                        c.textBaseline = isAbove ? 'bottom' : 'top';
-                        var yOffset = isAbove ? -6 : 6;
-                        var drawY = pt.y + yOffset;
-
-                        if (drawY < 12) {
-                            drawY = 12;
-                            c.textBaseline = 'top';
-                        } else if (drawY > chart.height - 14) {
-                            drawY = chart.height - 14;
-                            c.textBaseline = 'bottom';
-                        }
-
-                        c.lineWidth = 3.5;
+                        c.lineWidth = 3;
                         c.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-                        c.strokeText(txt, pt.x, drawY);
-                        c.fillStyle = ds.borderColor || '#0f172a';
-                        c.fillText(txt, pt.x, drawY);
+
+                        if (isLine) {
+                            c.textAlign = 'center';
+                            c.textBaseline = (dsIdx === 0) ? 'bottom' : 'top';
+                            var yOff = (dsIdx === 0) ? -6 : 6;
+                            var drawY = elem.y + yOff;
+                            c.strokeText(txt, elem.x, drawY);
+                            c.fillStyle = ds.borderColor || '#0f172a';
+                            c.fillText(txt, elem.x, drawY);
+                        } else if (isHoriz) {
+                            c.textAlign = 'left';
+                            c.textBaseline = 'middle';
+                            var drawX = elem.x + 5;
+                            c.strokeText(txt, drawX, elem.y);
+                            c.fillStyle = ds.backgroundColor || '#0f172a';
+                            c.fillText(txt, drawX, elem.y);
+                        } else {
+                            c.textAlign = 'center';
+                            c.textBaseline = 'bottom';
+                            var drawY = elem.y - 4;
+                            c.strokeText(txt, elem.x, drawY);
+                            c.fillStyle = ds.backgroundColor || '#0f172a';
+                            c.fillText(txt, elem.x, drawY);
+                        }
                     });
                 });
                 c.restore();
@@ -3073,21 +3162,22 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         window.yoyChartInstance = new Chart(ctx, {
-            type: 'line',
+            type: chartType,
             data: {
                 labels: labels,
                 datasets: datasets
             },
             plugins: [directPointLabelsPlugin],
             options: {
+                indexAxis: indexAxis,
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: {
-                    mode: 'index',
+                    mode: indexAxis === 'y' ? 'y' : 'index',
                     intersect: false
                 },
                 layout: {
-                    padding: { top: 18, right: 16, bottom: 6, left: 8 }
+                    padding: { top: 18, right: indexAxis === 'y' ? 36 : 16, bottom: 6, left: 8 }
                 },
                 plugins: {
                     legend: {
@@ -3097,7 +3187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         labels: {
                             boxWidth: 10,
                             boxHeight: 10,
-                            usePointStyle: true,
+                            usePointStyle: chartType === 'line',
                             pointStyle: 'circle',
                             padding: 10,
                             font: { size: 10.5, weight: '600' }
@@ -3106,7 +3196,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     tooltip: {
                         callbacks: {
                             label: function(c) {
-                                var val = c.parsed.y;
+                                var val = indexAxis === 'y' ? c.parsed.x : c.parsed.y;
                                 if (val === null || typeof val === 'undefined') return c.dataset.label + ': Tidak Ada Data';
                                 var u = metric === 'current' ? ' A' : ' kejadian';
                                 return c.dataset.label.split(' (')[0] + ': ' + Number(val).toLocaleString('id-ID') + u;
@@ -3114,7 +3204,24 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 },
-                scales: {
+                scales: indexAxis === 'y' ? {
+                    x: {
+                        beginAtZero: true,
+                        min: 0,
+                        suggestedMax: ySuggestedMax,
+                        title: {
+                            display: true,
+                            text: 'Total Kejadian',
+                            font: { size: 10, weight: 'bold' }
+                        },
+                        ticks: { font: { size: 10 } },
+                        grid: { color: 'rgba(148, 163, 184, 0.16)' }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10.5, weight: '600' } }
+                    }
+                } : {
                     y: {
                         beginAtZero: true,
                         min: 0,
@@ -3125,6 +3232,23 @@ document.addEventListener('DOMContentLoaded', function() {
                             font: { size: 10, weight: 'bold' }
                         },
                         ticks: {
+                            precision: metric === 'current' ? 1 : 0,
+                            maxTicksLimit: 6,
+                            font: { size: 10.5 }
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.16)'
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 10.5, weight: '600' }
+                        }
+                    }
+                }
+            }
+        });
                             precision: metric === 'current' ? 1 : 0,
                             maxTicksLimit: 6,
                             font: { size: 10.5 }

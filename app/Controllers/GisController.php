@@ -1931,6 +1931,67 @@ class GisController extends BaseController
             ->setHeader('Cache-Control', 'max-age=0')
             ->setBody($content);
     }
+
+    /**
+     * Batch Transline Dry Run across feeders or specific feeder
+     */
+    public function apiBatchTranslineDryRun(): ResponseInterface
+    {
+        $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
+        $service = new \App\Services\BatchTranslineValidationService();
+        $summary = $service->dryRun($penyulangId > 0 ? $penyulangId : null);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status' => 'success',
+            'data'   => $summary,
+        ]);
+    }
+
+    /**
+     * Batch Transline Execution with idempotent mutation & rollback
+     */
+    public function apiBatchTranslineExecute(): ResponseInterface
+    {
+        $penyulangId = (int)($this->request->getPost('penyulang_id') ?? 0);
+        $actor = session()->get('username') ?? 'ADMIN_UI';
+
+        try {
+            $service = new \App\Services\BatchTranslineValidationService();
+            $result = $service->executeBatch($penyulangId > 0 ? $penyulangId : null, $actor);
+
+            return $this->response->setStatusCode(200)->setJSON([
+                'status' => 'success',
+                'result' => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Validate & persist a single spatial transline segment
+     */
+    public function apiValidateTranslineSegment(): ResponseInterface
+    {
+        $sourceAssetId = (int)($this->request->getPost('source_asset_id') ?? 0);
+        $targetAssetId = (int)($this->request->getPost('target_asset_id') ?? 0);
+        $conductorType = (string)($this->request->getPost('conductor_type') ?? 'AAACS');
+        $conductorSize = (string)($this->request->getPost('conductor_size') ?? '150 mm²');
+        $actor = session()->get('username') ?? 'ADMIN_UI';
+
+        $service = new \App\Services\BatchTranslineValidationService();
+        $result = $service->validateSingleSegment($sourceAssetId, $targetAssetId, $conductorType, $conductorSize, $actor);
+
+        if ($result['status'] === 'success') {
+            return $this->response->setStatusCode(200)->setJSON($result);
+        }
+
+        return $this->response->setStatusCode(422)->setJSON($result);
+    }
 }
+
 
 

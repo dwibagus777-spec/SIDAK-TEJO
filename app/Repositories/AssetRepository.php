@@ -584,6 +584,7 @@ return [
             if (count($nodeMap) > 1) {
                 // Compute spatial nearest-neighbor preview segments strictly in-memory
                 $previewCoords = [];
+                $previewSegmentsNodeIds = [];
                 $nodesList = array_values($nodeMap);
 
                 $startId = null;
@@ -607,6 +608,7 @@ return [
                     $current = $unvisited[$startId];
                     unset($unvisited[$startId]);
                     $segment = [$current['coord']];
+                    $segmentAssetIds = [(int)$current['id']];
 
                     while (true) {
                         $nearestId   = null;
@@ -624,6 +626,7 @@ return [
                             $current = $unvisited[$nearestId];
                             unset($unvisited[$nearestId]);
                             $segment[] = $current['coord'];
+                            $segmentAssetIds[] = (int)$current['id'];
                         } else {
                             break;
                         }
@@ -631,6 +634,7 @@ return [
 
                     if (count($segment) > 1) {
                         $previewCoords[] = $segment;
+                        $previewSegmentsNodeIds[] = $segmentAssetIds;
                     }
                 }
 
@@ -644,7 +648,10 @@ return [
                         'authoritative' => false,
                         'topology'      => false,
                         'preview_id'    => 'preview-seg-' . $idx,
-                        'coordinates'   => $pSeg,
+                        'coordinates'     => $pSeg,
+                        'node_ids'        => $previewSegmentsNodeIds[$idx] ?? [],
+                        'source_asset_id' => !empty($previewSegmentsNodeIds[$idx]) ? $previewSegmentsNodeIds[$idx][0] : null,
+                        'target_asset_id' => !empty($previewSegmentsNodeIds[$idx]) ? $previewSegmentsNodeIds[$idx][count($previewSegmentsNodeIds[$idx]) - 1] : null,
                     ];
                 }
 

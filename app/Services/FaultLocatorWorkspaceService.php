@@ -157,7 +157,10 @@ class FaultLocatorWorkspaceService
     }
 
     /**
-     * Get protection devices (Recloser, PMCB, LBS) for a specific feeder
+     * Get protection devices (Recloser, PMCB, GH) for a specific feeder
+     *
+     * Rule: In Fault Locator, ONLY Recloser, PMCB, and GH serve as protection references.
+     * LBSM and ASS remain switching/keypoint assets, NOT protection trip points.
      */
     public function getProtectionDevices(int $penyulangId): array
     {
@@ -166,18 +169,27 @@ class FaultLocatorWorkspaceService
         }
 
         return $this->db->table('assets')
-            ->select('id, kode_asset, nama_asset, jenis_asset, section_id, sequence_no, latitude, longitude')
+            ->select('id, kode_asset, nama_asset, jenis_asset, section_id, sequence_no, latitude, longitude, parent_asset_id')
             ->where('penyulang_id', $penyulangId)
             ->where('deleted_at IS NULL')
             ->groupStart()
-                ->like('jenis_asset', 'RECLOSER')
-                ->orLike('jenis_asset', 'PMCB')
-                ->orLike('jenis_asset', 'LBS')
-                ->orLike('nama_asset', 'RECLOSER')
-                ->orLike('nama_asset', 'REC ')
-                ->orLike('nama_asset', 'PMCB')
-                ->orLike('nama_asset', 'LBS')
+                ->whereIn('UPPER(jenis_asset)', ['RECLOSER', 'PMCB', 'GH', 'JTM_RECLOSER', 'JTM_PMCB', 'GARDU_HUBUNG'])
+                ->orGroupStart()
+                    ->groupStart()
+                        ->like('nama_asset', 'RECLOSER')
+                        ->orLike('nama_asset', 'REC ')
+                        ->orLike('nama_asset', 'PMCB')
+                        ->orLike('nama_asset', 'GH ')
+                        ->orLike('nama_asset', 'GARDU HUBUNG')
+                    ->groupEnd()
+                    ->notLike('nama_asset', 'LBS')
+                    ->notLike('nama_asset', 'ASS')
+                    ->notLike('nama_asset', 'SECTIONALIZER')
+                ->groupEnd()
             ->groupEnd()
+            ->notLike('jenis_asset', 'LBS')
+            ->notLike('jenis_asset', 'ASS')
+            ->notLike('jenis_asset', 'SECTIONALIZER')
             ->orderBy('sequence_no', 'ASC')
             ->orderBy('id', 'ASC')
             ->get()

@@ -713,6 +713,9 @@
                 <button type="button" id="btn-open-transline-ai" class="btn btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-white px-2 px-md-3" style="font-size: 11px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: 1px solid #0284c7;">
                     <i class="fas fa-bolt text-warning me-1"></i> Auto-Complete AI
                 </button>
+                <button type="button" id="btn-open-batch-transline" class="btn btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-white px-2 px-md-3" style="font-size: 11px; background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); border: 1px solid #6366f1;" title="Validasi Batch Transline Seluruh Sistem">
+                    <i class="fas fa-check-double text-warning me-1"></i> Validasi Transline
+                </button>
                 <button type="button" id="btn-open-proposals-drawer" class="btn btn-warning btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-dark px-2 px-md-3" style="font-size: 11px; border: 1px solid #f59e0b; background: linear-gradient(135deg, #fef08a 0%, #facc15 100%);">
                     <i class="fas fa-robot text-dark me-1"></i> Proposal AI
                     <span id="proposals-badge-count" class="badge rounded-pill bg-dark text-warning ms-1" style="font-size:10px; padding: 2px 6px;">5</span>
@@ -2411,6 +2414,162 @@
 <!-- ========================================================
      TL-02: AI-ASSISTED JTM TRANSLINE AUTO-COMPLETION MODAL
      ======================================================== -->
+<!-- ========================================================
+     BATCH TRANSLINE VALIDATION & AUDIT MODAL
+     ======================================================== -->
+<div class="modal fade" id="modal-batch-transline" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <!-- Modal Header -->
+            <div class="modal-header bg-dark text-white py-3 border-bottom border-secondary">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="rounded-circle p-2 bg-primary bg-opacity-25 text-primary">
+                        <i class="fas fa-check-double fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h6 class="modal-title fw-bold mb-0 text-white" style="font-size: 15px;">Validasi Batch Transline Otoritatif (Seluruh Sistem)</h6>
+                            <span class="badge bg-primary font-monospace" style="font-size: 11px;">134 PENYULANG</span>
+                            <span class="badge bg-success font-monospace" style="font-size: 11px;">JTM POLE-TO-POLE ONLY</span>
+                            <span class="badge bg-warning text-dark font-monospace" style="font-size: 11px;">DEFAULT: AAACS 150 mm²</span>
+                        </div>
+                        <div class="text-white-50 small mt-1" style="font-size: 11px;">
+                            Menghubungkan tiang JTM valid secara aman, menolak Recloser/PMCB/GH/LBSM/ASS/Gardu/ROW, dengan auto-backup transaksi sebelum simpan.
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-4 bg-light">
+                <!-- Control Bar -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body p-3">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-5">
+                                <label class="form-label small fw-bold mb-1">Cakupan Validasi</label>
+                                <select id="batch-transline-scope" class="form-select form-select-sm">
+                                    <option value="all" selected>Seluruh Penyulang (134 Penyulang Sidoarjo)</option>
+                                    <option value="current">Hanya Penyulang Terpilih Saat Ini</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold mb-1">Konduktor Default (Bila Kosong)</label>
+                                <div class="badge bg-light text-dark border p-2 w-100 text-start">
+                                    <i class="fas fa-plug text-primary me-1"></i> AAACS 150 mm² (Alloy Standard PLN)
+                                </div>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end gap-2">
+                                <button type="button" id="btn-run-batch-dryrun" class="btn btn-primary btn-sm w-100 fw-bold py-2">
+                                    <i class="fas fa-search me-1"></i> 1. Jalankan Dry-Run
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="batch-transline-loading" style="display: none;" class="text-center py-5">
+                    <div class="spinner-border text-primary mb-2" role="status"></div>
+                    <div class="text-muted small fw-semibold">Memeriksa tiang dan mengevaluasi firewall keamanan topologi...</div>
+                </div>
+
+                <!-- Results Container -->
+                <div id="batch-transline-results" style="display: none;">
+                    <!-- Stat Counters -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm bg-white p-3 text-center">
+                                <div class="text-muted small fw-bold">TOTAL DIEVALUASI</div>
+                                <div id="batch-stat-total" class="fs-4 fw-bold text-dark font-monospace">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm bg-white p-3 text-center border-start border-success border-4">
+                                <div class="text-success small fw-bold">SEGMEN VALID (SIAP)</div>
+                                <div id="batch-stat-valid" class="fs-4 fw-bold text-success font-monospace">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm bg-white p-3 text-center border-start border-danger border-4">
+                                <div class="text-danger small fw-bold">DITOLAK (FIREWALL)</div>
+                                <div id="batch-stat-rejected" class="fs-4 fw-bold text-danger font-monospace">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm bg-white p-3 text-center border-start border-secondary border-4">
+                                <div class="text-secondary small fw-bold">DUPLIKAT (ADA)</div>
+                                <div id="batch-stat-duplicate" class="fs-4 fw-bold text-secondary font-monospace">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Details Tabs -->
+                    <ul class="nav nav-pills mb-3 gap-2" id="batch-result-tabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active btn-sm" id="tab-valid-btn" data-bs-toggle="pill" data-bs-target="#tab-valid-content" type="button">
+                                <i class="fas fa-check text-success me-1"></i> Segmen Valid (<span id="badge-valid-cnt">0</span>)
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link btn-sm" id="tab-rejected-btn" data-bs-toggle="pill" data-bs-target="#tab-rejected-content" type="button">
+                                <i class="fas fa-ban text-danger me-1"></i> Segmen Ditolak (<span id="badge-rejected-cnt">0</span>)
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link btn-sm" id="tab-needing-btn" data-bs-toggle="pill" data-bs-target="#tab-needing-content" type="button">
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i> Butuh Tiang Sisipan
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content bg-white p-3 rounded shadow-sm border" style="max-height: 340px; overflow-y: auto;">
+                        <div class="tab-pane fade show active" id="tab-valid-content">
+                            <table class="table table-sm table-hover font-monospace small mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Penyulang</th>
+                                        <th>Tiang Asal</th>
+                                        <th>Tiang Tujuan</th>
+                                        <th>Jarak</th>
+                                        <th>Konduktor</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batch-table-valid-body"></tbody>
+                            </table>
+                        </div>
+                        <div class="tab-pane fade" id="tab-rejected-content">
+                            <table class="table table-sm table-hover font-monospace small mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Penyulang</th>
+                                        <th>Pasangan</th>
+                                        <th>Alasan Penolakan</th>
+                                        <th>Detail</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batch-table-rejected-body"></tbody>
+                            </table>
+                        </div>
+                        <div class="tab-pane fade" id="tab-needing-content">
+                            <div id="batch-needing-list" class="small text-muted p-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer bg-light py-2 border-top">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" id="btn-execute-batch-save" class="btn btn-success btn-sm fw-bold" disabled>
+                    <i class="fas fa-save me-1"></i> 2. Eksekusi Simpan Otoritatif (<span id="btn-save-count">0</span> Segmen)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ========================================================
      TL-03 & TL-02: AI-ASSISTED JTM TOPOLOGY RECONSTRUCTION MODAL
      ======================================================== -->
@@ -5541,7 +5700,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span class="text-muted small d-block mb-1" style="font-size: 9px;">
                                     Ingin menetapkan segmen ini sebagai jalur resmi otoritatif?
                                 </span>
-                                <button type="button" class="btn btn-sm btn-primary w-100 py-1 fw-bold" style="font-size: 11px;" onclick="openQuickValidateModal(${pIdx}, ${segMeters}, ${conf})">
+                                <button type="button" class="btn btn-sm btn-primary w-100 py-1 fw-bold" style="font-size: 11px;" onclick="openQuickValidateModal(${pIdx}, ${segMeters}, ${conf}, ${pSeg.source_asset_id || 0}, ${pSeg.target_asset_id || 0})">
                                     <i class="fas fa-check-double me-1"></i> Validasi & Simpan Transline
                                 </button>
                             </div>
@@ -7187,28 +7346,120 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    window.openQuickValidateModal = function(pIdx, segMeters, conf) {
+    function findAssetNearLatLng(lat, lng) {
+        if (!currentData || !Array.isArray(currentData.features)) return null;
+        var best = null;
+        var minDist = 999999;
+        for (var i = 0; i < currentData.features.length; i++) {
+            var f = currentData.features[i];
+            if (!f.geometry || !Array.isArray(f.geometry.coordinates)) continue;
+            var fLng = f.geometry.coordinates[0];
+            var fLat = f.geometry.coordinates[1];
+            var d = L.latLng(lat, lng).distanceTo(L.latLng(fLat, fLng));
+            if (d < minDist && d <= 25.0) {
+                minDist = d;
+                best = {
+                    id: f.properties ? f.properties.id : null,
+                    kode: f.properties ? (f.properties.kode_asset || f.properties.kode || ('#' + f.properties.id)) : null,
+                    dist: d
+                };
+            }
+        }
+        return best;
+    }
+
+    window.openQuickValidateModal = function(pIdx, segMeters, conf, srcId, tgtId) {
+        var pSeg = (currentData && currentData.preview_segments && currentData.preview_segments[pIdx]) ? currentData.preview_segments[pIdx] : null;
+        var sId = srcId || (pSeg ? pSeg.source_asset_id : 0);
+        var tId = tgtId || (pSeg ? pSeg.target_asset_id : 0);
+
+        if ((!sId || !tId) && pSeg && Array.isArray(pSeg.coordinates) && pSeg.coordinates.length >= 2) {
+            var firstPt = pSeg.coordinates[0];
+            var lastPt = pSeg.coordinates[pSeg.coordinates.length - 1];
+            var aStart = findAssetNearLatLng(firstPt[1], firstPt[0]);
+            var aEnd = findAssetNearLatLng(lastPt[1], lastPt[0]);
+            if (aStart) sId = aStart.id;
+            if (aEnd) tId = aEnd.id;
+        }
+
+        var sourceCode = sId ? ('ID #' + sId) : 'Tiang Awal';
+        var targetCode = tId ? ('ID #' + tId) : 'Tiang Akhir';
+
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                title: `<span style="font-size: 16px; font-weight: bold;"><i class="fas fa-route text-warning me-1"></i> Validasi Prediksi Spasial Segmen #${pIdx + 1}</span>`,
+                title: `<span style="font-size: 16px; font-weight: bold;"><i class="fas fa-check-double text-primary me-1"></i> Validasi Segmen Transline #${pIdx + 1}</span>`,
                 html: `
-                    <div class="text-start small" style="line-height: 1.5;">
-                        <p class="mb-2">Segmen garis putus-putus ini dihitung dari kedekatan koordinat spasial tiang (~${segMeters} m, confidence ${conf}%).</p>
-                        <div class="alert alert-warning py-2 px-3 mb-2 small">
-                            <i class="fas fa-shield-alt text-warning me-1"></i>
-                            <strong>Aturan Keamanan Topologi:</strong> Prediksi tidak pernah disimpan otomatis. Jalur harus diverifikasi melalui engine topologi agar tidak merusak seksi manual yang telah ada.
+                    <div class="text-start small" style="line-height: 1.6;">
+                        <div class="p-2 mb-3 bg-light rounded border">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Penyulang:</span>
+                                <strong class="text-dark">${currentFeederName || ('#' + currentFeederId)}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Bentang Tiang:</span>
+                                <strong class="text-dark">${sourceCode} <i class="fas fa-arrow-right text-muted mx-1"></i> ${targetCode}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Estimasi Panjang:</span>
+                                <span class="font-monospace text-dark fw-bold">${segMeters} meter</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Tingkat Keyakinan:</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">${conf}%</span>
+                            </div>
                         </div>
-                        <p class="mb-0">Buka <strong>Cockpit Rekonstruksi JTM AI</strong> untuk meninjau detail seksi, konduktor, dan menyimpan secara resmi ke database?</p>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small mb-1">Spesifikasi Konduktor</label>
+                            <div class="row g-2">
+                                <div class="col-7">
+                                    <select id="quick-cond-type" class="form-select form-select-sm">
+                                        <option value="AAACS" selected>AAACS (Standard PLN)</option>
+                                        <option value="AAAC">AAAC</option>
+                                        <option value="XLPE">XLPE</option>
+                                        <option value="MVTIC">MVTIC</option>
+                                    </select>
+                                </div>
+                                <div class="col-5">
+                                    <select id="quick-cond-size" class="form-select form-select-sm">
+                                        <option value="150 mm²" selected>150 mm²</option>
+                                        <option value="70 mm²">70 mm²</option>
+                                        <option value="240 mm²">240 mm²</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <small class="text-muted" style="font-size: 10px;">Default sistem: <strong>AAACS 150 mm²</strong></small>
+                        </div>
+
+                        <div class="alert alert-info py-2 px-3 mb-0 small" style="font-size: 11px;">
+                            <i class="fas fa-shield-alt text-primary me-1"></i>
+                            <strong>Firewall Validasi:</strong> Recloser, PMCB, GH, LBSM, gardu, dan ROW otomatis ditolak sebagai node transline.
+                        </div>
                     </div>
                 `,
                 showCancelButton: true,
-                confirmButtonText: '<i class="fas fa-network-wired me-1"></i> Buka Editor & Validasi',
-                cancelButtonText: 'Tutup',
+                showDenyButton: true,
+                confirmButtonText: '<i class="fas fa-save me-1"></i> Simpan Transline Resmi',
+                denyButtonText: '<i class="fas fa-network-wired me-1"></i> Cockpit Rekonstruksi AI',
+                cancelButtonText: 'Batal',
                 confirmButtonColor: '#2563eb',
+                denyButtonColor: '#0d9488',
                 cancelButtonColor: '#6c757d',
-                focusConfirm: false
+                focusConfirm: false,
+                preConfirm: () => {
+                    var cType = document.getElementById('quick-cond-type') ? document.getElementById('quick-cond-type').value : 'AAACS';
+                    var cSize = document.getElementById('quick-cond-size') ? document.getElementById('quick-cond-size').value : '150 mm²';
+                    return { cType: cType, cSize: cSize };
+                }
             }).then((res) => {
                 if (res.isConfirmed) {
+                    if (!sId || !tId) {
+                        Swal.fire('Validasi Gagal', 'ID Tiang asal atau tujuan tidak teridentifikasi pada segmen spasial ini.', 'warning');
+                        return;
+                    }
+                    var valData = res.value || {};
+                    executeSingleSegmentValidation(sId, tId, valData.cType, valData.cSize);
+                } else if (res.isDenied) {
                     openTranslineAiModal();
                 }
             });
@@ -7218,6 +7469,285 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
     };
+
+    function executeSingleSegmentValidation(sId, tId, cType, cSize) {
+        Swal.fire({
+            title: 'Menyimpan Segmen Transline...',
+            text: 'Memverifikasi firewall tiang JTM dan aturan spasial...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        var formData = new FormData();
+        formData.append('source_asset_id', sId);
+        formData.append('target_asset_id', tId);
+        formData.append('conductor_type', cType || 'AAACS');
+        formData.append('conductor_size', cSize || '150 mm²');
+
+        fetch(baseUrl + '/gis/api-validate-transline-segment', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Segmen Resmi Tersimpan!',
+                    html: `
+                        <div class="small text-start">
+                            <p class="mb-1"><strong>Kode Transline:</strong> <code>${resp.transline_code}</code></p>
+                            <p class="mb-1"><strong>Jarak:</strong> ${resp.distance_meters} m</p>
+                            <p class="mb-0"><strong>Konduktor:</strong> ${resp.conductor_type} ${resp.conductor_size} ${resp.conductor_is_default ? '<span class="badge bg-secondary">Default</span>' : ''}</p>
+                        </div>
+                    `,
+                    timer: 3500
+                });
+                if (currentFeederId) {
+                    loadPenyulangNetwork(currentFeederId);
+                }
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validasi Transline Ditolak',
+                    text: resp.message || 'Gagal memvalidasi segmen transline.',
+                });
+            }
+        })
+        .catch(err => {
+            Swal.fire('Error Sistem', err.message || 'Gagal menghubungi server.', 'error');
+        });
+    }
+
+    // ========================================================
+    // BATCH TRANSLINE VALIDATION ENGINE CONTROLLER
+    // ========================================================
+    var batchTranslineModalInstance = null;
+    var lastBatchDryRunResult = null;
+
+    function openBatchTranslineModal() {
+        var mEl = document.getElementById('modal-batch-transline');
+        if (!mEl) return;
+        if (!batchTranslineModalInstance) {
+            batchTranslineModalInstance = new bootstrap.Modal(mEl);
+        }
+        batchTranslineModalInstance.show();
+    }
+
+    function runBatchTranslineDryRun() {
+        var scope = document.getElementById('batch-transline-scope') ? document.getElementById('batch-transline-scope').value : 'all';
+        var feederParam = (scope === 'current' && currentFeederId) ? currentFeederId : '';
+
+        var loadingEl = document.getElementById('batch-transline-loading');
+        var resultsEl = document.getElementById('batch-transline-results');
+        var btnExec = document.getElementById('btn-execute-batch-save');
+
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (resultsEl) resultsEl.style.display = 'none';
+        if (btnExec) btnExec.disabled = true;
+
+        var url = baseUrl + '/gis/api-batch-transline/dry-run' + (feederParam ? ('?penyulang_id=' + feederParam) : '');
+
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (resultsEl) resultsEl.style.display = 'block';
+
+            if (resp.status !== 'success' || !resp.data) {
+                alert('Gagal mengambil data dry-run transline.');
+                return;
+            }
+
+            var d = resp.data;
+            lastBatchDryRunResult = d;
+
+            document.getElementById('batch-stat-total').textContent = (d.total_evaluated || 0).toLocaleString();
+            document.getElementById('batch-stat-valid').textContent = (d.valid_count || 0).toLocaleString();
+            document.getElementById('batch-stat-rejected').textContent = (d.rejected_count || 0).toLocaleString();
+            document.getElementById('batch-stat-duplicate').textContent = (d.duplicate_count || 0).toLocaleString();
+
+            document.getElementById('badge-valid-cnt').textContent = d.valid_count || 0;
+            document.getElementById('badge-rejected-cnt').textContent = d.rejected_count || 0;
+            document.getElementById('btn-save-count').textContent = d.valid_count || 0;
+
+            if (btnExec) {
+                btnExec.disabled = (!d.valid_count || d.valid_count <= 0);
+            }
+
+            // Render valid table
+            var vBody = document.getElementById('batch-table-valid-body');
+            if (vBody) {
+                vBody.innerHTML = '';
+                var valList = d.valid_segments || [];
+                if (valList.length === 0) {
+                    vBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada segmen transline baru yang siap disimpan.</td></tr>';
+                } else {
+                    valList.slice(0, 100).forEach(function(s) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><span class="badge bg-light text-dark border">${s.nama_penyulang || ('#' + s.penyulang_id)}</span></td>
+                            <td><span class="text-primary fw-bold">${s.source_code}</span> <small class="text-muted">(#${s.source_asset_id})</small></td>
+                            <td><span class="text-primary fw-bold">${s.target_code}</span> <small class="text-muted">(#${s.target_asset_id})</small></td>
+                            <td>${s.distance_meters} m</td>
+                            <td><span class="badge bg-primary-subtle text-primary border">${s.conductor_type} ${s.conductor_size}</span> ${s.conductor_is_default ? '<span class="badge bg-warning-subtle text-warning border" style="font-size:9px;">Default</span>' : ''}</td>
+                        `;
+                        vBody.appendChild(tr);
+                    });
+                    if (valList.length > 100) {
+                        var moreTr = document.createElement('tr');
+                        moreTr.innerHTML = `<td colspan="5" class="text-center text-muted font-monospace small">... dan ${valList.length - 100} segmen lainnya.</td>`;
+                        vBody.appendChild(moreTr);
+                    }
+                }
+            }
+
+            // Render rejected table
+            var rBody = document.getElementById('batch-table-rejected-body');
+            if (rBody) {
+                rBody.innerHTML = '';
+                var rejList = d.rejected_segments || [];
+                if (rejList.length === 0) {
+                    rBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Tidak ada penolakan firewall.</td></tr>';
+                } else {
+                    rejList.slice(0, 100).forEach(function(r) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><span class="badge bg-light text-dark border">${r.feeder}</span></td>
+                            <td><code>${r.pair}</code></td>
+                            <td><span class="badge bg-danger">${r.reason}</span></td>
+                            <td class="text-truncate" style="max-width: 250px;">${r.detail}</td>
+                        `;
+                        rBody.appendChild(tr);
+                    });
+                    if (rejList.length > 100) {
+                        var moreTr = document.createElement('tr');
+                        moreTr.innerHTML = `<td colspan="4" class="text-center text-muted font-monospace small">... dan ${rejList.length - 100} penolakan lainnya.</td>`;
+                        rBody.appendChild(moreTr);
+                    }
+                }
+            }
+
+            // Render feeders needing input
+            var needEl = document.getElementById('batch-needing-list');
+            if (needEl) {
+                var needList = d.feeders_needing_input || [];
+                if (needList.length === 0) {
+                    needEl.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i> Seluruh bentang tiang berada dalam batas bentang aman (&le; 150m). Tidak ada span putus yang membutuhkan tiang sisipan fisik.</span>';
+                } else {
+                    var h = '<div class="alert alert-warning py-2 mb-2 small"><i class="fas fa-info-circle me-1"></i> Penyulang berikut memiliki celah bentang terputus (&gt; 150m) yang memerlukan investigasi lapangan / tiang sisipan sebelum dapat dihubungkan:</div><ul class="mb-0">';
+                    needList.forEach(function(n) {
+                        h += `<li><strong>${n.nama_penyulang}</strong>: ${n.issue}</li>`;
+                    });
+                    h += '</ul>';
+                    needEl.innerHTML = h;
+                }
+            }
+        })
+        .catch(err => {
+            if (loadingEl) loadingEl.style.display = 'none';
+            alert('Error menjalankan dry-run: ' + err.message);
+        });
+    }
+
+    function executeBatchTranslineSave() {
+        if (!lastBatchDryRunResult || !lastBatchDryRunResult.valid_count || lastBatchDryRunResult.valid_count <= 0) {
+            Swal.fire('Tidak Ada Segmen Valid', 'Jalankan dry-run terlebih dahulu dan pastikan terdapat segmen valid.', 'warning');
+            return;
+        }
+
+        var validCount = lastBatchDryRunResult.valid_count;
+        var scope = document.getElementById('batch-transline-scope') ? document.getElementById('batch-transline-scope').value : 'all';
+        var scopeLabel = scope === 'current' ? (currentFeederName || ('Penyulang #' + currentFeederId)) : 'Seluruh 134 Penyulang';
+
+        Swal.fire({
+            title: 'Konfirmasi Simpan Transline Batch',
+            html: `
+                <div class="text-start small" style="line-height: 1.6;">
+                    <p class="mb-2">Anda akan menyimpan secara resmi <strong>${validCount.toLocaleString()} segmen transline</strong> ke tabel otoritatif <code>gis_translines</code>.</p>
+                    <div class="p-2 mb-2 bg-light rounded border">
+                        <div><strong>Cakupan:</strong> ${scopeLabel}</div>
+                        <div><strong>Konduktor Default:</strong> AAACS 150 mm²</div>
+                        <div><strong>Auto-Backup:</strong> Snapshot JSON otomatis dibuat di direktori backup sebelum mutasi.</div>
+                    </div>
+                    <div class="alert alert-warning py-2 px-3 mb-0 small" style="font-size: 11px;">
+                        <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                        Aksi ini bersifat transaksional. Jika terjadi error di tengah jalan, seluruh mutasi akan otomatis di-rollback tanpa merusak data yang ada.
+                    </div>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: `<i class="fas fa-save me-1"></i> Ya, Eksekusi Simpan (${validCount} Segmen)`,
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#16a34a',
+            cancelButtonColor: '#6c757d'
+        }).then(res => {
+            if (res.isConfirmed) {
+                performBatchTranslineMutation(scope);
+            }
+        });
+    }
+
+    function performBatchTranslineMutation(scope) {
+        Swal.fire({
+            title: 'Mengeksekusi Simpan Transline...',
+            html: 'Membuat auto-backup dan menulis segmen transline secara transaksional...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        var formData = new FormData();
+        if (scope === 'current' && currentFeederId) {
+            formData.append('penyulang_id', currentFeederId);
+        }
+
+        fetch(baseUrl + '/gis/api-batch-transline/execute', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.status === 'success' && resp.result) {
+                var r = resp.result;
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Batch Transline Berhasil!',
+                    html: `
+                        <div class="small text-start">
+                            <p class="mb-1 text-success fw-bold"><i class="fas fa-check-circle me-1"></i> Berhasil menyimpan ${r.saved_count || 0} segmen transline resmi.</p>
+                            <p class="mb-1"><strong>Backup File:</strong> <code>${r.backup_file || '-'}</code></p>
+                            <p class="mb-0"><strong>Penyulang Tervalidasi:</strong> ${(r.feeders_saved ? r.feeders_saved.length : 0)} penyulang</p>
+                        </div>
+                    `,
+                    timer: 4500
+                });
+
+                if (batchTranslineModalInstance) {
+                    batchTranslineModalInstance.hide();
+                }
+
+                if (currentFeederId) {
+                    loadPenyulangNetwork(currentFeederId);
+                }
+            } else {
+                Swal.fire('Eksekusi Gagal', resp.message || 'Gagal menyimpan transline batch.', 'error');
+            }
+        })
+        .catch(err => {
+            Swal.fire('Error Sistem', err.message || 'Gagal menghubungi server.', 'error');
+        });
+    }
 
     function openTranslineAiModal() {
         if (!currentFeederId) {
@@ -7825,6 +8355,18 @@ document.addEventListener("DOMContentLoaded", function () {
     bindPointerSafeTap('btn-open-transline-ai', function () {
         openTranslineAiModal();
     }, 'OPEN_TRANSLINE_AI_MODAL');
+
+    bindPointerSafeTap('btn-open-batch-transline', function () {
+        openBatchTranslineModal();
+    }, 'OPEN_BATCH_TRANSLINE_MODAL');
+
+    bindPointerSafeTap('btn-run-batch-dryrun', function () {
+        runBatchTranslineDryRun();
+    }, 'RUN_BATCH_TRANSLINE_DRYRUN');
+
+    bindPointerSafeTap('btn-execute-batch-save', function () {
+        executeBatchTranslineSave();
+    }, 'EXECUTE_BATCH_TRANSLINE_SAVE');
 
     bindPointerSafeTap('btn-execute-transline-tl04', function () {
         executeTranslineTl04('batch');

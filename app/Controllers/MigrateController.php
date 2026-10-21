@@ -3944,21 +3944,19 @@ class MigrateController extends BaseController
             }
         }
 
-        // 6. Check backups and logs in writable directory
+        // 6. Check backups in writable/backups directory only
         $backupMatches = [];
-        $scanDirs = [WRITEPATH . 'backups', WRITEPATH . 'audits', WRITEPATH . 'logs'];
-        foreach ($scanDirs as $sDir) {
-            if (is_dir($sDir)) {
-                $files = scandir($sDir);
-                foreach ($files as $f) {
-                    if ($f === '.' || $f === '..') continue;
-                    $fp = $sDir . '/' . $f;
-                    if (is_file($fp) && filesize($fp) < 5000000) { // < 5MB
-                        $content = @file_get_contents($fp);
-                        if (str_contains($content, '656') || str_contains($content, '657')) {
-                            preg_match_all('/.{0,50}(?:656|657).{0,50}/', $content, $m);
-                            $backupMatches[$f] = array_slice($m[0] ?? [], 0, 5);
-                        }
+        $bDir = WRITEPATH . 'backups';
+        if (is_dir($bDir)) {
+            $files = scandir($bDir);
+            foreach ($files as $f) {
+                if ($f === '.' || $f === '..') continue;
+                $fp = $bDir . '/' . $f;
+                if (is_file($fp) && filesize($fp) < 2000000) { // < 2MB
+                    $content = @file_get_contents($fp);
+                    if ($content && (str_contains($content, '656') || str_contains($content, '657'))) {
+                        preg_match_all('/.{0,40}(?:656|657).{0,40}/', $content, $m);
+                        $backupMatches[$f] = array_slice($m[0] ?? [], 0, 5);
                     }
                 }
             }

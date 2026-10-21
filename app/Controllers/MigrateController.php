@@ -4009,7 +4009,8 @@ class MigrateController extends BaseController
             }
 
             // Check what master_materials has
-            $allMats = $db->table('master_materials')->select('id, material_code, nama_material, satuan')->get()->getResultArray();
+            $colsMat = $db->tableExists('master_materials') ? $db->getFieldNames('master_materials') : [];
+            $allMats = $db->tableExists('master_materials') ? $db->table('master_materials')->get()->getResultArray() : [];
 
             // 1. Assets count
             $activeAssets = $db->table('assets')->where('deleted_at IS NULL')->countAllResults();
@@ -4069,6 +4070,7 @@ class MigrateController extends BaseController
             return $this->response->setJSON([
                 'status' => 'success',
                 'timestamp' => date('Y-m-d H:i:s'),
+                'cols_mat' => $colsMat,
                 'diag_result' => $diagResult,
                 'master_materials' => $allMats,
                 'assets' => [

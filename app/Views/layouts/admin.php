@@ -3140,7 +3140,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             let isContinuous = false; // Only continuous when explicitly active
 
             // Load Proactive Smart Notifications on page load (FITUR 8)
-            fetchSmartNotifications();
+            // fetchSmartNotifications();
 
             // Listen for Android Native Bridge Permission Callbacks
             window.onAndroidPermissionResult = function(permission, isGranted) {

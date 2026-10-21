@@ -255,16 +255,6 @@ class VoiceAIService
             ];
         }
 
-        $achHarian = $kpi['ach_harian'] ?? 0;
-        if ($achHarian < 50) {
-            $notifications[] = [
-                'type'    => 'TARGET',
-                'title'   => 'Target Inspeksi Harian',
-                'message' => "Pencapaian target harian baru {$achHarian}%. Tingkatkan inspeksi di lapangan.",
-                'icon'    => 'fas fa-bullseye text-info'
-            ];
-        }
-
         return $notifications;
     }
 }

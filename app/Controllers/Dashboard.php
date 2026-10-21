@@ -541,9 +541,6 @@ class Dashboard extends BaseController
         }
         if ($pohonCount === 0 && $db->tableExists('vegetation_observations')) {
             $vegBuilder = $db->table('vegetation_observations');
-            if ($db->fieldExists('is_valid', 'vegetation_observations')) {
-                $vegBuilder->where('is_valid', 1);
-            }
             if ($db->fieldExists('deleted_at', 'vegetation_observations')) {
                 $vegBuilder->where('deleted_at IS NULL');
             }
@@ -556,6 +553,20 @@ class Dashboard extends BaseController
                 }
             }
             $pohonCount = (int)$vegBuilder->countAllResults();
+        }
+        if ($pohonCount === 0 && $db->tableExists('temuan')) {
+            $tVegBuilder = $db->table('temuan')->where('deleted_at IS NULL');
+            if ($ulpIdFilter !== null && $db->fieldExists('ulp_id', 'temuan')) {
+                $tVegBuilder->where('ulp_id', (int)$ulpIdFilter);
+            }
+            $tVegBuilder->groupStart()
+                ->like('jenis_temuan', 'ROW')
+                ->orLike('jenis_temuan', 'POHON')
+                ->orLike('detail_temuan', 'pohon')
+                ->orLike('detail_temuan', 'row')
+                ->orLike('detail_temuan', 'vegetasi')
+            ->groupEnd();
+            $pohonCount = (int)$tVegBuilder->countAllResults();
         }
 
         $assetSummary = [
@@ -591,26 +602,124 @@ class Dashboard extends BaseController
         }
         krsort($monthlyByYear);
 
+        // Determine max recorded month per year so 2026 is strictly Jan–Okt without flat repeated padding or fake zeros
+        $maxMonthPerYear = [];
+        if ($db->tableExists('historical_feeder_interruptions')) {
+            $mRes = $db->query("SELECT YEAR(h.event_date) yr, MAX(MONTH(h.event_date)) max_mo FROM historical_feeder_interruptions h WHERE h.event_date IS NOT NULL " . $ulpWhereClause . " GROUP BY yr")->getResultArray();
+            foreach ($mRes as $mr) {
+                $maxMonthPerYear[(int)$mr['yr']] = (int)$mr['max_mo'];
+            }
+        }
+
         $cumulativeGangguanYoY = [];
         foreach ($monthlyByYear as $yr => $monthsArr) {
             $runSum = 0;
             $cumArr = [];
-            for ($m = 1; $m <= 12; $m++) {
-                $runSum += (int)($monthsArr[$m] ?? 0);
-                $cumArr[$m] = $runSum;
+            $maxMo = $maxMonthPerYear[(int)$yr] ?? 12;
+            if ((int)$yr === (int)date('Y')) {
+                $maxMo = min((int)date('n'), $maxMo);
             }
-            // Strict YoY parity: Only include years that have actual recorded interruption data or current year
+            for ($m = 1; $m <= 12; $m++) {
+                if ($m <= $maxMo) {
+                    $runSum += (int)($monthsArr[$m] ?? 0);
+                    $cumArr[$m] = $runSum;
+                } else {
+                    // Strictly null for future unrecorded months; NO horizontal line padding
+                    $cumArr[$m] = null;
+                }
+            }
             if ($runSum > 0 || (int)$yr === (int)date('Y')) {
                 $cumulativeGangguanYoY[(int)$yr] = [
                     'year'       => (int)$yr,
                     'total'      => (int)$runSum,
+                    'max_month'  => $maxMo,
                     'has_source' => in_array((int)$yr, $availableInterruptionYears, true),
                     'monthly'    => array_values($monthsArr),
                     'cumulative' => array_values($cumArr),
                 ];
             }
         }
-        $cumulativeGangguan = $cumulativeGangguanYoY[$trendYear]['cumulative'] ?? array_fill(0, 12, 0);
+        $cumulativeGangguan = $cumulativeGangguanYoY[$trendYear]['cumulative'] ?? array_fill(0, 12, null);
+
+        // Zero-reload metric series: Fault Current (A), Protection Relay Trips, and Cause Category Trips
+        $monthlyFaultCurrentByYear = [];
+        $monthlyRelayByYear = [];
+        $monthlyCauseByYear = [];
+
+        if ($db->tableExists('historical_feeder_interruptions')) {
+            // 1. Fault current (A)
+            if ($db->fieldExists('fault_current_amperes', 'historical_feeder_interruptions')) {
+                $currRows = $db->query(
+                    "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo,
+                            AVG(NULLIF(h.fault_current_amperes, 0)) avg_curr,
+                            COUNT(CASE WHEN h.fault_current_amperes > 0 THEN 1 END) cnt_curr
+                     FROM historical_feeder_interruptions h
+                     WHERE h.event_date IS NOT NULL " . $ulpWhereClause . "
+                     GROUP BY yr, mo
+                     ORDER BY yr DESC, mo ASC"
+                )->getResultArray();
+                foreach ($availableInterruptionYears as $ay) {
+                    $monthlyFaultCurrentByYear[(int)$ay] = array_fill(1, 12, null);
+                }
+                foreach ($currRows as $cr) {
+                    $cy = (int)$cr['yr'];
+                    $cm = (int)$cr['mo'];
+                    if (isset($monthlyFaultCurrentByYear[$cy]) && (int)$cr['cnt_curr'] > 0) {
+                        $monthlyFaultCurrentByYear[$cy][$cm] = round((float)$cr['avg_curr'], 1);
+                    }
+                }
+            }
+
+            // 2. Protection Relay
+            if ($db->fieldExists('relay_trip_type', 'historical_feeder_interruptions')) {
+                $relayRows = $db->query(
+                    "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo,
+                            COALESCE(NULLIF(TRIM(h.relay_trip_type), ''), 'TIDAK_TERCATAT') relay_type,
+                            COUNT(h.id) cnt
+                     FROM historical_feeder_interruptions h
+                     WHERE h.event_date IS NOT NULL " . $ulpWhereClause . "
+                     GROUP BY yr, mo, relay_type
+                     ORDER BY yr DESC, mo ASC"
+                )->getResultArray();
+                foreach ($relayRows as $rr) {
+                    $ry = (int)$rr['yr'];
+                    $rm = (int)$rr['mo'];
+                    $rtype = (string)$rr['relay_type'];
+                    if (!isset($monthlyRelayByYear[$ry][$rtype])) {
+                        $monthlyRelayByYear[$ry][$rtype] = array_fill(1, 12, null);
+                    }
+                    $monthlyRelayByYear[$ry][$rtype][$rm] = (int)$rr['cnt'];
+                }
+            }
+
+            // 3. Cause Category
+            $cCatRows = $db->query(
+                "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo,
+                        COALESCE(NULLIF(TRIM(h.cause_category), ''), 'LAIN-LAIN') cat,
+                        COUNT(h.id) cnt
+                 FROM historical_feeder_interruptions h
+                 WHERE h.event_date IS NOT NULL " . $ulpWhereClause . "
+                 GROUP BY yr, mo, cat
+                 ORDER BY yr DESC, mo ASC"
+            )->getResultArray();
+            foreach ($cCatRows as $ccr) {
+                $cy = (int)$ccr['yr'];
+                $cm = (int)$ccr['mo'];
+                $cat = (string)$ccr['cat'];
+                if (!isset($monthlyCauseByYear[$cy][$cat])) {
+                    $monthlyCauseByYear[$cy][$cat] = array_fill(1, 12, null);
+                }
+                $monthlyCauseByYear[$cy][$cat][$cm] = (int)$ccr['cnt'];
+            }
+        }
+
+        $interruptionMetricsPayload = [
+            'yoy'           => $cumulativeGangguanYoY,
+            'fault_current' => array_map('array_values', $monthlyFaultCurrentByYear),
+            'relay'         => array_map(fn($arr) => array_map('array_values', $arr), $monthlyRelayByYear),
+            'cause'         => array_map(fn($arr) => array_map('array_values', $arr), $monthlyCauseByYear),
+            'years'         => array_values($availableInterruptionYears),
+        ];
 
         // Cause Breakdown ("Penyebab Sesuai Kode Gangguan") per year from official dictionary & canonical taxonomy
         $canonicalCauseMap = [
@@ -759,7 +868,7 @@ class Dashboard extends BaseController
                     SUM(COALESCE(tm.quantity, 0)) AS total_qty_semua_material,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-003', 'BES00080015', 'MAT-HDW-ARMTIE') OR tm.canonical_name_snapshot LIKE '%ARM%TIE%' THEN tm.quantity ELSE 0 END) AS qty_armtie,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-001', 'CANON-HDW-013', 'CANON-HDW-014', 'CANON-HDW-019', 'BES00020031', 'BES00020003', 'MAT-HDW-CROSSARM') OR tm.canonical_name_snapshot LIKE '%CROSS%ARM%' THEN tm.quantity ELSE 0 END) AS qty_crossarm,
-                    SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-001', 'CANON-ACC-010', 'CANON-ACC-011', 'CANON-ACC-012', 'ISO00020004', 'MAT-ISO-PIN-20KV') OR tm.canonical_name_snapshot LIKE '%PIN%POST%' OR tm.canonical_name_snapshot LIKE '%ISOLATOR TUMPU%' THEN tm.quantity ELSE 0 END) AS qty_pin_isolator,
+                    SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-001', 'ISO00020004', 'MAT-ISO-PIN-20KV') OR tm.canonical_name_snapshot LIKE '%PIN%POST%' OR tm.canonical_name_snapshot LIKE '%ISOLATOR TUMPU%' THEN tm.quantity ELSE 0 END) AS qty_pin_isolator,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-004', 'CANON-HDW-007', 'CANON-HDW-010', 'ISO00010004', 'MAT-ISO-HANG-20KV') OR tm.canonical_name_snapshot LIKE '%HANG%' OR tm.canonical_name_snapshot LIKE '%STRAIN%' OR tm.canonical_name_snapshot LIKE '%ISOLATOR TARIK%' THEN tm.quantity ELSE 0 END) AS qty_hang_isolator,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-003', 'MAT-PROT-FCO-LAT', 'CUT00010002', 'MAT-PROT-FCO-24KV') OR tm.canonical_name_snapshot LIKE '%FCO%' OR tm.canonical_name_snapshot LIKE '%FUSE CUT OUT%' THEN tm.quantity ELSE 0 END) AS qty_fco,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-002', 'ARR00010006', 'MAT-PROT-LA-24KV') OR tm.canonical_name_snapshot LIKE '%ARRESTER%' OR tm.canonical_name_snapshot LIKE '%LIGHTNING%' THEN tm.quantity ELSE 0 END) AS qty_arrester,
@@ -806,7 +915,66 @@ class Dashboard extends BaseController
                 $temuanMaterialMatrix['total_items_qty'] += $rowTotQty;
             }
             unset($tmr);
-            $temuanMaterialMatrix['rows'] = $tmMatrixRows;
+
+            // Group by feeder (default: 1 row per feeder with expandable section details)
+            $feederGrouped = [];
+            foreach ($tmMatrixRows as $tmr) {
+                $fId = (int)$tmr['penyulang_id'];
+                if (!isset($feederGrouped[$fId])) {
+                    $feederGrouped[$fId] = [
+                        'penyulang_id'             => $fId,
+                        'nama_penyulang'           => $tmr['nama_penyulang'],
+                        'ulp_id'                   => (int)$tmr['ulp_id'],
+                        'nama_ulp'                 => $tmr['nama_ulp'],
+                        'nama_gi'                  => $tmr['nama_gi'],
+                        'conductor_type'           => $tmr['conductor_type'],
+                        'conductor_size'           => $tmr['conductor_size'],
+                        'total_temuan'             => 0,
+                        'total_qty_semua_material' => 0.0,
+                        'qty_armtie'               => 0.0,
+                        'qty_crossarm'             => 0.0,
+                        'qty_pin_isolator'         => 0.0,
+                        'qty_hang_isolator'        => 0.0,
+                        'qty_fco'                  => 0.0,
+                        'qty_arrester'             => 0.0,
+                        'qty_skun_konektor'        => 0.0,
+                        'qty_gsw_ground'           => 0.0,
+                        'qty_konduktor_m'          => 0.0,
+                        'rincian_parts'            => [],
+                        'sections'                 => [],
+                    ];
+                }
+                $feederGrouped[$fId]['total_temuan']             += (int)$tmr['total_temuan'];
+                $feederGrouped[$fId]['total_qty_semua_material'] += (float)$tmr['total_qty_semua_material'];
+                $feederGrouped[$fId]['qty_armtie']               += (float)$tmr['qty_armtie'];
+                $feederGrouped[$fId]['qty_crossarm']             += (float)$tmr['qty_crossarm'];
+                $feederGrouped[$fId]['qty_pin_isolator']         += (float)$tmr['qty_pin_isolator'];
+                $feederGrouped[$fId]['qty_hang_isolator']        += (float)$tmr['qty_hang_isolator'];
+                $feederGrouped[$fId]['qty_fco']                  += (float)$tmr['qty_fco'];
+                $feederGrouped[$fId]['qty_arrester']             += (float)$tmr['qty_arrester'];
+                $feederGrouped[$fId]['qty_skun_konektor']        += (float)$tmr['qty_skun_konektor'];
+                $feederGrouped[$fId]['qty_gsw_ground']           += (float)$tmr['qty_gsw_ground'];
+                $feederGrouped[$fId]['qty_konduktor_m']          += (float)$tmr['qty_konduktor_m'];
+                if (!empty($tmr['rincian_material'])) {
+                    $feederGrouped[$fId]['rincian_parts'][] = $tmr['rincian_material'];
+                }
+                $feederGrouped[$fId]['sections'][] = $tmr;
+            }
+
+            foreach ($feederGrouped as &$fg) {
+                $fg['rincian_material'] = implode(', ', array_unique($fg['rincian_parts']));
+            }
+            unset($fg);
+
+            usort($feederGrouped, function($a, $b) {
+                if ($b['total_temuan'] === $a['total_temuan']) {
+                    return strcmp($a['nama_penyulang'], $b['nama_penyulang']);
+                }
+                return $b['total_temuan'] <=> $a['total_temuan'];
+            });
+
+            $temuanMaterialMatrix['rows'] = array_values($feederGrouped);
+            $temuanMaterialMatrix['raw_section_rows'] = $tmMatrixRows;
             $temuanMaterialMatrix['gis_list'] = array_keys($gisSet);
             sort($temuanMaterialMatrix['gis_list']);
 
@@ -1110,6 +1278,7 @@ class Dashboard extends BaseController
             'availableInterruptionYears' => $availableInterruptionYears,
             'cumulativeGangguan'         => $cumulativeGangguan,
             'cumulativeGangguanYoY'      => $cumulativeGangguanYoY,
+            'interruptionMetricsPayload' => $interruptionMetricsPayload,
             'causeBreakdownByYear'       => $causeBreakdownByYear,
             'topFeedersGangguan'    => $topFeedersGangguanRows,
             'topInspeksiPenyulang'  => $topInspeksiPenyulang,

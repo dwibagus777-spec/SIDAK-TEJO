@@ -65,6 +65,36 @@ class PlnStandardBomRuleService
     }
 
     /**
+     * Extracts impacted phase count (1, 2, or 3) from damage narrative text.
+     * Accurately parses expressions like "phase R dan T", "phasa R, S, T", "3 fasa", "2 phasa".
+     */
+    public static function extractPhaseCount(string $txt, float $default = 1.0): float
+    {
+        if (preg_match('/\b(3\s*(?:fasa|phase|set|buah)|semua\s*ph?as[ae]|3\s*ph?as[ae])\b/i', $txt)) {
+            return 3.0;
+        }
+
+        if (preg_match('/\b(2\s*(?:fasa|phase|set|buah)|2\s*ph?as[ae])\b/i', $txt)) {
+            return 2.0;
+        }
+
+        if (preg_match('/\b(?:ph?as[ae]|ph)\b/i', $txt)) {
+            if (preg_match('/\b(?:ph?as[ae]|ph)\s+[RST](?:\s*(?:dan|&|,|\/|\+)\s*(?:(?:ph?as[ae]|ph)\s+)?[RST])*/i', $txt, $clauseMatch)) {
+                $clause = strtoupper($clauseMatch[0]);
+                $phases = [];
+                if (preg_match('/\bR\b/', $clause)) $phases['R'] = true;
+                if (preg_match('/\bS\b/', $clause)) $phases['S'] = true;
+                if (preg_match('/\bT\b/', $clause)) $phases['T'] = true;
+                if (count($phases) > 0) {
+                    return (float)count($phases);
+                }
+            }
+        }
+
+        return $default;
+    }
+
+    /**
      * Resolves Standard PLN BOM Material Requirements from Finding Attributes.
      *
      * Maps damage description and construction taxonomy to canonical PLN materials.
@@ -122,7 +152,7 @@ class PlnStandardBomRuleService
             $primaryKey = 'ARRESTER';
             $isSinglePhase = (bool)preg_match('/\b(phase|fasa|phasa)\s*[rst]\b/i', $txt)
                 || (bool)preg_match('/\b(1\s*(?:set|buah|unit|phase|fasa))\b/i', $txt);
-            $laQty = $isSinglePhase ? 1.0 : 3.0;
+            $laQty = self::extractPhaseCount($txt, $isSinglePhase ? 1.0 : 3.0);
 
             $items[] = [
                 'canonical_code' => 'CANON-MAT-002',
@@ -130,9 +160,9 @@ class PlnStandardBomRuleService
                 'unit'           => 'buah',
                 'quantity'       => $laQty,
                 'category'       => 'PROTECTION',
-                'justification'  => $isSinglePhase
+                'justification'  => $laQty === 1.0
                     ? 'Penggantian 1 unit Lightning Arrester 24 kV phasa terdampak per standar konstruksi PLN'
-                    : 'Penggantian 1 set (3 unit) Lightning Arrester 24 kV lengkap per standar konstruksi PLN',
+                    : 'Penggantian ' . (int)$laQty . ' unit Lightning Arrester 24 kV lengkap per standar konstruksi PLN',
             ];
             $items[] = [
                 'canonical_code' => 'CANON-HDW-023',
@@ -155,8 +185,7 @@ class PlnStandardBomRuleService
         // 2. PIN / POST INSULATOR (ISOLATOR TUMPU)
         if (preg_match('/\b(pin\s*isolator|isolator\s*pin|pin\s*post|isolator\s*tumpu|pin\s*bantu|isolator\s*(?:retak|pecah|flash|fong))\b/i', $txt)) {
             if (!$primaryKey) $primaryKey = 'PIN_ISOLATOR';
-            $isThreePhase = (bool)preg_match('/\b(3\s*(?:fasa|phase|set|buah))\b/i', $txt);
-            $pinQty = $isThreePhase ? 3.0 : 1.0;
+            $pinQty = self::extractPhaseCount($txt, 1.0);
 
             $items[] = [
                 'canonical_code' => 'CANON-MAT-001',
@@ -164,7 +193,7 @@ class PlnStandardBomRuleService
                 'unit'           => 'buah',
                 'quantity'       => $pinQty,
                 'category'       => 'ISOLATOR',
-                'justification'  => 'Penggantian isolator tumpu retak/rusak',
+                'justification'  => 'Penggantian isolator tumpu retak/rusak (' . (int)$pinQty . ' phasa terdampak)',
             ];
             $items[] = [
                 'canonical_code' => 'CANON-ACC-012',
@@ -172,15 +201,14 @@ class PlnStandardBomRuleService
                 'unit'           => 'buah',
                 'quantity'       => $pinQty,
                 'category'       => 'PENGIKAT',
-                'justification'  => 'Ikatan isolator tumpu ke konduktor',
+                'justification'  => 'Ikatan isolator tumpu ke konduktor (' . (int)$pinQty . ' phasa)',
             ];
         }
 
         // 3. STRAIN / HANG INSULATOR (ISOLATOR TARIK)
         if (preg_match('/\b(hang\s*isolator|isolator\s*hang|strain\s*insulator|isolator\s*tarik|piring)\b/i', $txt)) {
             if (!$primaryKey) $primaryKey = 'HANG_ISOLATOR';
-            $isThree = (bool)preg_match('/\b(3\s*(?:fasa|phase|set))\b/i', $txt);
-            $hangQty = $isThree ? 3.0 : 1.0;
+            $hangQty = self::extractPhaseCount($txt, 1.0);
 
             $items[] = [
                 'canonical_code' => 'CANON-MAT-004',
@@ -188,7 +216,7 @@ class PlnStandardBomRuleService
                 'unit'           => 'buah',
                 'quantity'       => $hangQty,
                 'category'       => 'ISOLATOR',
-                'justification'  => 'Penggantian rangkaian isolator tarik',
+                'justification'  => 'Penggantian rangkaian isolator tarik (' . (int)$hangQty . ' phasa terdampak)',
             ];
             $items[] = [
                 'canonical_code' => 'CANON-HDW-007',
@@ -196,7 +224,7 @@ class PlnStandardBomRuleService
                 'unit'           => 'buah',
                 'quantity'       => $hangQty,
                 'category'       => 'CLAMP',
-                'justification'  => 'Klem penegang konduktor pada tiang tarik',
+                'justification'  => 'Klem penegang konduktor pada tiang tarik (' . (int)$hangQty . ' phasa)',
             ];
         }
 
@@ -623,7 +651,9 @@ class PlnStandardBomRuleService
                 " . ($ulpId !== null && $ulpId > 0 ? " AND t.ulp_id = " . (int)$ulpId : "") . "
             ");
             $unmappedCount = (int)($unmappedRes->getRowArray()['unmapped_cnt'] ?? 0);
-        } else {
+        }
+
+        if (empty($summary)) {
             // Dynamic evaluation fallback directly from findings
             $builder = $this->db->table('temuan')->where('deleted_at IS NULL');
             if ($ulpId !== null && $ulpId > 0) {

@@ -1085,7 +1085,7 @@
                     <ul class="nav nav-pills nav-fill gap-1 bg-light p-1 rounded-pill border" id="bomModuleTabs" role="tablist" style="font-size: 11px;">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active rounded-pill py-1 px-2.5 fw-semibold" id="tab-bom-matrix-btn" data-bs-toggle="pill" data-bs-target="#pane-bom-matrix" type="button" role="tab">
-                                <i class="fas fa-table me-1"></i>Matriks per Penyulang &amp; Section (<?= count($bomMatrixRows) ?>)
+                                <i class="fas fa-table me-1"></i>Matriks per Penyulang (<?= count($bomMatrixRows) ?>)
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -1189,8 +1189,10 @@
                                 $cType = (string)($bRow['conductor_type'] ?? 'AAACS');
                                 $cSize = (string)($bRow['conductor_size'] ?? '150');
                                 $bGi   = (string)($bRow['nama_gi'] ?? $bRow['gardu_induk'] ?? '-');
-                                $bSec  = (string)($bRow['nama_section'] ?? $bRow['section_name'] ?? '-');
                                 $bTem  = (int)($bRow['total_temuan'] ?? $bRow['temuan_count'] ?? 0);
+                                $fId   = (int)($bRow['penyulang_id'] ?? 0);
+                                $sections = $bRow['sections'] ?? [];
+                                $hasSections = count($sections) > 1 || (count($sections) === 1 && !empty($sections[0]['nama_section']) && $sections[0]['nama_section'] !== '-');
                                 $isNonStdSize = ((int)$cSize > 0 && (int)$cSize < 150);
                                 $cBadgeCls = $cType === 'AAAC'
                                     ? 'bg-warning-subtle text-warning-emphasis border-warning-subtle'
@@ -1203,13 +1205,14 @@
                                     $matSummaryStr = mb_substr($matSummaryStr, 0, 52) . '...';
                                 }
                             ?>
-                            <tr class="bom-matrix-row"
+                            <tr class="bom-matrix-row bom-feeder-row"
+                                id="bom-feeder-<?= $fId ?>"
                                 data-gi="<?= esc($bGi) ?>"
                                 data-ulp-id="<?= (int)($bRow['ulp_id'] ?? 0) ?>"
-                                data-feeder-id="<?= (int)($bRow['penyulang_id'] ?? 0) ?>"
+                                data-feeder-id="<?= $fId ?>"
                                 data-cond-type="<?= esc($cType) ?>"
                                 data-cond-size="<?= esc($cSize) ?>"
-                                data-search="<?= esc(strtolower($bGi . ' ' . ($bRow['nama_ulp'] ?? '') . ' ' . ($bRow['nama_penyulang'] ?? '') . ' ' . $bSec . ' ' . $cType . ' ' . $cSize . ' ' . $matFullStr)) ?>"
+                                data-search="<?= esc(strtolower($bGi . ' ' . ($bRow['nama_ulp'] ?? '') . ' ' . ($bRow['nama_penyulang'] ?? '') . ' ' . $cType . ' ' . $cSize . ' ' . $matFullStr)) ?>"
                                 data-temuan="<?= $bTem ?>"
                                 data-armtie="<?= (float)($bRow['qty_armtie'] ?? 0) ?>"
                                 data-crossarm="<?= (float)($bRow['qty_crossarm'] ?? 0) ?>"
@@ -1224,11 +1227,26 @@
                                 <td><span class="badge bg-light text-dark border"><?= esc($bGi) ?></span></td>
                                 <td class="text-muted small"><?= esc($bRow['nama_ulp'] ?? '-') ?></td>
                                 <td>
-                                    <a href="<?= site_url('temuan?penyulang_id=' . (int)($bRow['penyulang_id'] ?? 0)) ?>" class="fw-bold text-dark text-decoration-none">
-                                        <?= esc($bRow['nama_penyulang'] ?? '-') ?>
-                                    </a>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <?php if ($hasSections): ?>
+                                            <button type="button" class="btn btn-xs btn-outline-secondary p-0 px-1 border-0 toggle-feeder-sections" data-feeder="<?= $fId ?>" title="Lihat Rincian Section">
+                                                <i class="fas fa-chevron-right" style="font-size: 9px;"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                        <a href="<?= site_url('temuan?penyulang_id=' . $fId) ?>" class="fw-bold text-dark text-decoration-none">
+                                            <?= esc($bRow['nama_penyulang'] ?? '-') ?>
+                                        </a>
+                                    </div>
                                 </td>
-                                <td class="text-muted small font-monospace"><?= esc($bSec) ?></td>
+                                <td class="text-muted small font-monospace">
+                                    <?php if ($hasSections): ?>
+                                        <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px; cursor: pointer;" onclick="toggleFeederSections(<?= $fId ?>)">
+                                            <i class="fas fa-layer-group me-1"></i><?= count($sections) ?> Section
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="text-center">
                                     <span class="badge border <?= $cBadgeCls ?> font-monospace" style="font-size: 10px;">
                                         <?= esc($cType) ?> <?= esc($cSize) ?> mm²
@@ -1255,6 +1273,37 @@
                                     <?php endif; ?>
                                 </td>
                             </tr>
+                            <?php if ($hasSections): ?>
+                                <?php foreach ($sections as $sIdx => $sec): 
+                                    $secName = (string)($sec['nama_section'] ?? '-');
+                                    $sMatStr = (string)($sec['rincian_material'] ?? '');
+                                    $sMatFull = $sMatStr;
+                                    if (mb_strlen($sMatStr) > 45) $sMatStr = mb_substr($sMatStr, 0, 42) . '...';
+                                ?>
+                                <tr class="bom-section-child-row feeder-subrow-<?= $fId ?> d-none bg-light-subtle" style="font-size: 11px;">
+                                    <td class="text-center text-muted">-</td>
+                                    <td class="text-muted small"><?= esc($bGi) ?></td>
+                                    <td class="text-muted small"><?= esc($bRow['nama_ulp'] ?? '-') ?></td>
+                                    <td class="ps-4 text-muted small">
+                                        <i class="fas fa-turn-up fa-rotate-90 text-muted me-1"></i>
+                                        <span class="fw-semibold text-secondary">Section: <?= esc($secName) ?></span>
+                                    </td>
+                                    <td class="text-muted small font-monospace"><?= esc($secName) ?></td>
+                                    <td class="text-center text-muted font-monospace" style="font-size: 9.5px;"><?= esc($sec['conductor_type'] ?? $cType) ?> <?= esc($sec['conductor_size'] ?? $cSize) ?></td>
+                                    <td class="text-end text-dark font-monospace"><?= number_format((int)($sec['total_temuan'] ?? 0)) ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_armtie'] ?? 0) > 0 ? number_format((float)$sec['qty_armtie'], 0) : '-' ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_crossarm'] ?? 0) > 0 ? number_format((float)$sec['qty_crossarm'], 0) : '-' ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_pin_isolator'] ?? 0) > 0 ? number_format((float)$sec['qty_pin_isolator'], 0) : '-' ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_hang_isolator'] ?? 0) > 0 ? number_format((float)$sec['qty_hang_isolator'], 0) : '-' ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_fco'] ?? 0) > 0 ? number_format((float)$sec['qty_fco'], 0) : '-' ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_arrester'] ?? 0) > 0 ? number_format((float)$sec['qty_arrester'], 0) : '-' ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_skun_konektor'] ?? 0) > 0 ? number_format((float)$sec['qty_skun_konektor'], 0) : '-' ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_gsw_ground'] ?? 0) > 0 ? number_format((float)$sec['qty_gsw_ground'], 0) : '-' ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_konduktor_m'] ?? 0) > 0 ? number_format((float)$sec['qty_konduktor_m'], 0) : '-' ?></td>
+                                    <td class="small text-muted font-monospace" style="font-size: 9.5px;" title="<?= esc($sMatFull) ?>"><?= esc($sMatStr ?: '-') ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                             <?php endforeach; ?>
                             <?php if (empty($bomMatrixRows)): ?>
                             <tr>
@@ -1389,28 +1438,30 @@
                                     <span class="badge bg-light text-muted border" style="font-size: 10px;"><?= count($ctData['items'] ?? []) ?> Item BOM</span>
                                 </div>
                                 <div class="card-body p-0">
-                                    <table class="table table-sm table-striped mb-0" style="font-size: 11px;">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Kode Material</th>
-                                                <th>Nama Material</th>
-                                                <th>Kategori</th>
-                                                <th class="text-end">Qty Standar</th>
-                                                <th>Satuan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach (($ctData['items'] ?? []) as $bItem): ?>
-                                            <tr>
-                                                <td class="font-monospace text-muted"><?= esc($bItem['material_code'] ?? $bItem['code'] ?? '-') ?></td>
-                                                <td class="fw-medium text-dark"><?= esc($bItem['name'] ?? '-') ?></td>
-                                                <td><span class="badge bg-light text-secondary border" style="font-size:9.5px;"><?= esc($bItem['category'] ?? '-') ?></span></td>
-                                                <td class="text-end fw-bold font-monospace"><?= rtrim(rtrim(number_format((float)($bItem['quantity'] ?? $bItem['qty'] ?? 0), 2), '0'), '.') ?></td>
-                                                <td class="text-muted"><?= esc($bItem['unit'] ?? '-') ?></td>
-                                            </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped mb-0 align-middle" style="font-size: 11px; min-width: 460px;">
+                                            <thead class="table-light text-muted text-uppercase" style="font-size: 10px;">
+                                                <tr>
+                                                    <th style="width: 135px;" class="text-dark fw-bold">Kode Material</th>
+                                                    <th class="text-dark fw-bold">Nama Material</th>
+                                                    <th style="width: 100px;">Kategori</th>
+                                                    <th style="width: 90px;" class="text-end text-dark fw-bold">Qty Standar</th>
+                                                    <th style="width: 75px;" class="text-center text-dark fw-bold">Satuan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach (($ctData['items'] ?? []) as $bItem): ?>
+                                                <tr>
+                                                    <td class="font-monospace text-dark fw-bold"><?= esc($bItem['material_code'] ?? $bItem['code'] ?? '-') ?></td>
+                                                    <td class="fw-semibold text-dark"><?= esc($bItem['name'] ?? '-') ?></td>
+                                                    <td><span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle" style="font-size: 9.5px;"><?= esc($bItem['category'] ?? '-') ?></span></td>
+                                                    <td class="text-end fw-bold font-monospace text-primary" style="font-size: 12px;"><?= rtrim(rtrim(number_format((float)($bItem['quantity'] ?? $bItem['qty'] ?? 0), 2), '0'), '.') ?></td>
+                                                    <td class="text-center text-dark fw-semibold"><?= esc($bItem['unit'] ?? '-') ?></td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1422,56 +1473,80 @@
     </div>
 
     <!-- 6C. ANALISIS KEANDALAN & GANGGUAN PENYULANG (SUMBER SAMA DENGAN /gangguan) -->
-    <!-- Grafik Gangguan Kumulatif (Perbandingan YoY) — Full-Width Card dengan Angka di Setiap Titik -->
+    <!-- Grafik Gangguan Kumulatif (Perbandingan 2 Tahun & Multi-Metrik) -->
     <div class="card dah-card dah-cum-card shadow-sm border mb-3">
-        <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-chart-line"></i></span>
-                <div>
-                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 13.5px;">Gangguan Kumulatif (Perbandingan YoY)</h6>
-                    <small class="text-muted" style="font-size: 11px;">
-                        Akumulasi bulanan Jan–Des lintas tahun (<?= implode(', ', array_keys($cumulativeGangguanYoY ?? [$trendYear => []])) ?>) &bull; Sumber: Rekapitulasi Gangguan Penyulang
-                    </small>
+        <div class="card-header bg-white py-2 px-3 border-bottom">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-chart-line"></i></span>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 13.5px;">Gangguan Kumulatif &amp; Analisis Metrik Keandalan</h6>
+                        <small class="text-muted" style="font-size: 11px;">
+                            Perbandingan tepat 2 tahun pilihan pengguna &bull; Sumber data dan filter terintegrasi langsung dengan <a href="<?= site_url('gangguan') ?>" class="text-decoration-none fw-semibold">/gangguan</a>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Year Pair Comparison Selector -->
+                <div class="d-flex align-items-center gap-1.5 bg-light p-1 rounded-pill border">
+                    <span class="text-muted small fw-bold ps-2" style="font-size: 11px;"><i class="fas fa-calendar-alt me-1"></i>Bandingkan:</span>
+                    <select id="yoyYearA" class="form-select form-select-sm py-0 px-2 rounded-pill font-monospace fw-bold text-danger border-danger-subtle" style="font-size: 11px; width: auto; height: 26px;" onchange="updateYoYComparisonChart()">
+                        <?php foreach (($availableTrendYears ?? [date('Y')]) as $yrOpt): ?>
+                            <option value="<?= $yrOpt ?>" <?= (int)$yrOpt === (int)($trendYear ?? date('Y')) ? 'selected' : '' ?>><?= $yrOpt ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="text-muted small fw-bold px-0.5">vs</span>
+                    <select id="yoyYearB" class="form-select form-select-sm py-0 px-2 rounded-pill font-monospace fw-bold text-primary border-primary-subtle" style="font-size: 11px; width: auto; height: 26px;" onchange="updateYoYComparisonChart()">
+                        <?php 
+                            $prevYearDef = (int)($gangguanStats['last_year'] ?? (($trendYear ?? date('Y')) - 1));
+                            foreach (($availableTrendYears ?? [date('Y') - 1]) as $yrOpt): 
+                        ?>
+                            <option value="<?= $yrOpt ?>" <?= (int)$yrOpt === $prevYearDef ? 'selected' : '' ?>><?= $yrOpt ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
-            <div class="d-flex flex-wrap align-items-center gap-1.5">
-                <?php
-                    $yoyBadgeColors = [
-                        0 => 'bg-danger-subtle text-danger border-danger-subtle',
-                        1 => 'bg-info-subtle text-info border-info-subtle',
-                        2 => 'bg-warning-subtle text-warning-emphasis border-warning-subtle',
-                        3 => 'bg-success-subtle text-success border-success-subtle',
-                    ];
-                    $yoyIdx = 0;
-                    foreach (($cumulativeGangguanYoY ?? []) as $yKey => $yEntry):
-                        if (is_array($yEntry) && isset($yEntry['total']) && is_numeric($yEntry['total'])) {
-                            $yMax = (int)$yEntry['total'];
-                        } elseif (is_array($yEntry) && isset($yEntry['cumulative']) && is_array($yEntry['cumulative']) && !empty($yEntry['cumulative'])) {
-                            $yMax = (int)max($yEntry['cumulative']);
-                        } elseif (is_array($yEntry) && !empty($yEntry)) {
-                            $numericVals = array_filter($yEntry, 'is_numeric');
-                            $yMax = !empty($numericVals) ? (int)max($numericVals) : 0;
-                        } else {
-                            $yMax = 0;
-                        }
-                        if ($yMax <= 0 && (int)$yKey !== (int)($trendYear ?? date('Y'))) {
-                            continue;
-                        }
-                        $bCls = $yoyBadgeColors[$yoyIdx % count($yoyBadgeColors)];
-                        $yoyIdx++;
-                ?>
-                    <span class="badge border rounded-pill px-2.5 py-1 fw-bold font-monospace <?= $bCls ?>" style="font-size: 11px;">
-                        <?= (int)$yKey ?>: <?= number_format($yMax) ?> kali
+
+            <!-- Zero-Reload Metric Pills & Dynamic Summary Badges -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top">
+                <div class="btn-group btn-group-sm rounded-pill p-0.5 bg-light border" role="group" id="yoyMetricToggleGroup" style="font-size: 11px;">
+                    <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-primary" id="btnMetricTrips" onclick="switchYoYMetric('trips', this)">
+                        <i class="fas fa-chart-line me-1"></i>Total Trip Kumulatif
+                    </button>
+                    <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-light text-dark" id="btnMetricCause" onclick="switchYoYMetric('cause', this)">
+                        <i class="fas fa-tags me-1"></i>Kategori Penyebab
+                    </button>
+                    <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-light text-dark" id="btnMetricRelay" onclick="switchYoYMetric('relay', this)">
+                        <i class="fas fa-shield-halved me-1"></i>Proteksi/Rele
+                    </button>
+                    <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-light text-dark" id="btnMetricCurrent" onclick="switchYoYMetric('current', this)">
+                        <i class="fas fa-bolt me-1"></i>Arus Gangguan (A)
+                    </button>
+                </div>
+
+                <div class="d-flex align-items-center gap-1.5">
+                    <span class="badge border rounded-pill px-2.5 py-1 fw-bold font-monospace bg-danger-subtle text-danger border-danger-subtle" id="badgeYearA" style="font-size: 11px;">
+                        Tahun A: -
                     </span>
-                <?php endforeach; ?>
-                <a href="<?= site_url('gangguan?year_a=' . (int)($gangguanStats['year'] ?? $trendYear) . '&year_b=' . (int)($gangguanStats['last_year'] ?? ($trendYear - 1)) . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-1 fw-semibold ms-1" style="font-size: 11px;">
-                    <i class="fas fa-bolt me-1"></i> Detail YoY
-                </a>
+                    <span class="badge border rounded-pill px-2.5 py-1 fw-bold font-monospace bg-primary-subtle text-primary border-primary-subtle" id="badgeYearB" style="font-size: 11px;">
+                        Tahun B: -
+                    </span>
+                    <span class="badge border rounded-pill px-2 py-1 fw-bold font-monospace bg-light text-dark" id="badgeDiffYoY" style="font-size: 11px;">
+                        Diff: -
+                    </span>
+                    <a id="btnDetailYoy" href="<?= site_url('gangguan?year_a=' . (int)($gangguanStats['year'] ?? ($trendYear ?? date('Y'))) . '&year_b=' . (int)($gangguanStats['last_year'] ?? (($trendYear ?? date('Y')) - 1)) . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-1 fw-semibold ms-1" style="font-size: 11px;" title="Lihat Rekapitulasi Rinci di Halaman Gangguan">
+                        <i class="fas fa-arrow-up-right-from-square me-1"></i> Buka /gangguan
+                    </a>
+                </div>
             </div>
         </div>
         <div class="card-body p-2.5 d-flex align-items-center justify-content-center">
-            <div class="dah-cum-chart-box" id="cumulativeChartContainer">
+            <div class="dah-cum-chart-box w-100 position-relative" id="cumulativeChartContainer" style="min-height: 250px;">
                 <canvas id="cumulativeGangguanChart"></canvas>
+                <div id="chartNoDataOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-3 bg-white bg-opacity-75 rounded border shadow-sm">
+                    <i class="fas fa-circle-info text-muted fs-4 mb-1"></i>
+                    <div class="small fw-semibold text-dark" id="chartNoDataMsg">Data metrik belum tersedia pada periode ini.</div>
+                </div>
             </div>
         </div>
     </div>
@@ -1486,7 +1561,7 @@
                         <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-bolt"></i></span>
                         <div>
                             <h6 class="fw-bold mb-0 text-dark" style="font-size: 13px;">Penyulang Gangguan Terbanyak</h6>
-                            <small class="text-muted" style="font-size: 11px;">Peringkat frekuensi trip tahun <?= (int)$trendYear ?> (Sumber: Rekap Gangguan)</small>
+                            <small class="text-muted" style="font-size: 11px;">Peringkat frekuensi trip tahun <?= (int)($trendYear ?? date('Y')) ?> (Sumber: Rekap Gangguan)</small>
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-1.5">
@@ -1522,7 +1597,7 @@
                                 <?php endforeach; ?>
                                 <?php if (empty($topFeedersGangguan)): ?>
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-3 small">Tidak ada data gangguan untuk tahun <?= (int)$trendYear ?>.</td>
+                                    <td colspan="4" class="text-center text-muted py-3 small">Tidak ada data gangguan untuk tahun <?= (int)($trendYear ?? date('Y')) ?>.</td>
                                                                 </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -1535,7 +1610,7 @@
         <!-- 6E. Penyebab Gangguan -->
         <?php
             $causeYearsList = !empty($causeBreakdownByYear) ? array_keys($causeBreakdownByYear) : ($availableTrendYears ?? [(int)date('Y')]);
-            $initialCauseYear = in_array((int)$trendYear, array_map('intval', $causeYearsList), true) ? (int)$trendYear : (int)($causeYearsList[0] ?? date('Y'));
+            $initialCauseYear = in_array((int)($trendYear ?? date('Y')), array_map('intval', $causeYearsList), true) ? (int)($trendYear ?? date('Y')) : (int)($causeYearsList[0] ?? date('Y'));
             $rawInitialCause = $causeBreakdownByYear[$initialCauseYear] ?? [];
             if (is_array($rawInitialCause) && array_key_exists('items', $rawInitialCause)) {
                 $initialCauseItems = is_array($rawInitialCause['items']) ? $rawInitialCause['items'] : [];
@@ -2325,7 +2400,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Build 12-slot monthly array for selected trend year
             $selectedTrendYear = (int)($trendYear ?? date('Y'));
             $monthlySlots = array_fill(1, 12, 0);
-            foreach ($monthlyData as $md) {
+            foreach (($monthlyData ?? []) as $md) {
                 $parts = explode('-', $md['bulan'] ?? '');
                 if (count($parts) === 2 && (int)$parts[0] === $selectedTrendYear) {
                     $monthlySlots[(int)$parts[1]] = (int)($md['total'] ?? 0);
@@ -2692,231 +2767,427 @@ document.addEventListener('DOMContentLoaded', function() {
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // 6. Cumulative Gangguan Multi-Year YoY Line Chart (12 Months Running Total per Year)
-    (function initCumulativeChart() {
-        var yoyRaw = <?= json_encode($cumulativeGangguanYoY ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
-        var fallbackSingle = <?= json_encode(array_values($cumulativeGangguan ?? array_fill(0, 12, 0))) ?>;
-        var selectedTrendYear = <?= (int)($trendYear ?? date('Y')) ?>;
+    // 6. Cumulative Gangguan 2-Year YoY Comparison & Zero-Reload Multi-Metric Line Chart
+    window.yoyPayload = <?= json_encode($interruptionMetricsPayload ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+    window.currentYoYMetric = 'trips';
+    window.yoyChartInstance = null;
+
+    window.switchYoYMetric = function(metric, btn) {
+        window.currentYoYMetric = metric;
+        var group = document.getElementById('yoyMetricToggleGroup');
+        if (group) {
+            group.querySelectorAll('button').forEach(function(b) {
+                b.classList.remove('btn-primary', 'active');
+                b.classList.add('btn-light', 'text-dark');
+            });
+        }
+        if (btn) {
+            btn.classList.remove('btn-light', 'text-dark');
+            btn.classList.add('btn-primary', 'active');
+        }
+        window.updateYoYComparisonChart();
+    };
+
+    window.updateYoYComparisonChart = function() {
+        var selA = document.getElementById('yoyYearA');
+        var selB = document.getElementById('yoyYearB');
+        var yrA = selA ? parseInt(selA.value, 10) : new Date().getFullYear();
+        var yrB = selB ? parseInt(selB.value, 10) : (new Date().getFullYear() - 1);
+
+        // Update detail link href to maintain seamless synchronization with /gangguan page
+        var btnDetail = document.getElementById('btnDetailYoy');
+        if (btnDetail) {
+            btnDetail.href = '<?= site_url("gangguan") ?>?year_a=' + yrA + '&year_b=' + yrB + '<?= !empty($selectedUlpId) ? "&ulp_id=" . (int)$selectedUlpId : "" ?>';
+        }
+
         var labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
         var ctx = document.getElementById('cumulativeGangguanChart');
-        var box = document.getElementById('cumulativeChartContainer');
+        var overlay = document.getElementById('chartNoDataOverlay');
+        var overlayMsg = document.getElementById('chartNoDataMsg');
         if (!ctx || typeof Chart === 'undefined') return;
-        if (typeof Chart.getChart === 'function') {
-            var prev = Chart.getChart(ctx);
-            if (prev) prev.destroy();
+
+        if (window.yoyChartInstance) {
+            window.yoyChartInstance.destroy();
+            window.yoyChartInstance = null;
         }
 
-        function extractSeriesArray(entry) {
-            if (Array.isArray(entry)) {
-                return entry.map(function(v) { return Number(v) || 0; });
+        var metric = window.currentYoYMetric || 'trips';
+        var datasets = [];
+        var yTitle = 'Total Trip Kumulatif';
+        var maxVal = 0;
+        var hasValidData = false;
+
+        var yoyData = (window.yoyPayload && window.yoyPayload.yoy) ? window.yoyPayload.yoy : {};
+        var entryA = yoyData[yrA] || null;
+        var entryB = yoyData[yrB] || null;
+
+        if (metric === 'trips') {
+            yTitle = 'Gangguan Kumulatif (Trip)';
+            var dataA = (entryA && Array.isArray(entryA.cumulative)) ? entryA.cumulative : array_fill_null(12);
+            var dataB = (entryB && Array.isArray(entryB.cumulative)) ? entryB.cumulative : array_fill_null(12);
+
+            var totalA = (entryA && typeof entryA.total === 'number') ? entryA.total : getArrayMax(dataA);
+            var totalB = (entryB && typeof entryB.total === 'number') ? entryB.total : getArrayMax(dataB);
+
+            if (totalA > 0 || totalB > 0) hasValidData = true;
+            maxVal = Math.max(totalA, totalB);
+
+            // Update badge cards
+            var badgeA = document.getElementById('badgeYearA');
+            var badgeB = document.getElementById('badgeYearB');
+            var badgeDiff = document.getElementById('badgeDiffYoY');
+            if (badgeA) badgeA.textContent = yrA + ': ' + totalA.toLocaleString('id-ID') + ' trip';
+            if (badgeB) badgeB.textContent = yrB + ': ' + totalB.toLocaleString('id-ID') + ' trip';
+            if (badgeDiff) {
+                var diff = totalA - totalB;
+                var pct = totalB > 0 ? ((diff / totalB) * 100).toFixed(1) : (totalA > 0 ? '+100' : '0');
+                var sign = diff > 0 ? '+' : '';
+                badgeDiff.textContent = 'YoY: ' + sign + diff.toLocaleString('id-ID') + ' (' + sign + pct + '%)';
+                badgeDiff.className = 'badge border rounded-pill px-2 py-1 fw-bold font-monospace ' +
+                    (diff <= 0 ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle');
             }
-            if (entry && typeof entry === 'object') {
-                if (Array.isArray(entry.cumulative)) {
-                    return entry.cumulative.map(function(v) { return Number(v) || 0; });
-                }
-                if (Array.isArray(entry.monthly)) {
-                    var run = 0;
-                    return entry.monthly.map(function(v) {
-                        run += (Number(v) || 0);
-                        return run;
-                    });
-                }
+
+            datasets.push({
+                label: 'Tahun ' + yrA + ' (Total: ' + totalA.toLocaleString('id-ID') + ')',
+                data: dataA,
+                borderColor: '#dc2626',
+                backgroundColor: 'rgba(220, 38, 38, 0.08)',
+                borderWidth: 2.8,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#dc2626',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                fill: true,
+                tension: 0.25,
+                spanGaps: false
+            });
+
+            datasets.push({
+                label: 'Tahun ' + yrB + ' (Total: ' + totalB.toLocaleString('id-ID') + ')',
+                data: dataB,
+                borderColor: '#0284c7',
+                backgroundColor: 'rgba(2, 132, 199, 0.05)',
+                borderWidth: 2.4,
+                pointRadius: 3.5,
+                pointHoverRadius: 5.5,
+                pointBackgroundColor: '#0284c7',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                fill: false,
+                borderDash: [5, 4],
+                tension: 0.25,
+                spanGaps: false
+            });
+
+        } else if (metric === 'current') {
+            yTitle = 'Rata-rata Arus Gangguan (Ampere)';
+            var currMap = (window.yoyPayload && window.yoyPayload.fault_current) ? window.yoyPayload.fault_current : {};
+            var dataA = (currMap && currMap[yrA]) ? currMap[yrA] : array_fill_null(12);
+            var dataB = (currMap && currMap[yrB]) ? currMap[yrB] : array_fill_null(12);
+
+            var validA = dataA.filter(function(v) { return v !== null && !isNaN(v) && v > 0; });
+            var validB = dataB.filter(function(v) { return v !== null && !isNaN(v) && v > 0; });
+            if (validA.length || validB.length) hasValidData = true;
+
+            var avgA = validA.length ? (validA.reduce(function(a, b) { return a + b; }, 0) / validA.length).toFixed(1) : null;
+            var avgB = validB.length ? (validB.reduce(function(a, b) { return a + b; }, 0) / validB.length).toFixed(1) : null;
+
+            var badgeA = document.getElementById('badgeYearA');
+            var badgeB = document.getElementById('badgeYearB');
+            var badgeDiff = document.getElementById('badgeDiffYoY');
+            if (badgeA) badgeA.textContent = yrA + ': ' + (avgA !== null ? avgA + ' A' : 'N/A');
+            if (badgeB) badgeB.textContent = yrB + ': ' + (avgB !== null ? avgB + ' A' : 'N/A');
+            if (badgeDiff) {
+                badgeDiff.textContent = 'Metrik: Arus Gangguan Riil';
+                badgeDiff.className = 'badge border rounded-pill px-2 py-1 fw-bold font-monospace bg-light text-dark';
             }
-            return null;
-        }
 
-        try {
-            var palette = [
-                { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)', dash: [] },
-                { border: '#0284c7', bg: 'rgba(2, 132, 199, 0.06)', dash: [] },
-                { border: '#d97706', bg: 'rgba(217, 119, 6, 0.05)', dash: [5, 4] },
-                { border: '#16a34a', bg: 'rgba(22, 163, 74, 0.05)', dash: [3, 3] }
-            ];
+            maxVal = Math.max(getArrayMax(dataA), getArrayMax(dataB));
 
-            var years = Object.keys(yoyRaw || {}).sort(function(a, b) { return Number(b) - Number(a); });
-            var maxVal = 0;
-            var datasets = [];
+            datasets.push({
+                label: 'Arus Gangguan ' + yrA + (avgA ? ' (Rata-rata: ' + avgA + ' A)' : ' (N/A)'),
+                data: dataA,
+                borderColor: '#e11d48',
+                backgroundColor: 'rgba(225, 29, 72, 0.08)',
+                borderWidth: 2.5,
+                pointRadius: 4,
+                spanGaps: false
+            });
+            datasets.push({
+                label: 'Arus Gangguan ' + yrB + (avgB ? ' (Rata-rata: ' + avgB + ' A)' : ' (N/A)'),
+                data: dataB,
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.05)',
+                borderWidth: 2.2,
+                pointRadius: 3.5,
+                borderDash: [4, 4],
+                spanGaps: false
+            });
 
-            years.forEach(function(yr, idx) {
-                var entry = yoyRaw[yr];
-                var arr = extractSeriesArray(entry);
-                if (!Array.isArray(arr)) return;
-                while (arr.length < 12) arr.push(arr.length ? arr[arr.length - 1] : 0);
-                var localMax = (entry && typeof entry === 'object' && typeof entry.total === 'number')
-                    ? Number(entry.total)
-                    : (arr.length ? Math.max.apply(null, arr) : 0);
-                if (localMax > maxVal) maxVal = localMax;
-                var style = palette[idx % palette.length];
-                var isPrimaryYear = (Number(yr) === Number(selectedTrendYear)) || idx === 0;
+        } else if (metric === 'relay') {
+            yTitle = 'Frekuensi Kerja Proteksi / Rele';
+            var relayMap = (window.yoyPayload && window.yoyPayload.relay) ? window.yoyPayload.relay : {};
+            var relaysA = relayMap[yrA] || {};
+            var relaysB = relayMap[yrB] || {};
+            var allRelayTypes = Object.keys(Object.assign({}, relaysA, relaysB));
+
+            var colors = ['#dc2626', '#0284c7', '#d97706', '#16a34a', '#8b5cf6', '#ec4899'];
+            var cIdx = 0;
+            allRelayTypes.forEach(function(rType) {
+                if (rType === 'TIDAK_TERCATAT') return;
+                var arrA = relaysA[rType] || array_fill_null(12);
+                var arrB = relaysB[rType] || array_fill_null(12);
+                var totA = arrA.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+                var totB = arrB.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+                if (totA > 0 || totB > 0) hasValidData = true;
+                maxVal = Math.max(maxVal, getArrayMax(arrA), getArrayMax(arrB));
+
+                var col = colors[cIdx % colors.length];
+                cIdx++;
                 datasets.push({
-                    label: 'Tahun ' + yr + ' (Total: ' + localMax.toLocaleString('id-ID') + ')',
-                    data: arr.slice(0, 12),
-                    borderColor: style.border,
-                    backgroundColor: style.bg,
-                    borderDash: style.dash,
-                    borderWidth: isPrimaryYear ? 2.8 : 2.2,
-                    pointRadius: isPrimaryYear ? 3.5 : 3,
-                    pointHoverRadius: 5.5,
-                    pointBackgroundColor: style.border,
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 1.5,
-                    fill: idx === 0,
-                    tension: 0.28
+                    label: rType + ' ' + yrA + ' (' + totA + ')',
+                    data: arrA,
+                    borderColor: col,
+                    borderWidth: 2.4,
+                    pointRadius: 3.5,
+                    spanGaps: false
+                });
+                datasets.push({
+                    label: rType + ' ' + yrB + ' (' + totB + ')',
+                    data: arrB,
+                    borderColor: col,
+                    borderDash: [5, 4],
+                    borderWidth: 1.8,
+                    pointRadius: 3,
+                    spanGaps: false
                 });
             });
 
-            if (!datasets.length && Array.isArray(fallbackSingle) && fallbackSingle.length) {
-                var fbArr = fallbackSingle.map(function(v) { return Number(v) || 0; });
-                var fbMax = Math.max.apply(null, fbArr);
-                if (fbMax > maxVal) maxVal = fbMax;
+        } else if (metric === 'cause') {
+            yTitle = 'Trip Berdasarkan Kategori Penyebab';
+            var causeMap = (window.yoyPayload && window.yoyPayload.cause) ? window.yoyPayload.cause : {};
+            var causesA = causeMap[yrA] || {};
+            var causesB = causeMap[yrB] || {};
+            var allCats = Object.keys(Object.assign({}, causesA, causesB));
+
+            var colors = ['#16a34a', '#d97706', '#dc2626', '#0284c7', '#7c3aed', '#059669'];
+            var cIdx = 0;
+            allCats.forEach(function(cat) {
+                var arrA = causesA[cat] || array_fill_null(12);
+                var arrB = causesB[cat] || array_fill_null(12);
+                var totA = arrA.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+                var totB = arrB.reduce(function(a, b) { return a + (Number(b) || 0); }, 0);
+                if (totA > 0 || totB > 0) hasValidData = true;
+                maxVal = Math.max(maxVal, getArrayMax(arrA), getArrayMax(arrB));
+
+                var col = colors[cIdx % colors.length];
+                cIdx++;
                 datasets.push({
-                    label: 'Tahun ' + selectedTrendYear + ' (Total: ' + fbMax.toLocaleString('id-ID') + ')',
-                    data: fbArr.slice(0, 12),
-                    borderColor: '#dc2626',
-                    backgroundColor: 'rgba(220, 38, 38, 0.10)',
-                    borderWidth: 2.8,
+                    label: cat + ' ' + yrA + ' (' + totA + ')',
+                    data: arrA,
+                    borderColor: col,
+                    borderWidth: 2.4,
                     pointRadius: 3.5,
-                    fill: true,
-                    tension: 0.28
+                    spanGaps: false
                 });
+                datasets.push({
+                    label: cat + ' ' + yrB + ' (' + totB + ')',
+                    data: arrB,
+                    borderColor: col,
+                    borderDash: [5, 4],
+                    borderWidth: 1.8,
+                    pointRadius: 3,
+                    spanGaps: false
+                });
+            });
+        }
+
+        if (!hasValidData) {
+            if (overlay) {
+                overlay.classList.remove('d-none');
+                if (overlayMsg) overlayMsg.textContent = 'Data metrik "' + yTitle + '" belum tersedia pada periode ' + yrA + ' vs ' + yrB + '.';
             }
+        } else {
+            if (overlay) overlay.classList.add('d-none');
+        }
 
-            var ySuggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.22) : 10;
+        var ySuggestedMax = maxVal > 0 ? Math.ceil(maxVal * 1.25) : 10;
 
-            var directPointLabelsPlugin = {
-                id: 'directPointLabels',
-                afterDatasetsDraw: function(chart) {
-                    var c = chart.ctx;
-                    c.save();
-                    c.font = '700 9.5px "JetBrains Mono", Consolas, monospace';
-                    c.textAlign = 'center';
+        // Custom plugin: draws point labels on vertices with collision avoidance (higher point above, lower point below)
+        var directPointLabelsPlugin = {
+            id: 'directPointLabels',
+            afterDatasetsDraw: function(chart) {
+                var c = chart.ctx;
+                c.save();
+                c.font = '700 9.5px "JetBrains Mono", Consolas, monospace';
+                c.textAlign = 'center';
 
-                    var ds0Meta = chart.getDatasetMeta(0);
-                    var ds1Meta = chart.data.datasets.length > 1 ? chart.getDatasetMeta(1) : null;
+                var ds0Meta = chart.getDatasetMeta(0);
+                var ds1Meta = chart.data.datasets.length > 1 ? chart.getDatasetMeta(1) : null;
 
-                    chart.data.datasets.forEach(function(ds, dsIdx) {
-                        var meta = chart.getDatasetMeta(dsIdx);
-                        if (!meta || meta.hidden) return;
+                chart.data.datasets.forEach(function(ds, dsIdx) {
+                    var meta = chart.getDatasetMeta(dsIdx);
+                    if (!meta || meta.hidden) return;
 
-                        meta.data.forEach(function(pt, ptIdx) {
-                            var rawVal = ds.data[ptIdx];
-                            if (rawVal === null || typeof rawVal === 'undefined') return;
-                            var numVal = Number(rawVal) || 0;
-                            var txt = numVal.toLocaleString('id-ID');
+                    meta.data.forEach(function(pt, ptIdx) {
+                        var rawVal = ds.data[ptIdx];
+                        if (rawVal === null || typeof rawVal === 'undefined' || isNaN(rawVal)) return;
+                        var numVal = Number(rawVal);
+                        var txt = (metric === 'current' && numVal > 0) ? numVal.toFixed(1) + 'A' : Math.round(numVal).toLocaleString('id-ID');
 
-                            // Determine intelligent vertical offset and baseline to prevent overlap
-                            var isAbove = true;
-                            if (chart.data.datasets.length > 1 && ds0Meta && ds1Meta && ds0Meta.data[ptIdx] && ds1Meta.data[ptIdx]) {
-                                var y0 = ds0Meta.data[ptIdx].y;
-                                var y1 = ds1Meta.data[ptIdx].y;
-                                if (Math.abs(y0 - y1) < 18) {
-                                    // Points are vertically close: higher value (lower y) goes above, lower value goes below
-                                    if (dsIdx === 0) {
-                                        isAbove = (y0 <= y1);
-                                    } else {
-                                        isAbove = (y1 < y0);
-                                    }
-                                } else {
-                                    // Separated enough: ds 0 above, ds 1 below for visual rhythm
-                                    isAbove = (dsIdx === 0);
-                                }
+                        var isAbove = true;
+                        if (chart.data.datasets.length > 1 && ds0Meta && ds1Meta && ds0Meta.data[ptIdx] && ds1Meta.data[ptIdx]) {
+                            var y0 = ds0Meta.data[ptIdx].y;
+                            var y1 = ds1Meta.data[ptIdx].y;
+                            if (Math.abs(y0 - y1) < 18) {
+                                isAbove = (dsIdx === 0 ? (y0 <= y1) : (y1 < y0));
                             } else {
                                 isAbove = (dsIdx === 0);
                             }
+                        } else {
+                            isAbove = (dsIdx === 0);
+                        }
 
-                            c.textBaseline = isAbove ? 'bottom' : 'top';
-                            var yOffset = isAbove ? -6 : 6;
-                            var drawY = pt.y + yOffset;
+                        c.textBaseline = isAbove ? 'bottom' : 'top';
+                        var yOffset = isAbove ? -6 : 6;
+                        var drawY = pt.y + yOffset;
 
-                            // Clamp within chart drawing canvas
-                            if (drawY < 12) {
-                                drawY = 12;
-                                c.textBaseline = 'top';
-                            } else if (drawY > chart.height - 14) {
-                                drawY = chart.height - 14;
-                                c.textBaseline = 'bottom';
-                            }
+                        if (drawY < 12) {
+                            drawY = 12;
+                            c.textBaseline = 'top';
+                        } else if (drawY > chart.height - 14) {
+                            drawY = chart.height - 14;
+                            c.textBaseline = 'bottom';
+                        }
 
-                            c.lineWidth = 3.5;
-                            c.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-                            c.strokeText(txt, pt.x, drawY);
-                            c.fillStyle = ds.borderColor || '#0f172a';
-                            c.fillText(txt, pt.x, drawY);
-                        });
+                        c.lineWidth = 3.5;
+                        c.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+                        c.strokeText(txt, pt.x, drawY);
+                        c.fillStyle = ds.borderColor || '#0f172a';
+                        c.fillText(txt, pt.x, drawY);
                     });
-                    c.restore();
-                }
-            };
+                });
+                c.restore();
+            }
+        };
 
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: datasets
+        window.yoyChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            plugins: [directPointLabelsPlugin],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
                 },
-                plugins: [directPointLabelsPlugin],
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    layout: {
-                        padding: { top: 16, right: 16, bottom: 6, left: 8 }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            align: 'end',
-                            labels: {
-                                boxWidth: 12,
-                                boxHeight: 12,
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                padding: 10,
-                                font: { size: 11, weight: '600' }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(c) {
-                                    return c.dataset.label.split(' (')[0] + ': ' + Number(c.parsed.y || 0).toLocaleString('id-ID') + ' gangguan kumulatif';
-                                }
-                            }
+                layout: {
+                    padding: { top: 18, right: 16, bottom: 6, left: 8 }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 10,
+                            font: { size: 10.5, weight: '600' }
                         }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            min: 0,
-                            suggestedMax: ySuggestedMax,
-                            ticks: {
-                                precision: 0,
-                                maxTicksLimit: 6,
-                                font: { size: 11 }
-                            },
-                            grid: {
-                                color: 'rgba(148, 163, 184, 0.16)'
-                            }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                font: { size: 11, weight: '600' }
+                    tooltip: {
+                        callbacks: {
+                            label: function(c) {
+                                var val = c.parsed.y;
+                                if (val === null || typeof val === 'undefined') return c.dataset.label + ': Tidak Ada Data';
+                                var u = metric === 'current' ? ' A' : ' kejadian';
+                                return c.dataset.label.split(' (')[0] + ': ' + Number(val).toLocaleString('id-ID') + u;
                             }
                         }
                     }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        min: 0,
+                        suggestedMax: ySuggestedMax,
+                        title: {
+                            display: true,
+                            text: yTitle,
+                            font: { size: 10, weight: 'bold' }
+                        },
+                        ticks: {
+                            precision: metric === 'current' ? 1 : 0,
+                            maxTicksLimit: 6,
+                            font: { size: 10.5 }
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.16)'
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 10.5, weight: '600' }
+                        }
+                    }
                 }
-            });
-        } catch (chartErr) {
-            console.error('[SIDAK_CUMULATIVE_CHART_ERR]', chartErr);
-            if (box) {
-                box.innerHTML = '<div class="alert alert-warning py-2 px-3 small mb-0">Gagal memuat grafik Gangguan Kumulatif: ' + escHtml(chartErr.message || String(chartErr)) + '</div>';
+            }
+        });
+    };
+
+    function array_fill_null(len) {
+        var a = [];
+        for (var i = 0; i < len; i++) a.push(null);
+        return a;
+    }
+
+    function getArrayMax(arr) {
+        if (!Array.isArray(arr) || !arr.length) return 0;
+        var valid = arr.filter(function(v) { return v !== null && !isNaN(v); });
+        return valid.length ? Math.max.apply(null, valid) : 0;
+    }
+
+    // Initialize Cumulative 2-Year YoY Comparison Chart immediately on load
+    $(function() {
+        window.updateYoYComparisonChart();
+    });
+
+    // Feeder sections toggle helper
+    window.toggleFeederSections = function(feederId) {
+        var subrows = document.querySelectorAll('.feeder-subrow-' + feederId);
+        var btn = document.querySelector('.toggle-feeder-sections[data-feeder="' + feederId + '"]');
+        var isHidden = false;
+        subrows.forEach(function(row) {
+            if (row.classList.contains('d-none')) {
+                row.classList.remove('d-none');
+                isHidden = false;
+            } else {
+                row.classList.add('d-none');
+                isHidden = true;
+            }
+        });
+        if (btn) {
+            var icon = btn.querySelector('i');
+            if (icon) {
+                icon.className = isHidden ? 'fas fa-chevron-right' : 'fas fa-chevron-down';
             }
         }
-    })();
+    };
+
+    $(document).on('click', '.toggle-feeder-sections', function(e) {
+        e.preventDefault();
+        var fId = $(this).data('feeder');
+        if (fId) window.toggleFeederSections(fId);
+    });
 
     // 6B. Interactive Filter for Tabel Temuan dan Kebutuhan Material (BOM)
     window.onBomCondTypeFilterChange = function() {
@@ -2954,6 +3225,12 @@ document.addEventListener('DOMContentLoaded', function() {
                   && (!qVal || rSrch.indexOf(qVal) !== -1);
 
             r.style.display = ok ? '' : 'none';
+            var fId = r.getAttribute('data-feeder-id');
+            if (!ok && fId) {
+                document.querySelectorAll('.feeder-subrow-' + fId).forEach(function(sr) {
+                    sr.classList.add('d-none');
+                });
+            }
             if (ok) {
                 segCount++;
                 sumTemuan += Number(r.getAttribute('data-temuan') || 0);
@@ -2986,7 +3263,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var badge = document.getElementById('bomMatrixActiveCountBadge');
         if (badge) {
-            badge.textContent = sumTemuan.toLocaleString('id-ID') + ' Temuan • ' + segCount.toLocaleString('id-ID') + ' Segmen';
+            badge.textContent = sumTemuan.toLocaleString('id-ID') + ' Temuan • ' + segCount.toLocaleString('id-ID') + ' Penyulang';
         }
     };
 

@@ -34,6 +34,7 @@ $routes->get('master-assets/direct-audit-summary', 'MigrateController::directAud
 $routes->get('master-assets/audit-temuan-forensics', 'MigrateController::auditTemuanForensics');
 $routes->get('master-assets/audit-synthetic-duplicates', 'MigrateController::auditSyntheticDuplicates');
 $routes->match(['GET', 'POST'], 'master-assets/execute-synthetic-dedup', 'MigrateController::executeSyntheticDedup');
+$routes->get('master-assets/audit-row-bom', 'MigrateController::auditRowAndBomProduction');
 
 // Phase B.3: Network Intelligence Platform Routes (Strictly Read-Only)
 $routes->get('network-intelligence/audit', 'NetworkIntelligenceController::b3Audit');

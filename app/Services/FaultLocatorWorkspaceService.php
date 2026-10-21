@@ -71,9 +71,9 @@ class FaultLocatorWorkspaceService
         ],
     ];
 
-    public function __construct(?FaultLocationIntelligenceService $fliEngine = null)
+    public function __construct(?FaultLocationIntelligenceService $fliEngine = null, $db = null)
     {
-        $this->db = Database::connect('default');
+        $this->db = $db ?? Database::connect('default');
         $this->fliEngine = $fliEngine ?? new FaultLocationIntelligenceService(null, null, $this->db);
     }
 
@@ -138,9 +138,82 @@ class FaultLocatorWorkspaceService
     }
 
     /**
-     * Get list of real feeders from database, optionally filtered by ULP
+     * Resolve ULP ID from ID, Kode, or Normalized Name
+     *
+     * @param mixed $identifier
+     * @return int|false Returns resolved integer ID or false if not found
      */
-    public function getFeeders(?int $ulpId = null): array
+    public function resolveUlpId($identifier)
+    {
+        if ($identifier === null || $identifier === '' || $identifier === false) {
+            return false;
+        }
+
+        if (!$this->db->tableExists('ulps')) {
+            return false;
+        }
+
+        // 1. If numeric, check primary key id first
+        if (is_numeric($identifier)) {
+            $numId = (int)$identifier;
+            $row = $this->db->table('ulps')
+                ->select('id')
+                ->where('id', $numId)
+                ->get()
+                ->getRowArray();
+            if ($row) {
+                return (int)$row['id'];
+            }
+
+            // Check if matching kode_ulp as number/string
+            $rowKode = $this->db->table('ulps')
+                ->select('id')
+                ->where('kode_ulp', (string)$identifier)
+                ->get()
+                ->getRowArray();
+            if ($rowKode) {
+                return (int)$rowKode['id'];
+            }
+        }
+
+        // 2. Check exact string kode_ulp
+        $cleanStr = trim((string)$identifier);
+        $rowStr = $this->db->table('ulps')
+            ->select('id')
+            ->where('kode_ulp', $cleanStr)
+            ->get()
+            ->getRowArray();
+        if ($rowStr) {
+            return (int)$rowStr['id'];
+        }
+
+        // 3. Fallback: normalize name match
+        $normName = preg_replace('/\s+/', ' ', strtolower($cleanStr));
+        $allUlps = $this->db->table('ulps')
+            ->select('id, nama_ulp')
+            ->get()
+            ->getResultArray();
+
+        foreach ($allUlps as $u) {
+            $dbNorm = preg_replace('/\s+/', ' ', strtolower(trim($u['nama_ulp'])));
+            if ($dbNorm === $normName) {
+                return (int)$u['id'];
+            }
+            if (str_replace('ulp ', '', $dbNorm) === str_replace('ulp ', '', $normName)) {
+                return (int)$u['id'];
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get list of real feeders from database, strictly filtered by ULP if requested.
+     *
+     * @param int|string|null $ulpId
+     * @return array
+     */
+    public function getFeeders($ulpId = null): array
     {
         if (!$this->db->tableExists('penyulang')) {
             return [];
@@ -149,8 +222,18 @@ class FaultLocatorWorkspaceService
         $builder = $this->db->table('penyulang')
             ->select('id, kode_penyulang, nama_penyulang, ulp_id');
 
-        if ($ulpId !== null && $ulpId > 0) {
-            $builder->where('ulp_id', $ulpId);
+        // If an ULP is requested, resolve it strictly
+        if ($ulpId !== null && $ulpId !== '') {
+            $resolvedId = $this->resolveUlpId($ulpId);
+            if ($resolvedId === false) {
+                // Explicitly requested ULP was invalid/not found -> return empty list, never all/default feeders
+                return [];
+            }
+            $builder->where('ulp_id', $resolvedId);
+        }
+
+        if ($this->db->fieldExists('status', 'penyulang')) {
+            $builder->where('status', 'AKTIF');
         }
 
         return $builder->orderBy('nama_penyulang', 'ASC')->get()->getResultArray();

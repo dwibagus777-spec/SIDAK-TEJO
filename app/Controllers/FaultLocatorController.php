@@ -28,10 +28,34 @@ class FaultLocatorController extends BaseController
     {
         $summary = $this->service->getOperationalSummary();
         $ulps = $this->service->getUlps();
-        $defaultUlpId = !empty($ulps) ? (int)$ulps[0]['id'] : null;
+
+        $requestedUlp = $this->request->getGet('ulp_id');
+        $defaultUlpId = null;
+        if ($requestedUlp !== null && $requestedUlp !== '') {
+            $resolved = $this->service->resolveUlpId($requestedUlp);
+            if ($resolved !== false) {
+                $defaultUlpId = $resolved;
+            }
+        }
+        if ($defaultUlpId === null) {
+            $defaultUlpId = !empty($ulps) ? (int)$ulps[0]['id'] : null;
+        }
 
         $feeders = $this->service->getFeeders($defaultUlpId);
-        $defaultFeederId = !empty($feeders) ? (int)$feeders[0]['id'] : 1;
+
+        $requestedFeeder = $this->request->getGet('feeder_id');
+        $defaultFeederId = null;
+        if ($requestedFeeder !== null && $requestedFeeder !== '') {
+            foreach ($feeders as $f) {
+                if ($f['id'] == $requestedFeeder) {
+                    $defaultFeederId = (int)$f['id'];
+                    break;
+                }
+            }
+        }
+        if ($defaultFeederId === null) {
+            $defaultFeederId = !empty($feeders) ? (int)$feeders[0]['id'] : 1;
+        }
 
         $protectionDevices = $this->service->getProtectionDevices($defaultFeederId);
         $interruptions = $this->service->getRecentInterruptions(20);
@@ -89,12 +113,37 @@ class FaultLocatorController extends BaseController
     /**
      * API: Cascading Feeders by ULP
      */
-    public function feedersByUlp(int $ulpId): ResponseInterface
+    public function feedersByUlp($ulpId = null): ResponseInterface
     {
-        $feeders = $this->service->getFeeders($ulpId);
+        if ($ulpId === null || $ulpId === '') {
+            $ulpId = $this->request->getGet('ulp_id');
+        }
+
+        if ($ulpId === null || $ulpId === '') {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'Parameter ULP wajib diisi.',
+                'data'    => []
+            ]);
+        }
+
+        $resolvedId = $this->service->resolveUlpId($ulpId);
+        if ($resolvedId === false) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 'error',
+                'message' => 'ULP tidak ditemukan.',
+                'data'    => []
+            ]);
+        }
+
+        $feeders = $this->service->getFeeders($resolvedId);
+
         return $this->response->setJSON([
-            'status' => 'success',
-            'data'   => $feeders
+            'status'  => 'success',
+            'ulp_id'  => $resolvedId,
+            'count'   => count($feeders),
+            'data'    => $feeders,
+            'message' => empty($feeders) ? 'Tidak ada penyulang aktif untuk ULP yang dipilih.' : null,
         ]);
     }
 

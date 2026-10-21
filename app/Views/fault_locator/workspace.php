@@ -903,34 +903,156 @@
         updateMiniMap(currentLat, currentLng, (lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets[0]) ? lastCalculatedResult.candidate_assets[0].kode_asset : '', lastCalculatedResult.pole_sequence);
     }
 
-    // Cascading ULP -> Feeder
-    document.getElementById('ulpId').addEventListener('change', async function() {
-        const ulpId = this.value;
+    // Helper: Refresh Select2 widget when options dynamically change
+    function refreshSelect2(el) {
+        if (window.jQuery && $.fn && $.fn.select2) {
+            const $el = $(el);
+            if ($el.data('select2')) {
+                $el.select2('destroy');
+            }
+            $el.select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+        }
+    }
+
+    // Helper: Reset downstream Feeder Context & Protection Device
+    function clearFeederNetworkContext() {
+        const pill = document.getElementById('feederReadinessPill');
+        const contextDetails = document.getElementById('feederContextDetails');
+        const segTbody = document.getElementById('feederSegmentsPreviewBody');
+        const protSelect = document.getElementById('protectionDeviceId');
+        const srcProtRadio = document.getElementById('srcProtection');
+        const protNotice = document.getElementById('noProtectionNotice');
+        const protContainer = document.getElementById('protectionDeviceContainer');
+
+        if (pill) {
+            pill.className = 'badge bg-secondary-subtle text-dark border';
+            pill.innerText = 'Pilih penyulang';
+        }
+        if (contextDetails) {
+            contextDetails.innerHTML = '<span class="text-muted">Pilih penyulang untuk memuat konteks topologi resmi.</span>';
+        }
+        if (segTbody) {
+            segTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Pilih penyulang untuk melihat segmen.</td></tr>';
+        }
+        if (protSelect) {
+            protSelect.innerHTML = '<option value="">-- Pilih Perangkat Proteksi --</option>';
+        }
+        if (srcProtRadio) {
+            srcProtRadio.disabled = true;
+        }
+        if (protNotice) {
+            protNotice.style.display = 'block';
+        }
+        if (srcProtRadio && srcProtRadio.checked) {
+            const srcGI = document.getElementById('srcGI');
+            if (srcGI) srcGI.checked = true;
+            if (protContainer) protContainer.style.display = 'none';
+        }
+    }
+
+    // Cascading ULP -> Feeder State Management (Race-Condition Protected)
+    let ulpFetchSeq = 0;
+    let ulpAbortController = null;
+    let currentUlpValue = document.getElementById('ulpId') ? document.getElementById('ulpId').value : '';
+    let currentFeederValue = document.getElementById('feederId') ? document.getElementById('feederId').value : '';
+
+    async function handleUlpChange(ulpId) {
+        if (ulpId === currentUlpValue && document.getElementById('feederId') && document.getElementById('feederId').options.length > 1) {
+            return;
+        }
+        currentUlpValue = ulpId;
+        currentFeederValue = '';
+
         const feederSelect = document.getElementById('feederId');
+        if (!feederSelect) return;
+
+        // 1. Immediately empty and show loading
         feederSelect.innerHTML = '<option value="">Memuat penyulang...</option>';
+        refreshSelect2(feederSelect);
+
+        // 2. Clear all downstream context
+        clearFeederNetworkContext();
 
         if (!ulpId) {
             feederSelect.innerHTML = '<option value="">-- Pilih ULP Dahulu --</option>';
+            refreshSelect2(feederSelect);
             return;
         }
 
+        // 3. Abort any previous pending request to prevent race conditions
+        if (ulpAbortController) {
+            ulpAbortController.abort();
+        }
+        ulpAbortController = new AbortController();
+        const thisSeq = ++ulpFetchSeq;
+
         try {
-            const res = await fetch('<?= site_url('api/fault-locator/feeders-by-ulp') ?>/' + ulpId);
+            const res = await fetch('<?= site_url('api/fault-locator/feeders-by-ulp') ?>/' + encodeURIComponent(ulpId), {
+                signal: ulpAbortController.signal
+            });
             const data = await res.json();
-            feederSelect.innerHTML = '<option value="">-- Pilih Penyulang --</option>';
-            if (data.status === 'success' && data.data) {
+
+            // Stale response check: discard if a newer ULP selection was made
+            if (thisSeq !== ulpFetchSeq) return;
+
+            feederSelect.innerHTML = '';
+
+            if (data.status === 'success' && Array.isArray(data.data) && data.data.length > 0) {
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.innerText = '-- Pilih Penyulang (' + data.data.length + ') --';
+                feederSelect.appendChild(defaultOpt);
+
                 data.data.forEach(f => {
                     const opt = document.createElement('option');
                     opt.value = f.id;
-                    opt.innerText = f.nama_penyulang + ' (' + f.kode_penyulang + ')';
+                    opt.innerText = f.nama_penyulang + (f.kode_penyulang ? ' (' + f.kode_penyulang + ')' : '');
                     feederSelect.appendChild(opt);
                 });
+            } else {
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.innerText = '-- Tidak ada penyulang untuk ULP ini --';
+                feederSelect.appendChild(emptyOpt);
             }
+
+            refreshSelect2(feederSelect);
         } catch (e) {
+            if (e.name === 'AbortError') return;
+            if (thisSeq !== ulpFetchSeq) return;
             console.error('Error fetching feeders:', e);
-            feederSelect.innerHTML = '<option value="">Gagal memuat penyulang</option>';
+            feederSelect.innerHTML = '<option value="">-- Gagal memuat penyulang --</option>';
+            refreshSelect2(feederSelect);
         }
-    });
+    }
+
+    function handleFeederChange(feederId) {
+        if (feederId === currentFeederValue) return;
+        currentFeederValue = feederId;
+        if (feederId) {
+            loadFeederNetworkContext(feederId);
+        } else {
+            clearFeederNetworkContext();
+        }
+    }
+
+    // Attach listeners for both Native and jQuery/Select2 events
+    const ulpEl = document.getElementById('ulpId');
+    const feederEl = document.getElementById('feederId');
+
+    if (ulpEl) {
+        ulpEl.addEventListener('change', function() { handleUlpChange(this.value); });
+    }
+    if (feederEl) {
+        feederEl.addEventListener('change', function() { handleFeederChange(this.value); });
+    }
+    if (window.jQuery) {
+        $('#ulpId').on('change', function() { handleUlpChange(this.value); });
+        $('#feederId').on('change', function() { handleFeederChange(this.value); });
+    }
 
     // Feeder Network Context Loader
     async function loadFeederNetworkContext(feederId) {
@@ -1027,11 +1149,7 @@
         }
     }
 
-    document.getElementById('feederId').addEventListener('change', function() {
-        loadFeederNetworkContext(this.value);
-    });
-
-    if (document.getElementById('feederId').value) {
+    if (document.getElementById('feederId') && document.getElementById('feederId').value) {
         loadFeederNetworkContext(document.getElementById('feederId').value);
     }
 

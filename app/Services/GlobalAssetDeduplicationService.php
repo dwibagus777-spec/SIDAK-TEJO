@@ -512,15 +512,17 @@ class GlobalAssetDeduplicationService
      */
     public function auditSyntheticDuplicates(?string $feederFilter = null): array
     {
+        @ini_set('max_execution_time', '300');
+        @ini_set('memory_limit', '512M');
+
         if (!$this->db->tableExists('assets')) {
             return ['status' => 'error', 'message' => 'Tabel assets tidak ditemukan.'];
         }
 
         $builder = $this->db->table('assets a')
-            ->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.ulp_id, a.penyulang_id, a.section_id, a.latitude, a.longitude, a.created_at, u.nama_ulp, p.nama_penyulang, s.nama_section')
+            ->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.ulp_id, a.penyulang_id, a.section_id, a.latitude, a.longitude, a.created_at, u.nama_ulp, p.nama_penyulang')
             ->join('ulps u', 'u.id = a.ulp_id', 'left')
             ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
-            ->join('sections s', 's.id = a.section_id', 'left')
             ->where('a.deleted_at IS NULL');
 
         if (!empty($feederFilter)) {
@@ -560,20 +562,41 @@ class GlobalAssetDeduplicationService
         }
 
         $dupGroupsOnly = array_filter($coordGroups, fn($g) => count($g) > 1);
-        $dupAssetIds = [];
-        foreach ($dupGroupsOnly as $g) {
-            foreach ($g as $item) {
-                $dupAssetIds[] = (int)$item['id'];
+
+        // Pre-classify synthetic status to only fetch dependencies for groups having synthetic candidates
+        $relevantGroups = [];
+        $relevantAssetIds = [];
+        foreach ($dupGroupsOnly as $key => $records) {
+            $hasSynthetic = false;
+            foreach ($records as &$r) {
+                $name = trim((string)($r['nama_asset'] ?? ''));
+                $code = trim((string)($r['kode_asset'] ?? ''));
+                $r['is_synthetic'] = (
+                    $name === '' ||
+                    stripos($name, 'NEW_INGESTED_ASSET') === 0 ||
+                    (stripos($code, 'AST-') === 0 && preg_match('/-[0-9A-F]{8}$/i', $code) && stripos($name, 'NEW_INGESTED') === 0)
+                );
+                if ($r['is_synthetic']) {
+                    $hasSynthetic = true;
+                }
+            }
+            unset($r);
+
+            if ($hasSynthetic) {
+                $relevantGroups[$key] = $records;
+                foreach ($records as $r) {
+                    $relevantAssetIds[] = (int)$r['id'];
+                }
             }
         }
 
-        $dependencies = !empty($dupAssetIds) ? $this->fetchAssetDependencies($dupAssetIds) : [];
+        $dependencies = !empty($relevantAssetIds) ? $this->fetchAssetDependencies(array_unique($relevantAssetIds)) : [];
 
         $duplicateGroups = [];
         $totalSyntheticDups = 0;
         $syntheticDupIds = [];
 
-        foreach ($dupGroupsOnly as $key => $records) {
+        foreach ($relevantGroups as $key => $records) {
             foreach ($records as &$r) {
                 $rId = (int)$r['id'];
                 $r['dependencies'] = $dependencies[$rId] ?? [
@@ -585,13 +608,6 @@ class GlobalAssetDeduplicationService
                     'fault_outcomes_count'    => 0,
                     'total_dependencies'      => 0,
                 ];
-                $name = trim((string)($r['nama_asset'] ?? ''));
-                $code = trim((string)($r['kode_asset'] ?? ''));
-                $r['is_synthetic'] = (
-                    $name === '' ||
-                    stripos($name, 'NEW_INGESTED_ASSET') === 0 ||
-                    (stripos($code, 'AST-') === 0 && preg_match('/-[0-9A-F]{8}$/i', $code) && stripos($name, 'NEW_INGESTED') === 0)
-                );
             }
             unset($r);
 
@@ -980,96 +996,111 @@ class GlobalAssetDeduplicationService
             ];
         }
 
+        if (empty($assetIds)) {
+            return $deps;
+        }
+
+        $chunks = array_chunk(array_values(array_unique($assetIds)), 500);
+
         // 1. temuan
         if ($this->db->tableExists('temuan')) {
-            $rows = $this->db->table('temuan')
-                ->select('asset_id, COUNT(*) as cnt')
-                ->whereIn('asset_id', $assetIds)
-                ->groupBy('asset_id')
-                ->get()->getResultArray();
-            foreach ($rows as $r) {
-                $id = (int)$r['asset_id'];
-                if (isset($deps[$id])) {
-                    $deps[$id]['temuan_count'] = (int)$r['cnt'];
-                    $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+            foreach ($chunks as $chunk) {
+                $rows = $this->db->table('temuan')
+                    ->select('asset_id, COUNT(*) as cnt')
+                    ->whereIn('asset_id', $chunk)
+                    ->groupBy('asset_id')
+                    ->get()->getResultArray();
+                foreach ($rows as $r) {
+                    $id = (int)$r['asset_id'];
+                    if (isset($deps[$id])) {
+                        $deps[$id]['temuan_count'] += (int)$r['cnt'];
+                        $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+                    }
                 }
             }
         }
 
         // 2. temuan_materials
         if ($this->db->tableExists('temuan_materials')) {
-            $rows = $this->db->table('temuan_materials')
-                ->select('asset_id, COUNT(*) as cnt')
-                ->whereIn('asset_id', $assetIds)
-                ->groupBy('asset_id')
-                ->get()->getResultArray();
-            foreach ($rows as $r) {
-                $id = (int)$r['asset_id'];
-                if (isset($deps[$id])) {
-                    $deps[$id]['temuan_materials_count'] = (int)$r['cnt'];
-                    $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+            foreach ($chunks as $chunk) {
+                $rows = $this->db->table('temuan_materials')
+                    ->select('asset_id, COUNT(*) as cnt')
+                    ->whereIn('asset_id', $chunk)
+                    ->groupBy('asset_id')
+                    ->get()->getResultArray();
+                foreach ($rows as $r) {
+                    $id = (int)$r['asset_id'];
+                    if (isset($deps[$id])) {
+                        $deps[$id]['temuan_materials_count'] += (int)$r['cnt'];
+                        $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+                    }
                 }
             }
         }
 
-        // 3. gis_translines (source)
+        // 3. gis_translines (source & target)
         if ($this->db->tableExists('gis_translines')) {
-            $rows = $this->db->table('gis_translines')
-                ->select('source_asset_id, COUNT(*) as cnt')
-                ->whereIn('source_asset_id', $assetIds)
-                ->groupBy('source_asset_id')
-                ->get()->getResultArray();
-            foreach ($rows as $r) {
-                $id = (int)$r['source_asset_id'];
-                if (isset($deps[$id])) {
-                    $deps[$id]['translines_source_count'] = (int)$r['cnt'];
-                    $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+            foreach ($chunks as $chunk) {
+                $rows = $this->db->table('gis_translines')
+                    ->select('source_asset_id, COUNT(*) as cnt')
+                    ->whereIn('source_asset_id', $chunk)
+                    ->groupBy('source_asset_id')
+                    ->get()->getResultArray();
+                foreach ($rows as $r) {
+                    $id = (int)$r['source_asset_id'];
+                    if (isset($deps[$id])) {
+                        $deps[$id]['translines_source_count'] += (int)$r['cnt'];
+                        $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+                    }
                 }
-            }
 
-            // gis_translines (target)
-            $rows = $this->db->table('gis_translines')
-                ->select('target_asset_id, COUNT(*) as cnt')
-                ->whereIn('target_asset_id', $assetIds)
-                ->groupBy('target_asset_id')
-                ->get()->getResultArray();
-            foreach ($rows as $r) {
-                $id = (int)$r['target_asset_id'];
-                if (isset($deps[$id])) {
-                    $deps[$id]['translines_target_count'] = (int)$r['cnt'];
-                    $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+                $rowsTgt = $this->db->table('gis_translines')
+                    ->select('target_asset_id, COUNT(*) as cnt')
+                    ->whereIn('target_asset_id', $chunk)
+                    ->groupBy('target_asset_id')
+                    ->get()->getResultArray();
+                foreach ($rowsTgt as $r) {
+                    $id = (int)$r['target_asset_id'];
+                    if (isset($deps[$id])) {
+                        $deps[$id]['translines_target_count'] += (int)$r['cnt'];
+                        $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+                    }
                 }
             }
         }
 
         // 4. jtm_accessories
         if ($this->db->tableExists('jtm_accessories')) {
-            $rows = $this->db->table('jtm_accessories')
-                ->select('asset_id, COUNT(*) as cnt')
-                ->whereIn('asset_id', $assetIds)
-                ->groupBy('asset_id')
-                ->get()->getResultArray();
-            foreach ($rows as $r) {
-                $id = (int)$r['asset_id'];
-                if (isset($deps[$id])) {
-                    $deps[$id]['accessories_count'] = (int)$r['cnt'];
-                    $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+            foreach ($chunks as $chunk) {
+                $rows = $this->db->table('jtm_accessories')
+                    ->select('asset_id, COUNT(*) as cnt')
+                    ->whereIn('asset_id', $chunk)
+                    ->groupBy('asset_id')
+                    ->get()->getResultArray();
+                foreach ($rows as $r) {
+                    $id = (int)$r['asset_id'];
+                    if (isset($deps[$id])) {
+                        $deps[$id]['accessories_count'] += (int)$r['cnt'];
+                        $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+                    }
                 }
             }
         }
 
         // 5. fault_actual_findings
         if ($this->db->tableExists('fault_actual_findings')) {
-            $rows = $this->db->table('fault_actual_findings')
-                ->select('found_asset_id, COUNT(*) as cnt')
-                ->whereIn('found_asset_id', $assetIds)
-                ->groupBy('found_asset_id')
-                ->get()->getResultArray();
-            foreach ($rows as $r) {
-                $id = (int)$r['found_asset_id'];
-                if (isset($deps[$id])) {
-                    $deps[$id]['fault_outcomes_count'] = (int)$r['cnt'];
-                    $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+            foreach ($chunks as $chunk) {
+                $rows = $this->db->table('fault_actual_findings')
+                    ->select('found_asset_id, COUNT(*) as cnt')
+                    ->whereIn('found_asset_id', $chunk)
+                    ->groupBy('found_asset_id')
+                    ->get()->getResultArray();
+                foreach ($rows as $r) {
+                    $id = (int)$r['found_asset_id'];
+                    if (isset($deps[$id])) {
+                        $deps[$id]['fault_outcomes_count'] += (int)$r['cnt'];
+                        $deps[$id]['total_dependencies'] += (int)$r['cnt'];
+                    }
                 }
             }
         }

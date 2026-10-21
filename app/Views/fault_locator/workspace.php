@@ -9,6 +9,22 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+<!-- Quick Navigation Bar -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-primary-subtle text-primary border"><i class="fas fa-microchip me-1"></i> Engine: <?= esc($summary['engine_version'] ?? 'FLI-2.1.0') ?></span>
+        <span class="badge bg-warning-subtle text-dark border"><i class="fas fa-bolt me-1"></i> 20 kV / NGR 40Ω</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="<?= site_url('identifikasi') ?>" class="btn btn-sm btn-warning text-dark font-weight-bold">
+            <i class="fas fa-bolt-lightning me-1"></i> Identifikasi Gangguan Penyulang
+        </a>
+        <a href="<?= site_url('gis') ?>" class="btn btn-sm btn-outline-primary font-weight-bold">
+            <i class="fas fa-map me-1"></i> Peta Spasial GIS
+        </a>
+    </div>
+</div>
+
 <style>
     .kpi-stat-card {
         background: #ffffff;

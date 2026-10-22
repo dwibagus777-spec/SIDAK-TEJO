@@ -448,18 +448,26 @@ $accessoriesSummary = !empty($accLines) ? implode("\n", $accLines) : null;
 
 // GIS Return Context Contract
 $fromContext = service('request')->getGet('from');
+$returnTo = service('request')->getGet('return_to');
 $focusAssetId = service('request')->getGet('focus_asset_id') ?: ($temuan['asset_id'] ?? null);
+$contextUlpId = service('request')->getGet('ulp_id') ?: ($temuan['ulp_id'] ?? null);
+$contextPenyulangId = service('request')->getGet('penyulang_id') ?: ($temuan['penyulang_id'] ?? null);
 $contextLat = service('request')->getGet('lat') ?: ($temuan['latitude'] ?? null);
 $contextLng = service('request')->getGet('lng') ?: ($temuan['longitude'] ?? null);
 $contextZoom = service('request')->getGet('zoom') ?: 19;
-$isGisReturn = ($fromContext === 'gis_inspection' || !empty($focusAssetId));
-$gisReturnUrl = site_url('gis') . '?' . http_build_query([
+$contextLayers = service('request')->getGet('layers') ?? '';
+
+$isGisReturn = ($fromContext === 'gis_inspection' || $returnTo === 'gis' || !empty($focusAssetId));
+$gisReturnUrl = site_url('gis') . '?' . http_build_query(array_filter([
     'focus_asset_id' => $focusAssetId,
+    'ulp_id'         => $contextUlpId,
+    'penyulang_id'   => $contextPenyulangId,
     'lat'            => $contextLat,
     'lng'            => $contextLng,
     'zoom'           => $contextZoom,
+    'layers'         => $contextLayers,
     'updated'        => 1,
-]);
+], fn($v) => $v !== null && $v !== ''));
 
 // Build WhatsApp Complete Field Report Message
 $waMsgParts = [
@@ -546,14 +554,19 @@ $safetyAnalysis = $aiRecommendation['k2_k3_analysis'] ?? [];
     </div>
 </div>   
 <?php if ($isGisReturn): ?>
-<div class="alert alert-success d-flex align-items-center justify-content-between py-2 px-3 mb-3 shadow-sm rounded-pill border-success flex-wrap gap-2" role="alert" style="background-color: #f0fdf4;">
+<div class="alert alert-success d-flex align-items-center justify-content-between py-2 px-3 mb-3 shadow-sm rounded-4 border-success flex-wrap gap-2" role="alert" style="background-color: #f0fdf4;">
     <div class="d-flex align-items-center small fw-bold text-success">
         <i class="fas fa-check-circle me-2 fs-5"></i>
-        <span>Temuan tercatat! Siap kembali ke aset operasional di GIS Map.</span>
+        <span>Temuan #<?= esc($temuan['nomor_temuan']) ?> berhasil dicatat! Anda dapat membagikan temuan atau kembali ke GIS.</span>
     </div>
-    <a href="<?= esc($gisReturnUrl) ?>" class="btn btn-success btn-sm font-weight-bold rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
-        <i class="fas fa-map-marked-alt"></i> Kembali ke GIS (Lanjut Inspeksi)
-    </a>
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-outline-success btn-sm font-weight-bold rounded-pill px-3 shadow-sm btn-open-share-modal">
+            <i class="fas fa-share-nodes me-1"></i> Bagikan Temuan
+        </button>
+        <a href="<?= esc($gisReturnUrl) ?>" class="btn btn-success btn-sm font-weight-bold rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
+            <i class="fas fa-map-marked-alt"></i> Kembali ke GIS (Lanjut Inspeksi)
+        </a>
+    </div>
 </div>
 <?php endif; ?>
 

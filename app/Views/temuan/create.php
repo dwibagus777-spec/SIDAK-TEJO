@@ -12,18 +12,37 @@
 <div class="row">
     <div class="col-lg-8 col-12">
         <div class="card">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-plus mr-1"></i> Form Temuan Baru</h3>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0"><i class="fas fa-plus mr-1"></i> Form Temuan Baru</h3>
+                <?php if (service('request')->getGet('return_to') === 'gis' || service('request')->getGet('from') === 'gis_inspection'): ?>
+                <div>
+                    <a href="<?= site_url('gis') . '?' . http_build_query(array_filter([
+                        'focus_asset_id' => service('request')->getGet('focus_asset_id') ?: service('request')->getGet('asset_id'),
+                        'ulp_id'         => service('request')->getGet('ulp_id'),
+                        'penyulang_id'   => service('request')->getGet('penyulang_id'),
+                        'lat'            => service('request')->getGet('lat'),
+                        'lng'            => service('request')->getGet('lng'),
+                        'zoom'           => service('request')->getGet('zoom'),
+                        'layers'         => service('request')->getGet('layers'),
+                    ], fn($v) => $v !== null && $v !== '')) ?>" class="btn btn-sm btn-outline-secondary font-weight-bold">
+                        <i class="fas fa-arrow-left me-1"></i> Batal / Kembali ke GIS
+                    </a>
+                </div>
+                <?php endif; ?>
             </div>
             <!-- enctype="multipart/form-data" is required for file uploads -->
             <form id="form-create-temuan" action="<?= site_url('temuan/store') ?>" method="post" enctype="multipart/form-data" autocomplete="off">
                 <?= csrf_field() ?>
                 <!-- GIS Inspection Workflow Return Context Contract -->
                 <input type="hidden" name="from" value="<?= esc(service('request')->getGet('from') ?? '') ?>">
-                <input type="hidden" name="focus_asset_id" value="<?= esc(service('request')->getGet('focus_asset_id') ?? '') ?>">
+                <input type="hidden" name="return_to" value="<?= esc(service('request')->getGet('return_to') ?? '') ?>">
+                <input type="hidden" name="focus_asset_id" value="<?= esc(service('request')->getGet('focus_asset_id') ?: (service('request')->getGet('asset_id') ?: '')) ?>">
+                <input type="hidden" name="context_ulp_id" value="<?= esc(service('request')->getGet('ulp_id') ?? '') ?>">
+                <input type="hidden" name="context_penyulang_id" value="<?= esc(service('request')->getGet('penyulang_id') ?? '') ?>">
                 <input type="hidden" name="context_lat" value="<?= esc(service('request')->getGet('lat') ?? '') ?>">
                 <input type="hidden" name="context_lng" value="<?= esc(service('request')->getGet('lng') ?? '') ?>">
                 <input type="hidden" name="context_zoom" value="<?= esc(service('request')->getGet('zoom') ?? '19') ?>">
+                <input type="hidden" name="context_layers" value="<?= esc(service('request')->getGet('layers') ?? '') ?>">
                 <input type="hidden" name="planning_id" value="<?= esc(service('request')->getGet('planning_id') ?? '') ?>">
                 <div class="card-body">
                     

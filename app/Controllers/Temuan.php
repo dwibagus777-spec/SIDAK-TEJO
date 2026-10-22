@@ -590,7 +590,7 @@ class Temuan extends BaseController
                 }
 
                 // Phase 5: Mobile Inspection Return Context Handoff
-                $fromGis = ($this->request->getPost('from') === 'gis_inspection');
+                $fromGis = ($this->request->getPost('from') === 'gis_inspection') || ($this->request->getPost('return_to') === 'gis');
                 $isAjaxRequest = ($this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest')
                     || ($this->request->getPost('ajax') === '1');
                 $focusAssetId = $this->request->getPost('focus_asset_id') ?: $assetId;
@@ -598,33 +598,42 @@ class Temuan extends BaseController
                 $cLng = $this->request->getPost('context_lng') ?: ($data['longitude'] ?? null);
                 $cZoom = (int)($this->request->getPost('context_zoom') ?: 19);
                 $cPlan = (int)($this->request->getPost('planning_id') ?: 0);
+                $cUlp = $this->request->getPost('context_ulp_id') ?: ($data['ulp_id'] ?? null);
+                $cPenyulang = $this->request->getPost('context_penyulang_id') ?: ($data['penyulang_id'] ?? null);
+                $cLayers = $this->request->getPost('context_layers') ?? '';
 
-                // CR-GIS-FIX-02: Support AJAX submission from GIS modal (no page reload)
+                $detailParams = [];
+                if ($fromGis) {
+                    $detailParams = [
+                        'from'           => 'gis_inspection',
+                        'return_to'      => 'gis',
+                        'focus_asset_id' => $focusAssetId,
+                        'ulp_id'         => $cUlp,
+                        'penyulang_id'   => $cPenyulang,
+                        'lat'            => $cLat,
+                        'lng'            => $cLng,
+                        'zoom'           => $cZoom,
+                        'layers'         => $cLayers,
+                        'planning_id'    => $cPlan,
+                    ];
+                }
+
+                $detailUrl = site_url('temuan/detail/' . $insertedId);
+                if (!empty($detailParams)) {
+                    $detailUrl .= '?' . http_build_query(array_filter($detailParams, fn($v) => $v !== null && $v !== ''));
+                }
+
                 if ($isAjaxRequest) {
                     return $this->response->setJSON([
                         'success'         => true,
                         'id'              => $insertedId,
                         'message'         => $res['message'],
-                        'redirect_url'    => site_url('temuan/detail/' . $insertedId),
+                        'redirect_url'    => $detailUrl,
                         'focus_asset_id'  => $focusAssetId,
                     ]);
                 }
 
-                // CR-GIS-FIX-03: From GIS inspection, redirect BACK to GIS map (not to temuan/detail)
-                // so the operator stays on the map and can continue inspecting other assets.
-                if ($fromGis && $focusAssetId) {
-                    $gisRedirectUrl = site_url('gis') . '?' . http_build_query([
-                        'focus_asset_id' => $focusAssetId,
-                        'lat'            => $cLat,
-                        'lng'            => $cLng,
-                        'zoom'           => $cZoom,
-                        'planning_id'    => $cPlan,
-                        'updated'        => 1,
-                    ]);
-                    return redirect()->to($gisRedirectUrl)->with('success', 'Temuan berhasil dicatat. Kembali ke peta inspeksi.');
-                }
-
-                return redirect()->to(site_url('temuan/detail/' . $insertedId))->with('success', $res['message']);
+                return redirect()->to($detailUrl)->with('success', $res['message']);
             }
             return redirect()->to(site_url('temuan'))->with('success', $res['message']);
         }

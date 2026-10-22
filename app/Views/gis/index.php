@@ -3455,12 +3455,31 @@ document.addEventListener("DOMContentLoaded", function () {
                     } else if (autoSelectFirst) {
                         setupFeederSelect.value = res.penyulangs[0].id;
                     }
+                } else {
+                    setupFeederSelect.innerHTML = '<option value="">-- Tidak ada penyulang untuk ULP ini --</option>';
+                    drawerSelect.innerHTML = '<option value="">-- Tidak ada penyulang --</option>';
                 }
             })
             .catch(err => {
-                if (thisUlpRequestId === currentUlpRequestId) setupFeederLoading.style.display = 'none';
+                if (thisUlpRequestId === currentUlpRequestId) {
+                    setupFeederLoading.style.display = 'none';
+                    setupFeederSelect.innerHTML = '<option value="">-- Gagal memuat penyulang --</option>';
+                }
                 console.error(err);
             });
+    }
+
+    // Restore layer selection from URL if present
+    var initUrlParams = new URLSearchParams(window.location.search);
+    var initUrlLayers = initUrlParams.get('layers');
+    if (initUrlLayers) {
+        var layerArr = initUrlLayers.split(',').map(function (s) { return s.trim().toUpperCase(); });
+        ['jtm', 'gardu', 'trafo', 'switch', 'temuan'].forEach(function (lId) {
+            var chk = document.getElementById('setup-layer-' + lId);
+            if (chk) chk.checked = layerArr.includes(chk.value.toUpperCase());
+            var dChk = document.getElementById('drawer-layer-' + lId);
+            if (dChk) dChk.checked = layerArr.includes(dChk.value.toUpperCase());
+        });
     }
 
     setupUlpSelect.addEventListener('change', function () {
@@ -4038,9 +4057,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 notifyGis(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`, 'warning');
                 return;
             }
-                alert(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`);
-                return;
-            }
 
             translineEditor.targetAsset = clickedAsset;
             translineEditor.activeSegment = tl;
@@ -4288,7 +4304,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Update "Form Lengkap" link inside modal
                 const fullFormLink = document.getElementById('gis-modal-full-form-link');
                 if (fullFormLink && currentAssetContextId) {
-                    fullFormLink.href = '<?= site_url('temuan/create') ?>?asset_id=' + currentAssetContextId + '&from=gis_inspection';
+                    const qParams = new URLSearchParams({
+                        asset_id: currentAssetContextId,
+                        focus_asset_id: currentAssetContextId,
+                        from: 'gis_inspection',
+                        return_to: 'gis',
+                        ulp_id: ulpBlock.id || (setupUlpSelect ? setupUlpSelect.value : ''),
+                        penyulang_id: penyulangBlock.id || currentFeederId || '',
+                        lat: (res.asset && res.asset.latitude) || (map ? map.getCenter().lat.toFixed(6) : ''),
+                        lng: (res.asset && res.asset.longitude) || (map ? map.getCenter().lng.toFixed(6) : ''),
+                        zoom: map ? map.getZoom() : 18,
+                        layers: typeof getSelectedSetupLayers === 'function' ? getSelectedSetupLayers().join(',') : ''
+                    });
+                    fullFormLink.href = '<?= site_url('temuan/create') ?>?' + qParams.toString();
+                    fullFormLink.removeAttribute('target');
                 }
 
                 const viewUrl = (res.navigation && res.navigation.view_temuan_url) ? res.navigation.view_temuan_url : `<?= site_url('temuan') ?>?asset_id=${currentAssetContextId}`;
@@ -8744,7 +8773,21 @@ document.addEventListener("DOMContentLoaded", function () {
             // Populate full form link
             const fullFormLink = document.getElementById('gis-modal-full-form-link');
             if (fullFormLink) {
-                fullFormLink.href = '<?= site_url('temuan/create') ?>?asset_id=' + assetId + '&from=gis_inspection';
+                const ctx = window._gisCurrentAssetContext || {};
+                const qParams = new URLSearchParams({
+                    asset_id: assetId,
+                    focus_asset_id: assetId,
+                    from: 'gis_inspection',
+                    return_to: 'gis',
+                    ulp_id: ctx.ulp_id || (setupUlpSelect ? setupUlpSelect.value : ''),
+                    penyulang_id: ctx.penyulang_id || currentFeederId || '',
+                    lat: ctx.lat || (map ? map.getCenter().lat.toFixed(6) : ''),
+                    lng: ctx.lng || (map ? map.getCenter().lng.toFixed(6) : ''),
+                    zoom: map ? map.getZoom() : 18,
+                    layers: typeof getSelectedSetupLayers === 'function' ? getSelectedSetupLayers().join(',') : ''
+                });
+                fullFormLink.href = '<?= site_url('temuan/create') ?>?' + qParams.toString();
+                fullFormLink.removeAttribute('target');
             }
         }
 
@@ -8837,10 +8880,14 @@ document.addEventListener("DOMContentLoaded", function () {
         fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
         fd.append('ajax', '1');
         fd.append('from', 'gis_inspection');
+        fd.append('return_to', 'gis');
         fd.append('focus_asset_id', assetId || '');
+        fd.append('context_ulp_id', ulpId);
+        fd.append('context_penyulang_id', penyulangId);
         fd.append('context_lat', lat);
         fd.append('context_lng', lng);
-        fd.append('context_zoom', '18');
+        fd.append('context_zoom', map ? String(map.getZoom()) : '18');
+        fd.append('context_layers', typeof getSelectedSetupLayers === 'function' ? getSelectedSetupLayers().join(',') : '');
         fd.append('ulp_id', ulpId);
         fd.append('penyulang_id', penyulangId);
         fd.append('section_id', sectionId);
@@ -8879,6 +8926,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('modal-gis-quick-temuan'));
                 if (modal) modal.hide();
+
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                    return;
+                }
 
                 // Show success toast
                 if (typeof Swal !== 'undefined') {

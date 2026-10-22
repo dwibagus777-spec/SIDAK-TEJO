@@ -2782,6 +2782,72 @@ document.addEventListener('DOMContentLoaded', function() {
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // Centralized Cause Category Indonesian Mapping Dictionary
+    window.CAUSE_CATEGORY_LABELS = {
+        'ANIMAL CONTACT': 'Gangguan akibat hewan',
+        'ANIMAL_CONTACT': 'Gangguan akibat hewan',
+        'ANIMAL': 'Gangguan akibat hewan',
+        'ANIMAL_BIRD': 'Hewan (burung / kelelawar)',
+        'ANIMAL_REPTILE': 'Hewan (ular / reptil)',
+        'EQUIPMENT FAILURE': 'Kerusakan peralatan',
+        'EQUIPMENT_FAILURE': 'Kerusakan peralatan',
+        'EQ_INSULATOR_FLASH': 'Kerusakan isolator (flashover)',
+        'EQ_CONDUCTOR_BROKEN': 'Kawat / konduktor putus',
+        'EQ_JUMPER_BURNT': 'Jumper terbakar / lepas',
+        'VEGETATION ROW': 'Gangguan pohon / ROW',
+        'VEGETATION_ROW': 'Gangguan pohon / ROW',
+        'VEGETATION': 'Gangguan pohon / ROW',
+        'VEG_FALLEN_TREE': 'Pohon tumbang',
+        'VEG_BRANCH_TOUCH': 'Ranting / dahan menempel',
+        'LIGHTNING WEATHER': 'Cuaca / petir',
+        'LIGHTNING_WEATHER': 'Cuaca / petir',
+        'LIGHTNING': 'Cuaca / petir',
+        'THIRD PARTY OBJECT': 'Benda asing / pihak ketiga',
+        'THIRD_PARTY_OBJECT': 'Benda asing / pihak ketiga',
+        'EXTERNAL_OBJECT': 'Benda asing (layangan / spanduk)',
+        'THIRD_PARTY_ACCIDENT': 'Aktivitas pihak ketiga / tertabrak',
+        'CONDUCTOR GSW SNAP': 'Konduktor / kawat putus',
+        'CONDUCTOR_GSW_SNAP': 'Konduktor / kawat putus',
+        'CABLE TERMINATION FAULT': 'Kerusakan kabel / terminasi',
+        'CABLE_TERMINATION_FAULT': 'Kerusakan kabel / terminasi',
+        'CUSTOMER IML FAULT': 'Instalasi pelanggan (IML)',
+        'CUSTOMER_IML_FAULT': 'Instalasi pelanggan (IML)',
+        'IML': 'Instalasi pelanggan (IML)',
+        'OVERLOAD': 'Beban lebih (overload)',
+        'UNKNOWN INVESTIGATION': 'Dalam investigasi / nihil temuan',
+        'UNKNOWN_INVESTIGATION': 'Dalam investigasi / nihil temuan',
+        'TIDAK TERCATAT': 'Tidak tercatat',
+        'TIDAK_TERCATAT': 'Tidak tercatat',
+        'UNKNOWN': 'Belum diketahui',
+        'UNMAPPED': 'Belum terpetakan',
+        'LAIN-LAIN': 'Lain-lain',
+        'LAIN LAIN': 'Lain-lain',
+        'OTHER': 'Lain-lain'
+    };
+
+    window.formatCauseCategory = function(cat, maxLen) {
+        if (!cat) return '-';
+        var rawStr = String(cat).trim();
+        if (!rawStr) return '-';
+        var normUpper = rawStr.toUpperCase();
+        var keyUnderscore = normUpper.replace(/\s+/g, '_');
+        var keySpace = normUpper.replace(/_+/g, ' ');
+
+        var label = window.CAUSE_CATEGORY_LABELS[normUpper] 
+                 || window.CAUSE_CATEGORY_LABELS[keyUnderscore]
+                 || window.CAUSE_CATEGORY_LABELS[keySpace];
+
+        if (!label) {
+            // Graceful safe fallback for unmapped/custom categories: Title Case
+            label = keySpace.toLowerCase().replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+        }
+
+        if (maxLen && label.length > maxLen) {
+            return label.substr(0, maxLen) + '...';
+        }
+        return label;
+    };
+
     // 6. Cumulative Gangguan 2-Year YoY Comparison & Zero-Reload Multi-Metric Line Chart
     window.yoyPayload = <?= json_encode($interruptionMetricsPayload ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
     window.currentYoYMetric = 'trips';
@@ -2834,6 +2900,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var hasValidData = false;
             var chartType = 'line';
             var indexAxis = 'x';
+            var currentCauseScores = [];
 
         var yoyData = (window.yoyPayload && window.yoyPayload.yoy) ? window.yoyPayload.yoy : {};
         var entryA = yoyData[yrA] || null;
@@ -3022,9 +3089,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             causeScores.sort(function(a, b) { return b.total - a.total; });
+            currentCauseScores = causeScores;
             labels = causeScores.map(function(s) { 
-                var cName = s.cat.replace(/_/g, ' ');
-                return cName.length > 25 ? cName.substr(0, 25) + '...' : cName;
+                return window.formatCauseCategory(s.cat, 26);
             });
             var barDataA = causeScores.map(function(s) { return s.sumA; });
             var barDataB = causeScores.map(function(s) { return s.sumB; });
@@ -3038,7 +3105,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (badgeA) badgeA.textContent = yrA + ': ' + totalA.toLocaleString('id-ID') + ' trip';
             if (badgeB) badgeB.textContent = yrB + ': ' + totalB.toLocaleString('id-ID') + ' trip';
             if (badgeDiff) {
-                badgeDiff.textContent = 'Top: ' + (causeScores[0] ? causeScores[0].cat : '-');
+                var topLabel = causeScores[0] ? window.formatCauseCategory(causeScores[0].cat, 22) : '-';
+                badgeDiff.textContent = 'Top: ' + topLabel;
+                badgeDiff.title = causeScores[0] ? window.formatCauseCategory(causeScores[0].cat) : '';
                 badgeDiff.className = 'badge border rounded-pill px-2 py-1 fw-bold font-monospace bg-light text-dark';
             }
 
@@ -3208,6 +3277,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     tooltip: {
                         callbacks: {
+                            title: function(items) {
+                                if (!items || !items.length) return '';
+                                var idx = items[0].dataIndex;
+                                if (metric === 'cause' && currentCauseScores && currentCauseScores[idx]) {
+                                    return window.formatCauseCategory(currentCauseScores[idx].cat);
+                                }
+                                return items[0].label || '';
+                            },
                             label: function(c) {
                                 var val = indexAxis === 'y' ? c.parsed.x : c.parsed.y;
                                 if (val === null || typeof val === 'undefined') return c.dataset.label + ': Tidak Ada Data';

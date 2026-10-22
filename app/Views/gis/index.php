@@ -707,6 +707,17 @@
             </div>
 
             <div class="d-flex align-items-center gap-1">
+                <!-- Interactive Conductor Transline Filter -->
+                <div class="d-flex align-items-center bg-white rounded-pill px-2 py-0.5 border shadow-sm pointer-events-auto" style="height: 31px;" title="Filter Transline Berdasarkan Jenis Konduktor Tanpa Reload">
+                    <i class="fas fa-filter text-primary me-1" style="font-size: 10px;"></i>
+                    <select id="gis-topbar-conductor-filter" class="form-select form-select-sm border-0 bg-transparent p-0 font-monospace fw-bold text-dark" style="font-size: 11px; width: auto; cursor: pointer; outline: none; box-shadow: none;" onchange="window.applyGisConductorFilter(this.value)">
+                        <option value="ALL">⚡ Konduktor: Semua</option>
+                        <option value="AAAC">AAAC</option>
+                        <option value="AAACS">AAACS</option>
+                        <option value="MVTIC">MVTIC</option>
+                        <option value="XLPE">XLPE</option>
+                    </select>
+                </div>
                 <button type="button" id="btn-open-conductor-analytics" class="btn btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-white px-2 px-md-3" style="font-size: 11px; background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border: 1px solid #14b8a6;" title="Analisis Konduktor & Panjang Jaringan">
                     <i class="fas fa-wave-square me-1"></i> Konduktor
                 </button>
@@ -1674,6 +1685,16 @@
             <label class="small text-muted font-weight-bold d-block mb-1">Pilih Penyulang:</label>
             <select id="drawer-feeder-select" class="form-select form-select-sm fw-bold border-primary text-primary">
                 <!-- Dynamically cloned -->
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="small text-muted font-weight-bold d-block mb-1"><i class="fas fa-wave-square text-info me-1"></i> Filter Jenis Konduktor Transline:</label>
+            <select id="drawer-conductor-filter" class="form-select form-select-sm fw-bold border-secondary text-dark" onchange="window.applyGisConductorFilter(this.value)">
+                <option value="ALL">Semua Jenis Konduktor (AAAC, AAACS, MVTIC, XLPE)</option>
+                <option value="AAAC">AAAC (All Aluminium Alloy Conductor)</option>
+                <option value="AAACS">AAACS (AAAC Shielded / Berlapis XLPE)</option>
+                <option value="MVTIC">MVTIC (Medium Voltage Twisted Insulated Cable)</option>
+                <option value="XLPE">XLPE / SKTM (Kabel Tanah)</option>
             </select>
         </div>
         <div class="mb-3">
@@ -3807,6 +3828,8 @@ document.addEventListener("DOMContentLoaded", function () {
             lat += 0.00006;
             lng += 0.00006;
         }
+        normalized._renderedLatLng = [lat, lng];
+        if (feature) feature._renderedLatLng = [lat, lng];
         var assetId = props.id ? String(props.id) : null;
 
         var resolved = resolveAssetIcon(props, visual);
@@ -4502,17 +4525,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            // Check normalized match (e.g. "tm-1" vs "tm1", "lbs" vs "lbs")
+            // Check normalized match (e.g. "tm-1" vs "tm1", "pmcb" vs "pmcb")
             const normalizedMatch = (normalizedQ.length > 0 && normalizedCode.indexOf(normalizedQ) > -1);
             
             // Check all tokens match search data
             const allTokensMatch = (tokens.length > 0 && tokens.every(function(t) { return searchData.indexOf(t) > -1; }));
 
-            // Also support context match: if operator types e.g. "bulog" and active asset is "LBS BULOG",
-            // allow matching equipment items
-            const activeAssetMatch = (activeAssetName && activeAssetName.indexOf(rawQ) > -1 && (searchData.indexOf('equipment') > -1 || ['lbs', 'pmcb', 'recloser'].some(function(k) { return code.indexOf(k) > -1; })));
-
-            if (normalizedMatch || allTokensMatch || activeAssetMatch) {
+            if (normalizedMatch || allTokensMatch) {
                 $item.show();
                 matchCount++;
             } else {
@@ -5376,6 +5395,79 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // ========================================================
+    // ⚡ INTERACTIVE GIS CONDUCTOR FILTER & NORMALIZATION
+    // ========================================================
+    window.allTranslineEntries = [];
+    window.gisConductorFilter = 'ALL';
+
+    window.normalizeGisConductorType = function(rawType) {
+        if (!rawType) return 'AAAC';
+        var s = String(rawType).trim().toUpperCase();
+        if (s.indexOf('XLPE') > -1 || s.indexOf('N2XS') > -1 || s.indexOf('NA2XS') > -1 || s.indexOf('KABEL TANAH') > -1 || s.indexOf('SKTM') > -1) {
+            return 'XLPE';
+        }
+        if (s.indexOf('MVTIC') > -1 || s.indexOf('MV-TIC') > -1 || s.indexOf('TIC') > -1) {
+            return 'MVTIC';
+        }
+        // Check AAACS before AAAC to prevent false match
+        if (s.indexOf('AAACS') > -1 || s.indexOf('AAAC-S') > -1 || s.indexOf('AAAC/S') > -1 || s.indexOf('A3CS') > -1 || s.indexOf('A3C-S') > -1) {
+            return 'AAACS';
+        }
+        if (s.indexOf('AAAC') > -1 || s.indexOf('A3C') > -1) {
+            return 'AAAC';
+        }
+        return 'LAINNYA';
+    };
+
+    window.applyGisConductorFilter = function(filterType) {
+        window.gisConductorFilter = filterType || 'ALL';
+
+        // Synchronize UI dropdowns
+        var topSel = document.getElementById('gis-topbar-conductor-filter');
+        if (topSel && topSel.value !== window.gisConductorFilter) topSel.value = window.gisConductorFilter;
+        var drawSel = document.getElementById('drawer-conductor-filter');
+        if (drawSel && drawSel.value !== window.gisConductorFilter) drawSel.value = window.gisConductorFilter;
+
+        if (!translinePolylineLayer || !Array.isArray(window.allTranslineEntries)) return;
+
+        var visibleCount = 0;
+        var visibleLengthM = 0;
+        var totalCount = window.allTranslineEntries.length;
+
+        window.allTranslineEntries.forEach(function (entry) {
+            var matches = (window.gisConductorFilter === 'ALL' || entry.condType === window.gisConductorFilter);
+            if (matches) {
+                if (!translinePolylineLayer.hasLayer(entry.visiblePoly)) {
+                    translinePolylineLayer.addLayer(entry.visiblePoly);
+                }
+                if (!translinePolylineLayer.hasLayer(entry.hitPoly)) {
+                    translinePolylineLayer.addLayer(entry.hitPoly);
+                }
+                visibleCount++;
+                visibleLengthM += entry.lengthMeter;
+            } else {
+                if (translinePolylineLayer.hasLayer(entry.visiblePoly)) {
+                    translinePolylineLayer.removeLayer(entry.visiblePoly);
+                }
+                if (translinePolylineLayer.hasLayer(entry.hitPoly)) {
+                    translinePolylineLayer.removeLayer(entry.hitPoly);
+                }
+            }
+        });
+
+        // Update summary text dynamically without reload
+        var summaryEl = document.getElementById('summary-text');
+        if (summaryEl) {
+            var kmStr = (visibleLengthM / 1000).toFixed(2);
+            var filterNote = window.gisConductorFilter === 'ALL' ? '' : ` [Filter: ${window.gisConductorFilter}]`;
+            var curText = summaryEl.innerHTML;
+            if (curText.indexOf('TRANSLINE RESMI:') > -1) {
+                summaryEl.innerHTML = curText.replace(/TRANSLINE RESMI:\s*[^<]+/i, `TRANSLINE RESMI: ${visibleCount}/${totalCount} (${kmStr} km)${filterNote}`);
+            }
+        }
+    };
+
+    // ========================================================
     // ⚡ CENTRALIZED TRANSLINE MULTI-SEGMENT RENDERER
     // ========================================================
     function renderAllTranslines() {
@@ -5418,6 +5510,8 @@ document.addEventListener("DOMContentLoaded", function () {
             'authoritative=' + activeTranslines.length,
             'ids=' + JSON.stringify(activeTranslines.map(t => t.id || t.transline_id || t.edge_id))
         );
+
+        window.allTranslineEntries = [];
 
         activeTranslines.forEach(function (tl) {
             var tId = tl.id || tl.transline_id || tl.edge_id;
@@ -5611,9 +5705,29 @@ document.addEventListener("DOMContentLoaded", function () {
                     .openOn(map);
             });
 
+            var normCondType = normalizeGisConductorType(tl.conductor_type);
+            visiblePoly._condType = normCondType;
+            visiblePoly._lengthMeter = Number(lengthMeter) || 0;
+            visiblePoly._hitPoly = hitPoly;
+            hitPoly._condType = normCondType;
+            hitPoly._lengthMeter = Number(lengthMeter) || 0;
+            hitPoly._visiblePoly = visiblePoly;
+
             translinePolylineLayer.addLayer(hitPoly);
             window.translineLayers.set(tId, visiblePoly);
+            window.allTranslineEntries.push({
+                id: tId,
+                visiblePoly: visiblePoly,
+                hitPoly: hitPoly,
+                condType: normCondType,
+                lengthMeter: Number(lengthMeter) || 0,
+                data: tl
+            });
         });
+
+        if (window.gisConductorFilter && window.gisConductorFilter !== 'ALL') {
+            window.applyGisConductorFilter(window.gisConductorFilter);
+        }
 
         // 2. Spatial Preview Segments (SPATIAL_PREVIEW)
         // INVARIANTS:
@@ -5893,7 +6007,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         equipmentToLink.push({
                             id: props.id,
                             parent_id: Number(props.parent_asset_id),
-                            latlng: [geom.coordinates[1], geom.coordinates[0]],
+                            latlng: norm._renderedLatLng || [geom.coordinates[1], geom.coordinates[0]],
                             jenis: jenis,
                             nama: props.nama_asset
                         });
@@ -5955,7 +6069,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 summaryHtml += ` | <i class="fas fa-link-slash text-warning ms-2 me-1"></i> Belum Terhubung: <strong>${renderedUnassignedAssetCount}</strong>`;
             }
             if (topoContext.hasTopology && topoContext.edgeCount > 0) {
-                summaryHtml += ` | <span class="badge bg-success ms-2 shadow-sm"><i class="fas fa-route me-1"></i> TRANSLINE RESMI: ${topoContext.edgeCount}</span>`;
+                var tlBadgeText = (window.gisConductorFilter && window.gisConductorFilter !== 'ALL')
+                    ? `TRANSLINE RESMI: ${window.allTranslineEntries.filter(function(e) { return e.condType === window.gisConductorFilter; }).length}/${topoContext.edgeCount} [${window.gisConductorFilter}]`
+                    : `TRANSLINE RESMI: ${topoContext.edgeCount}`;
+                summaryHtml += ` | <span class="badge bg-success ms-2 shadow-sm"><i class="fas fa-route me-1"></i> ${tlBadgeText}</span>`;
             } else if (window.previewLayers && window.previewLayers.size > 0) {
                 var totalPreviewMeters = 0;
                 if (Array.isArray(currentData.preview_segments)) {

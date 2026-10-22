@@ -1055,7 +1055,6 @@
         $totMatArrester = 0.0;
         $totMatSkun     = 0.0;
         $totMatGsw      = 0.0;
-        $totMatCondM    = 0.0;
         foreach ($bomMatrixRows as $bmRow) {
             $totMatTemuan   += (int)($bmRow['total_temuan'] ?? $bmRow['temuan_count'] ?? 0);
             $totMatArmtie   += (float)($bmRow['qty_armtie'] ?? 0);
@@ -1066,7 +1065,6 @@
             $totMatArrester += (float)($bmRow['qty_arrester'] ?? 0);
             $totMatSkun     += (float)($bmRow['qty_skun_konektor'] ?? 0);
             $totMatGsw      += (float)($bmRow['qty_gsw_ground'] ?? 0);
-            $totMatCondM    += (float)($bmRow['qty_konduktor_m'] ?? 0);
         }
     ?>
     <div class="card dah-card shadow-sm border mb-4" id="temuanMaterialBomCard">
@@ -1169,7 +1167,7 @@
                                 <th rowspan="2" class="align-middle text-start">Section / Segmen</th>
                                 <th rowspan="2" class="align-middle">Konduktor &amp; Ukuran</th>
                                 <th rowspan="2" class="align-middle text-end" title="Jumlah Temuan pada Segmen">Temuan</th>
-                                <th colspan="9" class="bg-primary-subtle text-primary fw-bold py-1">Kebutuhan Material Standar BOM PLN</th>
+                                <th colspan="8" class="bg-primary-subtle text-primary fw-bold py-1">Kebutuhan Material Standar BOM PLN</th>
                                 <th rowspan="2" class="align-middle" style="width: 195px;">Rincian Kode Material BOM</th>
                             </tr>
                             <tr>
@@ -1181,7 +1179,6 @@
                                 <th class="text-end" title="ARR00010006 Lightning Arrester (LA) 20 kV (Bh)">Arrester<br><small class="text-muted fw-normal">(Bh)</small></th>
                                 <th class="text-end" title="CCO00020004 / KON00040001 Joint Sleeve / Skun / Konektor (Bh)">Skun/Konek<br><small class="text-muted fw-normal">(Bh)</small></th>
                                 <th class="text-end" title="MAT-GSW-ACC /PEN00050002 GSW &amp; Grounding (Set)">GSW/Grd<br><small class="text-muted fw-normal">(Set)</small></th>
-                                <th class="text-end text-primary" title="MAT-COND-* Kebutuhan Konduktor (Meter)">Konduktor<br><small class="text-muted fw-normal">(m)</small></th>
                             </tr>
                         </thead>
                         <tbody id="bomMatrixTableBody">
@@ -1221,8 +1218,7 @@
                                 data-fco="<?= (float)($bRow['qty_fco'] ?? 0) ?>"
                                 data-arrester="<?= (float)($bRow['qty_arrester'] ?? 0) ?>"
                                 data-skun="<?= (float)($bRow['qty_skun_konektor'] ?? 0) ?>"
-                                data-gsw="<?= (float)($bRow['qty_gsw_ground'] ?? 0) ?>"
-                                data-condm="<?= (float)($bRow['qty_konduktor_m'] ?? 0) ?>">
+                                data-gsw="<?= (float)($bRow['qty_gsw_ground'] ?? 0) ?>">
                                 <td class="text-center text-muted fw-bold"><?= $bIdx + 1 ?></td>
                                 <td><span class="badge bg-light text-dark border"><?= esc($bGi) ?></span></td>
                                 <td class="text-muted small"><?= esc($bRow['nama_ulp'] ?? '-') ?></td>
@@ -1264,7 +1260,6 @@
                                 <td class="text-end font-monospace <?= ($bRow['qty_arrester'] ?? 0) > 0 ? 'fw-bold text-warning-emphasis' : 'text-muted' ?>"><?= ($bRow['qty_arrester'] ?? 0) > 0 ? number_format((float)$bRow['qty_arrester'], 0) : '-' ?></td>
                                 <td class="text-end font-monospace <?= ($bRow['qty_skun_konektor'] ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' ?>"><?= ($bRow['qty_skun_konektor'] ?? 0) > 0 ? number_format((float)$bRow['qty_skun_konektor'], 0) : '-' ?></td>
                                 <td class="text-end font-monospace <?= ($bRow['qty_gsw_ground'] ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' ?>"><?= ($bRow['qty_gsw_ground'] ?? 0) > 0 ? number_format((float)$bRow['qty_gsw_ground'], 0) : '-' ?></td>
-                                <td class="text-end font-monospace <?= ($bRow['qty_konduktor_m'] ?? 0) > 0 ? 'fw-bold text-primary' : 'text-muted' ?>"><?= ($bRow['qty_konduktor_m'] ?? 0) > 0 ? number_format((float)$bRow['qty_konduktor_m'], 0) : '-' ?></td>
                                 <td class="small text-muted font-monospace" style="font-size: 10px;" title="<?= esc($matFullStr) ?>">
                                     <?php if (!empty($matSummaryStr)): ?>
                                         <?= esc($matSummaryStr) ?>
@@ -1299,7 +1294,6 @@
                                     <td class="text-end font-monospace text-muted"><?= ($sec['qty_arrester'] ?? 0) > 0 ? number_format((float)$sec['qty_arrester'], 0) : '-' ?></td>
                                     <td class="text-end font-monospace text-muted"><?= ($sec['qty_skun_konektor'] ?? 0) > 0 ? number_format((float)$sec['qty_skun_konektor'], 0) : '-' ?></td>
                                     <td class="text-end font-monospace text-muted"><?= ($sec['qty_gsw_ground'] ?? 0) > 0 ? number_format((float)$sec['qty_gsw_ground'], 0) : '-' ?></td>
-                                    <td class="text-end font-monospace text-muted"><?= ($sec['qty_konduktor_m'] ?? 0) > 0 ? number_format((float)$sec['qty_konduktor_m'], 0) : '-' ?></td>
                                     <td class="small text-muted font-monospace" style="font-size: 9.5px;" title="<?= esc($sMatFull) ?>"><?= esc($sMatStr ?: '-') ?></td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -1307,7 +1301,7 @@
                             <?php endforeach; ?>
                             <?php if (empty($bomMatrixRows)): ?>
                             <tr>
-                                <td colspan="17" class="text-center text-muted py-4">Belum ada data temuan dan kebutuhan material pada cakupan ini.</td>
+                                <td colspan="16" class="text-center text-muted py-4">Belum ada data temuan dan kebutuhan material pada cakupan ini.</td>
                             </tr>
                             <?php endif; ?>
                         </tbody>
@@ -1323,7 +1317,6 @@
                                 <td class="text-end text-warning-emphasis" id="bomTotArrester"><?= number_format($totMatArrester, 0) ?></td>
                                 <td class="text-end text-dark" id="bomTotSkun"><?= number_format($totMatSkun, 0) ?></td>
                                 <td class="text-end text-dark" id="bomTotGsw"><?= number_format($totMatGsw, 0) ?></td>
-                                <td class="text-end text-primary" id="bomTotCondM"><?= number_format($totMatCondM, 0) ?></td>
                                 <td class="text-muted small fw-normal">Rekap terstruktur</td>
                             </tr>
                         </tfoot>
@@ -3409,7 +3402,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var qVal    = String((document.getElementById('bomFilterSearch') || {}).value || '').trim().toLowerCase();
 
         var rows = document.querySelectorAll('#bomMatrixTableBody .bom-matrix-row');
-        var segCount = 0, sumTemuan = 0, sumArm = 0, sumCross = 0, sumPin = 0, sumHang = 0, sumFco = 0, sumArr = 0, sumSkun = 0, sumGsw = 0, sumCondM = 0;
+        var segCount = 0, sumTemuan = 0, sumArm = 0, sumCross = 0, sumPin = 0, sumHang = 0, sumFco = 0, sumArr = 0, sumSkun = 0, sumGsw = 0;
 
         rows.forEach(function(r) {
             var rGi   = String(r.getAttribute('data-gi') || '');
@@ -3442,7 +3435,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 sumArr    += Number(r.getAttribute('data-arrester') || 0);
                 sumSkun   += Number(r.getAttribute('data-skun') || 0);
                 sumGsw    += Number(r.getAttribute('data-gsw') || 0);
-                sumCondM  += Number(r.getAttribute('data-condm') || 0);
             }
         });
 
@@ -3459,7 +3451,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setTxt('bomTotArrester', sumArr);
         setTxt('bomTotSkun', sumSkun);
         setTxt('bomTotGsw', sumGsw);
-        setTxt('bomTotCondM', sumCondM);
 
         var badge = document.getElementById('bomMatrixActiveCountBadge');
         if (badge) {

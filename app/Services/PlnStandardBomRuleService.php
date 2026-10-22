@@ -371,17 +371,9 @@ class PlnStandardBomRuleService
         }
 
         // 8. CONDUCTOR (RANTAS / ANDONGAN / MEKAR) - Exclude tree findings & top ties
+        // Conductor info is strictly preserved as network metadata (conductor_type & conductor_size), NOT as replacement BOM material requirement.
         if (preg_match('/\b(konduktor|kawat\s*rantas|kabel\s*rantas|rantas|mekar|andongan|(?:kawat|konduktor|kabel)\s*putus)\b/i', $txt) && !preg_match('/\b(top\s*tie|toptie|top\s*ties)\b/i', $txt)) {
             if (!$primaryKey) $primaryKey = 'KONDUKTOR';
-            $condMatCode = "MAT-COND-{$conductorType}-{$conductorSize}";
-            $items[] = [
-                'canonical_code' => $condMatCode,
-                'canonical_name' => "Konduktor {$conductorType} {$conductorSize} mm² (20 kV)",
-                'unit'           => 'meter',
-                'quantity'       => 15.0,
-                'category'       => 'KONDUKTOR',
-                'justification'  => "Perbaikan kawat rantas / span standar 15 meter konduktor {$conductorType} {$conductorSize} mm²",
-            ];
         }
 
         // Deduplicate items by canonical_code
@@ -713,7 +705,7 @@ class PlnStandardBomRuleService
                 FROM temuan_materials tm
                 INNER JOIN temuan t ON t.id = tm.temuan_id AND t.deleted_at IS NULL {$pelaksanaClause}
                 LEFT JOIN master_materials mm ON mm.id = tm.material_id
-                WHERE 1=1
+                WHERE (tm.canonical_code_snapshot NOT LIKE 'MAT-COND-%' AND COALESCE(tm.canonical_name_snapshot, '') NOT LIKE '%KONDUKTOR%' AND COALESCE(tm.canonical_name_snapshot, '') NOT LIKE '%KABEL%')
                 " . ($ulpId !== null && $ulpId > 0 ? " AND t.ulp_id = " . (int)$ulpId : "") . "
                 GROUP BY tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot, mm.nama_lapangan, mm.material_category
                 ORDER BY total_qty DESC
@@ -751,6 +743,9 @@ class PlnStandardBomRuleService
                 if ($bom['mapping_status'] === 'RESOLVED' && !empty($bom['materials'])) {
                     foreach ($bom['materials'] as $item) {
                         $code = $item['canonical_code'];
+                        if (($item['category'] ?? '') === 'KONDUKTOR' || str_starts_with($code, 'MAT-COND-') || stripos($code, 'COND') !== false) {
+                            continue;
+                        }
                         if (!isset($recapMap[$code])) {
                             $recapMap[$code] = [
                                 'material_code'     => $code,

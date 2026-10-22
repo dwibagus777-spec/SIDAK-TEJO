@@ -887,7 +887,7 @@ class Dashboard extends BaseController
                     {$condTypeExpr} AS conductor_type,
                     {$condSizeExpr} AS conductor_size,
                     COUNT(DISTINCT t.id) AS total_temuan,
-                    SUM(COALESCE(tm.quantity, 0)) AS total_qty_semua_material,
+                    SUM(CASE WHEN tm.canonical_code_snapshot NOT LIKE 'MAT-COND-%' AND COALESCE(tm.canonical_name_snapshot, '') NOT LIKE '%KONDUKTOR%' AND COALESCE(tm.canonical_name_snapshot, '') NOT LIKE '%KABEL%' THEN COALESCE(tm.quantity, 0) ELSE 0 END) AS total_qty_semua_material,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-003', 'BES00080015', 'MAT-HDW-ARMTIE') OR tm.canonical_name_snapshot LIKE '%ARM%TIE%' THEN tm.quantity ELSE 0 END) AS qty_armtie,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-001', 'CANON-HDW-013', 'CANON-HDW-014', 'CANON-HDW-019', 'BES00020031', 'BES00020003', 'MAT-HDW-CROSSARM') OR tm.canonical_name_snapshot LIKE '%CROSS%ARM%' THEN tm.quantity ELSE 0 END) AS qty_crossarm,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-001', 'ISO00020004', 'MAT-ISO-PIN-20KV') OR tm.canonical_name_snapshot LIKE '%PIN%POST%' OR tm.canonical_name_snapshot LIKE '%ISOLATOR TUMPU%' THEN tm.quantity ELSE 0 END) AS qty_pin_isolator,
@@ -896,8 +896,8 @@ class Dashboard extends BaseController
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-MAT-002', 'ARR00010006', 'MAT-PROT-LA-24KV') OR tm.canonical_name_snapshot LIKE '%ARRESTER%' OR tm.canonical_name_snapshot LIKE '%LIGHTNING%' THEN tm.quantity ELSE 0 END) AS qty_arrester,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-023', 'CANON-HDW-024', 'CANON-HDW-025', 'CCO00020004', 'KON00040001', 'MAT-CONN-SKUN') OR tm.canonical_name_snapshot LIKE '%SKUN%' OR tm.canonical_name_snapshot LIKE '%CONNECTOR%' OR tm.canonical_name_snapshot LIKE '%KONEKTOR%' OR tm.canonical_name_snapshot LIKE '%JOINT SLEEVE%' THEN tm.quantity ELSE 0 END) AS qty_skun_konektor,
                     SUM(CASE WHEN tm.canonical_code_snapshot IN ('CANON-HDW-015', 'CANON-HDW-016', 'CANON-HDW-022', 'MAT-PROT-GROUND') OR tm.canonical_name_snapshot LIKE '%GROUND%' OR tm.canonical_name_snapshot LIKE '%GSW%' THEN tm.quantity ELSE 0 END) AS qty_gsw_ground,
-                    SUM(CASE WHEN tm.canonical_code_snapshot LIKE 'MAT-COND-%' OR tm.canonical_name_snapshot LIKE '%KONDUKTOR%' OR tm.canonical_name_snapshot LIKE '%KABEL%' THEN tm.quantity ELSE 0 END) AS qty_konduktor_m,
-                    GROUP_CONCAT(DISTINCT CONCAT(COALESCE(tm.canonical_name_snapshot, tm.canonical_code_snapshot), ' (', ROUND(tm.quantity, 0), ' ', tm.unit_snapshot, ')') SEPARATOR ', ') AS rincian_material
+                    0 AS qty_konduktor_m,
+                    GROUP_CONCAT(DISTINCT CASE WHEN tm.canonical_code_snapshot NOT LIKE 'MAT-COND-%' AND COALESCE(tm.canonical_name_snapshot, '') NOT LIKE '%KONDUKTOR%' AND COALESCE(tm.canonical_name_snapshot, '') NOT LIKE '%KABEL%' THEN CONCAT(COALESCE(tm.canonical_name_snapshot, tm.canonical_code_snapshot), ' (', ROUND(tm.quantity, 0), ' ', tm.unit_snapshot, ')') END SEPARATOR ', ') AS rincian_material
                 FROM temuan t
                 LEFT JOIN temuan_materials tm ON tm.temuan_id = t.id
                 LEFT JOIN penyulang p ON p.id = t.penyulang_id
@@ -929,7 +929,7 @@ class Dashboard extends BaseController
                 $tmr['qty_arrester']      = (float)$tmr['qty_arrester'];
                 $tmr['qty_skun_konektor'] = (float)$tmr['qty_skun_konektor'];
                 $tmr['qty_gsw_ground']    = (float)$tmr['qty_gsw_ground'];
-                $tmr['qty_konduktor_m']   = (float)$tmr['qty_konduktor_m'];
+                $tmr['qty_konduktor_m']   = 0.0;
                 $temuanMaterialMatrix['total_temuan'] += $tmr['total_temuan'];
                 $rowTotQty = (float)($tmr['total_qty_semua_material'] ?? 0);
                 if ($rowTotQty <= 0) {

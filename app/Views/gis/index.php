@@ -722,10 +722,22 @@
             </div>
 
             <div class="d-flex align-items-center gap-1 gis-topbar-actions" style="pointer-events: auto;">
-                <!-- Interactive Conductor Transline Filter -->
-                <div id="gis-topbar-conductor-filter-container" class="d-flex align-items-center bg-white rounded-pill px-2 py-0.5 border shadow-sm pointer-events-auto" style="height: 31px; pointer-events: auto; cursor: pointer;" title="Filter Transline Berdasarkan Jenis Konduktor Tanpa Reload">
-                    <i class="fas fa-filter text-primary me-1" style="font-size: 10px;"></i>
-                    <select id="gis-topbar-conductor-filter" class="form-select form-select-sm border-0 bg-transparent p-0 font-monospace fw-bold text-dark" style="font-size: 11px; width: auto; cursor: pointer; outline: none; box-shadow: none; pointer-events: auto;" onchange="window.applyGisConductorFilter(this.value)">
+                <!-- Interactive Conductor Transline Filter (Accessible Bootstrap 5 Dropdown) -->
+                <div id="gis-topbar-conductor-filter-container" class="dropdown" style="pointer-events: auto;">
+                    <button class="btn btn-sm bg-white rounded-pill border shadow-sm px-2.5 py-1 font-monospace fw-bold text-dark dropdown-toggle d-flex align-items-center gap-1" type="button" id="gis-conductor-dropdown-btn" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 11px; height: 31px; pointer-events: auto; outline: none; box-shadow: none;" title="Filter Transline Berdasarkan Jenis Konduktor Tanpa Reload">
+                        <i class="fas fa-filter text-primary me-1" style="font-size: 10px;"></i>
+                        <span id="gis-conductor-dropdown-label">⚡ Konduktor: Semua</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-1 font-monospace" aria-labelledby="gis-conductor-dropdown-btn" style="min-width: 175px; font-size: 11px; z-index: 2050;">
+                        <li><a class="dropdown-item rounded-2 py-1 px-2 d-flex align-items-center justify-content-between gis-cond-option active" href="javascript:void(0)" data-conductor="ALL"><span>⚡ Semua Jenis</span><i class="fas fa-check text-primary ms-2 cond-check-icon"></i></a></li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><a class="dropdown-item rounded-2 py-1 px-2 d-flex align-items-center justify-content-between gis-cond-option" href="javascript:void(0)" data-conductor="AAAC"><span>AAAC</span><i class="fas fa-check text-primary ms-2 cond-check-icon d-none"></i></a></li>
+                        <li><a class="dropdown-item rounded-2 py-1 px-2 d-flex align-items-center justify-content-between gis-cond-option" href="javascript:void(0)" data-conductor="AAACS"><span>AAACS</span><i class="fas fa-check text-primary ms-2 cond-check-icon d-none"></i></a></li>
+                        <li><a class="dropdown-item rounded-2 py-1 px-2 d-flex align-items-center justify-content-between gis-cond-option" href="javascript:void(0)" data-conductor="MVTIC"><span>MVTIC</span><i class="fas fa-check text-primary ms-2 cond-check-icon d-none"></i></a></li>
+                        <li><a class="dropdown-item rounded-2 py-1 px-2 d-flex align-items-center justify-content-between gis-cond-option" href="javascript:void(0)" data-conductor="XLPE"><span>XLPE</span><i class="fas fa-check text-primary ms-2 cond-check-icon d-none"></i></a></li>
+                    </ul>
+                    <!-- Synchronized hidden select for backwards compatibility / forms / testing -->
+                    <select id="gis-topbar-conductor-filter" class="d-none" onchange="window.applyGisConductorFilter(this.value)">
                         <option value="ALL">⚡ Konduktor: Semua</option>
                         <option value="AAAC">AAAC</option>
                         <option value="AAACS">AAACS</option>
@@ -3255,6 +3267,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var overlayIds = [
             'gis-compact-topbar',
             'gis-topbar-conductor-filter-container',
+            'gis-conductor-dropdown-btn',
             'gis-topbar-conductor-filter',
             'btn-open-conductor-analytics',
             'asset-quick-card',
@@ -5525,11 +5538,27 @@ document.addEventListener("DOMContentLoaded", function () {
     window.applyGisConductorFilter = function(filterType) {
         window.gisConductorFilter = filterType || 'ALL';
 
-        // Synchronize UI dropdowns
+        // Synchronize UI dropdowns & labels
         var topSel = document.getElementById('gis-topbar-conductor-filter');
         if (topSel && topSel.value !== window.gisConductorFilter) topSel.value = window.gisConductorFilter;
         var drawSel = document.getElementById('drawer-conductor-filter');
         if (drawSel && drawSel.value !== window.gisConductorFilter) drawSel.value = window.gisConductorFilter;
+
+        var btnLabel = document.getElementById('gis-conductor-dropdown-label');
+        if (btnLabel) {
+            btnLabel.textContent = window.gisConductorFilter === 'ALL' ? '⚡ Konduktor: Semua' : `⚡ ${window.gisConductorFilter}`;
+        }
+        document.querySelectorAll('.gis-cond-option').forEach(function(opt) {
+            var cVal = opt.getAttribute('data-conductor');
+            var checkIcon = opt.querySelector('.cond-check-icon');
+            if (cVal === window.gisConductorFilter) {
+                opt.classList.add('active');
+                if (checkIcon) checkIcon.classList.remove('d-none');
+            } else {
+                opt.classList.remove('active');
+                if (checkIcon) checkIcon.classList.add('d-none');
+            }
+        });
 
         // Highlight/dim legend items based on active filter
         var legendRows = document.querySelectorAll('#gis-legend-panel [data-conductor-type]');
@@ -5816,7 +5845,37 @@ document.addEventListener("DOMContentLoaded", function () {
                                 🟢 TRANSLINE OTORITATIF JTM (PERSISTED)
                             </span>
                         </div>
-                        ${(tl.conductor_type && tl.conductor_type.toUpperCase().includes('AAAC') && !tl.conductor_type.toUpperCase().includes('AAACS')) ? `<a class="btn btn-sm btn-warning w-100 mt-2" href="<?= site_url('captive-non-penugasan') ?>?transline_id=${encodeURIComponent(Number(tId))}&return_to=gis&penyulang_id=${encodeURIComponent(currentFeederId)}&lat=${encodeURIComponent(map ? map.getCenter().lat.toFixed(6) : '')}&lng=${encodeURIComponent(map ? map.getCenter().lng.toFixed(6) : '')}&zoom=${encodeURIComponent(map ? map.getZoom() : 14)}&layers=${encodeURIComponent(getSelectedSetupLayers().join(','))}"><i class="fas fa-highlighter me-1"></i> Tandai Potensi Coating</a>` : ''}
+                        ${(() => {
+                            var hasActiveCoating = tl.captive_coating && tl.captive_coating.status === 'POTENSI';
+                            var isCoatingCompleted = (tl.captive_coating && tl.captive_coating.status === 'SELESAI') || (tl.conductor_type && tl.conductor_type.toUpperCase().includes('COATING'));
+                            
+                            if (hasActiveCoating) {
+                                return `
+                                    <div class="mt-2 pt-2 border-top">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="badge bg-warning text-dark font-monospace" style="font-size: 9px;"><i class="fas fa-highlighter me-1"></i>STATUS: POTENSI COATING</span>
+                                            <span class="text-muted" style="font-size: 10px;">Captive #${tl.captive_coating.id}</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-success w-100 fw-bold shadow-sm py-1.5" onclick="window.confirmCoatingCompleted(${Number(tId)}, ${Number(tl.captive_coating.id)})" style="font-size: 11px;">
+                                            <i class="fas fa-check-double me-1"></i> Konfirmasi Sudah Dilakukan Coating
+                                        </button>
+                                    </div>
+                                `;
+                            }
+                            if (isCoatingCompleted) {
+                                return `
+                                    <div class="mt-2 pt-2 border-top">
+                                        <div class="p-1.5 bg-success bg-opacity-10 text-success rounded text-center border border-success font-monospace fw-bold" style="font-size: 10px;">
+                                            <i class="fas fa-check-circle me-1"></i> SUDAH DILAKUKAN COATING (AAACS)
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            if (tl.conductor_type && tl.conductor_type.toUpperCase().includes('AAAC') && !tl.conductor_type.toUpperCase().includes('AAACS')) {
+                                return `<a class="btn btn-sm btn-warning w-100 mt-2 fw-bold shadow-sm" href="<?= site_url('captive-non-penugasan') ?>?transline_id=${encodeURIComponent(Number(tId))}&return_to=gis&penyulang_id=${encodeURIComponent(currentFeederId)}&lat=${encodeURIComponent(map ? map.getCenter().lat.toFixed(6) : '')}&lng=${encodeURIComponent(map ? map.getCenter().lng.toFixed(6) : '')}&zoom=${encodeURIComponent(map ? map.getZoom() : 14)}&layers=${encodeURIComponent(getSelectedSetupLayers().join(','))}"><i class="fas fa-highlighter me-1"></i> Tandai Potensi Coating</a>`;
+                            }
+                            return '';
+                        })()}
                     </div>
                 `;
 
@@ -6862,19 +6921,72 @@ document.addEventListener("DOMContentLoaded", function () {
 
     bindPointerSafeTap('btn-reset-conductor-filters', resetConductorFilters, 'RESET_CONDUCTOR_FILTERS');
 
-    // Topbar Conductor Filter helper for click/tap
-    var topbarCondContainer = document.getElementById('gis-topbar-conductor-filter-container');
-    var topbarCondSelect = document.getElementById('gis-topbar-conductor-filter');
-    if (topbarCondContainer && topbarCondSelect) {
-        topbarCondContainer.addEventListener('click', function (e) {
-            if (e.target !== topbarCondSelect) {
-                topbarCondSelect.focus();
-                if (typeof topbarCondSelect.showPicker === 'function') {
-                    try { topbarCondSelect.showPicker(); } catch (err) {}
+    // Topbar Conductor Filter Bootstrap Dropdown options
+    document.querySelectorAll('.gis-cond-option').forEach(function (opt) {
+        opt.addEventListener('click', function (e) {
+            e.preventDefault();
+            var val = this.getAttribute('data-conductor') || 'ALL';
+            window.applyGisConductorFilter(val);
+        });
+    });
+
+    // Conductor Coating Confirmation Action
+    window.confirmCoatingCompleted = function(translineId, captiveId) {
+        if (!confirm("Konfirmasi Pekerjaan Coating:\n\nApakah Anda yakin pekerjaan coating pada segmen transline ini sudah selesai dilakukan?\n\nKonduktor transline terpilih akan diperbarui secara permanen menjadi AAACS (Coating) di database.")) {
+            return;
+        }
+
+        notifyGis('Menyimpan konfirmasi pekerjaan coating...', 'info');
+
+        fetch('<?= site_url('captive-non-penugasan/complete/') ?>' + encodeURIComponent(captiveId), {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(function(res) {
+            return res.json().then(function(data) {
+                return { status: res.status, ok: res.ok, data: data };
+            });
+        })
+        .then(function(res) {
+            if (!res.ok || res.data.status === 'error') {
+                throw new Error((res.data && res.data.message) ? res.data.message : 'Gagal mengonfirmasi coating');
+            }
+
+            notifyGis('Pekerjaan coating berhasil dikonfirmasi! Konduktor diperbarui menjadi AAACS (Coating).', 'success');
+
+            // Update in-memory transline state
+            if (currentData && Array.isArray(currentData.translines)) {
+                var targetTl = currentData.translines.find(function(t) { return Number(t.id) === Number(translineId); });
+                if (targetTl) {
+                    targetTl.conductor_type = 'AAACS (Coating)';
+                    if (targetTl.captive_coating) {
+                        targetTl.captive_coating.status = 'SELESAI';
+                    }
                 }
             }
+
+            // Update entry in allTranslineEntries
+            if (Array.isArray(window.allTranslineEntries)) {
+                var entry = window.allTranslineEntries.find(function(e) { return Number(e.id) === Number(translineId); });
+                if (entry) {
+                    entry.condType = 'AAACS';
+                    if (entry.data) {
+                        entry.data.conductor_type = 'AAACS (Coating)';
+                    }
+                }
+            }
+
+            if (map) map.closePopup();
+            renderAllTranslines();
+        })
+        .catch(function(err) {
+            console.error('[COATING_CONFIRM_ERR]', err);
+            notifyGis('Gagal: ' + err.message, 'danger');
         });
-    }
+    };
 
     // Quick Chips binding
     document.querySelectorAll('.cond-chip-btn').forEach(function (btn) {

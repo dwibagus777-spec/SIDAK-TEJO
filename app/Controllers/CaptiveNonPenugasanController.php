@@ -100,11 +100,28 @@ class CaptiveNonPenugasanController extends BaseController
     public function complete(int $id)
     {
         $session = session();
+        $isAjax = $this->request->isAJAX() || str_contains((string)$this->request->getHeaderLine('Accept'), 'application/json');
         try {
             (new CaptiveNonPenugasanService())->complete($id, (int)$session->get('user_id'), (int)($session->get('user_ulp_id') ?? $session->get('ulp_id') ?? 0) ?: null);
+            if ($isAjax) {
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'message' => 'Pekerjaan coating berhasil diselesaikan! Konduktor diperbarui menjadi AAACS (Coating).',
+                    'data' => [
+                        'id' => $id,
+                        'conductor_type' => 'AAACS (Coating)'
+                    ]
+                ]);
+            }
             return redirect()->to(site_url('captive-non-penugasan'))->with('success', 'Pekerjaan ditandai selesai; transline terkait telah diperbarui bila ini catatan coating.');
         } catch (Throwable $e) {
             log_message('error', 'Captive completion failed: {message}', ['message' => $e->getMessage()]);
+            if ($isAjax) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'message' => $e->getMessage()
+                ]);
+            }
             return redirect()->back()->with('error', $e->getMessage());
         }
     }

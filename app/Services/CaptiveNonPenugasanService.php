@@ -145,12 +145,16 @@ class CaptiveNonPenugasanService
             if ($item['jenis'] === 'COATING' && !empty($item['transline_id'])) {
                 $line = $db->table('gis_translines')->where('id', $item['transline_id'])->where('is_active', 1)->where('status', 'ACTIVE')->where('deleted_at IS NULL')->get()->getRowArray();
                 if (!$line || (int)$line['penyulang_id'] !== (int)$item['penyulang_id']) throw new RuntimeException('Transline tidak lagi aktif pada penyulang tercatat; status tidak diubah.');
-                if (strtoupper((string)$line['conductor_type']) !== strtoupper((string)$item['conductor_type']) || (string)$line['conductor_size'] !== (string)$item['conductor_size']) throw new RuntimeException('Spesifikasi transline berubah sejak catatan dibuat; periksa ulang sebelum menyelesaikan.');
-                $db->table('gis_translines')->where('id', $line['id'])->update([
-                    'conductor_type' => $item['target_conductor_type'] ?: 'AAACS',
-                    'conductor_size' => $item['target_conductor_size'] ?: $line['conductor_size'],
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ]);
+                if ($line['conductor_type'] !== 'AAACS (Coating)') {
+                    if (strtoupper((string)$line['conductor_type']) !== strtoupper((string)$item['conductor_type']) || (string)$line['conductor_size'] !== (string)$item['conductor_size']) {
+                        throw new RuntimeException('Spesifikasi transline berubah sejak catatan dibuat; periksa ulang sebelum menyelesaikan.');
+                    }
+                    $db->table('gis_translines')->where('id', $line['id'])->update([
+                        'conductor_type' => 'AAACS (Coating)',
+                        'conductor_size' => $item['target_conductor_size'] ?: $line['conductor_size'],
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
             }
             $db->table('captive_non_penugasan')->where('id', $id)->update(['status' => 'SELESAI', 'completed_by' => $userId, 'completed_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
             if ($db->transStatus() === false) throw new RuntimeException('Perubahan gagal disimpan.');

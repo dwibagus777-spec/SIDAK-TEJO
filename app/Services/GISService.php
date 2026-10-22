@@ -168,6 +168,36 @@ class GISService
                 $segmentData['network_truth']['topology_ready'] = count($segmentData['edges']) > 0;
             }
         }
+
+        // Attach active captive non penugasan coating information to translines
+        $db = \Config\Database::connect();
+        if (!empty($segmentData['translines']) && $db->tableExists('captive_non_penugasan')) {
+            $coatingRows = $db->table('captive_non_penugasan')
+                ->select('id, transline_id, status, jenis, conductor_type, conductor_size, target_conductor_type, target_conductor_size, updated_at')
+                ->where('jenis', 'COATING')
+                ->where('deleted_at IS NULL')
+                ->where('transline_id IS NOT NULL')
+                ->get()->getResultArray();
+            $coatingMap = [];
+            foreach ($coatingRows as $cr) {
+                $coatingMap[(int)$cr['transline_id']] = $cr;
+            }
+            foreach ($segmentData['translines'] as &$tRow) {
+                $tId = (int)($tRow['id'] ?? 0);
+                if (isset($coatingMap[$tId])) {
+                    $tRow['captive_coating'] = [
+                        'id' => (int)$coatingMap[$tId]['id'],
+                        'status' => $coatingMap[$tId]['status'],
+                        'target_conductor_type' => $coatingMap[$tId]['target_conductor_type'],
+                        'target_conductor_size' => $coatingMap[$tId]['target_conductor_size'],
+                    ];
+                } else {
+                    $tRow['captive_coating'] = null;
+                }
+            }
+            unset($tRow);
+        }
+
         $nodes       = $segmentData['nodes'] ?? [];
         
         $minLat = 90.0; $maxLat = -90.0;

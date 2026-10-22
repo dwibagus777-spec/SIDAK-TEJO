@@ -1869,15 +1869,62 @@ class MigrateController extends BaseController
         // Pure PHP GitHub Sync Fallback when shell_exec / exec are disabled by Hostinger
         if (empty($output)) {
             try {
-                $zipUrl = 'https://github.com/dwibagus777-spec/SIDAK-TEJO/archive/refs/heads/main.zip';
-                $context = stream_context_create([
-                    'http' => [
-                        'header' => "User-Agent: SIDAK-TEJO-AutoDeploy\r\n",
-                        'timeout' => 30
-                    ]
-                ]);
-                $zipData = @file_get_contents($zipUrl, false, $context);
-                if ($zipData !== false && strlen($zipData) > 1000) {
+                $zipUrls = [
+                    'https://codeload.github.com/dwibagus777-spec/SIDAK-TEJO/zip/refs/heads/main',
+                    'https://github.com/dwibagus777-spec/SIDAK-TEJO/archive/refs/heads/main.zip'
+                ];
+                $zipData = false;
+                $curlErr = '';
+
+                if (function_exists('curl_init')) {
+                    foreach ($zipUrls as $zUrl) {
+                        $ch = curl_init();
+                        curl_setopt($ch, CURLOPT_URL, $zUrl);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                        curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+                        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) SIDAK-TEJO-AutoDeploy/1.0');
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+                        curl_setopt($ch, CURLOPT_TIMEOUT, 90);
+                        $res = curl_exec($ch);
+                        $cErr = curl_error($ch);
+                        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
+                        if ($res !== false && strlen($res) > 5000 && ($httpCode === 200 || $httpCode === 302)) {
+                            $zipData = $res;
+                            $output[] = "Downloaded zip via cURL ({$httpCode}, " . strlen($res) . " bytes) from {$zUrl}";
+                            break;
+                        } else {
+                            $curlErr .= "[{$zUrl} code: {$httpCode}, err: {$cErr}] ";
+                        }
+                    }
+                }
+
+                if ($zipData === false || strlen($zipData) < 5000) {
+                    $context = stream_context_create([
+                        'http' => [
+                            'header'          => "User-Agent: Mozilla/5.0 SIDAK-TEJO-AutoDeploy\r\n",
+                            'timeout'         => 60,
+                            'follow_location' => 1,
+                            'max_redirects'   => 5
+                        ],
+                        'ssl' => [
+                            'verify_peer'      => false,
+                            'verify_peer_name' => false
+                        ]
+                    ]);
+                    foreach ($zipUrls as $zUrl) {
+                        $res = @file_get_contents($zUrl, false, $context);
+                        if ($res !== false && strlen($res) > 5000) {
+                            $zipData = $res;
+                            $output[] = "Downloaded zip via stream ({$zUrl}, " . strlen($res) . " bytes)";
+                            break;
+                        }
+                    }
+                }
+
+                if ($zipData !== false && strlen($zipData) > 5000) {
                     $tempZip = WRITEPATH . 'deploy_latest.zip';
                     file_put_contents($tempZip, $zipData);
                     
@@ -1894,9 +1941,17 @@ class MigrateController extends BaseController
                             if (is_dir($sourceDir)) {
                                 $this->recursiveCopy($sourceDir, ROOTPATH);
                                 $output[] = "Pure PHP GitHub Zip Sync Succeeded!";
+                            } else {
+                                $output[] = "Zip extracted, but SIDAK-TEJO-main folder not found in {$extractPath}";
                             }
+                        } else {
+                            $output[] = "ZipArchive failed to open downloaded zip file.";
                         }
+                    } else {
+                        $output[] = "ZipArchive extension not available on this server.";
                     }
+                } else {
+                    $output[] = "Failed to download repository zip: " . ($curlErr ?: 'empty response');
                 }
             } catch (\Throwable $eZip) {
                 $output[] = "Zip Sync Exception: " . $eZip->getMessage();

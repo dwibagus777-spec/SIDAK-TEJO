@@ -115,6 +115,14 @@
         gap: 8px;
         pointer-events: none;
     }
+    .gis-compact-topbar > * {
+        pointer-events: auto !important;
+    }
+    .gis-topbar-actions,
+    .gis-topbar-actions > *,
+    .pointer-events-auto {
+        pointer-events: auto !important;
+    }
     .gis-topbar-pill {
         pointer-events: auto;
         background: rgba(255, 255, 255, 0.96);
@@ -713,11 +721,11 @@
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-1">
+            <div class="d-flex align-items-center gap-1 gis-topbar-actions" style="pointer-events: auto;">
                 <!-- Interactive Conductor Transline Filter -->
-                <div class="d-flex align-items-center bg-white rounded-pill px-2 py-0.5 border shadow-sm pointer-events-auto" style="height: 31px;" title="Filter Transline Berdasarkan Jenis Konduktor Tanpa Reload">
+                <div id="gis-topbar-conductor-filter-container" class="d-flex align-items-center bg-white rounded-pill px-2 py-0.5 border shadow-sm pointer-events-auto" style="height: 31px; pointer-events: auto; cursor: pointer;" title="Filter Transline Berdasarkan Jenis Konduktor Tanpa Reload">
                     <i class="fas fa-filter text-primary me-1" style="font-size: 10px;"></i>
-                    <select id="gis-topbar-conductor-filter" class="form-select form-select-sm border-0 bg-transparent p-0 font-monospace fw-bold text-dark" style="font-size: 11px; width: auto; cursor: pointer; outline: none; box-shadow: none;" onchange="window.applyGisConductorFilter(this.value)">
+                    <select id="gis-topbar-conductor-filter" class="form-select form-select-sm border-0 bg-transparent p-0 font-monospace fw-bold text-dark" style="font-size: 11px; width: auto; cursor: pointer; outline: none; box-shadow: none; pointer-events: auto;" onchange="window.applyGisConductorFilter(this.value)">
                         <option value="ALL">⚡ Konduktor: Semua</option>
                         <option value="AAAC">AAAC</option>
                         <option value="AAACS">AAACS</option>
@@ -725,7 +733,7 @@
                         <option value="XLPE">XLPE</option>
                     </select>
                 </div>
-                <button type="button" id="btn-open-conductor-analytics" class="btn btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-white px-2 px-md-3" style="font-size: 11px; background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border: 1px solid #14b8a6;" title="Analisis Konduktor & Panjang Jaringan">
+                <button type="button" id="btn-open-conductor-analytics" class="btn btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-white px-2 px-md-3" style="font-size: 11px; pointer-events: auto; background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border: 1px solid #14b8a6;" title="Analisis Konduktor & Panjang Jaringan">
                     <i class="fas fa-wave-square me-1"></i> Konduktor
                 </button>
                 <button type="button" id="btn-open-transline-ai" class="btn btn-sm rounded-pill font-weight-bold shadow-sm pointer-events-auto text-white px-2 px-md-3" style="font-size: 11px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: 1px solid #0284c7;">
@@ -962,23 +970,23 @@
             <div class="border-top pt-2 mt-2">
                 <span class="text-muted fw-bold d-block mb-1" style="font-size: 10px; text-transform: uppercase;">Standar Konduktor SUTM (PLN)</span>
                 <div class="d-flex flex-column gap-1">
-                    <div class="legend-item-row align-items-center">
+                    <div class="legend-item-row align-items-center" data-conductor-type="AAAC">
                         <img src="<?= base_url('assets/gis/icons/a3c-150.png') ?>" alt="AAAC 150" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
                         <span class="text-dark font-monospace" style="font-size: 9px;">AAAC 150 mm²</span>
                     </div>
-                    <div class="legend-item-row align-items-center">
+                    <div class="legend-item-row align-items-center" data-conductor-type="AAAC">
                         <img src="<?= base_url('assets/gis/icons/a3c-240.png') ?>" alt="AAAC 240" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
                         <span class="text-dark font-monospace" style="font-size: 9px;">AAAC 240 mm²</span>
                     </div>
-                    <div class="legend-item-row align-items-center">
+                    <div class="legend-item-row align-items-center" data-conductor-type="AAACS">
                         <img src="<?= base_url('assets/gis/icons/a3cs-150.png') ?>" alt="AAAC-S 150" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
                         <span class="text-dark font-monospace" style="font-size: 9px;">AAAC-S 150 mm²</span>
                     </div>
-                    <div class="legend-item-row align-items-center">
+                    <div class="legend-item-row align-items-center" data-conductor-type="MVTIC">
                         <img src="<?= base_url('assets/gis/icons/mvtic-150.png') ?>" alt="MVTIC" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
                         <span class="text-dark font-monospace" style="font-size: 9px;">MVTIC 150 mm²</span>
                     </div>
-                    <div class="legend-item-row align-items-center">
+                    <div class="legend-item-row align-items-center" data-conductor-type="XLPE">
                         <img src="<?= base_url('assets/gis/icons/xlpe.png') ?>" alt="XLPE" class="legend-icon-preview" style="height: 14px; width: 44px; object-fit: contain;">
                         <span class="text-dark font-monospace" style="font-size: 9px;">XLPE 150 mm²</span>
                     </div>
@@ -3245,6 +3253,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // Isolate all GIS overlay elements from Leaflet map gesture capture
     function isolateGisUiFromLeaflet() {
         var overlayIds = [
+            'gis-compact-topbar',
+            'gis-topbar-conductor-filter-container',
+            'gis-topbar-conductor-filter',
+            'btn-open-conductor-analytics',
             'asset-quick-card',
             'offcanvas-asset-transline-menu',
             'offcanvas-confirm-connection-sheet',
@@ -5519,6 +5531,23 @@ document.addEventListener("DOMContentLoaded", function () {
         var drawSel = document.getElementById('drawer-conductor-filter');
         if (drawSel && drawSel.value !== window.gisConductorFilter) drawSel.value = window.gisConductorFilter;
 
+        // Highlight/dim legend items based on active filter
+        var legendRows = document.querySelectorAll('#gis-legend-panel [data-conductor-type]');
+        if (legendRows && legendRows.length > 0) {
+            legendRows.forEach(function (row) {
+                var cType = row.getAttribute('data-conductor-type');
+                if (window.gisConductorFilter === 'ALL' || cType === window.gisConductorFilter) {
+                    row.style.opacity = '1';
+                    row.style.fontWeight = window.gisConductorFilter === 'ALL' ? 'normal' : 'bold';
+                    row.classList.remove('opacity-25');
+                } else {
+                    row.style.opacity = '0.35';
+                    row.style.fontWeight = 'normal';
+                    row.classList.add('opacity-25');
+                }
+            });
+        }
+
         if (!translinePolylineLayer || !Array.isArray(window.allTranslineEntries)) return;
 
         var visibleCount = 0;
@@ -5551,9 +5580,10 @@ document.addEventListener("DOMContentLoaded", function () {
         if (summaryEl) {
             var kmStr = (visibleLengthM / 1000).toFixed(2);
             var filterNote = window.gisConductorFilter === 'ALL' ? '' : ` [Filter: ${window.gisConductorFilter}]`;
+            var countDisplay = window.gisConductorFilter === 'ALL' ? `${totalCount} (${kmStr} km)` : `${visibleCount}/${totalCount} (${kmStr} km)${filterNote}`;
             var curText = summaryEl.innerHTML;
             if (curText.indexOf('TRANSLINE RESMI:') > -1) {
-                summaryEl.innerHTML = curText.replace(/TRANSLINE RESMI:\s*[^<]+/i, `TRANSLINE RESMI: ${visibleCount}/${totalCount} (${kmStr} km)${filterNote}`);
+                summaryEl.innerHTML = curText.replace(/TRANSLINE RESMI:\s*[^<]+/i, `TRANSLINE RESMI: ${countDisplay}`);
             }
         }
     };
@@ -6405,10 +6435,18 @@ document.addEventListener("DOMContentLoaded", function () {
         if (document.getElementById('drawer-layer-temuan') && document.getElementById('setup-layer-temuan')) {
             document.getElementById('drawer-layer-temuan').checked = document.getElementById('setup-layer-temuan').checked;
         }
+        var drawerCond = document.getElementById('drawer-conductor-filter');
+        if (drawerCond) {
+            drawerCond.value = window.gisConductorFilter || 'ALL';
+        }
         safeShowOffcanvas('offcanvas-filter-sheet');
     }
 
     bindPointerSafeTap('btn-apply-drawer-filter', function () {
+        var drawerCond = document.getElementById('drawer-conductor-filter');
+        if (drawerCond && drawerCond.value !== window.gisConductorFilter) {
+            window.applyGisConductorFilter(drawerCond.value);
+        }
         var drawerSelect = document.getElementById('drawer-feeder-select');
         var selectedOpts = Array.from(drawerSelect.selectedOptions || []).filter(o => o.value);
         if (selectedOpts.length > 0) {
@@ -6823,6 +6861,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 'COND_QUICK_SEARCH');
 
     bindPointerSafeTap('btn-reset-conductor-filters', resetConductorFilters, 'RESET_CONDUCTOR_FILTERS');
+
+    // Topbar Conductor Filter helper for click/tap
+    var topbarCondContainer = document.getElementById('gis-topbar-conductor-filter-container');
+    var topbarCondSelect = document.getElementById('gis-topbar-conductor-filter');
+    if (topbarCondContainer && topbarCondSelect) {
+        topbarCondContainer.addEventListener('click', function (e) {
+            if (e.target !== topbarCondSelect) {
+                topbarCondSelect.focus();
+                if (typeof topbarCondSelect.showPicker === 'function') {
+                    try { topbarCondSelect.showPicker(); } catch (err) {}
+                }
+            }
+        });
+    }
 
     // Quick Chips binding
     document.querySelectorAll('.cond-chip-btn').forEach(function (btn) {

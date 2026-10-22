@@ -149,7 +149,7 @@
         top: 68px;
         left: 50%;
         transform: translateX(-50%);
-        z-index: 1005;
+        z-index: 1060 !important;
         background: rgba(15, 23, 42, 0.96);
         backdrop-filter: blur(12px);
         color: #ffffff;
@@ -375,7 +375,7 @@
         border-radius: 20px 20px 0 0 !important;
         border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
         box-shadow: 0 -10px 35px rgba(15, 23, 42, 0.25) !important;
-        z-index: 1055 !important;
+        z-index: 1070 !important;
         touch-action: pan-y !important;
         overflow: hidden !important;
     }
@@ -384,7 +384,7 @@
         max-height: 85vh !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
-        padding-bottom: 0 !important;
+        padding-bottom: calc(var(--gis-mob-bottom-nav, 68px) + env(safe-area-inset-bottom, 0px) + 24px) !important;
     }
 
     @media (min-width: 769px) {
@@ -626,11 +626,18 @@
             <div class="mb-3">
                 <label class="form-label small fw-bold text-secondary text-uppercase mb-1 d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-bolt text-warning me-1"></i> 3. Penyulang / Feeder</span>
-                    <span id="setup-feeder-loading" class="spinner-border spinner-border-sm text-primary" style="display:none;"></span>
+                    <span class="d-flex align-items-center gap-2">
+                        <span id="setup-feeder-loading" class="spinner-border spinner-border-sm text-primary" style="display:none;"></span>
+                        <span class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="setup-multi-feeder-toggle" role="switch" title="Pilih Beberapa Penyulang">
+                            <label class="form-check-label small text-muted" for="setup-multi-feeder-toggle" style="font-size: 11px;">Multi</label>
+                        </span>
+                    </span>
                 </label>
                 <select id="setup-feeder-select" class="form-select form-select-sm fw-bold border-primary text-primary rounded-3 py-2">
                     <option value="">-- Pilih ULP Terlebih Dahulu --</option>
                 </select>
+                <small id="setup-multi-feeder-hint" class="text-muted d-none" style="font-size: 10px;">Tekan Ctrl/Cmd untuk memilih lebih dari 1 penyulang sekaligus.</small>
             </div>
 
             <!-- Step 4: Layer Aset yang Dimuat -->
@@ -643,7 +650,7 @@
                         <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
                             <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-jtm" value="JTM" checked>
                             <label class="form-check-label small fw-bold text-dark ms-2 mb-0" for="setup-layer-jtm">
-                                Tiang JTM (TM)
+                                Tiang JTM (beserta keypoint)
                             </label>
                         </div>
                     </div>
@@ -667,7 +674,7 @@
                         <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
                             <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-switch" value="SWITCH" checked>
                             <label class="form-check-label small fw-bold text-dark ms-2 mb-0" for="setup-layer-switch">
-                                Peralatan (LBS/REC)
+                                Aset Keypoint (Recloser, PMCB, GH, LBS)
                             </label>
                         </div>
                     </div>
@@ -1682,10 +1689,17 @@
             <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="mb-3">
-            <label class="small text-muted font-weight-bold d-block mb-1">Pilih Penyulang:</label>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="small text-muted font-weight-bold mb-0">Pilih Penyulang:</label>
+                <span class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="drawer-multi-feeder-toggle" role="switch" title="Pilih Beberapa Penyulang">
+                    <label class="form-check-label small text-muted" for="drawer-multi-feeder-toggle" style="font-size: 11px;">Multi</label>
+                </span>
+            </div>
             <select id="drawer-feeder-select" class="form-select form-select-sm fw-bold border-primary text-primary">
                 <!-- Dynamically cloned -->
             </select>
+            <small id="drawer-multi-feeder-hint" class="text-muted d-none" style="font-size: 10px;">Tekan Ctrl/Cmd untuk memilih lebih dari 1 penyulang sekaligus.</small>
         </div>
         <div class="mb-3">
             <label class="small text-muted font-weight-bold d-block mb-1"><i class="fas fa-wave-square text-info me-1"></i> Filter Jenis Konduktor Transline:</label>
@@ -1698,30 +1712,30 @@
             </select>
         </div>
         <div class="mb-3">
-            <label class="small text-muted font-weight-bold d-block mb-1">Layer Aset:</label>
+            <label class="small text-muted font-weight-bold d-block mb-1">Layer Aset yang Dimuat:</label>
             <div class="row g-2">
                 <div class="col-6">
                     <div class="form-check p-2 bg-light rounded-3 border">
                         <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-jtm" value="JTM" checked>
-                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-jtm">Tiang JTM</label>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-jtm">Tiang JTM (beserta keypoint)</label>
                     </div>
                 </div>
                 <div class="col-6">
                     <div class="form-check p-2 bg-light rounded-3 border">
                         <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-gardu" value="GARDU" checked>
-                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-gardu">Gardu</label>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-gardu">Gardu Distribusi</label>
                     </div>
                 </div>
                 <div class="col-6">
                     <div class="form-check p-2 bg-light rounded-3 border">
                         <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-trafo" value="TRAFO" checked>
-                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-trafo">Trafo</label>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-trafo">Trafo Distribusi</label>
                     </div>
                 </div>
                 <div class="col-6">
                     <div class="form-check p-2 bg-light rounded-3 border">
                         <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-switch" value="SWITCH" checked>
-                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-switch">Peralatan</label>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-switch">Aset Keypoint (Recloser, PMCB, GH, LBS)</label>
                     </div>
                 </div>
                 <div class="col-12">
@@ -3069,6 +3083,27 @@ document.addEventListener("DOMContentLoaded", function () {
     var activeAssetProps = null;
     var masterConductorsList = [];
 
+    // Toast & Inline Accessible Notification Helper (Replacing Native Alert)
+    function notifyGis(message, type, title) {
+        type = type || 'info';
+        if (typeof Swal !== 'undefined') {
+            var iconType = (type === 'error') ? 'error' : ((type === 'success') ? 'success' : ((type === 'warning') ? 'warning' : 'info'));
+            var defaultTitle = (type === 'error') ? 'Peringatan' : ((type === 'success') ? 'Berhasil' : ((type === 'warning') ? 'Perhatian' : 'Informasi'));
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: iconType,
+                title: title || defaultTitle,
+                text: message,
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true
+            });
+        } else {
+            alert(message);
+        }
+    }
+
     // ========================================================
     // 🎯 ASSET-ANCHORED TRANSLINE EDITOR STATE MACHINE
     // ========================================================
@@ -3441,21 +3476,43 @@ document.addEventListener("DOMContentLoaded", function () {
         loadPenyulangsForUlp(setupUlpSelect.value, true);
     }
 
+    var setupMultiToggle = document.getElementById('setup-multi-feeder-toggle');
+    var setupMultiHint = document.getElementById('setup-multi-feeder-hint');
+    if (setupMultiToggle) {
+        setupMultiToggle.addEventListener('change', function() {
+            setupFeederSelect.multiple = this.checked;
+            setupFeederSelect.size = this.checked ? 5 : 1;
+            if (setupMultiHint) setupMultiHint.classList.toggle('d-none', !this.checked);
+        });
+    }
+    var drawerMultiToggle = document.getElementById('drawer-multi-feeder-toggle');
+    var drawerMultiHint = document.getElementById('drawer-multi-feeder-hint');
+    if (drawerMultiToggle) {
+        drawerMultiToggle.addEventListener('change', function() {
+            var drawerSelect = document.getElementById('drawer-feeder-select');
+            if (drawerSelect) {
+                drawerSelect.multiple = this.checked;
+                drawerSelect.size = this.checked ? 5 : 1;
+            }
+            if (drawerMultiHint) drawerMultiHint.classList.toggle('d-none', !this.checked);
+        });
+    }
+
     // ========================================================
     // STAGE 2: TRANSITION FROM SETUP TO FULL MAP WORKSPACE
     // ========================================================
     bindPointerSafeTap('btn-setup-open-map', function () {
-        var feederId = setupFeederSelect.value;
-        if (!feederId) {
-            alert('Silakan pilih Penyulang terlebih dahulu!');
+        var selectedOpts = Array.from(setupFeederSelect.selectedOptions || []).filter(o => o.value);
+        if (selectedOpts.length === 0) {
+            notifyGis('Silakan pilih Penyulang terlebih dahulu!', 'warning');
             return;
         }
 
-        var opt = setupFeederSelect.options[setupFeederSelect.selectedIndex];
+        var feederId = selectedOpts.map(o => o.value).join(',');
         var isDifferentFeeder = (currentFeederId && String(currentFeederId) !== String(feederId));
         currentFeederId = feederId;
-        currentFeederName = opt.dataset.feederName || opt.text;
-        currentUlpName = opt.dataset.ulpName || 'PLN ULP';
+        currentFeederName = selectedOpts.map(o => o.dataset.feederName || o.text).join(' + ');
+        currentUlpName = (selectedOpts[0].dataset && selectedOpts[0].dataset.ulpName) ? selectedOpts[0].dataset.ulpName : 'PLN ULP';
 
         document.getElementById('topbar-feeder-title').textContent = currentFeederName;
         document.getElementById('topbar-ulp-subtitle').textContent = currentUlpName;
@@ -3904,7 +3961,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Case A: State is CHANGE_CONNECTION or ADD_CONNECTION -> Target Selected!
         if (translineEditor.state === TRANSLINE_STATE.CHANGE_CONNECTION || translineEditor.state === TRANSLINE_STATE.ADD_CONNECTION) {
             if (translineEditor.sourceAsset && translineEditor.sourceAsset.id === clickedAsset.id) {
-                alert('Silakan pilih tiang TUJUAN yang berbeda dengan tiang sumber!');
+                notifyGis('Silakan pilih tiang TUJUAN yang berbeda dengan tiang sumber!', 'warning');
                 return;
             }
 
@@ -3922,13 +3979,13 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (translineEditor.sourceAsset.id === clickedAsset.id) {
-                alert('Silakan pilih tiang kedua yang berbeda untuk menentukan jalur yang akan dihapus!');
+                notifyGis('Silakan pilih tiang kedua yang berbeda untuk menentukan jalur yang akan dihapus!', 'warning');
                 return;
             }
 
             var tl = resolveTranslinePair(translineEditor.sourceAsset.id, clickedAsset.id);
             if (!tl) {
-                alert(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`);
+                notifyGis(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`, 'warning');
                 return;
             }
 
@@ -3947,13 +4004,13 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (translineEditor.sourceAsset.id === clickedAsset.id) {
-                alert('Silakan pilih tiang kedua yang berbeda untuk menentukan jalur!');
+                notifyGis('Silakan pilih tiang kedua yang berbeda untuk menentukan jalur!', 'warning');
                 return;
             }
 
             var tl = resolveTranslinePair(translineEditor.sourceAsset.id, clickedAsset.id);
             if (!tl) {
-                alert(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`);
+                notifyGis(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`, 'warning');
                 return;
             }
 
@@ -3972,12 +4029,15 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (translineEditor.sourceAsset.id === clickedAsset.id) {
-                alert('Silakan pilih tiang kedua yang berbeda untuk menentukan jalur!');
+                notifyGis('Silakan pilih tiang kedua yang berbeda untuk menentukan jalur!', 'warning');
                 return;
             }
 
             var tl = resolveTranslinePair(translineEditor.sourceAsset.id, clickedAsset.id);
             if (!tl) {
+                notifyGis(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`, 'warning');
+                return;
+            }
                 alert(`Tidak ditemukan sambungan jalur aktif antara ${translineEditor.sourceAsset.nama_asset} dan ${clickedAsset.nama_asset}.`);
                 return;
             }
@@ -4747,6 +4807,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 'QUICK_TRANSLINE_MENU');
 
     function openTranslineActionSheet(assetProps) {
+        if (map) map.closePopup();
+        if (typeof closeAssetQuickCard === 'function') closeAssetQuickCard();
         translineEditor.sourceAsset = assetProps;
         document.getElementById('transline-sheet-subtitle').textContent = `${assetProps.kode_asset || ''} - ${assetProps.nama_asset || ''}`;
         safeShowOffcanvas('offcanvas-asset-transline-menu');
@@ -4778,7 +4840,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var lon2 = targetAsset.longitude;
 
         if (!isValidLatLng(lat1, lon1) || !isValidLatLng(lat2, lon2)) {
-            alert('Koordinat tiang tidak valid.');
+            notifyGis('Koordinat tiang tidak valid.', 'error');
             return;
         }
 
@@ -4856,10 +4918,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     };
                 }
                 renderFilteredLayers(false);
-                alert(res.message);
+                notifyGis(res.message, 'success');
             } else {
                 loadGisNetworkOnDemand(false, function() {
-                    alert(res.message);
+                    notifyGis(res.message, 'success');
                 });
             }
         })
@@ -4868,7 +4930,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
             }
-            alert('Gagal memperbarui koneksi: ' + err.message);
+            notifyGis('Gagal memperbarui koneksi: ' + err.message, 'error');
         });
     }, 'SUBMIT_CONNECTION');
 
@@ -4957,10 +5019,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     };
                 }
                 renderFilteredLayers(false);
-                alert(res.message);
+                notifyGis(res.message, 'success');
             } else {
                 loadGisNetworkOnDemand(false, function() {
-                    alert(res.message);
+                    notifyGis(res.message, 'success');
                 });
             }
         })
@@ -4969,7 +5031,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Simpan Langsung';
             }
-            alert('Gagal: ' + err.message);
+            notifyGis('Gagal: ' + err.message, 'error');
         });
     }, 'SUBMIT_CONDUCTOR_SPEC');
 
@@ -5063,14 +5125,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 renderFilteredLayers(false);
             }
 
-            alert(res.message || 'Jalur berhasil diputus.');
+            notifyGis(res.message || 'Jalur berhasil diputus.', 'success');
         })
         .catch(err => {
             if (confirmBtn) {
                 confirmBtn.disabled = false;
                 confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i> Hapus Jalur';
             }
-            alert('Gagal menghapus jalur: ' + err.message);
+            notifyGis('Gagal menghapus jalur: ' + err.message, 'error');
         });
     }, 'CONFIRM_DELETE_PAIR');
 
@@ -5255,7 +5317,7 @@ document.addEventListener("DOMContentLoaded", function () {
             translineEditor.editedVertices = JSON.parse(JSON.stringify(translineEditor.undoStack[translineEditor.undoStack.length - 1]));
             renderSingleSegmentEditor();
         } else {
-            alert('Tidak ada riwayat undo.');
+            notifyGis('Tidak ada riwayat undo.', 'info');
         }
     }, 'UNDO_SEGMENT');
 
@@ -5266,7 +5328,7 @@ document.addEventListener("DOMContentLoaded", function () {
     bindPointerSafeTap('btn-save-segment-geometry', function () {
         var validVertices = translineEditor.editedVertices.filter(pt => isValidLatLng(pt[0], pt[1]));
         if (validVertices.length < 2) {
-            alert('Minimal 2 titik diperlukan.');
+            notifyGis('Minimal 2 titik diperlukan.', 'warning');
             return;
         }
 
@@ -5302,15 +5364,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     };
                 }
                 renderFilteredLayers(false);
-                alert(res.message);
+                notifyGis(res.message, 'success');
             } else {
                 loadGisNetworkOnDemand(false, function() {
-                    alert(res.message);
+                    notifyGis(res.message, 'success');
                 });
             }
         })
         .catch(err => {
-            alert('Gagal menyimpan bentuk segmen: ' + err.message);
+            notifyGis('Gagal menyimpan bentuk segmen: ' + err.message, 'error');
         });
     }, 'SAVE_SEGMENT_GEOMETRY');
 
@@ -5695,7 +5757,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 🟢 TRANSLINE OTORITATIF JTM (PERSISTED)
                             </span>
                         </div>
-                        ${(tl.conductor_type && tl.conductor_type.toUpperCase().includes('AAAC') && !tl.conductor_type.toUpperCase().includes('AAACS')) ? `<a class="btn btn-sm btn-warning w-100 mt-2" href="<?= site_url('captive-non-penugasan') ?>?transline_id=${encodeURIComponent(Number(tId))}"><i class="fas fa-highlighter me-1"></i> Tandai Potensi Coating</a>` : ''}
+                        ${(tl.conductor_type && tl.conductor_type.toUpperCase().includes('AAAC') && !tl.conductor_type.toUpperCase().includes('AAACS')) ? `<a class="btn btn-sm btn-warning w-100 mt-2" href="<?= site_url('captive-non-penugasan') ?>?transline_id=${encodeURIComponent(Number(tId))}&return_to=gis&penyulang_id=${encodeURIComponent(currentFeederId)}&lat=${encodeURIComponent(map ? map.getCenter().lat.toFixed(6) : '')}&lng=${encodeURIComponent(map ? map.getCenter().lng.toFixed(6) : '')}&zoom=${encodeURIComponent(map ? map.getZoom() : 14)}&layers=${encodeURIComponent(getSelectedSetupLayers().join(','))}"><i class="fas fa-highlighter me-1"></i> Tandai Potensi Coating</a>` : ''}
                     </div>
                 `;
 
@@ -6284,7 +6346,21 @@ document.addEventListener("DOMContentLoaded", function () {
     bindPointerSafeTap('btn-open-filter-drawer', openFilterDrawer, 'OPEN_FILTER_DRAWER');
 
     function openFilterDrawer() {
-        document.getElementById('drawer-feeder-select').value = currentFeederId;
+        var drawerSelect = document.getElementById('drawer-feeder-select');
+        var feederIds = String(currentFeederId || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (drawerSelect) {
+            if (feederIds.length > 1) {
+                drawerSelect.multiple = true;
+                drawerSelect.size = 5;
+                var drawerMultiToggle = document.getElementById('drawer-multi-feeder-toggle');
+                if (drawerMultiToggle) drawerMultiToggle.checked = true;
+                var drawerMultiHint = document.getElementById('drawer-multi-feeder-hint');
+                if (drawerMultiHint) drawerMultiHint.classList.remove('d-none');
+            }
+            Array.from(drawerSelect.options).forEach(opt => {
+                opt.selected = feederIds.includes(String(opt.value));
+            });
+        }
         if (document.getElementById('drawer-layer-jtm') && document.getElementById('setup-layer-jtm')) {
             document.getElementById('drawer-layer-jtm').checked = document.getElementById('setup-layer-jtm').checked;
         }
@@ -6304,13 +6380,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     bindPointerSafeTap('btn-apply-drawer-filter', function () {
-        var newFeederId = document.getElementById('drawer-feeder-select').value;
-        if (newFeederId) {
-            currentFeederId = newFeederId;
-            var opt = document.getElementById('drawer-feeder-select').options[document.getElementById('drawer-feeder-select').selectedIndex];
-            currentFeederName = opt.dataset.feederName || opt.text;
+        var drawerSelect = document.getElementById('drawer-feeder-select');
+        var selectedOpts = Array.from(drawerSelect.selectedOptions || []).filter(o => o.value);
+        if (selectedOpts.length > 0) {
+            currentFeederId = selectedOpts.map(o => o.value).join(',');
+            currentFeederName = selectedOpts.map(o => o.dataset.feederName || o.text).join(' + ');
             document.getElementById('topbar-feeder-title').textContent = currentFeederName;
-            setupFeederSelect.value = newFeederId;
+            // Sync with setup select
+            if (setupFeederSelect) {
+                Array.from(setupFeederSelect.options).forEach(opt => {
+                    opt.selected = selectedOpts.some(s => String(s.value) === String(opt.value));
+                });
+            }
         }
 
         if (document.getElementById('drawer-layer-jtm') && document.getElementById('setup-layer-jtm')) {
@@ -8608,6 +8689,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     timer: 3500,
                     timerProgressBar: true
                 });
+                if (window.history && window.history.replaceState) {
+                    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                    window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+                }
+            }
+
+            var captiveSuccessId = urlParams.get('captive_success');
+            if (captiveSuccessId) {
+                notifyGis('Catatan Captive #' + captiveSuccessId + ' berhasil disimpan!', 'success', 'Captive Tersimpan');
                 if (window.history && window.history.replaceState) {
                     const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
                     window.history.replaceState({ path: cleanUrl }, '', cleanUrl);

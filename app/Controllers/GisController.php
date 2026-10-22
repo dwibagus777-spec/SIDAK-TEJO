@@ -207,12 +207,17 @@ class GisController extends BaseController
      */
     public function apiNetwork(): ResponseInterface
     {
-        $penyulangId = (int)(
-            (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
-            ?? ($_GET['penyulang_id'] ?? 0)
-        );
+        $rawPenyulang = (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+            ?? ($_GET['penyulang_id'] ?? 0);
 
-        if ($penyulangId <= 0) {
+        $penyulangIds = [];
+        if (is_array($rawPenyulang)) {
+            $penyulangIds = array_values(array_filter(array_map('intval', $rawPenyulang)));
+        } elseif (is_string($rawPenyulang) || is_numeric($rawPenyulang)) {
+            $penyulangIds = array_values(array_filter(array_map('intval', explode(',', (string)$rawPenyulang))));
+        }
+
+        if (empty($penyulangIds)) {
             return $this->response->setStatusCode(422)->setJSON([
                 'status'  => 'error',
                 'message' => 'Penyulang wajib dipilih untuk memuat data peta jaringan.'
@@ -230,10 +235,11 @@ class GisController extends BaseController
         );
 
         $filters = [
-            'penyulang_id' => $penyulangId,
-            'zoom'         => $zoom,
-            'layers'       => $layers,
-            'captive_only' => (int)($this->request->getGet('captive_only') ?? 0) === 1,
+            'penyulang_id'  => count($penyulangIds) === 1 ? $penyulangIds[0] : implode(',', $penyulangIds),
+            'penyulang_ids' => $penyulangIds,
+            'zoom'          => $zoom,
+            'layers'        => $layers,
+            'captive_only'  => (int)($this->request->getGet('captive_only') ?? 0) === 1,
         ];
 
         $userUlpId = session()->get('ulp_id');
@@ -1461,23 +1467,96 @@ class GisController extends BaseController
         
         $sourceId = (int)($payload['source_asset_id'] ?? $payload['parent_id'] ?? 0);
         $targetId = (int)($payload['target_asset_id'] ?? $payload['child_id'] ?? 0);
+        $penyulangId = (int)($payload['penyulang_id'] ?? 0);
 
         if ($sourceId <= 0 || $targetId <= 0 || $sourceId === $targetId) {
             return $this->response->setStatusCode(422)->setJSON([
                 'status'  => 'error',
-                'message' => 'ID Aset Sumber dan ID Aset Tujuan valid wajib diisi.'
+                'message' => 'ID Aset Sumber dan ID Aset Tujuan valid wajib diisi dan tidak boleh sama.'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $sourceAsset = $db->table('assets')->where('id', $sourceId)->get()->getRowArray();
+        $targetAsset = $db->table('assets')->where('id', $targetId)->get()->getRowArray();
+
+        if (!$sourceAsset || !$targetAsset) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 'error',
+                'message' => 'Data aset sumber atau target tidak ditemukan.'
+            ]);
+        }
+
+        // Resolusi tiang fisik jika aset sumber adalah non-pole (PMCB, Recloser, LBS, GH, dll)
+        $srcPoleCheck = \App\Services\GisTranslineService::isJtmPoleAsset($sourceAsset);
+        $resolvedSourcePole = null;
+        if (!$srcPoleCheck['valid']) {
+            $fId = $penyulangId > 0 ? $penyulangId : (int)($sourceAsset['penyulang_id'] ?? 0);
+            $resSource = $this->translineService->resolveSourceContextToNearestJtmPole($sourceId, $fId);
+            if ($resSource && !empty($resSource['anchor_pole_asset'])) {
+                $resolvedSourcePole = $resSource['anchor_pole_asset'];
+                $sourceId = (int)$resolvedSourcePole['id'];
+                if (empty($sourceAsset['parent_asset_id']) || (int)$sourceAsset['parent_asset_id'] !== $sourceId) {
+                    $db->table('assets')->where('id', (int)$sourceAsset['id'])->update(['parent_asset_id' => $sourceId]);
+                }
+            } else {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'message' => "Aset sumber [{$sourceAsset['kode_asset']}] merupakan {$srcPoleCheck['reason']} dan belum terhubung ke tiang tumpu fisik dalam radius 35m."
+                ]);
+            }
+        }
+
+        // Resolusi tiang fisik jika aset target adalah non-pole (PMCB, Recloser, LBS, GH, dll)
+        $tgtPoleCheck = \App\Services\GisTranslineService::isJtmPoleAsset($targetAsset);
+        $resolvedTargetPole = null;
+        if (!$tgtPoleCheck['valid']) {
+            $fId = $penyulangId > 0 ? $penyulangId : (int)($targetAsset['penyulang_id'] ?? 0);
+            $resTarget = $this->translineService->resolveSourceContextToNearestJtmPole($targetId, $fId);
+            if ($resTarget && !empty($resTarget['anchor_pole_asset'])) {
+                $resolvedTargetPole = $resTarget['anchor_pole_asset'];
+                $targetId = (int)$resolvedTargetPole['id'];
+                if (empty($targetAsset['parent_asset_id']) || (int)$targetAsset['parent_asset_id'] !== $targetId) {
+                    $db->table('assets')->where('id', (int)$targetAsset['id'])->update(['parent_asset_id' => $targetId]);
+                }
+            } else {
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status'  => 'error',
+                    'message' => "Aset target [{$targetAsset['kode_asset']}] merupakan {$tgtPoleCheck['reason']} dan belum terhubung ke tiang tumpu fisik dalam radius 35m."
+                ]);
+            }
+        }
+
+        // Jika setelah resolusi tiang fisik sumber == target (misal PMCB terpasang pada tiang itu sendiri)
+        if ($sourceId === $targetId) {
+            $poleAsset = $resolvedSourcePole ?? $resolvedTargetPole ?? $sourceAsset;
+            $eqAsset = !$srcPoleCheck['valid'] ? $sourceAsset : $targetAsset;
+            return $this->response->setJSON([
+                'status'  => 'success',
+                'message' => "Perangkat [{$eqAsset['kode_asset']}] telah terpasang pada tiang tumpu [{$poleAsset['kode_asset']}]. Transline jaringan tetap menghubungkan antar-tiang JTM fisik."
             ]);
         }
 
         if ($this->topologyService->wouldCreateCycle($sourceId, $targetId)) {
             return $this->response->setStatusCode(400)->setJSON([
                 'status'  => 'error',
-                'message' => 'Penambahan relasi ditolak: Terdeteksi circular topology (loop tertutup)!'
+                'message' => 'Penambahan relasi ditolak: Terdeteksi circular topology (loop tertutup) antar-tiang JTM!'
             ]);
         }
 
+        // Update payload dengan ID tiang fisik yang valid
+        $payload['source_asset_id'] = $sourceId;
+        $payload['target_asset_id'] = $targetId;
+
         $actor = $this->getActor();
         $result = $this->translineService->saveTransline($payload, $actor);
+
+        if ($resolvedTargetPole || $resolvedSourcePole) {
+            $notes = [];
+            if ($resolvedSourcePole) $notes[] = "Sumber [{$sourceAsset['kode_asset']}] dihubungkan melalui tiang [{$resolvedSourcePole['kode_asset']}]";
+            if ($resolvedTargetPole) $notes[] = "Target [{$targetAsset['kode_asset']}] dihubungkan melalui tiang [{$resolvedTargetPole['kode_asset']}]";
+            $result['message'] = ($result['message'] ?? 'Transline tersimpan.') . ' (' . implode('; ', $notes) . ')';
+        }
 
         return $this->response->setJSON($result);
     }

@@ -6,8 +6,14 @@
     <?php if (session()->getFlashdata('success')): ?><div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div><?php endif ?>
     <?php if (session()->getFlashdata('error')): ?><div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div><?php endif ?>
     <div class="row g-3">
-        <div class="col-xl-5"><div class="card shadow-sm"><div class="card-header fw-bold">Catat Potensi Coating / Temuan Manual</div><div class="card-body">
+        <div class="col-xl-5"><div class="card shadow-sm"><div class="card-header fw-bold d-flex justify-content-between align-items-center"><span>Catat Potensi Coating / Temuan Manual</span><?php if (!empty($returnTo) && $returnTo === 'gis' && !empty($returnPenyulangId)): ?><a href="<?= site_url('gis?penyulang_id=' . (int)$returnPenyulangId . (!empty($returnLat) && !empty($returnLng) ? '&lat=' . urlencode($returnLat) . '&lng=' . urlencode($returnLng) : '') . (!empty($returnZoom) ? '&zoom=' . urlencode($returnZoom) : '') . (!empty($returnLayers) ? '&layers=' . urlencode($returnLayers) : '')) ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-arrow-left me-1"></i> Kembali ke GIS</a><?php endif ?></div><div class="card-body">
             <form method="post" action="<?= site_url('captive-non-penugasan/store') ?>"><?= csrf_field() ?>
+                <input type="hidden" name="return_to" value="<?= esc($returnTo ?? '') ?>">
+                <input type="hidden" name="return_penyulang_id" value="<?= esc($returnPenyulangId ?? '') ?>">
+                <input type="hidden" name="return_lat" value="<?= esc($returnLat ?? '') ?>">
+                <input type="hidden" name="return_lng" value="<?= esc($returnLng ?? '') ?>">
+                <input type="hidden" name="return_zoom" value="<?= esc($returnZoom ?? '') ?>">
+                <input type="hidden" name="return_layers" value="<?= esc($returnLayers ?? '') ?>">
                 <label class="form-label">Jenis catatan</label><select class="form-select mb-3" name="jenis" id="captive-kind"><option value="COATING" <?= $translineId ? 'selected' : '' ?>>Potensi coating dari transline GIS</option><option value="MANUAL" <?= !$translineId ? 'selected' : '' ?>>Temuan manual</option></select>
                 <div id="captive-line-fields" <?= !$translineId ? 'hidden' : '' ?>>
                     <label class="form-label">Transline terpilih</label>

@@ -52,6 +52,12 @@ class CaptiveNonPenugasanController extends BaseController
             'items' => $items, 'ulps' => $ulps, 'selectedUlpId' => $userUlpId ?: (int)($this->request->getGet('ulp_id') ?? 0),
             'translineId' => $translineId, 'selectedLine' => $selectedLine, 'feeders' => $feeders, 'sections' => $sections,
             'conductors' => CaptiveNonPenugasanService::CONDUCTORS, 'sizes' => CaptiveNonPenugasanService::SIZES,
+            'returnTo' => (string)($this->request->getGet('return_to') ?? ''),
+            'returnPenyulangId' => (int)($this->request->getGet('penyulang_id') ?? 0),
+            'returnLat' => (string)($this->request->getGet('lat') ?? ''),
+            'returnLng' => (string)($this->request->getGet('lng') ?? ''),
+            'returnZoom' => (string)($this->request->getGet('zoom') ?? ''),
+            'returnLayers' => (string)($this->request->getGet('layers') ?? ''),
         ]);
     }
 
@@ -59,12 +65,31 @@ class CaptiveNonPenugasanController extends BaseController
     {
         $session = session();
         try {
+            $postData = $this->request->getPost();
             $id = (new CaptiveNonPenugasanService())->create(
-                $this->request->getPost(),
+                $postData,
                 (int)$session->get('user_id'),
                 (string)($session->get('user_name') ?? 'Petugas'),
                 (int)($session->get('user_ulp_id') ?? $session->get('ulp_id') ?? 0) ?: null
             );
+
+            $returnTo = (string)($postData['return_to'] ?? '');
+            $returnPenyulangId = (int)($postData['return_penyulang_id'] ?? $postData['penyulang_id'] ?? 0);
+            if ($returnTo === 'gis' && $returnPenyulangId > 0) {
+                $gisUrl = site_url('gis?penyulang_id=' . $returnPenyulangId);
+                if (!empty($postData['return_lat']) && !empty($postData['return_lng'])) {
+                    $gisUrl .= '&lat=' . urlencode((string)$postData['return_lat']) . '&lng=' . urlencode((string)$postData['return_lng']);
+                }
+                if (!empty($postData['return_zoom'])) {
+                    $gisUrl .= '&zoom=' . urlencode((string)$postData['return_zoom']);
+                }
+                if (!empty($postData['return_layers'])) {
+                    $gisUrl .= '&layers=' . urlencode((string)$postData['return_layers']);
+                }
+                $gisUrl .= '&captive_success=' . $id;
+                return redirect()->to($gisUrl)->with('success', 'Catatan Captive tersimpan: #' . $id);
+            }
+
             return redirect()->to(site_url('captive-non-penugasan'))->with('success', 'Catatan Captive tersimpan: #' . $id);
         } catch (Throwable $e) {
             log_message('error', 'Captive create failed: {message}', ['message' => $e->getMessage()]);

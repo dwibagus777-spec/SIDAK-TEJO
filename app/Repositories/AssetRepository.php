@@ -387,11 +387,13 @@ return [
      * Priority 2: sequence_no ASC (500m max span)
      * Priority 3: Spatial Nearest-Neighbor Traversal with 350m Haversine Distance Guard
      */
-    public function getFeederNetworkSegments(int $penyulangId, ?int $userUlpId = null): array
+    public function getFeederNetworkSegments($penyulangId, ?int $userUlpId = null): array
     {
         try {
             $db = \Config\Database::connect();
-            if (!$db->tableExists('assets') || $penyulangId <= 0) {
+            $penyulangIds = is_array($penyulangId) ? array_values(array_filter(array_map('intval', $penyulangId))) : [(int)$penyulangId];
+            $penyulangIds = array_values(array_filter($penyulangIds, static fn($v) => $v > 0));
+            if (!$db->tableExists('assets') || empty($penyulangIds)) {
                 return [
                     'type'             => 'MultiLineString',
                     'coordinates'      => [],
@@ -420,23 +422,28 @@ return [
             // 1. Audit active topology snapshot (Entity 2: Topology Snapshot)
             $activeVer = null;
             if ($db->tableExists('network_topology_versions')) {
-                $activeVer = $db->table('network_topology_versions')
-                    ->where('penyulang_id', $penyulangId)
-                    ->where('is_active', 1)
-                    ->orderBy('version_no', 'DESC')
-                    ->get()
-                    ->getRowArray();
+                $verQuery = $db->table('network_topology_versions')->where('is_active', 1);
+                if (count($penyulangIds) > 1) {
+                    $verQuery->whereIn('penyulang_id', $penyulangIds);
+                } else {
+                    $verQuery->where('penyulang_id', $penyulangIds[0]);
+                }
+                $activeVer = $verQuery->orderBy('version_no', 'DESC')->get()->getRowArray();
             }
 
             // 2. Audit parent-child relationships (Entity 3: Asset Hierarchy)
             $parentRelationCount = 0;
             if ($db->fieldExists('parent_asset_id', 'assets')) {
-                $parentRelationCount = (int)$db->table('assets')
-                    ->where('penyulang_id', $penyulangId)
+                $pQuery = $db->table('assets')
                     ->where('parent_asset_id IS NOT NULL')
                     ->where('parent_asset_id >', 0)
-                    ->where('deleted_at IS NULL')
-                    ->countAllResults();
+                    ->where('deleted_at IS NULL');
+                if (count($penyulangIds) > 1) {
+                    $pQuery->whereIn('penyulang_id', $penyulangIds);
+                } else {
+                    $pQuery->where('penyulang_id', $penyulangIds[0]);
+                }
+                $parentRelationCount = (int)$pQuery->countAllResults();
             }
 
             // 3. Preload all valid JTM asset coordinates for this feeder
@@ -452,7 +459,11 @@ return [
                 $selectFields[] = 'sequence_no';
             }
             $builder->select(implode(', ', $selectFields));
-            $builder->where('penyulang_id', $penyulangId);
+            if (count($penyulangIds) > 1) {
+                $builder->whereIn('penyulang_id', $penyulangIds);
+            } else {
+                $builder->where('penyulang_id', $penyulangIds[0]);
+            }
             if ($db->fieldExists('deleted_at', 'assets')) {
                 $builder->where('deleted_at IS NULL');
             }
@@ -494,8 +505,12 @@ return [
             $translineRows = [];
             if ($db->tableExists('gis_translines')) {
                 $tlBuilder = $db->table('gis_translines')
-                    ->where('penyulang_id', $penyulangId)
                     ->where('is_active', 1);
+                if (count($penyulangIds) > 1) {
+                    $tlBuilder->whereIn('penyulang_id', $penyulangIds);
+                } else {
+                    $tlBuilder->where('penyulang_id', $penyulangIds[0]);
+                }
                 if ($db->fieldExists('deleted_at', 'gis_translines')) {
                     $tlBuilder->where('deleted_at IS NULL');
                 }
@@ -759,15 +774,22 @@ return [
                 return [];
             }
 
-            $penyulangId = (int)($filters['penyulang_id'] ?? 0);
+            $rawPenyulang = $filters['penyulang_ids'] ?? $filters['penyulang_id'] ?? 0;
+            $penyulangIds = [];
+            if (is_array($rawPenyulang)) {
+                $penyulangIds = array_values(array_filter(array_map('intval', $rawPenyulang)));
+            } elseif (is_string($rawPenyulang) || is_numeric($rawPenyulang)) {
+                $penyulangIds = array_values(array_filter(array_map('intval', explode(',', (string)$rawPenyulang))));
+            }
+
+            if (empty($penyulangIds)) {
+                return [];
+            }
+            $penyulangId = $penyulangIds[0];
             $zoom        = (int)($filters['zoom'] ?? 14);
             $layers      = $filters['layers'] ?? ['JTM', 'GARDU', 'TRAFO', 'SWITCH'];
             if (is_string($layers)) {
                 $layers = array_map('trim', explode(',', $layers));
-            }
-
-            if ($penyulangId <= 0) {
-                return [];
             }
 
             // Build Layer Filter Mapping
@@ -786,7 +808,7 @@ return [
             if (in_array('KUBIKEL', $layers)) {
                 $allowedJenisList[] = 'KUBIKEL';
             }
-            if (in_array('SWITCH', $layers)) {
+            if (in_array('SWITCH', $layers) || in_array('KEYPOINT', $layers)) {
                 $includeSwitchEquipment = true;
                 $allowedJenisList = array_merge($allowedJenisList, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION', 'RECLOSER_LBS', 'SAKLAR_FUSE_CUTOUT', 'PMCB', 'GH', 'ASS', 'KEYPOINT', 'jtm_pmcb', 'jtm_recloser']);
             }
@@ -819,9 +841,13 @@ return [
             }
 
             // Scope filter: Feeder Assets OR Unassigned Assets of the SAME ULP
-            if ($penyulangId > 0 && $effectiveUlpId > 0) {
+            if (!empty($penyulangIds) && $effectiveUlpId > 0) {
                 $builder->groupStart();
-                $builder->where('a.penyulang_id', $penyulangId);
+                if (count($penyulangIds) > 1) {
+                    $builder->whereIn('a.penyulang_id', $penyulangIds);
+                } else {
+                    $builder->where('a.penyulang_id', $penyulangIds[0]);
+                }
                 $builder->orGroupStart()
                     ->where('a.ulp_id', $effectiveUlpId)
                     ->groupStart()
@@ -830,8 +856,12 @@ return [
                     ->groupEnd()
                 ->groupEnd();
                 $builder->groupEnd();
-            } elseif ($penyulangId > 0) {
-                $builder->where('a.penyulang_id', $penyulangId);
+            } elseif (!empty($penyulangIds)) {
+                if (count($penyulangIds) > 1) {
+                    $builder->whereIn('a.penyulang_id', $penyulangIds);
+                } else {
+                    $builder->where('a.penyulang_id', $penyulangIds[0]);
+                }
             } elseif ($effectiveUlpId > 0) {
                 $builder->where('a.ulp_id', $effectiveUlpId);
             }

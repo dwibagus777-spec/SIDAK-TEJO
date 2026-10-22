@@ -118,7 +118,16 @@ class GISService
      */
     public function getNetworkData(array $filters = [], ?int $userUlpId = null): array
     {
-        $penyulangId = (int)($filters['penyulang_id'] ?? 0);
+        $rawPenyulang = $filters['penyulang_ids'] ?? $filters['penyulang_id'] ?? 0;
+        $penyulangIds = [];
+        if (is_array($rawPenyulang)) {
+            $penyulangIds = array_values(array_filter(array_map('intval', $rawPenyulang)));
+        } elseif (is_string($rawPenyulang) || is_numeric($rawPenyulang)) {
+            $penyulangIds = array_values(array_filter(array_map('intval', explode(',', (string)$rawPenyulang))));
+        }
+        $penyulangId = !empty($penyulangIds) ? $penyulangIds[0] : 0;
+        $filters['penyulang_ids'] = $penyulangIds;
+
         $zoom        = (int)($filters['zoom'] ?? 14);
         $layerFilter = $filters['layers'] ?? ['JTM', 'GARDU', 'TRAFO', 'SWITCH'];
 
@@ -131,7 +140,7 @@ class GISService
         }
 
         // 1. Fetch Independent Feeder Network Topology Segments (MultiLineString Edge Tree)
-        $segmentData = $this->assetRepository->getFeederNetworkSegments($penyulangId, $userUlpId);
+        $segmentData = $this->assetRepository->getFeederNetworkSegments(!empty($penyulangIds) ? (count($penyulangIds) === 1 ? $penyulangIds[0] : $penyulangIds) : $penyulangId, $userUlpId);
         if (!empty($filters['captive_only'])) {
             $db = \Config\Database::connect();
             $candidateIds = [];

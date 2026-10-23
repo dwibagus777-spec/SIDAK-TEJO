@@ -427,7 +427,7 @@ class FaultLocatorWorkspaceService
     public function locateFault(array $telemetry): array
     {
         $ulpInput         = $telemetry['ulp_id'] ?? null;
-        $feederInput      = $telemetry['feeder_id'] ?? '1';
+        $feederInput      = $telemetry['feeder_id'] ?? null;
         $sourceType       = strtoupper(trim($telemetry['source_type'] ?? 'GI')); // 'GI' or 'PROTECTION'
         $protectionId     = (int)($telemetry['protection_device_id'] ?? 0);
         $faultTimestamp   = $telemetry['fault_time'] ?? $telemetry['timestamp'] ?? date('Y-m-d H:i:s');
@@ -441,43 +441,38 @@ class FaultLocatorWorkspaceService
         $currentT = (float)($telemetry['current_t'] ?? 0);
         $currentN = (float)($telemetry['current_n'] ?? 0);
 
-        // 1. Resolve Feeder
+        // 1. Resolve Feeder Strictly (Never silently fall back to another feeder)
         $feeder = null;
-        if (is_numeric($feederInput)) {
-            $feeder = $this->db->table('penyulang')->where('id', (int)$feederInput)->get()->getRowArray();
-        }
-        if (!$feeder) {
-            $feeder = $this->db->table('penyulang')
-                ->groupStart()
-                    ->where('kode_penyulang', (string)$feederInput)
-                    ->orWhere('nama_penyulang', (string)$feederInput)
-                    ->orLike('nama_penyulang', (string)$feederInput)
-                ->groupEnd()
-                ->get()
-                ->getRowArray();
-        }
-        if (!$feeder) {
-            if (!empty($feederInput)) {
-                $feeder = [
-                    'id'             => is_numeric($feederInput) ? (int)$feederInput : 0,
-                    'kode_penyulang' => 'UNKNOWN',
-                    'nama_penyulang' => is_string($feederInput) ? $feederInput : ('Penyulang #' . $feederInput),
-                    'ulp_id'         => (int)($ulpInput ?? 1)
-                ];
-            } else {
-                $feeder = $this->db->table('penyulang')->orderBy('id', 'ASC')->get()->getRowArray() ?? [
-                    'id' => 1,
-                    'kode_penyulang' => 'PYL-001',
-                    'nama_penyulang' => 'SIWALAN PANJI',
-                    'ulp_id' => 1
-                ];
+        if ($feederInput !== null && $feederInput !== '') {
+            if (is_numeric($feederInput)) {
+                $feeder = $this->db->table('penyulang')->where('id', (int)$feederInput)->get()->getRowArray();
             }
+            if (!$feeder) {
+                $fBuilder = $this->db->table('penyulang');
+                if (is_numeric($ulpInput) && (int)$ulpInput > 0) {
+                    $fBuilder->where('ulp_id', (int)$ulpInput);
+                }
+                $feeder = $fBuilder->groupStart()
+                        ->where('kode_penyulang', trim((string)$feederInput))
+                        ->orWhere('nama_penyulang', trim((string)$feederInput))
+                    ->groupEnd()
+                    ->get()
+                    ->getRowArray();
+            }
+        }
+        if (!$feeder) {
+            $feeder = [
+                'id'             => 0,
+                'kode_penyulang' => 'UNKNOWN',
+                'nama_penyulang' => !empty($feederInput) ? (string)$feederInput : 'Penyulang Tidak Ditemukan',
+                'ulp_id'         => (int)($ulpInput ?? 0),
+            ];
         }
 
         $penyulangId   = (int)$feeder['id'];
         $penyulangNama = $feeder['nama_penyulang'];
         $penyulangKode = $feeder['kode_penyulang'];
-        $ulpId         = (int)($feeder['ulp_id'] ?? $ulpInput ?? 1);
+        $ulpId         = (int)($feeder['ulp_id'] ?? $ulpInput ?? 0);
 
         // 2. Conductor Impedance Parameters (Complex R + jX)
         $condParams = self::CONDUCTOR_CATALOG[$conductorKey] ?? self::CONDUCTOR_CATALOG['AAAC 150 mm²'];
@@ -502,57 +497,102 @@ class FaultLocatorWorkspaceService
         $faultType  = $faultClass['fault_type'];
         $iSc        = $faultClass['active_current_a'];
 
-        // 4. Resolve Anchor JTM Pole
-        // Invariant: GI or Protection Devices never have translines directly connected to them.
-        // We resolve them to the nearest verified JTM pole.
+        // 4. Load Strictly Scoped Feeder Assets & Translines and Resolve Anchor JTM Pole
+        // Invariant: Every candidate pole and transline endpoint MUST belong strictly to $penyulangId.
         $gisTransService = new GisTranslineService();
+        $feederAssets = [];
+        $translines   = [];
+        $assetMap     = [];
+        $adj          = [];
+
+        if ($penyulangId > 0) {
+            $feederAssets = $this->db->table('assets')
+                ->select('id, penyulang_id, kode_asset, nama_asset, jenis_asset, section_id, sequence_no, latitude, longitude')
+                ->where('penyulang_id', $penyulangId)
+                ->where('deleted_at IS NULL')
+                ->orderBy('sequence_no', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            foreach ($feederAssets as $a) {
+                if ((int)$a['penyulang_id'] !== $penyulangId) {
+                    continue;
+                }
+                if (GisTranslineService::isJtmPoleAsset($a)['valid']) {
+                    $assetMap[(int)$a['id']] = $a;
+                }
+            }
+
+            $translines = $this->db->table('gis_translines')
+                ->where('penyulang_id', $penyulangId)
+                ->where('is_active', 1)
+                ->where('deleted_at IS NULL')
+                ->get()
+                ->getResultArray();
+
+            // Build adjacency graph ONLY between verified JTM poles belonging to this feeder
+            foreach ($translines as $tl) {
+                if ((int)($tl['penyulang_id'] ?? 0) !== $penyulangId) {
+                    continue;
+                }
+                $u = (int)$tl['source_asset_id'];
+                $v = (int)$tl['target_asset_id'];
+                if (!isset($assetMap[$u], $assetMap[$v])) {
+                    continue;
+                }
+                $dist = (float)($tl['distance_meters'] ?? 0);
+                if ($dist <= 0) {
+                    $dist = $this->haversineDistance(
+                        (float)$assetMap[$u]['latitude'], (float)$assetMap[$u]['longitude'],
+                        (float)$assetMap[$v]['latitude'], (float)$assetMap[$v]['longitude']
+                    );
+                }
+                $adj[$u][] = ['target' => $v, 'tl' => $tl, 'dist' => $dist];
+                $adj[$v][] = ['target' => $u, 'tl' => $tl, 'dist' => $dist];
+            }
+        }
+
         $anchorPole = null;
         $anchorDesc = '';
         $anchorOffsetMeters = 0.0;
 
-        if ($sourceType === 'PROTECTION' && $protectionId > 0) {
+        if ($penyulangId > 0 && $sourceType === 'PROTECTION' && $protectionId > 0) {
             $resolved = $gisTransService->resolveSourceContextToNearestJtmPole($protectionId, $penyulangId);
             if ($resolved && !empty($resolved['anchor_pole_asset'])) {
-                $anchorPole = $resolved['anchor_pole_asset'];
-                $anchorOffsetMeters = (float)($resolved['distance_to_pole_meters'] ?? 0.0);
-                $devAsset = $resolved['source_asset'];
-                $anchorDesc = "Peralatan Proteksi [{$devAsset['kode_asset']} - {$devAsset['nama_asset']}] -> Terhubung ke Tiang JTM [{$anchorPole['kode_asset']}] (Jarak: {$anchorOffsetMeters}m)";
+                $candAnchor = $resolved['anchor_pole_asset'];
+                if ((int)($candAnchor['penyulang_id'] ?? 0) === $penyulangId && isset($assetMap[(int)$candAnchor['id']])) {
+                    $anchorPole = $assetMap[(int)$candAnchor['id']];
+                    $anchorOffsetMeters = (float)($resolved['distance_to_pole_meters'] ?? 0.0);
+                    $devAsset = $resolved['source_asset'];
+                    $anchorDesc = "Peralatan Proteksi [{$devAsset['kode_asset']} - {$devAsset['nama_asset']}] -> Terhubung ke Tiang JTM [{$anchorPole['kode_asset']}] (Jarak: {$anchorOffsetMeters}m)";
+                }
             }
         }
 
-        // Fallback for GI or unanchored protection: first valid JTM pole of feeder
-        if (!$anchorPole) {
-            $anchorPole = $this->db->table('assets')
-                ->where('penyulang_id', $penyulangId)
-                ->where('deleted_at IS NULL')
-                ->groupStart()
-                    ->whereIn('jenis_asset', ['TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE'])
-                    ->orWhere('jenis_asset IS NULL')
-                ->groupEnd()
-                ->orderBy('sequence_no', 'ASC')
-                ->orderBy('id', 'ASC')
-                ->get()
-                ->getRowArray();
-
+        // Fallback for GI or unanchored protection: first connected JTM pole of feeder (or first valid JTM pole)
+        if (!$anchorPole && !empty($assetMap)) {
+            foreach ($assetMap as $poleId => $poleRow) {
+                if (!empty($adj[$poleId])) {
+                    $anchorPole = $poleRow;
+                    break;
+                }
+            }
+            if (!$anchorPole) {
+                $anchorPole = reset($assetMap) ?: null;
+            }
             $anchorPoleKode = $anchorPole['kode_asset'] ?? 'PANGKAL_PENYULANG';
             $anchorDesc = "Gardu Induk (Pangkal Penyulang) -> Tiang JTM Pertama [{$anchorPoleKode}]";
+        } elseif (!$anchorPole) {
+            $anchorDesc = "Gardu Induk (Pangkal Penyulang) -> Belum ada tiang JTM terpetakan pada penyulang {$penyulangNama}";
         }
 
         $anchorPoleId = (int)($anchorPole['id'] ?? 0);
 
         // Pre-flight check: Feeder Physical Network Availability Safeguard
-        $translineCount = $this->db->table('gis_translines')
-            ->where('penyulang_id', $penyulangId)
-            ->where('is_active', 1)
-            ->where('deleted_at IS NULL')
-            ->countAllResults();
-
-        $assetCount = $this->db->table('assets')
-            ->where('penyulang_id', $penyulangId)
-            ->where('deleted_at IS NULL')
-            ->countAllResults();
-
-        $hasTopology = ($translineCount > 0 && $assetCount > 0 && $anchorPoleId > 0);
+        $translineCount = count($translines);
+        $assetCount     = count($assetMap);
+        $hasTopology    = ($penyulangId > 0 && $translineCount > 0 && $assetCount > 0 && $anchorPoleId > 0 && !empty($adj[$anchorPoleId]));
 
         // 5. Rigorous Electrical Calculation & Physics Telemetry Checks
         $calculationStatus = 'RESOLVED';
@@ -673,42 +713,7 @@ class FaultLocatorWorkspaceService
         }
 
         // 6. Traverse Real JTM Pole Translines Downstream with Honest Branching (T-Off) Detection
-        $translines = $this->db->table('gis_translines')
-            ->where('penyulang_id', $penyulangId)
-            ->where('is_active', 1)
-            ->where('deleted_at IS NULL')
-            ->get()
-            ->getResultArray();
-
-        $feederAssets = $this->db->table('assets')
-            ->select('id, kode_asset, nama_asset, jenis_asset, section_id, sequence_no, latitude, longitude')
-            ->where('penyulang_id', $penyulangId)
-            ->where('deleted_at IS NULL')
-            ->get()
-            ->getResultArray();
-
-        $assetMap = [];
-        foreach ($feederAssets as $a) {
-            $assetMap[$a['id']] = $a;
-        }
-
-        // Build adjacency graph of JTM poles
-        $adj = [];
-        foreach ($translines as $tl) {
-            $u = (int)$tl['source_asset_id'];
-            $v = (int)$tl['target_asset_id'];
-            $dist = (float)($tl['distance_meters'] ?? 0);
-            if ($dist <= 0 && isset($assetMap[$u], $assetMap[$v])) {
-                $dist = $this->haversineDistance(
-                    (float)$assetMap[$u]['latitude'], (float)$assetMap[$u]['longitude'],
-                    (float)$assetMap[$v]['latitude'], (float)$assetMap[$v]['longitude']
-                );
-            }
-            $adj[$u][] = ['target' => $v, 'tl' => $tl, 'dist' => $dist];
-            $adj[$v][] = ['target' => $u, 'tl' => $tl, 'dist' => $dist];
-        }
-
-        // Traverse downstream from anchor pole
+        // ($assetMap and $adj are already strictly built for $penyulangId above)
         $poleSequence = [];
         $visitedEdges = [];
         $totalSpanMeters = 0.0;
@@ -795,7 +800,7 @@ class FaultLocatorWorkspaceService
         $faultZoneSegment = null;
         $candidatePoles = [];
 
-        if (count($matchingFaultSegments) > 1) {
+        if ($calculatedDistanceM > 0 && count($matchingFaultSegments) > 1) {
             // Multiple branches reach this distance: genuinely ambiguous
             $calculationStatus = ($calculationStatus === 'DATA_TIDAK_CUKUP') ? 'DATA_TIDAK_CUKUP' : 'DISTANCE_AMBIGUOUS';
             $branchJunctionStr = implode(', ', array_unique($branchingJunctionPoles));
@@ -805,13 +810,13 @@ class FaultLocatorWorkspaceService
                 if (isset($assetMap[$ms['from_pole_id']])) $candidatePoles[] = $assetMap[$ms['from_pole_id']];
                 if (isset($assetMap[$ms['to_pole_id']])) $candidatePoles[] = $assetMap[$ms['to_pole_id']];
             }
-        } elseif (count($matchingFaultSegments) === 1) {
+        } elseif ($calculatedDistanceM > 0 && count($matchingFaultSegments) === 1) {
             $faultZoneSegment = $matchingFaultSegments[0];
             $candidatePoles = [
                 $assetMap[$faultZoneSegment['from_pole_id']] ?? null,
                 $assetMap[$faultZoneSegment['to_pole_id']] ?? null
             ];
-        } elseif (!empty($poleSequence)) {
+        } elseif ($calculatedDistanceM > 0 && !empty($poleSequence)) {
             // Beyond reach: pick the closest terminal segment
             $minDelta = PHP_FLOAT_MAX;
             foreach ($poleSequence as $seq) {
@@ -831,9 +836,34 @@ class FaultLocatorWorkspaceService
 
         $candidatePoles = array_values(array_filter($candidatePoles));
 
+        // Candidate assets formatting with strict feeder boundary and coordinate validation
+        $candidateAssetList = [];
+        $seenIds = [];
+        foreach ($candidatePoles as $cAst) {
+            if (!$cAst || isset($seenIds[$cAst['id']])) continue;
+            if ((int)($cAst['penyulang_id'] ?? 0) !== $penyulangId) continue;
+            if (!GisTranslineService::isJtmPoleAsset($cAst)['valid']) continue;
+            $cLat = (float)($cAst['latitude'] ?? 0);
+            $cLng = (float)($cAst['longitude'] ?? 0);
+            if ($cLat == 0.0 || $cLng == 0.0) continue;
+
+            $seenIds[$cAst['id']] = true;
+            $candidateAssetList[] = [
+                'asset_id'     => (int)$cAst['id'],
+                'penyulang_id' => $penyulangId,
+                'kode_asset'   => $cAst['kode_asset'],
+                'asset_name'   => $cAst['nama_asset'] ?? $cAst['kode_asset'],
+                'jenis_asset'  => $cAst['jenis_asset'],
+                'section_id'   => $cAst['section_id'] ?? null,
+                'latitude'     => $cLat,
+                'longitude'    => $cLng,
+            ];
+        }
+
         // 7. Spatial Coordinates Interpolation on the Identified Transline Segment
+        // Never fall back to hardcoded coordinates from another feeder!
         $faultPointGeom = null;
-        if ($faultZoneSegment && !empty($faultZoneSegment['from_coords']['lat']) && !empty($faultZoneSegment['to_coords']['lat'])) {
+        if (!empty($candidateAssetList) && $faultZoneSegment && !empty($faultZoneSegment['from_coords']['lat']) && !empty($faultZoneSegment['to_coords']['lat'])) {
             $span = max(1.0, (float)$faultZoneSegment['span_meters']);
             $cumStart = (float)$faultZoneSegment['cum_start_meters'];
             $cumEnd = (float)$faultZoneSegment['cumulative_meters'];
@@ -850,34 +880,23 @@ class FaultLocatorWorkspaceService
                 'lng' => round($fLng, 6),
                 'span_fraction' => round($fraction * 100, 1),
             ];
-        } elseif (!empty($candidatePoles)) {
-            $fLat = (float)($candidatePoles[0]['latitude'] ?? -7.4478);
-            $fLng = (float)($candidatePoles[0]['longitude'] ?? 112.7183);
-            $faultPointGeom = ['lat' => $fLat, 'lng' => $fLng, 'span_fraction' => 0.0];
-        }
-
-        // Candidate assets formatting
-        $candidateAssetList = [];
-        $seenIds = [];
-        foreach ($candidatePoles as $cAst) {
-            if (!$cAst || isset($seenIds[$cAst['id']])) continue;
-            $seenIds[$cAst['id']] = true;
-            $candidateAssetList[] = [
-                'asset_id'    => $cAst['id'],
-                'kode_asset'  => $cAst['kode_asset'],
-                'asset_name'  => $cAst['nama_asset'] ?? $cAst['kode_asset'],
-                'jenis_asset' => $cAst['jenis_asset'],
-                'section_id'  => $cAst['section_id'] ?? null,
-                'latitude'    => (float)($cAst['latitude'] ?? 0),
-                'longitude'   => (float)($cAst['longitude'] ?? 0),
+        } elseif (!empty($candidateAssetList)) {
+            $faultPointGeom = [
+                'lat' => round($candidateAssetList[0]['latitude'], 6),
+                'lng' => round($candidateAssetList[0]['longitude'], 6),
+                'span_fraction' => 0.0,
             ];
+        } else {
+            $faultZoneSegment = null;
         }
 
         // GIS URL
         $targetAssetId = !empty($candidateAssetList) ? $candidateAssetList[0]['asset_id'] : '';
-        $targetLat = $faultPointGeom ? $faultPointGeom['lat'] : -7.4478;
-        $targetLng = $faultPointGeom ? $faultPointGeom['lng'] : 112.7183;
-        $gisUrl = site_url("gis?penyulang_id={$penyulangId}&asset_id={$targetAssetId}&lat={$targetLat}&lng={$targetLng}&zoom=19");
+        if ($faultPointGeom) {
+            $gisUrl = site_url("gis?penyulang_id={$penyulangId}&asset_id={$targetAssetId}&lat={$faultPointGeom['lat']}&lng={$faultPointGeom['lng']}&zoom=19");
+        } else {
+            $gisUrl = site_url("gis?penyulang_id={$penyulangId}");
+        }
 
         // Case UUID & Fingerprint
         $inputData = [
@@ -1405,7 +1424,7 @@ class FaultLocatorWorkspaceService
                 $isHybrid = true;
             }
 
-            // Sequential segment preview with exact conductor per segment
+            // Sequential segment preview with exact conductor per segment (strictly scoped to this feeder)
             $segmentsQuery = $this->db->query("
                 SELECT 
                     tl.id,
@@ -1419,25 +1438,37 @@ class FaultLocatorWorkspaceService
                     COALESCE(ta.nama_asset, 'Tiang Target') as target_nama,
                     COALESCE(s.nama_section, '-') as nama_section
                 FROM gis_translines tl
-                LEFT JOIN assets sa ON sa.id = tl.source_asset_id
-                LEFT JOIN assets ta ON ta.id = tl.target_asset_id
+                LEFT JOIN assets sa ON sa.id = tl.source_asset_id AND sa.penyulang_id = tl.penyulang_id AND sa.deleted_at IS NULL
+                LEFT JOIN assets ta ON ta.id = tl.target_asset_id AND ta.penyulang_id = tl.penyulang_id AND ta.deleted_at IS NULL
                 LEFT JOIN sections s ON s.id = sa.section_id
-                WHERE tl.penyulang_id = " . (int)$penyulangId . " AND tl.deleted_at IS NULL
+                WHERE tl.penyulang_id = " . (int)$penyulangId . " AND tl.is_active = 1 AND tl.deleted_at IS NULL
                 ORDER BY tl.id ASC
                 LIMIT 50
             ");
-            $segmentsList = ($segmentsQuery && is_object($segmentsQuery)) ? $segmentsQuery->getResultArray() : [];
+            $rawSegments = ($segmentsQuery && is_object($segmentsQuery)) ? $segmentsQuery->getResultArray() : [];
+            $segmentsList = [];
+            foreach ($rawSegments as $idx => $segRow) {
+                $segRow['seq_no']      = $idx + 1;
+                $segRow['from_pole']   = $segRow['source_kode'];
+                $segRow['to_pole']     = $segRow['target_kode'];
+                $segRow['span_meters'] = (float)($segRow['distance_meters'] ?? 0);
+                $segmentsList[] = $segRow;
+            }
         }
 
         if ($this->db->tableExists('assets')) {
-            $poleCount = $this->db->table('assets')
+            $feederPoleCandidates = $this->db->table('assets')
+                ->select('id, kode_asset, nama_asset, jenis_asset')
                 ->where('penyulang_id', $penyulangId)
                 ->where('deleted_at IS NULL')
-                ->groupStart()
-                    ->whereIn('jenis_asset', ['TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE'])
-                    ->orWhere('jenis_asset IS NULL')
-                ->groupEnd()
-                ->countAllResults();
+                ->get()
+                ->getResultArray();
+            $poleCount = 0;
+            foreach ($feederPoleCandidates as $pCand) {
+                if (GisTranslineService::isJtmPoleAsset($pCand)['valid']) {
+                    $poleCount++;
+                }
+            }
 
             $sectionCount = $this->db->table('assets')
                 ->where('penyulang_id', $penyulangId)
@@ -1453,15 +1484,27 @@ class FaultLocatorWorkspaceService
         $enhancedDevices = [];
         foreach ($devices as $d) {
             $linkedPole = null;
-            if (!empty($d['latitude']) && !empty($d['longitude'])) {
+            if (!empty($d['parent_asset_id'])) {
+                $parentCand = $this->db->table('assets')
+                    ->select('id, kode_asset, nama_asset, jenis_asset')
+                    ->where('id', (int)$d['parent_asset_id'])
+                    ->where('penyulang_id', $penyulangId)
+                    ->where('deleted_at IS NULL')
+                    ->get()
+                    ->getRowArray();
+                if ($parentCand && GisTranslineService::isJtmPoleAsset($parentCand)['valid']) {
+                    $linkedPole = $parentCand;
+                }
+            }
+            if (!$linkedPole && !empty($d['latitude']) && !empty($d['longitude'])) {
                 // Find nearest physical JTM pole within 35m
                 $nearest = $this->db->table('assets')
-                    ->select('id, kode_asset, nama_asset')
+                    ->select('id, kode_asset, nama_asset, jenis_asset, latitude, longitude')
                     ->where('penyulang_id', $penyulangId)
                     ->where('id !=', $d['id'])
                     ->where('deleted_at IS NULL')
                     ->groupStart()
-                        ->whereIn('jenis_asset', ['TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE'])
+                        ->whereIn('jenis_asset', ['JTM_TIANG', 'jtm_tiang', 'TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE', 'TIANG_JTM'])
                         ->orWhere('jenis_asset IS NULL')
                     ->groupEnd()
                     ->get()
@@ -1469,6 +1512,9 @@ class FaultLocatorWorkspaceService
 
                 $minD = PHP_FLOAT_MAX;
                 foreach ($nearest as $p) {
+                    if (!GisTranslineService::isJtmPoleAsset($p)['valid']) {
+                        continue;
+                    }
                     $dist = $this->haversineDistance(
                         (float)$d['latitude'], (float)$d['longitude'],
                         (float)($p['latitude'] ?? 0), (float)($p['longitude'] ?? 0)

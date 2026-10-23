@@ -100,6 +100,7 @@ class GisTranslineService
             'TIANG',
             'JTM',
             'JTM_TIANG',
+            'TIANG_JTM',
             'POLE',
         ];
 
@@ -111,8 +112,16 @@ class GisTranslineService
             ];
         }
 
-        // 3. Backward-compatible fallback for legacy unclassified poles
-        if (empty($jenis) && (str_contains($nama, 'TIANG') || str_contains($kode, 'T-') || str_contains($kode, 'TIANG'))) {
+        // 3. Backward-compatible fallback for legacy unclassified poles (jenis_asset IS NULL / empty)
+        if (empty($jenis)) {
+            foreach ($prohibitedPatterns as $pattern => $label) {
+                if (str_contains($nama, $pattern) || str_contains($kode, $pattern)) {
+                    return [
+                        'valid'  => false,
+                        'reason' => "Aset '{$kode}' terindikasi sebagai {$label}, bukan tiang JTM fisik.",
+                    ];
+                }
+            }
             return [
                 'valid'  => true,
                 'reason' => 'VALID_LEGACY_POLE_BY_NAME',
@@ -134,7 +143,12 @@ class GisTranslineService
      */
     public function resolveSourceContextToNearestJtmPole(int $sourceAssetId, int $penyulangId): ?array
     {
-        $asset = $this->db->table('assets')->where('id', $sourceAssetId)->get()->getRowArray();
+        $asset = $this->db->table('assets')
+            ->where('id', $sourceAssetId)
+            ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->get()
+            ->getRowArray();
         if (!$asset) {
             return null;
         }
@@ -149,12 +163,30 @@ class GisTranslineService
             ];
         }
 
+        if (!empty($asset['parent_asset_id'])) {
+            $parentPole = $this->db->table('assets')
+                ->where('id', (int)$asset['parent_asset_id'])
+                ->where('penyulang_id', $penyulangId)
+                ->where('deleted_at IS NULL')
+                ->get()
+                ->getRowArray();
+            if ($parentPole && self::isJtmPoleAsset($parentPole)['valid']) {
+                return [
+                    'source_type'             => 'DEVICE_CONTEXT',
+                    'source_asset'            => $asset,
+                    'anchor_pole_asset'       => $parentPole,
+                    'distance_to_pole_meters' => 0.0,
+                    'verified'                => true,
+                ];
+            }
+        }
+
         // Find nearest valid JTM pole on the same feeder
         $poles = $this->db->table('assets')
             ->where('penyulang_id', $penyulangId)
             ->where('deleted_at IS NULL')
             ->groupStart()
-                ->whereIn('jenis_asset', ['TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE'])
+                ->whereIn('jenis_asset', ['JTM_TIANG', 'jtm_tiang', 'TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE', 'TIANG_JTM'])
                 ->orWhere('jenis_asset IS NULL')
             ->groupEnd()
             ->get()
@@ -166,6 +198,9 @@ class GisTranslineService
         $srcLng = (float)($asset['longitude'] ?? 0);
 
         foreach ($poles as $p) {
+            if (!self::isJtmPoleAsset($p)['valid']) {
+                continue;
+            }
             $pLat = (float)($p['latitude'] ?? 0);
             $pLng = (float)($p['longitude'] ?? 0);
             if ($pLat == 0.0 || $pLng == 0.0 || $srcLat == 0.0 || $srcLng == 0.0) {

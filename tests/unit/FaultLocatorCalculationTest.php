@@ -132,5 +132,152 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
         $this->assertEquals(0.0, $res['confidence_percent']);
         $this->assertEmpty($res['pole_sequence']);
         $this->assertEmpty($res['candidate_assets']);
+        $this->assertNull($res['fault_point']);
+    }
+
+    public function testJenggoloFeederNeverReturnsAdiprimaAssetsAndResolvesJtmTiangPoles(): void
+    {
+        $db = \Config\Database::connect('default');
+
+        // 1. Direct check on existing DB state for JENGGOLO (id=30 / PYL-030)
+        $resById = $this->service->locateFault([
+            'ulp_id'         => 1,
+            'feeder_id'      => 30,
+            'source_type'    => 'GI',
+            'current_r'      => 1450.0,
+            'current_s'      => 1420.0,
+            'current_t'      => 1440.0,
+            'current_n'      => 15.0,
+            'conductor_type' => 'AAAC 150 mm²',
+        ]);
+
+        $this->assertSame(30, $resById['feeder_id']);
+        $this->assertSame('PYL-030', $resById['feeder_code']);
+        $this->assertSame('JENGGOLO', $resById['feeder_name']);
+
+        foreach ($resById['candidate_assets'] as $cand) {
+            $this->assertSame(30, (int)$cand['penyulang_id']);
+            $this->assertStringNotContainsStringIgnoringCase('ADIPRIMA', $cand['kode_asset']);
+            $this->assertStringNotContainsStringIgnoringCase('ADIPRIMA', $cand['asset_name']);
+        }
+        foreach ($resById['pole_sequence'] as $seg) {
+            $this->assertStringNotContainsStringIgnoringCase('ADIPRIMA', $seg['from_pole_kode']);
+            $this->assertStringNotContainsStringIgnoringCase('ADIPRIMA', $seg['to_pole_kode']);
+        }
+
+        // 2. Also verify when JENGGOLO has jtm_tiang poles and translines (production topology structure)
+        $db->transBegin();
+        try {
+            $hasJenggoloTl = $db->table('gis_translines')
+                ->where('penyulang_id', 30)
+                ->where('is_active', 1)
+                ->where('deleted_at IS NULL')
+                ->countAllResults() > 0;
+
+            if (!$hasJenggoloTl) {
+                $db->table('assets')->insert([
+                    'kode_asset'   => 'AST-JENGGOLO-TEST-001',
+                    'nama_asset'   => 'Tiang JTM Jenggolo 001',
+                    'jenis_asset'  => 'jtm_tiang',
+                    'ulp_id'       => 1,
+                    'penyulang_id' => 30,
+                    'sequence_no'  => 1,
+                    'latitude'     => -7.441406,
+                    'longitude'    => 112.720442,
+                ]);
+                $pole1Id = (int)$db->insertID();
+
+                $db->table('assets')->insert([
+                    'kode_asset'   => 'AST-JENGGOLO-TEST-002',
+                    'nama_asset'   => 'Tiang JTM Jenggolo 002',
+                    'jenis_asset'  => 'jtm_tiang',
+                    'ulp_id'       => 1,
+                    'penyulang_id' => 30,
+                    'sequence_no'  => 2,
+                    'latitude'     => -7.441086,
+                    'longitude'    => 112.720348,
+                ]);
+                $pole2Id = (int)$db->insertID();
+
+                // Insert a valid Jenggolo transline AND a corrupted cross-feeder transline pointing to ADIPRIMA1_123 (id=42813)
+                $db->table('gis_translines')->insert([
+                    'transline_code'   => 'TL-PYL-030-TEST-1',
+                    'penyulang_id'     => 30,
+                    'source_asset_id'  => $pole1Id,
+                    'target_asset_id'  => $pole2Id,
+                    'conductor_type'   => 'AAAC',
+                    'conductor_size'   => '150 mm²',
+                    'distance_meters'  => 45.0,
+                    'is_active'        => 1,
+                ]);
+                $db->table('gis_translines')->insert([
+                    'transline_code'   => 'TL-PYL-030-CROSS-CORRUPT',
+                    'penyulang_id'     => 30,
+                    'source_asset_id'  => $pole2Id,
+                    'target_asset_id'  => 42813, // AST-ADIPRIMA1-ADIPRIMA1_123 on feeder 46
+                    'conductor_type'   => 'AAAC',
+                    'conductor_size'   => '150 mm²',
+                    'distance_meters'  => 50.0,
+                    'is_active'        => 1,
+                ]);
+            }
+
+            $resJenggolo = $this->service->locateFault([
+                'ulp_id'         => 1,
+                'feeder_id'      => 30,
+                'source_type'    => 'GI',
+                'current_r'      => 1450.0,
+                'current_s'      => 1420.0,
+                'current_t'      => 1440.0,
+                'current_n'      => 15.0,
+                'conductor_type' => 'AAAC 150 mm²',
+            ]);
+
+            $this->assertSame(30, $resJenggolo['feeder_id']);
+            $this->assertNotEmpty($resJenggolo['anchor_pole'], 'Anchor pole for Jenggolo with jtm_tiang must be resolved');
+            $this->assertNotEmpty($resJenggolo['candidate_assets'], 'Jenggolo with jtm_tiang must resolve candidate poles');
+            $this->assertNotNull($resJenggolo['fault_point'], 'Jenggolo with jtm_tiang must resolve fault_point coordinates');
+
+            foreach ($resJenggolo['candidate_assets'] as $cand) {
+                $this->assertSame(30, (int)$cand['penyulang_id']);
+                $this->assertStringNotContainsStringIgnoringCase('ADIPRIMA', $cand['kode_asset']);
+                $this->assertNotSame(42813, (int)$cand['asset_id']);
+            }
+            foreach ($resJenggolo['pole_sequence'] as $seg) {
+                $this->assertStringNotContainsStringIgnoringCase('ADIPRIMA', $seg['from_pole_kode']);
+                $this->assertStringNotContainsStringIgnoringCase('ADIPRIMA', $seg['to_pole_kode']);
+            }
+
+            $ctxJenggolo = $this->service->getFeederNetworkContext(30);
+            $this->assertSame('success', $ctxJenggolo['status']);
+            $this->assertGreaterThan(0, $ctxJenggolo['data']['topology']['valid_jtm_poles_count']);
+        } finally {
+            $db->transRollback();
+        }
+    }
+
+    public function testOtherFeedersMaintainStrictBoundaryRegression(): void
+    {
+        // Test SIWALAN PANJI (id=1) and GEMURUNG (id=4) which have active translines
+        foreach ([1, 4] as $feederId) {
+            $res = $this->service->locateFault([
+                'feeder_id'      => $feederId,
+                'source_type'    => 'GI',
+                'current_r'      => 1450.0,
+                'current_s'      => 1420.0,
+                'current_t'      => 1440.0,
+                'current_n'      => 15.0,
+                'conductor_type' => 'AAAC 150 mm²',
+            ]);
+
+            $this->assertSame($feederId, $res['feeder_id']);
+            $this->assertNotEmpty($res['candidate_assets']);
+            $this->assertNotNull($res['fault_point']);
+
+            foreach ($res['candidate_assets'] as $cand) {
+                $this->assertSame($feederId, (int)$cand['penyulang_id']);
+                $this->assertStringNotContainsStringIgnoringCase('ADIPRIMA', $cand['kode_asset']);
+            }
+        }
     }
 }

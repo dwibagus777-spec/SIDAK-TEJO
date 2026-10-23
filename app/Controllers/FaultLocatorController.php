@@ -167,7 +167,10 @@ class FaultLocatorController extends BaseController
         $json = $this->request->getJSON(true) ?? $this->request->getPost();
 
         if (empty($json['feeder_id'])) {
-            $json['feeder_id'] = '1';
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'Penyulang wajib dipilih sebelum menjalankan analisis Fault Locator.'
+            ]);
         }
 
         $result = $this->service->locateFault($json);

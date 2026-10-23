@@ -415,11 +415,7 @@
                                 <td>
                                     <span class="badge bg-primary-subtle text-primary border" id="resDasarBadge"><?= esc($result['dasar_perhitungan'] ?? '') ?></span>
                                     <span class="text-muted small ms-2" id="resDasarLabel"><?= esc($result['dasar_perhitungan_label'] ?? '') ?></span>
-                                    <?php if (!empty($result['formula_derivation'])): ?>
-                                        <div class="text-muted small mt-1 font-monospace bg-light p-2 rounded" id="resFormulaDerivation" style="font-size:0.78rem; white-space: pre-wrap;">
-                                            <?= esc($result['formula_derivation']) ?>
-                                        </div>
-                                    <?php endif; ?>
+                                    <div class="text-muted small mt-1 font-monospace bg-light p-2 rounded" id="resFormulaDerivation" style="font-size:0.78rem; white-space: pre-wrap; <?= empty($result['formula_derivation']) ? 'display:none;' : '' ?>"><?= esc($result['formula_derivation'] ?? '') ?></div>
                                 </td>
                             </tr>
                             <tr>
@@ -430,7 +426,7 @@
                                             <span class="badge bg-light text-dark border me-1"><i class="fas fa-bolt text-danger me-1"></i><?= esc($c['kode_asset']) ?> (<?= esc($c['asset_name']) ?>)</span>
                                         <?php endforeach; ?>
                                     <?php else: ?>
-                                        <span class="text-muted">Tidak ditemukan kandidat dalam rentang toleransi</span>
+                                        <span class="text-danger fw-bold"><i class="fas fa-circle-exclamation me-1"></i>Tidak ada kandidat valid pada penyulang ini</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -438,17 +434,17 @@
                                 <th class="bg-light text-dark">Segmen Zona Gangguan</th>
                                 <td class="text-primary">
                                     <span id="resSegmentName" class="fw-bold"><?= esc($result['transline_segment'] ?? '-') ?></span>
-                                    <?php if (!empty($result['fault_zone_segment'])): ?>
-                                        <span class="text-muted small ms-2">
+                                    <span id="resSegmentPoles" class="text-muted small ms-2">
+                                        <?php if (!empty($result['fault_zone_segment'])): ?>
                                             (<?= esc($result['fault_zone_segment']['from_pole_kode']) ?> &rarr; <?= esc($result['fault_zone_segment']['to_pole_kode']) ?>)
-                                        </span>
-                                    <?php endif; ?>
+                                        <?php endif; ?>
+                                    </span>
                                 </td>
                             </tr>
                             <tr>
                                 <th class="bg-light text-dark">Estimasi Koordinat (Sidoarjo)</th>
                                 <td id="resCoords" class="font-monospace text-primary">
-                                    <?= ($result['fault_point']) ? esc($result['fault_point']['lat'] . ', ' . $result['fault_point']['lng']) : '-7.4478, 112.7183' ?>
+                                    <?= (!empty($result['fault_point']) && !empty($result['candidate_assets'])) ? esc($result['fault_point']['lat'] . ', ' . $result['fault_point']['lng']) : 'Tidak ada kandidat valid pada penyulang ini' ?>
                                 </td>
                             </tr>
                         </tbody>
@@ -845,44 +841,47 @@
 <script>
     let currentCaseUuid = '<?= esc($result['case_uuid'] ?? '') ?>';
     let currentGisUrl = '<?= esc($result['gis_url'] ?? site_url('gis')) ?>';
-    let currentLat = <?= ($result['fault_point'] && isset($result['fault_point']['lat'])) ? (float)$result['fault_point']['lat'] : -7.4478 ?>;
-    let currentLng = <?= ($result['fault_point'] && isset($result['fault_point']['lng'])) ? (float)$result['fault_point']['lng'] : 112.7183 ?>;
+    let currentLat = <?= (!empty($result['fault_point']['lat']) && !empty($result['candidate_assets'])) ? (float)$result['fault_point']['lat'] : -7.4478 ?>;
+    let currentLng = <?= (!empty($result['fault_point']['lng']) && !empty($result['candidate_assets'])) ? (float)$result['fault_point']['lng'] : 112.7183 ?>;
     let lastCalculatedResult = <?= json_encode($result) ?>;
 
     // Initialize Leaflet Map
-    const map = L.map('miniMap').setView([currentLat, currentLng], 16);
+    const map = L.map('miniMap').setView([currentLat, currentLng], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    let faultMarker = L.circleMarker([currentLat, currentLng], {
-        radius: 12,
-        fillColor: '#ef4444',
-        color: '#ffffff',
-        weight: 3,
-        opacity: 1,
-        fillOpacity: 0.9
-    }).addTo(map);
-
-    let pulseCircle = L.circle([currentLat, currentLng], {
-        radius: 120,
-        color: '#ef4444',
-        fillColor: '#f87171',
-        fillOpacity: 0.2
-    }).addTo(map);
-
+    let faultMarker = null;
+    let pulseCircle = null;
     let pathPolyline = null;
 
-    faultMarker.bindPopup('<b>Titik Dugaan Gangguan</b><br>Lat: ' + currentLat.toFixed(5) + '<br>Lng: ' + currentLng.toFixed(5)).openPopup();
+    function clearMiniMapLayers(badgeText = 'TIDAK ADA KANDIDAT VALID', badgeClass = 'badge bg-secondary text-white') {
+        map.closePopup();
+        if (faultMarker) {
+            map.removeLayer(faultMarker);
+            faultMarker = null;
+        }
+        if (pulseCircle) {
+            map.removeLayer(pulseCircle);
+            pulseCircle = null;
+        }
+        if (pathPolyline) {
+            map.removeLayer(pathPolyline);
+            pathPolyline = null;
+        }
+        const mapBadge = document.getElementById('mapStatusBadge');
+        if (mapBadge) {
+            mapBadge.className = badgeClass;
+            mapBadge.innerText = badgeText;
+        }
+    }
 
-    function updateMiniMap(lat, lng, assetLabel, poleSeq) {
+    function updateMiniMap(lat, lng, assetLabel, poleSeq, feederName, feederCode) {
+        clearMiniMapLayers('FAULT POINT LOCATED' + (feederCode ? ' (' + feederCode + ')' : ''), 'badge bg-danger text-white');
         if (!lat || !lng) return;
         currentLat = lat;
         currentLng = lng;
         map.setView([lat, lng], 16);
-        faultMarker.setLatLng([lat, lng]);
-        pulseCircle.setLatLng([lat, lng]);
-        faultMarker.bindPopup('<b>Titik Gangguan: ' + (assetLabel || '') + '</b><br>Lat: ' + lat.toFixed(5) + '<br>Lng: ' + lng.toFixed(5)).openPopup();
 
         // Render transline polyline path if sequence coordinates exist
         if (poleSeq && poleSeq.length > 0) {
@@ -891,16 +890,43 @@
                 if (p.from_coords && p.from_coords.lat) latlngs.push([p.from_coords.lat, p.from_coords.lng]);
                 if (p.to_coords && p.to_coords.lat) latlngs.push([p.to_coords.lat, p.to_coords.lng]);
             });
-            if (pathPolyline) map.removeLayer(pathPolyline);
             if (latlngs.length > 1) {
                 pathPolyline = L.polyline(latlngs, {color: '#0284c7', weight: 4, opacity: 0.8}).addTo(map);
             }
         }
+
+        faultMarker = L.circleMarker([lat, lng], {
+            radius: 12,
+            fillColor: '#ef4444',
+            color: '#ffffff',
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 0.9
+        }).addTo(map);
+
+        pulseCircle = L.circle([lat, lng], {
+            radius: 120,
+            color: '#ef4444',
+            fillColor: '#f87171',
+            fillOpacity: 0.2
+        }).addTo(map);
+
+        const fTag = feederName ? ('<span class="text-muted small">Penyulang: ' + feederName + (feederCode ? ' (' + feederCode + ')' : '') + '</span><br>') : '';
+        faultMarker.bindPopup('<b>Titik Gangguan: ' + (assetLabel || '') + '</b><br>' + fTag + 'Lat: ' + lat.toFixed(5) + '<br>Lng: ' + lng.toFixed(5)).openPopup();
     }
 
-    // Initial polyline if initial result has sequence
-    if (lastCalculatedResult && lastCalculatedResult.pole_sequence) {
-        updateMiniMap(currentLat, currentLng, (lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets[0]) ? lastCalculatedResult.candidate_assets[0].kode_asset : '', lastCalculatedResult.pole_sequence);
+    // Initial map state: only show fault marker if initial result has valid fault_point & candidate_assets
+    if (lastCalculatedResult && lastCalculatedResult.fault_point && lastCalculatedResult.fault_point.lat && lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets.length > 0) {
+        updateMiniMap(
+            lastCalculatedResult.fault_point.lat,
+            lastCalculatedResult.fault_point.lng,
+            lastCalculatedResult.candidate_assets[0].kode_asset,
+            lastCalculatedResult.pole_sequence,
+            lastCalculatedResult.feeder_name,
+            lastCalculatedResult.feeder_code
+        );
+    } else {
+        clearMiniMapLayers('TIDAK ADA KANDIDAT VALID', 'badge bg-secondary text-white');
     }
 
     // Helper: Refresh Select2 widget when options dynamically change
@@ -917,8 +943,72 @@
         }
     }
 
+    // Race-condition sequence counters & AbortControllers
+    let ulpFetchSeq = 0;
+    let ulpAbortController = null;
+    let contextFetchSeq = 0;
+    let contextAbortController = null;
+    let locateFetchSeq = 0;
+    let locateAbortController = null;
+    let currentUlpValue = document.getElementById('ulpId') ? document.getElementById('ulpId').value : '';
+    let currentFeederValue = document.getElementById('feederId') ? document.getElementById('feederId').value : '';
+
+    // Reset previous analysis results, markers, zones, and layers when feeder/ULP changes
+    function resetAnalysisResultsAndMap(feederLabel = '') {
+        if (locateAbortController) {
+            locateAbortController.abort();
+            locateAbortController = null;
+        }
+        locateFetchSeq++;
+        lastCalculatedResult = null;
+        currentCaseUuid = '';
+
+        clearMiniMapLayers('MENUNGGU ANALISIS PENYULANG', 'badge bg-secondary text-white');
+
+        const feederEl = document.getElementById('feederId');
+        const selectedOptText = feederLabel || (feederEl && feederEl.selectedIndex >= 0 && feederEl.value ? feederEl.options[feederEl.selectedIndex].text : 'Belum Dipilih');
+
+        const resFeederName = document.getElementById('resFeederName');
+        if (resFeederName) resFeederName.innerText = selectedOptText;
+        const resTotalSpan = document.getElementById('resTotalSpan');
+        if (resTotalSpan) resTotalSpan.innerText = '0';
+        const resAnchorDesc = document.getElementById('resAnchorDesc');
+        if (resAnchorDesc) resAnchorDesc.innerText = 'Klik "Hitung Lokasi Gangguan" untuk menjalankan analisis pada penyulang terpilih.';
+        const resCandidateAsset = document.getElementById('resCandidateAsset');
+        if (resCandidateAsset) resCandidateAsset.innerHTML = '<span class="text-muted">Menunggu eksekusi analisis pada penyulang terpilih...</span>';
+        const resSegmentName = document.getElementById('resSegmentName');
+        if (resSegmentName) resSegmentName.innerText = '-';
+        const resSegmentPoles = document.getElementById('resSegmentPoles');
+        if (resSegmentPoles) resSegmentPoles.innerText = '';
+        const resCoords = document.getElementById('resCoords');
+        if (resCoords) resCoords.innerText = '-';
+        const poleSeqCount = document.getElementById('poleSeqCount');
+        if (poleSeqCount) poleSeqCount.innerText = '0 Bentang';
+        const poleSequenceBody = document.getElementById('poleSequenceBody');
+        if (poleSequenceBody) {
+            poleSequenceBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Klik tombol <strong>HITUNG LOKASI GANGGUAN</strong> untuk menelusuri graf transline penyulang ini.</td></tr>';
+        }
+        const insufficientAlert = document.getElementById('insufficientDataAlert');
+        if (insufficientAlert) insufficientAlert.style.display = 'none';
+        const outcomeBadge = document.getElementById('outcomeBadge');
+        if (outcomeBadge) {
+            outcomeBadge.className = 'badge-unresolved';
+            outcomeBadge.innerText = 'MENUNGGU ANALISIS';
+        }
+        const gisBtn = document.getElementById('btnOpenGis');
+        if (gisBtn) {
+            gisBtn.href = '<?= site_url('gis') ?>' + (feederEl && feederEl.value ? ('?penyulang_id=' + encodeURIComponent(feederEl.value)) : '');
+        }
+    }
+
     // Helper: Reset downstream Feeder Context & Protection Device
     function clearFeederNetworkContext() {
+        if (contextAbortController) {
+            contextAbortController.abort();
+            contextAbortController = null;
+        }
+        contextFetchSeq++;
+
         const pill = document.getElementById('feederReadinessPill');
         const contextDetails = document.getElementById('feederContextDetails');
         const segTbody = document.getElementById('feederSegmentsPreviewBody');
@@ -953,12 +1043,6 @@
         }
     }
 
-    // Cascading ULP -> Feeder State Management (Race-Condition Protected)
-    let ulpFetchSeq = 0;
-    let ulpAbortController = null;
-    let currentUlpValue = document.getElementById('ulpId') ? document.getElementById('ulpId').value : '';
-    let currentFeederValue = document.getElementById('feederId') ? document.getElementById('feederId').value : '';
-
     async function handleUlpChange(ulpId) {
         if (ulpId === currentUlpValue && document.getElementById('feederId') && document.getElementById('feederId').options.length > 1) {
             return;
@@ -973,8 +1057,9 @@
         feederSelect.innerHTML = '<option value="">Memuat penyulang...</option>';
         refreshSelect2(feederSelect);
 
-        // 2. Clear all downstream context
+        // 2. Clear all downstream context & previous feeder map/results immediately
         clearFeederNetworkContext();
+        resetAnalysisResultsAndMap('Belum Dipilih');
 
         if (!ulpId) {
             feederSelect.innerHTML = '<option value="">-- Pilih ULP Dahulu --</option>';
@@ -1032,6 +1117,7 @@
     function handleFeederChange(feederId) {
         if (feederId === currentFeederValue) return;
         currentFeederValue = feederId;
+        resetAnalysisResultsAndMap();
         if (feederId) {
             loadFeederNetworkContext(feederId);
         } else {
@@ -1054,14 +1140,18 @@
         $('#feederId').on('change', function() { handleFeederChange(this.value); });
     }
 
-    // Feeder Network Context Loader
+    // Feeder Network Context Loader (Race-Condition Protected)
     async function loadFeederNetworkContext(feederId) {
         if (!feederId) return;
 
-        const banner = document.getElementById('feederContextBanner');
+        if (contextAbortController) {
+            contextAbortController.abort();
+        }
+        contextAbortController = new AbortController();
+        const thisContextSeq = ++contextFetchSeq;
+
         const pill = document.getElementById('feederReadinessPill');
         const contextDetails = document.getElementById('feederContextDetails');
-        const segCollapse = document.getElementById('feederSegmentsCollapse');
         const condSelect = document.getElementById('conductorType');
         const srcProtRadio = document.getElementById('srcProtection');
         const protNotice = document.getElementById('noProtectionNotice');
@@ -1072,8 +1162,13 @@
         pill.innerText = 'Menganalisis...';
 
         try {
-            const res = await fetch('<?= site_url('api/fault-locator/feeder-network-context') ?>/' + feederId);
+            const res = await fetch('<?= site_url('api/fault-locator/feeder-network-context') ?>/' + encodeURIComponent(feederId), {
+                signal: contextAbortController.signal
+            });
             const json = await res.json();
+            if (thisContextSeq !== contextFetchSeq) return;
+            if (String(document.getElementById('feederId').value) !== String(feederId)) return;
+
             if (json.status === 'success' && json.data) {
                 const data = json.data;
 
@@ -1107,13 +1202,17 @@
                 const segTbody = document.getElementById('feederSegmentsPreviewBody');
                 if (data.segments_preview && data.segments_preview.length > 0) {
                     segTbody.innerHTML = '';
-                    data.segments_preview.forEach(s => {
+                    data.segments_preview.forEach((s, idx) => {
                         const tr = document.createElement('tr');
+                        const seqNo = s.seq_no !== undefined ? s.seq_no : (idx + 1);
+                        const fromPole = s.from_pole || s.source_kode || '-';
+                        const toPole = s.to_pole || s.target_kode || '-';
+                        const spanM = s.span_meters !== undefined ? s.span_meters : (s.distance_meters || 0);
                         tr.innerHTML = `
-                            <td>${s.seq_no}</td>
-                            <td>${s.from_pole}</td>
-                            <td>${s.to_pole}</td>
-                            <td class="text-end">${Number(s.span_meters).toFixed(1)}m</td>
+                            <td>${seqNo}</td>
+                            <td>${fromPole}</td>
+                            <td>${toPole}</td>
+                            <td class="text-end">${Number(spanM).toFixed(1)}m</td>
                             <td><span class="badge bg-light text-muted border" style="font-size:0.65rem;">${s.conductor_type}</span></td>
                         `;
                         segTbody.appendChild(tr);
@@ -1144,6 +1243,8 @@
                 }
             }
         } catch(e) {
+            if (e.name === 'AbortError') return;
+            if (thisContextSeq !== contextFetchSeq) return;
             console.error('Error loading feeder network context:', e);
             contextDetails.innerHTML = '<span class="text-danger">Gagal memuat konteks topologi resmi.</span>';
         }
@@ -1165,7 +1266,7 @@
         });
     });
 
-    // Locate Fault Action
+    // Locate Fault Action (Race-Condition Protected)
     document.getElementById('btnLocateFault').addEventListener('click', async function() {
         const feederId = document.getElementById('feederId').value;
         if (!feederId) {
@@ -1195,6 +1296,12 @@
             relay_distance_m: document.getElementById('relayDistanceM').value ? parseFloat(document.getElementById('relayDistanceM').value) : null
         };
 
+        if (locateAbortController) {
+            locateAbortController.abort();
+        }
+        locateAbortController = new AbortController();
+        const thisLocateSeq = ++locateFetchSeq;
+
         const btn = this;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menghitung Solusi Graf JTM...';
@@ -1203,10 +1310,18 @@
             const res = await fetch('<?= site_url('api/fault-locator/locate') ?>', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: locateAbortController.signal
             });
             const data = await res.json();
+            if (thisLocateSeq !== locateFetchSeq) return;
+            if (String(document.getElementById('feederId').value) !== String(feederId)) return;
+
             if (data.status === 'success' && data.data) {
+                if (String(data.data.feeder_id) !== String(feederId)) {
+                    console.warn('Discarded mismatched feeder response:', data.data.feeder_id, 'expected:', feederId);
+                    return;
+                }
                 lastCalculatedResult = data.data;
                 currentCaseUuid = data.data.case_uuid;
                 updateResultsUI(data.data);
@@ -1214,11 +1329,15 @@
                 alert(data.message || 'Gagal menghitung lokasi gangguan.');
             }
         } catch(e) {
+            if (e.name === 'AbortError') return;
+            if (thisLocateSeq !== locateFetchSeq) return;
             console.error('Error locating fault:', e);
             alert('Terjadi kesalahan koneksi server.');
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-crosshairs me-2"></i> HITUNG LOKASI GANGGUAN';
+            if (thisLocateSeq === locateFetchSeq) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-crosshairs me-2"></i> HITUNG LOKASI GANGGUAN';
+            }
         }
     });
 
@@ -1362,6 +1481,11 @@
 
     // Update Results UI
     function updateResultsUI(data) {
+        const activeFeederVal = document.getElementById('feederId') ? document.getElementById('feederId').value : '';
+        if (activeFeederVal && data.feeder_id && String(data.feeder_id) !== String(activeFeederVal)) {
+            return;
+        }
+
         document.getElementById('resCaseUuid').innerText = data.case_uuid;
         document.getElementById('resConfidence').innerText = data.confidence_percent + '%';
         document.getElementById('resDistance').innerText = Number(data.calculated_distance_m).toLocaleString() + ' Meter';
@@ -1369,12 +1493,23 @@
         document.getElementById('resTotalSpan').innerText = Number(data.feeder_span_meters || 0).toLocaleString();
         document.getElementById('resAnchorDesc').innerText = data.anchor_description || '';
         document.getElementById('resSegmentName').innerText = data.transline_segment || '-';
+
+        const segPolesEl = document.getElementById('resSegmentPoles');
+        if (segPolesEl) {
+            if (data.fault_zone_segment && data.fault_zone_segment.from_pole_kode && data.fault_zone_segment.to_pole_kode) {
+                segPolesEl.innerHTML = '(' + data.fault_zone_segment.from_pole_kode + ' &rarr; ' + data.fault_zone_segment.to_pole_kode + ')';
+            } else {
+                segPolesEl.innerText = '';
+            }
+        }
+
         document.getElementById('resDasarBadge').innerText = data.dasar_perhitungan || 'ESTIMASI';
         document.getElementById('resDasarLabel').innerText = data.dasar_perhitungan_label || '';
 
         const formulaBox = document.getElementById('resFormulaDerivation');
         if (formulaBox) {
             formulaBox.innerText = data.formula_derivation || '';
+            formulaBox.style.display = data.formula_derivation ? 'block' : 'none';
         }
 
         // Fault classification
@@ -1414,25 +1549,38 @@
             badge.className = 'badge-unresolved';
         }
 
-        // Candidate assets
+        // Candidate assets (Strictly verified against selected feeder)
         const candTd = document.getElementById('resCandidateAsset');
         candTd.innerHTML = '';
-        if (data.candidate_assets && data.candidate_assets.length > 0) {
-            data.candidate_assets.forEach(c => {
+        const validCandidates = Array.isArray(data.candidate_assets)
+            ? data.candidate_assets.filter(c => c && (!c.penyulang_id || String(c.penyulang_id) === String(data.feeder_id)))
+            : [];
+
+        if (validCandidates.length > 0) {
+            validCandidates.forEach(c => {
                 const sp = document.createElement('span');
                 sp.className = 'badge bg-light text-dark border me-1';
                 sp.innerHTML = '<i class="fas fa-bolt text-danger me-1"></i>' + c.kode_asset + ' (' + c.asset_name + ')';
                 candTd.appendChild(sp);
             });
         } else {
-            candTd.innerHTML = '<span class="text-muted">Tidak ditemukan kandidat dalam rentang toleransi</span>';
+            candTd.innerHTML = '<span class="text-danger fw-bold"><i class="fas fa-circle-exclamation me-1"></i>Tidak ada kandidat valid pada penyulang ini</span>';
         }
 
-        // Coordinates & Map
-        if (data.fault_point && data.fault_point.lat && data.fault_point.lng) {
+        // Coordinates & Map (Always clear stale markers if no valid candidate/fault_point)
+        if (validCandidates.length > 0 && data.fault_point && data.fault_point.lat && data.fault_point.lng) {
             document.getElementById('resCoords').innerText = data.fault_point.lat.toFixed(6) + ', ' + data.fault_point.lng.toFixed(6);
-            let candName = (data.candidate_assets && data.candidate_assets.length > 0) ? data.candidate_assets[0].kode_asset : '';
-            updateMiniMap(data.fault_point.lat, data.fault_point.lng, candName, data.pole_sequence);
+            updateMiniMap(
+                data.fault_point.lat,
+                data.fault_point.lng,
+                validCandidates[0].kode_asset,
+                data.pole_sequence,
+                data.feeder_name,
+                data.feeder_code
+            );
+        } else {
+            document.getElementById('resCoords').innerText = 'Tidak ada kandidat valid pada penyulang ini';
+            clearMiniMapLayers('TIDAK ADA KANDIDAT VALID (' + (data.feeder_code || data.feeder_name || '-') + ')', 'badge bg-secondary text-white');
         }
 
         // Pole Sequence Table
@@ -1456,7 +1604,7 @@
             });
         } else {
             document.getElementById('poleSeqCount').innerText = '0 Bentang';
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Tidak ada transline tiang JTM terpetakan untuk titik acuan ini.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Tidak ada kandidat valid pada penyulang ini (belum ada transline tiang JTM terpetakan).</td></tr>';
         }
 
         const gisBtn = document.getElementById('btnOpenGis');

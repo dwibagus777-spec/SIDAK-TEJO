@@ -188,6 +188,20 @@
             transform: scale(1);
         }
     }
+    @keyframes flTargetPulseModel {
+        0% {
+            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8), 0 0 0 0 rgba(245, 158, 11, 0.4);
+            transform: scale(1);
+        }
+        50% {
+            box-shadow: 0 0 0 9px rgba(245, 158, 11, 0.3), 0 0 0 18px rgba(245, 158, 11, 0.1);
+            transform: scale(1.06);
+        }
+        100% {
+            box-shadow: 0 0 0 16px rgba(245, 158, 11, 0), 0 0 0 26px rgba(245, 158, 11, 0);
+            transform: scale(1);
+        }
+    }
     .fl-target-pulse-marker {
         width: 32px;
         height: 32px;
@@ -204,6 +218,11 @@
         line-height: 1;
         animation: flTargetPulse 2s infinite ease-in-out;
         cursor: pointer;
+    }
+    .fl-target-pulse-marker.is-model-estimate {
+        background: radial-gradient(circle, #f59e0b 40%, #d97706 100%);
+        color: #1e293b;
+        animation: flTargetPulseModel 2s infinite ease-in-out;
     }
     @keyframes flCorridorDashFlow {
         to {
@@ -666,6 +685,10 @@
                             </div>
                             <div class="text-muted small mt-1" style="font-size:0.72rem;">
                                 Estimasi Titik Sistem: <strong id="resDistance" class="text-dark"><?= number_format($result['calculated_distance_m'] ?? 0, 1) ?> Meter</strong>
+                                <span id="resModelEstimateBadge" class="badge bg-warning text-dark border ms-1" style="font-size:0.65rem; <?= !empty($result['is_model_estimate']) ? '' : 'display:none;' ?>">Estimasi Model (Perlu Verifikasi)</span>
+                                <div id="resModelUncertaintyWrap" class="text-muted small" style="font-size:0.68rem; <?= !empty($result['is_model_estimate']) ? '' : 'display:none;' ?>">
+                                    Toleransi Model: &plusmn;<span id="resModelUncertaintyText"><?= number_format($result['candidate_zone']['uncertainty_m'] ?? 0, 1) ?></span> m
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -738,6 +761,46 @@
                                     <span class="badge bg-primary-subtle text-primary border" id="resDasarBadge"><?= esc($result['dasar_perhitungan'] ?? '') ?></span>
                                     <span class="text-muted small ms-2" id="resDasarLabel"><?= esc($result['dasar_perhitungan_label'] ?? '') ?></span>
                                     <div class="text-muted small mt-1 font-monospace bg-light p-2 rounded" id="resFormulaDerivation" style="font-size:0.78rem; white-space: pre-wrap; <?= empty($result['formula_derivation']) ? 'display:none;' : '' ?>"><?= esc($result['formula_derivation'] ?? '') ?></div>
+                                    <div id="resSensitivityWrap" style="<?= !empty($result['sensitivity_analysis']) ? '' : 'display:none;' ?>">
+                                        <?php if (!empty($result['sensitivity_analysis']['samples'])): ?>
+                                            <div class="mt-2 p-2 bg-white border rounded small">
+                                                <strong class="text-dark"><i class="fas fa-sliders text-warning me-1"></i> Analisis Sensitivitas Tahanan Pentanahan ($R_f$):</strong>
+                                                <div class="table-responsive mt-1">
+                                                    <table class="table table-sm table-bordered mb-0 text-center" style="font-size:0.73rem;">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th class="text-start">Titik Acuan Jalur</th>
+                                                                <th>Jarak Downstream</th>
+                                                                <th>Nilai $R_f$ Terhitung</th>
+                                                                <th class="text-start">Interpretasi Fisika</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="resSensitivityTbody">
+                                                            <?php foreach ($result['sensitivity_analysis']['samples'] as $smp): ?>
+                                                                <tr>
+                                                                    <td class="text-start font-monospace"><?= esc($smp['location']) ?></td>
+                                                                    <td><b><?= number_format($smp['distance_m'], 1) ?> m</b> (<?= number_format($smp['distance_m'] / 1000.0, 2) ?> km)</td>
+                                                                    <td><span class="badge bg-light text-dark border font-monospace">Rf = <?= number_format($smp['rf_ohm'], 2) ?> &Omega;</span></td>
+                                                                    <td class="text-start text-muted">
+                                                                        <?php if ($smp['distance_m'] == 0): ?>
+                                                                            Tahanan kontak tanah maksimum di pangkal
+                                                                        <?php elseif (abs($smp['distance_m'] - (float)($result['calculated_distance_m'] ?? 0)) < 1.0): ?>
+                                                                            <strong class="text-warning">Titik Estimasi Model (Median Prior Distribusi)</strong>
+                                                                        <?php else: ?>
+                                                                            Tahanan kontak tanah minimum di ujung penyulang
+                                                                        <?php endif; ?>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="text-muted mt-1" style="font-size:0.7rem;">
+                                                    Gradien Sensitivitas: Perubahan $R_f$ sebesar 1 &Omega; menggeser perkiraan lokasi sejauh &plusmn;<b><span id="resSensitivityGradText"><?= number_format($result['sensitivity_analysis']['sensitivity_km_per_ohm'] ?? 0, 2) ?></span> km</b> konduktor.
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                             <tr>
@@ -750,16 +813,26 @@
                                         $cz = $result['candidate_zone'] ?? [];
                                         $hCands = $result['historical_priority_assets'] ?? [];
                                         $calcDist = (float)($result['calculated_distance_m'] ?? 0);
+                                        $isModel = !empty($result['is_model_estimate']);
+                                        $uncM = !empty($result['candidate_zone']['uncertainty_m']) ? (float)$result['candidate_zone']['uncertainty_m'] : null;
+                                        $uncStr = $uncM ? ' (&plusmn;' . number_format($uncM, 1) . ' m)' : '';
+                                        $badgeClass = $isModel ? 'bg-warning text-dark' : 'bg-danger text-white';
+                                        $badgeTitle = $isModel ? 'ESTIMASI MODEL SPANS (PERLU VERIFIKASI)' : 'TITIK ESTIMASI PRESISI DITEMUKAN';
+                                        $btnClass = $isModel ? 'btn-warning text-dark' : 'btn-danger text-white';
                                     ?>
                                     <?php if ($isSinglePt): ?>
                                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom">
                                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                <span class="badge bg-danger text-white fw-bold"><i class="fas fa-crosshairs me-1"></i>TITIK ESTIMASI PRESISI DITEMUKAN</span>
+                                                <span class="badge <?= $badgeClass ?> fw-bold"><i class="fas fa-crosshairs me-1"></i><?= $badgeTitle ?></span>
                                                 <span class="badge bg-light text-dark border font-monospace"><?= $totalCands ?> Tiang Pengapit Bentang</span>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
-                                                <span class="text-muted small"><i class="fas fa-bullseye text-danger me-1"></i>Jarak: <b><?= number_format($calcDist, 1) ?> m (<?= number_format($calcDist / 1000.0, 2) ?> km)</b></span>
-                                                <button type="button" class="btn btn-danger btn-xs py-1 px-2 fw-bold text-white shadow-sm" onclick="window.flFocusFaultTarget()" title="Fokuskan peta ke titik koordinat estimasi gangguan">
+                                                <span class="text-muted small"><i class="fas fa-bullseye <?= $isModel ? 'text-warning' : 'text-danger' ?> me-1"></i>Jarak: <b><?= number_format($calcDist, 1) ?> m (<?= number_format($calcDist / 1000.0, 2) ?> km)<?= $uncStr ?></b></span>
+                                                <button type="button" class="btn <?= $btnClass ?> btn-xs py-1 px-2 fw-bold shadow-sm" onclick="window.flFocusFaultTarget()" title="Fokuskan peta ke titik koordinat estimasi gangguan">
+                                                    <i class="fas fa-crosshairs me-1"></i>Fokus Titik Estimasi
+                                                </button>
+                                            </div>
+                                        </div>
                                                     <i class="fas fa-crosshairs me-1"></i>Fokus Titik Estimasi
                                                 </button>
                                             </div>
@@ -1767,15 +1840,22 @@
             const distKm = (calcDist / 1000).toFixed(2);
             const distM = calcDist.toFixed(1);
 
+            const isModel = Boolean(fullData && fullData.is_model_estimate);
+            const uncM = (candidateZone && candidateZone.uncertainty_m) ? Number(candidateZone.uncertainty_m) : null;
+            const uncStr = uncM ? ` (&plusmn;${uncM.toFixed(1)} m)` : '';
+            const badgeClass = isModel ? 'bg-warning text-dark' : 'bg-danger text-white';
+            const badgeTitle = isModel ? 'ESTIMASI MODEL SPANS (PERLU VERIFIKASI)' : 'TITIK ESTIMASI PRESISI DITEMUKAN';
+            const btnClass = isModel ? 'btn-warning text-dark' : 'btn-danger text-white';
+
             let statusBadgeHtml = `
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span class="badge bg-danger text-white fw-bold"><i class="fas fa-crosshairs me-1"></i>TITIK ESTIMASI PRESISI DITEMUKAN</span>
+                        <span class="badge ${badgeClass} fw-bold"><i class="fas fa-crosshairs me-1"></i>${badgeTitle}</span>
                         <span class="badge bg-light text-dark border font-monospace">${totalCount} Tiang Pengapit Bentang</span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted small"><i class="fas fa-bullseye text-danger me-1"></i>Jarak: <b>${distM} m (${distKm} km)</b></span>
-                        <button type="button" class="btn btn-danger btn-xs py-1 px-2 fw-bold text-white shadow-sm" onclick="window.flFocusFaultTarget()" title="Fokuskan peta ke titik koordinat estimasi gangguan">
+                        <span class="text-muted small"><i class="fas fa-bullseye ${isModel ? 'text-warning' : 'text-danger'} me-1"></i>Jarak: <b>${distM} m (${distKm} km)${uncStr}</b></span>
+                        <button type="button" class="btn ${btnClass} btn-xs py-1 px-2 fw-bold shadow-sm" onclick="window.flFocusFaultTarget()" title="Fokuskan peta ke titik koordinat estimasi gangguan">
                             <i class="fas fa-crosshairs me-1"></i>Fokus Titik Estimasi
                         </button>
                     </div>
@@ -2358,18 +2438,23 @@
             focusBoundsPoints.push([fLatNum, fLngNum]);
             allDownstreamPoints.push([fLatNum, fLngNum]);
 
+            const isModel = Boolean(resultObj.is_model_estimate);
+            const circleColor = isModel ? '#f59e0b' : '#ef4444';
+            const circleFill = isModel ? '#fbbf24' : '#f87171';
+            const markerClass = isModel ? 'fl-target-pulse-marker is-model-estimate' : 'fl-target-pulse-marker';
+
             L.circle([fLatNum, fLngNum], {
                 radius: 85,
-                color: '#ef4444',
+                color: circleColor,
                 weight: 2,
                 dashArray: '5, 5',
-                fillColor: '#f87171',
-                fillOpacity: 0.16
+                fillColor: circleFill,
+                fillOpacity: 0.18
             }).addTo(miniMapLayerGroup);
 
             const targetPulseIcon = L.divIcon({
                 className: 'fl-target-pulse-wrapper',
-                html: '<div class="fl-target-pulse-marker" title="Titik Estimasi Gangguan">&#10005;</div>',
+                html: `<div class="${markerClass}" title="${isModel ? 'Titik Estimasi Model' : 'Titik Estimasi Gangguan'}">&#10005;</div>`,
                 iconSize: [32, 32],
                 iconAnchor: [16, 16]
             });
@@ -2385,20 +2470,33 @@
             const faultMarker = L.marker([fLatNum, fLngNum], { icon: targetPulseIcon, zIndexOffset: 1000 }).addTo(miniMapLayerGroup);
             window.flFaultTargetMarker = faultMarker;
             const fTag = feederName ? ('<span class="text-muted small">Penyulang: ' + escapeHtml(feederName) + (feederCode ? ' (' + escapeHtml(feederCode) + ')' : '') + '</span><br>') : '';
+            const popupTitle = isModel ? '[ESTIMASI MODEL SPANS]' : 'Estimasi Titik Gangguan';
+            const popupBadge = isModel
+                ? '<span class="badge bg-warning text-dark border mb-1" style="font-size:0.7rem;"><i class="fas fa-calculator me-1"></i>Estimasi Model (Perlu Verifikasi Lapangan)</span><br>'
+                : '<span class="badge bg-danger-subtle text-danger border mb-1" style="font-size:0.7rem;"><i class="fas fa-calculator me-1"></i>Estimasi Relay (Bukan Aktual Lapangan)</span><br>';
+            const uncLine = (isModel && resultObj.candidate_zone?.uncertainty_label)
+                ? ('Radius Toleransi: <b>' + escapeHtml(resultObj.candidate_zone.uncertainty_label) + '</b><br>')
+                : '';
+
             faultMarker.bindPopup(
-                '<b><i class="fas fa-crosshairs text-danger me-1"></i>Estimasi Titik Gangguan: ' + escapeHtml(assetLabel || '') + '</b><br>' +
+                '<b><i class="fas fa-crosshairs ' + (isModel ? 'text-warning' : 'text-danger') + ' me-1"></i>' + popupTitle + ': ' + escapeHtml(assetLabel || '') + '</b><br>' +
                 fTag +
-                '<span class="badge bg-danger-subtle text-danger border mb-1" style="font-size:0.7rem;"><i class="fas fa-calculator me-1"></i>Estimasi Sistem (Bukan Aktual Lapangan)</span><br>' +
+                popupBadge +
                 'Jarak Hilir: <b>' + distKm + ' km (' + distM + ' m)</b> dari ' + escapeHtml(refSourceShort) + '<br>' +
+                uncLine +
                 'Segmen Terdekat: <code>' + escapeHtml(segLabel) + '</code><br>' +
                 'Jenis Konduktor: <b>' + escapeHtml(conductorLabel) + '</b><br>' +
                 'Keyakinan (Confidence): <b>' + escapeHtml(resultObj.confidence_percent || 88) + '%</b><br>' +
                 'Koordinat: <code>' + fLatNum.toFixed(6) + ', ' + fLngNum.toFixed(6) + '</code>'
             );
 
+            const calloutText = isModel
+                ? `✕ Estimasi Model: ${distKm} km (${distM} m) &bull; ${escapeHtml(assetLabel || '')}`
+                : `✕ Estimasi: ${distKm} km (${distM} m) dari ${escapeHtml(refSourceShort)} &bull; ${escapeHtml(assetLabel || '')}`;
+
             const calloutIcon = L.divIcon({
                 className: 'fl-fault-callout-wrapper',
-                html: `<div class="fl-fault-callout-icon">✕ Estimasi: ${distKm} km (${distM} m) dari ${escapeHtml(refSourceShort)} &bull; ${escapeHtml(assetLabel || '')}</div>`,
+                html: `<div class="fl-fault-callout-icon">${calloutText}</div>`,
                 iconSize: null,
                 iconAnchor: [-16, 14]
             });
@@ -3571,6 +3669,18 @@
         document.getElementById('resCaseUuid').innerText = data.case_uuid;
         document.getElementById('resConfidence').innerText = data.confidence_percent + '%';
         document.getElementById('resDistance').innerText = Number(data.calculated_distance_m || 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' Meter';
+
+        const isModel = Boolean(data.is_model_estimate);
+        const modelBadge = document.getElementById('resModelEstimateBadge');
+        if (modelBadge) modelBadge.style.display = isModel ? 'inline-block' : 'none';
+        const modelUncWrap = document.getElementById('resModelUncertaintyWrap');
+        if (modelUncWrap) {
+            modelUncWrap.style.display = isModel ? 'block' : 'none';
+            const uncVal = data.candidate_zone && data.candidate_zone.uncertainty_m ? Number(data.candidate_zone.uncertainty_m).toFixed(1) : '0.0';
+            const uncEl = document.getElementById('resModelUncertaintyText');
+            if (uncEl) uncEl.innerText = uncVal;
+        }
+
         document.getElementById('resFeederName').innerText = data.feeder_name || 'Feeder';
         document.getElementById('resTotalSpan').innerText = Number(data.feeder_span_meters || 0).toLocaleString();
         document.getElementById('resAnchorDesc').innerText = data.anchor_description || '';
@@ -3640,6 +3750,39 @@
         if (formulaBox) {
             formulaBox.innerText = data.formula_derivation || '';
             formulaBox.style.display = data.formula_derivation ? 'block' : 'none';
+        }
+
+        const sensWrap = document.getElementById('resSensitivityWrap');
+        if (sensWrap) {
+            if (data.sensitivity_analysis && Array.isArray(data.sensitivity_analysis.samples) && data.sensitivity_analysis.samples.length > 0) {
+                sensWrap.style.display = 'block';
+                const sTbody = document.getElementById('resSensitivityTbody');
+                if (sTbody) {
+                    let sHtml = '';
+                    const calcDistVal = Number(data.calculated_distance_m || 0);
+                    data.sensitivity_analysis.samples.forEach(smp => {
+                        const distM = Number(smp.distance_m || 0);
+                        const distKm = (distM / 1000).toFixed(2);
+                        const isMedian = Math.abs(distM - calcDistVal) < 1.0;
+                        const interp = (distM === 0)
+                            ? 'Tahanan kontak tanah maksimum di pangkal'
+                            : (isMedian ? '<strong class="text-warning">Titik Estimasi Model (Median Prior Distribusi)</strong>' : 'Tahanan kontak tanah minimum di ujung penyulang');
+                        sHtml += `
+                            <tr>
+                                <td class="text-start font-monospace">${escapeHtml(smp.location)}</td>
+                                <td><b>${distM.toFixed(1)} m</b> (${distKm} km)</td>
+                                <td><span class="badge bg-light text-dark border font-monospace">Rf = ${Number(smp.rf_ohm || 0).toFixed(2)} &Omega;</span></td>
+                                <td class="text-start text-muted">${interp}</td>
+                            </tr>
+                        `;
+                    });
+                    sTbody.innerHTML = sHtml;
+                }
+                const gradEl = document.getElementById('resSensitivityGradText');
+                if (gradEl) gradEl.innerText = Number(data.sensitivity_analysis.sensitivity_km_per_ohm || 0).toFixed(2);
+            } else {
+                sensWrap.style.display = 'none';
+            }
         }
 
         // Fault classification & Supporting Evidence

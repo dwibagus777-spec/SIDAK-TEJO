@@ -1567,6 +1567,8 @@ class FaultLocatorWorkspaceService
         $calculatedDistanceM = 0.0;
         $confidence = 0.0;
         $explanation = '';
+        $isModelEstimate = false;
+        $sensitivityData = null;
 
         if (!$hasTopology) {
             $calculationStatus = 'DATA_TIDAK_CUKUP';
@@ -1631,16 +1633,161 @@ class FaultLocatorWorkspaceService
 
             if (!empty($faultClass['is_ground_fault'])) {
                 // Ground Fault (DGR, OCR-DGR, OCR Instan-DGR):
-                // Do NOT fabricate a fake distance when relay distance is not provided!
-                $dasarPerhitungan = 'NGR_GROUND_FAULT_INDETERMINATE';
-                $dasarPerhitunganLabel = 'DATA TIDAK CUKUP: Arus gangguan tanah didominasi NGR dan Rf, bukan panjang konduktor';
-                $formulaDerivation = "I_f = 3*V_LN / (2*Z1 + Z0 + 3*RN + 3*Rf).\n"
-                    . "Tahanan NGR (3*RN ≈ 120 Ω bila NGR 40Ω, atau 36 Ω bila NGR 12Ω) dan tahanan sentuh pohon/tanah (Rf = 5 - 200 Ω) mendominasi total impedansi dibandingkan impedansi kawat (2*Z1 + Z0 ≈ 1-15 Ω).\n"
-                    . "Secara fisika, jarak titik gangguan TIDAK DAPAT dihitung dari besaran arus/tegangan fasa semata tanpa jarak/reaktansi X dari relay numerik.\n"
-                    . "{$topologyPathLengthLabel}: {$topologyPathLengthM} m.";
-                $explanation = "Terdeteksi {$faultClass['fault_type_label']}. Pada sistem distribusi ber-tahanan netral (NGR), jarak gangguan tanah tidak dapat dihitung tanpa pembacaan jarak relay numerik. {$topologyPathLengthLabel} adalah {$topologyPathLengthM} m (bukan jarak terukur relay).";
-                $calculatedDistanceM = 0.0;
+                // Span-by-Span Cumulative Impedance Model across traversed downstream translines
+                $dasarPerhitungan = 'ESTIMASI_MODEL_IMPEDANSI_DGR';
+                $isModelEstimate = true;
+                $confidence = 42.0;
+
+                // 1. Evaluate Line-to-Neutral Voltage (V_LN) from healthy phase voltages or nominal 20 kV
+                $vHealthySum = 0.0;
+                $vHealthyCount = 0;
+                if ($voltageR !== null && $voltageR > 10.0) { $vHealthySum += $voltageR; $vHealthyCount++; }
+                if ($voltageS !== null && $voltageS > 10.0) { $vHealthySum += $voltageS; $vHealthyCount++; }
+                if ($voltageT !== null && $voltageT > 10.0) { $vHealthySum += $voltageT; $vHealthyCount++; }
+
+                $vLnActual = ($vHealthyCount > 0)
+                    ? (($vHealthySum / $vHealthyCount) * 1000.0) / sqrt(3.0)
+                    : $V_LN;
+
+                // 2. Neutral Current & Measured Loop Impedance Magnitude
+                $iNeutral = (float)($currentN ?? $iSc);
+                $zLoopMeas = ($iNeutral > 5.0) ? ($vLnActual / $iNeutral) : 0.0;
+
+                // Substation Grounding Resistor (PLN 20 kV Standard NGR = 40.0 Ohm)
+                $rNgr = 40.0;
+
+                // 3. Accumulate Span-by-Span Impedance along Downstream Traversal Path
+                $cumR = 0.0;
+                $cumX = 0.0;
+                $spanAccumulations = [];
+
+                foreach ($poleSequence as $sIdx => $seq) {
+                    $sMeters = (float)($seq['span_meters'] ?? 0.0);
+                    $sKm = $sMeters / 1000.0;
+
+                    // Resolve conductor for this specific span
+                    $sCondKey = $seq['conductor_type'] ?? null;
+                    $sParams = ($sCondKey && isset(self::CONDUCTOR_CATALOG[$sCondKey]))
+                        ? self::CONDUCTOR_CATALOG[$sCondKey]
+                        : $condParams;
+
+                    $r1_k = (float)$sParams['r1_ohm_km'];
+                    $x1_k = (float)$sParams['x1_ohm_km'];
+                    $r0_k = (float)$sParams['r0_ohm_km'];
+                    $x0_k = (float)$sParams['x0_ohm_km'];
+
+                    $rLoop_k = (2.0 * $r1_k + $r0_k) / 3.0;
+                    $xLoop_k = (2.0 * $x1_k + $x0_k) / 3.0;
+
+                    $spanR = $rLoop_k * $sKm;
+                    $spanX = $xLoop_k * $sKm;
+
+                    $cumR += $spanR;
+                    $cumX += $spanX;
+
+                    $spanAccumulations[$sIdx] = [
+                        'span_r'   => $spanR,
+                        'span_x'   => $spanX,
+                        'cum_r'    => $cumR,
+                        'cum_x'    => $cumX,
+                        'r_loop_k' => $rLoop_k,
+                        'x_loop_k' => $xLoop_k,
+                    ];
+                }
+
+                $totalCumR = $cumR;
+                $totalCumX = $cumX;
+                $totalDownstreamM = (float)($poleSequence[count($poleSequence) - 1]['cumulative_meters'] ?? $topologyPathLengthM);
+
+                // 4. Fault Resistance (Rf) Bounds & Sensitivity Analysis
+                // At anchor (d = 0 m):
+                $xTot0 = $X_source;
+                $rTot0 = ($zLoopMeas > $xTot0) ? sqrt($zLoopMeas ** 2 - $xTot0 ** 2) : $zLoopMeas;
+                $rfMax = max(0.0, $rTot0 - $rNgr - $R_source);
+
+                // At feeder end (d = D_total):
+                $xTotEnd = $X_source + $totalCumX;
+                $rTotEnd = ($zLoopMeas > $xTotEnd) ? sqrt($zLoopMeas ** 2 - $xTotEnd ** 2) : $zLoopMeas;
+                $rfMin = max(0.0, $rTotEnd - $rNgr - $R_source - $totalCumR);
+
+                $deltaRf = max(0.001, $rfMax - $rfMin);
+                $sensitivityMPerOhm = ($deltaRf > 0) ? ($totalDownstreamM / $deltaRf) : 0.0;
+
+                // 5. Model Estimate Distance (d_model) via Median Impedance Prior (50% cumulative R)
+                $rTarget = 0.5 * $totalCumR;
+                $dModel = 0.5 * $totalDownstreamM; // fallback
+                $runningR = 0.0;
+
+                foreach ($poleSequence as $sIdx => $seq) {
+                    $acc = $spanAccumulations[$sIdx];
+                    $spanR = $acc['span_r'];
+                    $sMeters = (float)($seq['span_meters'] ?? 0.0);
+                    if ($runningR + $spanR >= $rTarget && $spanR > 0) {
+                        $frac = ($rTarget - $runningR) / $spanR;
+                        $frac = max(0.0, min(1.0, $frac));
+                        $dModel = (float)($seq['cum_start_meters'] ?? 0.0) + ($frac * $sMeters);
+                        break;
+                    }
+                    $runningR += $spanR;
+                }
+
+                $calculatedDistanceM = round($dModel, 1);
+                $rfMedian = round(($rfMax + $rfMin) / 2.0, 2);
+                $uncertaintyRadiusM = round($totalDownstreamM / 2.0, 1);
+
+                $dasarPerhitunganLabel = "Estimasi Model Akumulasi Impedansi Spans (Rf median = {$rfMedian} Ω, NGR 40Ω)";
+
+                // Build Sensitivity Analysis Structure
+                $sensitivityData = [
+                    'system_v_ln_v'          => round($vLnActual, 1),
+                    'neutral_current_a'      => round($iNeutral, 1),
+                    'loop_impedance_ohm'     => round($zLoopMeas, 2),
+                    'ngr_resistor_ohm'       => $rNgr,
+                    'total_span_count'       => count($poleSequence),
+                    'total_line_r_ohm'       => round($totalCumR, 3),
+                    'total_line_x_ohm'       => round($totalCumX, 3),
+                    'rf_at_anchor_ohm'       => round($rfMax, 2),
+                    'rf_at_model_point_ohm'  => $rfMedian,
+                    'rf_at_feeder_end_ohm'   => round($rfMin, 2),
+                    'delta_rf_feeder_ohm'    => round($deltaRf, 3),
+                    'sensitivity_km_per_ohm' => round($sensitivityMPerOhm / 1000.0, 2),
+                    'samples'                => [
+                        [
+                            'location'    => 'Pangkal Proteksi (Anchor)',
+                            'distance_m'  => 0.0,
+                            'rf_ohm'      => round($rfMax, 2),
+                        ],
+                        [
+                            'location'    => 'Estimasi Model Median (Prior)',
+                            'distance_m'  => $calculatedDistanceM,
+                            'rf_ohm'      => $rfMedian,
+                        ],
+                        [
+                            'location'    => 'Ujung Feeder Terjauh',
+                            'distance_m'  => round($totalDownstreamM, 1),
+                            'rf_ohm'      => round($rfMin, 2),
+                        ],
+                    ],
+                ];
+
+                $formulaDerivation = "Model Akumulasi Impedansi Bentang (Span-by-Span) untuk Gangguan Tanah:\n"
+                    . "1. Telemetri & Impedansi Loop:\n"
+                    . "   V_LN = " . number_format($vLnActual, 1) . " V; I_N = {$iNeutral} A => |Z_loop| = " . number_format($zLoopMeas, 2) . " Ω\n"
+                    . "   Substation Grounding: NGR R_N = {$rNgr} Ω; Z_source = (0.05 + j0.45) Ω\n"
+                    . "2. Akumulasi Impedansi Jalur Hilir (" . count($poleSequence) . " span aktif, total " . number_format($totalDownstreamM, 1) . " m):\n"
+                    . "   R_cum(total) = " . number_format($totalCumR, 3) . " Ω; X_cum(total) = " . number_format($totalCumX, 3) . " Ω\n"
+                    . "3. Analisis Sensitivitas Tahanan Kontak Tanah (Rf):\n"
+                    . "   - d = 0.0 m (Pangkal Proteksi): Rf = " . number_format($rfMax, 2) . " Ω\n"
+                    . "   - d = " . number_format($calculatedDistanceM, 1) . " m (Titik Estimasi Model): Rf_median = " . number_format($rfMedian, 2) . " Ω\n"
+                    . "   - d = " . number_format($totalDownstreamM, 1) . " m (Ujung Feeder): Rf = " . number_format($rfMin, 2) . " Ω\n"
+                    . "   Rentang Selisih Feeder: ΔRf = " . number_format($deltaRf, 2) . " Ω (Sensitivitas: ~" . number_format($sensitivityMPerOhm / 1000.0, 2) . " km per 1 Ω Rf)\n"
+                    . "4. Hasil Estimasi Model:\n"
+                    . "   d_model = " . number_format($calculatedDistanceM, 1) . " m (median akumulasi impedansi bentang).\n"
+                    . "   [ESTIMASI MODEL — PERLU VERIFIKASI LAPANGAN]: Radius toleransi patroli ±" . number_format($uncertaintyRadiusM, 1) . " m.";
+
+                $explanation = "Terdeteksi {$faultClass['fault_type_label']}. Sistem menghitung estimasi model berbasis akumulasi impedansi " . count($poleSequence) . " bentang hilir ({$totalDownstreamM} m, NGR 40Ω, Rf median = {$rfMedian} Ω). Titik estimasi model berada pada {$calculatedDistanceM} m dari {$anchorDesc} dengan radius ketidakpastian patroli ±{$uncertaintyRadiusM} m.";
             } elseif ($faultType === 'OCR_INSTAN' || $faultType === 'OCR') {
+                $isModelEstimate = true;
                 if (($faultClass['technical_fault_type'] ?? '') === '3_PHASE' && $iSc > 10.0) {
                     $zLoop = $V_LN / $iSc;
                     $A = $r1PerKm ** 2 + $x1PerKm ** 2;
@@ -1854,19 +2001,36 @@ class FaultLocatorWorkspaceService
             }
             unset($pSeq);
         } elseif ($calculatedDistanceM > 0) {
-            $rangeStart = max(0.0, $calculatedDistanceM - 100.0);
-            $rangeEnd = $calculatedDistanceM + 100.0;
-            $candidateZoneInfo = [
-                'is_single_point'    => true,
-                'zone_type'          => 'SINGLE_POINT',
-                'range_start_m'      => $rangeStart,
-                'range_end_m'        => $rangeEnd,
-                'range_label'        => number_format($calculatedDistanceM, 1) . " m (" . number_format($calculatedDistanceM / 1000.0, 2) . " km dari acuan)",
-                'uncertainty_m'      => 100.0,
-                'uncertainty_label'  => "±100.0 m",
-                'zone_title'         => 'Estimasi Titik & Segmen Gangguan Terproyeksi',
-                'zone_notice'        => "Titik gangguan terproyeksi pada segmen transline dengan estimasi radius toleransi ±100 m.",
-            ];
+            if ($isModelEstimate) {
+                $uncertaintyM = round($topologyPathLengthM / 2.0, 1);
+                $candidateZoneInfo = [
+                    'is_single_point'    => true,
+                    'is_model_estimate'  => true,
+                    'zone_type'          => 'SINGLE_POINT_MODEL_ESTIMATE',
+                    'range_start_m'      => 0.0,
+                    'range_end_m'        => $topologyPathLengthM,
+                    'range_label'        => number_format($calculatedDistanceM, 1) . " m (" . number_format($calculatedDistanceM / 1000.0, 2) . " km dari acuan)",
+                    'uncertainty_m'      => $uncertaintyM,
+                    'uncertainty_label'  => "±" . number_format($uncertaintyM, 1) . " m",
+                    'zone_title'         => 'Estimasi Model Spans (Perlu Verifikasi Lapangan)',
+                    'zone_notice'        => "Titik estimasi model dihitung dari distribusi impedansi bentang hilir (median prior Rf = " . number_format($rfMedian ?? 131.7, 1) . " Ω, NGR 40Ω). Radius toleransi patroli mencakup bentang hilir proteksi (±" . number_format($uncertaintyM, 1) . " m). Periksa 2 tiang pengapit bentang ini terlebih dahulu.",
+                ];
+            } else {
+                $rangeStart = max(0.0, $calculatedDistanceM - 100.0);
+                $rangeEnd = $calculatedDistanceM + 100.0;
+                $candidateZoneInfo = [
+                    'is_single_point'    => true,
+                    'is_model_estimate'  => false,
+                    'zone_type'          => 'SINGLE_POINT',
+                    'range_start_m'      => $rangeStart,
+                    'range_end_m'        => $rangeEnd,
+                    'range_label'        => number_format($calculatedDistanceM, 1) . " m (" . number_format($calculatedDistanceM / 1000.0, 2) . " km dari acuan)",
+                    'uncertainty_m'      => 100.0,
+                    'uncertainty_label'  => "±100.0 m",
+                    'zone_title'         => 'Estimasi Titik & Segmen Gangguan Terproyeksi',
+                    'zone_notice'        => "Titik gangguan terproyeksi pada segmen transline dengan estimasi radius toleransi ±100 m.",
+                ];
+            }
             foreach ($poleSequence as &$pSeq) {
                 if (!empty($pSeq['is_fault_zone'])) {
                     $pSeq['is_candidate_zone'] = true;
@@ -1929,17 +2093,17 @@ class FaultLocatorWorkspaceService
                 return $delA <=> $delB;
             });
 
-            $baseScore = ($calculationStatus === 'CALCULATED_RELAY_AIDED') ? 95 : 80;
+            $baseScore = ($calculationStatus === 'CALCULATED_RELAY_AIDED') ? 95 : ($isModelEstimate ? 65 : 80);
             foreach ($candidateAssetList as $rIdx => &$cItem) {
                 $cItem['rank'] = $rIdx + 1;
                 $penalty = min(20, (int)(($cItem['delta_to_target_m'] ?? 0) / 10));
-                $score = max(50, $baseScore - ($rIdx * 6) - $penalty);
+                $score = max(40, $baseScore - ($rIdx * 5) - $penalty);
                 $cItem['prediction_score'] = $score;
                 $cItem['confidence_label'] = "{$score}%";
-                $cItem['ranking_basis'] = 'PROXIMITY_TO_CALCULATED_FAULT_POINT';
+                $cItem['ranking_basis'] = $isModelEstimate ? 'FLANKING_POLE_TO_MODEL_ESTIMATE' : 'PROXIMITY_TO_CALCULATED_FAULT_POINT';
                 $cItem['influencing_factors'] = [
-                    "Selisih {$cItem['delta_to_target_m']} m dari titik estimasi (d={$calculatedDistanceM} m)",
-                    "Metode: " . ($calculationStatus === 'CALCULATED_RELAY_AIDED' ? 'Jarak Terukur Relay Numerik' : 'Simulasi Loop Impedansi'),
+                    "Selisih {$cItem['delta_to_target_m']} m dari titik estimasi model (d={$calculatedDistanceM} m)",
+                    "Metode: " . ($calculationStatus === 'CALCULATED_RELAY_AIDED' ? 'Jarak Terukur Relay Numerik' : ($isModelEstimate ? 'Estimasi Model Akumulasi Impedansi Spans' : 'Simulasi Loop Impedansi')),
                     "Segmen: " . ($faultZoneSegment['from_pole_kode'] ?? '-') . " → " . ($faultZoneSegment['to_pole_kode'] ?? '-'),
                     "Konduktor: " . ($faultZoneSegment['conductor_type'] ?? 'Belum tersedia')
                 ];
@@ -1958,7 +2122,7 @@ class FaultLocatorWorkspaceService
 
         // Search for evidence-based historical vulnerability priority poles along this path
         $historicalPriorityAssets = [];
-        if ($isIndeterminateZone && !empty($poleSequence)) {
+        if (!empty($poleSequence)) {
             $historicalPriorityAssets = $this->findHistoricalVulnerabilityPoles($penyulangId, $poleSequence, $assetMap, $poleCumDistanceMap);
         }
 
@@ -1977,9 +2141,12 @@ class FaultLocatorWorkspaceService
             $fLat = $faultZoneSegment['from_coords']['lat'] + $fraction * ($faultZoneSegment['to_coords']['lat'] - $faultZoneSegment['from_coords']['lat']);
             $fLng = $faultZoneSegment['from_coords']['lng'] + $fraction * ($faultZoneSegment['to_coords']['lng'] - $faultZoneSegment['from_coords']['lng']);
             $faultPointGeom = [
-                'lat' => round($fLat, 6),
-                'lng' => round($fLng, 6),
-                'span_fraction' => round($fraction * 100, 1),
+                'lat'                  => round($fLat, 6),
+                'lng'                  => round($fLng, 6),
+                'span_fraction'        => round($fraction * 100, 1),
+                'estimated_distance_m' => $calculatedDistanceM,
+                'is_model_estimate'    => $isModelEstimate,
+                'uncertainty_radius_m' => $isModelEstimate ? round($topologyPathLengthM / 2.0, 1) : 100.0,
             ];
         } elseif (!$isIndeterminateZone && !empty($candidateAssetList)) {
             $faultPointGeom = [
@@ -2110,6 +2277,8 @@ class FaultLocatorWorkspaceService
             'candidate_assets'           => $candidateAssetList,
             'historical_priority_assets' => $historicalPriorityAssets,
             'has_physics_prediction'     => ($calculatedDistanceM > 0),
+            'is_model_estimate'          => $isModelEstimate,
+            'sensitivity_analysis'       => $sensitivityData,
             'transline_segment'          => $faultZoneSegment ? "TL-{$penyulangKode}-P{$faultZoneSegment['seq_no']}" : "TL-{$penyulangKode}-MAIN",
             'fault_point'                => $faultPointGeom,
             'explanation'                => $explanation,

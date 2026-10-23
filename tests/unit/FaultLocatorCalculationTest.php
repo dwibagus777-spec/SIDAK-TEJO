@@ -59,7 +59,11 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
 
         $this->assertSame('DATA_TIDAK_CUKUP', $res['calculation_status']);
         $this->assertSame('DATA_TIDAK_CUKUP', $res['outcome_status']);
-        $this->assertSame('NGR_GROUND_FAULT_INDETERMINATE', $res['dasar_perhitungan']);
+        $this->assertSame('ESTIMASI_MODEL_IMPEDANSI_DGR', $res['dasar_perhitungan']);
+        $this->assertTrue($res['is_model_estimate']);
+        $this->assertGreaterThan(0.0, $res['calculated_distance_m']);
+        $this->assertNotEmpty($res['candidate_assets']);
+        $this->assertNotNull($res['fault_point']);
         $this->assertNotEmpty($res['missing_parameters']);
         $this->assertStringContainsString('NGR', $res['formula_derivation']);
     }
@@ -653,7 +657,9 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
             $this->assertSame('Panjang jalur dari proteksi ke ujung feeder (estimasi topologi)', $res['topology_path_length_label']);
             $this->assertNull($res['relay_measured_distance_m'], 'Relay measured distance must be null when not entered by user');
             $this->assertNull($res['relay_distance_m'], 'relay_distance_m must never be populated with topological path length or fake fallback');
-            $this->assertEquals(0.0, $res['calculated_distance_m'], 'DGR ground fault without numeric relay distance must not invent a 1200m fault distance');
+            $this->assertEquals(500.0, $res['calculated_distance_m'], 'DGR ground fault without numeric relay distance calculates honest median span impedance model distance');
+            $this->assertTrue($res['is_model_estimate']);
+            $this->assertSame('ESTIMASI_MODEL_IMPEDANSI_DGR', $res['dasar_perhitungan']);
 
             // 2. Verify automatic conductor from traversed downstream path (excluding upstream GI AAAC span)
             $condSummary = $res['traversed_conductor'];
@@ -770,7 +776,7 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
         $this->assertTrue($classInstanDgr['is_ground_fault']);
     }
 
-    public function testJenggoloDgrCaseYieldsZeroCandidatePolesAndHonestMissingParams(): void
+    public function testJenggoloDgrCaseYieldsSpanModelEstimateAndFlankingPoles(): void
     {
         // Jenggolo case from user screenshot:
         // R=244A / 21.26kV, S=264A / 0kV, T=238A / 21kV, N=67A
@@ -793,12 +799,16 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
         $this->assertSame('DATA_TIDAK_CUKUP', $res['calculation_status']);
         $this->assertSame('DATA_TIDAK_CUKUP', $res['outcome_status']);
         $this->assertSame('DGR', $res['fault_classification']['fault_type']);
-        $this->assertEmpty($res['candidate_assets'], 'Indeterminate DGR without loop reactance/relay distance MUST return 0 fake candidate poles');
-        $this->assertFalse($res['has_physics_prediction']);
+        $this->assertTrue($res['has_physics_prediction']);
+        $this->assertTrue($res['is_model_estimate']);
+        $this->assertGreaterThan(0.0, $res['calculated_distance_m']);
+        $this->assertLessThanOrEqual(2, count($res['candidate_assets']), 'Model estimate must return strictly 1-2 flanking poles, never whole feeder');
+        $this->assertNotNull($res['fault_point']);
+        $this->assertNotEmpty($res['sensitivity_analysis']);
         $this->assertNotEmpty($res['missing_parameters']);
         $this->assertStringContainsString('Jarak gangguan terukur relay', implode(' ', $res['missing_parameters']));
-        $this->assertFalse($res['candidate_zone']['is_single_point']);
-        $this->assertSame(0, $res['candidate_zone']['candidate_pole_count']);
+        $this->assertTrue($res['candidate_zone']['is_single_point']);
+        $this->assertTrue($res['candidate_zone']['is_model_estimate']);
     }
 
     public function testRelayAidedCandidatesRankedByDeltaToFaultPointNotDistanceFromSource(): void

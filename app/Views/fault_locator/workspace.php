@@ -174,6 +174,76 @@
         font-size: 13px;
         line-height: 1;
     }
+    @keyframes flTargetPulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.75), 0 0 0 0 rgba(239, 68, 68, 0.4);
+            transform: scale(1);
+        }
+        50% {
+            box-shadow: 0 0 0 9px rgba(239, 68, 68, 0.28), 0 0 0 18px rgba(239, 68, 68, 0.1);
+            transform: scale(1.06);
+        }
+        100% {
+            box-shadow: 0 0 0 16px rgba(239, 68, 68, 0), 0 0 0 26px rgba(239, 68, 68, 0);
+            transform: scale(1);
+        }
+    }
+    .fl-target-pulse-marker {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #ef4444 40%, #b91c1c 100%);
+        color: #ffffff;
+        border: 3px solid #ffffff;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.4), 0 4px 12px rgba(0,0,0,0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 14px;
+        line-height: 1;
+        animation: flTargetPulse 2s infinite ease-in-out;
+        cursor: pointer;
+    }
+    @keyframes flCorridorDashFlow {
+        to {
+            stroke-dashoffset: -32;
+        }
+    }
+    .fl-candidate-corridor-flow path {
+        animation: flCorridorDashFlow 1.6s linear infinite;
+    }
+    @keyframes flPoleHighlightPulse {
+        0% {
+            box-shadow: 0 0 0 2px #38bdf8, 0 0 0 5px rgba(56, 189, 248, 0.6);
+            transform: scale(1);
+        }
+        50% {
+            box-shadow: 0 0 0 4px #0284c7, 0 0 0 14px rgba(56, 189, 248, 0.25);
+            transform: scale(1.18);
+        }
+        100% {
+            box-shadow: 0 0 0 2px #38bdf8, 0 0 0 5px rgba(56, 189, 248, 0.6);
+            transform: scale(1);
+        }
+    }
+    .fl-pole-highlight-marker {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: rgba(14, 165, 233, 0.35);
+        border: 3px solid #0284c7;
+        animation: flPoleHighlightPulse 1.8s infinite ease-in-out;
+        pointer-events: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .fl-target-pulse-marker,
+        .fl-candidate-corridor-flow path,
+        .fl-pole-highlight-marker {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
     .fl-seq-strip {
         display: flex;
         align-items: center;
@@ -671,12 +741,87 @@
                                 </td>
                             </tr>
                             <tr>
-                                <th class="bg-light text-dark">Kandidat Tiang Terduga</th>
-                                <td id="resCandidateAsset" class="fw-bold text-dark">
+                                <th class="bg-light text-dark" style="width:28%">Kandidat Tiang Terduga</th>
+                                <td id="resCandidateAsset" class="text-dark">
                                     <?php if (!empty($result['candidate_assets'])): ?>
-                                        <?php foreach ($result['candidate_assets'] as $c): ?>
-                                            <span class="badge bg-light text-dark border me-1"><i class="fas fa-bolt text-danger me-1"></i><?= esc($c['kode_asset']) ?> (<?= esc($c['asset_name']) ?>)</span>
-                                        <?php endforeach; ?>
+                                        <?php 
+                                            $cands = $result['candidate_assets'];
+                                            $totalCands = count($cands);
+                                            $isSinglePt = !empty($result['candidate_zone']['is_single_point']);
+                                            $cz = $result['candidate_zone'] ?? [];
+                                        ?>
+                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom">
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                <?php if (!$isSinglePt): ?>
+                                                    <span class="badge bg-warning text-dark border fw-bold"><i class="fas fa-layer-group me-1"></i>ZONA KANDIDAT — BELUM PRESISI</span>
+                                                    <span class="badge bg-light text-dark border font-monospace">Total: <?= $totalCands ?> Tiang</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-danger text-white fw-bold"><i class="fas fa-crosshairs me-1"></i>TITIK ESTIMASI PRESISI</span>
+                                                    <span class="badge bg-light text-dark border font-monospace"><?= $totalCands ?> Tiang Terdekat</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="text-muted small">
+                                                <?php if (!$isSinglePt): ?>
+                                                    <i class="fas fa-ruler-horizontal text-primary me-1"></i>Rentang: <b><?= number_format(((float)($cz['range_start_m'] ?? 0)) / 1000.0, 2) ?> – <?= number_format(((float)($cz['range_end_m'] ?? 0)) / 1000.0, 2) ?> km</b>
+                                                <?php else: ?>
+                                                    <i class="fas fa-bullseye text-danger me-1"></i>Estimasi toleransi ±100 m
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+
+                                        <div class="table-responsive mb-2">
+                                            <table class="table table-sm table-bordered table-hover align-middle mb-0" style="font-size:0.78rem;">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th class="text-center" style="width: 5%">#</th>
+                                                        <th style="width: 25%">Kode Tiang</th>
+                                                        <th style="width: 35%">Nama / Status Aset</th>
+                                                        <th style="width: 22%" class="text-end">Kumulatif dari Acuan</th>
+                                                        <th style="width: 13%" class="text-center">Aksi Peta</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach (array_slice($cands, 0, 5) as $idx => $c): ?>
+                                                        <?php 
+                                                            $rawName = trim($c['asset_name'] ?? '');
+                                                            $rawKode = trim($c['kode_asset'] ?? '');
+                                                            $isUnverified = empty($rawName) || str_starts_with(strtoupper($rawName), 'NEW_INGESTED_ASSET_') || $rawName === $rawKode;
+                                                            $cumM = isset($c['cumulative_meters']) && $c['cumulative_meters'] !== null ? (float)$c['cumulative_meters'] : null;
+                                                        ?>
+                                                        <tr>
+                                                            <td class="text-center font-monospace text-muted"><?= $idx + 1 ?></td>
+                                                            <td><strong class="font-monospace text-dark"><?= esc($rawKode) ?></strong></td>
+                                                            <td>
+                                                                <?php if ($isUnverified): ?>
+                                                                    <span class="badge bg-secondary-subtle text-secondary border fw-normal" style="font-size:0.7rem;"><i class="fas fa-circle-question me-1"></i>Nama aset belum terverifikasi</span>
+                                                                <?php else: ?>
+                                                                    <span class="text-dark small"><?= esc($rawName) ?></span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td class="text-end font-monospace">
+                                                                <?= $cumM !== null ? number_format($cumM, 1) . ' m (' . number_format($cumM / 1000.0, 2) . ' km)' : '-' ?>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <button type="button" class="btn btn-outline-primary btn-xs py-0 px-2 fw-bold"
+                                                                    onclick="window.flFocusPole(<?= (float)$c['latitude'] ?>, <?= (float)$c['longitude'] ?>, '<?= esc($rawKode) ?>', <?= $cumM !== null ? $cumM : 'null' ?>, '<?= esc($rawName) ?>')"
+                                                                    title="Fokuskan peta ke tiang ini">
+                                                                    <i class="fas fa-crosshairs me-1"></i>Fokus
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <?php if ($totalCands > 5): ?>
+                                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-1">
+                                                <span class="text-muted small">Menampilkan 5 prioritas teratas dari <b><?= $totalCands ?></b> tiang terduga.</span>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalAllCandidates" onclick="window.flPopulateCandidateModal()">
+                                                    <i class="fas fa-list-ol text-warning me-1"></i> Lihat Semua Kandidat (<?= $totalCands ?>)
+                                                </button>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <span class="text-danger fw-bold"><i class="fas fa-circle-exclamation me-1"></i>Tidak ada kandidat valid pada penyulang ini</span>
                                     <?php endif; ?>
@@ -842,13 +987,10 @@
                         <span class="fl-legend-dot" style="background:#8b5cf6;"></span> Titik Acuan (0.0 km)
                     </span>
                     <span class="fl-map-legend-item">
-                        <span class="fl-legend-dot" style="background:#f59e0b;"></span> Tiang Kandidat Terduga
+                        <span class="fl-legend-dot" style="background:#10b981;"></span> Tiang JTM (Normal)
                     </span>
                     <span class="fl-map-legend-item">
-                        <span class="fl-legend-dot" style="background:#10b981;"></span> Tiang Normal
-                    </span>
-                    <span class="fl-map-legend-item">
-                        <span class="fl-legend-dot" style="background:#ef4444;"></span> Fault Point (✕)
+                        <span class="fl-legend-dot" style="background:#ef4444;"></span> Estimasi Titik Gangguan (✕)
                     </span>
                 </div>
                 <div id="miniMap"></div>
@@ -1331,6 +1473,55 @@
     </div>
 </div>
 
+<!-- Modal All Candidates Dialog -->
+<div class="modal fade" id="modalAllCandidates" tabindex="-1" aria-labelledby="modalAllCandidatesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-3">
+                <h5 class="modal-title font-weight-bold" id="modalAllCandidatesLabel">
+                    <i class="fas fa-list-ol text-warning me-2"></i> Seluruh Kandidat Tiang Terduga (<span id="modalCandidateCount"><?= !empty($result['candidate_assets']) ? count($result['candidate_assets']) : 0 ?></span> Tiang)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <div class="input-group" style="max-width: 380px;">
+                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" id="inputSearchCandidates" placeholder="Cari kode tiang atau nama aset..." autocomplete="off">
+                    </div>
+                    <div id="modalCandidateStatusInfo" class="small text-muted">
+                        <?php if (empty($result['candidate_zone']['is_single_point'])): ?>
+                            <span class="badge bg-warning text-dark border">ZONA KANDIDAT — BELUM PRESISI</span> Urut hilir dari acuan
+                        <?php else: ?>
+                            <span class="badge bg-danger text-white">TITIK ESTIMASI PRESISI</span> Kandidat terdekat gangguan
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height: 480px;">
+                    <table class="table table-sm table-hover table-bordered align-middle mb-0" id="tableModalCandidates">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="width: 6%" class="text-center">#</th>
+                                <th style="width: 25%">Kode Tiang</th>
+                                <th style="width: 32%">Nama / Status Aset</th>
+                                <th style="width: 22%" class="text-end">Kumulatif dari Acuan</th>
+                                <th style="width: 15%" class="text-center">Aksi Peta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyModalCandidates">
+                            <!-- Populated dynamically via JS or initial PHP -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer py-2 bg-light">
+                <span class="text-muted small me-auto"><i class="fas fa-info-circle me-1"></i>Klik "Fokus" untuk memusatkan peta dan menandai tiang dengan highlight ring.</span>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -1348,6 +1539,12 @@
     }).addTo(map);
 
     const miniMapLayerGroup = L.layerGroup().addTo(map);
+    window.miniMap = map;
+    window.miniMapLayerGroup = miniMapLayerGroup;
+    window.flActiveHighlightLayer = null;
+    window.flCachedCandidates = <?= !empty($result['candidate_assets']) ? json_encode($result['candidate_assets']) : '[]' ?>;
+    window.flCachedCandidateZone = <?= !empty($result['candidate_zone']) ? json_encode($result['candidate_zone']) : 'null' ?>;
+    window.flCachedIsSinglePoint = <?= !empty($result['candidate_zone']['is_single_point']) ? 'true' : 'false' ?>;
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -1357,8 +1554,245 @@
             .replace(/"/g, '&quot;');
     }
 
+    function formatAssetDisplayName(kode, name) {
+        const rawName = String(name || '').trim();
+        const rawKode = String(kode || '').trim();
+        const isUnverified = !rawName || rawName.toUpperCase().startsWith('NEW_INGESTED_ASSET_') || rawName === rawKode;
+        if (isUnverified) {
+            return `<span class="badge bg-secondary-subtle text-secondary border fw-normal" style="font-size:0.7rem;"><i class="fas fa-circle-question me-1"></i>Nama aset belum terverifikasi</span>`;
+        }
+        return `<span class="text-dark small">${escapeHtml(rawName)}</span>`;
+    }
+
+    window.flFocusPole = function(lat, lng, kode, cumMeters, assetName) {
+        if (!map || lat === null || lng === null || isNaN(Number(lat)) || isNaN(Number(lng))) return;
+
+        if (window.flActiveHighlightLayer) {
+            miniMapLayerGroup.removeLayer(window.flActiveHighlightLayer);
+            window.flActiveHighlightLayer = null;
+        }
+
+        const targetCoord = [Number(lat), Number(lng)];
+
+        const ringIcon = L.divIcon({
+            className: 'fl-pole-highlight-wrapper',
+            html: '<div class="fl-pole-highlight-marker"></div>',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+        });
+
+        window.flActiveHighlightLayer = L.marker(targetCoord, { icon: ringIcon, zIndexOffset: 1200 }).addTo(miniMapLayerGroup);
+        map.setView(targetCoord, 18, { animate: true });
+
+        const cumStr = (cumMeters !== null && cumMeters !== undefined && !isNaN(Number(cumMeters)))
+            ? `Jarak Kumulatif dari Acuan: <b>${Number(cumMeters).toFixed(1)} m (${(Number(cumMeters) / 1000).toFixed(2)} km)</b><br>`
+            : '';
+        const rawName = String(assetName || '').trim();
+        const isUnverified = !rawName || rawName.toUpperCase().startsWith('NEW_INGESTED_ASSET_') || rawName === String(kode || '').trim();
+        const nameDisplay = isUnverified
+            ? '<span class="badge bg-secondary-subtle text-secondary border mb-1">Nama aset belum terverifikasi</span><br>'
+            : `Nama Aset: <b>${escapeHtml(rawName)}</b><br>`;
+
+        L.popup({ offset: [0, -10] })
+            .setLatLng(targetCoord)
+            .setContent(
+                `<b>Tiang JTM Terpilih: ${escapeHtml(kode)}</b><br>` +
+                nameDisplay +
+                cumStr +
+                `Koordinat: <code>${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}</code>`
+            )
+            .openOn(map);
+    };
+
+    window.flFocusFromModal = function(lat, lng, kode, cumM, assetName) {
+        const modalEl = document.getElementById('modalAllCandidates');
+        if (modalEl && window.bootstrap && bootstrap.Modal) {
+            const inst = bootstrap.Modal.getInstance(modalEl);
+            if (inst) inst.hide();
+        }
+        window.flFocusPole(lat, lng, kode, cumM, assetName);
+    };
+
+    function renderModalCandidateRows(items) {
+        const tbody = document.getElementById('tbodyModalCandidates');
+        if (!tbody) return;
+
+        if (!items || items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada tiang yang cocok dengan pencarian.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        items.forEach((c, idx) => {
+            const cumM = (c.cumulative_meters !== null && c.cumulative_meters !== undefined) ? Number(c.cumulative_meters) : null;
+            const cumStr = cumM !== null ? `${cumM.toFixed(1)} m (${(cumM / 1000).toFixed(2)} km)` : '-';
+            const nameDisplay = formatAssetDisplayName(c.kode_asset, c.asset_name);
+
+            html += `
+                <tr>
+                    <td class="text-center font-monospace text-muted">${idx + 1}</td>
+                    <td><strong class="font-monospace text-dark">${escapeHtml(c.kode_asset)}</strong></td>
+                    <td>${nameDisplay}</td>
+                    <td class="text-end font-monospace">${cumStr}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-outline-primary btn-xs py-0 px-2 fw-bold"
+                            onclick="window.flFocusFromModal(${Number(c.latitude)}, ${Number(c.longitude)}, '${escapeHtml(c.kode_asset)}', ${cumM !== null ? cumM : 'null'}, '${escapeHtml(c.asset_name || '')}')"
+                            title="Fokuskan peta ke tiang ini">
+                            <i class="fas fa-crosshairs me-1"></i>Fokus
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    window.flPopulateCandidateModal = function() {
+        const list = window.flCachedCandidates || [];
+        const countEl = document.getElementById('modalCandidateCount');
+        const statusEl = document.getElementById('modalCandidateStatusInfo');
+
+        if (countEl) countEl.innerText = list.length;
+        if (statusEl) {
+            if (!window.flCachedIsSinglePoint) {
+                statusEl.innerHTML = `<span class="badge bg-warning text-dark border">ZONA KANDIDAT — BELUM PRESISI</span> Urut hilir dari acuan`;
+            } else {
+                statusEl.innerHTML = `<span class="badge bg-danger text-white">TITIK ESTIMASI PRESISI</span> Kandidat terdekat gangguan`;
+            }
+        }
+
+        renderModalCandidateRows(list);
+
+        const searchInput = document.getElementById('inputSearchCandidates');
+        if (searchInput && !searchInput.dataset.bound) {
+            searchInput.dataset.bound = '1';
+            searchInput.addEventListener('input', function() {
+                const query = (this.value || '').trim().toLowerCase();
+                if (!query) {
+                    renderModalCandidateRows(window.flCachedCandidates || []);
+                    return;
+                }
+                const filtered = (window.flCachedCandidates || []).filter(c => {
+                    const kode = String(c.kode_asset || '').toLowerCase();
+                    const name = String(c.asset_name || '').toLowerCase();
+                    return kode.includes(query) || name.includes(query);
+                });
+                renderModalCandidateRows(filtered);
+            });
+        }
+    };
+
+    function renderCandidateAssetsSummary(candidates, isSinglePoint, candidateZone, anchorDesc) {
+        const container = document.getElementById('resCandidateAsset');
+        if (!container) return;
+
+        window.flCachedCandidates = Array.isArray(candidates) ? candidates : [];
+        window.flCachedCandidateZone = candidateZone || null;
+        window.flCachedIsSinglePoint = Boolean(isSinglePoint);
+
+        if (!Array.isArray(candidates) || candidates.length === 0) {
+            container.innerHTML = '<span class="text-danger fw-bold"><i class="fas fa-circle-exclamation me-1"></i>Tidak ada kandidat valid pada penyulang ini</span>';
+            return;
+        }
+
+        const totalCount = candidates.length;
+        const isIndeterminate = !isSinglePoint;
+
+        let statusBadgeHtml = '';
+        if (isIndeterminate) {
+            const startM = candidateZone ? Number(candidateZone.range_start_m || 0).toFixed(0) : '0';
+            const endM = candidateZone ? Number(candidateZone.range_end_m || 0).toFixed(0) : '0';
+            const startKm = (Number(startM) / 1000).toFixed(2);
+            const endKm = (Number(endM) / 1000).toFixed(2);
+            statusBadgeHtml = `
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-warning text-dark border fw-bold"><i class="fas fa-layer-group me-1"></i>ZONA KANDIDAT — BELUM PRESISI</span>
+                        <span class="badge bg-light text-dark border font-monospace">Total: ${totalCount} Tiang</span>
+                    </div>
+                    <div class="text-muted small">
+                        <i class="fas fa-ruler-horizontal text-primary me-1"></i>Rentang: <b>${startKm} – ${endKm} km</b> (${startM} – ${endM} m)
+                    </div>
+                </div>
+            `;
+        } else {
+            statusBadgeHtml = `
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-danger text-white fw-bold"><i class="fas fa-crosshairs me-1"></i>TITIK ESTIMASI PRESISI</span>
+                        <span class="badge bg-light text-dark border font-monospace">${totalCount} Tiang Terdekat</span>
+                    </div>
+                    <div class="text-muted small">
+                        <i class="fas fa-bullseye text-danger me-1"></i>Estimasi toleransi ±100 m
+                    </div>
+                </div>
+            `;
+        }
+
+        const topCandidates = candidates.slice(0, 5);
+        let rowsHtml = '';
+        topCandidates.forEach((c, idx) => {
+            const cumM = (c.cumulative_meters !== null && c.cumulative_meters !== undefined) ? Number(c.cumulative_meters) : null;
+            const cumStr = cumM !== null ? `${cumM.toFixed(1)} m (${(cumM / 1000).toFixed(2)} km)` : '-';
+            const nameDisplay = formatAssetDisplayName(c.kode_asset, c.asset_name);
+
+            rowsHtml += `
+                <tr>
+                    <td class="text-center font-monospace text-muted" style="width: 5%;">${idx + 1}</td>
+                    <td style="width: 25%;">
+                        <strong class="font-monospace text-dark">${escapeHtml(c.kode_asset)}</strong>
+                    </td>
+                    <td style="width: 35%;">${nameDisplay}</td>
+                    <td class="text-end font-monospace" style="width: 22%;">${cumStr}</td>
+                    <td class="text-center" style="width: 13%;">
+                        <button type="button" class="btn btn-outline-primary btn-xs py-0 px-2 fw-bold"
+                            onclick="window.flFocusPole(${Number(c.latitude)}, ${Number(c.longitude)}, '${escapeHtml(c.kode_asset)}', ${cumM !== null ? cumM : 'null'}, '${escapeHtml(c.asset_name || '')}')"
+                            title="Fokuskan peta ke tiang ini">
+                            <i class="fas fa-crosshairs me-1"></i>Fokus
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        const previewTableHtml = `
+            <div class="table-responsive mb-2">
+                <table class="table table-sm table-bordered table-hover align-middle mb-0" style="font-size:0.78rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center">#</th>
+                            <th>Kode Tiang</th>
+                            <th>Nama / Status Aset</th>
+                            <th class="text-end">Kumulatif dari Acuan</th>
+                            <th class="text-center">Aksi Peta</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>
+        `;
+
+        let footerHtml = '';
+        if (totalCount > 5) {
+            footerHtml = `
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-1">
+                    <span class="text-muted small">Menampilkan 5 prioritas teratas dari <b>${totalCount}</b> tiang terduga.</span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalAllCandidates" onclick="window.flPopulateCandidateModal()">
+                        <i class="fas fa-list-ol text-warning me-1"></i> Lihat Semua Kandidat (${totalCount})
+                    </button>
+                </div>
+            `;
+        }
+
+        container.innerHTML = statusBadgeHtml + previewTableHtml + footerHtml;
+    }
+
     function clearMiniMapLayers(badgeText = 'TIDAK ADA KANDIDAT VALID', badgeClass = 'badge bg-secondary text-white') {
         map.closePopup();
+        if (window.flActiveHighlightLayer) {
+            miniMapLayerGroup.removeLayer(window.flActiveHighlightLayer);
+            window.flActiveHighlightLayer = null;
+        }
         miniMapLayerGroup.clearLayers();
         const mapBadge = document.getElementById('mapStatusBadge');
         if (mapBadge) {
@@ -1619,17 +2053,19 @@
                     L.polyline(pts, {
                         color: '#f59e0b',
                         weight: 8,
-                        opacity: 0.72,
-                        lineCap: 'round'
+                        opacity: 0.65,
+                        lineCap: 'round',
+                        className: 'fl-candidate-corridor-flow'
                     }).addTo(miniMapLayerGroup);
 
                     L.polyline(pts, {
                         color: '#d97706',
                         weight: 3.5,
                         opacity: 0.95,
-                        dashArray: '6, 6'
+                        dashArray: '8, 8',
+                        className: 'fl-candidate-corridor-flow'
                     }).bindTooltip(
-                        '<b>Zona Kandidat DGR:</b> ' + escapeHtml(seg.from_pole_kode) + ' &rarr; ' + escapeHtml(seg.to_pole_kode) +
+                        '<b>Zona kandidat — belum presisi:</b> ' + escapeHtml(seg.from_pole_kode) + ' &rarr; ' + escapeHtml(seg.to_pole_kode) +
                         ' (' + Number(seg.cumulative_meters).toFixed(1) + ' m &bull; ' + condText + ')',
                         { sticky: true }
                     ).addTo(miniMapLayerGroup);
@@ -1703,28 +2139,17 @@
             if (isZonePole) {
                 L.circleMarker([pole.lat, pole.lng], {
                     radius: 7,
-                    fillColor: '#f59e0b',
+                    fillColor: '#ef4444',
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
                     fillOpacity: 0.95
                 }).bindTooltip(
-                    '<b>' + escapeHtml(pole.kode) + '</b> (Zona Gangguan &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km)',
+                    '<b>' + escapeHtml(pole.kode) + '</b> (Segmen Gangguan Terdekat &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km)',
                     { direction: 'top', offset: [0, -6] }
                 ).addTo(miniMapLayerGroup);
-            } else if (isCandidatePole && isCandidateZoneIndeterminate) {
-                L.circleMarker([pole.lat, pole.lng], {
-                    radius: 6,
-                    fillColor: '#f59e0b',
-                    color: '#ffffff',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.95
-                }).bindTooltip(
-                    '<b>' + escapeHtml(pole.kode) + '</b> (Tiang Kandidat Terduga &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km)',
-                    { direction: 'top', offset: [0, -6] }
-                ).addTo(miniMapLayerGroup);
-            } else if (pole.on_path || isAnchor) {
+            } else if (pole.on_path || isAnchor || (isCandidatePole && isCandidateZoneIndeterminate)) {
+                // Keep normal green (#10b981) for poles along candidate corridor (do NOT mark all 100+ poles orange!)
                 L.circleMarker([pole.lat, pole.lng], {
                     radius: isAnchor ? 7 : 5.5,
                     fillColor: isAnchor ? '#8b5cf6' : '#10b981',
@@ -1733,7 +2158,7 @@
                     opacity: 1,
                     fillOpacity: 0.95
                 }).bindTooltip(
-                    '<b>' + escapeHtml(pole.kode) + '</b> &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km (' + pole.cum_m.toFixed(0) + ' m)',
+                    '<b>' + escapeHtml(pole.kode) + '</b> &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km (' + pole.cum_m.toFixed(0) + ' m)' + (isCandidateZoneIndeterminate ? ' <span class="badge bg-warning text-dark border">Zona Kandidat</span>' : ''),
                     { direction: 'top', offset: [0, -5] }
                 ).addTo(miniMapLayerGroup);
             } else {
@@ -1780,7 +2205,7 @@
                 .addTo(miniMapLayerGroup);
         }
 
-        // 5. Render Fault Point Marker (✕) & Radius Circle ONLY when a single verified fault coordinate exists
+        // 5. Render Fault Point Marker (Pulse Ripple Target) & Radius Circle ONLY when a single verified fault coordinate exists
         if (hasFaultPoint) {
             const fLatNum = Number(lat);
             const fLngNum = Number(lng);
@@ -1796,11 +2221,11 @@
                 fillOpacity: 0.16
             }).addTo(miniMapLayerGroup);
 
-            const crossIcon = L.divIcon({
-                className: 'fl-fault-cross-wrapper',
-                html: '<div class="fl-fault-cross-marker">&#10005;</div>',
-                iconSize: [26, 26],
-                iconAnchor: [13, 13]
+            const targetPulseIcon = L.divIcon({
+                className: 'fl-target-pulse-wrapper',
+                html: '<div class="fl-target-pulse-marker" title="Titik Estimasi Gangguan">&#10005;</div>',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
             });
 
             const distKm = (Number(resultObj.calculated_distance_m || 0) / 1000).toFixed(2);
@@ -1808,20 +2233,25 @@
             const refSourceShort = isProt
                 ? (srcCtx.protection_device?.nama_asset || srcCtx.source_label || 'Peralatan Proteksi')
                 : ('GI Pangkal ' + (feederName || ''));
+            const conductorLabel = resultObj.traversed_conductor?.display_label || resultObj.electrical_parameters?.conductor_type || 'Belum tersedia';
+            const segLabel = resultObj.fault_zone_segment ? (resultObj.fault_zone_segment.from_pole_kode + ' &rarr; ' + resultObj.fault_zone_segment.to_pole_kode) : '-';
 
-            const faultMarker = L.marker([fLatNum, fLngNum], { icon: crossIcon, zIndexOffset: 1000 }).addTo(miniMapLayerGroup);
+            const faultMarker = L.marker([fLatNum, fLngNum], { icon: targetPulseIcon, zIndexOffset: 1000 }).addTo(miniMapLayerGroup);
             const fTag = feederName ? ('<span class="text-muted small">Penyulang: ' + escapeHtml(feederName) + (feederCode ? ' (' + escapeHtml(feederCode) + ')' : '') + '</span><br>') : '';
             faultMarker.bindPopup(
-                '<b>Titik Estimasi Gangguan: ' + escapeHtml(assetLabel || '') + '</b><br>' +
+                '<b><i class="fas fa-crosshairs text-danger me-1"></i>Estimasi Titik Gangguan: ' + escapeHtml(assetLabel || '') + '</b><br>' +
                 fTag +
+                '<span class="badge bg-danger-subtle text-danger border mb-1" style="font-size:0.7rem;"><i class="fas fa-calculator me-1"></i>Estimasi Sistem (Bukan Aktual Lapangan)</span><br>' +
                 'Jarak Hilir: <b>' + distKm + ' km (' + distM + ' m)</b> dari ' + escapeHtml(refSourceShort) + '<br>' +
-                'Segmen: <code>' + escapeHtml(resultObj.fault_zone_segment ? (resultObj.fault_zone_segment.from_pole_kode + ' -> ' + resultObj.fault_zone_segment.to_pole_kode) : '-') + '</code><br>' +
-                'Koordinat: ' + fLatNum.toFixed(6) + ', ' + fLngNum.toFixed(6)
+                'Segmen Terdekat: <code>' + escapeHtml(segLabel) + '</code><br>' +
+                'Jenis Konduktor: <b>' + escapeHtml(conductorLabel) + '</b><br>' +
+                'Keyakinan (Confidence): <b>' + escapeHtml(resultObj.confidence_percent || 88) + '%</b><br>' +
+                'Koordinat: <code>' + fLatNum.toFixed(6) + ', ' + fLngNum.toFixed(6) + '</code>'
             );
 
             const calloutIcon = L.divIcon({
                 className: 'fl-fault-callout-wrapper',
-                html: `<div class="fl-fault-callout-icon">✕ ${distKm} km (${distM} m) dari ${escapeHtml(refSourceShort)} &bull; ${escapeHtml(assetLabel || '')}</div>`,
+                html: `<div class="fl-fault-callout-icon">✕ Estimasi: ${distKm} km (${distM} m) dari ${escapeHtml(refSourceShort)} &bull; ${escapeHtml(assetLabel || '')}</div>`,
                 iconSize: null,
                 iconAnchor: [-16, 14]
             });
@@ -1832,11 +2262,11 @@
                 ? (srcCtx.protection_device?.nama_asset || srcCtx.source_label || 'Proteksi')
                 : ('GI Pangkal ' + (feederName || ''));
             const czEndKm = (Number(candidateZone.range_end_m || 0) / 1000).toFixed(2);
-            const czPoleCount = candidateZone.candidate_poles ? candidateZone.candidate_poles.length : 0;
+            const czPoleCount = candidateZone.candidate_poles ? candidateZone.candidate_poles.length : (candidateZone.candidate_pole_count || 0);
 
             const czCalloutIcon = L.divIcon({
                 className: 'fl-fault-callout-wrapper',
-                html: `<div class="fl-fault-callout-icon" style="background:rgba(180,83,9,0.95); border-color:#f59e0b; color:#fffbeb;"><i class="fas fa-layer-group me-1"></i>Zona Estimasi DGR (0.00 – ${czEndKm} km dari ${escapeHtml(refSourceShort)}) &bull; ${czPoleCount} Tiang Terduga</div>`,
+                html: `<div class="fl-fault-callout-icon" style="background:rgba(180,83,9,0.95); border-color:#f59e0b; color:#fffbeb;"><i class="fas fa-layer-group me-1"></i>Zona Kandidat — Belum Presisi (0.00 – ${czEndKm} km dari ${escapeHtml(refSourceShort)}) &bull; ${czPoleCount} Tiang</div>`,
                 iconSize: null,
                 iconAnchor: [-16, 14]
             });
@@ -2024,6 +2454,13 @@
         locateFetchSeq++;
         lastCalculatedResult = null;
         currentCaseUuid = '';
+        window.flCachedCandidates = [];
+        window.flCachedCandidateZone = null;
+        window.flCachedIsSinglePoint = false;
+        if (window.flActiveHighlightLayer) {
+            miniMapLayerGroup.removeLayer(window.flActiveHighlightLayer);
+            window.flActiveHighlightLayer = null;
+        }
 
         clearMiniMapLayers('MENUNGGU ANALISIS PENYULANG', 'badge bg-secondary text-white');
 
@@ -3147,27 +3584,14 @@
         }
 
         // Candidate assets (Strictly verified against selected feeder)
-        const candTd = document.getElementById('resCandidateAsset');
-        candTd.innerHTML = '';
         const validCandidates = Array.isArray(data.candidate_assets)
             ? data.candidate_assets.filter(c => c && (!c.penyulang_id || String(c.penyulang_id) === String(data.feeder_id)))
             : [];
+        const isCandidateZoneIndeterminate = Boolean(data.candidate_zone && !data.candidate_zone.is_single_point);
 
-        if (validCandidates.length > 0) {
-            validCandidates.forEach(c => {
-                const sp = document.createElement('span');
-                sp.className = 'badge bg-light text-dark border me-1';
-                sp.innerHTML = '<i class="fas fa-bolt text-danger me-1"></i>' + escapeHtml(c.kode_asset) + ' (' + escapeHtml(c.asset_name) + ')';
-                candTd.appendChild(sp);
-            });
-        } else if (Array.isArray(data.pole_sequence) && data.pole_sequence.length > 0 && Number(data.calculated_distance_m || 0) === 0) {
-            candTd.innerHTML = '<span class="text-warning fw-bold"><i class="fas fa-route me-1"></i>Jalur hilir terpetakan (' + data.pole_sequence.length + ' bentang), namun jarak titik gangguan belum diukur relay</span>';
-        } else {
-            candTd.innerHTML = '<span class="text-danger fw-bold"><i class="fas fa-circle-exclamation me-1"></i>Tidak ada kandidat valid pada penyulang ini</span>';
-        }
+        renderCandidateAssetsSummary(validCandidates, !isCandidateZoneIndeterminate, data.candidate_zone, data.anchor_description);
 
         // Coordinates & Map
-        const isCandidateZoneIndeterminate = Boolean(data.candidate_zone && !data.candidate_zone.is_single_point);
         const hasValidPoint = validCandidates.length > 0 && data.fault_point && data.fault_point.lat && data.fault_point.lng && !isCandidateZoneIndeterminate;
         const hasDownstreamPath = Array.isArray(data.pole_sequence) && data.pole_sequence.length > 0;
 

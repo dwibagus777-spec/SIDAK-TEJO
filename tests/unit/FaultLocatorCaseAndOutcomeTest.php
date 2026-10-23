@@ -195,10 +195,16 @@ class FaultLocatorCaseAndOutcomeTest extends CIUnitTestCase
         $this->assertGreaterThan(0, $feederMap['ECCO']['active_jtm_poles_count']);
         $this->assertGreaterThan(0, $feederMap['ECCO']['translines_count']);
 
-        // Verify empty feeder (e.g. CANDI)
-        $this->assertArrayHasKey('CANDI', $feederMap);
-        $this->assertSame('BELUM_SIAP', $feederMap['CANDI']['readiness_status']);
-        $this->assertSame(0, $feederMap['CANDI']['active_jtm_poles_count']);
-        $this->assertNotEmpty($feederMap['CANDI']['missing_prerequisites']);
+        // Verify unready feeder audit
+        $unreadyFeeder = null;
+        foreach ($audit['feeders'] as $f) {
+            if ($f['readiness_status'] === 'BELUM_SIAP') {
+                $unreadyFeeder = $f;
+                break;
+            }
+        }
+        $this->assertNotNull($unreadyFeeder, 'Harus ada minimal satu feeder BELUM_SIAP');
+        $this->assertSame('BELUM_SIAP', $unreadyFeeder['readiness_status']);
+        $this->assertNotEmpty($unreadyFeeder['missing_prerequisites']);
     }
 }

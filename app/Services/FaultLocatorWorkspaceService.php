@@ -1891,6 +1891,20 @@ class FaultLocatorWorkspaceService
 
         $candidatePoles = array_values(array_filter($candidatePoles));
 
+        // Build cumulative distance lookup for all traversed poles from anchor
+        $poleCumDistanceMap = [];
+        if ($anchorPole) {
+            $poleCumDistanceMap[$anchorPole['id']] = 0.0;
+        }
+        foreach ($poleSequence as $pSeq) {
+            if (!isset($poleCumDistanceMap[$pSeq['from_pole_id']])) {
+                $poleCumDistanceMap[$pSeq['from_pole_id']] = (float)($pSeq['cum_start_meters'] ?? 0.0);
+            }
+            if (!isset($poleCumDistanceMap[$pSeq['to_pole_id']])) {
+                $poleCumDistanceMap[$pSeq['to_pole_id']] = (float)$pSeq['cumulative_meters'];
+            }
+        }
+
         // Candidate assets formatting with strict feeder boundary and coordinate validation
         $candidateAssetList = [];
         $seenIds = [];
@@ -1904,19 +1918,29 @@ class FaultLocatorWorkspaceService
 
             $seenIds[$cAst['id']] = true;
             $candidateAssetList[] = [
-                'asset_id'     => (int)$cAst['id'],
-                'penyulang_id' => $penyulangId,
-                'kode_asset'   => $cAst['kode_asset'],
-                'asset_name'   => $cAst['nama_asset'] ?? $cAst['kode_asset'],
-                'jenis_asset'  => $cAst['jenis_asset'],
-                'section_id'   => $cAst['section_id'] ?? null,
-                'latitude'     => $cLat,
-                'longitude'    => $cLng,
+                'asset_id'          => (int)$cAst['id'],
+                'penyulang_id'      => $penyulangId,
+                'kode_asset'        => $cAst['kode_asset'],
+                'asset_name'        => $cAst['nama_asset'] ?? $cAst['kode_asset'],
+                'jenis_asset'       => $cAst['jenis_asset'],
+                'section_id'        => $cAst['section_id'] ?? null,
+                'latitude'          => $cLat,
+                'longitude'         => $cLng,
+                'cumulative_meters' => isset($poleCumDistanceMap[$cAst['id']]) ? round($poleCumDistanceMap[$cAst['id']], 1) : null,
             ];
+        }
+
+        if ($isIndeterminateZone && !empty($candidateAssetList)) {
+            usort($candidateAssetList, function($a, $b) {
+                $distA = $a['cumulative_meters'] ?? 0.0;
+                $distB = $b['cumulative_meters'] ?? 0.0;
+                return $distA <=> $distB;
+            });
         }
 
         if ($candidateZoneInfo) {
             $candidateZoneInfo['candidate_pole_count'] = count($candidateAssetList);
+            $candidateZoneInfo['candidate_poles'] = $candidateAssetList;
         }
 
         // 9. Spatial Coordinates Interpolation on the Identified Transline Segment

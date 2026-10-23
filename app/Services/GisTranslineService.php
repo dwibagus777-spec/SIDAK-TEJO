@@ -153,54 +153,132 @@ class GisTranslineService
             return null;
         }
 
+        // Collect connected pole IDs in active translines of this feeder so we prefer poles on the active network graph
+        $connectedPoleIds = [];
+        if ($this->db->tableExists('gis_translines')) {
+            $tlEndpoints = $this->db->table('gis_translines')
+                ->select('source_asset_id, target_asset_id')
+                ->where('penyulang_id', $penyulangId)
+                ->where('is_active', 1)
+                ->where('deleted_at IS NULL')
+                ->get()
+                ->getResultArray();
+            foreach ($tlEndpoints as $ep) {
+                $u = (int)($ep['source_asset_id'] ?? 0);
+                $v = (int)($ep['target_asset_id'] ?? 0);
+                if ($u > 0 && $v > 0 && $u !== $v) {
+                    $connectedPoleIds[$u] = true;
+                    $connectedPoleIds[$v] = true;
+                }
+            }
+        }
+
+        // Load all valid JTM poles on the same feeder
+        $rawPoles = $this->db->table('assets')
+            ->where('penyulang_id', $penyulangId)
+            ->where('deleted_at IS NULL')
+            ->get()
+            ->getResultArray();
+
+        $validPolesById = [];
+        foreach ($rawPoles as $p) {
+            if ((int)($p['penyulang_id'] ?? 0) === $penyulangId && self::isJtmPoleAsset($p)['valid']) {
+                $validPolesById[(int)$p['id']] = $p;
+            }
+        }
+
+        $snapToConnectedPole = function (array $pole) use ($connectedPoleIds, $validPolesById): array {
+            $pid = (int)$pole['id'];
+            if (empty($connectedPoleIds) || isset($connectedPoleIds[$pid])) {
+                return $pole;
+            }
+            $pLat = (float)($pole['latitude'] ?? 0);
+            $pLng = (float)($pole['longitude'] ?? 0);
+            if ($pLat == 0.0 || $pLng == 0.0) {
+                return $pole;
+            }
+            $best = $pole;
+            $bestD = 50.0;
+            foreach ($connectedPoleIds as $cid => $_) {
+                if (!isset($validPolesById[$cid])) continue;
+                $cPole = $validPolesById[$cid];
+                $cLat = (float)($cPole['latitude'] ?? 0);
+                $cLng = (float)($cPole['longitude'] ?? 0);
+                if ($cLat == 0.0 || $cLng == 0.0) continue;
+                $d = $this->haversineDistance($pLat, $pLng, $cLat, $cLng);
+                if ($d <= $bestD) {
+                    $bestD = $d;
+                    $best = $cPole;
+                }
+            }
+            return $best;
+        };
+
         $check = self::isJtmPoleAsset($asset);
         if ($check['valid']) {
+            $snapped = $snapToConnectedPole($asset);
             return [
                 'source_type'             => 'JTM_POLE',
+                'mounting_relation'       => 'DIRECT_POLE',
                 'source_asset'            => $asset,
-                'anchor_pole_asset'       => $asset,
+                'anchor_pole_asset'       => $snapped,
                 'distance_to_pole_meters' => 0.0,
+                'verified'                => true,
             ];
         }
 
+        // 1. Explicit parent_asset_id mounting relationship
         if (!empty($asset['parent_asset_id'])) {
-            $parentPole = $this->db->table('assets')
-                ->where('id', (int)$asset['parent_asset_id'])
-                ->where('penyulang_id', $penyulangId)
-                ->where('deleted_at IS NULL')
-                ->get()
-                ->getRowArray();
-            if ($parentPole && self::isJtmPoleAsset($parentPole)['valid']) {
+            $parentId = (int)$asset['parent_asset_id'];
+            $parentPole = $validPolesById[$parentId] ?? null;
+            if ($parentPole) {
+                $snapped = $snapToConnectedPole($parentPole);
                 return [
                     'source_type'             => 'DEVICE_CONTEXT',
+                    'mounting_relation'       => 'PARENT_ASSET_ID',
                     'source_asset'            => $asset,
-                    'anchor_pole_asset'       => $parentPole,
+                    'anchor_pole_asset'       => $snapped,
                     'distance_to_pole_meters' => 0.0,
                     'verified'                => true,
                 ];
             }
         }
 
-        // Find nearest valid JTM pole on the same feeder
-        $poles = $this->db->table('assets')
-            ->where('penyulang_id', $penyulangId)
-            ->where('deleted_at IS NULL')
-            ->groupStart()
-                ->whereIn('jenis_asset', ['JTM_TIANG', 'jtm_tiang', 'TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE', 'TIANG_JTM'])
-                ->orWhere('jenis_asset IS NULL')
-            ->groupEnd()
-            ->get()
-            ->getResultArray();
+        // 2. Explicit asset_relationships mounting table (MOUNTED_ON_POLE / parent_asset_id / target_asset_id)
+        if ($this->db->tableExists('asset_relationships')) {
+            $relRows = $this->db->table('asset_relationships')
+                ->groupStart()
+                    ->where('child_asset_id', $sourceAssetId)
+                    ->orWhere('source_asset_id', $sourceAssetId)
+                ->groupEnd()
+                ->where('is_active', 1)
+                ->get()
+                ->getResultArray();
+            foreach ($relRows as $rel) {
+                $candPoleId = (int)($rel['parent_asset_id'] ?: ($rel['target_asset_id'] ?? 0));
+                if ($candPoleId > 0 && isset($validPolesById[$candPoleId])) {
+                    $snapped = $snapToConnectedPole($validPolesById[$candPoleId]);
+                    return [
+                        'source_type'             => 'DEVICE_CONTEXT',
+                        'mounting_relation'       => 'ASSET_RELATIONSHIP',
+                        'source_asset'            => $asset,
+                        'anchor_pole_asset'       => $snapped,
+                        'distance_to_pole_meters' => round((float)($rel['distance_meters'] ?? 0.0), 2),
+                        'verified'                => true,
+                    ];
+                }
+            }
+        }
 
+        // 3. Nearest verified JTM pole on the same feeder (preferring connected poles in gis_translines)
         $nearestPole = null;
         $minDist = PHP_FLOAT_MAX;
+        $nearestConnectedPole = null;
+        $minConnectedDist = PHP_FLOAT_MAX;
         $srcLat = (float)($asset['latitude'] ?? 0);
         $srcLng = (float)($asset['longitude'] ?? 0);
 
-        foreach ($poles as $p) {
-            if (!self::isJtmPoleAsset($p)['valid']) {
-                continue;
-            }
+        foreach ($validPolesById as $pid => $p) {
             $pLat = (float)($p['latitude'] ?? 0);
             $pLng = (float)($p['longitude'] ?? 0);
             if ($pLat == 0.0 || $pLng == 0.0 || $srcLat == 0.0 || $srcLng == 0.0) {
@@ -211,11 +289,27 @@ class GisTranslineService
                 $minDist = $d;
                 $nearestPole = $p;
             }
+            if (isset($connectedPoleIds[$pid]) && $d < $minConnectedDist) {
+                $minConnectedDist = $d;
+                $nearestConnectedPole = $p;
+            }
         }
 
-        if ($nearestPole && $minDist <= 35.0) {
+        if ($nearestConnectedPole && $minConnectedDist <= 250.0) {
             return [
                 'source_type'             => 'DEVICE_CONTEXT',
+                'mounting_relation'       => 'NEAREST_CONNECTED_POLE',
+                'source_asset'            => $asset,
+                'anchor_pole_asset'       => $nearestConnectedPole,
+                'distance_to_pole_meters' => round($minConnectedDist, 2),
+                'verified'                => true,
+            ];
+        }
+
+        if ($nearestPole && $minDist <= 50.0) {
+            return [
+                'source_type'             => 'DEVICE_CONTEXT',
+                'mounting_relation'       => 'NEAREST_POLE',
                 'source_asset'            => $asset,
                 'anchor_pole_asset'       => $nearestPole,
                 'distance_to_pole_meters' => round($minDist, 2),
@@ -229,7 +323,7 @@ class GisTranslineService
             'anchor_pole_asset'       => null,
             'distance_to_pole_meters' => ($minDist !== PHP_FLOAT_MAX) ? round($minDist, 2) : null,
             'verified'                => false,
-            'reason'                  => 'Jarak ke tiang JTM terdekat melebihi batas fisik 35m atau section tidak terbukti.',
+            'reason'                  => 'Jarak ke tiang JTM terdekat melebihi batas fisik atau tiang belum terhubung ke jaringan transline.',
         ];
     }
 

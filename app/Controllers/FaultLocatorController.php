@@ -70,9 +70,12 @@ class FaultLocatorController extends BaseController
             'current_s'            => 1420.0,
             'current_t'            => 1440.0,
             'current_n'            => 15.0,
+            'voltage_r_kv'         => null,
+            'voltage_s_kv'         => null,
+            'voltage_t_kv'         => null,
             'relay_distance_m'     => null,
             'relay_type'           => 'OCR_GFR',
-            'conductor_type'       => 'AAAC 150 mm²',
+            'conductor_type'       => null,
         ];
 
         $initialResult = $this->service->locateFault($defaultTelemetry);
@@ -174,6 +177,14 @@ class FaultLocatorController extends BaseController
         }
 
         $result = $this->service->locateFault($json);
+        if (!empty($result['validation_error'])) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'message' => $result['validation_message'] ?? 'Parameter telemetri tidak valid.',
+                'errors'  => $result['validation_errors'] ?? [],
+                'data'    => $result,
+            ]);
+        }
 
         return $this->response->setJSON([
             'status' => 'success',
@@ -318,7 +329,9 @@ class FaultLocatorController extends BaseController
      */
     public function feederNetworkContext(int $penyulangId): ResponseInterface
     {
-        $context = $this->service->getFeederNetworkContext($penyulangId);
+        $sourceType = strtoupper(trim((string)($this->request->getGet('source_type') ?? 'GI')));
+        $protectionId = (int)($this->request->getGet('protection_device_id') ?? 0);
+        $context = $this->service->getFeederNetworkContext($penyulangId, $sourceType, $protectionId);
         $status = ($context['status'] ?? '') === 'error' ? 404 : 200;
         return $this->response->setStatusCode($status)->setJSON($context);
     }

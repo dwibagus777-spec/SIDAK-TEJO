@@ -298,33 +298,311 @@ class FaultLocatorWorkspaceService
     }
 
     /**
-     * Rigorous Fault Type Classification from Currents (R, S, T, and Neutral)
-     *
-     * Adheres to standard relaying criteria (IEEE C37.114 & SPLN S3.001):
-     * 1. 3-PH: Symmetrical high currents across all 3 phases (R, S, T within 15% balance, In < 15% max).
-     * 2. 2-PH: Two phases high and balanced (|Ia - Ib| / max <= 20%), third phase low (< 30%), In low (< 15%).
-     * 3. 2-LG: Two phases high and In significant (> 20% max phase).
-     * 4. 1-LG: Exactly one phase high, other two phases normal load level, and In significant (> 30 A).
+     * Parse and validate telemetry inputs (Currents R/S/T/N in A, Phase Voltages R/S/T in kV, Optional Relay Distance in m).
+     * Strictly distinguishes entered 0.00 kV (0.0) from unentered/empty data (null).
      */
-    public function classifyFaultCurrents(float $iR, float $iS, float $iT, float $iN): array
+    public function parseAndValidateTelemetry(array $telemetry): array
     {
-        $iR = abs($iR);
-        $iS = abs($iS);
-        $iT = abs($iT);
-        $iN = abs($iN);
+        $errors = [];
+
+        $parseCurrent = static function ($raw, string $phaseLabel) use (&$errors): float {
+            if ($raw === null || $raw === '') {
+                return 0.0;
+            }
+            if (is_string($raw)) {
+                $raw = str_replace(',', '.', trim($raw));
+                if ($raw === '') {
+                    return 0.0;
+                }
+            }
+            if (!is_numeric($raw)) {
+                $errors[] = "Arus {$phaseLabel} harus berupa angka valid dalam satuan Ampere (A).";
+                return 0.0;
+            }
+            $val = (float)$raw;
+            if (!is_finite($val) || $val < 0.0 || $val > 50000.0) {
+                $errors[] = "Arus {$phaseLabel} harus berada dalam rentang 0.00 A hingga 50,000.00 A.";
+                return 0.0;
+            }
+            return round($val, 2);
+        };
+
+        $parseVoltageKv = static function ($raw, string $phaseLabel) use (&$errors): ?float {
+            if ($raw === null) {
+                return null;
+            }
+            if (is_string($raw)) {
+                $raw = str_replace(',', '.', trim($raw));
+                if ($raw === '') {
+                    return null;
+                }
+            }
+            if (!is_numeric($raw)) {
+                $errors[] = "Tegangan {$phaseLabel} harus berupa angka valid dalam satuan kV.";
+                return null;
+            }
+            $val = (float)$raw;
+            if (!is_finite($val) || $val < 0.0 || $val > 35.0) {
+                $errors[] = "Tegangan {$phaseLabel} harus berada dalam rentang 0.00 kV hingga 35.00 kV.";
+                return null;
+            }
+            return round($val, 2);
+        };
+
+        $parseRelayDistance = static function ($raw) use (&$errors): ?float {
+            if ($raw === null) {
+                return null;
+            }
+            if (is_string($raw)) {
+                $raw = str_replace(',', '.', trim($raw));
+                if ($raw === '') {
+                    return null;
+                }
+            }
+            if (!is_numeric($raw)) {
+                $errors[] = 'Jarak gangguan terukur relay harus berupa angka valid dalam satuan meter (m).';
+                return null;
+            }
+            $val = (float)$raw;
+            if (!is_finite($val) || $val < 0.0 || $val > 250000.0) {
+                $errors[] = 'Jarak gangguan terukur relay harus berada dalam rentang > 0 m hingga 250,000 m.';
+                return null;
+            }
+            return $val > 0.0 ? round($val, 1) : null;
+        };
+
+        $currentR = $parseCurrent($telemetry['current_r'] ?? ($telemetry['fault_current_a'] ?? null), 'Fasa R');
+        $currentS = $parseCurrent($telemetry['current_s'] ?? null, 'Fasa S');
+        $currentT = $parseCurrent($telemetry['current_t'] ?? null, 'Fasa T');
+        $currentN = $parseCurrent($telemetry['current_n'] ?? null, 'Netral / GFR');
+
+        $voltageR = array_key_exists('voltage_r_kv', $telemetry)
+            ? $parseVoltageKv($telemetry['voltage_r_kv'], 'Fasa R')
+            : (array_key_exists('voltage_r', $telemetry) ? $parseVoltageKv($telemetry['voltage_r'], 'Fasa R') : null);
+        $voltageS = array_key_exists('voltage_s_kv', $telemetry)
+            ? $parseVoltageKv($telemetry['voltage_s_kv'], 'Fasa S')
+            : (array_key_exists('voltage_s', $telemetry) ? $parseVoltageKv($telemetry['voltage_s'], 'Fasa S') : null);
+        $voltageT = array_key_exists('voltage_t_kv', $telemetry)
+            ? $parseVoltageKv($telemetry['voltage_t_kv'], 'Fasa T')
+            : (array_key_exists('voltage_t', $telemetry) ? $parseVoltageKv($telemetry['voltage_t'], 'Fasa T') : null);
+
+        $rawRelayDist = $telemetry['relay_measured_distance_m'] ?? $telemetry['relay_distance_m'] ?? null;
+        $relayDistanceM = $parseRelayDistance($rawRelayDist);
+
+        return [
+            'valid'  => empty($errors),
+            'errors' => $errors,
+            'values' => [
+                'current_r'                 => $currentR,
+                'current_s'                 => $currentS,
+                'current_t'                 => $currentT,
+                'current_n'                 => $currentN,
+                'voltage_r_kv'              => $voltageR,
+                'voltage_s_kv'              => $voltageS,
+                'voltage_t_kv'              => $voltageT,
+                'relay_measured_distance_m' => $relayDistanceM,
+            ],
+        ];
+    }
+
+    /**
+     * Rigorous Fault Indication Classification from Combined Currents (R, S, T, N in A) and Phase Voltages (R, S, T in kV)
+     *
+     * Adheres to IEEE C37.114 & SPLN S3.001:
+     * - Distinguishes measured 0.00 kV (0.0) from unentered voltage (null).
+     * - Evaluates voltage depression / neutral shift alongside phase & neutral currents to classify DGR / ground / phase fault indications.
+     * - Always presents classification as an "indication" with supporting evidence and confidence score.
+     */
+    public function classifyFaultCurrents(
+        float $iR,
+        float $iS,
+        float $iT,
+        float $iN,
+        ?float $vR = null,
+        ?float $vS = null,
+        ?float $vT = null
+    ): array {
+        $iR = round(abs($iR), 2);
+        $iS = round(abs($iS), 2);
+        $iT = round(abs($iT), 2);
+        $iN = round(abs($iN), 2);
+
+        $vR = $vR !== null ? round(abs($vR), 2) : null;
+        $vS = $vS !== null ? round(abs($vS), 2) : null;
+        $vT = $vT !== null ? round(abs($vT), 2) : null;
+
+        $iMap = ['R' => $iR, 'S' => $iS, 'T' => $iT];
+        $vMap = ['R' => $vR, 'S' => $vS, 'T' => $vT];
+
+        $enteredVoltages = array_filter($vMap, static fn($v): bool => $v !== null);
+        $hasAnyVoltage = !empty($enteredVoltages);
+        $hasAllThreeVoltages = ($vR !== null && $vS !== null && $vT !== null);
+        $indicationBasis = $hasAnyVoltage ? 'COMBINED_CURRENT_AND_PHASE_VOLTAGE' : 'CURRENT_ONLY_SCALAR';
+
+        $saggedPhases = [];
+        $healthyVoltagePhases = [];
+        foreach ($vMap as $phase => $vVal) {
+            if ($vVal === null) {
+                continue;
+            }
+            if ($vVal <= 8.5) {
+                $saggedPhases[] = $phase;
+            } elseif ($vVal >= 10.0) {
+                $healthyVoltagePhases[] = $phase;
+            }
+        }
 
         $maxPhase = max($iR, $iS, $iT);
 
-        // Under-current / load threshold: If all currents <= 10A, no detectable short circuit
-        if ($maxPhase <= 10.0 && $iN <= 10.0) {
+        $buildPayload = static function (
+            string $faultType,
+            string $faultTypeLabel,
+            float $activeCurrentA,
+            array $faultPhases,
+            bool $isGroundFault,
+            string $rule,
+            float $indicationConfidence,
+            array $evidence
+        ) use ($iR, $iS, $iT, $iN, $vR, $vS, $vT, $hasAnyVoltage, $hasAllThreeVoltages, $indicationBasis): array {
             return [
-                'fault_type'        => 'NO_FAULT',
-                'fault_type_label'  => 'Normal / Beban Rendah (Arus < 10 A)',
-                'active_current_a'  => 0.0,
-                'fault_phases'      => [],
-                'is_ground_fault'   => false,
-                'classification_rule'=> 'ARUS_DIBAWAH_AMBANG_GANGGUAN'
+                'fault_type'                    => $faultType,
+                'fault_type_label'              => $faultTypeLabel,
+                'indication_label'              => $faultTypeLabel,
+                'is_indication'                 => true,
+                'indication_basis'              => $indicationBasis,
+                'indication_confidence_percent' => round($indicationConfidence, 1),
+                'supporting_evidence'           => $evidence,
+                'active_current_a'              => round($activeCurrentA, 1),
+                'fault_phases'                  => $faultPhases,
+                'is_ground_fault'               => $isGroundFault,
+                'classification_rule'           => $rule,
+                'current_r'                     => $iR,
+                'current_s'                     => $iS,
+                'current_t'                     => $iT,
+                'current_n'                     => $iN,
+                'voltage_r_kv'                  => $vR,
+                'voltage_s_kv'                  => $vS,
+                'voltage_t_kv'                  => $vT,
+                'has_voltage_telemetry'         => $hasAnyVoltage,
+                'has_complete_phase_voltages'   => $hasAllThreeVoltages,
             ];
+        };
+
+        // Under-current / load threshold: If all currents <= 10A and no voltage collapse
+        if ($maxPhase <= 10.0 && $iN <= 10.0 && empty($saggedPhases)) {
+            $evidence = [
+                "Arus fasa R ({$iR} A), S ({$iS} A), T ({$iT} A) dan Netral ({$iN} A) berada di bawah ambang gangguan (<= 10 A).",
+            ];
+            if ($hasAnyVoltage) {
+                $vDesc = [];
+                foreach ($enteredVoltages as $p => $v) {
+                    $vDesc[] = "{$p}=" . number_format($v, 2, '.', '') . " kV";
+                }
+                $evidence[] = 'Tegangan fasa terukur normal (' . implode(', ', $vDesc) . ').';
+            }
+            return $buildPayload(
+                'NO_FAULT',
+                'Normal / Beban Rendah (Arus < 10 A)',
+                0.0,
+                [],
+                false,
+                'ARUS_DIBAWAH_AMBANG_GANGGUAN',
+                90.0,
+                $evidence
+            );
+        }
+
+        // Pattern V1: Single-Phase Ground / DGR Indication confirmed by 1 collapsed phase voltage + healthy other phases
+        if (count($saggedPhases) === 1 && count($healthyVoltagePhases) >= 1 && ($iN >= 5.0 || $maxPhase > 10.0)) {
+            $pFault = $saggedPhases[0];
+            $vFault = (float)$vMap[$pFault];
+            $iFault = (float)$iMap[$pFault];
+            $actCurrent = max($iFault, $iN);
+
+            $healthyDesc = [];
+            foreach ($healthyVoltagePhases as $hp) {
+                $healthyDesc[] = "Fasa {$hp} = " . number_format((float)$vMap[$hp], 2, '.', '') . " kV";
+            }
+
+            $evidence = [
+                "Tegangan Fasa {$pFault} drop signifikan ke " . number_format($vFault, 2, '.', '') . " kV" . ($vFault <= 0.5 ? ' (mendekati 0.00 kV terhadap tanah).' : ' (di bawah ambang normal 10 kV).'),
+                'Tegangan fasa sehat tetap tinggi/normal (' . implode(', ', $healthyDesc) . '), konsisten dengan pergeseran titik netral pada gangguan tanah sistem distribusi 20 kV.',
+                "Arus Netral/GFR terukur " . number_format($iN, 1, '.', '') . " A dengan arus Fasa {$pFault} sebesar " . number_format($iFault, 1, '.', '') . " A (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A).",
+            ];
+
+            $indConf = ($hasAllThreeVoltages && $vFault <= 2.0 && $iN >= 20.0) ? 92.0 : ($hasAllThreeVoltages ? 84.0 : 74.0);
+
+            return $buildPayload(
+                '1_PHASE_GROUND',
+                "Indikasi Gangguan Tanah Fasa {$pFault}-N / DGR",
+                $actCurrent,
+                [$pFault, 'N'],
+                true,
+                "INDIKASI_DGR_{$pFault}_N",
+                $indConf,
+                $evidence
+            );
+        }
+
+        // Pattern V2: Two phases with collapsed voltage -> 2-Phase Ground or 2-Phase Short Circuit
+        if (count($saggedPhases) === 2 && ($maxPhase > 10.0 || $iN > 10.0)) {
+            $phasesStr = implode('-', $saggedPhases);
+            $saggedVDesc = [];
+            $sumFaultCurrent = 0.0;
+            $maxFaultPhaseCurrent = 0.0;
+            foreach ($saggedPhases as $sp) {
+                $saggedVDesc[] = "Fasa {$sp} = " . number_format((float)$vMap[$sp], 2, '.', '') . " kV";
+                $sumFaultCurrent += $iMap[$sp];
+                $maxFaultPhaseCurrent = max($maxFaultPhaseCurrent, $iMap[$sp]);
+            }
+
+            $evidence = [
+                'Tegangan drop pada dua fasa (' . implode(', ', $saggedVDesc) . ').',
+                "Arus fasa terukur R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A; Netral/GFR=" . number_format($iN, 1, '.', '') . " A.",
+            ];
+
+            if ($iN >= 15.0) {
+                return $buildPayload(
+                    '2_PHASE_GROUND',
+                    "Indikasi Gangguan 2 Fasa ke Tanah ({$phasesStr}-N)",
+                    max($maxFaultPhaseCurrent, $iN),
+                    array_merge($saggedPhases, ['N']),
+                    true,
+                    'INDIKASI_DUA_FASA_TANAH_TEGANGAN_DROP',
+                    $hasAllThreeVoltages ? 88.0 : 78.0,
+                    $evidence
+                );
+            }
+
+            return $buildPayload(
+                '2_PHASE',
+                "Indikasi Gangguan Antar Fasa ({$phasesStr})",
+                $sumFaultCurrent / 2.0,
+                $saggedPhases,
+                false,
+                'INDIKASI_ANTAR_FASA_TEGANGAN_DROP',
+                $hasAllThreeVoltages ? 86.0 : 76.0,
+                $evidence
+            );
+        }
+
+        // Pattern V3: All 3 phases collapsed voltage -> 3-Phase Short Circuit
+        if (count($saggedPhases) === 3 && $maxPhase > 50.0) {
+            $avgCurrent = round(($iR + $iS + $iT) / 3.0, 1);
+            $evidence = [
+                "Tegangan ketiga fasa drop serentak (R=" . number_format((float)$vR, 2, '.', '') . " kV, S=" . number_format((float)$vS, 2, '.', '') . " kV, T=" . number_format((float)$vT, 2, '.', '') . " kV).",
+                "Arus hubung-singkat tiga fasa tinggi (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A; rata-rata {$avgCurrent} A).",
+            ];
+            return $buildPayload(
+                '3_PHASE',
+                'Indikasi Gangguan 3 Fasa Simetris (R-S-T)',
+                $avgCurrent,
+                ['R', 'S', 'T'],
+                false,
+                'INDIKASI_TIGA_FASA_TEGANGAN_DROP',
+                90.0,
+                $evidence
+            );
         }
 
         // Active phase threshold: phase current > 50 A AND > 25% of max phase
@@ -341,14 +619,23 @@ class FaultLocatorWorkspaceService
             $imbalance = ($maxPhase - $minPhase) / max(1.0, $maxPhase);
             if ($imbalance <= 0.25 && $iN <= 0.20 * $maxPhase) {
                 $avgCurrent = round(($iR + $iS + $iT) / 3.0, 1);
-                return [
-                    'fault_type'        => '3_PHASE',
-                    'fault_type_label'  => 'Gangguan 3 Fasa Simetris (R-S-T)',
-                    'active_current_a'  => $avgCurrent,
-                    'fault_phases'      => ['R', 'S', 'T'],
-                    'is_ground_fault'   => false,
-                    'classification_rule'=> 'SIMETRIS_TIGA_FASA_SEIMBANG'
+                $evidence = [
+                    "Arus ketiga fasa tinggi dan simetris (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A; ketidakseimbangan " . round($imbalance * 100, 1) . "%).",
+                    "Arus Netral/GFR rendah (" . number_format($iN, 1, '.', '') . " A).",
                 ];
+                if (!$hasAnyVoltage) {
+                    $evidence[] = 'Data tegangan per fasa (kV) belum diisi; indikasi didasarkan pada besaran arus skalar.';
+                }
+                return $buildPayload(
+                    '3_PHASE',
+                    'Gangguan 3 Fasa Simetris (R-S-T)',
+                    $avgCurrent,
+                    ['R', 'S', 'T'],
+                    false,
+                    'SIMETRIS_TIGA_FASA_SEIMBANG',
+                    $hasAnyVoltage ? 82.0 : 68.0,
+                    $evidence
+                );
             }
         }
 
@@ -358,28 +645,45 @@ class FaultLocatorWorkspaceService
             $isGroundSignificant = ($iN > 30.0 && $iN >= 0.15 * $maxPhase);
 
             if ($isGroundSignificant) {
-                return [
-                    'fault_type'        => '2_PHASE_GROUND',
-                    'fault_type_label'  => "Gangguan 2 Fasa ke Tanah ({$phasesStr}-N)",
-                    'active_current_a'  => round($maxPhase, 1),
-                    'fault_phases'      => array_merge($activePhases, ['N']),
-                    'is_ground_fault'   => true,
-                    'classification_rule'=> 'DUA_FASA_DENGAN_ARUS_NETRAL_SIGNIFIKAN'
+                $evidence = [
+                    "Dua fasa dominan ({$phasesStr}) dengan arus tinggi (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A).",
+                    "Arus Netral/GFR signifikan sebesar " . number_format($iN, 1, '.', '') . " A.",
                 ];
+                if (!$hasAnyVoltage) {
+                    $evidence[] = 'Data tegangan per fasa (kV) belum diisi; indikasi didasarkan pada besaran arus skalar.';
+                }
+                return $buildPayload(
+                    '2_PHASE_GROUND',
+                    "Gangguan 2 Fasa ke Tanah ({$phasesStr}-N)",
+                    round($maxPhase, 1),
+                    array_merge($activePhases, ['N']),
+                    true,
+                    'DUA_FASA_DENGAN_ARUS_NETRAL_SIGNIFIKAN',
+                    $hasAnyVoltage ? 80.0 : 65.0,
+                    $evidence
+                );
             }
 
             $sumCurrent = 0.0;
             foreach ($activePhases as $p) {
                 $sumCurrent += ($p === 'R' ? $iR : ($p === 'S' ? $iS : $iT));
             }
-            return [
-                'fault_type'        => '2_PHASE',
-                'fault_type_label'  => "Gangguan Antar Fasa ({$phasesStr})",
-                'active_current_a'  => round($sumCurrent / 2.0, 1),
-                'fault_phases'      => $activePhases,
-                'is_ground_fault'   => false,
-                'classification_rule'=> 'DUA_FASA_TANPA_ARUS_TANAH'
+            $evidence = [
+                "Dua fasa dominan ({$phasesStr}) berimbang (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A) tanpa arus netral signifikan ({$iN} A).",
             ];
+            if (!$hasAnyVoltage) {
+                $evidence[] = 'Data tegangan per fasa (kV) belum diisi; indikasi didasarkan pada besaran arus skalar.';
+            }
+            return $buildPayload(
+                '2_PHASE',
+                "Gangguan Antar Fasa ({$phasesStr})",
+                round($sumCurrent / 2.0, 1),
+                $activePhases,
+                false,
+                'DUA_FASA_TANPA_ARUS_TANAH',
+                $hasAnyVoltage ? 80.0 : 66.0,
+                $evidence
+            );
         }
 
         // 3. Single Line to Ground (1-LG)
@@ -389,36 +693,277 @@ class FaultLocatorWorkspaceService
             if ($iN > $actCurrent) {
                 $actCurrent = $iN;
             }
+            $evidence = [
+                "Arus Fasa {$singlePhase} dominan (" . number_format($iMap[$singlePhase], 1, '.', '') . " A) disertai arus Netral/GFR (" . number_format($iN, 1, '.', '') . " A).",
+            ];
+            if (!$hasAnyVoltage) {
+                $evidence[] = 'Data tegangan per fasa (kV) belum diisi; masukkan tegangan fasa R/S/T untuk verifikasi drop tegangan DGR.';
+            }
+            return $buildPayload(
+                '1_PHASE_GROUND',
+                "Gangguan 1 Fasa ke Tanah ({$singlePhase}-N)",
+                round($actCurrent, 1),
+                [$singlePhase, 'N'],
+                true,
+                'SATU_FASA_DOMINAN_DENGAN_ARUS_TANAH',
+                $hasAnyVoltage ? 82.0 : 65.0,
+                $evidence
+            );
+        }
+
+        // Only neutral current high (or 3 load phases active with high residual neutral current and no voltage collapse provided)
+        if ($iN > 30.0) {
+            $highestPhase = 'R';
+            if ($iS >= $iR && $iS >= $iT) {
+                $highestPhase = 'S';
+            } elseif ($iT >= $iR && $iT >= $iS) {
+                $highestPhase = 'T';
+            }
+
+            $evidence = [
+                "Arus Netral/GFR terukur signifikan sebesar " . number_format($iN, 1, '.', '') . " A (arus fasa R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A; tertinggi pada Fasa {$highestPhase}).",
+            ];
+            if (!$hasAnyVoltage) {
+                $evidence[] = "Data tegangan per fasa (kV) belum dimasukkan, sehingga fasa yang mengalami gangguan tanah/DGR belum dapat dipastikan hanya dari arus beban.";
+            } else {
+                $evidence[] = "Tegangan fasa terukur tidak menunjukkan drop di bawah 8.5 kV, mengindikasikan gangguan tanah impedansi tinggi (HIF / GFR).";
+            }
+
+            return $buildPayload(
+                '1_PHASE_GROUND',
+                'Gangguan 1 Fasa ke Tanah (Ground Residual GFR)',
+                round($iN, 1),
+                ['N'],
+                true,
+                'RESIDUAL_NETRAL_GFR_DOMINAN',
+                $hasAnyVoltage ? 68.0 : 55.0,
+                $evidence
+            );
+        }
+
+        $evidence = [
+            "Pola arus R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A, N=" . number_format($iN, 1, '.', '') . " A tidak memenuhi ambang klasifikasi standar.",
+        ];
+        if (!$hasAnyVoltage) {
+            $evidence[] = 'Data tegangan fasa (kV) belum tersedia.';
+        }
+
+        return $buildPayload(
+            'UNKNOWN_PROFILE',
+            'Karakteristik Arus Asimetris / Tidak Spesifik',
+            round($maxPhase, 1),
+            $activePhases,
+            false,
+            'PROFIL_ARUS_NON_STANDAR',
+            40.0,
+            $evidence
+        );
+    }
+
+    /**
+     * Summarize conductor types and sizes strictly from the traversed downstream transline sequence.
+     * Never silently guesses a conductor if the traversed path has no conductor metadata.
+     */
+    protected function summarizeTraversedPathConductors(array $poleSequence): array
+    {
+        if (empty($poleSequence)) {
             return [
-                'fault_type'        => '1_PHASE_GROUND',
-                'fault_type_label'  => "Gangguan 1 Fasa ke Tanah ({$singlePhase}-N)",
-                'active_current_a'  => round($actCurrent, 1),
-                'fault_phases'      => [$singlePhase, 'N'],
-                'is_ground_fault'   => true,
-                'classification_rule'=> 'SATU_FASA_DOMINAN_DENGAN_ARUS_TANAH'
+                'is_available'         => false,
+                'status'               => 'BELUM_TERSEDIA',
+                'official_type'        => 'Belum tersedia',
+                'display_label'        => 'Belum tersedia',
+                'source'               => 'TRAVERSED_PATH_EMPTY',
+                'is_hybrid'            => false,
+                'resolved_catalog_key' => null,
+                'catalog_entry'        => null,
+                'total_traversed_m'    => 0.0,
+                'breakdown'            => [],
+                'segment_ranges'       => [],
+                'status_message'       => 'Belum tersedia (Jalur transline hilir belum terbentuk dari titik sumber).',
             ];
         }
 
-        // Only neutral current high
-        if ($iN > 30.0) {
+        $totalPathSpanM = 0.0;
+        $maxCumM = 0.0;
+        $validSpanCount = 0;
+        $missingSpanCount = 0;
+        $byConductor = [];
+        $segmentRanges = [];
+
+        foreach ($poleSequence as $seg) {
+            $spanM = (float)($seg['span_meters'] ?? 0.0);
+            $startM = (float)($seg['cum_start_meters'] ?? 0.0);
+            $endM = (float)($seg['cumulative_meters'] ?? ($startM + $spanM));
+            $totalPathSpanM += $spanM;
+            if ($endM > $maxCumM) {
+                $maxCumM = $endM;
+            }
+
+            $rawType = strtoupper(trim((string)($seg['raw_conductor_type'] ?? $seg['conductor_type'] ?? '')));
+            $rawSize = trim((string)($seg['raw_conductor_size'] ?? $seg['conductor_size'] ?? ''));
+
+            if ($rawType === '' || $rawType === 'UNKNOWN' || $rawType === 'BELUM TERSEDIA' || $rawType === '-') {
+                $missingSpanCount++;
+                $condLabel = 'Belum tersedia';
+                $normType = '';
+                $normSize = '';
+            } else {
+                $validSpanCount++;
+                $normType = $rawType;
+                if ($rawSize !== '' && $rawSize !== '-') {
+                    $normSize = str_contains(strtolower($rawSize), 'mm') ? $rawSize : ($rawSize . ' mm²');
+                } else {
+                    $normSize = '';
+                }
+                $condLabel = trim($normType . ($normSize !== '' ? ' ' . $normSize : ''));
+            }
+
+            if ($normType !== '') {
+                if (!isset($byConductor[$condLabel])) {
+                    $byConductor[$condLabel] = [
+                        'label'      => $condLabel,
+                        'type'       => $normType,
+                        'size'       => $normSize !== '' ? $normSize : 'Belum tercatat',
+                        'spans'      => 0,
+                        'distance_m' => 0.0,
+                        'min_cum_m'  => $startM,
+                        'max_cum_m'  => $endM,
+                    ];
+                }
+                $byConductor[$condLabel]['spans']++;
+                $byConductor[$condLabel]['distance_m'] = round($byConductor[$condLabel]['distance_m'] + $spanM, 1);
+                $byConductor[$condLabel]['min_cum_m'] = min($byConductor[$condLabel]['min_cum_m'], $startM);
+                $byConductor[$condLabel]['max_cum_m'] = max($byConductor[$condLabel]['max_cum_m'], $endM);
+            }
+
+            $lastIdx = count($segmentRanges) - 1;
+            if (
+                $lastIdx >= 0
+                && $segmentRanges[$lastIdx]['conductor_label'] === $condLabel
+                && (int)$segmentRanges[$lastIdx]['to_pole_id'] === (int)($seg['from_pole_id'] ?? -1)
+            ) {
+                $segmentRanges[$lastIdx]['to_pole_id'] = (int)($seg['to_pole_id'] ?? 0);
+                $segmentRanges[$lastIdx]['to_pole_kode'] = $seg['to_pole_kode'] ?? '';
+                $segmentRanges[$lastIdx]['end_m'] = round($endM, 1);
+                $segmentRanges[$lastIdx]['span_meters'] = round($segmentRanges[$lastIdx]['span_meters'] + $spanM, 1);
+                $segmentRanges[$lastIdx]['span_count']++;
+                $segmentRanges[$lastIdx]['range_text'] = number_format($segmentRanges[$lastIdx]['start_m'], 1, '.', '')
+                    . ' m – ' . number_format($segmentRanges[$lastIdx]['end_m'], 1, '.', '')
+                    . ' m (' . $segmentRanges[$lastIdx]['from_pole_kode'] . ' → ' . $segmentRanges[$lastIdx]['to_pole_kode'] . '): '
+                    . $condLabel;
+            } else {
+                $fromKode = $seg['from_pole_kode'] ?? '';
+                $toKode = $seg['to_pole_kode'] ?? '';
+                $segmentRanges[] = [
+                    'conductor_label' => $condLabel,
+                    'conductor_type'  => $normType !== '' ? $normType : 'Belum tersedia',
+                    'conductor_size'  => $normSize !== '' ? $normSize : '-',
+                    'from_pole_id'    => (int)($seg['from_pole_id'] ?? 0),
+                    'from_pole_kode'  => $fromKode,
+                    'to_pole_id'      => (int)($seg['to_pole_id'] ?? 0),
+                    'to_pole_kode'    => $toKode,
+                    'start_m'         => round($startM, 1),
+                    'end_m'           => round($endM, 1),
+                    'span_meters'     => round($spanM, 1),
+                    'span_count'      => 1,
+                    'range_text'      => number_format($startM, 1, '.', '') . ' m – ' . number_format($endM, 1, '.', '') . " m ({$fromKode} → {$toKode}): {$condLabel}",
+                ];
+            }
+        }
+
+        if ($validSpanCount === 0 || empty($byConductor)) {
             return [
-                'fault_type'        => '1_PHASE_GROUND',
-                'fault_type_label'  => 'Gangguan 1 Fasa ke Tanah (Ground Residual GFR)',
-                'active_current_a'  => round($iN, 1),
-                'fault_phases'      => ['N'],
-                'is_ground_fault'   => true,
-                'classification_rule'=> 'RESIDUAL_NETRAL_GFR_DOMINAN'
+                'is_available'         => false,
+                'status'               => 'BELUM_TERSEDIA',
+                'official_type'        => 'Belum tersedia',
+                'display_label'        => 'Belum tersedia',
+                'source'               => 'TRAVERSED_PATH_MISSING_CONDUCTOR',
+                'is_hybrid'            => false,
+                'resolved_catalog_key' => null,
+                'catalog_entry'        => null,
+                'total_traversed_m'    => round($totalPathSpanM, 1),
+                'breakdown'            => [],
+                'segment_ranges'       => $segmentRanges,
+                'status_message'       => 'Belum tersedia (Segmen transline pada jalur ini belum memiliki atribut jenis/ukuran konduktor).',
             ];
+        }
+
+        $breakdown = array_values($byConductor);
+        usort($breakdown, static fn(array $a, array $b): int => $b['distance_m'] <=> $a['distance_m']);
+
+        foreach ($breakdown as &$bItem) {
+            $bItem['distance_km'] = round($bItem['distance_m'] / 1000.0, 2);
+            $bItem['percentage'] = $totalPathSpanM > 0 ? round(($bItem['distance_m'] / $totalPathSpanM) * 100, 1) : 100.0;
+            $bItem['range_summary'] = number_format($bItem['min_cum_m'], 1, '.', '') . ' m – ' . number_format($bItem['max_cum_m'], 1, '.', '') . ' m';
+        }
+        unset($bItem);
+
+        $dominant = $breakdown[0];
+        $matchedCatalogKey = $this->matchConductorCatalogKey($dominant['type'], $dominant['size']);
+        $isHybrid = count($breakdown) > 1;
+
+        if (!$isHybrid) {
+            $displayLabel = "{$dominant['label']} (Rentang 0.0 m – " . number_format($maxCumM, 1, '.', '') . " m)";
+            $statusMsg = "Konduktor jalur terdeteksi otomatis dari {$dominant['spans']} span transline aktif ({$dominant['label']}, rentang 0.0 m – " . number_format($maxCumM, 1, '.', '') . " m).";
+            if ($missingSpanCount > 0) {
+                $statusMsg .= " Terdapat {$missingSpanCount} span tanpa atribut konduktor.";
+            }
+        } else {
+            $parts = [];
+            foreach ($breakdown as $b) {
+                $parts[] = "{$b['label']} ({$b['range_summary']}, {$b['percentage']}%)";
+            }
+            $displayLabel = 'Multi-Konduktor: ' . implode(' | ', $parts);
+            $statusMsg = 'Jalur hasil penelusuran melewati ' . count($breakdown) . ' jenis konduktor: ' . implode('; ', $parts) . '.';
         }
 
         return [
-            'fault_type'        => 'UNKNOWN_PROFILE',
-            'fault_type_label'  => 'Karakteristik Arus Asimetris / Tidak Spesifik',
-            'active_current_a'  => round($maxPhase, 1),
-            'fault_phases'      => $activePhases,
-            'is_ground_fault'   => false,
-            'classification_rule'=> 'PROFIL_ARUS_NON_STANDAR'
+            'is_available'         => true,
+            'status'               => $isHybrid ? 'MULTI_SEGMENT_HYBRID' : 'SINGLE_CONDUCTOR',
+            'official_type'        => $dominant['label'],
+            'display_label'        => $displayLabel,
+            'source'               => 'TRAVERSED_DOWNSTREAM_TRANSLINE',
+            'is_hybrid'            => $isHybrid,
+            'resolved_catalog_key' => $matchedCatalogKey,
+            'catalog_entry'        => $matchedCatalogKey ? (self::CONDUCTOR_CATALOG[$matchedCatalogKey] ?? null) : null,
+            'total_traversed_m'    => round($totalPathSpanM, 1),
+            'max_reach_m'          => round($maxCumM, 1),
+            'breakdown'            => $breakdown,
+            'segment_ranges'       => $segmentRanges,
+            'status_message'       => $statusMsg,
         ];
+    }
+
+    /**
+     * Match raw conductor type & size against CONDUCTOR_CATALOG keys without guessing when empty
+     */
+    protected function matchConductorCatalogKey(string $rawType, string $rawSize = ''): ?string
+    {
+        $normType = strtoupper(trim($rawType));
+        if ($normType === '' || $normType === 'BELUM TERSEDIA' || $normType === 'UNKNOWN') {
+            return null;
+        }
+
+        $sizeDigits = '';
+        if (preg_match('/(\d+)/', $rawSize, $m)) {
+            $sizeDigits = $m[1];
+        }
+
+        if ($sizeDigits !== '') {
+            foreach (array_keys(self::CONDUCTOR_CATALOG) as $catKey) {
+                if (preg_match('/\b' . preg_quote($normType, '/') . '\b/i', $catKey) && str_contains($catKey, $sizeDigits)) {
+                    return $catKey;
+                }
+            }
+        }
+
+        foreach (array_keys(self::CONDUCTOR_CATALOG) as $catKey) {
+            if (preg_match('/\b' . preg_quote($normType, '/') . '\b/i', $catKey)) {
+                return $catKey;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -426,20 +971,35 @@ class FaultLocatorWorkspaceService
      */
     public function locateFault(array $telemetry): array
     {
-        $ulpInput         = $telemetry['ulp_id'] ?? null;
-        $feederInput      = $telemetry['feeder_id'] ?? null;
-        $sourceType       = strtoupper(trim($telemetry['source_type'] ?? 'GI')); // 'GI' or 'PROTECTION'
-        $protectionId     = (int)($telemetry['protection_device_id'] ?? 0);
-        $faultTimestamp   = $telemetry['fault_time'] ?? $telemetry['timestamp'] ?? date('Y-m-d H:i:s');
-        $relayType        = $telemetry['relay_type'] ?? 'OCR_GFR';
-        $conductorKey     = $telemetry['conductor_type'] ?? 'AAAC 150 mm²';
-        $relayDistanceIn  = isset($telemetry['relay_distance_m']) && is_numeric($telemetry['relay_distance_m']) ? (float)$telemetry['relay_distance_m'] : null;
+        $validation = $this->parseAndValidateTelemetry($telemetry);
+        if (!$validation['valid']) {
+            return [
+                'validation_error'   => true,
+                'errors'             => $validation['errors'],
+                'message'            => implode(' ', $validation['errors']),
+                'calculation_status' => 'VALIDATION_ERROR',
+                'outcome_status'     => 'VALIDATION_ERROR',
+            ];
+        }
 
-        // Currents in Amperes
-        $currentR = (float)($telemetry['current_r'] ?? ($telemetry['fault_current_a'] ?? 0));
-        $currentS = (float)($telemetry['current_s'] ?? 0);
-        $currentT = (float)($telemetry['current_t'] ?? 0);
-        $currentN = (float)($telemetry['current_n'] ?? 0);
+        $parsedTel       = $validation['values'];
+        $ulpInput        = $telemetry['ulp_id'] ?? null;
+        $feederInput     = $telemetry['feeder_id'] ?? null;
+        $sourceType      = strtoupper(trim((string)($telemetry['source_type'] ?? 'GI'))); // 'GI' or 'PROTECTION'
+        $protectionId    = (int)($telemetry['protection_device_id'] ?? 0);
+        $faultTimestamp  = $telemetry['fault_time'] ?? $telemetry['timestamp'] ?? date('Y-m-d H:i:s');
+        $relayType       = $telemetry['relay_type'] ?? 'OCR_GFR';
+        $rawConductorReq = trim((string)($telemetry['conductor_type'] ?? ''));
+        $relayDistanceIn = $parsedTel['relay_measured_distance_m'];
+
+        // Currents in Amperes & Phase Voltages in kV (strictly preserving 0.0 vs null)
+        $currentR  = $parsedTel['current_r'];
+        $currentS  = $parsedTel['current_s'];
+        $currentT  = $parsedTel['current_t'];
+        $currentN  = $parsedTel['current_n'];
+        $voltageR  = $parsedTel['voltage_r_kv'];
+        $voltageS  = $parsedTel['voltage_s_kv'];
+        $voltageT  = $parsedTel['voltage_t_kv'];
 
         // 1. Resolve Feeder Strictly (Never silently fall back to another feeder)
         $feeder = null;
@@ -474,32 +1034,14 @@ class FaultLocatorWorkspaceService
         $penyulangKode = $feeder['kode_penyulang'];
         $ulpId         = (int)($feeder['ulp_id'] ?? $ulpInput ?? 0);
 
-        // 2. Conductor Impedance Parameters (Complex R + jX)
-        $condParams = self::CONDUCTOR_CATALOG[$conductorKey] ?? self::CONDUCTOR_CATALOG['AAAC 150 mm²'];
-        $r1PerKm    = (float)$condParams['r1_ohm_km'];
-        $x1PerKm    = (float)$condParams['x1_ohm_km'];
-        $z1PerKm    = (float)$condParams['z1_ohm_km']; // sqrt(r1^2 + x1^2)
-
-        // Electrical Physics Constants
-        // Reference: PLN 20 kV nominal distribution
-        $V_LL = 20000.0;                   // 20 kV line-to-line
-        $V_LN = 20000.0 / sqrt(3.0);       // ~11,547.005 V line-to-neutral
-
-        // Substation transformer source impedance model:
-        // Assumed baseline for demonstration: Trafo 150/20 kV 30 MVA, %Z = 12% -> Z_base = 20^2 / 30 = 13.33 Ohm -> Z_trafo = 1.6 Ohm
-        // However, this is an assumption without verified GI MVA column.
-        $R_source = 0.05;                  // ~0.05 Ohm
-        $X_source = 0.45;                  // ~0.45 Ohm
-        $Z_source_mag = sqrt($R_source ** 2 + $X_source ** 2);
-
-        // 3. Classify Fault Currents
-        $faultClass = $this->classifyFaultCurrents($currentR, $currentS, $currentT, $currentN);
+        // 2. Classify Fault Indication from Combined Currents (R, S, T, N) and Phase Voltages (R, S, T)
+        $faultClass = $this->classifyFaultCurrents($currentR, $currentS, $currentT, $currentN, $voltageR, $voltageS, $voltageT);
         $faultType  = $faultClass['fault_type'];
         $iSc        = $faultClass['active_current_a'];
 
-        // 4. Load Strictly Scoped Feeder Assets & Translines and Resolve Anchor JTM Pole
+        // 3. Load Strictly Scoped Feeder Assets & Translines and Resolve Anchor JTM Pole
         // Invariant: Every candidate pole and transline endpoint MUST belong strictly to $penyulangId.
-        $gisTransService = new GisTranslineService();
+        $gisTransService = new GisTranslineService($this->db);
         $feederAssets = [];
         $translines   = [];
         $assetMap     = [];
@@ -507,7 +1049,7 @@ class FaultLocatorWorkspaceService
 
         if ($penyulangId > 0) {
             $feederAssets = $this->db->table('assets')
-                ->select('id, penyulang_id, kode_asset, nama_asset, jenis_asset, section_id, sequence_no, latitude, longitude')
+                ->select('id, penyulang_id, parent_asset_id, kode_asset, nama_asset, jenis_asset, section_id, sequence_no, latitude, longitude')
                 ->where('penyulang_id', $penyulangId)
                 ->where('deleted_at IS NULL')
                 ->orderBy('sequence_no', 'ASC')
@@ -531,14 +1073,14 @@ class FaultLocatorWorkspaceService
                 ->get()
                 ->getResultArray();
 
-            // Build adjacency graph ONLY between verified JTM poles belonging to this feeder
+            // Build adjacency graph ONLY between verified distinct JTM poles belonging to this feeder
             foreach ($translines as $tl) {
                 if ((int)($tl['penyulang_id'] ?? 0) !== $penyulangId) {
                     continue;
                 }
                 $u = (int)$tl['source_asset_id'];
                 $v = (int)$tl['target_asset_id'];
-                if (!isset($assetMap[$u], $assetMap[$v])) {
+                if ($u === $v || !isset($assetMap[$u], $assetMap[$v])) {
                     continue;
                 }
                 $dist = (float)($tl['distance_meters'] ?? 0);
@@ -548,53 +1090,336 @@ class FaultLocatorWorkspaceService
                         (float)$assetMap[$v]['latitude'], (float)$assetMap[$v]['longitude']
                     );
                 }
-                $adj[$u][] = ['target' => $v, 'tl' => $tl, 'dist' => $dist];
-                $adj[$v][] = ['target' => $u, 'tl' => $tl, 'dist' => $dist];
+                $pathCoords = $this->extractTranslineGeometry($tl['geojson_geometry'] ?? null, $assetMap[$u], $assetMap[$v]);
+                $adj[$u][] = ['target' => $v, 'tl' => $tl, 'dist' => $dist, 'path_coords' => $pathCoords, 'forward' => true];
+                $adj[$v][] = ['target' => $u, 'tl' => $tl, 'dist' => $dist, 'path_coords' => array_reverse($pathCoords), 'forward' => false];
+            }
+        }
+
+        // Partition adjacency graph into connected components (largest component first)
+        $components = [];
+        $compOfNode = [];
+        foreach (array_keys($adj) as $startNode) {
+            if (isset($compOfNode[$startNode])) {
+                continue;
+            }
+            $compIdx = count($components);
+            $q = [$startNode];
+            $compOfNode[$startNode] = $compIdx;
+            $nodes = [];
+            while (!empty($q)) {
+                $curr = array_shift($q);
+                $nodes[] = $curr;
+                foreach ($adj[$curr] ?? [] as $edge) {
+                    $nxt = $edge['target'];
+                    if (!isset($compOfNode[$nxt])) {
+                        $compOfNode[$nxt] = $compIdx;
+                        $q[] = $nxt;
+                    }
+                }
+            }
+            $components[] = $nodes;
+        }
+        usort($components, static fn(array $a, array $b): int => count($b) <=> count($a));
+        $compOfNode = [];
+        foreach ($components as $idx => $nodes) {
+            foreach ($nodes as $nId) {
+                $compOfNode[$nId] = $idx;
             }
         }
 
         $anchorPole = null;
         $anchorDesc = '';
         $anchorOffsetMeters = 0.0;
+        $anchorRelType = 'GI_PANGKAL';
+        $sourceDeviceAsset = null;
+        $protectionResolutionError = null;
 
-        if ($penyulangId > 0 && $sourceType === 'PROTECTION' && $protectionId > 0) {
-            $resolved = $gisTransService->resolveSourceContextToNearestJtmPole($protectionId, $penyulangId);
-            if ($resolved && !empty($resolved['anchor_pole_asset'])) {
-                $candAnchor = $resolved['anchor_pole_asset'];
-                if ((int)($candAnchor['penyulang_id'] ?? 0) === $penyulangId && isset($assetMap[(int)$candAnchor['id']])) {
-                    $anchorPole = $assetMap[(int)$candAnchor['id']];
-                    $anchorOffsetMeters = (float)($resolved['distance_to_pole_meters'] ?? 0.0);
-                    $devAsset = $resolved['source_asset'];
-                    $anchorDesc = "Peralatan Proteksi [{$devAsset['kode_asset']} - {$devAsset['nama_asset']}] -> Terhubung ke Tiang JTM [{$anchorPole['kode_asset']}] (Jarak: {$anchorOffsetMeters}m)";
+        if ($sourceType === 'PROTECTION') {
+            if ($penyulangId > 0 && $protectionId > 0) {
+                $resolved = $gisTransService->resolveSourceContextToNearestJtmPole($protectionId, $penyulangId);
+                if ($resolved && !empty($resolved['anchor_pole_asset'])) {
+                    $candAnchor = $resolved['anchor_pole_asset'];
+                    $sourceDeviceAsset = $resolved['source_asset'] ?? null;
+                    $anchorRelType = $resolved['relationship_type'] ?? 'MOUNTED_ON_POLE';
+                    if ((int)($candAnchor['penyulang_id'] ?? 0) === $penyulangId && isset($assetMap[(int)$candAnchor['id']])) {
+                        $anchorPole = $assetMap[(int)$candAnchor['id']];
+                        $anchorOffsetMeters = (float)($resolved['distance_to_pole_meters'] ?? 0.0);
+                        $devCode = $sourceDeviceAsset['kode_asset'] ?? "DEV-{$protectionId}";
+                        $devName = $sourceDeviceAsset['nama_asset'] ?? $devCode;
+                        $anchorDesc = "Peralatan Proteksi [{$devCode} - {$devName}] -> Tiang JTM [{$anchorPole['kode_asset']}] (Hilir / Ke Arah Ujung Penyulang)";
+                    } else {
+                        $protectionResolutionError = "Tiang JTM tempat pemasangan perangkat proteksi tidak ditemukan pada penyulang {$penyulangNama}.";
+                    }
+                } else {
+                    $protectionResolutionError = "Perangkat proteksi (#{$protectionId}) belum terhubung ke tiang JTM pada jaringan transline penyulang {$penyulangNama}.";
                 }
+            } else {
+                $protectionResolutionError = "Pilih perangkat proteksi (Recloser / PMCB) terlebih dahulu untuk memulai penelusuran ke arah hilir.";
+            }
+
+            if (!$anchorPole) {
+                $anchorDesc = "Peralatan Proteksi -> Belum terhubung ke tiang JTM pada penyulang {$penyulangNama}";
             }
         }
 
-        // Fallback for GI or unanchored protection: first connected JTM pole of feeder (or first valid JTM pole)
-        if (!$anchorPole && !empty($assetMap)) {
-            foreach ($assetMap as $poleId => $poleRow) {
-                if (!empty($adj[$poleId])) {
-                    $anchorPole = $poleRow;
-                    break;
-                }
-            }
-            if (!$anchorPole) {
+        // Determine GI Root Pole (Pangkal Penyulang) for the feeder's target connected component
+        $targetCompIdx = ($anchorPole && isset($compOfNode[(int)$anchorPole['id']]))
+            ? $compOfNode[(int)$anchorPole['id']]
+            : 0;
+        $targetCompNodes = $components[$targetCompIdx] ?? [];
+        $giRootPole = $this->resolveFeederGiRootPole($penyulangId, $targetCompNodes, $assetMap, $adj, $feederAssets);
+        $giRootPoleId = (int)($giRootPole['id'] ?? 0);
+
+        if ($sourceType !== 'PROTECTION') {
+            $anchorPole = $giRootPole;
+            if (!$anchorPole && !empty($assetMap)) {
                 $anchorPole = reset($assetMap) ?: null;
             }
-            $anchorPoleKode = $anchorPole['kode_asset'] ?? 'PANGKAL_PENYULANG';
-            $anchorDesc = "Gardu Induk (Pangkal Penyulang) -> Tiang JTM Pertama [{$anchorPoleKode}]";
-        } elseif (!$anchorPole) {
-            $anchorDesc = "Gardu Induk (Pangkal Penyulang) -> Belum ada tiang JTM terpetakan pada penyulang {$penyulangNama}";
+            if ($anchorPole) {
+                $anchorPoleKode = $anchorPole['kode_asset'] ?? 'PANGKAL_PENYULANG';
+                $anchorDesc = "Gardu Induk (Pangkal Penyulang) -> Tiang JTM Pangkal [{$anchorPoleKode}]";
+            } else {
+                $anchorDesc = "Gardu Induk (Pangkal Penyulang) -> Belum ada tiang JTM terpetakan pada penyulang {$penyulangNama}";
+            }
         }
 
         $anchorPoleId = (int)($anchorPole['id'] ?? 0);
-
-        // Pre-flight check: Feeder Physical Network Availability Safeguard
         $translineCount = count($translines);
         $assetCount     = count($assetMap);
-        $hasTopology    = ($penyulangId > 0 && $translineCount > 0 && $assetCount > 0 && $anchorPoleId > 0 && !empty($adj[$anchorPoleId]));
 
-        // 5. Rigorous Electrical Calculation & Physics Telemetry Checks
+        // 4. Compute Dijkstra distances from GI Root Pole ($giRootPoleId) to orient upstream vs downstream
+        $distFromGi = [];
+        $parentFromGi = [];
+        $parentEdgeFromGi = [];
+        if ($giRootPoleId > 0 && isset($adj[$giRootPoleId])) {
+            $distFromGi[$giRootPoleId] = 0.0;
+            $pq = [[0.0, $giRootPoleId]];
+            while (!empty($pq)) {
+                usort($pq, static fn(array $a, array $b): int => $a[0] <=> $b[0]);
+                [$dCurr, $u] = array_shift($pq);
+                if ($dCurr > ($distFromGi[$u] ?? PHP_FLOAT_MAX)) {
+                    continue;
+                }
+                foreach ($adj[$u] ?? [] as $edge) {
+                    $v = $edge['target'];
+                    $nd = $dCurr + (float)$edge['dist'];
+                    if ($nd < ($distFromGi[$v] ?? PHP_FLOAT_MAX)) {
+                        $distFromGi[$v] = $nd;
+                        $parentFromGi[$v] = $u;
+                        $parentEdgeFromGi[$v] = $edge;
+                        $pq[] = [$nd, $v];
+                    }
+                }
+            }
+        }
+
+        // Block upstream GI-side nodes when traversing from a Protection Device (Recloser / PMCB)
+        $blockedUpstreamNodes = [];
+        $upstreamSegments = [];
+        $anchorDistFromGiM = isset($distFromGi[$anchorPoleId]) ? round($distFromGi[$anchorPoleId], 1) : 0.0;
+
+        if ($sourceType === 'PROTECTION' && $anchorPoleId > 0 && $giRootPoleId > 0 && $anchorPoleId !== $giRootPoleId && isset($distFromGi[$anchorPoleId])) {
+            // 1) Block the direct shortest path from GI root pole up to $anchorPoleId
+            $pathNodes = [];
+            $currP = $anchorPoleId;
+            while (isset($parentFromGi[$currP])) {
+                $prevP = $parentFromGi[$currP];
+                $blockedUpstreamNodes[$prevP] = true;
+                $pathNodes[] = [$prevP, $currP, $parentEdgeFromGi[$currP]];
+                $currP = $prevP;
+            }
+            $pathNodes = array_reverse($pathNodes);
+            $upCum = 0.0;
+            foreach ($pathNodes as [$uPole, $vPole, $uEdge]) {
+                $uSpan = round((float)$uEdge['dist'], 1);
+                $upCum = round($upCum + $uSpan, 1);
+                $uFrom = $assetMap[$uPole] ?? null;
+                $uTo   = $assetMap[$vPole] ?? null;
+                if ($uFrom && $uTo) {
+                    $upstreamSegments[] = [
+                        'from_pole_id'      => $uPole,
+                        'from_pole_kode'    => $uFrom['kode_asset'],
+                        'to_pole_id'        => $vPole,
+                        'to_pole_kode'      => $uTo['kode_asset'],
+                        'span_meters'       => $uSpan,
+                        'cumulative_meters' => $upCum,
+                        'from_coords'       => ['lat' => (float)$uFrom['latitude'], 'lng' => (float)$uFrom['longitude']],
+                        'to_coords'         => ['lat' => (float)$uTo['latitude'], 'lng' => (float)$uTo['longitude']],
+                        'path_coords'       => $uEdge['path_coords'],
+                    ];
+                }
+            }
+
+            // 2) Also block any upstream lateral branches whose distance from GI is <= anchor's distance from GI,
+            // provided doing so still leaves at least one downstream neighbor from $anchorPoleId.
+            $candidateUpstreamBlock = $blockedUpstreamNodes;
+            $anchorDist = $distFromGi[$anchorPoleId];
+            foreach ($distFromGi as $nodeId => $dGi) {
+                if ($nodeId !== $anchorPoleId && $dGi <= $anchorDist - 0.01) {
+                    $candidateUpstreamBlock[$nodeId] = true;
+                }
+            }
+            $remainingDownstreamNeighbors = 0;
+            foreach ($adj[$anchorPoleId] ?? [] as $edge) {
+                if (!isset($candidateUpstreamBlock[$edge['target']])) {
+                    $remainingDownstreamNeighbors++;
+                }
+            }
+            if ($remainingDownstreamNeighbors > 0) {
+                $blockedUpstreamNodes = $candidateUpstreamBlock;
+            }
+        }
+
+        // 5. Traverse Real JTM Pole Translines Strictly Downstream from $anchorPoleId (0.0 m) toward Feeder End
+        $poleSequence = [];
+        $visitedEdges = [];
+        $totalSpanMeters = 0.0;
+        $maxDownstreamReachMeters = 0.0;
+        $farthestDownstreamSeqIdx = null;
+        $downstreamEndPole = null;
+        $parentSeqIdxOfPole = [];
+        $outDegreeByPole = [];
+
+        if ($penyulangId > 0 && $translineCount > 0 && $assetCount > 0 && $anchorPoleId > 0 && !empty($adj[$anchorPoleId])) {
+            $queue = [[0.0, $anchorPoleId]];
+            $visitedPoles = [$anchorPoleId => 0.0];
+
+            $seqNo = 1;
+            while (!empty($queue)) {
+                usort($queue, static fn(array $a, array $b): int => $a[0] <=> $b[0]);
+                [$currCum, $currPoleId] = array_shift($queue);
+
+                if (!isset($adj[$currPoleId])) {
+                    continue;
+                }
+
+                $unvisitedOutEdges = [];
+                foreach ($adj[$currPoleId] as $edge) {
+                    $nextPoleId = $edge['target'];
+                    if (isset($blockedUpstreamNodes[$nextPoleId])) {
+                        continue;
+                    }
+                    $edgeKey = min($currPoleId, $nextPoleId) . '-' . max($currPoleId, $nextPoleId);
+                    if (!isset($visitedEdges[$edgeKey])) {
+                        $unvisitedOutEdges[] = $edge;
+                    }
+                }
+
+                $outDegreeByPole[$currPoleId] = [
+                    'deg'   => count($unvisitedOutEdges),
+                    'cum_m' => $currCum,
+                    'kode'  => $assetMap[$currPoleId]['kode_asset'] ?? "T-{$currPoleId}",
+                ];
+
+                foreach ($unvisitedOutEdges as $edge) {
+                    $nextPoleId = $edge['target'];
+                    $edgeKey = min($currPoleId, $nextPoleId) . '-' . max($currPoleId, $nextPoleId);
+                    $visitedEdges[$edgeKey] = true;
+
+                    if (isset($visitedPoles[$nextPoleId])) {
+                        continue;
+                    }
+
+                    $spanDist = round((float)$edge['dist'], 1);
+                    $nextCum = round($currCum + $spanDist, 1);
+                    $totalSpanMeters += $spanDist;
+
+                    $fromPoleAsset = $assetMap[$currPoleId] ?? ['id' => $currPoleId, 'kode_asset' => "T-{$currPoleId}", 'nama_asset' => "Tiang #{$currPoleId}"];
+                    $toPoleAsset   = $assetMap[$nextPoleId] ?? ['id' => $nextPoleId, 'kode_asset' => "T-{$nextPoleId}", 'nama_asset' => "Tiang #{$nextPoleId}"];
+
+                    $rawCondType = trim((string)($edge['tl']['conductor_type'] ?? ''));
+                    $rawCondSize = trim((string)($edge['tl']['conductor_size'] ?? ''));
+
+                    $currSeqIdx = count($poleSequence);
+                    $parentSeqIdx = $parentSeqIdxOfPole[$currPoleId] ?? null;
+
+                    $seqItem = [
+                        'seq_no'             => $seqNo++,
+                        'seq_idx'            => $currSeqIdx,
+                        'parent_seq_idx'     => $parentSeqIdx,
+                        'transline_id'       => (int)($edge['tl']['id'] ?? 0),
+                        'section_name'       => $edge['tl']['section_name'] ?? null,
+                        'from_pole_id'       => $currPoleId,
+                        'from_pole_kode'     => $fromPoleAsset['kode_asset'] ?? "T-{$currPoleId}",
+                        'from_pole_nama'     => $fromPoleAsset['nama_asset'] ?? $fromPoleAsset['kode_asset'],
+                        'to_pole_id'         => $nextPoleId,
+                        'to_pole_kode'       => $toPoleAsset['kode_asset'] ?? "T-{$nextPoleId}",
+                        'to_pole_nama'       => $toPoleAsset['nama_asset'] ?? $toPoleAsset['kode_asset'],
+                        'span_meters'        => $spanDist,
+                        'cumulative_meters'  => $nextCum,
+                        'cum_start_meters'   => $currCum,
+                        'raw_conductor_type' => $rawCondType,
+                        'raw_conductor_size' => $rawCondSize,
+                        'conductor_type'     => $rawCondType !== '' ? $rawCondType : 'Belum tersedia',
+                        'conductor_size'     => $rawCondSize !== '' ? $rawCondSize : '-',
+                        'is_fault_zone'      => false,
+                        'is_on_fault_path'   => false,
+                        'from_coords'        => ['lat' => (float)($fromPoleAsset['latitude'] ?? 0), 'lng' => (float)($fromPoleAsset['longitude'] ?? 0)],
+                        'to_coords'          => ['lat' => (float)($toPoleAsset['latitude'] ?? 0), 'lng' => (float)($toPoleAsset['longitude'] ?? 0)],
+                        'path_coords'        => $edge['path_coords'],
+                    ];
+
+                    $poleSequence[] = $seqItem;
+                    $visitedPoles[$nextPoleId] = $nextCum;
+                    $parentSeqIdxOfPole[$nextPoleId] = $currSeqIdx;
+                    $queue[] = [$nextCum, $nextPoleId];
+
+                    if ($nextCum >= $maxDownstreamReachMeters) {
+                        $maxDownstreamReachMeters = $nextCum;
+                        $farthestDownstreamSeqIdx = $currSeqIdx;
+                        $downstreamEndPole = [
+                            'id'                => $nextPoleId,
+                            'kode_asset'        => $toPoleAsset['kode_asset'] ?? "T-{$nextPoleId}",
+                            'nama_asset'        => $toPoleAsset['nama_asset'] ?? ($toPoleAsset['kode_asset'] ?? "Tiang #{$nextPoleId}"),
+                            'cumulative_meters' => $nextCum,
+                            'latitude'          => (float)($toPoleAsset['latitude'] ?? 0),
+                            'longitude'         => (float)($toPoleAsset['longitude'] ?? 0),
+                        ];
+                    }
+                }
+            }
+
+            if ($sourceType === 'PROTECTION' && empty($poleSequence) && $protectionResolutionError === null) {
+                $protectionResolutionError = "Arah hilir (downstream) dari tiang pemasangan [{$anchorPole['kode_asset']}] menuju ujung penyulang tidak dapat ditentukan karena segmen transline hilir belum tersedia.";
+            }
+        }
+
+        $hasTopology = ($penyulangId > 0 && $translineCount > 0 && $assetCount > 0 && $anchorPoleId > 0 && !empty($poleSequence));
+        $topologyPathLengthM = $hasTopology ? round($maxDownstreamReachMeters, 1) : null;
+        $topologyPathLengthLabel = $sourceType === 'PROTECTION'
+            ? 'Panjang jalur dari proteksi ke ujung feeder (estimasi topologi)'
+            : 'Panjang jalur dari GI ke ujung feeder (estimasi topologi)';
+
+        // 6. Automatic Conductor Resolution strictly from the traversed downstream transline sequence
+        $traversedConductor = $this->summarizeTraversedPathConductors($poleSequence);
+
+        // Determine active conductor catalog entry for impedance calculation:
+        // Prefer traversed path's resolved conductor; fall back to explicit valid request only if provided.
+        $explicitCatalogKey = ($rawConductorReq !== '' && strtoupper($rawConductorReq) !== 'AUTO')
+            ? ($this->matchConductorCatalogKey($rawConductorReq, $rawConductorReq) ?? (isset(self::CONDUCTOR_CATALOG[$rawConductorReq]) ? $rawConductorReq : null))
+            : null;
+        $resolvedCatalogKey = $traversedConductor['resolved_catalog_key'] ?? $explicitCatalogKey;
+        $condParams = $resolvedCatalogKey !== null
+            ? self::CONDUCTOR_CATALOG[$resolvedCatalogKey]
+            : self::CONDUCTOR_CATALOG['AAAC 150 mm²'];
+        $conductorDisplayKey = $traversedConductor['is_available']
+            ? $traversedConductor['official_type']
+            : ($explicitCatalogKey ?? 'Belum tersedia');
+
+        $r1PerKm = (float)$condParams['r1_ohm_km'];
+        $x1PerKm = (float)$condParams['x1_ohm_km'];
+        $z1PerKm = (float)$condParams['z1_ohm_km'];
+
+        // Electrical Physics Constants (PLN 20 kV nominal distribution)
+        $V_LL = 20000.0;
+        $V_LN = 20000.0 / sqrt(3.0);
+        $R_source = 0.05;
+        $X_source = 0.45;
+        $Z_source_mag = sqrt($R_source ** 2 + $X_source ** 2);
+
+        // 7. Rigorous Electrical Calculation & Physics Telemetry Checks
+        // Strictly separate topology_path_length_m from relay_measured_distance_m.
         $calculationStatus = 'RESOLVED';
         $dasarPerhitungan = 'ESTIMASI_TOPOLOGI';
         $dasarPerhitunganLabel = '';
@@ -606,50 +1431,68 @@ class FaultLocatorWorkspaceService
 
         if (!$hasTopology) {
             $calculationStatus = 'DATA_TIDAK_CUKUP';
-            $dasarPerhitungan = 'TOPOLOGI_BELUM_TERSEDIA';
-            $dasarPerhitunganLabel = "DATA TIDAK CUKUP: Penyulang {$penyulangNama} belum memiliki data topologi span/tiang JTM resmi ({$translineCount} span / {$assetCount} tiang)";
-            $formulaDerivation = "Penyulang [{$penyulangNama}] memiliki {$translineCount} transline aktif dan {$assetCount} tiang JTM terdaftar. Perhitungan jarak gangguan dihentikan pada 0.0 m untuk mencegah hasil estimasi fiktif.";
-            $missingParameters = [
-                "Topologi transline resmi untuk penyulang {$penyulangNama} belum terpetakan di sistem (0 segmen)",
-                "Data aset tiang JTM resmi belum lengkap ({$assetCount} tiang)",
-                "Peralatan proteksi/pangkal penyulang belum terhubung ke graf transline resmi"
-            ];
+            if ($sourceType === 'PROTECTION' && $protectionResolutionError !== null) {
+                $dasarPerhitungan = 'ANCHOR_PROTEKSI_TIDAK_VALID';
+                $dasarPerhitunganLabel = "DATA TIDAK CUKUP: {$protectionResolutionError}";
+                $formulaDerivation = "Penelusuran dari peralatan proteksi dihentikan karena perangkat belum terhubung ke tiang JTM atau segmen hilir pada penyulang [{$penyulangNama}] belum lengkap. Sistem tidak melakukan fallback ke GI maupun mengisi jarak palsu.";
+                $missingParameters = [
+                    $protectionResolutionError,
+                    "Relasi pemasangan perangkat proteksi (parent_asset_id / koordinat tiang JTM penyulang {$penyulangNama})",
+                ];
+                $explanation = $protectionResolutionError;
+            } else {
+                $dasarPerhitungan = 'TOPOLOGI_BELUM_TERSEDIA';
+                $dasarPerhitunganLabel = "DATA TIDAK CUKUP: Penyulang {$penyulangNama} belum memiliki data topologi span/tiang JTM resmi ({$translineCount} span / {$assetCount} tiang)";
+                $formulaDerivation = "Penyulang [{$penyulangNama}] memiliki {$translineCount} transline aktif dan {$assetCount} tiang JTM terdaftar. Perhitungan jarak gangguan dihentikan pada 0.0 m untuk mencegah hasil estimasi fiktif.";
+                $missingParameters = [
+                    "Topologi transline resmi untuk penyulang {$penyulangNama} belum terpetakan di sistem (0 segmen)",
+                    "Data aset tiang JTM resmi belum lengkap ({$assetCount} tiang)",
+                    "Peralatan proteksi/pangkal penyulang belum terhubung ke graf transline resmi",
+                ];
+                $explanation = "Penyulang {$penyulangNama} belum memiliki topologi transline dan tiang JTM resmi di sistem (0 span / {$assetCount} tiang). Silakan petakan aset tiang JTM dan transline penyulang ini terlebih dahulu sebelum menjalankan Fault Locator.";
+            }
             $calculatedDistanceM = 0.0;
             $confidence = 0.0;
-            $explanation = "Penyulang {$penyulangNama} belum memiliki topologi transline dan tiang JTM resmi di sistem (0 span / {$assetCount} tiang). Silakan petakan aset tiang JTM dan transline penyulang ini terlebih dahulu sebelum menjalankan Fault Locator.";
         } elseif ($relayDistanceIn !== null && $relayDistanceIn > 0) {
             // Case A: Relay distance measurement available directly from numeric relay
             $calculatedDistanceM = round($relayDistanceIn, 1);
             $calculationStatus = 'CALCULATED_RELAY_AIDED';
             $dasarPerhitungan = 'RELAY_DISTANCE_MEASUREMENT';
             $dasarPerhitunganLabel = "Hasil Pengukuran Digital Fault Locator / Distance Relay: {$calculatedDistanceM} m";
-            $formulaDerivation = "d = {$calculatedDistanceM} m (diperoleh langsung dari pembacaan relay numerik lapangan dengan sampling tegangan & arus simultan)";
+            $formulaDerivation = "d_relay = {$calculatedDistanceM} m (diperoleh langsung dari pembacaan relay numerik lapangan; {$topologyPathLengthLabel} = {$topologyPathLengthM} m)";
             $confidence = 92.0;
-            $explanation = "Penentuan lokasi menggunakan data jarak relay numerik ({$calculatedDistanceM}m) yang ditelusuri sepanjang graf transline tiang JTM.";
-        } else {
-            // Case B: Only scalar current magnitudes (IR, IS, IT, IN) are available.
-            // Rigorous Physics Evaluation:
-            // Scalar currents alone are physically insufficient to isolate source impedance, bus voltage sag,
-            // and contact resistance Rf (IEEE Std C37.114).
-            // Therefore, we strictly flag DATA_TIDAK_CUKUP.
-
+            $explanation = "Penentuan titik lokasi menggunakan jarak gangguan terukur relay numerik ({$calculatedDistanceM} m) yang ditelusuri sepanjang graf transline tiang JTM ke arah hilir dari {$anchorDesc}.";
+        } elseif (!$traversedConductor['is_available'] && $explicitCatalogKey === null) {
+            // Traversed path has no conductor data and no relay distance was provided
+            $calculationStatus = 'DATA_TIDAK_CUKUP';
+            $dasarPerhitungan = 'KONDUKTOR_JALUR_BELUM_TERSEDIA';
+            $dasarPerhitunganLabel = 'DATA TIDAK CUKUP: Data jenis/ukuran konduktor pada jalur transline belum tersedia';
+            $formulaDerivation = "Perhitungan impedansi saluran membutuhkan parameter R1 dan X1 konduktor, namun segmen transline pada jalur hilir penyulang [{$penyulangNama}] belum memiliki data konduktor. Sistem tidak menebak konduktor secara diam-diam.";
             $missingParameters = [
-                'Fasor tegangan bus saat gangguan (V_bus / kV) — Tegangan aktual bus GI turun saat gangguan dan tidak setara 20 kV nominal',
-                'Sudut fasa arus terhadap tegangan (Power Factor / cos phi) dari DFR atau relay numerik',
-                'Kapasitas hubung-singkat GI dan impedansi sumber (MVA_sc / Z_source) — Belum tercatat di database master_gi/penyulang',
-                'Nilai reaktansi murni loop relay (X_loop) untuk mengeliminasi resistansi kontak gangguan (Rf)',
-                'Konfigurasi spesifikasi tahanan pentanahan NGR GI terkait (40 Ohm vs 12 Ohm vs Solid Grounding)'
+                'Atribut jenis dan ukuran konduktor (conductor_type / conductor_size) pada gis_translines jalur terpilih masih kosong (Belum tersedia)',
+                'Jarak gangguan terukur relay numerik (opsional bila konduktor belum tersedia)',
             ];
+            $calculatedDistanceM = 0.0;
+            $confidence = 0.0;
+            $explanation = "Data konduktor pada jalur transline hasil penelusuran belum tersedia. {$topologyPathLengthLabel} tercatat {$topologyPathLengthM} m, namun jarak titik gangguan tidak dihitung tanpa data konduktor atau jarak terukur relay.";
+        } else {
+            // Case B: No numeric relay distance entered; evaluate based on electrical physics
+            $missingParameters = [
+                'Jarak gangguan terukur relay numerik / DFR (belum diisi — opsional)',
+                'Sudut fasa arus terhadap tegangan (Power Factor / cos phi) dan reaktansi murni loop relay (X_loop)',
+                'Kapasitas hubung-singkat GI dan impedansi sumber (MVA_sc / Z_source) — Belum tercatat di database master_gi/penyulang',
+                'Konfigurasi spesifikasi tahanan pentanahan NGR GI terkait (40 Ohm vs 12 Ohm vs Solid Grounding)',
+            ];
+            if ($voltageR === null || $voltageS === null || $voltageT === null) {
+                array_unshift($missingParameters, 'Tegangan per fasa lengkap (VR, VS, VT dalam kV) saat gangguan');
+            }
 
             $calculationStatus = 'DATA_TIDAK_CUKUP';
-            $confidence = 35.0; // Honest, low confidence reflecting physical limitation
+            $confidence = 35.0;
 
             if ($faultType === '3_PHASE' && $iSc > 10.0) {
-                // Symmetrical 3-Phase:
-                // Solve complex quadratic: |(Rs + r1*d) + j*(Xs + x1*d)| = V_LN / I_sc
-                // (r1^2 + x1^2)*d^2 + 2*(Rs*r1 + Xs*x1)*d + (Rs^2 + Xs^2 - Z_loop^2) = 0
                 $zLoop = $V_LN / $iSc;
-                $A = $r1PerKm ** 2 + $x1PerKm ** 2; // |Z1|^2
+                $A = $r1PerKm ** 2 + $x1PerKm ** 2;
                 $B = 2.0 * ($R_source * $r1PerKm + $X_source * $x1PerKm);
                 $C = ($R_source ** 2 + $X_source ** 2) - ($zLoop ** 2);
                 $disc = $B ** 2 - 4.0 * $A * $C;
@@ -667,11 +1510,9 @@ class FaultLocatorWorkspaceService
                     . "|(R_s + r1*d) + j(X_s + x1*d)| = Z_loop\n"
                     . "A = r1² + x1² = " . round($A, 4) . "; B = 2(Rs*r1 + Xs*x1) = " . round($B, 4) . "; C = Zs² - Zloop² = " . round($C, 4) . "\n"
                     . "d_teoritis = (-B + √(B² - 4AC)) / 2A = " . round($dKm, 3) . " km ({$calculatedDistanceM} m)\n"
-                    . "[PERINGATAN: Nilai di atas adalah estimasi teoritis ideal tanpa tahanan busur/kontak dan mengasumsikan tegangan bus tidak drop]";
-                $explanation = "Data telemetri hanya menyediakan besaran arus skalar (" . number_format($iSc, 0) . "A). Tanpa rekaman fasor tegangan bus dan kapasitas MVA gardu induk, jarak pasti secara fisika tidak dapat ditentukan. Jarak {$calculatedDistanceM}m merupakan ESTIMASI TOPOLOGI KANDIDAT.";
+                    . "[PERINGATAN: Nilai di atas adalah simulasi teoritis ideal (bukan jarak terukur relay); {$topologyPathLengthLabel}: {$topologyPathLengthM} m]";
+                $explanation = "Data telemetri belum menyertakan jarak terukur relay numerik. Jarak simulasi teoritis {$calculatedDistanceM} m ditelusuri pada jalur hilir (panjang jalur topologi ke ujung feeder: {$topologyPathLengthM} m).";
             } elseif ($faultType === '2_PHASE' && $iSc > 10.0) {
-                // Phase-to-Phase 2-PH:
-                // Solve complex quadratic: |(Rs + r1*d) + j*(Xs + x1*d)| = V_LL / (2 * I_sc)
                 $zLoop = $V_LL / (2.0 * $iSc);
                 $A = $r1PerKm ** 2 + $x1PerKm ** 2;
                 $B = 2.0 * ($R_source * $r1PerKm + $X_source * $x1PerKm);
@@ -689,19 +1530,18 @@ class FaultLocatorWorkspaceService
                 $formulaDerivation = "Persamaan Kuadrat Impedansi Loop Fasa-ke-Fasa:\n"
                     . "Z_loop = V_LL / (2 * I_sc) = 20,000 V / (2 * {$iSc} A) = " . round($zLoop, 3) . " Ω\n"
                     . "d_teoritis = (-B + √(B² - 4AC)) / 2A = " . round($dKm, 3) . " km ({$calculatedDistanceM} m)\n"
-                    . "[PERINGATAN: Mengabaikan tahanan busur kontak antar konduktor]";
-                $explanation = "Gangguan antar fasa dengan arus " . number_format($iSc, 0) . "A. Karena parameter tegangan drop dan impedansi sumber tidak tercatat di database, hasil di bawah merupakan ESTIMASI TOPOLOGI KANDIDAT.";
+                    . "[PERINGATAN: Mengabaikan tahanan busur kontak antar konduktor; {$topologyPathLengthLabel}: {$topologyPathLengthM} m]";
+                $explanation = "Gangguan antar fasa dengan arus " . number_format($iSc, 0) . " A tanpa input jarak terukur relay. Jarak simulasi teoritis {$calculatedDistanceM} m merupakan estimasi kandidat ({$topologyPathLengthLabel}: {$topologyPathLengthM} m).";
             } elseif ($faultType === '1_PHASE_GROUND' || $faultType === '2_PHASE_GROUND') {
-                // Ground Fault:
-                // In resistance-grounded systems, I_f = 3*V_LN / (2*Z1 + Z0 + 3*RN + 3*Rf).
-                // Without X_fault from distance relay, NGR and touch resistance Rf completely dominate.
+                // Ground Fault: Do NOT fabricate a fake 1200.0 m distance when relay distance is not provided!
                 $dasarPerhitungan = 'NGR_GROUND_FAULT_INDETERMINATE';
                 $dasarPerhitunganLabel = 'DATA TIDAK CUKUP: Arus gangguan tanah didominasi NGR dan Rf, bukan panjang konduktor';
                 $formulaDerivation = "I_f = 3*V_LN / (2*Z1 + Z0 + 3*RN + 3*Rf).\n"
                     . "Tahanan NGR (3*RN ≈ 120 Ω bila NGR 40Ω, atau 36 Ω bila NGR 12Ω) dan tahanan sentuh pohon/tanah (Rf = 5 - 200 Ω) mendominasi total impedansi dibandingkan impedansi kawat (2*Z1 + Z0 ≈ 1-15 Ω).\n"
-                    . "Secara fisika, jarak TIDAK DAPAT dihitung dari besaran arus tanah semata tanpa reaktansi murni X dari relay numerik.";
-                $explanation = "Pada sistem distribusi ber-tahanan netral, arus gangguan fasa-ke-tanah dibatasi oleh NGR dan tahanan sentuh kontak (Rf). Besaran arus tidak memiliki korelasi linier dengan jarak fisik.";
-                $calculatedDistanceM = 1200.0; // Topological exploration fallback distance
+                    . "Secara fisika, jarak titik gangguan TIDAK DAPAT dihitung dari besaran arus/tegangan fasa semata tanpa jarak/reaktansi X dari relay numerik.\n"
+                    . "{$topologyPathLengthLabel}: {$topologyPathLengthM} m.";
+                $explanation = "Terdeteksi {$faultClass['fault_type_label']}. Pada sistem distribusi ber-tahanan netral (NGR), jarak gangguan tanah tidak dapat dihitung tanpa pembacaan jarak relay numerik. {$topologyPathLengthLabel} adalah {$topologyPathLengthM} m (bukan jarak terukur relay).";
+                $calculatedDistanceM = 0.0;
             } else {
                 $calculationStatus = 'UNRESOLVED';
                 $dasarPerhitungan = 'ARUS_TIDAK_MENCAPAI_AMBANG';
@@ -712,88 +1552,46 @@ class FaultLocatorWorkspaceService
             }
         }
 
-        // 6. Traverse Real JTM Pole Translines Downstream with Honest Branching (T-Off) Detection
-        // ($assetMap and $adj are already strictly built for $penyulangId above)
-        $poleSequence = [];
-        $visitedEdges = [];
-        $totalSpanMeters = 0.0;
+        // 8. Identify Fault Zone Segment(s) along the Traversed Downstream Path when $calculatedDistanceM > 0
         $matchingFaultSegments = [];
         $branchAmbiguityDetected = false;
         $branchingJunctionPoles = [];
 
-        if ($anchorPoleId > 0 && isset($adj[$anchorPoleId])) {
-            // Queue format: [poleId, cumulativeDistanceMeters]
-            $queue = [[$anchorPoleId, 0.0]];
-            $visitedPoles = [$anchorPoleId => 0.0];
-
-            $seqNo = 1;
-            while (!empty($queue)) {
-                [$currPoleId, $currCum] = array_shift($queue);
-
-                if (!isset($adj[$currPoleId])) continue;
-
-                $unvisitedOutEdges = [];
-                foreach ($adj[$currPoleId] as $edge) {
-                    $nextPoleId = $edge['target'];
-                    $edgeKey = min($currPoleId, $nextPoleId) . '-' . max($currPoleId, $nextPoleId);
-                    if (!isset($visitedEdges[$edgeKey])) {
-                        $unvisitedOutEdges[] = $edge;
-                    }
-                }
-
-                // Tee-Off (Branching) detection: out-degree > 1 from current pole
-                if (count($unvisitedOutEdges) > 1 && $currCum < $calculatedDistanceM) {
-                    $branchAmbiguityDetected = true;
-                    $branchingJunctionPoles[] = $assetMap[$currPoleId]['kode_asset'] ?? "T-{$currPoleId}";
-                }
-
-                foreach ($unvisitedOutEdges as $edge) {
-                    $nextPoleId = $edge['target'];
-                    $edgeKey = min($currPoleId, $nextPoleId) . '-' . max($currPoleId, $nextPoleId);
-                    $visitedEdges[$edgeKey] = true;
-
-                    $spanDist = round((float)$edge['dist'], 1);
-                    $nextCum = round($currCum + $spanDist, 1);
-                    $totalSpanMeters += $spanDist;
-
-                    $fromPoleAsset = $assetMap[$currPoleId] ?? ['id' => $currPoleId, 'kode_asset' => "T-{$currPoleId}", 'nama_asset' => "Tiang #{$currPoleId}"];
-                    $toPoleAsset   = $assetMap[$nextPoleId] ?? ['id' => $nextPoleId, 'kode_asset' => "T-{$nextPoleId}", 'nama_asset' => "Tiang #{$nextPoleId}"];
-
-                    $isZone = false;
-                    if ($calculatedDistanceM > 0 && $calculatedDistanceM >= $currCum && $calculatedDistanceM <= $nextCum) {
-                        $isZone = true;
-                    }
-
-                    $seqItem = [
-                        'seq_no'            => $seqNo++,
-                        'from_pole_id'      => $currPoleId,
-                        'from_pole_kode'    => $fromPoleAsset['kode_asset'] ?? "T-{$currPoleId}",
-                        'from_pole_nama'    => $fromPoleAsset['nama_asset'] ?? $fromPoleAsset['kode_asset'],
-                        'to_pole_id'        => $nextPoleId,
-                        'to_pole_kode'      => $toPoleAsset['kode_asset'] ?? "T-{$nextPoleId}",
-                        'to_pole_nama'      => $toPoleAsset['nama_asset'] ?? $toPoleAsset['kode_asset'],
-                        'span_meters'       => $spanDist,
-                        'cumulative_meters' => $nextCum,
-                        'cum_start_meters'  => $currCum,
-                        'conductor_type'    => $edge['tl']['conductor_type'] ?? $condParams['type'],
-                        'conductor_size'    => $edge['tl']['conductor_size'] ?? $condParams['size'],
-                        'is_fault_zone'     => $isZone,
-                        'from_coords'       => ['lat' => (float)($fromPoleAsset['latitude'] ?? 0), 'lng' => (float)($fromPoleAsset['longitude'] ?? 0)],
-                        'to_coords'         => ['lat' => (float)($toPoleAsset['latitude'] ?? 0), 'lng' => (float)($toPoleAsset['longitude'] ?? 0)],
-                    ];
-
-                    $poleSequence[] = $seqItem;
-
-                    if ($isZone) {
-                        $matchingFaultSegments[] = $seqItem;
-                    }
-
-                    if (!isset($visitedPoles[$nextPoleId])) {
-                        $visitedPoles[$nextPoleId] = $nextCum;
-                        $queue[] = [$nextPoleId, $nextCum];
-                    }
+        if ($calculatedDistanceM > 0 && !empty($poleSequence)) {
+            foreach ($outDegreeByPole as $degInfo) {
+                if ($degInfo['deg'] > 1 && $degInfo['cum_m'] < $calculatedDistanceM) {
+                    $branchingJunctionPoles[] = $degInfo['kode'];
                 }
             }
+
+            foreach ($poleSequence as $idx => $seqItem) {
+                if ($calculatedDistanceM >= $seqItem['cum_start_meters'] && $calculatedDistanceM <= $seqItem['cumulative_meters']) {
+                    $poleSequence[$idx]['is_fault_zone'] = true;
+                    $matchingFaultSegments[] = $poleSequence[$idx];
+                }
+            }
+        }
+
+        // Deduplicate colocated parallel matching segments (within 35m of each other)
+        if (count($matchingFaultSegments) > 1) {
+            $distinctMatches = [];
+            foreach ($matchingFaultSegments as $candSeg) {
+                $isColocated = false;
+                foreach ($distinctMatches as $existingSeg) {
+                    $dEnd = $this->haversineDistance(
+                        (float)$candSeg['to_coords']['lat'], (float)$candSeg['to_coords']['lng'],
+                        (float)$existingSeg['to_coords']['lat'], (float)$existingSeg['to_coords']['lng']
+                    );
+                    if ($dEnd <= 35.0) {
+                        $isColocated = true;
+                        break;
+                    }
+                }
+                if (!$isColocated) {
+                    $distinctMatches[] = $candSeg;
+                }
+            }
+            $matchingFaultSegments = $distinctMatches;
         }
 
         // Branching Ambiguity Resolution
@@ -801,11 +1599,11 @@ class FaultLocatorWorkspaceService
         $candidatePoles = [];
 
         if ($calculatedDistanceM > 0 && count($matchingFaultSegments) > 1) {
-            // Multiple branches reach this distance: genuinely ambiguous
+            $branchAmbiguityDetected = true;
             $calculationStatus = ($calculationStatus === 'DATA_TIDAK_CUKUP') ? 'DATA_TIDAK_CUKUP' : 'DISTANCE_AMBIGUOUS';
-            $branchJunctionStr = implode(', ', array_unique($branchingJunctionPoles));
-            $explanation .= " Terdeteksi " . count($matchingFaultSegments) . " percabangan lateral (T-Off) pada tiang {$branchJunctionStr} yang sama-sama menjangkau jarak " . number_format($calculatedDistanceM, 0) . "m. Diperlukan inspeksi patroli pada kedua cabang.";
-            $faultZoneSegment = $matchingFaultSegments[0]; // primary representation
+            $branchJunctionStr = implode(', ', array_slice(array_unique($branchingJunctionPoles), 0, 5));
+            $explanation .= " Terdeteksi " . count($matchingFaultSegments) . " percabangan hilir (T-Off" . ($branchJunctionStr ? " via {$branchJunctionStr}" : '') . ") yang sama-sama menjangkau jarak " . number_format($calculatedDistanceM, 0) . "m dari titik acuan. Diperlukan inspeksi patroli pada cabang kandidat.";
+            $faultZoneSegment = $matchingFaultSegments[0];
             foreach ($matchingFaultSegments as $ms) {
                 if (isset($assetMap[$ms['from_pole_id']])) $candidatePoles[] = $assetMap[$ms['from_pole_id']];
                 if (isset($assetMap[$ms['to_pole_id']])) $candidatePoles[] = $assetMap[$ms['to_pole_id']];
@@ -814,10 +1612,9 @@ class FaultLocatorWorkspaceService
             $faultZoneSegment = $matchingFaultSegments[0];
             $candidatePoles = [
                 $assetMap[$faultZoneSegment['from_pole_id']] ?? null,
-                $assetMap[$faultZoneSegment['to_pole_id']] ?? null
+                $assetMap[$faultZoneSegment['to_pole_id']] ?? null,
             ];
         } elseif ($calculatedDistanceM > 0 && !empty($poleSequence)) {
-            // Beyond reach: pick the closest terminal segment
             $minDelta = PHP_FLOAT_MAX;
             foreach ($poleSequence as $seq) {
                 $delta = abs($seq['cumulative_meters'] - $calculatedDistanceM);
@@ -827,11 +1624,41 @@ class FaultLocatorWorkspaceService
                 }
             }
             if ($faultZoneSegment) {
+                $poleSequence[$faultZoneSegment['seq_idx']]['is_fault_zone'] = true;
+                $faultZoneSegment['is_fault_zone'] = true;
+                $matchingFaultSegments = [$faultZoneSegment];
                 $candidatePoles = [
                     $assetMap[$faultZoneSegment['from_pole_id']] ?? null,
-                    $assetMap[$faultZoneSegment['to_pole_id']] ?? null
+                    $assetMap[$faultZoneSegment['to_pole_id']] ?? null,
                 ];
             }
+        }
+
+        // Trace back the contiguous path from Anchor Pole (0.0m) to Fault Zone Segment(s),
+        // or to the farthest downstream terminal pole when no specific fault distance was measured ($calculatedDistanceM == 0)
+        $faultPathSequence = [];
+        $segmentsToTrace = !empty($matchingFaultSegments)
+            ? $matchingFaultSegments
+            : ($faultZoneSegment ? [$faultZoneSegment] : ($farthestDownstreamSeqIdx !== null && isset($poleSequence[$farthestDownstreamSeqIdx]) ? [$poleSequence[$farthestDownstreamSeqIdx]] : []));
+        $primaryPathIndices = [];
+        foreach ($segmentsToTrace as $tIdx => $mSeg) {
+            $walkIdx = $mSeg['seq_idx'] ?? null;
+            $guard = 0;
+            while ($walkIdx !== null && isset($poleSequence[$walkIdx]) && $guard < 2000) {
+                $poleSequence[$walkIdx]['is_on_fault_path'] = true;
+                if ($tIdx === 0) {
+                    $primaryPathIndices[] = $walkIdx;
+                }
+                $walkIdx = $poleSequence[$walkIdx]['parent_seq_idx'];
+                $guard++;
+            }
+        }
+        $primaryPathIndices = array_reverse($primaryPathIndices);
+        foreach ($primaryPathIndices as $pIdx) {
+            $faultPathSequence[] = $poleSequence[$pIdx];
+        }
+        if ($faultZoneSegment && isset($poleSequence[$faultZoneSegment['seq_idx']])) {
+            $faultZoneSegment = $poleSequence[$faultZoneSegment['seq_idx']];
         }
 
         $candidatePoles = array_values(array_filter($candidatePoles));
@@ -860,8 +1687,7 @@ class FaultLocatorWorkspaceService
             ];
         }
 
-        // 7. Spatial Coordinates Interpolation on the Identified Transline Segment
-        // Never fall back to hardcoded coordinates from another feeder!
+        // 9. Spatial Coordinates Interpolation on the Identified Transline Segment
         $faultPointGeom = null;
         if (!empty($candidateAssetList) && $faultZoneSegment && !empty($faultZoneSegment['from_coords']['lat']) && !empty($faultZoneSegment['to_coords']['lat'])) {
             $span = max(1.0, (float)$faultZoneSegment['span_meters']);
@@ -900,18 +1726,27 @@ class FaultLocatorWorkspaceService
 
         // Case UUID & Fingerprint
         $inputData = [
-            'feeder_id'    => $penyulangId,
-            'source_type'  => $sourceType,
-            'current_r'    => $currentR,
-            'current_s'    => $currentS,
-            'current_t'    => $currentT,
-            'current_n'    => $currentN,
-            'fault_time'   => $faultTimestamp,
-            'conductor'    => $conductorKey,
+            'feeder_id'                 => $penyulangId,
+            'source_type'               => $sourceType,
+            'protection_id'             => $protectionId,
+            'current_r'                 => $currentR,
+            'current_s'                 => $currentS,
+            'current_t'                 => $currentT,
+            'current_n'                 => $currentN,
+            'voltage_r_kv'              => $voltageR,
+            'voltage_s_kv'              => $voltageS,
+            'voltage_t_kv'              => $voltageT,
+            'relay_measured_distance_m' => $relayDistanceIn,
+            'fault_time'                => $faultTimestamp,
+            'conductor'                 => $conductorDisplayKey,
         ];
         ksort($inputData);
         $inputFingerprint = hash('sha256', json_encode($inputData, JSON_UNESCAPED_SLASHES));
         $caseUuid = 'FLI-CASE-' . date('Ymd') . '-' . strtoupper(substr($inputFingerprint, 0, 8));
+
+        $sourceLabelShort = $sourceType === 'PROTECTION'
+            ? ($sourceDeviceAsset ? ($sourceDeviceAsset['nama_asset'] ?: $sourceDeviceAsset['kode_asset']) : 'Peralatan Proteksi')
+            : 'GI Pangkal (' . ($anchorPole['kode_asset'] ?? $penyulangNama) . ')';
 
         return [
             'case_uuid'                 => $caseUuid,
@@ -922,47 +1757,83 @@ class FaultLocatorWorkspaceService
             'feeder_code'               => $penyulangKode,
             'feeder_name'               => $penyulangNama,
             'source_type'               => $sourceType,
+            'protection_device_id'      => $sourceType === 'PROTECTION' ? $protectionId : null,
+            'telemetry_input'           => $parsedTel,
+            'source_context'            => [
+                'source_type'               => $sourceType,
+                'direction_mode'            => 'DOWNSTREAM_TO_FEEDER_END',
+                'source_label'              => $sourceLabelShort,
+                'protection_device'         => $sourceDeviceAsset ? [
+                    'id'          => (int)$sourceDeviceAsset['id'],
+                    'kode_asset'  => $sourceDeviceAsset['kode_asset'],
+                    'nama_asset'  => $sourceDeviceAsset['nama_asset'],
+                    'jenis_asset' => $sourceDeviceAsset['jenis_asset'],
+                    'latitude'    => (float)($sourceDeviceAsset['latitude'] ?? 0),
+                    'longitude'   => (float)($sourceDeviceAsset['longitude'] ?? 0),
+                ] : null,
+                'mounting_relationship'     => $anchorRelType,
+                'anchor_offset_meters'      => $anchorOffsetMeters,
+                'gi_root_pole'              => $giRootPole ? [
+                    'id'         => (int)$giRootPole['id'],
+                    'kode_asset' => $giRootPole['kode_asset'],
+                    'nama_asset' => $giRootPole['nama_asset'],
+                    'latitude'   => (float)$giRootPole['latitude'],
+                    'longitude'  => (float)$giRootPole['longitude'],
+                ] : null,
+                'downstream_end_pole'       => $downstreamEndPole,
+                'distance_from_gi_meters'   => $anchorDistFromGiM,
+                'upstream_blocked_nodes'    => count($blockedUpstreamNodes),
+                'constraint_error'          => $protectionResolutionError,
+            ],
             'anchor_description'        => $anchorDesc,
             'anchor_pole'               => $anchorPole ? [
-                'id'         => $anchorPole['id'],
+                'id'         => (int)$anchorPole['id'],
                 'kode_asset' => $anchorPole['kode_asset'],
                 'nama_asset' => $anchorPole['nama_asset'],
                 'latitude'   => (float)$anchorPole['latitude'],
                 'longitude'  => (float)$anchorPole['longitude'],
             ] : null,
             'fault_classification'      => $faultClass,
+            'traversed_conductor'       => $traversedConductor,
             'electrical_parameters'     => [
                 'system_voltage_ll_kv'  => 20.0,
                 'system_voltage_ln_kv'  => round($V_LN / 1000.0, 3),
                 'r_source_ohm'          => $R_source,
                 'x_source_ohm'          => $X_source,
                 'z_source_mag_ohm'      => round($Z_source_mag, 3),
-                'conductor_type'        => $conductorKey,
+                'conductor_type'        => $conductorDisplayKey,
+                'conductor_status'      => $traversedConductor['status'],
+                'conductor_display'     => $traversedConductor['display_label'],
                 'r1_ohm_km'             => $r1PerKm,
                 'x1_ohm_km'             => $x1PerKm,
                 'z1_ohm_km'             => $z1PerKm,
             ],
-            'calculation_status'        => $calculationStatus,
-            'outcome_status'            => $calculationStatus,
-            'dasar_perhitungan'         => $dasarPerhitungan,
-            'dasar_perhitungan_label'   => $dasarPerhitunganLabel,
-            'formula_derivation'        => $formulaDerivation,
-            'missing_parameters'        => $missingParameters,
-            'calculated_distance_m'     => $calculatedDistanceM,
-            'relay_distance_m'          => $calculatedDistanceM,
-            'feeder_span_meters'        => round($totalSpanMeters, 1),
-            'confidence_percent'        => $confidence,
-            'pole_sequence'             => $poleSequence,
-            'fault_zone_segment'        => $faultZoneSegment,
-            'matching_fault_segments'   => $matchingFaultSegments,
-            'branch_ambiguity'          => count($matchingFaultSegments) > 1,
-            'candidate_assets'          => $candidateAssetList,
-            'transline_segment'         => $faultZoneSegment ? "TL-{$penyulangKode}-P{$faultZoneSegment['seq_no']}" : "TL-{$penyulangKode}-MAIN",
-            'fault_point'               => $faultPointGeom,
-            'explanation'               => $explanation,
-            'gis_url'                   => $gisUrl,
-            'input_fingerprint'         => $inputFingerprint,
-            'keterbatasan_telemetri'    => 'Berdasarkan kaidah IEEE C37.114, masukan arus skalar semata tanpa fasor tegangan V, reaktansi X, dan MVA bus GI tidak dapat menghasilkan jarak impedansi presisi tinggi.',
+            'calculation_status'         => $calculationStatus,
+            'outcome_status'             => $calculationStatus,
+            'dasar_perhitungan'          => $dasarPerhitungan,
+            'dasar_perhitungan_label'    => $dasarPerhitunganLabel,
+            'formula_derivation'         => $formulaDerivation,
+            'missing_parameters'         => $missingParameters,
+            'calculated_distance_m'      => $calculatedDistanceM,
+            'relay_measured_distance_m'  => $relayDistanceIn,
+            'relay_distance_m'           => $relayDistanceIn,
+            'topology_path_length_m'     => $topologyPathLengthM,
+            'topology_path_length_label' => $topologyPathLengthLabel,
+            'feeder_span_meters'         => round($totalSpanMeters, 1),
+            'confidence_percent'         => $confidence,
+            'pole_sequence'              => $poleSequence,
+            'fault_path_sequence'        => $faultPathSequence,
+            'upstream_segments'          => $upstreamSegments,
+            'fault_zone_segment'         => $faultZoneSegment,
+            'matching_fault_segments'    => $matchingFaultSegments,
+            'branch_ambiguity'           => $branchAmbiguityDetected,
+            'candidate_assets'           => $candidateAssetList,
+            'transline_segment'          => $faultZoneSegment ? "TL-{$penyulangKode}-P{$faultZoneSegment['seq_no']}" : "TL-{$penyulangKode}-MAIN",
+            'fault_point'                => $faultPointGeom,
+            'explanation'                => $explanation,
+            'gis_url'                    => $gisUrl,
+            'input_fingerprint'          => $inputFingerprint,
+            'keterbatasan_telemetri'     => 'Berdasarkan kaidah IEEE C37.114, masukan arus/tegangan skalar semata tanpa reaktansi loop X dari relay numerik dan MVA bus GI tidak dapat menghasilkan jarak impedansi presisi tinggi.',
         ];
     }
 
@@ -993,18 +1864,60 @@ class FaultLocatorWorkspaceService
     {
         $caseUuid = $resultData['case_uuid'] ?? ('FLI-CASE-' . date('Ymd') . '-' . substr(md5(microtime()), 0, 6));
         $now = date('Y-m-d H:i:s');
-        $actorUsername = $actor['username'] ?? $actor['name'] ?? 'OPERATOR';
+        $actorUserId = (isset($actor['id']) && is_numeric($actor['id']) && (int)$actor['id'] > 0) ? (int)$actor['id'] : null;
 
         // Check if case already exists
         $existing = $this->db->table('fault_cases')->where('case_number', $caseUuid)->get()->getRowArray();
         if ($existing) {
             return [
-                'status'  => 'success',
-                'case_id' => (int)$existing['id'],
+                'status'      => 'success',
+                'case_id'     => (int)$existing['id'],
                 'case_number' => $existing['case_number'],
-                'message' => 'Kasus gangguan sudah tersimpan sebelumnya.'
+                'message'     => 'Kasus gangguan sudah tersimpan sebelumnya.'
             ];
         }
+
+        $fc  = $resultData['fault_classification'] ?? [];
+        $tel = $resultData['telemetry_input'] ?? [];
+
+        $extractNullableFloat = static function ($val): ?float {
+            if ($val === null || $val === '') {
+                return null;
+            }
+            if (is_string($val)) {
+                $val = str_replace(',', '.', trim($val));
+                if ($val === '') {
+                    return null;
+                }
+            }
+            return is_numeric($val) ? round((float)$val, 2) : null;
+        };
+
+        $currentR = isset($fc['current_r']) ? (float)$fc['current_r'] : (float)($resultData['current_r'] ?? $tel['current_r'] ?? 0.0);
+        $currentS = isset($fc['current_s']) ? (float)$fc['current_s'] : (float)($resultData['current_s'] ?? $tel['current_s'] ?? 0.0);
+        $currentT = isset($fc['current_t']) ? (float)$fc['current_t'] : (float)($resultData['current_t'] ?? $tel['current_t'] ?? 0.0);
+        $currentN = isset($fc['current_n']) ? (float)$fc['current_n'] : (float)($resultData['current_n'] ?? $tel['current_n'] ?? 0.0);
+
+        $voltageR = $extractNullableFloat($fc['voltage_r_kv'] ?? $resultData['voltage_r_kv'] ?? $tel['voltage_r_kv'] ?? null);
+        $voltageS = $extractNullableFloat($fc['voltage_s_kv'] ?? $resultData['voltage_s_kv'] ?? $tel['voltage_s_kv'] ?? null);
+        $voltageT = $extractNullableFloat($fc['voltage_t_kv'] ?? $resultData['voltage_t_kv'] ?? $tel['voltage_t_kv'] ?? null);
+
+        $topologyPathLengthM    = $extractNullableFloat($resultData['topology_path_length_m'] ?? null);
+        $relayMeasuredDistanceM = $extractNullableFloat($resultData['relay_measured_distance_m'] ?? null);
+
+        // Ensure fault_classification inside telemetry_payload_json also preserves currents & phase voltages
+        if (!isset($resultData['fault_classification']) || !is_array($resultData['fault_classification'])) {
+            $resultData['fault_classification'] = [];
+        }
+        $resultData['fault_classification']['current_r']    = $currentR;
+        $resultData['fault_classification']['current_s']    = $currentS;
+        $resultData['fault_classification']['current_t']    = $currentT;
+        $resultData['fault_classification']['current_n']    = $currentN;
+        $resultData['fault_classification']['voltage_r_kv'] = $voltageR;
+        $resultData['fault_classification']['voltage_s_kv'] = $voltageS;
+        $resultData['fault_classification']['voltage_t_kv'] = $voltageT;
+        $resultData['topology_path_length_m']               = $topologyPathLengthM;
+        $resultData['relay_measured_distance_m']            = $relayMeasuredDistanceM;
 
         // Link or create fault_event
         $eventId = !empty($resultData['fault_event_id']) ? (int)$resultData['fault_event_id'] : null;
@@ -1032,35 +1945,45 @@ class FaultLocatorWorkspaceService
         }
 
         $insertData = [
-            'case_number'               => $caseUuid,
-            'fault_event_id'            => $eventId,
-            'ulp_id'                    => !empty($resultData['ulp_id']) ? (int)$resultData['ulp_id'] : null,
-            'penyulang_id'              => (int)($resultData['feeder_id'] ?? 1),
-            'source_type'               => $resultData['source_type'] ?? 'GI',
-            'analysis_version'          => $resultData['engine_version'] ?? $this->engineVersion,
-            'analysis_input_hash'       => $resultData['input_fingerprint'] ?? hash('sha256', $caseUuid),
-            'device_asset_id'           => !empty($resultData['anchor_pole']['id']) ? (int)$resultData['anchor_pole']['id'] : null,
-            'target_distance_meters'    => (float)($resultData['calculated_distance_m'] ?? 0),
-            'fault_type'                => $resultData['fault_classification']['fault_type'] ?? 'UNKNOWN',
-            'current_r'                 => (float)($resultData['fault_classification']['current_r'] ?? 0),
-            'current_s'                 => (float)($resultData['fault_classification']['current_s'] ?? 0),
-            'current_t'                 => (float)($resultData['fault_classification']['current_t'] ?? 0),
-            'current_n'                 => (float)($resultData['fault_classification']['current_n'] ?? 0),
-            'conductor_type'            => $resultData['electrical_parameters']['conductor_type'] ?? 'AAAC 150 mm²',
-            'formula_version'           => $resultData['engine_version'] ?? $this->engineVersion,
-            'missing_parameters_json'   => json_encode($resultData['missing_parameters'] ?? []),
-            'telemetry_payload_json'    => json_encode($resultData),
-            'estimated_lat'             => !empty($resultData['fault_point']['lat']) ? (float)$resultData['fault_point']['lat'] : null,
-            'estimated_lng'             => !empty($resultData['fault_point']['lng']) ? (float)$resultData['fault_point']['lng'] : null,
-            'top_candidate_asset_id'    => $topCandId,
-            'top_confidence_score'      => (float)($resultData['confidence_percent'] ?? 0),
-            'status'                    => 'OPEN',
-            'follow_up_status'          => 'MENUNGGU_PEMERIKSAAN',
-            'created_by'                => $actorUsername,
-            'analysis_timestamp'        => $now,
-            'created_at'                => $now,
-            'updated_at'                => $now,
+            'case_number'             => $caseUuid,
+            'fault_event_id'          => $eventId,
+            'ulp_id'                  => !empty($resultData['ulp_id']) ? (int)$resultData['ulp_id'] : null,
+            'penyulang_id'            => (int)($resultData['feeder_id'] ?? 1),
+            'source_type'             => $resultData['source_type'] ?? 'GI',
+            'analysis_version'        => $resultData['engine_version'] ?? $this->engineVersion,
+            'analysis_input_hash'     => $resultData['input_fingerprint'] ?? hash('sha256', $caseUuid),
+            'device_asset_id'         => !empty($resultData['anchor_pole']['id']) ? (int)$resultData['anchor_pole']['id'] : null,
+            'target_distance_meters'  => (float)($resultData['calculated_distance_m'] ?? 0),
+            'fault_type'              => $resultData['fault_classification']['fault_type'] ?? 'UNKNOWN',
+            'current_r'               => $currentR,
+            'current_s'               => $currentS,
+            'current_t'               => $currentT,
+            'current_n'               => $currentN,
+            'conductor_type'          => $resultData['electrical_parameters']['conductor_type'] ?? ($resultData['traversed_conductor']['official_type'] ?? 'Belum tersedia'),
+            'formula_version'         => $resultData['engine_version'] ?? $this->engineVersion,
+            'missing_parameters_json' => json_encode($resultData['missing_parameters'] ?? []),
+            'telemetry_payload_json'  => json_encode($resultData),
+            'estimated_lat'           => !empty($resultData['fault_point']['lat']) ? (float)$resultData['fault_point']['lat'] : null,
+            'estimated_lng'           => !empty($resultData['fault_point']['lng']) ? (float)$resultData['fault_point']['lng'] : null,
+            'top_candidate_asset_id'  => $topCandId,
+            'top_confidence_score'    => (float)($resultData['confidence_percent'] ?? 0),
+            'status'                  => 'OPEN',
+            'follow_up_status'        => 'MENUNGGU_PEMERIKSAAN',
+            'created_by'              => $actorUserId,
+            'analysis_timestamp'      => $now,
+            'created_at'              => $now,
+            'updated_at'              => $now,
         ];
+
+        if ($this->db->fieldExists('voltage_r_kv', 'fault_cases')) {
+            $insertData['voltage_r_kv'] = $voltageR;
+            $insertData['voltage_s_kv'] = $voltageS;
+            $insertData['voltage_t_kv'] = $voltageT;
+        }
+        if ($this->db->fieldExists('topology_path_length_m', 'fault_cases')) {
+            $insertData['topology_path_length_m']    = $topologyPathLengthM;
+            $insertData['relay_measured_distance_m'] = $relayMeasuredDistanceM;
+        }
 
         $this->db->table('fault_cases')->insert($insertData);
         $caseId = (int)$this->db->insertID();
@@ -1195,6 +2118,42 @@ class FaultLocatorWorkspaceService
     }
 
     /**
+     * Normalize stored case telemetry fields (strictly distinguishing 0.00 kV from null)
+     */
+    protected function hydrateCaseTelemetryFields(array &$c): void
+    {
+        $payload = [];
+        if (!empty($c['telemetry_payload_json']) && is_string($c['telemetry_payload_json'])) {
+            $decoded = json_decode($c['telemetry_payload_json'], true);
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+        $fc = $payload['fault_classification'] ?? [];
+        $tel = $payload['telemetry_input'] ?? [];
+
+        $normalizeNullable = static function ($colVal, $fallbackVal = null): ?float {
+            if ($colVal !== null && $colVal !== '') {
+                return round((float)$colVal, 2);
+            }
+            if ($fallbackVal !== null && $fallbackVal !== '') {
+                return round((float)$fallbackVal, 2);
+            }
+            return null;
+        };
+
+        $c['voltage_r_kv'] = $normalizeNullable($c['voltage_r_kv'] ?? null, $fc['voltage_r_kv'] ?? $tel['voltage_r_kv'] ?? null);
+        $c['voltage_s_kv'] = $normalizeNullable($c['voltage_s_kv'] ?? null, $fc['voltage_s_kv'] ?? $tel['voltage_s_kv'] ?? null);
+        $c['voltage_t_kv'] = $normalizeNullable($c['voltage_t_kv'] ?? null, $fc['voltage_t_kv'] ?? $tel['voltage_t_kv'] ?? null);
+        $c['has_voltage_measurement'] = ($c['voltage_r_kv'] !== null || $c['voltage_s_kv'] !== null || $c['voltage_t_kv'] !== null);
+
+        $c['topology_path_length_m']    = $normalizeNullable($c['topology_path_length_m'] ?? null, $payload['topology_path_length_m'] ?? null);
+        $c['relay_measured_distance_m'] = $normalizeNullable($c['relay_measured_distance_m'] ?? null, $payload['relay_measured_distance_m'] ?? null);
+        $c['protection_device_id']      = !empty($payload['protection_device_id']) ? (int)$payload['protection_device_id'] : null;
+        $c['fault_type_label']          = $fc['fault_type_label'] ?? $c['fault_type'] ?? 'UNKNOWN';
+    }
+
+    /**
      * Get list of historical cases with linked findings and feeder metadata
      */
     public function getCaseHistory(?int $penyulangId = null, int $limit = 20): array
@@ -1231,6 +2190,8 @@ class FaultLocatorWorkspaceService
             $t = (float)($c['current_t'] ?? 0);
             $n = (float)($c['current_n'] ?? 0);
             $c['has_current_measurement'] = ($r > 0 || $s > 0 || $t > 0 || $n > 0);
+
+            $this->hydrateCaseTelemetryFields($c);
 
             // Fetch latest field finding
             $finding = $this->db->table('fault_actual_findings')
@@ -1315,10 +2276,10 @@ class FaultLocatorWorkspaceService
     }
 
     /**
-     * Reads official network topology & conductor context for a given feeder
-     * to eliminate manual input copying and provide authentic network parameters.
+     * Reads official network topology & conductor context for a given feeder and source (GI or PROTECTION)
+     * strictly from the traversed downstream path.
      */
-    public function getFeederNetworkContext(int $penyulangId): array
+    public function getFeederNetworkContext(int $penyulangId, string $sourceType = 'GI', int $protectionId = 0): array
     {
         if (!$this->db->tableExists('penyulang') || $penyulangId <= 0) {
             return ['status' => 'error', 'message' => 'Penyulang tidak valid.'];
@@ -1335,125 +2296,46 @@ class FaultLocatorWorkspaceService
             return ['status' => 'error', 'message' => 'Data penyulang tidak ditemukan.'];
         }
 
-        // 1. Conductor auto-resolution from translines or feeder metadata
-        $dominantConductor = 'AAAC 150 mm²';
-        $conductorSource = 'DEFAULT_STANDARD';
+        $sourceType = strtoupper(trim($sourceType ?: 'GI'));
 
-        if ($this->db->tableExists('gis_translines')) {
-            $condRow = $this->db->table('gis_translines')
-                ->select('conductor_type, conductor_size, COUNT(*) as cnt')
-                ->where('penyulang_id', $penyulangId)
-                ->where('deleted_at IS NULL')
-                ->where('conductor_type IS NOT NULL')
-                ->groupBy('conductor_type, conductor_size')
-                ->orderBy('cnt', 'DESC')
-                ->get()
-                ->getRowArray();
+        // Execute read-only downstream traversal from the selected source (GI or PROTECTION)
+        $traversalCtx = $this->locateFault([
+            'ulp_id'               => (int)($feeder['ulp_id'] ?? 0),
+            'feeder_id'            => $penyulangId,
+            'source_type'          => $sourceType,
+            'protection_device_id' => $protectionId,
+            'current_r'            => 0.0,
+            'current_s'            => 0.0,
+            'current_t'            => 0.0,
+            'current_n'            => 0.0,
+        ]);
 
-            if ($condRow && !empty($condRow['conductor_type'])) {
-                $rawType = strtoupper(trim((string)$condRow['conductor_type']));
-                $rawSize = trim((string)($condRow['conductor_size'] ?? '150'));
-                $matchedKey = null;
+        $traversedConductor = $traversalCtx['traversed_conductor'] ?? $this->summarizeTraversedPathConductors([]);
+        $poleSequence = $traversalCtx['pole_sequence'] ?? [];
+        $topologyPathLengthM = $traversalCtx['topology_path_length_m'] ?? null;
+        $topologyPathLengthLabel = $traversalCtx['topology_path_length_label'] ?? (
+            $sourceType === 'PROTECTION'
+                ? 'Panjang jalur dari proteksi ke ujung feeder (estimasi topologi)'
+                : 'Panjang jalur dari GI ke ujung feeder (estimasi topologi)'
+        );
 
-                foreach (array_keys(self::CONDUCTOR_CATALOG) as $catKey) {
-                    if (str_contains(strtoupper($catKey), $rawType) && str_contains($catKey, $rawSize)) {
-                        $matchedKey = $catKey;
-                        break;
-                    }
-                }
-
-                if ($matchedKey) {
-                    $dominantConductor = $matchedKey;
-                    $conductorSource = 'OFFICIAL_TRANSLINE';
-                } elseif (isset(self::CONDUCTOR_CATALOG[$rawType . ' 150 mm²'])) {
-                    $dominantConductor = $rawType . ' 150 mm²';
-                    $conductorSource = 'OFFICIAL_TRANSLINE_TYPE';
-                }
-            }
-        }
-
-        // 2. Transline topology metrics & Conductor Breakdown
+        // Total feeder-wide transline & pole statistics
         $totalSpanMeters = 0.0;
         $segmentCount = 0;
         $poleCount = 0;
         $sectionCount = 0;
-        $condBreakdown = [];
-        $segmentsList = [];
-        $isHybrid = false;
 
         if ($this->db->tableExists('gis_translines')) {
             $tlStats = $this->db->table('gis_translines')
                 ->select('COUNT(*) as seg_cnt, SUM(distance_meters) as span_sum')
                 ->where('penyulang_id', $penyulangId)
+                ->where('is_active', 1)
                 ->where('deleted_at IS NULL')
                 ->get()
                 ->getRowArray();
 
             $segmentCount = (int)($tlStats['seg_cnt'] ?? 0);
             $totalSpanMeters = (float)($tlStats['span_sum'] ?? 0.0);
-
-            // Detailed conductor breakdown per segment type & size
-            $breakdownRows = $this->db->table('gis_translines')
-                ->select("COALESCE(NULLIF(TRIM(conductor_type), ''), 'AAAC') as c_type, COALESCE(NULLIF(TRIM(conductor_size), ''), '150 mm²') as c_size, COUNT(*) as span_cnt, SUM(distance_meters) as span_len")
-                ->where('penyulang_id', $penyulangId)
-                ->where('deleted_at IS NULL')
-                ->groupBy('c_type, c_size')
-                ->orderBy('span_len', 'DESC')
-                ->get()
-                ->getResultArray();
-
-            foreach ($breakdownRows as $br) {
-                $rawT = strtoupper(trim((string)$br['c_type']));
-                $rawS = trim((string)$br['c_size']);
-                $distM = (float)($br['span_len'] ?? 0);
-                $pct = $totalSpanMeters > 0 ? round(($distM / $totalSpanMeters) * 100, 1) : 0.0;
-                $label = $rawT . (str_contains($rawS, 'mm') ? ' ' . $rawS : ' ' . $rawS . ' mm²');
-
-                $condBreakdown[] = [
-                    'label'          => $label,
-                    'type'           => $rawT,
-                    'size'           => $rawS,
-                    'spans'          => (int)$br['span_cnt'],
-                    'distance_m'     => round($distM, 1),
-                    'distance_km'    => round($distM / 1000.0, 2),
-                    'percentage'     => $pct,
-                ];
-            }
-
-            if (count($condBreakdown) > 1) {
-                $isHybrid = true;
-            }
-
-            // Sequential segment preview with exact conductor per segment (strictly scoped to this feeder)
-            $segmentsQuery = $this->db->query("
-                SELECT 
-                    tl.id,
-                    tl.transline_code,
-                    tl.distance_meters,
-                    COALESCE(NULLIF(TRIM(tl.conductor_type), ''), 'AAAC') as conductor_type,
-                    COALESCE(NULLIF(TRIM(tl.conductor_size), ''), '150 mm²') as conductor_size,
-                    COALESCE(sa.kode_asset, CONCAT('TIANG-#', tl.source_asset_id)) as source_kode,
-                    COALESCE(sa.nama_asset, 'Tiang Sumber') as source_nama,
-                    COALESCE(ta.kode_asset, CONCAT('TIANG-#', tl.target_asset_id)) as target_kode,
-                    COALESCE(ta.nama_asset, 'Tiang Target') as target_nama,
-                    COALESCE(s.nama_section, '-') as nama_section
-                FROM gis_translines tl
-                LEFT JOIN assets sa ON sa.id = tl.source_asset_id AND sa.penyulang_id = tl.penyulang_id AND sa.deleted_at IS NULL
-                LEFT JOIN assets ta ON ta.id = tl.target_asset_id AND ta.penyulang_id = tl.penyulang_id AND ta.deleted_at IS NULL
-                LEFT JOIN sections s ON s.id = sa.section_id
-                WHERE tl.penyulang_id = " . (int)$penyulangId . " AND tl.is_active = 1 AND tl.deleted_at IS NULL
-                ORDER BY tl.id ASC
-                LIMIT 50
-            ");
-            $rawSegments = ($segmentsQuery && is_object($segmentsQuery)) ? $segmentsQuery->getResultArray() : [];
-            $segmentsList = [];
-            foreach ($rawSegments as $idx => $segRow) {
-                $segRow['seq_no']      = $idx + 1;
-                $segRow['from_pole']   = $segRow['source_kode'];
-                $segRow['to_pole']     = $segRow['target_kode'];
-                $segRow['span_meters'] = (float)($segRow['distance_meters'] ?? 0);
-                $segmentsList[] = $segRow;
-            }
         }
 
         if ($this->db->tableExists('assets')) {
@@ -1463,7 +2345,6 @@ class FaultLocatorWorkspaceService
                 ->where('deleted_at IS NULL')
                 ->get()
                 ->getResultArray();
-            $poleCount = 0;
             foreach ($feederPoleCandidates as $pCand) {
                 if (GisTranslineService::isJtmPoleAsset($pCand)['valid']) {
                     $poleCount++;
@@ -1479,68 +2360,49 @@ class FaultLocatorWorkspaceService
                 ->getRowArray()['sec_cnt'] ?? 0;
         }
 
-        // 3. Protection devices (Recloser, PMCB, LBS) linked to valid JTM poles
+        $segmentsList = [];
+        foreach (array_slice($poleSequence, 0, 50) as $idx => $segRow) {
+            $segmentsList[] = [
+                'seq_no'            => $idx + 1,
+                'from_pole'         => $segRow['from_pole_kode'],
+                'from_nama'         => $segRow['from_pole_nama'],
+                'to_pole'           => $segRow['to_pole_kode'],
+                'to_nama'           => $segRow['to_pole_nama'],
+                'span_meters'       => (float)$segRow['span_meters'],
+                'cum_start_meters'  => (float)$segRow['cum_start_meters'],
+                'cumulative_meters' => (float)$segRow['cumulative_meters'],
+                'conductor_type'    => $segRow['conductor_type'],
+                'conductor_size'    => $segRow['conductor_size'],
+                'nama_section'      => $segRow['section_name'] ?? '-',
+            ];
+        }
+
+        // Protection devices (Recloser, PMCB, GH) linked to valid JTM poles
+        $gisTransService = new GisTranslineService($this->db);
         $devices = $this->getProtectionDevices($penyulangId);
         $enhancedDevices = [];
         foreach ($devices as $d) {
             $linkedPole = null;
-            if (!empty($d['parent_asset_id'])) {
-                $parentCand = $this->db->table('assets')
-                    ->select('id, kode_asset, nama_asset, jenis_asset')
-                    ->where('id', (int)$d['parent_asset_id'])
-                    ->where('penyulang_id', $penyulangId)
-                    ->where('deleted_at IS NULL')
-                    ->get()
-                    ->getRowArray();
-                if ($parentCand && GisTranslineService::isJtmPoleAsset($parentCand)['valid']) {
-                    $linkedPole = $parentCand;
-                }
-            }
-            if (!$linkedPole && !empty($d['latitude']) && !empty($d['longitude'])) {
-                // Find nearest physical JTM pole within 35m
-                $nearest = $this->db->table('assets')
-                    ->select('id, kode_asset, nama_asset, jenis_asset, latitude, longitude')
-                    ->where('penyulang_id', $penyulangId)
-                    ->where('id !=', $d['id'])
-                    ->where('deleted_at IS NULL')
-                    ->groupStart()
-                        ->whereIn('jenis_asset', ['JTM_TIANG', 'jtm_tiang', 'TIANG_BETON', 'TIANG_BESI', 'TIANG_KAYU', 'TIANG', 'JTM', 'POLE', 'TIANG_JTM'])
-                        ->orWhere('jenis_asset IS NULL')
-                    ->groupEnd()
-                    ->get()
-                    ->getResultArray();
-
-                $minD = PHP_FLOAT_MAX;
-                foreach ($nearest as $p) {
-                    if (!GisTranslineService::isJtmPoleAsset($p)['valid']) {
-                        continue;
-                    }
-                    $dist = $this->haversineDistance(
-                        (float)$d['latitude'], (float)$d['longitude'],
-                        (float)($p['latitude'] ?? 0), (float)($p['longitude'] ?? 0)
-                    );
-                    if ($dist < $minD && $dist <= 35.0) {
-                        $minD = $dist;
-                        $linkedPole = $p;
-                    }
-                }
+            $resolvedCtx = $gisTransService->resolveSourceContextToNearestJtmPole((int)$d['id'], $penyulangId);
+            if ($resolvedCtx && !empty($resolvedCtx['anchor_pole_asset'])) {
+                $linkedPole = $resolvedCtx['anchor_pole_asset'];
             }
 
             $enhancedDevices[] = [
-                'id'                 => (int)$d['id'],
-                'kode_asset'         => $d['kode_asset'],
-                'nama_asset'         => $d['nama_asset'],
-                'jenis_asset'        => $d['jenis_asset'],
-                'linked_pole_id'     => $linkedPole ? (int)$linkedPole['id'] : null,
-                'linked_pole_code'   => $linkedPole ? $linkedPole['kode_asset'] : 'Tiang Dekat Perangkat',
-                'display_label'      => $d['kode_asset'] . ' - ' . $d['nama_asset'] . ' (' . $d['jenis_asset'] . ($linkedPole ? ', pada tiang ' . $linkedPole['kode_asset'] : '') . ')',
+                'id'               => (int)$d['id'],
+                'kode_asset'       => $d['kode_asset'],
+                'nama_asset'       => $d['nama_asset'],
+                'jenis_asset'      => $d['jenis_asset'],
+                'linked_pole_id'   => $linkedPole ? (int)$linkedPole['id'] : null,
+                'linked_pole_code' => $linkedPole ? $linkedPole['kode_asset'] : 'Belum terhubung ke tiang JTM',
+                'display_label'    => $d['kode_asset'] . ' - ' . $d['nama_asset'] . ' (' . $d['jenis_asset'] . ($linkedPole ? ', pada tiang ' . $linkedPole['kode_asset'] : ' - Belum terhubung ke tiang JTM') . ')',
             ];
         }
 
         $devicesAvailable = count($enhancedDevices) > 0;
         $protectionStatusMessage = $devicesAvailable
             ? 'Tersedia ' . count($enhancedDevices) . ' perangkat proteksi terdaftar pada penyulang ini.'
-            : 'Data aset proteksi (Recloser / PMCB / LBS) belum tersedia untuk penyulang ini. Perhitungan didukung penuh dari Gardu Induk (GI) Pangkal.';
+            : 'Data aset proteksi (Recloser / PMCB) belum tersedia untuk penyulang ini. Perhitungan didukung penuh dari Gardu Induk (GI) Pangkal.';
 
         return [
             'status' => 'success',
@@ -1552,27 +2414,41 @@ class FaultLocatorWorkspaceService
                     'ulp_id'         => (int)$feeder['ulp_id'],
                     'nama_ulp'       => $feeder['nama_ulp'] ?? 'ULP Tidak Diketahui',
                 ],
+                'source_context' => $traversalCtx['source_context'] ?? null,
+                'anchor_pole'    => $traversalCtx['anchor_pole'] ?? null,
+                'anchor_description' => $traversalCtx['anchor_description'] ?? '',
                 'conductor' => [
-                    'official_type'       => $dominantConductor,
-                    'source'              => $conductorSource,
-                    'is_hybrid'           => $isHybrid,
-                    'breakdown'           => $condBreakdown,
-                    'catalog_entry'       => self::CONDUCTOR_CATALOG[$dominantConductor] ?? null,
+                    'is_available'        => $traversedConductor['is_available'],
+                    'status'              => $traversedConductor['status'],
+                    'official_type'       => $traversedConductor['official_type'],
+                    'display_label'       => $traversedConductor['display_label'],
+                    'source'              => $traversedConductor['source'],
+                    'is_hybrid'           => $traversedConductor['is_hybrid'],
+                    'breakdown'           => $traversedConductor['breakdown'],
+                    'segment_ranges'      => $traversedConductor['segment_ranges'],
+                    'status_message'      => $traversedConductor['status_message'],
+                    'catalog_entry'       => $traversedConductor['catalog_entry'],
                 ],
                 'segments_preview' => $segmentsList,
                 'topology' => [
-                    'total_span_meters'      => round($totalSpanMeters, 1),
-                    'total_span_km'          => round($totalSpanMeters / 1000.0, 2),
-                    'segment_count'          => $segmentCount,
-                    'valid_jtm_poles_count'  => $poleCount,
-                    'sections_count'         => (int)$sectionCount,
-                    'is_topology_ready'      => ($poleCount > 0 && $segmentCount >= ($poleCount * 0.35)),
+                    'topology_path_length_m'     => $topologyPathLengthM,
+                    'topology_path_length_km'    => $topologyPathLengthM !== null ? round($topologyPathLengthM / 1000.0, 2) : null,
+                    'topology_path_length_label' => $topologyPathLengthLabel,
+                    'traversed_segment_count'    => count($poleSequence),
+                    'traversed_span_meters'      => round((float)($traversalCtx['feeder_span_meters'] ?? 0.0), 1),
+                    'total_span_meters'          => round($totalSpanMeters, 1),
+                    'total_span_km'              => round($totalSpanMeters / 1000.0, 2),
+                    'segment_count'              => $segmentCount,
+                    'valid_jtm_poles_count'      => $poleCount,
+                    'sections_count'             => (int)$sectionCount,
+                    'is_topology_ready'          => ($topologyPathLengthM !== null && $topologyPathLengthM > 0),
+                    'constraint_error'           => $traversalCtx['source_context']['constraint_error'] ?? null,
                 ],
                 'protection_devices' => [
-                    'available'       => $devicesAvailable,
-                    'count'           => count($enhancedDevices),
-                    'message'         => $protectionStatusMessage,
-                    'devices'         => $enhancedDevices,
+                    'available' => $devicesAvailable,
+                    'count'     => count($enhancedDevices),
+                    'message'   => $protectionStatusMessage,
+                    'devices'   => $enhancedDevices,
                 ]
             ]
         ];
@@ -1598,6 +2474,8 @@ class FaultLocatorWorkspaceService
         if (!$case) {
             return null;
         }
+
+        $this->hydrateCaseTelemetryFields($case);
 
         // Candidates
         $candidates = $this->db->table('fault_candidate_assets')
@@ -1643,6 +2521,222 @@ class FaultLocatorWorkspaceService
             'lineage_verified'   => true,
             'verified_at'        => date('Y-m-d H:i:s')
         ];
+    }
+
+    /**
+     * Resolve authoritative GI Root Pole (Pangkal Penyulang) within the target connected component
+     */
+    protected function resolveFeederGiRootPole(int $penyulangId, array $targetCompNodes, array $assetMap, array $adj, array $feederAssets): ?array
+    {
+        if (empty($targetCompNodes)) {
+            foreach ($assetMap as $poleId => $poleRow) {
+                if (!empty($adj[$poleId])) {
+                    return $poleRow;
+                }
+            }
+            return !empty($assetMap) ? (reset($assetMap) ?: null) : null;
+        }
+
+        $targetCompSet = array_flip($targetCompNodes);
+
+        // Rule 1: Explicit GI Outgoing / Pangkal Section or Pole Naming
+        $giSectionIds = [];
+        try {
+            if ($this->db->tableExists('sections')) {
+                $sections = $this->db->table('sections')
+                    ->where('penyulang_id', $penyulangId)
+                    ->get()
+                    ->getResultArray();
+                foreach ($sections as $sec) {
+                    $sn = strtoupper((string)($sec['nama_section'] ?? ''));
+                    if (preg_match('/^GI\b|\bGI\s*-|\bGARDU INDUK\b|\bPANGKAL\b|\bOUTGOING\b/i', $sn)) {
+                        $giSectionIds[(int)$sec['id']] = true;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore if sections table is unavailable in lightweight test environments
+        }
+
+        $giSectionCandidates = [];
+        foreach ($targetCompNodes as $nId) {
+            $pole = $assetMap[$nId] ?? null;
+            if (!$pole) {
+                continue;
+            }
+            $secId = (int)($pole['section_id'] ?? 0);
+            $pName = strtoupper((string)($pole['nama_asset'] ?? '') . ' ' . (string)($pole['kode_asset'] ?? ''));
+            if (isset($giSectionIds[$secId]) || preg_match('/\bPANGKAL\b|\bOUTGOING\b/i', $pName)) {
+                $deg = count($adj[$nId] ?? []);
+                $seq = (int)($pole['sequence_no'] ?? 0);
+                $giSectionCandidates[] = [
+                    'pole' => $pole,
+                    'deg'  => $deg,
+                    'seq'  => $seq > 0 ? $seq : 999999,
+                    'id'   => $nId,
+                ];
+            }
+        }
+        if (!empty($giSectionCandidates)) {
+            usort($giSectionCandidates, static function (array $a, array $b): int {
+                $aTerm = ($a['deg'] === 1) ? 0 : 1;
+                $bTerm = ($b['deg'] === 1) ? 0 : 1;
+                if ($aTerm !== $bTerm) {
+                    return $aTerm <=> $bTerm;
+                }
+                if ($a['seq'] !== $b['seq']) {
+                    return $a['seq'] <=> $b['seq'];
+                }
+                return $a['id'] <=> $b['id'];
+            });
+            return $giSectionCandidates[0]['pole'];
+        }
+
+        // Rule 2: Topological Trunk-vs-Load-Tree Orientation via Protection Device Mounting Poles
+        // A feeder trunk coming from the GI into a Recloser/PMCB is typically a smaller/linear incoming branch
+        // compared to the branching downstream load network.
+        $gisTransService = new GisTranslineService($this->db);
+        foreach ($feederAssets as $fa) {
+            $jType = strtoupper(trim((string)($fa['jenis_asset'] ?? '')));
+            if (in_array($jType, ['RECLOSER', 'PMCB', 'LBS', 'FCO', 'SECT', 'SECTIONALIZER'], true)) {
+                $res = $gisTransService->resolveSourceContextToNearestJtmPole((int)$fa['id'], $penyulangId);
+                $pPoleId = (int)($res['anchor_pole_asset']['id'] ?? 0);
+                if ($pPoleId > 0 && isset($targetCompSet[$pPoleId]) && count($adj[$pPoleId] ?? []) >= 2) {
+                    $subtrees = [];
+                    foreach ($adj[$pPoleId] as $edge) {
+                        $nb = $edge['target'];
+                        $vis = [$pPoleId => true, $nb => true];
+                        $q = [[$nb, (float)$edge['dist']]];
+                        $cnt = 0;
+                        $terms = [];
+                        while (!empty($q)) {
+                            [$c, $d] = array_shift($q);
+                            $cnt++;
+                            $deg = 0;
+                            foreach ($adj[$c] ?? [] as $e2) {
+                                $nx = $e2['target'];
+                                if ($nx === $pPoleId) {
+                                    continue;
+                                }
+                                $deg++;
+                                if (!isset($vis[$nx])) {
+                                    $vis[$nx] = true;
+                                    $q[] = [$nx, $d + (float)$e2['dist']];
+                                }
+                            }
+                            if ($deg === 0 || ($c !== $nb && count($adj[$c] ?? []) === 1)) {
+                                $terms[] = ['pole_id' => $c, 'dist' => $d];
+                            }
+                        }
+                        if (empty($terms)) {
+                            $terms[] = ['pole_id' => $nb, 'dist' => (float)$edge['dist']];
+                        }
+                        usort($terms, static fn(array $a, array $b): int => $b['dist'] <=> $a['dist']);
+                        $subtrees[] = [
+                            'count'          => $cnt,
+                            'terminal_count' => count($terms),
+                            'far_terminal'   => $terms[0]['pole_id'],
+                        ];
+                    }
+                    usort($subtrees, static fn(array $a, array $b): int => $a['count'] <=> $b['count']);
+                    $smallest = $subtrees[0];
+                    $largest  = $subtrees[count($subtrees) - 1];
+                    if (
+                        $smallest['terminal_count'] <= 2
+                        && $smallest['count'] >= 1
+                        && $smallest['count'] < $largest['count']
+                        && isset($assetMap[$smallest['far_terminal']])
+                    ) {
+                        return $assetMap[$smallest['far_terminal']];
+                    }
+                }
+            }
+        }
+
+        // Rule 3: Explicit positive sequence_no (e.g. sequence_no = 1) or lowest ID in target component
+        $bestPole = null;
+        $bestSeq = PHP_INT_MAX;
+        foreach ($targetCompNodes as $nId) {
+            $pole = $assetMap[$nId] ?? null;
+            if (!$pole) {
+                continue;
+            }
+            $seq = (int)($pole['sequence_no'] ?? 0);
+            if ($seq > 0 && $seq < $bestSeq) {
+                $bestSeq = $seq;
+                $bestPole = $pole;
+            }
+        }
+        if ($bestPole) {
+            return $bestPole;
+        }
+
+        $firstNodeId = $targetCompNodes[0];
+        return $assetMap[$firstNodeId] ?? null;
+    }
+
+    /**
+     * Extract ordered LineString coordinate points [[lat, lng], ...] oriented from $fromPole to $toPole
+     */
+    protected function extractTranslineGeometry(?string $geojsonStr, array $fromPole, array $toPole): array
+    {
+        $fromLat = (float)($fromPole['latitude'] ?? 0);
+        $fromLng = (float)($fromPole['longitude'] ?? 0);
+        $toLat   = (float)($toPole['latitude'] ?? 0);
+        $toLng   = (float)($toPole['longitude'] ?? 0);
+        $default = [
+            ['lat' => $fromLat, 'lng' => $fromLng],
+            ['lat' => $toLat, 'lng' => $toLng],
+        ];
+
+        if (empty($geojsonStr)) {
+            return $default;
+        }
+
+        $decoded = json_decode($geojsonStr, true);
+        if (!is_array($decoded)) {
+            return $default;
+        }
+
+        $coords = null;
+        if (($decoded['type'] ?? '') === 'LineString' && !empty($decoded['coordinates'])) {
+            $coords = $decoded['coordinates'];
+        } elseif (($decoded['type'] ?? '') === 'Feature' && ($decoded['geometry']['type'] ?? '') === 'LineString') {
+            $coords = $decoded['geometry']['coordinates'] ?? null;
+        }
+
+        if (!is_array($coords) || count($coords) < 2) {
+            return $default;
+        }
+
+        $points = [];
+        foreach ($coords as $pt) {
+            if (is_array($pt) && count($pt) >= 2) {
+                $lng = (float)$pt[0];
+                $lat = (float)$pt[1];
+                if ($lat != 0.0 && $lng != 0.0) {
+                    $points[] = ['lat' => $lat, 'lng' => $lng];
+                }
+            }
+        }
+
+        if (count($points) < 2) {
+            return $default;
+        }
+
+        // Ensure orientation matches $fromPole -> $toPole
+        $first = $points[0];
+        $last  = $points[count($points) - 1];
+        $dForward = $this->haversineDistance($fromLat, $fromLng, $first['lat'], $first['lng'])
+                  + $this->haversineDistance($toLat, $toLng, $last['lat'], $last['lng']);
+        $dReverse = $this->haversineDistance($fromLat, $fromLng, $last['lat'], $last['lng'])
+                  + $this->haversineDistance($toLat, $toLng, $first['lat'], $first['lng']);
+
+        if ($dReverse + 1.0 < $dForward) {
+            $points = array_reverse($points);
+        }
+
+        return $points;
     }
 
     /**

@@ -99,6 +99,121 @@
         border-radius: 6px;
         font-size: 0.8rem;
     }
+    .fl-map-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+        padding: 8px 12px;
+        background: #0f172a;
+        color: #f8fafc;
+        border-radius: 8px;
+        font-size: 0.74rem;
+        margin-bottom: 10px;
+    }
+    .fl-map-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+    }
+    .fl-legend-line {
+        width: 22px;
+        height: 4px;
+        border-radius: 2px;
+        display: inline-block;
+    }
+    .fl-legend-dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        display: inline-block;
+        border: 2px solid #ffffff;
+    }
+    .fl-source-badge-icon {
+        background: #7c3aed;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.72rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 2px solid #ddd6fe;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .fl-source-badge-gi {
+        background: #0f172a;
+        border-color: #38bdf8;
+    }
+    .fl-fault-callout-icon {
+        background: rgba(127, 29, 29, 0.94);
+        color: #fecaca;
+        font-weight: 700;
+        font-size: 0.72rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1.5px solid #ef4444;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+        white-space: nowrap;
+    }
+    .fl-fault-cross-marker {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #ef4444;
+        color: #ffffff;
+        border: 3px solid #ffffff;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.35), 0 3px 8px rgba(0,0,0,0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 13px;
+        line-height: 1;
+    }
+    .fl-seq-strip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 10px 12px;
+        background: #0f172a;
+        border-radius: 8px;
+        margin-top: 10px;
+        border: 1px solid #1e293b;
+    }
+    .fl-seq-node {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 5px 9px;
+        border-radius: 6px;
+        background: #1e293b;
+        color: #e2e8f0;
+        border: 1px solid #334155;
+        min-width: 92px;
+        flex-shrink: 0;
+        font-size: 0.68rem;
+    }
+    .fl-seq-node.is-source {
+        background: rgba(124, 58, 237, 0.25);
+        border-color: #a78bfa;
+        color: #ede9fe;
+    }
+    .fl-seq-node.is-fault-zone {
+        background: rgba(245, 158, 11, 0.22);
+        border-color: #f59e0b;
+        color: #fef3c7;
+    }
+    .fl-seq-arrow {
+        color: #38bdf8;
+        font-weight: 700;
+        font-size: 0.78rem;
+        flex-shrink: 0;
+    }
 </style>
 
 <!-- Top Operational KPIs -->
@@ -253,60 +368,151 @@
                         <input type="datetime-local" class="form-control" id="faultTimestamp" value="<?= date('Y-m-d\TH:i') ?>">
                     </div>
 
-                    <!-- Masukan Arus Fasa R, S, T, dan Netral -->
-                    <div class="p-3 rounded-3 bg-light border mb-3">
-                        <label class="form-label text-dark small fw-bold mb-2">
-                            <i class="fas fa-wave-square text-warning me-1"></i> ARUS GANGGUAN RELAY (AMPERE)
-                        </label>
-                        <div class="row g-2 mb-2">
+                    <!-- Masukan Arus (A) & Tegangan Fasa (kV) R, S, T, serta Arus Netral (A) -->
+                    <div class="p-3 rounded-3 bg-light border mb-3" id="telemetryInputsCard">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-2">
+                            <label class="form-label text-dark small fw-bold mb-0">
+                                <i class="fas fa-wave-square text-warning me-1"></i> TELEMETRI ARUS (A) &amp; TEGANGAN FASA (kV)
+                            </label>
+                            <span class="badge bg-info-subtle text-primary border" style="font-size:0.68rem;">R/S/T: A &amp; kV | N: A</span>
+                        </div>
+
+                        <!-- Fasa R: Arus (A) & Tegangan (kV) -->
+                        <div class="row g-2 align-items-end mb-2">
                             <div class="col-6">
-                                <label class="form-label text-muted small mb-1">Fasa R (A)</label>
-                                <input type="number" class="form-control text-danger fw-bold" id="currentR" value="1450" step="5">
+                                <label class="form-label text-muted small mb-1" for="currentR">Arus Fasa R (A)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control text-danger fw-bold" id="currentR" value="1450" min="0" max="50000" step="0.1" inputmode="decimal">
+                                    <span class="input-group-text bg-white text-muted fw-semibold">A</span>
+                                </div>
                             </div>
                             <div class="col-6">
-                                <label class="form-label text-muted small mb-1">Fasa S (A)</label>
-                                <input type="number" class="form-control text-warning fw-bold" id="currentS" value="1420" step="5">
+                                <label class="form-label text-muted small mb-1" for="voltageR">Tegangan Fasa R (kV)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control text-danger fw-bold" id="voltageR" placeholder="Opsional (cth: 21.26)" min="0" max="35" step="0.01" inputmode="decimal">
+                                    <span class="input-group-text bg-white text-muted fw-semibold">kV</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="row g-2">
+
+                        <!-- Fasa S: Arus (A) & Tegangan (kV) -->
+                        <div class="row g-2 align-items-end mb-2">
                             <div class="col-6">
-                                <label class="form-label text-muted small mb-1">Fasa T (A)</label>
-                                <input type="number" class="form-control text-primary fw-bold" id="currentT" value="1440" step="5">
+                                <label class="form-label text-muted small mb-1" for="currentS">Arus Fasa S (A)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control text-warning fw-bold" id="currentS" value="1420" min="0" max="50000" step="0.1" inputmode="decimal">
+                                    <span class="input-group-text bg-white text-muted fw-semibold">A</span>
+                                </div>
                             </div>
                             <div class="col-6">
-                                <label class="form-label text-muted small mb-1">Netral / GFR (A)</label>
-                                <input type="number" class="form-control text-dark fw-bold" id="currentN" value="15" step="5">
+                                <label class="form-label text-muted small mb-1" for="voltageS">Tegangan Fasa S (kV)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control text-warning fw-bold" id="voltageS" placeholder="Opsional (cth: 0.00)" min="0" max="35" step="0.01" inputmode="decimal">
+                                    <span class="input-group-text bg-white text-muted fw-semibold">kV</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="form-text text-muted mt-2" style="font-size:0.75rem;">
-                            Klasifikasi otomatis jenis gangguan (3-PH, 2-PH, 1-LG, 2-LG) berdasarkan sebaran arus fasa dan netral.
+
+                        <!-- Fasa T: Arus (A) & Tegangan (kV) -->
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col-6">
+                                <label class="form-label text-muted small mb-1" for="currentT">Arus Fasa T (A)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control text-primary fw-bold" id="currentT" value="1440" min="0" max="50000" step="0.1" inputmode="decimal">
+                                    <span class="input-group-text bg-white text-muted fw-semibold">A</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-muted small mb-1" for="voltageT">Tegangan Fasa T (kV)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control text-primary fw-bold" id="voltageT" placeholder="Opsional (cth: 21.00)" min="0" max="35" step="0.01" inputmode="decimal">
+                                    <span class="input-group-text bg-white text-muted fw-semibold">kV</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Netral / GFR: Tetap Arus (A) Tanpa Tegangan N -->
+                        <div class="row g-2 align-items-center pt-1 border-top mt-2">
+                            <div class="col-6">
+                                <label class="form-label text-muted small mb-1" for="currentN">Netral / GFR (A)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control text-dark fw-bold" id="currentN" value="15" min="0" max="50000" step="0.1" inputmode="decimal">
+                                    <span class="input-group-text bg-white text-muted fw-semibold">A</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted mt-3" style="font-size:0.7rem; line-height:1.25;">
+                                    <i class="fas fa-circle-info text-info me-1"></i>Netral/GFR khusus arus residu (A); tidak meminta tegangan fasa N. Nilai <code>0.00 kV</code> pada fasa R/S/T dibedakan dari kolom kosong.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="telemetryValidationAlert" class="alert alert-danger py-2 px-3 mt-2 mb-0 small" style="display:none; font-size:0.74rem;"></div>
+
+                        <div class="form-text text-muted mt-2" style="font-size:0.73rem;">
+                            Klasifikasi indikasi gangguan memadukan arus R/S/T/N dan tegangan fasa R/S/T (contoh: S = 0.00 kV dengan R &amp; T ~21 kV serta arus N terukur &rarr; Indikasi Gangguan Tanah Fasa S-N / DGR).
                         </div>
                     </div>
 
-                    <!-- Tipe Konduktor JTM -->
-                    <div class="mb-3">
-                        <label class="form-label text-dark small fw-bold">TIPE KONDUKTOR JTM</label>
-                        <select class="form-select" id="conductorType">
-                            <?php foreach ($conductorCatalog as $k => $c): ?>
-                                <option value="<?= esc($k) ?>" <?= ($k === 'AAAC 150 mm²') ? 'selected' : '' ?>>
-                                    <?= esc($k) ?> (Z1 = <?= esc($c['z1_ohm_km']) ?> Ω/km)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                    <!-- Konduktor Otomatis dari Jalur Jaringan Hasil Traversal -->
+                    <div class="mb-3 p-3 rounded-3 bg-light border" id="autoConductorBox">
+                        <input type="hidden" id="conductorType" value="AUTO">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label text-dark small fw-bold mb-0">
+                                <i class="fas fa-bolt-lightning text-primary me-1"></i> KONDUKTOR JARINGAN (OTOMATIS DARI JALUR)
+                            </label>
+                            <span class="badge bg-primary-subtle text-primary border" id="autoConductorStatusBadge" style="font-size:0.68rem;">
+                                <?= esc($result['traversed_conductor']['status'] ?? 'OTOMATIS') ?>
+                            </span>
+                        </div>
+                        <div class="fw-bold text-dark small" id="autoConductorDisplay">
+                            <?= esc($result['traversed_conductor']['display_label'] ?? ($result['electrical_parameters']['conductor_type'] ?? 'Belum tersedia')) ?>
+                        </div>
+                        <div class="text-muted mt-1" id="autoConductorSubtext" style="font-size:0.72rem;">
+                            <?= esc($result['traversed_conductor']['status_message'] ?? 'Diambil otomatis dari gis_translines aktif pada jalur hilir terpilih.') ?>
+                        </div>
+                        <div id="autoConductorRangesList" class="mt-2 pt-2 border-top small" style="font-size:0.7rem; <?= empty($result['traversed_conductor']['segment_ranges']) ? 'display:none;' : '' ?>">
+                            <?php if (!empty($result['traversed_conductor']['segment_ranges'])): ?>
+                                <?php foreach (array_slice($result['traversed_conductor']['segment_ranges'], 0, 5) as $sr): ?>
+                                    <div class="text-muted"><i class="fas fa-route text-primary me-1"></i><?= esc($sr['range_text']) ?></div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
 
-                    <!-- Pembacaan Jarak Relay Langsung (Opsional) -->
+                    <!-- Panjang Jalur Topologi (Otomatis) vs Jarak Gangguan Terukur Relay (Opsional) -->
+                    <div class="mb-3 p-3 rounded-3 bg-light border" id="topologyPathLengthBox">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-dark small fw-bold" id="topologyPathLengthLabel">
+                                <i class="fas fa-ruler-horizontal text-success me-1"></i> <?= esc($result['topology_path_length_label'] ?? 'Panjang jalur dari GI ke ujung feeder (estimasi topologi)') ?>
+                            </span>
+                            <span class="badge bg-success-subtle text-success border" style="font-size:0.66rem;">Estimasi Topologi</span>
+                        </div>
+                        <div class="fs-6 fw-bold text-success" id="topologyPathLengthValue">
+                            <?php if (isset($result['topology_path_length_m']) && $result['topology_path_length_m'] !== null): ?>
+                                <?= number_format((float)$result['topology_path_length_m'], 1) ?> m (<?= number_format(((float)$result['topology_path_length_m']) / 1000.0, 2) ?> km)
+                            <?php else: ?>
+                                Belum tersedia
+                            <?php endif; ?>
+                        </div>
+                        <div class="text-muted mt-1" id="topologyConstraintNotice" style="font-size:0.72rem;">
+                            Dihitung otomatis dari titik sumber acuan (0.0 m) menelusuri transline ke arah hilir hingga ujung penyulang. Bukan hasil pengukuran relay.
+                        </div>
+                    </div>
+
                     <div class="mb-4">
-                        <label class="form-label text-dark small fw-bold">JARAK RELAY NUMERIK (OPSIONAL / METER)</label>
+                        <label class="form-label text-dark small fw-bold" for="relayDistanceM">
+                            JARAK GANGGUAN TERUKUR RELAY (OPSIONAL / METER)
+                        </label>
                         <div class="input-group">
-                            <input type="number" class="form-control text-primary fw-bold" id="relayDistanceM" placeholder="Kosongkan jika hitung via impedansi arus" step="10">
+                            <input type="number" class="form-control text-primary fw-bold" id="relayDistanceM" placeholder="Kosongkan bila tidak ada pengukuran relay numerik" min="0" max="250000" step="1">
                             <span class="input-group-text bg-light text-muted">Meter</span>
                         </div>
-                        <div class="form-text text-muted small">Jika relay jarak / DFR telah menampilkan nilai km pasti, masukkan di sini.</div>
+                        <div class="form-text text-muted small">Hanya diisi bila relay proteksi / fault locator numerik benar-benar menampilkan jarak gangguan terukur.</div>
                     </div>
 
                     <button type="button" class="btn btn-danger w-100 py-2 fw-bold" id="btnLocateFault">
-                        <i class="fas fa-crosshairs me-2"></i> HITUNG LOKASI GANGGUAN
+                        <i class="fas fa-crosshairs me-2"></i> HITUNG &amp; TAMPILKAN ESTIMASI
                     </button>
                 </form>
             </div>
@@ -352,32 +558,71 @@
             <div class="card-body p-4">
                 
                 <!-- Top Status Cards -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <div class="bg-light p-3 rounded-3 border">
-                            <span class="text-muted small d-block mb-1">KLASIFIKASI GANGGUAN</span>
-                            <span id="resFaultTypeLabel" class="text-warning fw-bold fs-6">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-5">
+                        <div class="bg-light p-3 rounded-3 border h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">INDIKASI KLASIFIKASI GANGGUAN</span>
+                                <span class="badge bg-warning-subtle text-dark border" id="resIndicationConfidenceBadge" style="font-size:0.68rem;">
+                                    Keyakinan Indikasi: <span id="resIndicationConfidence"><?= esc($result['fault_classification']['indication_confidence_percent'] ?? 68) ?></span>%
+                                </span>
+                            </div>
+                            <span id="resFaultTypeLabel" class="text-warning fw-bold fs-6 d-block">
                                 <?= esc($result['fault_classification']['fault_type_label'] ?? 'Gangguan 3 Fasa') ?>
                             </span>
-                            <div class="text-dark small mt-1">Arus Aktif: <strong id="resActiveCurrent" class="text-danger"><?= esc($result['fault_classification']['active_current_a'] ?? 1450) ?> A</strong></div>
+                            <div class="text-dark small mt-1">
+                                Arus Aktif: <strong id="resActiveCurrent" class="text-danger"><?= esc($result['fault_classification']['active_current_a'] ?? 1450) ?> A</strong>
+                                <span id="resVoltageSummaryInline" class="text-muted ms-1" style="font-size:0.72rem;"></span>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="bg-light p-3 rounded-3 border">
-                            <span class="text-muted small d-block mb-1">ESTIMASI JARAK DARI ACUAN</span>
-                            <span id="resDistance" class="text-primary fw-bold fs-5">
-                                <?= number_format($result['calculated_distance_m'] ?? 0, 1) ?> Meter
+                        <div class="bg-light p-3 rounded-3 border h-100">
+                            <span class="text-muted small d-block mb-1" id="resTopologyPathCardLabel">
+                                <?= esc($result['topology_path_length_label'] ?? 'Panjang jalur dari GI ke ujung feeder (estimasi topologi)') ?>
                             </span>
-                            <div class="text-muted small mt-1">Dari Titik Nol Acuan JTM</div>
+                            <span id="resTopologyPathLength" class="text-success fw-bold fs-6 d-block">
+                                <?php if (isset($result['topology_path_length_m']) && $result['topology_path_length_m'] !== null): ?>
+                                    <?= number_format((float)$result['topology_path_length_m'], 1) ?> Meter (<?= number_format(((float)$result['topology_path_length_m']) / 1000.0, 2) ?> km)
+                                <?php else: ?>
+                                    Belum tersedia
+                                <?php endif; ?>
+                            </span>
+                            <div class="text-dark small mt-1 border-top pt-1">
+                                Jarak Terukur Relay:
+                                <strong id="resRelayMeasuredDistance" class="text-primary">
+                                    <?= (isset($result['relay_measured_distance_m']) && $result['relay_measured_distance_m'] !== null) ? (number_format((float)$result['relay_measured_distance_m'], 1) . ' Meter') : 'Belum diisi' ?>
+                                </strong>
+                            </div>
+                            <div class="text-muted small mt-1" style="font-size:0.72rem;">
+                                Estimasi Titik Sistem: <strong id="resDistance" class="text-dark"><?= number_format($result['calculated_distance_m'] ?? 0, 1) ?> Meter</strong>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="bg-light p-3 rounded-3 border">
-                            <span class="text-muted small d-block mb-1">TINGKAT KEYAKINAN</span>
+                    <div class="col-md-3">
+                        <div class="bg-light p-3 rounded-3 border h-100">
+                            <span class="text-muted small d-block mb-1">KEYAKINAN LOKASI</span>
                             <span id="resConfidence" class="text-success fw-bold fs-5"><?= esc($result['confidence_percent'] ?? 88) ?>%</span>
                             <div class="text-muted small mt-1">Case: <code id="resCaseUuid" class="text-primary"><?= esc($result['case_uuid']) ?></code></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Supporting Evidence for Fault Indication -->
+                <div id="supportingEvidenceBox" class="p-3 rounded-3 bg-light border mb-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-1">
+                        <strong class="text-dark small"><i class="fas fa-magnifying-glass-chart text-primary me-1"></i> Data Pendukung Indikasi Gangguan (Arus &amp; Tegangan Fasa)</strong>
+                        <span class="badge bg-light text-muted border" id="resIndicationBasisBadge" style="font-size:0.68rem;">
+                            <?= (!empty($result['fault_classification']['has_voltage_telemetry'])) ? 'Arus + Tegangan Fasa (kV)' : 'Arus Skalar Saja (Tanpa Tegangan Fasa)' ?>
+                        </span>
+                    </div>
+                    <ul class="small mb-0 ps-3 text-dark" id="resSupportingEvidenceList">
+                        <?php if (!empty($result['fault_classification']['supporting_evidence'])): ?>
+                            <?php foreach ($result['fault_classification']['supporting_evidence'] as $ev): ?>
+                                <li><?= esc($ev) ?></li>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </ul>
                 </div>
 
                 <!-- Insufficient Data Alert Box (if applicable) -->
@@ -406,8 +651,15 @@
                             <tr>
                                 <th style="width:28%" class="bg-light text-dark">Penyulang &amp; Acuan Awal</th>
                                 <td>
-                                    <strong class="text-dark" id="resFeederName"><?= esc($result['feeder_name']) ?></strong> (Total Span: <span id="resTotalSpan"><?= number_format($result['feeder_span_meters'] ?? 0) ?></span> m)<br>
+                                    <strong class="text-dark" id="resFeederName"><?= esc($result['feeder_name']) ?></strong> (Total Span Hilir: <span id="resTotalSpan"><?= number_format($result['feeder_span_meters'] ?? 0) ?></span> m)<br>
                                     <span class="text-primary small" id="resAnchorDesc"><?= esc($result['anchor_description'] ?? '') ?></span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Konduktor Jalur Traversal</th>
+                                <td>
+                                    <strong class="text-dark" id="resConductorSummary"><?= esc($result['traversed_conductor']['display_label'] ?? ($result['electrical_parameters']['conductor_type'] ?? 'Belum tersedia')) ?></strong>
+                                    <div class="text-muted small" id="resConductorMessage"><?= esc($result['traversed_conductor']['status_message'] ?? '') ?></div>
                                 </td>
                             </tr>
                             <tr>
@@ -451,6 +703,9 @@
                     </table>
                 </div>
 
+                <!-- Save Case Feedback Banner -->
+                <div id="saveCaseStatusBanner" class="alert alert-success border py-2 px-3 mb-3 small" style="display:none;"></div>
+
                 <!-- Dispatch & Deep-Link Action Banner -->
                 <div class="alert alert-light border border-danger p-3 rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
                     <div>
@@ -485,11 +740,12 @@
                             <thead class="table-light sticky-top">
                                 <tr>
                                     <th style="width: 5%">#</th>
-                                    <th style="width: 25%">Dari Tiang</th>
-                                    <th style="width: 25%">Ke Tiang</th>
-                                    <th style="width: 15%" class="text-end">Bentang (m)</th>
-                                    <th style="width: 15%" class="text-end">Kumulatif (m)</th>
-                                    <th style="width: 15%">Status</th>
+                                    <th style="width: 22%">Dari Tiang</th>
+                                    <th style="width: 22%">Ke Tiang</th>
+                                    <th style="width: 18%">Konduktor</th>
+                                    <th style="width: 11%" class="text-end">Bentang (m)</th>
+                                    <th style="width: 11%" class="text-end">Kumulatif (m)</th>
+                                    <th style="width: 11%">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="poleSequenceBody">
@@ -499,6 +755,7 @@
                                             <td class="text-center font-monospace"><?= esc($p['seq_no']) ?></td>
                                             <td><?= esc($p['from_pole_kode']) ?></td>
                                             <td><?= esc($p['to_pole_kode']) ?></td>
+                                            <td><span class="badge bg-light text-dark border" style="font-size:0.68rem;"><?= esc(trim(($p['conductor_type'] ?? 'Belum tersedia') . (($p['conductor_size'] ?? '-') !== '-' ? ' ' . $p['conductor_size'] : ''))) ?></span></td>
                                             <td class="text-end"><?= number_format($p['span_meters'], 1) ?></td>
                                             <td class="text-end fw-bold"><?= number_format($p['cumulative_meters'], 1) ?></td>
                                             <td>
@@ -512,7 +769,7 @@
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-3">Belum ada segmen transline tiang JTM terpetakan untuk titik acuan ini.</td>
+                                        <td colspan="7" class="text-center text-muted py-3">Belum ada segmen transline tiang JTM terpetakan untuk titik acuan ini.</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -525,14 +782,35 @@
 
         <!-- Spatial Fault Point Leaflet Map Preview -->
         <div class="card card-modern shadow-sm border-0 mb-4">
-            <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h4 class="card-title font-weight-bold text-dark mb-0">
-                    <i class="fas fa-map-location-dot text-danger me-2"></i> Pratinjau Spasial Titik Gangguan (Sidoarjo)
+                    <i class="fas fa-map-location-dot text-danger me-2"></i> Pratinjau Spasial Titik Gangguan &amp; Jalur Hilir Transline
                 </h4>
                 <span class="badge bg-danger text-white" id="mapStatusBadge">FAULT POINT LOCATED</span>
             </div>
             <div class="card-body p-3">
+                <div class="fl-map-legend" id="miniMapLegend">
+                    <span class="fl-map-legend-item">
+                        <span class="fl-legend-line" style="background:#0284c7;"></span> Transline Hilir
+                    </span>
+                    <span class="fl-map-legend-item">
+                        <span class="fl-legend-line" style="background:repeating-linear-gradient(90deg,#ef4444,#ef4444 5px,transparent 5px,transparent 9px);"></span> Jalur Terukur ke Gangguan
+                    </span>
+                    <span class="fl-map-legend-item">
+                        <span class="fl-legend-dot" style="background:#10b981;"></span> Tiang Normal
+                    </span>
+                    <span class="fl-map-legend-item">
+                        <span class="fl-legend-dot" style="background:#8b5cf6;"></span> Titik Acuan (0.0 km)
+                    </span>
+                    <span class="fl-map-legend-item">
+                        <span class="fl-legend-dot" style="background:#f59e0b;"></span> Estimasi Zona Gangguan
+                    </span>
+                    <span class="fl-map-legend-item">
+                        <span class="fl-legend-dot" style="background:#ef4444;"></span> Fault Point (✕)
+                    </span>
+                </div>
                 <div id="miniMap"></div>
+                <div id="faultPathSequenceStrip" class="fl-seq-strip" style="display:none;"></div>
             </div>
         </div>
 
@@ -627,13 +905,13 @@
                     <table class="table table-bordered table-sm align-middle mb-0" id="tableCaseHistory">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 14%">No. Kasus</th>
+                                <th style="width: 13%">No. Kasus</th>
                                 <th style="width: 16%">Penyulang &amp; Sumber</th>
-                                <th style="width: 14%">Arus Gangguan</th>
-                                <th style="width: 12%">Prediksi Jarak</th>
-                                <th style="width: 16%">Status Patroli</th>
-                                <th style="width: 16%">Hasil Temuan Lapangan</th>
-                                <th style="width: 12%">Aksi</th>
+                                <th style="width: 18%">Arus (A) &amp; Tegangan (kV)</th>
+                                <th style="width: 13%">Jarak (Topologi / Relay)</th>
+                                <th style="width: 13%">Status Patroli</th>
+                                <th style="width: 14%">Hasil Temuan Lapangan</th>
+                                <th style="width: 13%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="caseHistoryBody">
@@ -651,9 +929,13 @@
                                                 $tCurr = (float)($c['current_t'] ?? 0);
                                                 $nCurr = (float)($c['current_n'] ?? 0);
                                                 $hasCurrent = ($rCurr > 0 || $sCurr > 0 || $tCurr > 0 || $nCurr > 0);
+                                                $vR = $c['voltage_r_kv'] ?? null;
+                                                $vS = $c['voltage_s_kv'] ?? null;
+                                                $vT = $c['voltage_t_kv'] ?? null;
+                                                $hasVoltage = ($vR !== null || $vS !== null || $vT !== null);
                                             ?>
                                             <div class="text-dark fw-bold"><?= esc($fdrName) ?></div>
-                                            <div class="text-muted" style="font-size:0.72rem;"><?= esc($c['source_type'] ?: 'GI') ?> &bull; <?= esc($c['fault_type'] ?: '1-PHASE') ?></div>
+                                            <div class="text-muted" style="font-size:0.72rem;"><?= esc($c['source_type'] ?: 'GI') ?> &bull; <?= esc($c['fault_type_label'] ?? $c['fault_type'] ?: '1-PHASE') ?></div>
                                         </td>
                                         <td>
                                             <?php if ($hasCurrent): ?>
@@ -662,13 +944,27 @@
                                             <?php else: ?>
                                                 <span class="badge bg-secondary-subtle text-muted border small">Tanpa Telemetri Arus</span>
                                             <?php endif; ?>
-                                        </td>
-                                        <td class="fw-bold text-dark">
-                                            <?php if (($c['target_distance_meters'] ?? 0) > 0): ?>
-                                                <div><?= number_format($c['target_distance_meters'], 1) ?> m</div>
-                                                <div class="text-muted fw-normal" style="font-size:0.68rem;">&plusmn; <?= number_format($c['distance_tolerance_meters'] ?? 250, 0) ?> m</div>
+                                            <?php if ($hasVoltage): ?>
+                                                <div class="text-primary fw-semibold mt-1" style="font-size:0.71rem;">
+                                                    V (R/S/T):
+                                                    <?= $vR !== null ? number_format((float)$vR, 2, '.', '') : '-' ?> /
+                                                    <?= $vS !== null ? number_format((float)$vS, 2, '.', '') : '-' ?> /
+                                                    <?= $vT !== null ? number_format((float)$vT, 2, '.', '') : '-' ?> kV
+                                                </div>
                                             <?php else: ?>
-                                                <span class="text-muted small">-</span>
+                                                <div class="text-muted" style="font-size:0.68rem;">Tegangan: Belum diisi</div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="small">
+                                            <?php if (!empty($c['topology_path_length_m'])): ?>
+                                                <div class="text-success fw-semibold">Jalur: <?= number_format((float)$c['topology_path_length_m'], 1) ?> m</div>
+                                            <?php endif; ?>
+                                            <?php if (!empty($c['relay_measured_distance_m'])): ?>
+                                                <div class="text-primary fw-bold">Relay: <?= number_format((float)$c['relay_measured_distance_m'], 1) ?> m</div>
+                                            <?php elseif (($c['target_distance_meters'] ?? 0) > 0): ?>
+                                                <div class="text-dark fw-bold">Est: <?= number_format((float)$c['target_distance_meters'], 1) ?> m</div>
+                                            <?php else: ?>
+                                                <div class="text-muted">Relay: -</div>
                                             <?php endif; ?>
                                         </td>
                                         <td>
@@ -698,9 +994,29 @@
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <button class="btn btn-outline-warning btn-sm py-0 px-2 btn-record-outcome" data-case-id="<?= esc($c['id']) ?>" data-case-number="<?= esc($c['case_number']) ?>" data-feeder-name="<?= esc($c['nama_penyulang'] ?? '') ?>">
-                                                <i class="fas fa-clipboard-check me-1"></i> Catat
-                                            </button>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 btn-review-case"
+                                                    data-case-id="<?= esc($c['id']) ?>"
+                                                    data-case-number="<?= esc($c['case_number']) ?>"
+                                                    data-ulp-id="<?= esc($c['ulp_id'] ?? '') ?>"
+                                                    data-penyulang-id="<?= esc($c['penyulang_id'] ?? '') ?>"
+                                                    data-source-type="<?= esc($c['source_type'] ?? 'GI') ?>"
+                                                    data-protection-id="<?= esc($c['protection_device_id'] ?? '') ?>"
+                                                    data-current-r="<?= esc($rCurr) ?>"
+                                                    data-current-s="<?= esc($sCurr) ?>"
+                                                    data-current-t="<?= esc($tCurr) ?>"
+                                                    data-current-n="<?= esc($nCurr) ?>"
+                                                    data-voltage-r="<?= $vR !== null ? esc(number_format((float)$vR, 2, '.', '')) : '' ?>"
+                                                    data-voltage-s="<?= $vS !== null ? esc(number_format((float)$vS, 2, '.', '')) : '' ?>"
+                                                    data-voltage-t="<?= $vT !== null ? esc(number_format((float)$vT, 2, '.', '')) : '' ?>"
+                                                    data-relay-distance="<?= !empty($c['relay_measured_distance_m']) ? esc(number_format((float)$c['relay_measured_distance_m'], 1, '.', '')) : '' ?>"
+                                                    title="Muat kembali nilai arus dan tegangan kasus ini untuk ditinjau">
+                                                    <i class="fas fa-eye me-1"></i> Tinjau
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning btn-sm py-0 px-2 btn-record-outcome" data-case-id="<?= esc($c['id']) ?>" data-case-number="<?= esc($c['case_number']) ?>" data-feeder-name="<?= esc($c['nama_penyulang'] ?? '') ?>">
+                                                    <i class="fas fa-clipboard-check me-1"></i> Catat
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -851,79 +1167,417 @@
         attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    let faultMarker = null;
-    let pulseCircle = null;
-    let pathPolyline = null;
+    const miniMapLayerGroup = L.layerGroup().addTo(map);
+
+    function escapeHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
 
     function clearMiniMapLayers(badgeText = 'TIDAK ADA KANDIDAT VALID', badgeClass = 'badge bg-secondary text-white') {
         map.closePopup();
-        if (faultMarker) {
-            map.removeLayer(faultMarker);
-            faultMarker = null;
-        }
-        if (pulseCircle) {
-            map.removeLayer(pulseCircle);
-            pulseCircle = null;
-        }
-        if (pathPolyline) {
-            map.removeLayer(pathPolyline);
-            pathPolyline = null;
-        }
+        miniMapLayerGroup.clearLayers();
         const mapBadge = document.getElementById('mapStatusBadge');
         if (mapBadge) {
             mapBadge.className = badgeClass;
             mapBadge.innerText = badgeText;
         }
+        const stripEl = document.getElementById('faultPathSequenceStrip');
+        if (stripEl) {
+            stripEl.style.display = 'none';
+            stripEl.innerHTML = '';
+        }
     }
 
-    function updateMiniMap(lat, lng, assetLabel, poleSeq, feederName, feederCode) {
-        clearMiniMapLayers('FAULT POINT LOCATED' + (feederCode ? ' (' + feederCode + ')' : ''), 'badge bg-danger text-white');
-        if (!lat || !lng) return;
-        currentLat = lat;
-        currentLng = lng;
-        map.setView([lat, lng], 16);
+    function renderFaultPathSequenceStrip(resultData) {
+        const stripEl = document.getElementById('faultPathSequenceStrip');
+        if (!stripEl) return;
 
-        // Render transline polyline path if sequence coordinates exist
-        if (poleSeq && poleSeq.length > 0) {
-            const latlngs = [];
-            poleSeq.forEach(p => {
-                if (p.from_coords && p.from_coords.lat) latlngs.push([p.from_coords.lat, p.from_coords.lng]);
-                if (p.to_coords && p.to_coords.lat) latlngs.push([p.to_coords.lat, p.to_coords.lng]);
-            });
-            if (latlngs.length > 1) {
-                pathPolyline = L.polyline(latlngs, {color: '#0284c7', weight: 4, opacity: 0.8}).addTo(map);
-            }
+        const pathSeq = (Array.isArray(resultData?.fault_path_sequence) && resultData.fault_path_sequence.length > 0)
+            ? resultData.fault_path_sequence
+            : (Array.isArray(resultData?.pole_sequence) ? resultData.pole_sequence.slice(0, 12) : []);
+
+        if (!pathSeq || pathSeq.length === 0) {
+            stripEl.style.display = 'none';
+            stripEl.innerHTML = '';
+            return;
         }
 
-        faultMarker = L.circleMarker([lat, lng], {
-            radius: 12,
-            fillColor: '#ef4444',
-            color: '#ffffff',
-            weight: 3,
-            opacity: 1,
-            fillOpacity: 0.9
-        }).addTo(map);
+        const srcCtx = resultData?.source_context || {};
+        const isProt = (resultData?.source_type === 'PROTECTION' || srcCtx.source_type === 'PROTECTION');
+        const srcTitle = isProt
+            ? ('⚡ ' + (srcCtx.protection_device?.nama_asset || srcCtx.source_label || 'PROTEKSI'))
+            : ('GI PANGKAL (' + (resultData?.feeder_name || '') + ')');
+        const anchorCode = resultData?.anchor_pole?.kode_asset || pathSeq[0]?.from_pole_kode || 'PANGKAL';
 
-        pulseCircle = L.circle([lat, lng], {
-            radius: 120,
-            color: '#ef4444',
-            fillColor: '#f87171',
-            fillOpacity: 0.2
-        }).addTo(map);
+        let html = `
+            <div class="fl-seq-node is-source" title="${escapeHtml(resultData?.anchor_description || srcTitle)}">
+                <span class="fw-bold">${escapeHtml(srcTitle)}</span>
+                <span class="font-monospace" style="font-size:0.64rem;">${escapeHtml(anchorCode)}</span>
+                <span class="badge bg-dark text-info mt-1" style="font-size:0.62rem;">0.00 km (Acuan)</span>
+            </div>
+        `;
 
-        const fTag = feederName ? ('<span class="text-muted small">Penyulang: ' + feederName + (feederCode ? ' (' + feederCode + ')' : '') + '</span><br>') : '';
-        faultMarker.bindPopup('<b>Titik Gangguan: ' + (assetLabel || '') + '</b><br>' + fTag + 'Lat: ' + lat.toFixed(5) + '<br>Lng: ' + lng.toFixed(5)).openPopup();
+        // If path is long, show first 3, ellipsis, and last 5 segments up to the fault zone
+        const maxDisplay = 8;
+        let displayItems = pathSeq;
+        let truncatedCount = 0;
+        if (pathSeq.length > maxDisplay) {
+            truncatedCount = pathSeq.length - maxDisplay;
+            displayItems = [
+                ...pathSeq.slice(0, 3),
+                { _ellipsis: true, skipped: truncatedCount },
+                ...pathSeq.slice(pathSeq.length - 5)
+            ];
+        }
+
+        displayItems.forEach(seg => {
+            if (seg._ellipsis) {
+                html += `<span class="fl-seq-arrow">&rarr;</span>
+                    <div class="fl-seq-node text-center" style="min-width:70px;opacity:0.8;">
+                        <span class="fw-bold">... +${seg.skipped} bentang ...</span>
+                        <span style="font-size:0.62rem;">Jalur Hilir</span>
+                    </div>`;
+                return;
+            }
+            const isZone = Boolean(seg.is_fault_zone);
+            const kmStr = (Number(seg.cumulative_meters || 0) / 1000).toFixed(2) + ' km';
+            const mStr = Number(seg.cumulative_meters || 0).toFixed(0) + ' m';
+            html += `<span class="fl-seq-arrow">&rarr;</span>
+                <div class="fl-seq-node ${isZone ? 'is-fault-zone' : ''}">
+                    <span class="fw-bold">${escapeHtml(seg.to_pole_kode)}</span>
+                    <span style="font-size:0.62rem;">+${Number(seg.span_meters || 0).toFixed(0)}m &bull; ${kmStr} (${mStr})</span>
+                    ${isZone ? '<span class="badge bg-danger text-white mt-1" style="font-size:0.6rem;">✕ ZONA GANGGUAN</span>' : '<span class="text-success mt-1" style="font-size:0.6rem;">● Tiang Normal</span>'}
+                </div>`;
+        });
+
+        stripEl.innerHTML = html;
+        stripEl.style.display = 'flex';
     }
 
-    // Initial map state: only show fault marker if initial result has valid fault_point & candidate_assets
-    if (lastCalculatedResult && lastCalculatedResult.fault_point && lastCalculatedResult.fault_point.lat && lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets.length > 0) {
+    function extractValidSegmentLatLngs(seg) {
+        if (Array.isArray(seg.path_coords) && seg.path_coords.length >= 2) {
+            const pts = [];
+            seg.path_coords.forEach(pt => {
+                const lat = Number(pt.lat ?? pt[0] ?? 0);
+                const lng = Number(pt.lng ?? pt[1] ?? 0);
+                if (lat !== 0 && lng !== 0 && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+                    pts.push([lat, lng]);
+                }
+            });
+            if (pts.length >= 2) return pts;
+        }
+        const fLat = Number(seg.from_coords?.lat ?? 0);
+        const fLng = Number(seg.from_coords?.lng ?? 0);
+        const tLat = Number(seg.to_coords?.lat ?? 0);
+        const tLng = Number(seg.to_coords?.lng ?? 0);
+        if (fLat !== 0 && fLng !== 0 && tLat !== 0 && tLng !== 0) {
+            return [[fLat, fLng], [tLat, tLng]];
+        }
+        return [];
+    }
+
+    function updateMiniMap(lat, lng, assetLabel, poleSeq, feederName, feederCode, fullResultData = null) {
+        const resultObj = fullResultData || lastCalculatedResult || {};
+        const srcCtx = resultObj.source_context || {};
+        const isProt = (resultObj.source_type === 'PROTECTION' || srcCtx.source_type === 'PROTECTION');
+        const srcBadgeSuffix = isProt
+            ? (' — HILIR DARI ' + (srcCtx.protection_device?.nama_asset || srcCtx.source_label || 'PROTEKSI'))
+            : (' — DARI GI PANGKAL');
+
+        const hasFaultPoint = Boolean(lat && lng && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng)));
+        const hasDownstreamSeq = Array.isArray(poleSeq) && poleSeq.length > 0;
+
+        if (!hasFaultPoint && !hasDownstreamSeq) {
+            clearMiniMapLayers(
+                'TIDAK ADA KANDIDAT VALID' + (feederCode ? ' (' + feederCode + ')' : ''),
+                'badge bg-secondary text-white'
+            );
+            return;
+        }
+
+        clearMiniMapLayers(
+            (hasFaultPoint ? 'FAULT POINT LOCATED' : 'JALUR HILIR TERPETAKAN') + (feederCode ? ' (' + feederCode + ')' : '') + srcBadgeSuffix,
+            hasFaultPoint ? 'badge bg-danger text-white' : 'badge bg-info text-dark'
+        );
+
+        if (hasFaultPoint) {
+            currentLat = Number(lat);
+            currentLng = Number(lng);
+        }
+
+        const focusBoundsPoints = [];
+
+        // 1. Optional Upstream Reference Segments (GI -> Protection Device, muted dashed gray)
+        const upstreamSegs = Array.isArray(resultObj.upstream_segments) ? resultObj.upstream_segments : [];
+        upstreamSegs.forEach(uSeg => {
+            const pts = extractValidSegmentLatLngs(uSeg);
+            if (pts.length >= 2) {
+                L.polyline(pts, {
+                    color: '#94a3b8',
+                    weight: 2.5,
+                    opacity: 0.5,
+                    dashArray: '4, 6'
+                }).bindTooltip(
+                    'Jalur Hulu (GI &rarr; Proteksi): ' + escapeHtml(uSeg.from_pole_kode) + ' &rarr; ' + escapeHtml(uSeg.to_pole_kode) + ' (Diblokir dari penelusuran hilir)',
+                    { sticky: true }
+                ).addTo(miniMapLayerGroup);
+            }
+        });
+
+        // 2. Render each downstream transline segment as its OWN individual L.polyline (prevents cross-branch polygon/web)
+        const poleMap = new Map();
+        const faultZonePoleIds = new Set();
+
+        if (hasDownstreamSeq) {
+            poleSeq.forEach(seg => {
+                const pts = extractValidSegmentLatLngs(seg);
+                if (pts.length < 2) return;
+
+                const isZone = Boolean(seg.is_fault_zone);
+                const isOnFaultPath = Boolean(seg.is_on_fault_path);
+                const condText = escapeHtml(
+                    ((seg.conductor_type || 'Belum tersedia') + ((seg.conductor_size && seg.conductor_size !== '-') ? ' ' + seg.conductor_size : '')).trim()
+                );
+
+                if (isZone) {
+                    faultZonePoleIds.add(seg.from_pole_id);
+                    faultZonePoleIds.add(seg.to_pole_id);
+                }
+
+                if (isZone) {
+                    L.polyline(pts, {
+                        color: '#f59e0b',
+                        weight: 9,
+                        opacity: 0.85,
+                        lineCap: 'round'
+                    }).addTo(miniMapLayerGroup);
+
+                    L.polyline(pts, {
+                        color: '#ef4444',
+                        weight: 4,
+                        opacity: 1.0,
+                        dashArray: '6, 6'
+                    }).bindPopup(
+                        '<b>Zona Gangguan (' + escapeHtml(seg.from_pole_kode) + ' &rarr; ' + escapeHtml(seg.to_pole_kode) + ')</b><br>' +
+                        'Bentang: ' + Number(seg.span_meters).toFixed(1) + ' m<br>' +
+                        'Jarak Kumulatif dari Acuan: <b>' + Number(seg.cumulative_meters).toFixed(1) + ' m (' + (Number(seg.cumulative_meters) / 1000).toFixed(2) + ' km)</b><br>' +
+                        'Konduktor: ' + condText
+                    ).addTo(miniMapLayerGroup);
+
+                    pts.forEach(p => focusBoundsPoints.push(p));
+                } else if (isOnFaultPath) {
+                    L.polyline(pts, {
+                        color: '#0284c7',
+                        weight: 5,
+                        opacity: 0.92,
+                        lineCap: 'round'
+                    }).addTo(miniMapLayerGroup);
+
+                    L.polyline(pts, {
+                        color: '#ef4444',
+                        weight: 2.5,
+                        opacity: 0.85,
+                        dashArray: '6, 8'
+                    }).bindTooltip(
+                        'Jalur Hilir #' + seg.seq_no + ': ' + escapeHtml(seg.from_pole_kode) + ' &rarr; ' + escapeHtml(seg.to_pole_kode) +
+                        ' (' + Number(seg.cumulative_meters).toFixed(1) + ' m &bull; ' + condText + ')',
+                        { sticky: true }
+                    ).addTo(miniMapLayerGroup);
+
+                    pts.forEach(p => focusBoundsPoints.push(p));
+                } else {
+                    L.polyline(pts, {
+                        color: '#0284c7',
+                        weight: 3,
+                        opacity: 0.6
+                    }).bindTooltip(
+                        escapeHtml(seg.from_pole_kode) + ' &rarr; ' + escapeHtml(seg.to_pole_kode) +
+                        ' (Kumulatif Hilir: ' + Number(seg.cumulative_meters).toFixed(1) + ' m &bull; ' + condText + ')',
+                        { sticky: true }
+                    ).addTo(miniMapLayerGroup);
+                }
+
+                if (seg.from_coords && seg.from_coords.lat && seg.from_coords.lng) {
+                    const existingFrom = poleMap.get(seg.from_pole_id);
+                    poleMap.set(seg.from_pole_id, {
+                        id: seg.from_pole_id,
+                        kode: seg.from_pole_kode,
+                        lat: Number(seg.from_coords.lat),
+                        lng: Number(seg.from_coords.lng),
+                        cum_m: existingFrom ? Math.min(existingFrom.cum_m, Number(seg.cum_start_meters || 0)) : Number(seg.cum_start_meters || 0),
+                        on_path: (existingFrom?.on_path || false) || isOnFaultPath || isZone
+                    });
+                }
+                if (seg.to_coords && seg.to_coords.lat && seg.to_coords.lng) {
+                    const existingTo = poleMap.get(seg.to_pole_id);
+                    poleMap.set(seg.to_pole_id, {
+                        id: seg.to_pole_id,
+                        kode: seg.to_pole_kode,
+                        lat: Number(seg.to_coords.lat),
+                        lng: Number(seg.to_coords.lng),
+                        cum_m: Number(seg.cumulative_meters || 0),
+                        on_path: (existingTo?.on_path || false) || isOnFaultPath || isZone
+                    });
+                }
+            });
+        }
+
+        // 3. Render Pole Node Markers (Tiang Normal #10b981 & Estimasi Zona #f59e0b)
+        const anchorPoleId = Number(resultObj.anchor_pole?.id || 0);
+        poleMap.forEach(pole => {
+            const isZonePole = faultZonePoleIds.has(pole.id);
+            const isAnchor = (pole.id === anchorPoleId);
+            if (!pole.lat || !pole.lng) return;
+
+            if (isZonePole) {
+                L.circleMarker([pole.lat, pole.lng], {
+                    radius: 7,
+                    fillColor: '#f59e0b',
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.95
+                }).bindTooltip(
+                    '<b>' + escapeHtml(pole.kode) + '</b> (Zona Gangguan &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km)',
+                    { direction: 'top', offset: [0, -6] }
+                ).addTo(miniMapLayerGroup);
+            } else if (pole.on_path || isAnchor) {
+                L.circleMarker([pole.lat, pole.lng], {
+                    radius: isAnchor ? 7 : 5.5,
+                    fillColor: isAnchor ? '#8b5cf6' : '#10b981',
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.95
+                }).bindTooltip(
+                    '<b>' + escapeHtml(pole.kode) + '</b> &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km (' + pole.cum_m.toFixed(0) + ' m)',
+                    { direction: 'top', offset: [0, -5] }
+                ).addTo(miniMapLayerGroup);
+            } else {
+                L.circleMarker([pole.lat, pole.lng], {
+                    radius: 3.5,
+                    fillColor: '#10b981',
+                    color: '#ffffff',
+                    weight: 1,
+                    opacity: 0.85,
+                    fillOpacity: 0.8
+                }).bindTooltip(
+                    escapeHtml(pole.kode) + ' (' + pole.cum_m.toFixed(0) + ' m)',
+                    { direction: 'top' }
+                ).addTo(miniMapLayerGroup);
+            }
+        });
+
+        // 4. Render Source Anchor Callout Badge (0.0 km at Mounting Pole of Recloser/PMCB or GI Pangkal)
+        const anchorPole = resultObj.anchor_pole;
+        if (anchorPole && anchorPole.latitude && anchorPole.longitude) {
+            const aLat = Number(anchorPole.latitude);
+            const aLng = Number(anchorPole.longitude);
+            focusBoundsPoints.push([aLat, aLng]);
+
+            const badgeLabel = isProt
+                ? ('⚡ ' + (srcCtx.protection_device?.nama_asset || srcCtx.source_label || 'PROTEKSI') + ' &bull; 0.0 km')
+                : ('⚡ GI PANGKAL (' + (anchorPole.kode_asset || feederName || '') + ') &bull; 0.0 km');
+
+            const sourceIcon = L.divIcon({
+                className: 'fl-source-div-icon',
+                html: `<div class="fl-source-badge-icon ${isProt ? '' : 'fl-source-badge-gi'}">${badgeLabel}</div>`,
+                iconSize: null,
+                iconAnchor: [16, 34]
+            });
+
+            L.marker([aLat, aLng], { icon: sourceIcon, zIndexOffset: 900 })
+                .bindPopup(
+                    '<b>Titik Awal Penelusuran (0.0 m)</b><br>' +
+                    escapeHtml(resultObj.anchor_description || '') + '<br>' +
+                    'Tiang Acuan: <code>' + escapeHtml(anchorPole.kode_asset) + '</code><br>' +
+                    'Arah Traversal: <b>Hilir (Menuju Ujung Penyulang)</b>'
+                )
+                .addTo(miniMapLayerGroup);
+        }
+
+        // 5. Render Fault Point Marker (✕) & Radius Circle + Distance Callout ONLY when a valid fault coordinate exists
+        if (hasFaultPoint) {
+            const fLatNum = Number(lat);
+            const fLngNum = Number(lng);
+            focusBoundsPoints.push([fLatNum, fLngNum]);
+
+            L.circle([fLatNum, fLngNum], {
+                radius: 85,
+                color: '#ef4444',
+                weight: 2,
+                dashArray: '5, 5',
+                fillColor: '#f87171',
+                fillOpacity: 0.16
+            }).addTo(miniMapLayerGroup);
+
+            const crossIcon = L.divIcon({
+                className: 'fl-fault-cross-wrapper',
+                html: '<div class="fl-fault-cross-marker">&#10005;</div>',
+                iconSize: [26, 26],
+                iconAnchor: [13, 13]
+            });
+
+            const distKm = (Number(resultObj.calculated_distance_m || 0) / 1000).toFixed(2);
+            const distM = Number(resultObj.calculated_distance_m || 0).toFixed(1);
+            const refSourceShort = isProt
+                ? (srcCtx.protection_device?.nama_asset || srcCtx.source_label || 'Peralatan Proteksi')
+                : ('GI Pangkal ' + (feederName || ''));
+
+            const faultMarker = L.marker([fLatNum, fLngNum], { icon: crossIcon, zIndexOffset: 1000 }).addTo(miniMapLayerGroup);
+            const fTag = feederName ? ('<span class="text-muted small">Penyulang: ' + escapeHtml(feederName) + (feederCode ? ' (' + escapeHtml(feederCode) + ')' : '') + '</span><br>') : '';
+            faultMarker.bindPopup(
+                '<b>Titik Estimasi Gangguan: ' + escapeHtml(assetLabel || '') + '</b><br>' +
+                fTag +
+                'Jarak Hilir: <b>' + distKm + ' km (' + distM + ' m)</b> dari ' + escapeHtml(refSourceShort) + '<br>' +
+                'Segmen: <code>' + escapeHtml(resultObj.fault_zone_segment ? (resultObj.fault_zone_segment.from_pole_kode + ' -> ' + resultObj.fault_zone_segment.to_pole_kode) : '-') + '</code><br>' +
+                'Koordinat: ' + fLatNum.toFixed(6) + ', ' + fLngNum.toFixed(6)
+            );
+
+            const calloutIcon = L.divIcon({
+                className: 'fl-fault-callout-wrapper',
+                html: `<div class="fl-fault-callout-icon">✕ ${distKm} km (${distM} m) dari ${escapeHtml(refSourceShort)} &bull; ${escapeHtml(assetLabel || '')}</div>`,
+                iconSize: null,
+                iconAnchor: [-16, 14]
+            });
+            L.marker([fLatNum, fLngNum], { icon: calloutIcon, zIndexOffset: 950, interactive: false }).addTo(miniMapLayerGroup);
+        }
+
+        // 6. Fit Map Bounds smoothly around the active path
+        if (focusBoundsPoints.length >= 2) {
+            const bounds = L.latLngBounds(focusBoundsPoints);
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [42, 42], maxZoom: 17 });
+            } else if (hasFaultPoint) {
+                map.setView([Number(lat), Number(lng)], 16);
+            }
+        } else if (focusBoundsPoints.length === 1) {
+            map.setView(focusBoundsPoints[0], 16);
+        } else if (hasFaultPoint) {
+            map.setView([Number(lat), Number(lng)], 16);
+        }
+
+        // 7. Render the linear pole sequence strip below #miniMap
+        renderFaultPathSequenceStrip(resultObj);
+    }
+
+    // Initial map state
+    if (lastCalculatedResult && ((lastCalculatedResult.fault_point && lastCalculatedResult.fault_point.lat) || (Array.isArray(lastCalculatedResult.pole_sequence) && lastCalculatedResult.pole_sequence.length > 0))) {
+        const initLat = (lastCalculatedResult.fault_point && lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets.length > 0) ? lastCalculatedResult.fault_point.lat : null;
+        const initLng = (lastCalculatedResult.fault_point && lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets.length > 0) ? lastCalculatedResult.fault_point.lng : null;
+        const initLabel = (lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets.length > 0) ? lastCalculatedResult.candidate_assets[0].kode_asset : '';
         updateMiniMap(
-            lastCalculatedResult.fault_point.lat,
-            lastCalculatedResult.fault_point.lng,
-            lastCalculatedResult.candidate_assets[0].kode_asset,
+            initLat,
+            initLng,
+            initLabel,
             lastCalculatedResult.pole_sequence,
             lastCalculatedResult.feeder_name,
-            lastCalculatedResult.feeder_code
+            lastCalculatedResult.feeder_code,
+            lastCalculatedResult
         );
     } else {
         clearMiniMapLayers('TIDAK ADA KANDIDAT VALID', 'badge bg-secondary text-white');
@@ -953,6 +1607,86 @@
     let currentUlpValue = document.getElementById('ulpId') ? document.getElementById('ulpId').value : '';
     let currentFeederValue = document.getElementById('feederId') ? document.getElementById('feederId').value : '';
 
+    // Helper: Update Automatic Conductor & Topological Path Length boxes in the Form
+    function updateAutoConductorAndTopologyUI(condObj, topoObj, srcType = 'GI') {
+        const condBadge = document.getElementById('autoConductorStatusBadge');
+        const condDisplay = document.getElementById('autoConductorDisplay');
+        const condSubtext = document.getElementById('autoConductorSubtext');
+        const condRanges = document.getElementById('autoConductorRangesList');
+        const condHidden = document.getElementById('conductorType');
+
+        if (condObj) {
+            const isAvail = Boolean(condObj.is_available);
+            const statusStr = condObj.status || (isAvail ? 'OTOMATIS' : 'BELUM_TERSEDIA');
+            if (condBadge) {
+                condBadge.innerText = statusStr.replace(/_/g, ' ');
+                condBadge.className = isAvail
+                    ? (condObj.is_hybrid ? 'badge bg-warning-subtle text-dark border' : 'badge bg-primary-subtle text-primary border')
+                    : 'badge bg-secondary-subtle text-muted border';
+            }
+            if (condDisplay) {
+                condDisplay.innerText = condObj.display_label || condObj.official_type || 'Belum tersedia';
+                condDisplay.className = isAvail ? 'fw-bold text-dark small' : 'fw-bold text-danger small';
+            }
+            if (condSubtext) {
+                condSubtext.innerText = condObj.status_message || (isAvail ? 'Diambil otomatis dari gis_translines aktif pada jalur hilir terpilih.' : 'Data konduktor pada jalur ini belum tersedia.');
+            }
+            if (condHidden) {
+                condHidden.value = 'AUTO';
+            }
+            if (condRanges) {
+                const ranges = Array.isArray(condObj.segment_ranges) ? condObj.segment_ranges : [];
+                if (ranges.length > 0 && isAvail) {
+                    condRanges.innerHTML = ranges.slice(0, 6).map(sr =>
+                        `<div class="text-muted"><i class="fas fa-route text-primary me-1"></i>${escapeHtml(sr.range_text || (sr.start_m + ' m – ' + sr.end_m + ' m: ' + sr.conductor_label))}</div>`
+                    ).join('');
+                    condRanges.style.display = 'block';
+                } else {
+                    condRanges.innerHTML = '';
+                    condRanges.style.display = 'none';
+                }
+            }
+        }
+
+        const pathLabelEl = document.getElementById('topologyPathLengthLabel');
+        const pathValueEl = document.getElementById('topologyPathLengthValue');
+        const pathConstraintEl = document.getElementById('topologyConstraintNotice');
+
+        const defaultLabel = srcType === 'PROTECTION'
+            ? 'Panjang jalur dari proteksi ke ujung feeder (estimasi topologi)'
+            : 'Panjang jalur dari GI ke ujung feeder (estimasi topologi)';
+
+        const labelText = topoObj?.topology_path_length_label || defaultLabel;
+        if (pathLabelEl) {
+            pathLabelEl.innerHTML = '<i class="fas fa-ruler-horizontal text-success me-1"></i> ' + escapeHtml(labelText);
+        }
+
+        const pathLenM = topoObj?.topology_path_length_m;
+        const constraintErr = topoObj?.constraint_error || null;
+
+        if (pathValueEl) {
+            if (pathLenM !== null && pathLenM !== undefined && Number(pathLenM) > 0) {
+                const mNum = Number(pathLenM);
+                const kmNum = (mNum / 1000.0).toFixed(2);
+                pathValueEl.innerText = mNum.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' m (' + kmNum + ' km)';
+                pathValueEl.className = 'fs-6 fw-bold text-success';
+            } else {
+                pathValueEl.innerText = 'Belum tersedia';
+                pathValueEl.className = 'fs-6 fw-bold text-secondary';
+            }
+        }
+
+        if (pathConstraintEl) {
+            if (constraintErr) {
+                pathConstraintEl.innerHTML = '<span class="text-danger fw-semibold"><i class="fas fa-triangle-exclamation me-1"></i>' + escapeHtml(constraintErr) + '</span>';
+            } else if (pathLenM !== null && pathLenM !== undefined && Number(pathLenM) > 0) {
+                pathConstraintEl.innerText = 'Dihitung otomatis dari titik sumber acuan (0.0 m) menelusuri transline ke arah hilir hingga ujung penyulang. Bukan jarak terukur relay.';
+            } else {
+                pathConstraintEl.innerText = 'Jalur transline hilir dari titik sumber belum tersedia atau belum lengkap.';
+            }
+        }
+    }
+
     // Reset previous analysis results, markers, zones, and layers when feeder/ULP changes
     function resetAnalysisResultsAndMap(feederLabel = '') {
         if (locateAbortController) {
@@ -973,7 +1707,7 @@
         const resTotalSpan = document.getElementById('resTotalSpan');
         if (resTotalSpan) resTotalSpan.innerText = '0';
         const resAnchorDesc = document.getElementById('resAnchorDesc');
-        if (resAnchorDesc) resAnchorDesc.innerText = 'Klik "Hitung Lokasi Gangguan" untuk menjalankan analisis pada penyulang terpilih.';
+        if (resAnchorDesc) resAnchorDesc.innerText = 'Klik "Hitung & Tampilkan Estimasi" untuk menjalankan analisis pada penyulang terpilih.';
         const resCandidateAsset = document.getElementById('resCandidateAsset');
         if (resCandidateAsset) resCandidateAsset.innerHTML = '<span class="text-muted">Menunggu eksekusi analisis pada penyulang terpilih...</span>';
         const resSegmentName = document.getElementById('resSegmentName');
@@ -986,10 +1720,12 @@
         if (poleSeqCount) poleSeqCount.innerText = '0 Bentang';
         const poleSequenceBody = document.getElementById('poleSequenceBody');
         if (poleSequenceBody) {
-            poleSequenceBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Klik tombol <strong>HITUNG LOKASI GANGGUAN</strong> untuk menelusuri graf transline penyulang ini.</td></tr>';
+            poleSequenceBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Klik tombol <strong>HITUNG &amp; TAMPILKAN ESTIMASI</strong> untuk menelusuri graf transline penyulang ini.</td></tr>';
         }
         const insufficientAlert = document.getElementById('insufficientDataAlert');
         if (insufficientAlert) insufficientAlert.style.display = 'none';
+        const saveBanner = document.getElementById('saveCaseStatusBanner');
+        if (saveBanner) saveBanner.style.display = 'none';
         const outcomeBadge = document.getElementById('outcomeBadge');
         if (outcomeBadge) {
             outcomeBadge.className = 'badge-unresolved';
@@ -1041,6 +1777,12 @@
             if (srcGI) srcGI.checked = true;
             if (protContainer) protContainer.style.display = 'none';
         }
+
+        updateAutoConductorAndTopologyUI(
+            { is_available: false, status: 'BELUM_TERSEDIA', display_label: 'Belum tersedia', status_message: 'Pilih penyulang dan sumber acuan terlebih dahulu.' },
+            { topology_path_length_m: null, topology_path_length_label: 'Panjang jalur dari GI ke ujung feeder (estimasi topologi)' },
+            'GI'
+        );
     }
 
     async function handleUlpChange(ulpId) {
@@ -1053,11 +1795,9 @@
         const feederSelect = document.getElementById('feederId');
         if (!feederSelect) return;
 
-        // 1. Immediately empty and show loading
         feederSelect.innerHTML = '<option value="">Memuat penyulang...</option>';
         refreshSelect2(feederSelect);
 
-        // 2. Clear all downstream context & previous feeder map/results immediately
         clearFeederNetworkContext();
         resetAnalysisResultsAndMap('Belum Dipilih');
 
@@ -1067,7 +1807,6 @@
             return;
         }
 
-        // 3. Abort any previous pending request to prevent race conditions
         if (ulpAbortController) {
             ulpAbortController.abort();
         }
@@ -1080,7 +1819,6 @@
             });
             const data = await res.json();
 
-            // Stale response check: discard if a newer ULP selection was made
             if (thisSeq !== ulpFetchSeq) return;
 
             feederSelect.innerHTML = '';
@@ -1119,13 +1857,15 @@
         currentFeederValue = feederId;
         resetAnalysisResultsAndMap();
         if (feederId) {
-            loadFeederNetworkContext(feederId);
+            const srcRadio = document.querySelector('input[name="sourceType"]:checked');
+            const srcType = srcRadio ? srcRadio.value : 'GI';
+            const protId = document.getElementById('protectionDeviceId') ? document.getElementById('protectionDeviceId').value : '';
+            loadFeederNetworkContext(feederId, srcType, protId);
         } else {
             clearFeederNetworkContext();
         }
     }
 
-    // Attach listeners for both Native and jQuery/Select2 events
     const ulpEl = document.getElementById('ulpId');
     const feederEl = document.getElementById('feederId');
 
@@ -1140,8 +1880,8 @@
         $('#feederId').on('change', function() { handleFeederChange(this.value); });
     }
 
-    // Feeder Network Context Loader (Race-Condition Protected)
-    async function loadFeederNetworkContext(feederId) {
+    // Feeder Network Context Loader (Race-Condition Protected, Source-Aware)
+    async function loadFeederNetworkContext(feederId, sourceTypeOverride = null, protectionIdOverride = null) {
         if (!feederId) return;
 
         if (contextAbortController) {
@@ -1152,17 +1892,25 @@
 
         const pill = document.getElementById('feederReadinessPill');
         const contextDetails = document.getElementById('feederContextDetails');
-        const condSelect = document.getElementById('conductorType');
         const srcProtRadio = document.getElementById('srcProtection');
         const protNotice = document.getElementById('noProtectionNotice');
         const protContainer = document.getElementById('protectionDeviceContainer');
         const protSelect = document.getElementById('protectionDeviceId');
 
+        const activeSrcRadio = document.querySelector('input[name="sourceType"]:checked');
+        const srcType = sourceTypeOverride || (activeSrcRadio ? activeSrcRadio.value : 'GI');
+        const prevProtId = protectionIdOverride !== null ? String(protectionIdOverride) : (protSelect ? String(protSelect.value || '') : '');
+
         pill.className = 'badge bg-secondary-subtle text-dark border';
         pill.innerText = 'Menganalisis...';
 
+        const qs = new URLSearchParams({
+            source_type: srcType,
+            protection_device_id: prevProtId || '0'
+        });
+
         try {
-            const res = await fetch('<?= site_url('api/fault-locator/feeder-network-context') ?>/' + encodeURIComponent(feederId), {
+            const res = await fetch('<?= site_url('api/fault-locator/feeder-network-context') ?>/' + encodeURIComponent(feederId) + '?' + qs.toString(), {
                 signal: contextAbortController.signal
             });
             const json = await res.json();
@@ -1171,29 +1919,28 @@
 
             if (json.status === 'success' && json.data) {
                 const data = json.data;
+                const topo = data.topology || {};
+                const cond = data.conductor || {};
 
-                // 1. Auto-select official dominant conductor
-                if (data.conductor && data.conductor.official_type) {
-                    for (let i = 0; i < condSelect.options.length; i++) {
-                        if (condSelect.options[i].value === data.conductor.official_type) {
-                            condSelect.selectedIndex = i;
-                            break;
-                        }
-                    }
-                }
+                // 1. Update Automatic Conductor & Topological Path Length boxes
+                updateAutoConductorAndTopologyUI(cond, topo, srcType);
 
                 // 2. Display readiness and topology summary
-                const topo = data.topology || {};
                 const isReady = topo.is_topology_ready;
                 pill.className = isReady ? 'badge bg-success-subtle text-success border border-success' : 'badge bg-warning-subtle text-dark border border-warning';
                 pill.innerText = isReady ? 'TOPOLOGI SIAP' : 'TOPOLOGI BELUM LENGKAP';
 
-                let detailsHtml = `<strong>Bentang Resmi:</strong> ${Number(topo.total_span_meters || 0).toLocaleString()} m (${topo.total_span_km || 0} km) &bull; `;
+                const pathLenLabel = topo.topology_path_length_label || 'Panjang jalur ke ujung feeder (estimasi topologi)';
+                const pathLenText = (topo.topology_path_length_m !== null && topo.topology_path_length_m !== undefined)
+                    ? `${Number(topo.topology_path_length_m).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} m (${topo.topology_path_length_km || 0} km)`
+                    : 'Belum tersedia';
+
+                let detailsHtml = `<strong>${escapeHtml(pathLenLabel)}:</strong> <span class="text-success fw-bold">${escapeHtml(pathLenText)}</span><br>`;
                 detailsHtml += `<strong>Tiang JTM:</strong> ${topo.valid_jtm_poles_count || 0} tiang &bull; `;
-                detailsHtml += `<strong>Segmen:</strong> ${topo.segment_count || 0} span<br>`;
-                detailsHtml += `<strong>Konduktor Dominan:</strong> <span class="badge bg-light text-primary border">${data.conductor.official_type}</span> `;
-                if (data.conductor.is_hybrid) {
-                    detailsHtml += `<span class="badge bg-warning-subtle text-dark border">Campuran</span> `;
+                detailsHtml += `<strong>Segmen Hilir:</strong> ${topo.traversed_segment_count ?? topo.segment_count ?? 0} span<br>`;
+                detailsHtml += `<strong>Konduktor Jalur:</strong> <span class="badge bg-light text-primary border">${escapeHtml(cond.display_label || cond.official_type || 'Belum tersedia')}</span> `;
+                if (cond.is_hybrid) {
+                    detailsHtml += `<span class="badge bg-warning-subtle text-dark border">Multi-Segmen</span> `;
                 }
                 detailsHtml += `<a class="text-primary text-decoration-none fw-bold ms-1" data-bs-toggle="collapse" href="#feederSegmentsCollapse" role="button" aria-expanded="false" aria-controls="feederSegmentsCollapse">[Lihat Segmen]</a>`;
                 contextDetails.innerHTML = detailsHtml;
@@ -1208,20 +1955,21 @@
                         const fromPole = s.from_pole || s.source_kode || '-';
                         const toPole = s.to_pole || s.target_kode || '-';
                         const spanM = s.span_meters !== undefined ? s.span_meters : (s.distance_meters || 0);
+                        const condText = ((s.conductor_type || 'Belum tersedia') + ((s.conductor_size && s.conductor_size !== '-') ? ' ' + s.conductor_size : '')).trim();
                         tr.innerHTML = `
                             <td>${seqNo}</td>
-                            <td>${fromPole}</td>
-                            <td>${toPole}</td>
+                            <td>${escapeHtml(fromPole)}</td>
+                            <td>${escapeHtml(toPole)}</td>
                             <td class="text-end">${Number(spanM).toFixed(1)}m</td>
-                            <td><span class="badge bg-light text-muted border" style="font-size:0.65rem;">${s.conductor_type}</span></td>
+                            <td><span class="badge bg-light text-muted border" style="font-size:0.65rem;">${escapeHtml(condText)}</span></td>
                         `;
                         segTbody.appendChild(tr);
                     });
                 } else {
-                    segTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Tidak ada segmen transline tiang JTM terpetakan untuk penyulang ini.</td></tr>';
+                    segTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Tidak ada segmen transline tiang JTM terpetakan untuk titik sumber ini.</td></tr>';
                 }
 
-                // 4. Update Protection Devices dropdown
+                // 4. Update Protection Devices dropdown while preserving active selection
                 const pDevs = data.protection_devices || {};
                 protSelect.innerHTML = '<option value="">-- Pilih Perangkat Proteksi --</option>';
                 if (pDevs.available && pDevs.devices && pDevs.devices.length > 0) {
@@ -1231,6 +1979,9 @@
                         const opt = document.createElement('option');
                         opt.value = d.id;
                         opt.innerText = d.display_label;
+                        if (prevProtId && String(d.id) === String(prevProtId)) {
+                            opt.selected = true;
+                        }
                         protSelect.appendChild(opt);
                     });
                 } else {
@@ -1254,23 +2005,143 @@
         loadFeederNetworkContext(document.getElementById('feederId').value);
     }
 
-    // Toggle Protection Device container
+    // Toggle Protection Device container & refresh source-aware topology/conductor context
     document.querySelectorAll('input[name="sourceType"]').forEach(el => {
-        el.addEventListener('change', function() {
+        el.addEventListener('change', async function() {
             const container = document.getElementById('protectionDeviceContainer');
+            const protSelect = document.getElementById('protectionDeviceId');
+            const feederVal = document.getElementById('feederId') ? document.getElementById('feederId').value : '';
+
+            resetAnalysisResultsAndMap();
+
             if (this.value === 'PROTECTION') {
                 container.style.display = 'block';
+                if (protSelect && !protSelect.value && protSelect.options.length === 2) {
+                    protSelect.selectedIndex = 1;
+                }
+                const chosenProt = protSelect ? protSelect.value : '';
+                if (feederVal) {
+                    await loadFeederNetworkContext(feederVal, 'PROTECTION', chosenProt);
+                }
+                if (feederVal && chosenProt) {
+                    document.getElementById('btnLocateFault').click();
+                } else {
+                    const resAnchorDesc = document.getElementById('resAnchorDesc');
+                    if (resAnchorDesc) {
+                        resAnchorDesc.innerText = 'Pilih perangkat proteksi (Recloser / PMCB) untuk menghitung jarak ke arah hilir penyulang.';
+                    }
+                }
             } else {
                 container.style.display = 'none';
+                if (feederVal) {
+                    await loadFeederNetworkContext(feederVal, 'GI', 0);
+                    document.getElementById('btnLocateFault').click();
+                }
             }
         });
     });
 
+    const protDeviceSelectEl = document.getElementById('protectionDeviceId');
+    if (protDeviceSelectEl) {
+        protDeviceSelectEl.addEventListener('change', async function() {
+            resetAnalysisResultsAndMap();
+            const srcTypeEl = document.querySelector('input[name="sourceType"]:checked');
+            const feederVal = document.getElementById('feederId') ? document.getElementById('feederId').value : '';
+            if (feederVal) {
+                await loadFeederNetworkContext(feederVal, srcTypeEl ? srcTypeEl.value : 'PROTECTION', this.value);
+            }
+            if (this.value && feederVal && srcTypeEl && srcTypeEl.value === 'PROTECTION') {
+                document.getElementById('btnLocateFault').click();
+            }
+        });
+    }
+
+    // Parse & Validate Current (A), Phase Voltage (kV), and Optional Relay Distance (m)
+    // Strictly distinguishes 0.00 kV (0.0) from empty/unentered (null)
+    function parseAndValidateFormTelemetry() {
+        const errors = [];
+        const alertEl = document.getElementById('telemetryValidationAlert');
+
+        function readCurrent(elId, label) {
+            const raw = String(document.getElementById(elId)?.value ?? '').trim().replace(',', '.');
+            if (raw === '') return 0.0;
+            const num = Number(raw);
+            if (Number.isNaN(num) || !Number.isFinite(num) || num < 0 || num > 50000) {
+                errors.push(`Arus ${label} harus berupa angka 0.00 – 50,000.00 A.`);
+                return 0.0;
+            }
+            return num;
+        }
+
+        function readOptionalVoltageKv(elId, label) {
+            const raw = String(document.getElementById(elId)?.value ?? '').trim().replace(',', '.');
+            if (raw === '') return null; // Unentered -> null (distinct from 0.00 kV)
+            const num = Number(raw);
+            if (Number.isNaN(num) || !Number.isFinite(num) || num < 0 || num > 35) {
+                errors.push(`Tegangan ${label} harus berada dalam rentang 0.00 – 35.00 kV.`);
+                return null;
+            }
+            return Number(num.toFixed(2));
+        }
+
+        function readOptionalRelayDistanceM(elId) {
+            const raw = String(document.getElementById(elId)?.value ?? '').trim().replace(',', '.');
+            if (raw === '') return null;
+            const num = Number(raw);
+            if (Number.isNaN(num) || !Number.isFinite(num) || num < 0 || num > 250000) {
+                errors.push('Jarak gangguan terukur relay harus berada dalam rentang > 0 – 250,000 Meter.');
+                return null;
+            }
+            return num > 0 ? Number(num.toFixed(1)) : null;
+        }
+
+        const currentR = readCurrent('currentR', 'Fasa R');
+        const currentS = readCurrent('currentS', 'Fasa S');
+        const currentT = readCurrent('currentT', 'Fasa T');
+        const currentN = readCurrent('currentN', 'Netral / GFR');
+
+        const voltageR = readOptionalVoltageKv('voltageR', 'Fasa R');
+        const voltageS = readOptionalVoltageKv('voltageS', 'Fasa S');
+        const voltageT = readOptionalVoltageKv('voltageT', 'Fasa T');
+        const relayDistanceM = readOptionalRelayDistanceM('relayDistanceM');
+
+        if (alertEl) {
+            if (errors.length > 0) {
+                alertEl.innerHTML = '<i class="fas fa-circle-exclamation me-1"></i>' + errors.map(escapeHtml).join('<br>');
+                alertEl.style.display = 'block';
+            } else {
+                alertEl.innerHTML = '';
+                alertEl.style.display = 'none';
+            }
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors,
+            values: {
+                current_r: currentR,
+                current_s: currentS,
+                current_t: currentT,
+                current_n: currentN,
+                voltage_r_kv: voltageR,
+                voltage_s_kv: voltageS,
+                voltage_t_kv: voltageT,
+                relay_distance_m: relayDistanceM,
+                relay_measured_distance_m: relayDistanceM
+            }
+        };
+    }
+
     // Locate Fault Action (Race-Condition Protected)
     document.getElementById('btnLocateFault').addEventListener('click', async function() {
         const feederId = document.getElementById('feederId').value;
+        const alertEl = document.getElementById('telemetryValidationAlert');
+
         if (!feederId) {
-            alert('Silakan pilih penyulang terlebih dahulu.');
+            if (alertEl) {
+                alertEl.innerHTML = '<i class="fas fa-circle-exclamation me-1"></i>Silakan pilih penyulang terlebih dahulu.';
+                alertEl.style.display = 'block';
+            }
             return;
         }
 
@@ -1278,7 +2149,15 @@
         const protId = document.getElementById('protectionDeviceId').value;
 
         if (srcType === 'PROTECTION' && !protId) {
-            alert('Silakan pilih peralatan proteksi yang menjadi acuan.');
+            if (alertEl) {
+                alertEl.innerHTML = '<i class="fas fa-circle-exclamation me-1"></i>Silakan pilih peralatan proteksi (Recloser / PMCB) yang menjadi acuan.';
+                alertEl.style.display = 'block';
+            }
+            return;
+        }
+
+        const parsedTel = parseAndValidateFormTelemetry();
+        if (!parsedTel.valid) {
             return;
         }
 
@@ -1286,14 +2165,18 @@
             ulp_id: document.getElementById('ulpId').value,
             feeder_id: feederId,
             source_type: srcType,
-            protection_device_id: protId ? parseInt(protId) : null,
+            protection_device_id: protId ? parseInt(protId, 10) : null,
             fault_time: document.getElementById('faultTimestamp').value,
-            current_r: parseFloat(document.getElementById('currentR').value) || 0,
-            current_s: parseFloat(document.getElementById('currentS').value) || 0,
-            current_t: parseFloat(document.getElementById('currentT').value) || 0,
-            current_n: parseFloat(document.getElementById('currentN').value) || 0,
-            conductor_type: document.getElementById('conductorType').value,
-            relay_distance_m: document.getElementById('relayDistanceM').value ? parseFloat(document.getElementById('relayDistanceM').value) : null
+            current_r: parsedTel.values.current_r,
+            current_s: parsedTel.values.current_s,
+            current_t: parsedTel.values.current_t,
+            current_n: parsedTel.values.current_n,
+            voltage_r_kv: parsedTel.values.voltage_r_kv,
+            voltage_s_kv: parsedTel.values.voltage_s_kv,
+            voltage_t_kv: parsedTel.values.voltage_t_kv,
+            conductor_type: 'AUTO',
+            relay_distance_m: parsedTel.values.relay_distance_m,
+            relay_measured_distance_m: parsedTel.values.relay_measured_distance_m
         };
 
         if (locateAbortController) {
@@ -1326,25 +2209,102 @@
                 currentCaseUuid = data.data.case_uuid;
                 updateResultsUI(data.data);
             } else {
-                alert(data.message || 'Gagal menghitung lokasi gangguan.');
+                if (alertEl) {
+                    alertEl.innerHTML = '<i class="fas fa-circle-exclamation me-1"></i>' + escapeHtml(data.message || 'Gagal menghitung lokasi gangguan.');
+                    alertEl.style.display = 'block';
+                }
             }
         } catch(e) {
             if (e.name === 'AbortError') return;
             if (thisLocateSeq !== locateFetchSeq) return;
             console.error('Error locating fault:', e);
-            alert('Terjadi kesalahan koneksi server.');
+            if (alertEl) {
+                alertEl.innerHTML = '<i class="fas fa-circle-exclamation me-1"></i>Terjadi kesalahan koneksi server.';
+                alertEl.style.display = 'block';
+            }
         } finally {
             if (thisLocateSeq === locateFetchSeq) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-crosshairs me-2"></i> HITUNG LOKASI GANGGUAN';
+                btn.innerHTML = '<i class="fas fa-crosshairs me-2"></i> HITUNG &amp; TAMPILKAN ESTIMASI';
             }
         }
     });
 
-    // Save Case Action
+    // Attach handler to Review/Reload a saved case into the form & results
+    function bindReviewCaseButton(btn) {
+        if (!btn || btn.dataset.boundReview === '1') return;
+        btn.dataset.boundReview = '1';
+        btn.addEventListener('click', async function() {
+            const ulpId = this.getAttribute('data-ulp-id') || '';
+            const penyulangId = this.getAttribute('data-penyulang-id') || '';
+            const srcType = (this.getAttribute('data-source-type') || 'GI').toUpperCase();
+            const protId = this.getAttribute('data-protection-id') || '';
+
+            const cR = this.getAttribute('data-current-r') ?? '0';
+            const cS = this.getAttribute('data-current-s') ?? '0';
+            const cT = this.getAttribute('data-current-t') ?? '0';
+            const cN = this.getAttribute('data-current-n') ?? '0';
+
+            const vR = this.getAttribute('data-voltage-r') ?? '';
+            const vS = this.getAttribute('data-voltage-s') ?? '';
+            const vT = this.getAttribute('data-voltage-t') ?? '';
+            const rDist = this.getAttribute('data-relay-distance') ?? '';
+
+            document.getElementById('currentR').value = cR;
+            document.getElementById('currentS').value = cS;
+            document.getElementById('currentT').value = cT;
+            document.getElementById('currentN').value = cN;
+
+            document.getElementById('voltageR').value = vR;
+            document.getElementById('voltageS').value = vS;
+            document.getElementById('voltageT').value = vT;
+            document.getElementById('relayDistanceM').value = rDist;
+
+            if (ulpId && document.getElementById('ulpId') && String(document.getElementById('ulpId').value) !== String(ulpId)) {
+                document.getElementById('ulpId').value = ulpId;
+                refreshSelect2(document.getElementById('ulpId'));
+                await handleUlpChange(ulpId);
+            }
+
+            if (penyulangId && document.getElementById('feederId')) {
+                document.getElementById('feederId').value = penyulangId;
+                currentFeederValue = String(penyulangId);
+                refreshSelect2(document.getElementById('feederId'));
+                await loadFeederNetworkContext(penyulangId, srcType, protId);
+            }
+
+            const srcGiRadio = document.getElementById('srcGI');
+            const srcProtRadio = document.getElementById('srcProtection');
+            const protContainer = document.getElementById('protectionDeviceContainer');
+            const protSelect = document.getElementById('protectionDeviceId');
+
+            if (srcType === 'PROTECTION' && srcProtRadio && !srcProtRadio.disabled) {
+                srcProtRadio.checked = true;
+                if (protContainer) protContainer.style.display = 'block';
+                if (protSelect && protId) {
+                    protSelect.value = protId;
+                }
+            } else if (srcGiRadio) {
+                srcGiRadio.checked = true;
+                if (protContainer) protContainer.style.display = 'none';
+            }
+
+            document.getElementById('btnLocateFault').click();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    document.querySelectorAll('.btn-review-case').forEach(bindReviewCaseButton);
+
+    // Save Case Action (Persists Currents & Phase Voltages and updates History Table for immediate review)
     document.getElementById('btnSaveCase').addEventListener('click', async function() {
+        const saveBanner = document.getElementById('saveCaseStatusBanner');
         if (!lastCalculatedResult) {
-            alert('Lakukan perhitungan terlebih dahulu sebelum menyimpan kasus.');
+            if (saveBanner) {
+                saveBanner.className = 'alert alert-warning border py-2 px-3 mb-3 small';
+                saveBanner.innerText = 'Lakukan perhitungan terlebih dahulu sebelum menyimpan kasus.';
+                saveBanner.style.display = 'block';
+            }
             return;
         }
 
@@ -1360,14 +2320,89 @@
             });
             const data = await res.json();
             if (data.status === 'success') {
-                alert('Kasus ' + data.case_number + ' berhasil disimpan ke database SIDAK TEJO.');
-                location.reload();
+                if (saveBanner) {
+                    saveBanner.className = 'alert alert-success border py-2 px-3 mb-3 small';
+                    saveBanner.innerHTML = `<i class="fas fa-circle-check me-1"></i>Kasus <strong>${escapeHtml(data.case_number)}</strong> berhasil disimpan beserta telemetri arus &amp; tegangan fasa.`;
+                    saveBanner.style.display = 'block';
+                }
+
+                // Prepend or update row in #caseHistoryBody so it can be reviewed immediately without page reload
+                const historyTbody = document.getElementById('caseHistoryBody');
+                if (historyTbody) {
+                    const fc = lastCalculatedResult.fault_classification || {};
+                    const cR = Number(fc.current_r ?? 0);
+                    const cS = Number(fc.current_s ?? 0);
+                    const cT = Number(fc.current_t ?? 0);
+                    const cN = Number(fc.current_n ?? 0);
+                    const vR = fc.voltage_r_kv !== undefined ? fc.voltage_r_kv : null;
+                    const vS = fc.voltage_s_kv !== undefined ? fc.voltage_s_kv : null;
+                    const vT = fc.voltage_t_kv !== undefined ? fc.voltage_t_kv : null;
+                    const hasV = (vR !== null || vS !== null || vT !== null);
+                    const topoLen = lastCalculatedResult.topology_path_length_m;
+                    const relayDist = lastCalculatedResult.relay_measured_distance_m;
+
+                    const vStr = hasV
+                        ? `V (R/S/T): ${vR !== null ? Number(vR).toFixed(2) : '-'} / ${vS !== null ? Number(vS).toFixed(2) : '-'} / ${vT !== null ? Number(vT).toFixed(2) : '-'} kV`
+                        : 'Tegangan: Belum diisi';
+
+                    const tr = document.createElement('tr');
+                    tr.setAttribute('data-saved-case-number', data.case_number);
+                    tr.innerHTML = `
+                        <td class="font-monospace text-primary small fw-bold">${escapeHtml(data.case_number)}</td>
+                        <td>
+                            <div class="text-dark fw-bold">${escapeHtml(lastCalculatedResult.feeder_name || '-')}</div>
+                            <div class="text-muted" style="font-size:0.72rem;">${escapeHtml(lastCalculatedResult.source_type || 'GI')} &bull; ${escapeHtml(fc.fault_type_label || fc.fault_type || '-')}</div>
+                        </td>
+                        <td>
+                            <span class="text-danger small fw-bold">${cR.toFixed(1)} / ${cS.toFixed(1)} / ${cT.toFixed(1)} A</span>
+                            <div class="text-muted" style="font-size:0.72rem;">N: ${cN.toFixed(1)} A</div>
+                            <div class="${hasV ? 'text-primary fw-semibold' : 'text-muted'} mt-1" style="font-size:0.71rem;">${escapeHtml(vStr)}</div>
+                        </td>
+                        <td class="small">
+                            ${topoLen !== null && topoLen !== undefined ? `<div class="text-success fw-semibold">Jalur: ${Number(topoLen).toFixed(1)} m</div>` : ''}
+                            ${relayDist !== null && relayDist !== undefined ? `<div class="text-primary fw-bold">Relay: ${Number(relayDist).toFixed(1)} m</div>` : `<div class="text-muted">Relay: -</div>`}
+                        </td>
+                        <td><span class="badge bg-secondary small">MENUNGGU PEMERIKSAAN</span></td>
+                        <td class="small"><span class="text-muted">Belum ada inspeksi</span></td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 btn-review-case"
+                                    data-case-id="${escapeHtml(data.case_id || '')}"
+                                    data-case-number="${escapeHtml(data.case_number)}"
+                                    data-ulp-id="${escapeHtml(lastCalculatedResult.ulp_id || '')}"
+                                    data-penyulang-id="${escapeHtml(lastCalculatedResult.feeder_id || '')}"
+                                    data-source-type="${escapeHtml(lastCalculatedResult.source_type || 'GI')}"
+                                    data-protection-id="${escapeHtml(lastCalculatedResult.protection_device_id || '')}"
+                                    data-current-r="${cR}"
+                                    data-current-s="${cS}"
+                                    data-current-t="${cT}"
+                                    data-current-n="${cN}"
+                                    data-voltage-r="${vR !== null ? Number(vR).toFixed(2) : ''}"
+                                    data-voltage-s="${vS !== null ? Number(vS).toFixed(2) : ''}"
+                                    data-voltage-t="${vT !== null ? Number(vT).toFixed(2) : ''}"
+                                    data-relay-distance="${relayDist !== null && relayDist !== undefined ? Number(relayDist).toFixed(1) : ''}">
+                                    <i class="fas fa-eye me-1"></i> Tinjau
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    historyTbody.prepend(tr);
+                    bindReviewCaseButton(tr.querySelector('.btn-review-case'));
+                }
             } else {
-                alert('Gagal menyimpan: ' + (data.message || ''));
+                if (saveBanner) {
+                    saveBanner.className = 'alert alert-danger border py-2 px-3 mb-3 small';
+                    saveBanner.innerText = 'Gagal menyimpan: ' + (data.message || '');
+                    saveBanner.style.display = 'block';
+                }
             }
         } catch(e) {
             console.error('Error saving case:', e);
-            alert('Gagal menghubungi server.');
+            if (saveBanner) {
+                saveBanner.className = 'alert alert-danger border py-2 px-3 mb-3 small';
+                saveBanner.innerText = 'Gagal menghubungi server.';
+                saveBanner.style.display = 'block';
+            }
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-floppy-disk me-1"></i> Simpan Kasus';
@@ -1387,14 +2422,14 @@
                 body: JSON.stringify({case_uuid: currentCaseUuid})
             });
             const data = await res.json();
-            if (data.status === 'success') {
-                alert('Surat Tugas Lapangan berhasil diterbitkan: ' + data.dispatch.dispatch_id + ' untuk ' + data.dispatch.assigned_team);
-            } else {
-                alert('Gagal menerbitkan tugas.');
+            const saveBanner = document.getElementById('saveCaseStatusBanner');
+            if (data.status === 'success' && saveBanner) {
+                saveBanner.className = 'alert alert-info border py-2 px-3 mb-3 small';
+                saveBanner.innerText = 'Surat Tugas Lapangan berhasil diterbitkan: ' + data.dispatch.dispatch_id + ' untuk ' + data.dispatch.assigned_team;
+                saveBanner.style.display = 'block';
             }
         } catch(e) {
             console.error('Error dispatching:', e);
-            alert('Gagal menerbitkan surat tugas.');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Buat Surat Tugas';
@@ -1465,14 +2500,10 @@
             });
             const data = await res.json();
             if (data.status === 'success') {
-                alert('Hasil temuan patroli berhasil disimpan. Status: ' + data.follow_up_status);
                 location.reload();
-            } else {
-                alert(data.message || 'Gagal menyimpan temuan patroli.');
             }
         } catch(e) {
             console.error('Error recording outcome:', e);
-            alert('Gagal menghubungi server.');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-floppy-disk me-1"></i> SIMPAN HASIL PEMERIKSAAN';
@@ -1488,11 +2519,59 @@
 
         document.getElementById('resCaseUuid').innerText = data.case_uuid;
         document.getElementById('resConfidence').innerText = data.confidence_percent + '%';
-        document.getElementById('resDistance').innerText = Number(data.calculated_distance_m).toLocaleString() + ' Meter';
+        document.getElementById('resDistance').innerText = Number(data.calculated_distance_m || 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' Meter';
         document.getElementById('resFeederName').innerText = data.feeder_name || 'Feeder';
         document.getElementById('resTotalSpan').innerText = Number(data.feeder_span_meters || 0).toLocaleString();
         document.getElementById('resAnchorDesc').innerText = data.anchor_description || '';
         document.getElementById('resSegmentName').innerText = data.transline_segment || '-';
+
+        // Update Topological Path Length vs Relay Measured Distance in Results Card & Form
+        const topoLabel = data.topology_path_length_label || (data.source_type === 'PROTECTION'
+            ? 'Panjang jalur dari proteksi ke ujung feeder (estimasi topologi)'
+            : 'Panjang jalur dari GI ke ujung feeder (estimasi topologi)');
+        const resTopoCardLabel = document.getElementById('resTopologyPathCardLabel');
+        if (resTopoCardLabel) resTopoCardLabel.innerText = topoLabel;
+
+        const resTopoLenEl = document.getElementById('resTopologyPathLength');
+        if (resTopoLenEl) {
+            if (data.topology_path_length_m !== null && data.topology_path_length_m !== undefined && Number(data.topology_path_length_m) > 0) {
+                const mVal = Number(data.topology_path_length_m);
+                const kmVal = (mVal / 1000.0).toFixed(2);
+                resTopoLenEl.innerText = mVal.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' Meter (' + kmVal + ' km)';
+                resTopoLenEl.className = 'text-success fw-bold fs-6 d-block';
+            } else {
+                resTopoLenEl.innerText = 'Belum tersedia';
+                resTopoLenEl.className = 'text-secondary fw-bold fs-6 d-block';
+            }
+        }
+
+        const resRelayMeasEl = document.getElementById('resRelayMeasuredDistance');
+        if (resRelayMeasEl) {
+            if (data.relay_measured_distance_m !== null && data.relay_measured_distance_m !== undefined && Number(data.relay_measured_distance_m) > 0) {
+                resRelayMeasEl.innerText = Number(data.relay_measured_distance_m).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' Meter';
+                resRelayMeasEl.className = 'text-primary';
+            } else {
+                resRelayMeasEl.innerText = 'Belum diisi';
+                resRelayMeasEl.className = 'text-muted';
+            }
+        }
+
+        // Sync automatic conductor & topological path length box in left form panel
+        if (data.traversed_conductor) {
+            updateAutoConductorAndTopologyUI(
+                data.traversed_conductor,
+                {
+                    topology_path_length_m: data.topology_path_length_m,
+                    topology_path_length_label: topoLabel,
+                    constraint_error: data.source_context?.constraint_error || null
+                },
+                data.source_type || 'GI'
+            );
+            const resCondSum = document.getElementById('resConductorSummary');
+            const resCondMsg = document.getElementById('resConductorMessage');
+            if (resCondSum) resCondSum.innerText = data.traversed_conductor.display_label || data.traversed_conductor.official_type || 'Belum tersedia';
+            if (resCondMsg) resCondMsg.innerText = data.traversed_conductor.status_message || '';
+        }
 
         const segPolesEl = document.getElementById('resSegmentPoles');
         if (segPolesEl) {
@@ -1512,10 +2591,46 @@
             formulaBox.style.display = data.formula_derivation ? 'block' : 'none';
         }
 
-        // Fault classification
+        // Fault classification & Supporting Evidence
         if (data.fault_classification) {
-            document.getElementById('resFaultTypeLabel').innerText = data.fault_classification.fault_type_label;
-            document.getElementById('resActiveCurrent').innerText = data.fault_classification.active_current_a + ' A';
+            const fc = data.fault_classification;
+            document.getElementById('resFaultTypeLabel').innerText = fc.fault_type_label || 'Indikasi Gangguan';
+            document.getElementById('resActiveCurrent').innerText = fc.active_current_a + ' A';
+
+            const indConfEl = document.getElementById('resIndicationConfidence');
+            if (indConfEl && fc.indication_confidence_percent !== undefined) {
+                indConfEl.innerText = fc.indication_confidence_percent;
+            }
+
+            const basisBadge = document.getElementById('resIndicationBasisBadge');
+            if (basisBadge) {
+                basisBadge.innerText = fc.has_voltage_telemetry ? 'Arus + Tegangan Fasa (kV)' : 'Arus Skalar Saja (Tanpa Tegangan Fasa)';
+                basisBadge.className = fc.has_voltage_telemetry ? 'badge bg-info-subtle text-primary border' : 'badge bg-light text-muted border';
+            }
+
+            const vInline = document.getElementById('resVoltageSummaryInline');
+            if (vInline) {
+                if (fc.has_voltage_telemetry) {
+                    const vrStr = fc.voltage_r_kv !== null && fc.voltage_r_kv !== undefined ? Number(fc.voltage_r_kv).toFixed(2) : '-';
+                    const vsStr = fc.voltage_s_kv !== null && fc.voltage_s_kv !== undefined ? Number(fc.voltage_s_kv).toFixed(2) : '-';
+                    const vtStr = fc.voltage_t_kv !== null && fc.voltage_t_kv !== undefined ? Number(fc.voltage_t_kv).toFixed(2) : '-';
+                    vInline.innerText = `| V(R/S/T): ${vrStr} / ${vsStr} / ${vtStr} kV`;
+                } else {
+                    vInline.innerText = '| Tegangan Fasa: Belum diisi';
+                }
+            }
+
+            const evListEl = document.getElementById('resSupportingEvidenceList');
+            if (evListEl) {
+                evListEl.innerHTML = '';
+                if (Array.isArray(fc.supporting_evidence) && fc.supporting_evidence.length > 0) {
+                    fc.supporting_evidence.forEach(ev => {
+                        const li = document.createElement('li');
+                        li.innerText = ev;
+                        evListEl.appendChild(li);
+                    });
+                }
+            }
         }
 
         // Insufficient data alert
@@ -1539,7 +2654,7 @@
         // Outcome Badge
         const badge = document.getElementById('outcomeBadge');
         badge.innerText = data.outcome_status;
-        if (data.outcome_status === 'RESOLVED') {
+        if (data.outcome_status === 'RESOLVED' || data.outcome_status === 'CALCULATED_RELAY_AIDED') {
             badge.className = 'badge-resolved';
         } else if (data.outcome_status === 'DATA_TIDAK_CUKUP') {
             badge.className = 'badge-data-tidak-cukup';
@@ -1560,15 +2675,20 @@
             validCandidates.forEach(c => {
                 const sp = document.createElement('span');
                 sp.className = 'badge bg-light text-dark border me-1';
-                sp.innerHTML = '<i class="fas fa-bolt text-danger me-1"></i>' + c.kode_asset + ' (' + c.asset_name + ')';
+                sp.innerHTML = '<i class="fas fa-bolt text-danger me-1"></i>' + escapeHtml(c.kode_asset) + ' (' + escapeHtml(c.asset_name) + ')';
                 candTd.appendChild(sp);
             });
+        } else if (Array.isArray(data.pole_sequence) && data.pole_sequence.length > 0 && Number(data.calculated_distance_m || 0) === 0) {
+            candTd.innerHTML = '<span class="text-warning fw-bold"><i class="fas fa-route me-1"></i>Jalur hilir terpetakan (' + data.pole_sequence.length + ' bentang), namun jarak titik gangguan belum diukur relay</span>';
         } else {
             candTd.innerHTML = '<span class="text-danger fw-bold"><i class="fas fa-circle-exclamation me-1"></i>Tidak ada kandidat valid pada penyulang ini</span>';
         }
 
-        // Coordinates & Map (Always clear stale markers if no valid candidate/fault_point)
-        if (validCandidates.length > 0 && data.fault_point && data.fault_point.lat && data.fault_point.lng) {
+        // Coordinates & Map
+        const hasValidPoint = validCandidates.length > 0 && data.fault_point && data.fault_point.lat && data.fault_point.lng;
+        const hasDownstreamPath = Array.isArray(data.pole_sequence) && data.pole_sequence.length > 0;
+
+        if (hasValidPoint) {
             document.getElementById('resCoords').innerText = data.fault_point.lat.toFixed(6) + ', ' + data.fault_point.lng.toFixed(6);
             updateMiniMap(
                 data.fault_point.lat,
@@ -1576,7 +2696,19 @@
                 validCandidates[0].kode_asset,
                 data.pole_sequence,
                 data.feeder_name,
-                data.feeder_code
+                data.feeder_code,
+                data
+            );
+        } else if (hasDownstreamPath) {
+            document.getElementById('resCoords').innerText = 'Jalur hilir terpetakan (Masukkan jarak terukur relay untuk titik koordinat spesifik)';
+            updateMiniMap(
+                null,
+                null,
+                '',
+                data.pole_sequence,
+                data.feeder_name,
+                data.feeder_code,
+                data
             );
         } else {
             document.getElementById('resCoords').innerText = 'Tidak ada kandidat valid pada penyulang ini';
@@ -1591,11 +2723,13 @@
             data.pole_sequence.forEach(p => {
                 const tr = document.createElement('tr');
                 if (p.is_fault_zone) tr.className = 'row-fault-zone';
+                const condLabel = ((p.conductor_type || 'Belum tersedia') + ((p.conductor_size && p.conductor_size !== '-') ? ' ' + p.conductor_size : '')).trim();
 
                 tr.innerHTML = `
                     <td class="text-center font-monospace">${p.seq_no}</td>
-                    <td>${p.from_pole_kode}</td>
-                    <td>${p.to_pole_kode}</td>
+                    <td>${escapeHtml(p.from_pole_kode)}</td>
+                    <td>${escapeHtml(p.to_pole_kode)}</td>
+                    <td><span class="badge bg-light text-dark border" style="font-size:0.68rem;">${escapeHtml(condLabel)}</span></td>
                     <td class="text-end">${Number(p.span_meters).toFixed(1)}</td>
                     <td class="text-end fw-bold">${Number(p.cumulative_meters).toFixed(1)}</td>
                     <td>${p.is_fault_zone ? '<span class="badge bg-danger text-white"><i class="fas fa-crosshairs me-1"></i> ZONA GANGGUAN</span>' : '<span class="badge bg-light text-muted border">Normal</span>'}</td>
@@ -1604,7 +2738,7 @@
             });
         } else {
             document.getElementById('poleSeqCount').innerText = '0 Bentang';
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Tidak ada kandidat valid pada penyulang ini (belum ada transline tiang JTM terpetakan).</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Tidak ada kandidat valid pada penyulang ini (belum ada transline tiang JTM terpetakan).</td></tr>';
         }
 
         const gisBtn = document.getElementById('btnOpenGis');

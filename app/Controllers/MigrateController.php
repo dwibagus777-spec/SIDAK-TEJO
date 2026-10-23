@@ -175,6 +175,15 @@ class MigrateController extends BaseController
                 $executed[] = 'make_device_asset_id_nullable';
             }
 
+            // Run AddPhaseVoltagesAndTopologyDistanceToFaultCases Migration (Phase voltages kV & topology path vs relay distance)
+            $phaseVoltagesMigFile = APPPATH . 'Database/Migrations/2026-10-23-000001_AddPhaseVoltagesAndTopologyDistanceToFaultCases.php';
+            if (file_exists($phaseVoltagesMigFile)) {
+                require_once $phaseVoltagesMigFile;
+                $pvMig = new \App\Database\Migrations\AddPhaseVoltagesAndTopologyDistanceToFaultCases();
+                $pvMig->up();
+                $executed[] = 'add_phase_voltages_and_topology_distance_to_fault_cases';
+            }
+
             // Phase D3 Hotfix: Archive Proto Dummy Test Cases (FLI-1.0.0 with 0 currents & null feeder)
             try {
                 $flSvc = new \App\Services\FaultLocatorWorkspaceService();

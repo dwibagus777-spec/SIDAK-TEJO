@@ -1809,43 +1809,29 @@ class FaultLocatorWorkspaceService
 
         if ($isIndeterminateZone && !empty($poleSequence)) {
             // Indeterminate DGR / Ground fault or unmeasured relay distance:
-            // Designate the downstream protected path as Candidate Fault Zone
+            // Designate the downstream protected path as un-narrowed coordination reach
             $zoneRangeStartM = 0.0;
             $zoneRangeEndM = $topologyPathLengthM > 0 ? $topologyPathLengthM : (float)($poleSequence[count($poleSequence) - 1]['cumulative_meters'] ?? 0);
             $uncertaintyM = round(($zoneRangeEndM - $zoneRangeStartM) / 2.0, 1);
 
-            // Mark segments along the primary downstream path as candidate zone
-            foreach ($poleSequence as $seqIdx => &$pSeq) {
-                if (!empty($pSeq['is_on_fault_path'])) {
-                    $pSeq['is_candidate_zone'] = true;
-                    if (isset($assetMap[$pSeq['from_pole_id']])) $candidatePoles[] = $assetMap[$pSeq['from_pole_id']];
-                    if (isset($assetMap[$pSeq['to_pole_id']])) $candidatePoles[] = $assetMap[$pSeq['to_pole_id']];
-                }
-            }
-            unset($pSeq);
+            // Strictly do NOT fabricate candidate poles across the entire feeder!
+            // When distance cannot be calculated, candidate poles from physics calculation is empty.
+            $candidatePoles = [];
 
-            // Fallback if none marked: include all traversed downstream poles
-            if (empty($candidatePoles)) {
-                foreach ($poleSequence as $seqIdx => &$pSeq) {
-                    $pSeq['is_candidate_zone'] = true;
-                    if (isset($assetMap[$pSeq['from_pole_id']])) $candidatePoles[] = $assetMap[$pSeq['from_pole_id']];
-                    if (isset($assetMap[$pSeq['to_pole_id']])) $candidatePoles[] = $assetMap[$pSeq['to_pole_id']];
-                }
-                unset($pSeq);
-            }
-
-            $zoneNotice = "Kaidah IEEE C37.114: Gangguan fasa-tanah (DGR) pada sistem pentanahan NGR 40Ω memiliki arus gangguan yang sangat dipengaruhi oleh resistansi kontak tanah (Rf). Tanpa pembacaan reaktansi loop X dari relay numerik, sistem menandai seluruh jangkauan hilir proteksi sebagai Zona Kandidat Gangguan (" . number_format($zoneRangeStartM, 1) . " m – " . number_format($zoneRangeEndM, 1) . " m) untuk verifikasi visual patroli.";
+            $zoneNotice = "Kaidah IEEE C37.114: Gangguan fasa-tanah (DGR) pada sistem pentanahan NGR 40Ω memiliki arus gangguan yang sangat dipengaruhi oleh resistansi kontak tanah (Rf). Tanpa pembacaan reaktansi loop X / jarak relay numerik, sistem menandai seluruh jangkauan hilir proteksi (" . number_format($zoneRangeStartM, 1) . " m – " . number_format($zoneRangeEndM, 1) . " m) sebagai jangkauan koordinasi proteksi untuk patroli visual, bukan daftar titik prediksi gangguan.";
 
             $candidateZoneInfo = [
-                'is_single_point'    => false,
-                'zone_type'          => 'PROTECTION_DOWNSTREAM_REACH',
-                'range_start_m'      => $zoneRangeStartM,
-                'range_end_m'        => $zoneRangeEndM,
-                'range_label'        => number_format($zoneRangeStartM, 1) . " m – " . number_format($zoneRangeEndM, 1) . " m (" . number_format($zoneRangeEndM / 1000.0, 2) . " km)",
-                'uncertainty_m'      => $uncertaintyM,
-                'uncertainty_label'  => "±" . number_format($uncertaintyM, 1) . " m",
-                'zone_title'         => 'Zona Kandidat Gangguan Hilir Proteksi (DGR)',
-                'zone_notice'        => $zoneNotice,
+                'is_single_point'      => false,
+                'zone_type'            => 'PROTECTION_DOWNSTREAM_REACH',
+                'range_start_m'        => $zoneRangeStartM,
+                'range_end_m'          => $zoneRangeEndM,
+                'range_label'          => number_format($zoneRangeStartM, 1) . " m – " . number_format($zoneRangeEndM, 1) . " m (" . number_format($zoneRangeEndM / 1000.0, 2) . " km)",
+                'uncertainty_m'        => $uncertaintyM,
+                'uncertainty_label'    => "±" . number_format($uncertaintyM, 1) . " m",
+                'zone_title'           => 'Jangkauan Proteksi Hilir (Belum Dipersempit)',
+                'zone_notice'          => $zoneNotice,
+                'candidate_pole_count' => 0,
+                'candidate_poles'      => [],
             ];
         } elseif ($calculatedDistanceM > 0 && $branchAmbiguityDetected) {
             $rangeStart = max(0.0, $calculatedDistanceM - 150.0);
@@ -1917,30 +1903,63 @@ class FaultLocatorWorkspaceService
             if ($cLat == 0.0 || $cLng == 0.0) continue;
 
             $seenIds[$cAst['id']] = true;
+            $poleCum = isset($poleCumDistanceMap[$cAst['id']]) ? round($poleCumDistanceMap[$cAst['id']], 1) : null;
+            $deltaToTarget = ($calculatedDistanceM > 0 && $poleCum !== null) ? round(abs($poleCum - $calculatedDistanceM), 1) : null;
+
             $candidateAssetList[] = [
-                'asset_id'          => (int)$cAst['id'],
-                'penyulang_id'      => $penyulangId,
-                'kode_asset'        => $cAst['kode_asset'],
-                'asset_name'        => $cAst['nama_asset'] ?? $cAst['kode_asset'],
-                'jenis_asset'       => $cAst['jenis_asset'],
-                'section_id'        => $cAst['section_id'] ?? null,
-                'latitude'          => $cLat,
-                'longitude'         => $cLng,
-                'cumulative_meters' => isset($poleCumDistanceMap[$cAst['id']]) ? round($poleCumDistanceMap[$cAst['id']], 1) : null,
+                'asset_id'              => (int)$cAst['id'],
+                'penyulang_id'          => $penyulangId,
+                'kode_asset'            => $cAst['kode_asset'],
+                'asset_name'            => $cAst['nama_asset'] ?? $cAst['kode_asset'],
+                'jenis_asset'           => $cAst['jenis_asset'],
+                'section_id'            => $cAst['section_id'] ?? null,
+                'latitude'              => $cLat,
+                'longitude'             => $cLng,
+                'cumulative_meters'     => $poleCum,
+                'delta_to_target_m'     => $deltaToTarget,
+                'is_physics_prediction' => true,
             ];
         }
 
-        if ($isIndeterminateZone && !empty($candidateAssetList)) {
+        if ($calculatedDistanceM > 0 && !empty($candidateAssetList)) {
+            // Rank strictly by delta proximity to the calculated target point (closest pole = Rank 1)
             usort($candidateAssetList, function($a, $b) {
-                $distA = $a['cumulative_meters'] ?? 0.0;
-                $distB = $b['cumulative_meters'] ?? 0.0;
-                return $distA <=> $distB;
+                $delA = $a['delta_to_target_m'] ?? PHP_FLOAT_MAX;
+                $delB = $b['delta_to_target_m'] ?? PHP_FLOAT_MAX;
+                return $delA <=> $delB;
             });
+
+            $baseScore = ($calculationStatus === 'CALCULATED_RELAY_AIDED') ? 95 : 80;
+            foreach ($candidateAssetList as $rIdx => &$cItem) {
+                $cItem['rank'] = $rIdx + 1;
+                $penalty = min(20, (int)(($cItem['delta_to_target_m'] ?? 0) / 10));
+                $score = max(50, $baseScore - ($rIdx * 6) - $penalty);
+                $cItem['prediction_score'] = $score;
+                $cItem['confidence_label'] = "{$score}%";
+                $cItem['ranking_basis'] = 'PROXIMITY_TO_CALCULATED_FAULT_POINT';
+                $cItem['influencing_factors'] = [
+                    "Selisih {$cItem['delta_to_target_m']} m dari titik estimasi (d={$calculatedDistanceM} m)",
+                    "Metode: " . ($calculationStatus === 'CALCULATED_RELAY_AIDED' ? 'Jarak Terukur Relay Numerik' : 'Simulasi Loop Impedansi'),
+                    "Segmen: " . ($faultZoneSegment['from_pole_kode'] ?? '-') . " → " . ($faultZoneSegment['to_pole_kode'] ?? '-'),
+                    "Konduktor: " . ($faultZoneSegment['conductor_type'] ?? 'Belum tersedia')
+                ];
+            }
+            unset($cItem);
+        } else {
+            // When distance is not calculated ($calculatedDistanceM <= 0):
+            // Do NOT fabricate fake prediction candidates across the feeder!
+            $candidateAssetList = [];
         }
 
         if ($candidateZoneInfo) {
             $candidateZoneInfo['candidate_pole_count'] = count($candidateAssetList);
             $candidateZoneInfo['candidate_poles'] = $candidateAssetList;
+        }
+
+        // Search for evidence-based historical vulnerability priority poles along this path
+        $historicalPriorityAssets = [];
+        if ($isIndeterminateZone && !empty($poleSequence)) {
+            $historicalPriorityAssets = $this->findHistoricalVulnerabilityPoles($penyulangId, $poleSequence, $assetMap, $poleCumDistanceMap);
         }
 
         // 9. Spatial Coordinates Interpolation on the Identified Transline Segment
@@ -2089,6 +2108,8 @@ class FaultLocatorWorkspaceService
             'matching_fault_segments'    => $matchingFaultSegments,
             'branch_ambiguity'           => $branchAmbiguityDetected,
             'candidate_assets'           => $candidateAssetList,
+            'historical_priority_assets' => $historicalPriorityAssets,
+            'has_physics_prediction'     => ($calculatedDistanceM > 0),
             'transline_segment'          => $faultZoneSegment ? "TL-{$penyulangKode}-P{$faultZoneSegment['seq_no']}" : "TL-{$penyulangKode}-MAIN",
             'fault_point'                => $faultPointGeom,
             'explanation'                => $explanation,
@@ -2096,6 +2117,110 @@ class FaultLocatorWorkspaceService
             'input_fingerprint'          => $inputFingerprint,
             'keterbatasan_telemetri'     => 'Berdasarkan kaidah IEEE C37.114, masukan arus/tegangan skalar semata tanpa reaktansi loop X dari relay numerik dan MVA bus GI tidak dapat menghasilkan jarak impedansi presisi tinggi.',
         ];
+    }
+
+    /**
+     * Identify evidence-based historical vulnerability priority poles along the downstream traversed path.
+     * Used when physics calculations cannot narrow down location mathematically (e.g. DGR without relay loop reactance).
+     */
+    public function findHistoricalVulnerabilityPoles(int $penyulangId, array $poleSequence, array $assetMap, array $poleCumDistanceMap): array
+    {
+        if (empty($poleSequence)) {
+            return [];
+        }
+
+        $allPoleIds = [];
+        foreach ($poleSequence as $p) {
+            if (!empty($p['from_pole_id'])) $allPoleIds[(int)$p['from_pole_id']] = true;
+            if (!empty($p['to_pole_id'])) $allPoleIds[(int)$p['to_pole_id']] = true;
+        }
+        $poleIdList = array_keys($allPoleIds);
+        if (empty($poleIdList)) {
+            return [];
+        }
+
+        $findingsByPole = [];
+        if ($this->db->tableExists('fault_actual_findings')) {
+            $fRows = $this->db->table('fault_actual_findings')
+                ->select('id, fault_case_id, found_asset_id, cause_category_code, component_damaged, inspected_at')
+                ->whereIn('found_asset_id', $poleIdList)
+                ->where('outcome_type', 'CONFIRMED')
+                ->get()
+                ->getResultArray();
+            foreach ($fRows as $fr) {
+                $pid = (int)$fr['found_asset_id'];
+                $findingsByPole[$pid][] = $fr;
+            }
+        }
+
+        $temuanByPole = [];
+        if ($this->db->tableExists('temuan')) {
+            $tQuery = $this->db->table('temuan')
+                ->select('id, asset_id, jenis_temuan, status, tanggal_temuan')
+                ->whereIn('asset_id', $poleIdList);
+            if ($this->db->fieldExists('deleted_at', 'temuan')) {
+                $tQuery->where('deleted_at IS NULL');
+            }
+            if ($this->db->fieldExists('status', 'temuan')) {
+                $tQuery->whereNotIn('status', ['SELESAI', 'CLOSED']);
+            }
+            $tRows = $tQuery->get()->getResultArray();
+            foreach ($tRows as $tr) {
+                $pid = (int)$tr['asset_id'];
+                $temuanByPole[$pid][] = $tr;
+            }
+        }
+
+        $priorityList = [];
+        foreach ($poleIdList as $poleId) {
+            $findings = $findingsByPole[$poleId] ?? [];
+            $temuans = $temuanByPole[$poleId] ?? [];
+
+            if (empty($findings) && empty($temuans)) {
+                continue;
+            }
+
+            $ast = $assetMap[$poleId] ?? null;
+            if (!$ast) continue;
+
+            $fCount = count($findings);
+            $tCount = count($temuans);
+            $vScore = min(92, 45 + ($fCount * 20) + ($tCount * 12));
+
+            $factors = [];
+            if ($fCount > 0) {
+                $factors[] = "{$fCount}x Riwayat titik gangguan aktual terkonfirmasi pada tiang ini";
+            }
+            if ($tCount > 0) {
+                $factors[] = "{$tCount}x Catatan temuan inspeksi aktif (anomali komponen / ROW)";
+            }
+
+            $priorityList[] = [
+                'asset_id'               => $poleId,
+                'kode_asset'             => $ast['kode_asset'],
+                'asset_name'             => $ast['nama_asset'] ?? $ast['kode_asset'],
+                'cumulative_meters'      => $poleCumDistanceMap[$poleId] ?? null,
+                'latitude'               => (float)($ast['latitude'] ?? 0),
+                'longitude'              => (float)($ast['longitude'] ?? 0),
+                'vulnerability_score'    => $vScore,
+                'evidence_factors'       => $factors,
+                'finding_count'          => $fCount,
+                'temuan_count'           => $tCount,
+                'is_historical_priority' => true,
+                'is_physics_prediction'  => false,
+            ];
+        }
+
+        usort($priorityList, function($a, $b) {
+            return $b['vulnerability_score'] <=> $a['vulnerability_score'];
+        });
+
+        foreach ($priorityList as $idx => &$item) {
+            $item['priority_rank'] = $idx + 1;
+        }
+        unset($item);
+
+        return array_slice($priorityList, 0, 5);
     }
 
     /**
@@ -2249,7 +2374,7 @@ class FaultLocatorWorkspaceService
         $this->db->table('fault_cases')->insert($insertData);
         $caseId = (int)$this->db->insertID();
 
-        // Store candidate assets
+        // Store candidate assets or historical priorities
         if ($caseId > 0 && !empty($resultData['candidate_assets'])) {
             foreach ($resultData['candidate_assets'] as $rank => $cand) {
                 if (empty($cand['asset_id'])) continue;
@@ -2260,10 +2385,27 @@ class FaultLocatorWorkspaceService
                 $this->db->table('fault_candidate_assets')->insert([
                     'fault_case_id'                => $caseId,
                     'asset_id'                     => $candAssetId,
-                    'rank'                         => $rank + 1,
-                    'candidate_status'             => 'CANDIDATE',
+                    'rank'                         => $cand['rank'] ?? ($rank + 1),
+                    'candidate_status'             => 'PREDICTED_CANDIDATE',
                     'graph_distance_from_device_m' => (float)($resultData['calculated_distance_m'] ?? 0),
                     'evidence_breakdown_json'      => json_encode($cand),
+                    'created_at'                   => $now,
+                ]);
+            }
+        } elseif ($caseId > 0 && !empty($resultData['historical_priority_assets'])) {
+            foreach ($resultData['historical_priority_assets'] as $rank => $hCand) {
+                if (empty($hCand['asset_id'])) continue;
+                $candAssetId = (int)$hCand['asset_id'];
+                if ($this->db->tableExists('assets') && $this->db->table('assets')->where('id', $candAssetId)->countAllResults() === 0) {
+                    continue;
+                }
+                $this->db->table('fault_candidate_assets')->insert([
+                    'fault_case_id'                => $caseId,
+                    'asset_id'                     => $candAssetId,
+                    'rank'                         => $hCand['priority_rank'] ?? ($rank + 1),
+                    'candidate_status'             => 'HISTORICAL_PRIORITY',
+                    'graph_distance_from_device_m' => (float)($hCand['cumulative_meters'] ?? 0),
+                    'evidence_breakdown_json'      => json_encode($hCand),
                     'created_at'                   => $now,
                 ]);
             }

@@ -769,4 +769,70 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
         $this->assertStringContainsString('OCR Instan-DGR', $classInstanDgr['fault_type_label']);
         $this->assertTrue($classInstanDgr['is_ground_fault']);
     }
+
+    public function testJenggoloDgrCaseYieldsZeroCandidatePolesAndHonestMissingParams(): void
+    {
+        // Jenggolo case from user screenshot:
+        // R=244A / 21.26kV, S=264A / 0kV, T=238A / 21kV, N=67A
+        $telemetry = [
+            'feeder_id'        => 1,
+            'source_type'      => 'GI',
+            'current_r'        => 244.0,
+            'current_s'        => 264.0,
+            'current_t'        => 238.0,
+            'current_n'        => 67.0,
+            'voltage_r_kv'     => 21.26,
+            'voltage_s_kv'     => 0.0,
+            'voltage_t_kv'     => 21.0,
+            'relay_distance_m' => null,
+            'conductor_type'   => 'AAAC 150 mm²',
+        ];
+
+        $res = $this->service->locateFault($telemetry);
+
+        $this->assertSame('DATA_TIDAK_CUKUP', $res['calculation_status']);
+        $this->assertSame('DATA_TIDAK_CUKUP', $res['outcome_status']);
+        $this->assertSame('DGR', $res['fault_classification']['fault_type']);
+        $this->assertEmpty($res['candidate_assets'], 'Indeterminate DGR without loop reactance/relay distance MUST return 0 fake candidate poles');
+        $this->assertFalse($res['has_physics_prediction']);
+        $this->assertNotEmpty($res['missing_parameters']);
+        $this->assertStringContainsString('Jarak gangguan terukur relay', implode(' ', $res['missing_parameters']));
+        $this->assertFalse($res['candidate_zone']['is_single_point']);
+        $this->assertSame(0, $res['candidate_zone']['candidate_pole_count']);
+    }
+
+    public function testRelayAidedCandidatesRankedByDeltaToFaultPointNotDistanceFromSource(): void
+    {
+        $telemetry = [
+            'feeder_id'        => 1,
+            'source_type'      => 'GI',
+            'current_r'        => 280.0,
+            'current_s'        => 0.0,
+            'current_t'        => 0.0,
+            'current_n'        => 275.0,
+            'relay_distance_m' => 850.0, // target distance 850m
+            'conductor_type'   => 'AAAC 150 mm²',
+        ];
+
+        $res = $this->service->locateFault($telemetry);
+
+        $this->assertSame('CALCULATED_RELAY_AIDED', $res['calculation_status']);
+        $this->assertEqualsWithDelta(850.0, (float)$res['calculated_distance_m'], 1.0);
+        $this->assertTrue($res['has_physics_prediction']);
+        $this->assertTrue($res['candidate_zone']['is_single_point']);
+
+        if (!empty($res['candidate_assets'])) {
+            $this->assertLessThanOrEqual(4, count($res['candidate_assets']), 'Bounding candidate poles must be narrowed to segment bounding poles, not all feeder poles');
+            
+            // Verify candidate ranking is by proximity delta to calculated fault point
+            $prevDelta = -1.0;
+            foreach ($res['candidate_assets'] as $cand) {
+                $this->assertArrayHasKey('delta_to_target_m', $cand);
+                $this->assertSame('PROXIMITY_TO_CALCULATED_FAULT_POINT', $cand['ranking_basis']);
+                $delta = (float)$cand['delta_to_target_m'];
+                $this->assertGreaterThanOrEqual($prevDelta, $delta, 'Candidates must be sorted strictly by delta_to_target_m ascending');
+                $prevDelta = $delta;
+            }
+        }
+    }
 }

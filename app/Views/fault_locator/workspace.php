@@ -713,6 +713,9 @@
                         <strong class="text-dark">Teruskan Hasil Gangguan ke Tim Lapangan &amp; GIS</strong>
                     </div>
                     <div class="d-flex gap-2">
+                        <button class="btn btn-warning btn-sm fw-bold text-dark" id="btnRecordOutcomeCurrentCase" title="Rekam hasil temuan pemeriksaan patroli di lapangan">
+                            <i class="fas fa-clipboard-check me-1"></i> Rekam Hasil Lapangan
+                        </button>
                         <button class="btn btn-success btn-sm fw-bold" id="btnSaveCase">
                             <i class="fas fa-floppy-disk me-1"></i> Simpan Kasus
                         </button>
@@ -784,11 +787,47 @@
         <div class="card card-modern shadow-sm border-0 mb-4">
             <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h4 class="card-title font-weight-bold text-dark mb-0">
-                    <i class="fas fa-map-location-dot text-danger me-2"></i> Pratinjau Spasial Titik Gangguan &amp; Jalur Hilir Transline
+                    <i class="fas fa-map-location-dot text-danger me-2"></i> Pratinjau Spasial Titik &amp; Zona Gangguan Transline
                 </h4>
-                <span class="badge bg-danger text-white" id="mapStatusBadge">FAULT POINT LOCATED</span>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold" id="btnFocusFaultLocation" title="Fokuskan peta ke titik atau zona estimasi gangguan">
+                        <i class="fas fa-crosshairs me-1"></i> Fokus Titik/Zona
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary fw-bold" id="btnResetMapFocus" title="Kembalikan tampilan peta ke seluruh jalur hilir feeder">
+                        <i class="fas fa-compress me-1"></i> Kembali ke Seluruh Jalur
+                    </button>
+                    <span class="badge bg-danger text-white" id="mapStatusBadge">FAULT POINT LOCATED</span>
+                </div>
             </div>
             <div class="card-body p-3">
+                <!-- Spatial Candidate Zone Alert / Callout Box -->
+                <div id="candidateZoneNoticeBox" class="alert alert-warning border text-dark p-3 rounded-3 mb-2 small" style="<?= (!empty($result['candidate_zone']) && empty($result['candidate_zone']['is_single_point'])) ? 'display:block;' : 'display:none;' ?>">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-1">
+                        <strong class="text-dark"><i class="fas fa-layer-group text-warning me-1"></i> <span id="candidateZoneNoticeTitle"><?= esc($result['candidate_zone']['title'] ?? 'ZONA KANDIDAT PENELUSURAN GANGGUAN TANAH (DGR)') ?></span></strong>
+                        <span class="badge bg-warning text-dark border" id="candidateZoneRangeBadge">
+                            Rentang: <span id="candidateZoneRangeText"><?= number_format($result['candidate_zone']['range_start_m'] ?? 0, 0) ?> m – <?= number_format($result['candidate_zone']['range_end_m'] ?? 0, 0) ?> m</span>
+                        </span>
+                    </div>
+                    <div id="candidateZoneExplanation" class="text-muted mb-1" style="font-size:0.75rem;">
+                        <?= esc($result['candidate_zone']['notes'] ?? 'Tanpa nilai impedansi/reaktansi loop dari relay numerik, sistem menampilkan zona kandidat bentang hilir yang diamankan.') ?>
+                    </div>
+                    <div id="candidateZonePolesWrap" class="mt-1" style="font-size:0.73rem;">
+                        <span class="fw-bold text-dark">Tiang Terduga Dalam Zona:</span>
+                        <span id="candidateZonePolesList">
+                            <?php if (!empty($result['candidate_zone']['candidate_poles'])): ?>
+                                <?php foreach (array_slice($result['candidate_zone']['candidate_poles'], 0, 8) as $cp): ?>
+                                    <span class="badge bg-white text-dark border me-1 font-monospace"><i class="fas fa-bolt text-warning me-1"></i><?= esc($cp['kode_asset'] ?? $cp['kode_tiang'] ?? '-') ?></span>
+                                <?php endforeach; ?>
+                                <?php if (count($result['candidate_zone']['candidate_poles']) > 8): ?>
+                                    <span class="text-muted">+<?= count($result['candidate_zone']['candidate_poles']) - 8 ?> tiang lainnya</span>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span class="text-muted">Semua tiang sepanjang zona kandidat</span>
+                            <?php endif; ?>
+                        </span>
+                    </div>
+                </div>
+
                 <div class="fl-map-legend" id="miniMapLegend">
                     <span class="fl-map-legend-item">
                         <span class="fl-legend-line" style="background:#0284c7;"></span> Transline Hilir
@@ -797,13 +836,16 @@
                         <span class="fl-legend-line" style="background:repeating-linear-gradient(90deg,#ef4444,#ef4444 5px,transparent 5px,transparent 9px);"></span> Jalur Terukur ke Gangguan
                     </span>
                     <span class="fl-map-legend-item">
-                        <span class="fl-legend-dot" style="background:#10b981;"></span> Tiang Normal
+                        <span class="fl-legend-line" style="background:#f59e0b; box-shadow:0 0 5px #f59e0b;"></span> Zona Kandidat Estimasi
                     </span>
                     <span class="fl-map-legend-item">
                         <span class="fl-legend-dot" style="background:#8b5cf6;"></span> Titik Acuan (0.0 km)
                     </span>
                     <span class="fl-map-legend-item">
-                        <span class="fl-legend-dot" style="background:#f59e0b;"></span> Estimasi Zona Gangguan
+                        <span class="fl-legend-dot" style="background:#f59e0b;"></span> Tiang Kandidat Terduga
+                    </span>
+                    <span class="fl-map-legend-item">
+                        <span class="fl-legend-dot" style="background:#10b981;"></span> Tiang Normal
                     </span>
                     <span class="fl-map-legend-item">
                         <span class="fl-legend-dot" style="background:#ef4444;"></span> Fault Point (✕)
@@ -885,6 +927,108 @@
                     </div>
                     <div class="mt-2 text-muted" style="font-size:0.75rem;">
                         <i class="fas fa-lock text-warning me-1"></i> <strong>Invarian Kalibrasi:</strong> Formula fisika 20 kV baseline terlindungi secara deterministik dari perubahan liar. Parameter hanya dapat dikalibrasi setelah minimal 15 sampel lapangan terkonfirmasi terkumpul.
+                    </div>
+                </div>
+
+                <!-- Controlled Calibration Breakdown by Category -->
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+                        <strong class="text-dark small"><i class="fas fa-chart-pie text-info me-1"></i> Performa Model Kalibrasi per Kategori Jaringan &amp; Gangguan</strong>
+                        <span class="text-muted" style="font-size:0.68rem;">Target Kalibrasi: Min. 15 Sampel Terkonfirmasi per Kategori</span>
+                    </div>
+                    <div class="row g-2">
+                        <!-- Breakdown by Fault Type -->
+                        <div class="col-md-4">
+                            <div class="border rounded p-2 bg-white h-100">
+                                <div class="fw-bold text-dark small mb-1 border-bottom pb-1" style="font-size:0.72rem;">Berdasarkan Jenis Gangguan</div>
+                                <?php if (!empty($calibrationSummary['metrics_by_fault_type'])): ?>
+                                    <table class="table table-sm table-borderless mb-0" style="font-size:0.68rem;">
+                                        <thead>
+                                            <tr class="text-muted border-bottom">
+                                                <th>Tipe</th>
+                                                <th class="text-center">Sampel</th>
+                                                <th class="text-end">MAE</th>
+                                                <th class="text-end">Akurasi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($calibrationSummary['metrics_by_fault_type'] as $k => $m): ?>
+                                                <tr>
+                                                    <td class="fw-bold"><?= esc($k) ?></td>
+                                                    <td class="text-center"><?= esc($m['confirmed_count']) ?>/<?= esc($m['total_samples']) ?></td>
+                                                    <td class="text-end"><?= esc($m['mae_label']) ?></td>
+                                                    <td class="text-end fw-bold <?= ($m['accuracy_percent'] >= 80) ? 'text-success' : 'text-warning' ?>"><?= esc($m['accuracy_percent']) ?>%</td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                <?php else: ?>
+                                    <div class="text-muted p-2 text-center" style="font-size:0.7rem;">Belum ada sampel terkonfirmasi.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Breakdown by Source Type -->
+                        <div class="col-md-4">
+                            <div class="border rounded p-2 bg-white h-100">
+                                <div class="fw-bold text-dark small mb-1 border-bottom pb-1" style="font-size:0.72rem;">Berdasarkan Titik Acuan</div>
+                                <?php if (!empty($calibrationSummary['metrics_by_source_type'])): ?>
+                                    <table class="table table-sm table-borderless mb-0" style="font-size:0.68rem;">
+                                        <thead>
+                                            <tr class="text-muted border-bottom">
+                                                <th>Sumber</th>
+                                                <th class="text-center">Sampel</th>
+                                                <th class="text-end">MAE</th>
+                                                <th class="text-end">Akurasi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($calibrationSummary['metrics_by_source_type'] as $k => $m): ?>
+                                                <tr>
+                                                    <td class="fw-bold"><?= esc($k) ?></td>
+                                                    <td class="text-center"><?= esc($m['confirmed_count']) ?>/<?= esc($m['total_samples']) ?></td>
+                                                    <td class="text-end"><?= esc($m['mae_label']) ?></td>
+                                                    <td class="text-end fw-bold <?= ($m['accuracy_percent'] >= 80) ? 'text-success' : 'text-warning' ?>"><?= esc($m['accuracy_percent']) ?>%</td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                <?php else: ?>
+                                    <div class="text-muted p-2 text-center" style="font-size:0.7rem;">Belum ada sampel terkonfirmasi.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Breakdown by Conductor Type -->
+                        <div class="col-md-4">
+                            <div class="border rounded p-2 bg-white h-100">
+                                <div class="fw-bold text-dark small mb-1 border-bottom pb-1" style="font-size:0.72rem;">Berdasarkan Konduktor</div>
+                                <?php if (!empty($calibrationSummary['metrics_by_conductor_type'])): ?>
+                                    <table class="table table-sm table-borderless mb-0" style="font-size:0.68rem;">
+                                        <thead>
+                                            <tr class="text-muted border-bottom">
+                                                <th>Konduktor</th>
+                                                <th class="text-center">Sampel</th>
+                                                <th class="text-end">MAE</th>
+                                                <th class="text-end">Akurasi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($calibrationSummary['metrics_by_conductor_type'] as $k => $m): ?>
+                                                <tr>
+                                                    <td class="fw-bold"><?= esc($k) ?></td>
+                                                    <td class="text-center"><?= esc($m['confirmed_count']) ?>/<?= esc($m['total_samples']) ?></td>
+                                                    <td class="text-end"><?= esc($m['mae_label']) ?></td>
+                                                    <td class="text-end fw-bold <?= ($m['accuracy_percent'] >= 80) ? 'text-success' : 'text-warning' ?>"><?= esc($m['accuracy_percent']) ?>%</td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                <?php else: ?>
+                                    <div class="text-muted p-2 text-center" style="font-size:0.7rem;">Belum ada sampel terkonfirmasi.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1083,25 +1227,61 @@
 
                     <!-- Bagian Jika Gangguan Ditemukan (CONFIRMED) -->
                     <div id="sectionConfirmed">
-                        <div class="mb-3">
-                            <label class="form-label text-dark small fw-bold">DESKRIPSI KERUSAKAN KOMPONEN</label>
-                            <input type="text" class="form-control" id="modalComponentDamaged" placeholder="Contoh: Bunglon menempel pada pin isolator fasa R / Flashover kawat">
-                        </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label text-dark small fw-bold">ID ASET TIANG TERDAPAT GANGGUAN (OPSIONAL)</label>
-                                <input type="number" class="form-control" id="modalFoundAssetId" placeholder="Masukkan Asset ID jika diketahui">
+                                <label class="form-label text-dark small fw-bold">KATEGORI PENYEBAB GANGGUAN <span class="text-danger">*</span></label>
+                                <select class="form-select" id="modalCauseCategory">
+                                    <option value="BINATANG">Binatang (Bunglon / Burung / Kelelawar / Ular)</option>
+                                    <option value="POHON">Pohon (Sentuhan Dahan / Pohon Tumbang)</option>
+                                    <option value="PETIR">Surja Petir / Sambaran Petir Langsung</option>
+                                    <option value="PERALATAN_RUSAK">Peralatan Rusak (Isolator Flashover / Arrester / Kawat Putus)</option>
+                                    <option value="KONTAK_BENDA_ASING">Kontak Benda Asing (Layang-layang / Seng / Spanduk)</option>
+                                    <option value="TEMPORER_HILANG">Temporer Hilang Sendiri</option>
+                                    <option value="LAINNYA">Lain-lain / Penyebab Khusus</option>
+                                </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label text-dark small fw-bold">JARAK LAPANGAN AKTUAL (METER)</label>
-                                <input type="number" class="form-control" id="modalActualDistanceM" placeholder="Jarak speedometer / GPS dari acuan">
+                                <label class="form-label text-dark small fw-bold">DESKRIPSI KERUSAKAN KOMPONEN</label>
+                                <input type="text" class="form-control" id="modalComponentDamaged" placeholder="Contoh: Bunglon mati di pin isolator fasa R / Flashover kawat">
                             </div>
                         </div>
+
+                        <!-- Candidate Pole Select & ID -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label class="form-label text-dark small fw-bold">PILIH TIANG JTM TEMUAN (KANDIDAT ATAU DAFTAR TIANG)</label>
+                                <select class="form-select" id="modalFoundAssetSelect">
+                                    <option value="">-- Pilih dari Kandidat / Tiang Jalur --</option>
+                                </select>
+                                <div class="form-text text-muted" style="font-size:0.69rem;">Memilih tiang akan otomatis mengisi Asset ID, estimasi jarak, dan koordinat.</div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label text-dark small fw-bold">ID ASET TIANG (MANUAL / OTOMATIS)</label>
+                                <input type="number" class="form-control" id="modalFoundAssetId" placeholder="Asset ID (opsional)">
+                            </div>
+                        </div>
+
+                        <!-- Actual Coordinates & Measured Distance -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label text-dark small fw-bold">JARAK DARI ACUAN (METER)</label>
+                                <input type="number" step="0.1" class="form-control fw-bold" id="modalActualDistanceM" placeholder="Jarak kumulatif (m)">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark small fw-bold">LATITUDE AKTUAL</label>
+                                <input type="number" step="0.00000001" class="form-control font-monospace" id="modalActualLatitude" placeholder="-7.45xxxxxx">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark small fw-bold">LONGITUDE AKTUAL</label>
+                                <input type="number" step="0.00000001" class="form-control font-monospace" id="modalActualLongitude" placeholder="112.71xxxxxx">
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="modalIsComponentMatch" checked>
                                 <label class="form-check-label text-dark small" for="modalIsComponentMatch">
-                                    Kerusakan komponen sesuai dengan klasifikasi gangguan sistem
+                                    Kerusakan komponen sesuai dengan klasifikasi gangguan sistem (DGR / OCR)
                                 </label>
                             </div>
                         </div>
@@ -1288,21 +1468,68 @@
             ? (' — HILIR DARI ' + (srcCtx.protection_device?.nama_asset || srcCtx.source_label || 'PROTEKSI'))
             : (' — DARI GI PANGKAL');
 
-        const hasFaultPoint = Boolean(lat && lng && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng)));
+        const candidateZone = resultObj.candidate_zone || null;
+        const isCandidateZoneIndeterminate = Boolean(candidateZone && !candidateZone.is_single_point);
+        const hasFaultPoint = Boolean(lat && lng && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng)) && !isCandidateZoneIndeterminate);
         const hasDownstreamSeq = Array.isArray(poleSeq) && poleSeq.length > 0;
 
-        if (!hasFaultPoint && !hasDownstreamSeq) {
+        if (!hasFaultPoint && !hasDownstreamSeq && !isCandidateZoneIndeterminate) {
             clearMiniMapLayers(
                 'TIDAK ADA KANDIDAT VALID' + (feederCode ? ' (' + feederCode + ')' : ''),
                 'badge bg-secondary text-white'
             );
+            const czBox = document.getElementById('candidateZoneNoticeBox');
+            if (czBox) czBox.style.display = 'none';
             return;
         }
 
-        clearMiniMapLayers(
-            (hasFaultPoint ? 'FAULT POINT LOCATED' : 'JALUR HILIR TERPETAKAN') + (feederCode ? ' (' + feederCode + ')' : '') + srcBadgeSuffix,
-            hasFaultPoint ? 'badge bg-danger text-white' : 'badge bg-info text-dark'
-        );
+        let mapStatusText = '';
+        let mapStatusClass = '';
+        if (hasFaultPoint) {
+            mapStatusText = 'FAULT POINT LOCATED' + (feederCode ? ' (' + feederCode + ')' : '') + srcBadgeSuffix;
+            mapStatusClass = 'badge bg-danger text-white';
+        } else if (isCandidateZoneIndeterminate) {
+            mapStatusText = 'ZONA KANDIDAT TERPETAKAN' + (feederCode ? ' (' + feederCode + ')' : '') + srcBadgeSuffix;
+            mapStatusClass = 'badge bg-warning text-dark';
+        } else {
+            mapStatusText = 'JALUR HILIR TERPETAKAN' + (feederCode ? ' (' + feederCode + ')' : '') + srcBadgeSuffix;
+            mapStatusClass = 'badge bg-info text-dark';
+        }
+
+        clearMiniMapLayers(mapStatusText, mapStatusClass);
+
+        // Update Spatial Candidate Zone Notice Box in Map Card
+        const czNoticeBox = document.getElementById('candidateZoneNoticeBox');
+        if (czNoticeBox) {
+            if (isCandidateZoneIndeterminate && candidateZone) {
+                czNoticeBox.style.display = 'block';
+                const czTitle = document.getElementById('candidateZoneNoticeTitle');
+                if (czTitle) czTitle.innerText = candidateZone.title || 'ZONA KANDIDAT PENELUSURAN GANGGUAN TANAH (DGR)';
+                const czRange = document.getElementById('candidateZoneRangeText');
+                if (czRange) {
+                    const startM = Number(candidateZone.range_start_m || 0).toFixed(0);
+                    const endM = Number(candidateZone.range_end_m || 0).toFixed(0);
+                    const startKm = (Number(startM) / 1000).toFixed(2);
+                    const endKm = (Number(endM) / 1000).toFixed(2);
+                    czRange.innerText = `${startM} m – ${endM} m (${startKm} – ${endKm} km)`;
+                }
+                const czNotes = document.getElementById('candidateZoneExplanation');
+                if (czNotes) czNotes.innerText = candidateZone.notes || '';
+                const czPolesList = document.getElementById('candidateZonePolesList');
+                if (czPolesList) {
+                    const poles = Array.isArray(candidateZone.candidate_poles) ? candidateZone.candidate_poles : [];
+                    if (poles.length > 0) {
+                        czPolesList.innerHTML = poles.slice(0, 10).map(p =>
+                            `<span class="badge bg-white text-dark border me-1 font-monospace"><i class="fas fa-bolt text-warning me-1"></i>${escapeHtml(p.kode_asset || p.kode_tiang || '-')}</span>`
+                        ).join('') + (poles.length > 10 ? `<span class="text-muted">+${poles.length - 10} tiang lainnya</span>` : '');
+                    } else {
+                        czPolesList.innerHTML = '<span class="text-muted">Semua tiang sepanjang jalur hilir kandidat</span>';
+                    }
+                }
+            } else {
+                czNoticeBox.style.display = 'none';
+            }
+        }
 
         if (hasFaultPoint) {
             currentLat = Number(lat);
@@ -1310,6 +1537,7 @@
         }
 
         const focusBoundsPoints = [];
+        const allDownstreamPoints = [];
 
         // 1. Optional Upstream Reference Segments (GI -> Protection Device, muted dashed gray)
         const upstreamSegs = Array.isArray(resultObj.upstream_segments) ? resultObj.upstream_segments : [];
@@ -1328,16 +1556,27 @@
             }
         });
 
-        // 2. Render each downstream transline segment as its OWN individual L.polyline (prevents cross-branch polygon/web)
+        // 2. Render each downstream transline segment as its OWN individual L.polyline
         const poleMap = new Map();
         const faultZonePoleIds = new Set();
+        const candidatePoleIds = new Set();
+        if (candidateZone && Array.isArray(candidateZone.candidate_poles)) {
+            candidateZone.candidate_poles.forEach(cp => {
+                if (cp && cp.id) candidatePoleIds.add(Number(cp.id));
+            });
+        }
+
+        let firstCandidateCoord = null;
 
         if (hasDownstreamSeq) {
             poleSeq.forEach(seg => {
                 const pts = extractValidSegmentLatLngs(seg);
                 if (pts.length < 2) return;
 
+                pts.forEach(p => allDownstreamPoints.push(p));
+
                 const isZone = Boolean(seg.is_fault_zone);
+                const isCandZone = Boolean(seg.is_candidate_zone || (isCandidateZoneIndeterminate && seg.is_on_fault_path));
                 const isOnFaultPath = Boolean(seg.is_on_fault_path);
                 const condText = escapeHtml(
                     ((seg.conductor_type || 'Belum tersedia') + ((seg.conductor_size && seg.conductor_size !== '-') ? ' ' + seg.conductor_size : '')).trim()
@@ -1346,6 +1585,13 @@
                 if (isZone) {
                     faultZonePoleIds.add(seg.from_pole_id);
                     faultZonePoleIds.add(seg.to_pole_id);
+                }
+                if (isCandZone) {
+                    candidatePoleIds.add(seg.from_pole_id);
+                    candidatePoleIds.add(seg.to_pole_id);
+                    if (!firstCandidateCoord && pts.length > 0) {
+                        firstCandidateCoord = pts[0];
+                    }
                 }
 
                 if (isZone) {
@@ -1366,6 +1612,26 @@
                         'Bentang: ' + Number(seg.span_meters).toFixed(1) + ' m<br>' +
                         'Jarak Kumulatif dari Acuan: <b>' + Number(seg.cumulative_meters).toFixed(1) + ' m (' + (Number(seg.cumulative_meters) / 1000).toFixed(2) + ' km)</b><br>' +
                         'Konduktor: ' + condText
+                    ).addTo(miniMapLayerGroup);
+
+                    pts.forEach(p => focusBoundsPoints.push(p));
+                } else if (isCandZone) {
+                    L.polyline(pts, {
+                        color: '#f59e0b',
+                        weight: 8,
+                        opacity: 0.72,
+                        lineCap: 'round'
+                    }).addTo(miniMapLayerGroup);
+
+                    L.polyline(pts, {
+                        color: '#d97706',
+                        weight: 3.5,
+                        opacity: 0.95,
+                        dashArray: '6, 6'
+                    }).bindTooltip(
+                        '<b>Zona Kandidat DGR:</b> ' + escapeHtml(seg.from_pole_kode) + ' &rarr; ' + escapeHtml(seg.to_pole_kode) +
+                        ' (' + Number(seg.cumulative_meters).toFixed(1) + ' m &bull; ' + condText + ')',
+                        { sticky: true }
                     ).addTo(miniMapLayerGroup);
 
                     pts.forEach(p => focusBoundsPoints.push(p));
@@ -1409,7 +1675,7 @@
                         lat: Number(seg.from_coords.lat),
                         lng: Number(seg.from_coords.lng),
                         cum_m: existingFrom ? Math.min(existingFrom.cum_m, Number(seg.cum_start_meters || 0)) : Number(seg.cum_start_meters || 0),
-                        on_path: (existingFrom?.on_path || false) || isOnFaultPath || isZone
+                        on_path: (existingFrom?.on_path || false) || isOnFaultPath || isZone || isCandZone
                     });
                 }
                 if (seg.to_coords && seg.to_coords.lat && seg.to_coords.lng) {
@@ -1420,16 +1686,17 @@
                         lat: Number(seg.to_coords.lat),
                         lng: Number(seg.to_coords.lng),
                         cum_m: Number(seg.cumulative_meters || 0),
-                        on_path: (existingTo?.on_path || false) || isOnFaultPath || isZone
+                        on_path: (existingTo?.on_path || false) || isOnFaultPath || isZone || isCandZone
                     });
                 }
             });
         }
 
-        // 3. Render Pole Node Markers (Tiang Normal #10b981 & Estimasi Zona #f59e0b)
+        // 3. Render Pole Node Markers (Normal #10b981, Zona #f59e0b, Acuan #8b5cf6)
         const anchorPoleId = Number(resultObj.anchor_pole?.id || 0);
         poleMap.forEach(pole => {
             const isZonePole = faultZonePoleIds.has(pole.id);
+            const isCandidatePole = candidatePoleIds.has(pole.id);
             const isAnchor = (pole.id === anchorPoleId);
             if (!pole.lat || !pole.lng) return;
 
@@ -1443,6 +1710,18 @@
                     fillOpacity: 0.95
                 }).bindTooltip(
                     '<b>' + escapeHtml(pole.kode) + '</b> (Zona Gangguan &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km)',
+                    { direction: 'top', offset: [0, -6] }
+                ).addTo(miniMapLayerGroup);
+            } else if (isCandidatePole && isCandidateZoneIndeterminate) {
+                L.circleMarker([pole.lat, pole.lng], {
+                    radius: 6,
+                    fillColor: '#f59e0b',
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.95
+                }).bindTooltip(
+                    '<b>' + escapeHtml(pole.kode) + '</b> (Tiang Kandidat Terduga &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km)',
                     { direction: 'top', offset: [0, -6] }
                 ).addTo(miniMapLayerGroup);
             } else if (pole.on_path || isAnchor) {
@@ -1478,6 +1757,7 @@
             const aLat = Number(anchorPole.latitude);
             const aLng = Number(anchorPole.longitude);
             focusBoundsPoints.push([aLat, aLng]);
+            allDownstreamPoints.push([aLat, aLng]);
 
             const badgeLabel = isProt
                 ? ('⚡ ' + (srcCtx.protection_device?.nama_asset || srcCtx.source_label || 'PROTEKSI') + ' &bull; 0.0 km')
@@ -1500,11 +1780,12 @@
                 .addTo(miniMapLayerGroup);
         }
 
-        // 5. Render Fault Point Marker (✕) & Radius Circle + Distance Callout ONLY when a valid fault coordinate exists
+        // 5. Render Fault Point Marker (✕) & Radius Circle ONLY when a single verified fault coordinate exists
         if (hasFaultPoint) {
             const fLatNum = Number(lat);
             const fLngNum = Number(lng);
             focusBoundsPoints.push([fLatNum, fLngNum]);
+            allDownstreamPoints.push([fLatNum, fLngNum]);
 
             L.circle([fLatNum, fLngNum], {
                 radius: 85,
@@ -1545,9 +1826,29 @@
                 iconAnchor: [-16, 14]
             });
             L.marker([fLatNum, fLngNum], { icon: calloutIcon, zIndexOffset: 950, interactive: false }).addTo(miniMapLayerGroup);
+        } else if (isCandidateZoneIndeterminate && firstCandidateCoord) {
+            // Render Callout Badge for Candidate Zone without placing fake precision cross
+            const refSourceShort = isProt
+                ? (srcCtx.protection_device?.nama_asset || srcCtx.source_label || 'Proteksi')
+                : ('GI Pangkal ' + (feederName || ''));
+            const czEndKm = (Number(candidateZone.range_end_m || 0) / 1000).toFixed(2);
+            const czPoleCount = candidateZone.candidate_poles ? candidateZone.candidate_poles.length : 0;
+
+            const czCalloutIcon = L.divIcon({
+                className: 'fl-fault-callout-wrapper',
+                html: `<div class="fl-fault-callout-icon" style="background:rgba(180,83,9,0.95); border-color:#f59e0b; color:#fffbeb;"><i class="fas fa-layer-group me-1"></i>Zona Estimasi DGR (0.00 – ${czEndKm} km dari ${escapeHtml(refSourceShort)}) &bull; ${czPoleCount} Tiang Terduga</div>`,
+                iconSize: null,
+                iconAnchor: [-16, 14]
+            });
+            L.marker(firstCandidateCoord, { icon: czCalloutIcon, zIndexOffset: 950, interactive: false }).addTo(miniMapLayerGroup);
         }
 
-        // 6. Fit Map Bounds smoothly around the active path
+        // 6. Cache bounds for Focus / Reset buttons
+        window.flFaultLocationBounds = (focusBoundsPoints.length > 0) ? L.latLngBounds(focusBoundsPoints) : null;
+        window.flAllDownstreamBounds = (allDownstreamPoints.length > 0) ? L.latLngBounds(allDownstreamPoints) : null;
+        window.flFaultPointCoord = hasFaultPoint ? [Number(lat), Number(lng)] : null;
+
+        // 7. Fit Map Bounds smoothly around the active path
         if (focusBoundsPoints.length >= 2) {
             const bounds = L.latLngBounds(focusBoundsPoints);
             if (bounds.isValid()) {
@@ -1559,10 +1860,37 @@
             map.setView(focusBoundsPoints[0], 16);
         } else if (hasFaultPoint) {
             map.setView([Number(lat), Number(lng)], 16);
+        } else if (allDownstreamPoints.length >= 2) {
+            map.fitBounds(L.latLngBounds(allDownstreamPoints), { padding: [42, 42], maxZoom: 17 });
         }
 
-        // 7. Render the linear pole sequence strip below #miniMap
+        // 8. Render the linear pole sequence strip below #miniMap
         renderFaultPathSequenceStrip(resultObj);
+    }
+
+    // Attach listeners for Focus / Reset Map View buttons
+    const btnFocusMap = document.getElementById('btnFocusFaultLocation');
+    if (btnFocusMap && !btnFocusMap.dataset.bound) {
+        btnFocusMap.dataset.bound = '1';
+        btnFocusMap.addEventListener('click', function() {
+            if (window.flFaultPointCoord) {
+                map.setView(window.flFaultPointCoord, 17);
+            } else if (window.flFaultLocationBounds && window.flFaultLocationBounds.isValid()) {
+                map.fitBounds(window.flFaultLocationBounds, { padding: [40, 40], maxZoom: 17 });
+            } else if (window.flAllDownstreamBounds && window.flAllDownstreamBounds.isValid()) {
+                map.fitBounds(window.flAllDownstreamBounds, { padding: [40, 40], maxZoom: 17 });
+            }
+        });
+    }
+
+    const btnResetMap = document.getElementById('btnResetMapFocus');
+    if (btnResetMap && !btnResetMap.dataset.bound) {
+        btnResetMap.dataset.bound = '1';
+        btnResetMap.addEventListener('click', function() {
+            if (window.flAllDownstreamBounds && window.flAllDownstreamBounds.isValid()) {
+                map.fitBounds(window.flAllDownstreamBounds, { padding: [40, 40], maxZoom: 17 });
+            }
+        });
     }
 
     // Initial map state
@@ -2436,7 +2764,136 @@
         }
     });
 
-    // Record Outcome Modal Handlers
+    // Populate Candidate Poles Select in the Outcome Modal
+    function populateOutcomeModalCandidates(resultData) {
+        const selectEl = document.getElementById('modalFoundAssetSelect');
+        if (!selectEl) return;
+
+        selectEl.innerHTML = '<option value="">-- Pilih Tiang JTM Temuan / Kandidat --</option>';
+
+        const seenIds = new Set();
+        const addPoleOption = (id, kode, cumDist, lat, lng, isCand = false) => {
+            if (!id || seenIds.has(Number(id))) return;
+            seenIds.add(Number(id));
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.dataset.assetId = id;
+            opt.dataset.kode = kode;
+            opt.dataset.cumDist = (cumDist !== null && cumDist !== undefined) ? Number(cumDist).toFixed(1) : '';
+            opt.dataset.lat = (lat !== null && lat !== undefined) ? Number(lat).toFixed(6) : '';
+            opt.dataset.lng = (lng !== null && lng !== undefined) ? Number(lng).toFixed(6) : '';
+
+            const distStr = opt.dataset.cumDist ? ` (+${opt.dataset.cumDist}m)` : '';
+            const tagStr = isCand ? ' [KANDIDAT UTAMA]' : '';
+            opt.innerText = `${kode}${distStr}${tagStr}`;
+            selectEl.appendChild(opt);
+        };
+
+        // 1. Primary candidate assets
+        if (Array.isArray(resultData?.candidate_assets)) {
+            resultData.candidate_assets.forEach(ca => {
+                addPoleOption(ca.id, ca.kode_asset, resultData.calculated_distance_m, ca.latitude, ca.longitude, true);
+            });
+        }
+
+        // 2. Candidate Zone poles
+        if (Array.isArray(resultData?.candidate_zone?.candidate_poles)) {
+            resultData.candidate_zone.candidate_poles.forEach(cp => {
+                addPoleOption(cp.id, cp.kode_asset || cp.kode_tiang, cp.cumulative_meters, cp.latitude, cp.longitude, true);
+            });
+        }
+
+        // 3. Downstream sequence poles
+        if (Array.isArray(resultData?.pole_sequence)) {
+            resultData.pole_sequence.forEach(ps => {
+                if (ps.to_pole_id) {
+                    addPoleOption(ps.to_pole_id, ps.to_pole_kode, ps.cumulative_meters, ps.to_coords?.lat, ps.to_coords?.lng, Boolean(ps.is_fault_zone || ps.is_candidate_zone));
+                }
+            });
+        }
+    }
+
+    // Auto-fill coordinates and distance when a candidate pole is selected in modal
+    const foundAssetSelect = document.getElementById('modalFoundAssetSelect');
+    if (foundAssetSelect) {
+        foundAssetSelect.addEventListener('change', function() {
+            const opt = this.options[this.selectedIndex];
+            if (!opt || !opt.value) return;
+
+            const assetIdInput = document.getElementById('modalFoundAssetId');
+            if (assetIdInput && opt.dataset.assetId) assetIdInput.value = opt.dataset.assetId;
+
+            const distInput = document.getElementById('modalActualDistanceM');
+            if (distInput && opt.dataset.cumDist) distInput.value = opt.dataset.cumDist;
+
+            const latInput = document.getElementById('modalActualLatitude');
+            if (latInput && opt.dataset.lat) latInput.value = opt.dataset.lat;
+
+            const lngInput = document.getElementById('modalActualLongitude');
+            if (lngInput && opt.dataset.lng) lngInput.value = opt.dataset.lng;
+        });
+    }
+
+    // Trigger Outcome Modal for Current Active Calculated Case
+    const btnRecordCurrentCase = document.getElementById('btnRecordOutcomeCurrentCase');
+    if (btnRecordCurrentCase) {
+        btnRecordCurrentCase.addEventListener('click', async function() {
+            if (!lastCalculatedResult) {
+                alert('Silakan lakukan analisis gangguan terlebih dahulu sebelum mencatat hasil patroli.');
+                return;
+            }
+
+            const btn = this;
+            btn.disabled = true;
+
+            try {
+                // If case has not been saved yet, auto-save to get official case_id and case_number
+                let caseId = lastCalculatedResult.case_id;
+                let caseNum = lastCalculatedResult.case_number || lastCalculatedResult.case_uuid;
+
+                if (!caseId) {
+                    const saveRes = await fetch('<?= site_url('api/fault-locator/save-case') ?>', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(lastCalculatedResult)
+                    });
+                    const saveData = await saveRes.json();
+                    if (saveData.status === 'success' && saveData.case_id) {
+                        caseId = saveData.case_id;
+                        caseNum = saveData.case_number;
+                        lastCalculatedResult.case_id = caseId;
+                        lastCalculatedResult.case_number = caseNum;
+                    }
+                }
+
+                document.getElementById('modalCaseId').value = caseId || '';
+                document.getElementById('modalCaseNumberDisplay').innerText = caseNum || '-';
+                document.getElementById('modalFeederDisplay').innerText = lastCalculatedResult.feeder_name || '-';
+
+                populateOutcomeModalCandidates(lastCalculatedResult);
+
+                // If single point fault point exists, pre-fill distance & coordinates
+                if (lastCalculatedResult.fault_point && lastCalculatedResult.calculated_distance_m > 0) {
+                    const latIn = document.getElementById('modalActualLatitude');
+                    const lngIn = document.getElementById('modalActualLongitude');
+                    const distIn = document.getElementById('modalActualDistanceM');
+                    if (latIn && !latIn.value) latIn.value = Number(lastCalculatedResult.fault_point.lat).toFixed(6);
+                    if (lngIn && !lngIn.value) lngIn.value = Number(lastCalculatedResult.fault_point.lng).toFixed(6);
+                    if (distIn && !distIn.value) distIn.value = Number(lastCalculatedResult.calculated_distance_m).toFixed(1);
+                }
+
+                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRecordOutcome'));
+                modal.show();
+            } catch (err) {
+                console.error('Error preparing outcome recording:', err);
+                alert('Gagal menyiapkan form rekam hasil lapangan.');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    }
+
+    // Record Outcome Modal Handlers from Case History table
     document.querySelectorAll('.btn-record-outcome').forEach(btn => {
         btn.addEventListener('click', function() {
             const caseId = this.getAttribute('data-case-id');
@@ -2446,6 +2903,14 @@
             document.getElementById('modalCaseId').value = caseId;
             document.getElementById('modalCaseNumberDisplay').innerText = caseNum;
             document.getElementById('modalFeederDisplay').innerText = feederName;
+
+            // Load candidate list from last calculated result if matches, or clear
+            if (lastCalculatedResult && String(lastCalculatedResult.case_id) === String(caseId)) {
+                populateOutcomeModalCandidates(lastCalculatedResult);
+            } else {
+                const selectEl = document.getElementById('modalFoundAssetSelect');
+                if (selectEl) selectEl.innerHTML = '<option value="">-- Masukkan Asset ID manual di samping --</option>';
+            }
 
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRecordOutcome'));
             modal.show();
@@ -2471,15 +2936,26 @@
 
     document.getElementById('btnSubmitOutcome').addEventListener('click', async function() {
         const caseId = document.getElementById('modalCaseId').value;
-        if (!caseId) return;
+        if (!caseId) {
+            alert('ID kasus gangguan tidak valid.');
+            return;
+        }
 
         const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
+        const causeCategory = document.getElementById('modalCauseCategory')?.value || 'GENERAL_FAULT';
+        const actualLat = document.getElementById('modalActualLatitude')?.value;
+        const actualLng = document.getElementById('modalActualLongitude')?.value;
+        const actualDist = document.getElementById('modalActualDistanceM')?.value;
+
         const payload = {
-            case_id: parseInt(caseId),
+            case_id: parseInt(caseId, 10),
             outcome_type: outcomeType,
-            found_asset_id: document.getElementById('modalFoundAssetId').value ? parseInt(document.getElementById('modalFoundAssetId').value) : null,
+            cause_category_code: causeCategory,
+            found_asset_id: document.getElementById('modalFoundAssetId').value ? parseInt(document.getElementById('modalFoundAssetId').value, 10) : null,
             component_damaged: document.getElementById('modalComponentDamaged').value,
-            actual_distance_m: document.getElementById('modalActualDistanceM').value ? parseFloat(document.getElementById('modalActualDistanceM').value) : null,
+            actual_distance_m: (actualDist !== '' && actualDist !== null) ? parseFloat(actualDist) : null,
+            actual_latitude: (actualLat !== '' && actualLat !== null) ? parseFloat(actualLat) : null,
+            actual_longitude: (actualLng !== '' && actualLng !== null) ? parseFloat(actualLng) : null,
             is_component_match: document.getElementById('modalIsComponentMatch').checked ? 1 : 0,
             inspected_area_notes: document.getElementById('modalInspectedAreaNotes').value,
             not_found_reason: document.getElementById('modalNotFoundReason').value,
@@ -2500,10 +2976,16 @@
             });
             const data = await res.json();
             if (data.status === 'success') {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalRecordOutcome'));
+                if (modal) modal.hide();
+                alert('Hasil pemeriksaan lapangan berhasil direkam. Dataset kalibrasi & riwayat kasus telah diperbarui.');
                 location.reload();
+            } else {
+                alert('Gagal menyimpan hasil: ' + (data.message || ''));
             }
         } catch(e) {
             console.error('Error recording outcome:', e);
+            alert('Terjadi kesalahan koneksi server saat menyimpan hasil.');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-floppy-disk me-1"></i> SIMPAN HASIL PEMERIKSAAN';
@@ -2685,7 +3167,8 @@
         }
 
         // Coordinates & Map
-        const hasValidPoint = validCandidates.length > 0 && data.fault_point && data.fault_point.lat && data.fault_point.lng;
+        const isCandidateZoneIndeterminate = Boolean(data.candidate_zone && !data.candidate_zone.is_single_point);
+        const hasValidPoint = validCandidates.length > 0 && data.fault_point && data.fault_point.lat && data.fault_point.lng && !isCandidateZoneIndeterminate;
         const hasDownstreamPath = Array.isArray(data.pole_sequence) && data.pole_sequence.length > 0;
 
         if (hasValidPoint) {
@@ -2694,6 +3177,19 @@
                 data.fault_point.lat,
                 data.fault_point.lng,
                 validCandidates[0].kode_asset,
+                data.pole_sequence,
+                data.feeder_name,
+                data.feeder_code,
+                data
+            );
+        } else if (isCandidateZoneIndeterminate && hasDownstreamPath) {
+            const czStart = Number(data.candidate_zone.range_start_m || 0).toFixed(0);
+            const czEnd = Number(data.candidate_zone.range_end_m || 0).toFixed(0);
+            document.getElementById('resCoords').innerText = `Zona kandidat estimasi (${czStart} m – ${czEnd} m dari acuan); butuh jarak relay numerik untuk koordinat presisi tunggal`;
+            updateMiniMap(
+                null,
+                null,
+                '',
                 data.pole_sequence,
                 data.feeder_name,
                 data.feeder_code,

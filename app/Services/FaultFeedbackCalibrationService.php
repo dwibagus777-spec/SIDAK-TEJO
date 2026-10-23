@@ -90,6 +90,66 @@ class FaultFeedbackCalibrationService
         $locationAccuracy = $confirmedCount > 0 ? round(($locationMatches / $confirmedCount) * 100, 1) : 0.0;
         $componentAccuracy = $confirmedCount > 0 ? round(($componentMatches / $confirmedCount) * 100, 1) : 0.0;
 
+        // Breakdown metrics per fault type, source type, and conductor type
+        $metricsByFaultType = [];
+        $metricsBySourceType = [];
+        $metricsByConductorType = [];
+
+        if ($this->db->tableExists('fault_actual_findings') && $this->db->tableExists('fault_cases')) {
+            $joinedFindings = $this->db->table('fault_actual_findings f')
+                ->select('f.outcome_type, f.distance_error_meters, f.is_location_match, c.fault_type, c.source_type, c.conductor_type')
+                ->join('fault_cases c', 'f.fault_case_id = c.id', 'inner')
+                ->get()
+                ->getResultArray();
+
+            $computeGroupMetrics = static function(array $rows, string $groupKey): array {
+                $groups = [];
+                foreach ($rows as $r) {
+                    $key = !empty($r[$groupKey]) ? $r[$groupKey] : 'UNKNOWN';
+                    if (!isset($groups[$key])) {
+                        $groups[$key] = [
+                            'group_name'       => $key,
+                            'total_samples'    => 0,
+                            'confirmed_count'  => 0,
+                            'location_matches' => 0,
+                            'error_sum'        => 0.0,
+                            'error_count'      => 0,
+                        ];
+                    }
+                    $groups[$key]['total_samples']++;
+                    if (($r['outcome_type'] ?? '') === 'CONFIRMED') {
+                        $groups[$key]['confirmed_count']++;
+                        if (!empty($r['is_location_match'])) {
+                            $groups[$key]['location_matches']++;
+                        }
+                        if ($r['distance_error_meters'] !== null) {
+                            $groups[$key]['error_sum'] += abs((float)$r['distance_error_meters']);
+                            $groups[$key]['error_count']++;
+                        }
+                    }
+                }
+                $result = [];
+                foreach ($groups as $k => $g) {
+                    $cCount = $g['confirmed_count'];
+                    $mae = $g['error_count'] > 0 ? round($g['error_sum'] / $g['error_count'], 1) : null;
+                    $acc = $cCount > 0 ? round(($g['location_matches'] / $cCount) * 100, 1) : 0.0;
+                    $result[$k] = [
+                        'key'              => $k,
+                        'total_samples'    => $g['total_samples'],
+                        'confirmed_count'  => $cCount,
+                        'mae_meters'       => $mae,
+                        'mae_label'        => $mae !== null ? number_format($mae, 1) . ' m' : 'N/A',
+                        'accuracy_percent' => $acc,
+                    ];
+                }
+                return $result;
+            };
+
+            $metricsByFaultType = $computeGroupMetrics($joinedFindings, 'fault_type');
+            $metricsBySourceType = $computeGroupMetrics($joinedFindings, 'source_type');
+            $metricsByConductorType = $computeGroupMetrics($joinedFindings, 'conductor_type');
+        }
+
         $isEligible = ($confirmedCount >= self::MIN_CONFIRMED_SAMPLES);
         $calibrationStatus = $isEligible ? 'CALIBRATION_ELIGIBLE' : 'DATA_COLLECTION_MODE';
         $statusMessage = $isEligible
@@ -116,6 +176,9 @@ class FaultFeedbackCalibrationService
             'location_accuracy_pct' => $locationAccuracy,
             'accuracy_rate_percent' => $locationAccuracy,
             'component_accuracy_pct'=> $componentAccuracy,
+            'metrics_by_fault_type' => $metricsByFaultType,
+            'metrics_by_source_type'=> $metricsBySourceType,
+            'metrics_by_conductor_type' => $metricsByConductorType,
             'controlled_learning_policy' => [
                 'auto_mutation_allowed' => false,
                 'min_confirmed_required' => self::MIN_CONFIRMED_SAMPLES,

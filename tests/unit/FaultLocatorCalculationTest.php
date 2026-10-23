@@ -18,7 +18,8 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
     public function testFaultClassificationSymmetrical3Phase(): void
     {
         $class = $this->service->classifyFaultCurrents(1500.0, 1490.0, 1510.0, 10.0);
-        $this->assertSame('3_PHASE', $class['fault_type']);
+        $this->assertSame('OCR_INSTAN', $class['fault_type']);
+        $this->assertSame('3_PHASE', $class['technical_fault_type']);
         $this->assertFalse($class['is_ground_fault']);
         $this->assertEqualsWithDelta(1500.0, $class['active_current_a'], 5.0);
     }
@@ -26,7 +27,8 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
     public function testFaultClassificationPhaseToPhase(): void
     {
         $class = $this->service->classifyFaultCurrents(1200.0, 1195.0, 5.0, 8.0);
-        $this->assertSame('2_PHASE', $class['fault_type']);
+        $this->assertSame('OCR_INSTAN', $class['fault_type']);
+        $this->assertSame('2_PHASE', $class['technical_fault_type']);
         $this->assertFalse($class['is_ground_fault']);
         $this->assertEqualsWithDelta(1197.5, $class['active_current_a'], 2.0);
     }
@@ -34,7 +36,8 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
     public function testFaultClassificationSingleLineToGround(): void
     {
         $class = $this->service->classifyFaultCurrents(280.0, 5.0, 4.0, 278.0);
-        $this->assertSame('1_PHASE_GROUND', $class['fault_type']);
+        $this->assertSame('DGR', $class['fault_type']);
+        $this->assertSame('1_PHASE_GROUND', $class['technical_fault_type']);
         $this->assertTrue($class['is_ground_fault']);
         $this->assertEqualsWithDelta(280.0, $class['active_current_a'], 5.0);
     }
@@ -457,7 +460,8 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
         // Real case from field: R = 244 A / 21.26 kV, S = 264 A / 0.00 kV, T = 238 A / 21.00 kV, N = 67 A
         $class = $this->service->classifyFaultCurrents(244.0, 264.0, 238.0, 67.0, 21.26, 0.00, 21.00);
 
-        $this->assertSame('1_PHASE_GROUND', $class['fault_type']);
+        $this->assertSame('DGR', $class['fault_type']);
+        $this->assertSame('1_PHASE_GROUND', $class['technical_fault_type']);
         $this->assertSame('Indikasi Gangguan Tanah Fasa S-N / DGR', $class['fault_type_label']);
         $this->assertSame('INDIKASI_DGR_S_N', $class['classification_rule']);
         $this->assertSame(['S', 'N'], $class['fault_phases']);
@@ -699,5 +703,70 @@ class FaultLocatorCalculationTest extends CIUnitTestCase
         } finally {
             $db->transRollback();
         }
+    }
+
+    public function testOperationalClassificationBoundary300A(): void
+    {
+        // Boundary: Exactly 300 A does NOT meet "di atas 300 A" -> PERLU_VERIFIKASI
+        $class300 = $this->service->classifyFaultCurrents(300.0, 300.0, 5.0, 0.0);
+        $this->assertSame('PERLU_VERIFIKASI', $class300['fault_type']);
+        $this->assertSame('PERLU_VERIFIKASI', $class300['operational_category']);
+        $this->assertStringContainsString('300 A', $class300['fault_type_label']);
+        $this->assertFalse($class300['is_ground_fault']);
+
+        // Boundary: 301 A meets "di atas 300 A" -> OCR
+        $class301 = $this->service->classifyFaultCurrents(301.0, 301.0, 5.0, 0.0);
+        $this->assertSame('OCR', $class301['fault_type']);
+        $this->assertSame('OCR', $class301['operational_category']);
+        $this->assertStringContainsString('OCR', $class301['fault_type_label']);
+        $this->assertFalse($class301['is_ground_fault']);
+    }
+
+    public function testOperationalClassificationBoundary1000A(): void
+    {
+        // Boundary: Exactly 1000 A enters OCR
+        $class1000 = $this->service->classifyFaultCurrents(1000.0, 1000.0, 5.0, 0.0);
+        $this->assertSame('OCR', $class1000['fault_type']);
+        $this->assertSame('OCR', $class1000['operational_category']);
+        $this->assertStringContainsString('OCR', $class1000['fault_type_label']);
+        $this->assertFalse($class1000['is_ground_fault']);
+
+        // Boundary: Above 1000 A (1001 A) enters OCR Instan
+        $class1001 = $this->service->classifyFaultCurrents(1001.0, 1001.0, 5.0, 0.0);
+        $this->assertSame('OCR_INSTAN', $class1001['fault_type']);
+        $this->assertSame('OCR_INSTAN', $class1001['operational_category']);
+        $this->assertStringContainsString('OCR Instan', $class1001['fault_type_label']);
+        $this->assertFalse($class1001['is_ground_fault']);
+    }
+
+    public function testOperationalClassificationNeutralNoiseVersusDetected(): void
+    {
+        // Neutral <= 15 A considered zero/noise (e.g. 5 A)
+        $classZero = $this->service->classifyFaultCurrents(600.0, 600.0, 5.0, 5.0);
+        $this->assertSame('OCR', $classZero['fault_type']);
+        $this->assertFalse($classZero['is_ground_fault']);
+
+        // Neutral >= 20 A is detected ground fault -> OCR-DGR
+        $classDetected = $this->service->classifyFaultCurrents(600.0, 600.0, 5.0, 45.0);
+        $this->assertSame('OCR_DGR', $classDetected['fault_type']);
+        $this->assertSame('OCR', $classDetected['sub_classification']);
+        $this->assertTrue($classDetected['is_ground_fault']);
+    }
+
+    public function testOperationalClassificationOcrDgrAndOcrInstanDgr(): void
+    {
+        // OCR-DGR: Phase between 300 A - 1000 A + neutral detected
+        $classOcrDgr = $this->service->classifyFaultCurrents(700.0, 700.0, 5.0, 50.0);
+        $this->assertSame('OCR_DGR', $classOcrDgr['fault_type']);
+        $this->assertSame('OCR', $classOcrDgr['sub_classification']);
+        $this->assertStringContainsString('OCR-DGR', $classOcrDgr['fault_type_label']);
+        $this->assertTrue($classOcrDgr['is_ground_fault']);
+
+        // OCR Instan-DGR: Phase > 1000 A + neutral detected
+        $classInstanDgr = $this->service->classifyFaultCurrents(1500.0, 1500.0, 1500.0, 60.0);
+        $this->assertSame('OCR_INSTAN_DGR', $classInstanDgr['fault_type']);
+        $this->assertSame('OCR_INSTAN', $classInstanDgr['sub_classification']);
+        $this->assertStringContainsString('OCR Instan-DGR', $classInstanDgr['fault_type_label']);
+        $this->assertTrue($classInstanDgr['is_ground_fault']);
     }
 }

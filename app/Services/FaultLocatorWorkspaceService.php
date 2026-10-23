@@ -71,6 +71,13 @@ class FaultLocatorWorkspaceService
         ],
     ];
 
+    // Operational Fault Classification Thresholds (PLN 20 kV Distribution & Relay Engineering Standards)
+    public const THRESHOLD_NEUTRAL_NOISE_A = 15.0;    // <= 15.0 A dianggap nol (noise / ketidakseimbangan beban normal)
+    public const THRESHOLD_NEUTRAL_DETECTED_A = 20.0; // >= 20.0 A terdeteksi sebagai arus gangguan tanah / GFR
+    public const THRESHOLD_PHASE_NOISE_A = 20.0;      // <= 20.0 A dianggap nol / idle
+    public const THRESHOLD_OCR_MIN_A = 300.0;         // Ambang batas bawah OCR: > 300.0 A (300.0 A tepat TIDAK memenuhi "di atas 300 A")
+    public const THRESHOLD_OCR_INSTANT_A = 1000.0;    // Ambang batas OCR vs OCR Instan: 300 A < I <= 1000 A adalah OCR; I > 1000 A adalah OCR Instan
+
     public function __construct(?FaultLocationIntelligenceService $fliEngine = null, $db = null)
     {
         $this->db = $db ?? Database::connect('default');
@@ -462,12 +469,20 @@ class FaultLocatorWorkspaceService
             bool $isGroundFault,
             string $rule,
             float $indicationConfidence,
-            array $evidence
+            array $evidence,
+            string $operationalCategory = '',
+            string $subClassification = 'NONE',
+            string $technicalType = ''
         ) use ($iR, $iS, $iT, $iN, $vR, $vS, $vT, $hasAnyVoltage, $hasAllThreeVoltages, $indicationBasis): array {
+            $opCat = $operationalCategory ?: $faultType;
+            $techType = $technicalType ?: $faultType;
             return [
-                'fault_type'                    => $faultType,
+                'fault_type'                    => $opCat,
+                'operational_category'          => $opCat,
+                'sub_classification'            => $subClassification,
                 'fault_type_label'              => $faultTypeLabel,
                 'indication_label'              => $faultTypeLabel,
+                'technical_fault_type'          => $techType,
                 'is_indication'                 => true,
                 'indication_basis'              => $indicationBasis,
                 'indication_confidence_percent' => round($indicationConfidence, 1),
@@ -476,6 +491,13 @@ class FaultLocatorWorkspaceService
                 'fault_phases'                  => $faultPhases,
                 'is_ground_fault'               => $isGroundFault,
                 'classification_rule'           => $rule,
+                'thresholds_used'               => [
+                    'neutral_noise_a'           => self::THRESHOLD_NEUTRAL_NOISE_A,
+                    'neutral_detected_a'        => self::THRESHOLD_NEUTRAL_DETECTED_A,
+                    'phase_noise_a'             => self::THRESHOLD_PHASE_NOISE_A,
+                    'ocr_min_a'                 => self::THRESHOLD_OCR_MIN_A,
+                    'ocr_instant_a'             => self::THRESHOLD_OCR_INSTANT_A,
+                ],
                 'current_r'                     => $iR,
                 'current_s'                     => $iS,
                 'current_t'                     => $iT,
@@ -507,256 +529,373 @@ class FaultLocatorWorkspaceService
                 [],
                 false,
                 'ARUS_DIBAWAH_AMBANG_GANGGUAN',
-                90.0,
-                $evidence
+                95.0,
+                $evidence,
+                'NO_FAULT',
+                'NONE',
+                'NO_FAULT'
             );
         }
 
-        // Pattern V1: Single-Phase Ground / DGR Indication confirmed by 1 collapsed phase voltage + healthy other phases
-        if (count($saggedPhases) === 1 && count($healthyVoltagePhases) >= 1 && ($iN >= 5.0 || $maxPhase > 10.0)) {
-            $pFault = $saggedPhases[0];
-            $vFault = (float)$vMap[$pFault];
-            $iFault = (float)$iMap[$pFault];
-            $actCurrent = max($iFault, $iN);
+        // Neutral status evaluation (validated thresholds)
+        $isNeutralZero = ($iN <= self::THRESHOLD_NEUTRAL_NOISE_A);
+        $isNeutralDetected = ($iN >= self::THRESHOLD_NEUTRAL_DETECTED_A);
+        $isNeutralBorderline = (!$isNeutralZero && !$isNeutralDetected); // 10.0 A < iN < 15.0 A
 
-            $healthyDesc = [];
-            foreach ($healthyVoltagePhases as $hp) {
-                $healthyDesc[] = "Fasa {$hp} = " . number_format((float)$vMap[$hp], 2, '.', '') . " kV";
+        // Active phase candidates above phase noise threshold (20 A)
+        $phaseCandidates = [];
+        foreach ($iMap as $p => $cur) {
+            if ($cur > self::THRESHOLD_PHASE_NOISE_A) {
+                $phaseCandidates[$p] = $cur;
             }
-
-            $evidence = [
-                "Tegangan Fasa {$pFault} drop signifikan ke " . number_format($vFault, 2, '.', '') . " kV" . ($vFault <= 0.5 ? ' (mendekati 0.00 kV terhadap tanah).' : ' (di bawah ambang normal 10 kV).'),
-                'Tegangan fasa sehat tetap tinggi/normal (' . implode(', ', $healthyDesc) . '), konsisten dengan pergeseran titik netral pada gangguan tanah sistem distribusi 20 kV.',
-                "Arus Netral/GFR terukur " . number_format($iN, 1, '.', '') . " A dengan arus Fasa {$pFault} sebesar " . number_format($iFault, 1, '.', '') . " A (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A).",
-            ];
-
-            $indConf = ($hasAllThreeVoltages && $vFault <= 2.0 && $iN >= 20.0) ? 92.0 : ($hasAllThreeVoltages ? 84.0 : 74.0);
-
-            return $buildPayload(
-                '1_PHASE_GROUND',
-                "Indikasi Gangguan Tanah Fasa {$pFault}-N / DGR",
-                $actCurrent,
-                [$pFault, 'N'],
-                true,
-                "INDIKASI_DGR_{$pFault}_N",
-                $indConf,
-                $evidence
-            );
         }
+        arsort($phaseCandidates);
+        $candidateCount = count($phaseCandidates);
 
-        // Pattern V2: Two phases with collapsed voltage -> 2-Phase Ground or 2-Phase Short Circuit
-        if (count($saggedPhases) === 2 && ($maxPhase > 10.0 || $iN > 10.0)) {
-            $phasesStr = implode('-', $saggedPhases);
-            $saggedVDesc = [];
-            $sumFaultCurrent = 0.0;
-            $maxFaultPhaseCurrent = 0.0;
-            foreach ($saggedPhases as $sp) {
-                $saggedVDesc[] = "Fasa {$sp} = " . number_format((float)$vMap[$sp], 2, '.', '') . " kV";
-                $sumFaultCurrent += $iMap[$sp];
-                $maxFaultPhaseCurrent = max($maxFaultPhaseCurrent, $iMap[$sp]);
-            }
+        $isInterPhase = false;
+        $faultPhases = [];
+        $iFault = 0.0;
+        $technicalType = 'UNKNOWN_PROFILE';
 
-            $evidence = [
-                'Tegangan drop pada dua fasa (' . implode(', ', $saggedVDesc) . ').',
-                "Arus fasa terukur R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A; Netral/GFR=" . number_format($iN, 1, '.', '') . " A.",
-            ];
-
-            if ($iN >= 15.0) {
-                return $buildPayload(
-                    '2_PHASE_GROUND',
-                    "Indikasi Gangguan 2 Fasa ke Tanah ({$phasesStr}-N)",
-                    max($maxFaultPhaseCurrent, $iN),
-                    array_merge($saggedPhases, ['N']),
-                    true,
-                    'INDIKASI_DUA_FASA_TANAH_TEGANGAN_DROP',
-                    $hasAllThreeVoltages ? 88.0 : 78.0,
-                    $evidence
-                );
-            }
-
-            return $buildPayload(
-                '2_PHASE',
-                "Indikasi Gangguan Antar Fasa ({$phasesStr})",
-                $sumFaultCurrent / 2.0,
-                $saggedPhases,
-                false,
-                'INDIKASI_ANTAR_FASA_TEGANGAN_DROP',
-                $hasAllThreeVoltages ? 86.0 : 76.0,
-                $evidence
-            );
+        // 1. Priority: If exactly 1 phase voltage collapsed and others healthy -> Single-Phase Ground (DGR)
+        if (count($saggedPhases) === 1 && count($healthyVoltagePhases) >= 1 && ($isNeutralDetected || $iN >= self::THRESHOLD_NEUTRAL_NOISE_A)) {
+            $isInterPhase = false;
+            $faultPhases = $saggedPhases;
+            $iFault = max($iMap[$faultPhases[0]], $iN);
+            $technicalType = '1_PHASE_GROUND';
         }
-
-        // Pattern V3: All 3 phases collapsed voltage -> 3-Phase Short Circuit
-        if (count($saggedPhases) === 3 && $maxPhase > 50.0) {
-            $avgCurrent = round(($iR + $iS + $iT) / 3.0, 1);
-            $evidence = [
-                "Tegangan ketiga fasa drop serentak (R=" . number_format((float)$vR, 2, '.', '') . " kV, S=" . number_format((float)$vS, 2, '.', '') . " kV, T=" . number_format((float)$vT, 2, '.', '') . " kV).",
-                "Arus hubung-singkat tiga fasa tinggi (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A; rata-rata {$avgCurrent} A).",
-            ];
-            return $buildPayload(
-                '3_PHASE',
-                'Indikasi Gangguan 3 Fasa Simetris (R-S-T)',
-                $avgCurrent,
-                ['R', 'S', 'T'],
-                false,
-                'INDIKASI_TIGA_FASA_TEGANGAN_DROP',
-                90.0,
-                $evidence
-            );
+        // 2. If exactly 2 phase voltages collapsed -> 2-Phase Inter-phase fault
+        elseif (count($saggedPhases) === 2) {
+            $isInterPhase = true;
+            $faultPhases = $saggedPhases;
+            sort($faultPhases);
+            $iFault = round(($iMap[$faultPhases[0]] + $iMap[$faultPhases[1]]) / 2.0, 1);
+            $technicalType = '2_PHASE';
         }
-
-        // Active phase threshold: phase current > 50 A AND > 25% of max phase
-        $activePhases = [];
-        if ($iR > 50.0 && $iR >= 0.25 * $maxPhase) $activePhases[] = 'R';
-        if ($iS > 50.0 && $iS >= 0.25 * $maxPhase) $activePhases[] = 'S';
-        if ($iT > 50.0 && $iT >= 0.25 * $maxPhase) $activePhases[] = 'T';
-
-        $phaseCount = count($activePhases);
-
-        // 1. Symmetrical 3-Phase Check: all 3 phases active and well-balanced
-        if ($phaseCount === 3) {
+        // 3. Check 3-Phase fault (all 3 voltages collapsed OR all 3 phases active & well-balanced with no single phase ground)
+        elseif ($candidateCount === 3) {
             $minPhase = min($iR, $iS, $iT);
             $imbalance = ($maxPhase - $minPhase) / max(1.0, $maxPhase);
-            if ($imbalance <= 0.25 && $iN <= 0.20 * $maxPhase) {
-                $avgCurrent = round(($iR + $iS + $iT) / 3.0, 1);
-                $evidence = [
-                    "Arus ketiga fasa tinggi dan simetris (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A; ketidakseimbangan " . round($imbalance * 100, 1) . "%).",
-                    "Arus Netral/GFR rendah (" . number_format($iN, 1, '.', '') . " A).",
-                ];
-                if (!$hasAnyVoltage) {
-                    $evidence[] = 'Data tegangan per fasa (kV) belum diisi; indikasi didasarkan pada besaran arus skalar.';
+            if (count($saggedPhases) === 3 || ($imbalance <= 0.35 && empty($saggedPhases))) {
+                $isInterPhase = true;
+                $faultPhases = ['R', 'S', 'T'];
+                // Average of 3 symmetrical faulted phases, never arbitrary summation
+                $iFault = round(($iR + $iS + $iT) / 3.0, 1);
+                $technicalType = '3_PHASE';
+            }
+        }
+
+        // 4. If not inter-phase yet, check 2-Phase from current telemetry
+        if (!$isInterPhase && $technicalType !== '1_PHASE_GROUND') {
+            if ($candidateCount >= 2) {
+                $keys = array_keys($phaseCandidates);
+                $p1 = $keys[0];
+                $p2 = $keys[1];
+                $p3 = $keys[2] ?? null;
+                $p3Val = $p3 ? $phaseCandidates[$p3] : 0.0;
+                // Two dominant phases well above the third
+                if ($p3Val <= self::THRESHOLD_PHASE_NOISE_A || $p3Val < 0.40 * $phaseCandidates[$p2] || ($phaseCandidates[$p1] >= 100.0 && $phaseCandidates[$p2] >= 100.0 && $p3Val < 50.0)) {
+                    $isInterPhase = true;
+                    $faultPhases = [$p1, $p2];
+                    sort($faultPhases);
+                    $iFault = round(($iMap[$p1] + $iMap[$p2]) / 2.0, 1);
+                    $technicalType = '2_PHASE';
                 }
-                return $buildPayload(
-                    '3_PHASE',
-                    'Gangguan 3 Fasa Simetris (R-S-T)',
-                    $avgCurrent,
-                    ['R', 'S', 'T'],
-                    false,
-                    'SIMETRIS_TIGA_FASA_SEIMBANG',
-                    $hasAnyVoltage ? 82.0 : 68.0,
-                    $evidence
-                );
             }
         }
 
-        // 2. Phase-to-Phase (2-PH) or Double Line to Ground (2-LG)
-        if ($phaseCount === 2) {
-            $phasesStr = implode('-', $activePhases);
-            $isGroundSignificant = ($iN > 30.0 && $iN >= 0.15 * $maxPhase);
-
-            if ($isGroundSignificant) {
-                $evidence = [
-                    "Dua fasa dominan ({$phasesStr}) dengan arus tinggi (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A).",
-                    "Arus Netral/GFR signifikan sebesar " . number_format($iN, 1, '.', '') . " A.",
-                ];
-                if (!$hasAnyVoltage) {
-                    $evidence[] = 'Data tegangan per fasa (kV) belum diisi; indikasi didasarkan pada besaran arus skalar.';
-                }
-                return $buildPayload(
-                    '2_PHASE_GROUND',
-                    "Gangguan 2 Fasa ke Tanah ({$phasesStr}-N)",
-                    round($maxPhase, 1),
-                    array_merge($activePhases, ['N']),
-                    true,
-                    'DUA_FASA_DENGAN_ARUS_NETRAL_SIGNIFIKAN',
-                    $hasAnyVoltage ? 80.0 : 65.0,
-                    $evidence
-                );
+        // 5. If not inter-phase, check 1-Phase fault from current telemetry
+        if (!$isInterPhase && $technicalType !== '1_PHASE_GROUND') {
+            if ($candidateCount === 1) {
+                $faultPhases = [array_keys($phaseCandidates)[0]];
+                $iFault = max($phaseCandidates[$faultPhases[0]], $iN);
+                $technicalType = '1_PHASE_GROUND';
+            } elseif ($isNeutralDetected) {
+                $dominantPhase = !empty($phaseCandidates) ? array_keys($phaseCandidates)[0] : 'S';
+                $faultPhases = [$dominantPhase];
+                $iFault = max($maxPhase, $iN);
+                $technicalType = '1_PHASE_GROUND';
             }
-
-            $sumCurrent = 0.0;
-            foreach ($activePhases as $p) {
-                $sumCurrent += ($p === 'R' ? $iR : ($p === 'S' ? $iS : $iT));
-            }
-            $evidence = [
-                "Dua fasa dominan ({$phasesStr}) berimbang (R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A) tanpa arus netral signifikan ({$iN} A).",
-            ];
-            if (!$hasAnyVoltage) {
-                $evidence[] = 'Data tegangan per fasa (kV) belum diisi; indikasi didasarkan pada besaran arus skalar.';
-            }
-            return $buildPayload(
-                '2_PHASE',
-                "Gangguan Antar Fasa ({$phasesStr})",
-                round($sumCurrent / 2.0, 1),
-                $activePhases,
-                false,
-                'DUA_FASA_TANPA_ARUS_TANAH',
-                $hasAnyVoltage ? 80.0 : 66.0,
-                $evidence
-            );
         }
 
-        // 3. Single Line to Ground (1-LG)
-        if ($phaseCount === 1) {
-            $singlePhase = $activePhases[0];
-            $actCurrent = ($singlePhase === 'R' ? $iR : ($singlePhase === 'S' ? $iS : $iT));
-            if ($iN > $actCurrent) {
-                $actCurrent = $iN;
-            }
-            $evidence = [
-                "Arus Fasa {$singlePhase} dominan (" . number_format($iMap[$singlePhase], 1, '.', '') . " A) disertai arus Netral/GFR (" . number_format($iN, 1, '.', '') . " A).",
-            ];
-            if (!$hasAnyVoltage) {
-                $evidence[] = 'Data tegangan per fasa (kV) belum diisi; masukkan tegangan fasa R/S/T untuk verifikasi drop tegangan DGR.';
-            }
-            return $buildPayload(
-                '1_PHASE_GROUND',
-                "Gangguan 1 Fasa ke Tanah ({$singlePhase}-N)",
-                round($actCurrent, 1),
-                [$singlePhase, 'N'],
-                true,
-                'SATU_FASA_DOMINAN_DENGAN_ARUS_TANAH',
-                $hasAnyVoltage ? 82.0 : 65.0,
-                $evidence
-            );
-        }
+        $phasesStr = !empty($faultPhases) ? implode('-', $faultPhases) : 'Tidak Spesifik';
 
-        // Only neutral current high (or 3 load phases active with high residual neutral current and no voltage collapse provided)
-        if ($iN > 30.0) {
-            $highestPhase = 'R';
-            if ($iS >= $iR && $iS >= $iT) {
-                $highestPhase = 'S';
-            } elseif ($iT >= $iR && $iT >= $iS) {
-                $highestPhase = 'T';
-            }
-
+        // -------------------------------------------------------------
+        // BRANCH 1: Ambiguous / Transition Neutral Zone (10 A < iN < 15 A)
+        // -------------------------------------------------------------
+        if ($isNeutralBorderline) {
             $evidence = [
-                "Arus Netral/GFR terukur signifikan sebesar " . number_format($iN, 1, '.', '') . " A (arus fasa R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A; tertinggi pada Fasa {$highestPhase}).",
+                "Arus Netral/GFR sebesar {$iN} A berada di zona ambang transisi (" . self::THRESHOLD_NEUTRAL_NOISE_A . " A – " . self::THRESHOLD_NEUTRAL_DETECTED_A . " A), sehingga belum dapat dipastikan sebagai nol maupun gangguan tanah pasti.",
+                "Arus fasa terukur: R={$iR} A, S={$iS} A, T={$iT} A (Fasa: {$phasesStr}, I_fault = {$iFault} A).",
             ];
-            if (!$hasAnyVoltage) {
-                $evidence[] = "Data tegangan per fasa (kV) belum dimasukkan, sehingga fasa yang mengalami gangguan tanah/DGR belum dapat dipastikan hanya dari arus beban.";
+            if ($hasAnyVoltage) {
+                $vDesc = [];
+                foreach ($enteredVoltages as $p => $v) $vDesc[] = "{$p}=" . number_format($v, 2, '.', '') . " kV";
+                $evidence[] = "Tegangan fasa: " . implode(', ', $vDesc) . ".";
             } else {
-                $evidence[] = "Tegangan fasa terukur tidak menunjukkan drop di bawah 8.5 kV, mengindikasikan gangguan tanah impedansi tinggi (HIF / GFR).";
+                $evidence[] = "Data tegangan per fasa (kV) belum dimasukkan; masukkan tegangan fasa untuk memvalidasi indikasi drop tegangan.";
             }
-
             return $buildPayload(
-                '1_PHASE_GROUND',
-                'Gangguan 1 Fasa ke Tanah (Ground Residual GFR)',
-                round($iN, 1),
-                ['N'],
-                true,
-                'RESIDUAL_NETRAL_GFR_DOMINAN',
-                $hasAnyVoltage ? 68.0 : 55.0,
-                $evidence
+                'PERLU_VERIFIKASI',
+                "Perlu Verifikasi (Arus Netral {$iN} A di Zona Batas Noise 10 A - 15 A)",
+                $iFault,
+                $faultPhases,
+                false,
+                'AMBANG_NETRAL_TRANSISI_PERLU_VERIFIKASI',
+                50.0,
+                $evidence,
+                'PERLU_VERIFIKASI',
+                'NONE',
+                $technicalType
             );
         }
 
+        // -------------------------------------------------------------
+        // BRANCH 2: Pola Gangguan Antar-Fasa ($isInterPhase = true)
+        // -------------------------------------------------------------
+        if ($isInterPhase) {
+            // Scenario 2A: Netral Terdeteksi -> OCR-DGR atau OCR Instan-DGR
+            if ($isNeutralDetected) {
+                if ($iFault > self::THRESHOLD_OCR_INSTANT_A) {
+                    // OCR Instan-DGR (> 1000 A)
+                    $evidence = [
+                        "Pola gangguan antar-fasa ({$phasesStr}) terdeteksi dengan arus fasa {$iFault} A > " . number_format(self::THRESHOLD_OCR_INSTANT_A, 0) . " A (memenuhi kriteria OCR Instan).",
+                        "Arus Netral/GFR terdeteksi sebesar {$iN} A >= " . self::THRESHOLD_NEUTRAL_DETECTED_A . " A (arus gangguan ke tanah juga terpicu).",
+                        "Kombinasi fasa dan netral mengindikasikan gangguan OCR Instan-DGR (hubung singkat fasa ke fasa tanah arus tinggi).",
+                    ];
+                    if ($hasAnyVoltage) {
+                        $vDesc = [];
+                        foreach ($enteredVoltages as $p => $v) $vDesc[] = "{$p}=" . number_format($v, 2, '.', '') . " kV";
+                        $evidence[] = "Tegangan pendukung: " . implode(', ', $vDesc) . ".";
+                    }
+                    return $buildPayload(
+                        'OCR_INSTAN_DGR',
+                        "OCR Instan-DGR (Hubung Singkat Fasa & Tanah > 1.000 A)",
+                        $iFault,
+                        array_merge($faultPhases, ['N']),
+                        true,
+                        'OCR_INSTAN_DGR_GT_1000A_WITH_GROUND',
+                        $hasAnyVoltage ? 94.0 : 88.0,
+                        $evidence,
+                        'OCR_INSTAN_DGR',
+                        'OCR_INSTAN',
+                        $technicalType === '3_PHASE' ? '3_PHASE_GROUND' : '2_PHASE_GROUND'
+                    );
+                } elseif ($iFault > self::THRESHOLD_OCR_MIN_A) {
+                    // OCR-DGR (> 300 A s/d 1000 A; tepat 1000 A masuk OCR)
+                    $evidence = [
+                        "Pola gangguan antar-fasa ({$phasesStr}) terdeteksi dengan arus fasa {$iFault} A berada di atas 300 A s/d 1.000 A (memenuhi kriteria OCR).",
+                        "Arus Netral/GFR terdeteksi sebesar {$iN} A >= " . self::THRESHOLD_NEUTRAL_DETECTED_A . " A (arus gangguan ke tanah juga terpicu).",
+                        "Kombinasi fasa dan netral mengindikasikan gangguan OCR-DGR.",
+                    ];
+                    if ($hasAnyVoltage) {
+                        $vDesc = [];
+                        foreach ($enteredVoltages as $p => $v) $vDesc[] = "{$p}=" . number_format($v, 2, '.', '') . " kV";
+                        $evidence[] = "Tegangan pendukung: " . implode(', ', $vDesc) . ".";
+                    }
+                    return $buildPayload(
+                        'OCR_DGR',
+                        "OCR-DGR (Hubung Singkat Fasa & Tanah 300 A - 1.000 A)",
+                        $iFault,
+                        array_merge($faultPhases, ['N']),
+                        true,
+                        'OCR_DGR_300A_TO_1000A_WITH_GROUND',
+                        $hasAnyVoltage ? 92.0 : 85.0,
+                        $evidence,
+                        'OCR_DGR',
+                        'OCR',
+                        $technicalType === '3_PHASE' ? '3_PHASE_GROUND' : '2_PHASE_GROUND'
+                    );
+                } else {
+                    // OCR-DGR (arus fasa <= 300 A)
+                    $evidence = [
+                        "Pola gangguan antar-fasa ({$phasesStr}) terdeteksi bersama arus Netral/GFR ({$iN} A >= " . self::THRESHOLD_NEUTRAL_DETECTED_A . " A).",
+                        "Arus fasa {$iFault} A <= " . number_format(self::THRESHOLD_OCR_MIN_A, 0) . " A (di bawah ambang OCR standar > 300 A).",
+                        "Diklasifikasikan sebagai OCR-DGR arus rendah / gangguan multi-fasa tanah berimpedansi.",
+                    ];
+                    return $buildPayload(
+                        'OCR_DGR',
+                        "OCR-DGR (Hubung Singkat Fasa & Tanah <= 300 A)",
+                        $iFault,
+                        array_merge($faultPhases, ['N']),
+                        true,
+                        'OCR_DGR_LE_300A_WITH_GROUND',
+                        $hasAnyVoltage ? 85.0 : 75.0,
+                        $evidence,
+                        'OCR_DGR',
+                        'OCR_LOW_CURRENT',
+                        $technicalType === '3_PHASE' ? '3_PHASE_GROUND' : '2_PHASE_GROUND'
+                    );
+                }
+            }
+
+            // Scenario 2B: Netral Dianggap Nol ($isNeutralZero = true) -> OCR atau OCR Instan
+            if ($isNeutralZero) {
+                if ($iFault > self::THRESHOLD_OCR_INSTANT_A) {
+                    // OCR Instan (> 1000 A)
+                    $evidence = [
+                        "Pola gangguan antar-fasa ({$phasesStr}) terdeteksi dengan arus fasa {$iFault} A > " . number_format(self::THRESHOLD_OCR_INSTANT_A, 0) . " A (memenuhi kriteria OCR Instan).",
+                        "Arus Netral/GFR sebesar {$iN} A <= " . self::THRESHOLD_NEUTRAL_NOISE_A . " A (dianggap nol / noise).",
+                        "Klasifikasi operasional: OCR Instan murni antar-fasa tanpa gangguan ke tanah.",
+                    ];
+                    if ($hasAnyVoltage) {
+                        $vDesc = [];
+                        foreach ($enteredVoltages as $p => $v) $vDesc[] = "{$p}=" . number_format($v, 2, '.', '') . " kV";
+                        $evidence[] = "Tegangan pendukung: " . implode(', ', $vDesc) . ".";
+                    }
+                    return $buildPayload(
+                        'OCR_INSTAN',
+                        "OCR Instan (Hubung Singkat Antar-Fasa > 1.000 A)",
+                        $iFault,
+                        $faultPhases,
+                        false,
+                        'OCR_INSTAN_ANTAR_FASA_GT_1000A',
+                        $hasAnyVoltage ? 95.0 : 90.0,
+                        $evidence,
+                        'OCR_INSTAN',
+                        'OCR_INSTAN',
+                        $technicalType
+                    );
+                } elseif ($iFault > self::THRESHOLD_OCR_MIN_A) {
+                    // OCR (> 300 A s/d 1000 A; tepat 1000 A masuk OCR)
+                    $evidence = [
+                        "Pola gangguan antar-fasa ({$phasesStr}) terdeteksi dengan arus fasa {$iFault} A di atas 300 A s/d 1.000 A (memenuhi kriteria OCR).",
+                        "Arus Netral/GFR sebesar {$iN} A <= " . self::THRESHOLD_NEUTRAL_NOISE_A . " A (dianggap nol / noise).",
+                        "Klasifikasi operasional: OCR murni antar-fasa.",
+                    ];
+                    if ($hasAnyVoltage) {
+                        $vDesc = [];
+                        foreach ($enteredVoltages as $p => $v) $vDesc[] = "{$p}=" . number_format($v, 2, '.', '') . " kV";
+                        $evidence[] = "Tegangan pendukung: " . implode(', ', $vDesc) . ".";
+                    }
+                    return $buildPayload(
+                        'OCR',
+                        "OCR (Hubung Singkat Antar-Fasa 300 A - 1.000 A)",
+                        $iFault,
+                        $faultPhases,
+                        false,
+                        'OCR_ANTAR_FASA_300A_TO_1000A',
+                        $hasAnyVoltage ? 92.0 : 85.0,
+                        $evidence,
+                        'OCR',
+                        'OCR',
+                        $technicalType
+                    );
+                } else {
+                    // iFault <= 300 A (tepat 300 A TIDAK memenuhi "di atas 300 A")
+                    $evidence = [
+                        "Pola arus antar-fasa ({$phasesStr}) terdeteksi sebesar {$iFault} A dengan netral nol ({$iN} A).",
+                        "Besaran arus {$iFault} A <= " . number_format(self::THRESHOLD_OCR_MIN_A, 0) . " A tidak memenuhi kriteria 'di atas 300 A' untuk OCR operasional.",
+                        "Status: Perlu verifikasi lapangan / pemeriksaan beban penyulang.",
+                    ];
+                    return $buildPayload(
+                        'PERLU_VERIFIKASI',
+                        "Perlu Verifikasi (Arus Antar-Fasa {$iFault} A <= 300 A, Belum Memenuhi Ambang OCR)",
+                        $iFault,
+                        $faultPhases,
+                        false,
+                        'PERLU_VERIFIKASI_ANTAR_FASA_LE_300A',
+                        60.0,
+                        $evidence,
+                        'PERLU_VERIFIKASI',
+                        'NONE',
+                        $technicalType
+                    );
+                }
+            }
+        }
+
+        // -------------------------------------------------------------
+        // BRANCH 3: Pola Fasa Tunggal + Netral Terdeteksi -> DGR
+        // -------------------------------------------------------------
+        if ($isNeutralDetected) {
+            // Rule 1: DGR - arus gangguan terdeteksi pada fasa dan netral/GFR
+            $faultPhase = !empty($faultPhases) ? $faultPhases[0] : 'S';
+            $phaseCurrent = $iMap[$faultPhase] ?? $maxPhase;
+            $evidence = [
+                "Arus gangguan terdeteksi pada fasa ({$faultPhase} = " . number_format($phaseCurrent, 1, '.', '') . " A) dan Netral/GFR (" . number_format($iN, 1, '.', '') . " A >= " . number_format(self::THRESHOLD_NEUTRAL_DETECTED_A, 0) . " A).",
+                "Karakteristik konsisten dengan gangguan tanah fasa tunggal / Directional Ground Relay (DGR) pada jaringan distribusi 20 kV.",
+            ];
+            if ($hasAnyVoltage) {
+                if (count($saggedPhases) === 1) {
+                    $evidence[] = "Drop tegangan fasa {$saggedPhases[0]} ke " . number_format((float)$vMap[$saggedPhases[0]], 2, '.', '') . " kV mengonfirmasi fasa yang terhubung ke tanah.";
+                } else {
+                    $vDesc = [];
+                    foreach ($enteredVoltages as $p => $v) $vDesc[] = "{$p}=" . number_format($v, 2, '.', '') . " kV";
+                    $evidence[] = "Tegangan fasa: " . implode(', ', $vDesc) . ".";
+                }
+            } else {
+                $evidence[] = "Data tegangan fasa belum dimasukkan; masukkan tegangan fasa R/S/T untuk verifikasi pergeseran titik netral DGR.";
+            }
+
+            $ruleName = (count($saggedPhases) === 1) ? "INDIKASI_DGR_{$faultPhase}_N" : 'DGR_FASA_DAN_NETRAL_TERDETEKSI';
+            $labelName = (count($saggedPhases) === 1)
+                ? "Indikasi Gangguan Tanah Fasa {$faultPhase}-N / DGR"
+                : "DGR (Gangguan Fasa {$faultPhase}-N / Directional Ground Relay)";
+
+            return $buildPayload(
+                'DGR',
+                $labelName,
+                $iFault,
+                [$faultPhase, 'N'],
+                true,
+                $ruleName,
+                $hasAnyVoltage ? 92.0 : 80.0,
+                $evidence,
+                'DGR',
+                'DGR',
+                '1_PHASE_GROUND'
+            );
+        }
+
+        // -------------------------------------------------------------
+        // BRANCH 4: Fasa Tunggal Tanpa Netral (Netral Nol <= 10 A)
+        // -------------------------------------------------------------
+        if ($candidateCount === 1 && $isNeutralZero) {
+            $p = array_keys($phaseCandidates)[0];
+            $evidence = [
+                "Arus fasa {$p} terukur {$phaseCandidates[$p]} A, namun arus Netral/GFR dianggap nol ({$iN} A <= " . self::THRESHOLD_NEUTRAL_NOISE_A . " A) dan fasa lain nol.",
+                "Pola arus satu fasa tanpa arus kembali (return path) tidak memenuhi kaidah rangkaian tertutup AC; kemungkinan deviasi sensor atau CT.",
+                "Status: Perlu verifikasi telemetri.",
+            ];
+            return $buildPayload(
+                'PERLU_VERIFIKASI',
+                "Perlu Verifikasi (Pola 1 Fasa {$p} Tanpa Arus Netral)",
+                $phaseCandidates[$p],
+                [$p],
+                false,
+                'PERLU_VERIFIKASI_SATU_FASA_TANPA_NETRAL',
+                40.0,
+                $evidence,
+                'PERLU_VERIFIKASI',
+                'NONE',
+                'UNKNOWN_PROFILE'
+            );
+        }
+
+        // -------------------------------------------------------------
+        // BRANCH 5: Fallback / Pola Asimetris Tidak Jelas -> Perlu Verifikasi
+        // -------------------------------------------------------------
         $evidence = [
-            "Pola arus R=" . number_format($iR, 1, '.', '') . " A, S=" . number_format($iS, 1, '.', '') . " A, T=" . number_format($iT, 1, '.', '') . " A, N=" . number_format($iN, 1, '.', '') . " A tidak memenuhi ambang klasifikasi standar.",
+            "Pola telemetri arus (R={$iR} A, S={$iS} A, T={$iT} A, N={$iN} A) tidak cocok dengan profil gangguan standar.",
+            "Berdasarkan aturan operasional: bila data tidak cukup atau pola fasa tidak jelas, ditampilkan Perlu Verifikasi.",
         ];
         if (!$hasAnyVoltage) {
-            $evidence[] = 'Data tegangan fasa (kV) belum tersedia.';
+            $evidence[] = "Data tegangan per fasa (kV) belum tersedia.";
         }
 
         return $buildPayload(
-            'UNKNOWN_PROFILE',
-            'Karakteristik Arus Asimetris / Tidak Spesifik',
-            round($maxPhase, 1),
-            $activePhases,
+            'PERLU_VERIFIKASI',
+            'Perlu Verifikasi (Pola Fasa Tidak Spesifik / Di Bawah Ambang)',
+            $maxPhase,
+            $faultPhases,
             false,
-            'PROFIL_ARUS_NON_STANDAR',
-            40.0,
-            $evidence
+            'POLA_TIDAK_SPESIFIK_PERLU_VERIFIKASI',
+            35.0,
+            $evidence,
+            'PERLU_VERIFIKASI',
+            'NONE',
+            'UNKNOWN_PROFILE'
         );
     }
 
@@ -1490,50 +1629,9 @@ class FaultLocatorWorkspaceService
             $calculationStatus = 'DATA_TIDAK_CUKUP';
             $confidence = 35.0;
 
-            if ($faultType === '3_PHASE' && $iSc > 10.0) {
-                $zLoop = $V_LN / $iSc;
-                $A = $r1PerKm ** 2 + $x1PerKm ** 2;
-                $B = 2.0 * ($R_source * $r1PerKm + $X_source * $x1PerKm);
-                $C = ($R_source ** 2 + $X_source ** 2) - ($zLoop ** 2);
-                $disc = $B ** 2 - 4.0 * $A * $C;
-
-                $dKm = 0.0;
-                if ($disc >= 0 && $A > 0) {
-                    $dKm = max(0.0, (-$B + sqrt($disc)) / (2.0 * $A));
-                }
-                $calculatedDistanceM = round($dKm * 1000.0, 1);
-
-                $dasarPerhitungan = 'SIMULASI_IDEAL_BOLTED_3PH';
-                $dasarPerhitunganLabel = "DATA TIDAK CUKUP: Simulasi Ideal Bolted 3-Fasa (Asumsi Rf=0, Zs={$Z_source_mag}Ω, V_LN=11.55 kV)";
-                $formulaDerivation = "Persamaan Kuadrat Impedansi Kompleks:\n"
-                    . "Z_loop = V_LN / I_sc = 11,547 V / {$iSc} A = " . round($zLoop, 3) . " Ω\n"
-                    . "|(R_s + r1*d) + j(X_s + x1*d)| = Z_loop\n"
-                    . "A = r1² + x1² = " . round($A, 4) . "; B = 2(Rs*r1 + Xs*x1) = " . round($B, 4) . "; C = Zs² - Zloop² = " . round($C, 4) . "\n"
-                    . "d_teoritis = (-B + √(B² - 4AC)) / 2A = " . round($dKm, 3) . " km ({$calculatedDistanceM} m)\n"
-                    . "[PERINGATAN: Nilai di atas adalah simulasi teoritis ideal (bukan jarak terukur relay); {$topologyPathLengthLabel}: {$topologyPathLengthM} m]";
-                $explanation = "Data telemetri belum menyertakan jarak terukur relay numerik. Jarak simulasi teoritis {$calculatedDistanceM} m ditelusuri pada jalur hilir (panjang jalur topologi ke ujung feeder: {$topologyPathLengthM} m).";
-            } elseif ($faultType === '2_PHASE' && $iSc > 10.0) {
-                $zLoop = $V_LL / (2.0 * $iSc);
-                $A = $r1PerKm ** 2 + $x1PerKm ** 2;
-                $B = 2.0 * ($R_source * $r1PerKm + $X_source * $x1PerKm);
-                $C = ($R_source ** 2 + $X_source ** 2) - ($zLoop ** 2);
-                $disc = $B ** 2 - 4.0 * $A * $C;
-
-                $dKm = 0.0;
-                if ($disc >= 0 && $A > 0) {
-                    $dKm = max(0.0, (-$B + sqrt($disc)) / (2.0 * $A));
-                }
-                $calculatedDistanceM = round($dKm * 1000.0, 1);
-
-                $dasarPerhitungan = 'SIMULASI_IDEAL_BOLTED_2PH';
-                $dasarPerhitunganLabel = "DATA TIDAK CUKUP: Simulasi Ideal Bolted Antar-Fasa (Asumsi Rf=0, Zs={$Z_source_mag}Ω, V_LL=20 kV)";
-                $formulaDerivation = "Persamaan Kuadrat Impedansi Loop Fasa-ke-Fasa:\n"
-                    . "Z_loop = V_LL / (2 * I_sc) = 20,000 V / (2 * {$iSc} A) = " . round($zLoop, 3) . " Ω\n"
-                    . "d_teoritis = (-B + √(B² - 4AC)) / 2A = " . round($dKm, 3) . " km ({$calculatedDistanceM} m)\n"
-                    . "[PERINGATAN: Mengabaikan tahanan busur kontak antar konduktor; {$topologyPathLengthLabel}: {$topologyPathLengthM} m]";
-                $explanation = "Gangguan antar fasa dengan arus " . number_format($iSc, 0) . " A tanpa input jarak terukur relay. Jarak simulasi teoritis {$calculatedDistanceM} m merupakan estimasi kandidat ({$topologyPathLengthLabel}: {$topologyPathLengthM} m).";
-            } elseif ($faultType === '1_PHASE_GROUND' || $faultType === '2_PHASE_GROUND') {
-                // Ground Fault: Do NOT fabricate a fake 1200.0 m distance when relay distance is not provided!
+            if (!empty($faultClass['is_ground_fault'])) {
+                // Ground Fault (DGR, OCR-DGR, OCR Instan-DGR):
+                // Do NOT fabricate a fake distance when relay distance is not provided!
                 $dasarPerhitungan = 'NGR_GROUND_FAULT_INDETERMINATE';
                 $dasarPerhitunganLabel = 'DATA TIDAK CUKUP: Arus gangguan tanah didominasi NGR dan Rf, bukan panjang konduktor';
                 $formulaDerivation = "I_f = 3*V_LN / (2*Z1 + Z0 + 3*RN + 3*Rf).\n"
@@ -1542,12 +1640,56 @@ class FaultLocatorWorkspaceService
                     . "{$topologyPathLengthLabel}: {$topologyPathLengthM} m.";
                 $explanation = "Terdeteksi {$faultClass['fault_type_label']}. Pada sistem distribusi ber-tahanan netral (NGR), jarak gangguan tanah tidak dapat dihitung tanpa pembacaan jarak relay numerik. {$topologyPathLengthLabel} adalah {$topologyPathLengthM} m (bukan jarak terukur relay).";
                 $calculatedDistanceM = 0.0;
+            } elseif ($faultType === 'OCR_INSTAN' || $faultType === 'OCR') {
+                if (($faultClass['technical_fault_type'] ?? '') === '3_PHASE' && $iSc > 10.0) {
+                    $zLoop = $V_LN / $iSc;
+                    $A = $r1PerKm ** 2 + $x1PerKm ** 2;
+                    $B = 2.0 * ($R_source * $r1PerKm + $X_source * $x1PerKm);
+                    $C = ($R_source ** 2 + $X_source ** 2) - ($zLoop ** 2);
+                    $disc = $B ** 2 - 4.0 * $A * $C;
+
+                    $dKm = 0.0;
+                    if ($disc >= 0 && $A > 0) {
+                        $dKm = max(0.0, (-$B + sqrt($disc)) / (2.0 * $A));
+                    }
+                    $calculatedDistanceM = round($dKm * 1000.0, 1);
+
+                    $dasarPerhitungan = 'SIMULASI_IDEAL_BOLTED_3PH';
+                    $dasarPerhitunganLabel = "DATA TIDAK CUKUP: Simulasi Ideal Bolted 3-Fasa (Asumsi Rf=0, Zs={$Z_source_mag}Ω, V_LN=11.55 kV)";
+                    $formulaDerivation = "Persamaan Kuadrat Impedansi Kompleks:\n"
+                        . "Z_loop = V_LN / I_sc = 11,547 V / {$iSc} A = " . round($zLoop, 3) . " Ω\n"
+                        . "|(R_s + r1*d) + j(X_s + x1*d)| = Z_loop\n"
+                        . "A = r1² + x1² = " . round($A, 4) . "; B = 2(Rs*r1 + Xs*x1) = " . round($B, 4) . "; C = Zs² - Zloop² = " . round($C, 4) . "\n"
+                        . "d_teoritis = (-B + √(B² - 4AC)) / 2A = " . round($dKm, 3) . " km ({$calculatedDistanceM} m)\n"
+                        . "[PERINGATAN: Nilai di atas adalah simulasi teoritis ideal (bukan jarak terukur relay); {$topologyPathLengthLabel}: {$topologyPathLengthM} m]";
+                    $explanation = "Data telemetri {$faultClass['fault_type_label']} belum menyertakan jarak terukur relay numerik. Jarak simulasi teoritis {$calculatedDistanceM} m ditelusuri pada jalur hilir (panjang jalur topologi ke ujung feeder: {$topologyPathLengthM} m).";
+                } elseif ($iSc > 10.0) {
+                    $zLoop = $V_LL / (2.0 * $iSc);
+                    $A = $r1PerKm ** 2 + $x1PerKm ** 2;
+                    $B = 2.0 * ($R_source * $r1PerKm + $X_source * $x1PerKm);
+                    $C = ($R_source ** 2 + $X_source ** 2) - ($zLoop ** 2);
+                    $disc = $B ** 2 - 4.0 * $A * $C;
+
+                    $dKm = 0.0;
+                    if ($disc >= 0 && $A > 0) {
+                        $dKm = max(0.0, (-$B + sqrt($disc)) / (2.0 * $A));
+                    }
+                    $calculatedDistanceM = round($dKm * 1000.0, 1);
+
+                    $dasarPerhitungan = 'SIMULASI_IDEAL_BOLTED_2PH';
+                    $dasarPerhitunganLabel = "DATA TIDAK CUKUP: Simulasi Ideal Bolted Antar-Fasa (Asumsi Rf=0, Zs={$Z_source_mag}Ω, V_LL=20 kV)";
+                    $formulaDerivation = "Persamaan Kuadrat Impedansi Loop Fasa-ke-Fasa:\n"
+                        . "Z_loop = V_LL / (2 * I_sc) = 20,000 V / (2 * {$iSc} A) = " . round($zLoop, 3) . " Ω\n"
+                        . "d_teoritis = (-B + √(B² - 4AC)) / 2A = " . round($dKm, 3) . " km ({$calculatedDistanceM} m)\n"
+                        . "[PERINGATAN: Mengabaikan tahanan busur kontak antar konduktor; {$topologyPathLengthLabel}: {$topologyPathLengthM} m]";
+                    $explanation = "Gangguan antar fasa ({$faultClass['fault_type_label']}) dengan arus " . number_format($iSc, 0) . " A tanpa input jarak terukur relay. Jarak simulasi teoritis {$calculatedDistanceM} m merupakan estimasi kandidat ({$topologyPathLengthLabel}: {$topologyPathLengthM} m).";
+                }
             } else {
-                $calculationStatus = 'UNRESOLVED';
-                $dasarPerhitungan = 'ARUS_TIDAK_MENCAPAI_AMBANG';
-                $dasarPerhitunganLabel = 'Arus di bawah ambang batas deteksi gangguan (<= 10 A)';
+                $calculationStatus = 'DATA_TIDAK_CUKUP';
+                $dasarPerhitungan = ($faultType === 'NO_FAULT') ? 'ARUS_TIDAK_MENCAPAI_AMBANG' : 'POLA_ARUS_PERLU_VERIFIKASI';
+                $dasarPerhitunganLabel = ($faultType === 'NO_FAULT') ? 'Arus di bawah ambang batas deteksi gangguan (<= 10 A)' : 'DATA TIDAK CUKUP: Pola arus/tegangan perlu verifikasi lapangan';
                 $confidence = 0.0;
-                $explanation = 'Besaran arus fasa dan netral berada dalam rentang beban normal.';
+                $explanation = ($faultType === 'NO_FAULT') ? 'Besaran arus fasa dan netral berada dalam rentang beban normal.' : "Hasil klasifikasi: {$faultClass['fault_type_label']}. Diperlukan verifikasi telemetri atau patroli lapangan.";
                 $calculatedDistanceM = 0.0;
             }
         }
@@ -1661,6 +1803,92 @@ class FaultLocatorWorkspaceService
             $faultZoneSegment = $poleSequence[$faultZoneSegment['seq_idx']];
         }
 
+        // Candidate Zone & Asset Resolution
+        $isIndeterminateZone = ($calculatedDistanceM <= 0.0);
+        $candidateZoneInfo = null;
+
+        if ($isIndeterminateZone && !empty($poleSequence)) {
+            // Indeterminate DGR / Ground fault or unmeasured relay distance:
+            // Designate the downstream protected path as Candidate Fault Zone
+            $zoneRangeStartM = 0.0;
+            $zoneRangeEndM = $topologyPathLengthM > 0 ? $topologyPathLengthM : (float)($poleSequence[count($poleSequence) - 1]['cumulative_meters'] ?? 0);
+            $uncertaintyM = round(($zoneRangeEndM - $zoneRangeStartM) / 2.0, 1);
+
+            // Mark segments along the primary downstream path as candidate zone
+            foreach ($poleSequence as $seqIdx => &$pSeq) {
+                if (!empty($pSeq['is_on_fault_path'])) {
+                    $pSeq['is_candidate_zone'] = true;
+                    if (isset($assetMap[$pSeq['from_pole_id']])) $candidatePoles[] = $assetMap[$pSeq['from_pole_id']];
+                    if (isset($assetMap[$pSeq['to_pole_id']])) $candidatePoles[] = $assetMap[$pSeq['to_pole_id']];
+                }
+            }
+            unset($pSeq);
+
+            // Fallback if none marked: include all traversed downstream poles
+            if (empty($candidatePoles)) {
+                foreach ($poleSequence as $seqIdx => &$pSeq) {
+                    $pSeq['is_candidate_zone'] = true;
+                    if (isset($assetMap[$pSeq['from_pole_id']])) $candidatePoles[] = $assetMap[$pSeq['from_pole_id']];
+                    if (isset($assetMap[$pSeq['to_pole_id']])) $candidatePoles[] = $assetMap[$pSeq['to_pole_id']];
+                }
+                unset($pSeq);
+            }
+
+            $zoneNotice = "Kaidah IEEE C37.114: Gangguan fasa-tanah (DGR) pada sistem pentanahan NGR 40Ω memiliki arus gangguan yang sangat dipengaruhi oleh resistansi kontak tanah (Rf). Tanpa pembacaan reaktansi loop X dari relay numerik, sistem menandai seluruh jangkauan hilir proteksi sebagai Zona Kandidat Gangguan (" . number_format($zoneRangeStartM, 1) . " m – " . number_format($zoneRangeEndM, 1) . " m) untuk verifikasi visual patroli.";
+
+            $candidateZoneInfo = [
+                'is_single_point'    => false,
+                'zone_type'          => 'PROTECTION_DOWNSTREAM_REACH',
+                'range_start_m'      => $zoneRangeStartM,
+                'range_end_m'        => $zoneRangeEndM,
+                'range_label'        => number_format($zoneRangeStartM, 1) . " m – " . number_format($zoneRangeEndM, 1) . " m (" . number_format($zoneRangeEndM / 1000.0, 2) . " km)",
+                'uncertainty_m'      => $uncertaintyM,
+                'uncertainty_label'  => "±" . number_format($uncertaintyM, 1) . " m",
+                'zone_title'         => 'Zona Kandidat Gangguan Hilir Proteksi (DGR)',
+                'zone_notice'        => $zoneNotice,
+            ];
+        } elseif ($calculatedDistanceM > 0 && $branchAmbiguityDetected) {
+            $rangeStart = max(0.0, $calculatedDistanceM - 150.0);
+            $rangeEnd = $calculatedDistanceM + 150.0;
+            $candidateZoneInfo = [
+                'is_single_point'    => false,
+                'zone_type'          => 'BRANCH_AMBIGUITY',
+                'range_start_m'      => $rangeStart,
+                'range_end_m'        => $rangeEnd,
+                'range_label'        => number_format($rangeStart, 1) . " m – " . number_format($rangeEnd, 1) . " m (" . count($matchingFaultSegments) . " Percabangan Hilir)",
+                'uncertainty_m'      => 150.0,
+                'uncertainty_label'  => "±150.0 m",
+                'zone_title'         => 'Zona Kandidat Percabangan Ganda Hilir',
+                'zone_notice'        => "Jarak gangguan terhitung menjangkau " . count($matchingFaultSegments) . " cabang terpisah pada penyulang ini. Patroli perlu memeriksa seluruh tiang kandidat pada cabang terkait.",
+            ];
+            foreach ($poleSequence as &$pSeq) {
+                if (!empty($pSeq['is_fault_zone'])) {
+                    $pSeq['is_candidate_zone'] = true;
+                }
+            }
+            unset($pSeq);
+        } elseif ($calculatedDistanceM > 0) {
+            $rangeStart = max(0.0, $calculatedDistanceM - 100.0);
+            $rangeEnd = $calculatedDistanceM + 100.0;
+            $candidateZoneInfo = [
+                'is_single_point'    => true,
+                'zone_type'          => 'SINGLE_POINT',
+                'range_start_m'      => $rangeStart,
+                'range_end_m'        => $rangeEnd,
+                'range_label'        => number_format($calculatedDistanceM, 1) . " m (" . number_format($calculatedDistanceM / 1000.0, 2) . " km dari acuan)",
+                'uncertainty_m'      => 100.0,
+                'uncertainty_label'  => "±100.0 m",
+                'zone_title'         => 'Estimasi Titik & Segmen Gangguan Terproyeksi',
+                'zone_notice'        => "Titik gangguan terproyeksi pada segmen transline dengan estimasi radius toleransi ±100 m.",
+            ];
+            foreach ($poleSequence as &$pSeq) {
+                if (!empty($pSeq['is_fault_zone'])) {
+                    $pSeq['is_candidate_zone'] = true;
+                }
+            }
+            unset($pSeq);
+        }
+
         $candidatePoles = array_values(array_filter($candidatePoles));
 
         // Candidate assets formatting with strict feeder boundary and coordinate validation
@@ -1687,9 +1915,13 @@ class FaultLocatorWorkspaceService
             ];
         }
 
+        if ($candidateZoneInfo) {
+            $candidateZoneInfo['candidate_pole_count'] = count($candidateAssetList);
+        }
+
         // 9. Spatial Coordinates Interpolation on the Identified Transline Segment
         $faultPointGeom = null;
-        if (!empty($candidateAssetList) && $faultZoneSegment && !empty($faultZoneSegment['from_coords']['lat']) && !empty($faultZoneSegment['to_coords']['lat'])) {
+        if (!$isIndeterminateZone && !empty($candidateAssetList) && $faultZoneSegment && !empty($faultZoneSegment['from_coords']['lat']) && !empty($faultZoneSegment['to_coords']['lat'])) {
             $span = max(1.0, (float)$faultZoneSegment['span_meters']);
             $cumStart = (float)$faultZoneSegment['cum_start_meters'];
             $cumEnd = (float)$faultZoneSegment['cumulative_meters'];
@@ -1706,14 +1938,18 @@ class FaultLocatorWorkspaceService
                 'lng' => round($fLng, 6),
                 'span_fraction' => round($fraction * 100, 1),
             ];
-        } elseif (!empty($candidateAssetList)) {
+        } elseif (!$isIndeterminateZone && !empty($candidateAssetList)) {
             $faultPointGeom = [
                 'lat' => round($candidateAssetList[0]['latitude'], 6),
                 'lng' => round($candidateAssetList[0]['longitude'], 6),
                 'span_fraction' => 0.0,
             ];
         } else {
-            $faultZoneSegment = null;
+            // Indeterminate distance / DGR: No fake single precision point!
+            $faultPointGeom = null;
+            if ($isIndeterminateZone) {
+                $faultZoneSegment = null;
+            }
         }
 
         // GIS URL
@@ -1823,6 +2059,7 @@ class FaultLocatorWorkspaceService
             'confidence_percent'         => $confidence,
             'pole_sequence'              => $poleSequence,
             'fault_path_sequence'        => $faultPathSequence,
+            'candidate_zone'             => $candidateZoneInfo,
             'upstream_segments'          => $upstreamSegments,
             'fault_zone_segment'         => $faultZoneSegment,
             'matching_fault_segments'    => $matchingFaultSegments,
@@ -2039,6 +2276,7 @@ class FaultLocatorWorkspaceService
 
         $outcomeType = strtoupper(trim($outcomeData['outcome_type'] ?? 'CONFIRMED')); // CONFIRMED, NOT_FOUND, AMBIGUOUS
         $foundAssetId = !empty($outcomeData['found_asset_id']) ? (int)$outcomeData['found_asset_id'] : null;
+        $causeCategoryCode = !empty($outcomeData['cause_category_code']) ? strtoupper(trim($outcomeData['cause_category_code'])) : 'GENERAL_FAULT';
         $componentDamaged = $outcomeData['component_damaged'] ?? null;
         $findingNotes = $outcomeData['finding_notes'] ?? '';
         $inspectedAreaNotes = $outcomeData['inspected_area_notes'] ?? null;
@@ -2046,6 +2284,9 @@ class FaultLocatorWorkspaceService
         $technicianName = $outcomeData['technician_name'] ?? $actorUsername;
         $inspectedAt = !empty($outcomeData['inspected_at']) ? $outcomeData['inspected_at'] : $now;
         $photoEvidenceUrl = $outcomeData['photo_evidence_url'] ?? null;
+        $actualLat = (isset($outcomeData['actual_latitude']) && $outcomeData['actual_latitude'] !== '') ? (float)$outcomeData['actual_latitude'] : null;
+        $actualLng = (isset($outcomeData['actual_longitude']) && $outcomeData['actual_longitude'] !== '') ? (float)$outcomeData['actual_longitude'] : null;
+        $actualObservedDist = (isset($outcomeData['actual_distance_m']) && $outcomeData['actual_distance_m'] !== '') ? (float)$outcomeData['actual_distance_m'] : null;
 
         $distErrorMeters = null;
         $isLocationMatch = 0;
@@ -2057,16 +2298,37 @@ class FaultLocatorWorkspaceService
             // Compute distance delta from predicted coordinates
             $foundAsset = $this->db->table('assets')->where('id', $foundAssetId)->get()->getRowArray();
             if ($foundAsset) {
-                if (!empty($case['estimated_lat']) && !empty($foundAsset['latitude'])) {
+                if ($actualLat === null && !empty($foundAsset['latitude'])) {
+                    $actualLat = (float)$foundAsset['latitude'];
+                }
+                if ($actualLng === null && !empty($foundAsset['longitude'])) {
+                    $actualLng = (float)$foundAsset['longitude'];
+                }
+                if (!empty($case['estimated_lat']) && $actualLat && $actualLng) {
                     $distErrorMeters = round($this->haversineDistance(
                         (float)$case['estimated_lat'], (float)$case['estimated_lng'],
-                        (float)$foundAsset['latitude'], (float)$foundAsset['longitude']
+                        $actualLat, $actualLng
                     ), 1);
                     // Matched if within 250 meters
+                    $isLocationMatch = ($distErrorMeters <= 250.0) ? 1 : 0;
+                } elseif ($actualObservedDist !== null && !empty($case['calculated_distance_m']) && (float)$case['calculated_distance_m'] > 0) {
+                    $distErrorMeters = round(abs($actualObservedDist - (float)$case['calculated_distance_m']), 1);
                     $isLocationMatch = ($distErrorMeters <= 250.0) ? 1 : 0;
                 }
             } else {
                 $foundAssetId = null;
+            }
+        } elseif ($outcomeType === 'CONFIRMED' && $actualLat && $actualLng) {
+            $newFollowUpStatus = 'GANGGUAN_DITEMUKAN';
+            if (!empty($case['estimated_lat'])) {
+                $distErrorMeters = round($this->haversineDistance(
+                    (float)$case['estimated_lat'], (float)$case['estimated_lng'],
+                    $actualLat, $actualLng
+                ), 1);
+                $isLocationMatch = ($distErrorMeters <= 250.0) ? 1 : 0;
+            } elseif ($actualObservedDist !== null && !empty($case['calculated_distance_m']) && (float)$case['calculated_distance_m'] > 0) {
+                $distErrorMeters = round(abs($actualObservedDist - (float)$case['calculated_distance_m']), 1);
+                $isLocationMatch = ($distErrorMeters <= 250.0) ? 1 : 0;
             }
         } elseif ($outcomeType === 'NOT_FOUND') {
             $newFollowUpStatus = 'TIDAK_DITEMUKAN';
@@ -2081,9 +2343,11 @@ class FaultLocatorWorkspaceService
             'revision_no'                => $revisionNo,
             'outcome_type'               => $outcomeType,
             'found_asset_id'             => $foundAssetId,
-            'cause_category_code'        => $outcomeData['cause_category_code'] ?? 'GENERAL_FAULT',
+            'cause_category_code'        => $causeCategoryCode,
             'component_damaged'          => $componentDamaged,
-            'actual_observed_distance_m' => isset($outcomeData['actual_distance_m']) ? (float)$outcomeData['actual_distance_m'] : null,
+            'actual_observed_distance_m' => $actualObservedDist,
+            'actual_latitude'            => $actualLat,
+            'actual_longitude'           => $actualLng,
             'distance_error_meters'      => $distErrorMeters,
             'is_location_match'          => $isLocationMatch,
             'is_component_match'         => $isComponentMatch,

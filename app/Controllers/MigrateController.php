@@ -184,6 +184,15 @@ class MigrateController extends BaseController
                 $executed[] = 'add_phase_voltages_and_topology_distance_to_fault_cases';
             }
 
+            // Run AddActualCoordinatesToFaultActualFindings Migration (Actual Lat/Lng for field inspection findings)
+            $actualCoordsMigFile = APPPATH . 'Database/Migrations/2026-10-23-000002_AddActualCoordinatesToFaultActualFindings.php';
+            if (file_exists($actualCoordsMigFile)) {
+                require_once $actualCoordsMigFile;
+                $acMig = new \App\Database\Migrations\AddActualCoordinatesToFaultActualFindings();
+                $acMig->up();
+                $executed[] = 'add_actual_coordinates_to_fault_actual_findings';
+            }
+
             // Phase D3 Hotfix: Archive Proto Dummy Test Cases (FLI-1.0.0 with 0 currents & null feeder)
             try {
                 $flSvc = new \App\Services\FaultLocatorWorkspaceService();

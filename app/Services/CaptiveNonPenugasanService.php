@@ -114,6 +114,25 @@ class CaptiveNonPenugasanService
                 'nomor_gangguan' => trim((string)($input['nomor_gangguan'] ?? '')) ?: null,
                 'detail_temuan' => trim((string)($input['detail_temuan'] ?? '')),
             ];
+
+            $sourceAssetId = (int)($input['source_asset_id'] ?? $input['asset_id'] ?? 0) ?: null;
+            $sourceLabel = trim((string)($input['source_label'] ?? '')) ?: null;
+            if ($sourceAssetId) {
+                $asset = $db->table('assets')->where('id', $sourceAssetId)->get()->getRowArray();
+                if ($asset) {
+                    if (empty($sourceLabel)) {
+                        $sourceLabel = trim(($asset['kode_asset'] ?? '') . ' ' . ($asset['nama_asset'] ?? ''));
+                    }
+                    if (empty($snapshot['latitude']) && !empty($asset['latitude'])) {
+                        $snapshot['latitude'] = (float)$asset['latitude'];
+                    }
+                    if (empty($snapshot['longitude']) && !empty($asset['longitude'])) {
+                        $snapshot['longitude'] = (float)$asset['longitude'];
+                    }
+                }
+            }
+            $snapshot['source_asset_id'] = $sourceAssetId;
+            $snapshot['source_label'] = $sourceLabel;
         }
 
         $detail = trim((string)($input['detail_temuan'] ?? ''));

@@ -138,8 +138,8 @@ class MaterialPickerService
         $cCode   = strtoupper(trim((string)($construction['construction_code'] ?? ($construction['code'] ?? ''))));
         $cName   = (string)($construction['construction_name'] ?? ($construction['name'] ?? $cCode));
 
-        // Provisional Kubikel Firewall: block draft/provisional constructions from picker
-        if ($cFamily === 'GARDU_KUBIKEL' || $cStatus === 'DRAFT' || str_contains($cCode, 'KUBIKEL')) {
+        // Provisional Firewall: block draft/provisional constructions from picker
+        if ($cStatus === 'DRAFT') {
             return [
                 'status'         => 'PROVISIONAL_BLOCKED',
                 'bom_status'     => 'NEEDS_BOM_MAPPING',

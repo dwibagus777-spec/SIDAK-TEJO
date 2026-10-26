@@ -284,8 +284,9 @@ class NetworkLookup extends BaseController
                 $cCode   = strtoupper(trim((string)($row['construction_code'] ?? ($row['code'] ?? ''))));
                 $cName   = (string)($row['construction_name'] ?? ($row['name'] ?? $cCode));
 
-                // Provisional Kubikel Firewall: block draft/provisional constructions
-                if ($cFamily === 'GARDU_KUBIKEL' || str_contains($cCode, 'KUBIKEL')) {
+                // Block draft/provisional constructions, allow active standards including Gardu Kubikel
+                $cStatus = strtoupper(trim((string)($row['approval_status'] ?? 'ACTIVE')));
+                if ($cStatus === 'DRAFT') {
                     continue;
                 }
 

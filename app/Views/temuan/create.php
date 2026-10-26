@@ -99,6 +99,15 @@
                         </div>
                     </div>
                     <!-- CR-HOTFIX-02 Part B: Authoritative Asset Banner / Card -->
+                    <?php
+                    $isPreselectedGardu = false;
+                    if (!empty($preselectedAsset)) {
+                        $pj = strtoupper((string)($preselectedAsset['jenis_asset'] ?? ''));
+                        $pk = strtoupper((string)($preselectedAsset['kode_asset'] ?? ''));
+                        $pn = strtoupper((string)($preselectedAsset['nama_asset'] ?? ''));
+                        $isPreselectedGardu = str_contains($pj, 'GARDU') || str_contains($pn, 'GARDU') || str_starts_with($pk, 'GD') || str_starts_with($pk, 'GTT');
+                    }
+                    ?>
                     <input type="hidden" name="authoritative_asset_id" id="authoritative_asset_id" value="<?= esc($preselectedAsset['id'] ?? old('authoritative_asset_id', '')) ?>">
                     <div id="authoritative-asset-card" class="card border-success mb-3 shadow-sm" style="<?= empty($preselectedAsset) ? 'display: none;' : '' ?> background: #f0fdf4; border: 1.5px solid #86efac !important; border-radius: 12px;">
                         <div class="card-body p-3">
@@ -135,6 +144,36 @@
                             </div>
                             <div id="asset-coord-alert" class="alert alert-danger py-1 px-2 mt-2 mb-0 small" style="<?= (!empty($preselectedAsset) && empty($preselectedAsset['has_coordinates'])) ? '' : 'display: none;' ?>">
                                 <i class="fas fa-triangle-exclamation me-1"></i> <strong>Asset belum memiliki koordinat authoritative.</strong> Temuan untuk asset ini tidak dapat disimpan sebelum data koordinat dilengkapi.
+                            </div>
+
+                            <!-- Pilihan Tujuan Temuan Aset Gardu (CR-GARDU-01) -->
+                            <div id="gardu-destination-box" class="p-2 mt-2 bg-white rounded border border-warning shadow-xs" style="<?= $isPreselectedGardu ? '' : 'display: none;' ?>">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="small fw-bold text-dark"><i class="fas fa-arrows-split-up-and-left text-warning me-1"></i> Pilihan Tujuan Temuan Aset Gardu:</span>
+                                    <span class="badge bg-warning text-dark" style="font-size: 10px;">Aset Gardu</span>
+                                </div>
+                                <div class="d-flex gap-3 small flex-wrap mb-1">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="gardu_dest_radio" id="gardu_dest_pln" value="PLN" checked>
+                                        <label class="form-check-label fw-bold text-success" for="gardu_dest_pln">
+                                            <i class="fas fa-bolt me-1"></i> Temuan sisi PLN (Detail Temuan Inspeksi)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="gardu_dest_radio" id="gardu_dest_captive" value="CAPTIVE">
+                                        <label class="form-check-label fw-bold text-primary" for="gardu_dest_captive">
+                                            <i class="fas fa-industry me-1"></i> Temuan Captive Non Penugasan
+                                        </label>
+                                    </div>
+                                </div>
+                                <div id="gardu-captive-redirect-alert" class="alert alert-info py-2 px-3 mt-1 mb-0 small" style="display: none;">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <span><i class="fas fa-info-circle me-1"></i> Anda memilih <strong>Temuan Captive Non Penugasan</strong>. Klik tombol berikut untuk membuka formulir Captive dengan identitas Gardu ini:</span>
+                                        <a id="btn-gardu-to-captive" href="<?= site_url('captive-non-penugasan') . '?asset_id=' . (int)($preselectedAsset['id'] ?? 0) . '&return_to=gis' ?>" class="btn btn-sm btn-primary text-nowrap">
+                                            <i class="fas fa-arrow-right me-1"></i> Buka Captive Non Penugasan
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1416,6 +1455,19 @@
                                 marker.dragging.enable();
                             }
                         }
+                        const aJenis = (a.jenis_asset || '').toUpperCase();
+                        const aKode = (a.kode_asset || '').toUpperCase();
+                        const aNama = (a.nama_asset || '').toUpperCase();
+                        const isGardu = aJenis.includes('GARDU') || aNama.includes('GARDU') || aKode.startsWith('GD') || aKode.startsWith('GTT');
+                        if (isGardu) {
+                            $('#gardu-destination-box').slideDown(150);
+                            $('#btn-gardu-to-captive').attr('href', '<?= site_url('captive-non-penugasan') ?>?asset_id=' + a.id + '&return_to=gis');
+                        } else {
+                            $('#gardu-destination-box').slideUp(150);
+                            $('#gardu_dest_pln').prop('checked', true);
+                            $('#gardu-captive-redirect-alert').hide();
+                            $('#form-create-temuan button[type="submit"]').prop('disabled', false);
+                        }
                         $authCard.slideDown(200);
                     }
                 }
@@ -1428,6 +1480,16 @@
             handleAssetCoordinateLock(assetId);
             if (isMaterialFlowActive) {
                 loadMaterialPickerForAsset(assetId, sectionId);
+            }
+        });
+
+        $(document).on('change click', 'input[name="gardu_dest_radio"]', function() {
+            if ($('#gardu_dest_captive').is(':checked')) {
+                $('#gardu-captive-redirect-alert').slideDown(150);
+                $('#form-create-temuan button[type="submit"]').prop('disabled', true);
+            } else {
+                $('#gardu-captive-redirect-alert').slideUp(150);
+                $('#form-create-temuan button[type="submit"]').prop('disabled', false);
             }
         });
 

@@ -15,6 +15,22 @@ class CaptiveNonPenugasanController extends BaseController
         $db = Database::connect();
         $userUlpId = (int)($session->get('user_ulp_id') ?? $session->get('ulp_id') ?? 0) ?: null;
 
+        $assetId = (int)($this->request->getGet('asset_id') ?? 0);
+        $selectedAsset = null;
+        if ($assetId > 0 && $db->tableExists('assets')) {
+            $selectedAsset = $db->table('assets a')
+                ->select('a.*, u.nama_ulp, p.nama_penyulang, s.nama_section')
+                ->join('ulps u', 'u.id = a.ulp_id', 'left')
+                ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+                ->join('sections s', 's.id = a.section_id', 'left')
+                ->where('a.id', $assetId)
+                ->get()->getRowArray();
+        }
+
+        $selectedUlpId = $userUlpId ?: (int)($this->request->getGet('ulp_id') ?? ($selectedAsset['ulp_id'] ?? 0));
+        $selectedFeederId = (int)($this->request->getGet('penyulang_id') ?? ($selectedAsset['penyulang_id'] ?? 0));
+        $selectedSectionId = (int)($this->request->getGet('section_id') ?? ($selectedAsset['section_id'] ?? 0));
+
         $ulps = [];
         if ($db->tableExists('ulps')) {
             $ulps = $db->table('ulps')->select('id,nama_ulp')->orderBy('nama_ulp')->get()->getResultArray();
@@ -22,15 +38,30 @@ class CaptiveNonPenugasanController extends BaseController
         }
 
         $feeders = [];
-        if ($db->tableExists('penyulang')) {
-            $feedersQuery = $db->table('penyulang')->select('id,ulp_id,nama_penyulang')->orderBy('nama_penyulang');
-            if ($userUlpId) $feedersQuery->where('ulp_id', $userUlpId);
-            $feeders = $feedersQuery->get()->getResultArray();
+        if ($db->tableExists('penyulang') && $selectedUlpId > 0) {
+            $feeders = $db->table('penyulang')
+                ->select('id,ulp_id,nama_penyulang')
+                ->where('ulp_id', $selectedUlpId)
+                ->where('status', 'AKTIF')
+                ->orderBy('nama_penyulang')
+                ->get()->getResultArray();
+        } elseif ($db->tableExists('penyulang') && $userUlpId) {
+            $feeders = $db->table('penyulang')
+                ->select('id,ulp_id,nama_penyulang')
+                ->where('ulp_id', $userUlpId)
+                ->where('status', 'AKTIF')
+                ->orderBy('nama_penyulang')
+                ->get()->getResultArray();
         }
 
         $sections = [];
-        if ($db->tableExists('sections')) {
-            $sections = $db->table('sections')->select('id,penyulang_id,nama_section')->orderBy('nama_section')->get()->getResultArray();
+        if ($db->tableExists('sections') && $selectedFeederId > 0) {
+            $sections = $db->table('sections')
+                ->select('id,penyulang_id,nama_section')
+                ->where('penyulang_id', $selectedFeederId)
+                ->where('status', 'AKTIF')
+                ->orderBy('nama_section')
+                ->get()->getResultArray();
         }
 
         $service = new CaptiveNonPenugasanService($db);
@@ -49,7 +80,9 @@ class CaptiveNonPenugasanController extends BaseController
             }
         }
         return view('captive_non_penugasan/index', [
-            'items' => $items, 'ulps' => $ulps, 'selectedUlpId' => $userUlpId ?: (int)($this->request->getGet('ulp_id') ?? 0),
+            'items' => $items, 'ulps' => $ulps, 'selectedUlpId' => $selectedUlpId,
+            'selectedFeederId' => $selectedFeederId, 'selectedSectionId' => $selectedSectionId,
+            'selectedAsset' => $selectedAsset, 'assetId' => $assetId,
             'translineId' => $translineId, 'selectedLine' => $selectedLine, 'feeders' => $feeders, 'sections' => $sections,
             'conductors' => CaptiveNonPenugasanService::CONDUCTORS, 'sizes' => CaptiveNonPenugasanService::SIZES,
             'returnTo' => (string)($this->request->getGet('return_to') ?? ''),

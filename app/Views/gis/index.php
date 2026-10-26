@@ -1634,6 +1634,17 @@
                         <div id="gis-modal-foto-preview" class="d-flex flex-wrap gap-2 mt-2"></div>
                     </div>
                 </div>
+                <div id="gis-modal-gardu-choice" class="alert alert-warning py-2 px-3 mt-3 d-none">
+                    <div class="fw-bold small text-dark mb-1"><i class="fas fa-arrows-split-up-and-left text-warning me-1"></i> Aset Gardu Terpilih — Pilihan Alur Temuan:</div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-success flex-fill disabled" style="cursor: default;">
+                            <i class="fas fa-bolt me-1"></i> Temuan sisi PLN (Form Ini)
+                        </button>
+                        <a href="#" class="btn btn-sm btn-primary flex-fill" id="btn-choice-captive">
+                            <i class="fas fa-industry me-1"></i> Temuan Captive Non Penugasan &rarr;
+                        </a>
+                    </div>
+                </div>
                 <div id="gis-modal-alert" class="alert d-none mt-3"></div>
             </div>
             <div class="modal-footer">
@@ -4343,6 +4354,30 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                     fullFormLink.href = '<?= site_url('temuan/create') ?>?' + qParams.toString();
                     fullFormLink.removeAttribute('target');
+                }
+
+                // Check if current asset is Gardu and configure Captive Non Penugasan choice
+                const aJenis = (res.asset && res.asset.jenis_asset) ? String(res.asset.jenis_asset).toUpperCase() : '';
+                const aKode  = (res.asset && res.asset.kode_asset) ? String(res.asset.kode_asset).toUpperCase() : '';
+                const aNama  = (res.asset && res.asset.nama_asset) ? String(res.asset.nama_asset).toUpperCase() : '';
+                const isGarduAsset = aJenis.includes('GARDU') || aNama.includes('GARDU') || aKode.startsWith('GD') || aKode.startsWith('GTT');
+
+                const $garduChoice = $('#gis-modal-gardu-choice');
+                const $btnChoiceCaptive = $('#btn-choice-captive');
+                if (isGarduAsset && currentAssetContextId) {
+                    $garduChoice.removeClass('d-none');
+                    const capParams = new URLSearchParams({
+                        asset_id: currentAssetContextId,
+                        return_to: 'gis',
+                        penyulang_id: penyulangBlock.id || currentFeederId || '',
+                        lat: (res.asset && res.asset.latitude) || (map ? map.getCenter().lat.toFixed(6) : ''),
+                        lng: (res.asset && res.asset.longitude) || (map ? map.getCenter().lng.toFixed(6) : ''),
+                        zoom: map ? map.getZoom() : 18,
+                        layers: typeof getSelectedSetupLayers === 'function' ? getSelectedSetupLayers().join(',') : ''
+                    });
+                    $btnChoiceCaptive.attr('href', '<?= site_url('captive-non-penugasan') ?>?' + capParams.toString());
+                } else {
+                    $garduChoice.addClass('d-none');
                 }
 
                 const viewUrl = (res.navigation && res.navigation.view_temuan_url) ? res.navigation.view_temuan_url : `<?= site_url('temuan') ?>?asset_id=${currentAssetContextId}`;
@@ -8952,6 +8987,29 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
                 fullFormLink.href = '<?= site_url('temuan/create') ?>?' + qParams.toString();
                 fullFormLink.removeAttribute('target');
+            }
+
+            const ctx = window._gisCurrentAssetContext || {};
+            const ctxName = String(ctx.nama_asset || '').toUpperCase();
+            const ctxJenis = String(ctx.jenis_asset || '').toUpperCase();
+            const ctxKode = String(ctx.kode_asset || '').toUpperCase();
+            const isGarduModal = ctxName.includes('GARDU') || ctxJenis.includes('GARDU') || ctxKode.startsWith('GD') || ctxKode.startsWith('GTT');
+            const $gChoice = $('#gis-modal-gardu-choice');
+            const $bCaptive = $('#btn-choice-captive');
+            if (isGarduModal && assetId) {
+                $gChoice.removeClass('d-none');
+                const capParams = new URLSearchParams({
+                    asset_id: assetId,
+                    return_to: 'gis',
+                    penyulang_id: ctx.penyulang_id || currentFeederId || '',
+                    lat: ctx.lat || (map ? map.getCenter().lat.toFixed(6) : ''),
+                    lng: ctx.lng || (map ? map.getCenter().lng.toFixed(6) : ''),
+                    zoom: map ? map.getZoom() : 18,
+                    layers: typeof getSelectedSetupLayers === 'function' ? getSelectedSetupLayers().join(',') : ''
+                });
+                $bCaptive.attr('href', '<?= site_url('captive-non-penugasan') ?>?' + capParams.toString());
+            } else if (!isGarduModal) {
+                $gChoice.addClass('d-none');
             }
         }
 

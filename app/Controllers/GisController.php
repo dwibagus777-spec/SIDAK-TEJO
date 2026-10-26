@@ -1501,7 +1501,7 @@ class GisController extends BaseController
         if (!$srcPoleCheck['valid']) {
             $fId = $penyulangId > 0 ? $penyulangId : (int)($sourceAsset['penyulang_id'] ?? 0);
             $resSource = $this->translineService->resolveSourceContextToNearestJtmPole($sourceId, $fId);
-            if ($resSource && !empty($resSource['anchor_pole_asset'])) {
+            if ($resSource && !empty($resSource['verified']) && !empty($resSource['anchor_pole_asset'])) {
                 $resolvedSourcePole = $resSource['anchor_pole_asset'];
                 $sourceId = (int)$resolvedSourcePole['id'];
                 if (empty($sourceAsset['parent_asset_id']) || (int)$sourceAsset['parent_asset_id'] !== $sourceId) {
@@ -1509,8 +1509,9 @@ class GisController extends BaseController
                 }
             } else {
                 return $this->response->setStatusCode(422)->setJSON([
-                    'status'  => 'error',
-                    'message' => "Aset sumber [{$sourceAsset['kode_asset']}] merupakan {$srcPoleCheck['reason']} dan belum terhubung ke tiang tumpu fisik dalam radius 35m."
+                    'status'     => 'error',
+                    'error_code' => 'UNRESOLVED_MOUNTING_POLE',
+                    'message'    => "Aset sumber [{$sourceAsset['nama_asset']}] merupakan {$srcPoleCheck['reason']} dan belum memiliki relasi tiang tumpu terdaftar. Silakan pilih tiang JTM tempat peralatan ini terpasang secara eksplisit."
                 ]);
             }
         }
@@ -1521,7 +1522,7 @@ class GisController extends BaseController
         if (!$tgtPoleCheck['valid']) {
             $fId = $penyulangId > 0 ? $penyulangId : (int)($targetAsset['penyulang_id'] ?? 0);
             $resTarget = $this->translineService->resolveSourceContextToNearestJtmPole($targetId, $fId);
-            if ($resTarget && !empty($resTarget['anchor_pole_asset'])) {
+            if ($resTarget && !empty($resTarget['verified']) && !empty($resTarget['anchor_pole_asset'])) {
                 $resolvedTargetPole = $resTarget['anchor_pole_asset'];
                 $targetId = (int)$resolvedTargetPole['id'];
                 if (empty($targetAsset['parent_asset_id']) || (int)$targetAsset['parent_asset_id'] !== $targetId) {
@@ -1529,8 +1530,9 @@ class GisController extends BaseController
                 }
             } else {
                 return $this->response->setStatusCode(422)->setJSON([
-                    'status'  => 'error',
-                    'message' => "Aset target [{$targetAsset['kode_asset']}] merupakan {$tgtPoleCheck['reason']} dan belum terhubung ke tiang tumpu fisik dalam radius 35m."
+                    'status'     => 'error',
+                    'error_code' => 'UNRESOLVED_MOUNTING_POLE',
+                    'message'    => "Aset target [{$targetAsset['nama_asset']}] merupakan {$tgtPoleCheck['reason']} dan belum memiliki relasi tiang tumpu terdaftar. Silakan pilih tiang JTM tempat peralatan ini terpasang secara eksplisit."
                 ]);
             }
         }
@@ -1540,15 +1542,62 @@ class GisController extends BaseController
             $poleAsset = $resolvedSourcePole ?? $resolvedTargetPole ?? $sourceAsset;
             $eqAsset = !$srcPoleCheck['valid'] ? $sourceAsset : $targetAsset;
             return $this->response->setJSON([
-                'status'  => 'success',
-                'message' => "Perangkat [{$eqAsset['kode_asset']}] telah terpasang pada tiang tumpu [{$poleAsset['kode_asset']}]. Transline jaringan tetap menghubungkan antar-tiang JTM fisik."
+                'status'               => 'success',
+                'is_equipment_mounted' => true,
+                'source_pole'          => $poleAsset,
+                'equipment'            => $eqAsset,
+                'message'              => "Perangkat [{$eqAsset['nama_asset']}] telah terpasang pada tiang tumpu [{$poleAsset['nama_asset']}]. Transline jaringan tetap menghubungkan antar-tiang JTM fisik (tidak memerlukan transline tambahan)."
             ]);
         }
 
+        // Cek duplikasi transline antara tiang sumber dan tiang target sebelum validasi cycle
+        $fId = $penyulangId > 0 ? $penyulangId : (int)($sourceAsset['penyulang_id'] ?? 0);
+        $existingTl = $this->translineService->resolveTranslinePair($fId, $sourceId, $targetId);
+        if ($existingTl) {
+            $srcDisplayName = $sourceAsset['nama_asset'] ?? "Tiang #{$sourceId}";
+            $tgtDisplayName = $targetAsset['nama_asset'] ?? "Tiang #{$targetId}";
+            $poleTgtName = $resolvedTargetPole ? $resolvedTargetPole['nama_asset'] : $tgtDisplayName;
+            $poleSrcName = $resolvedSourcePole ? $resolvedSourcePole['nama_asset'] : $srcDisplayName;
+
+            $msg = "Sambungan transline resmi antara [{$poleSrcName}] dan [{$poleTgtName}] sudah aktif dengan kode [{$existingTl['transline_code']}].";
+            if ($resolvedTargetPole) {
+                $msg .= " Perangkat [{$targetAsset['nama_asset']}] telah terhubung ke jaringan melalui tiang tumpunya.";
+            } elseif ($resolvedSourcePole) {
+                $msg .= " Perangkat [{$sourceAsset['nama_asset']}] telah terhubung ke jaringan melalui tiang tumpunya.";
+            }
+
+            return $this->response->setJSON([
+                'status'               => 'success',
+                'duplicate'            => true,
+                'message'              => $msg,
+                'transline'            => $existingTl,
+                'resolved_target_pole' => $resolvedTargetPole,
+                'resolved_source_pole' => $resolvedSourcePole,
+            ]);
+        }
+
+        // Cek apakah penambahan koneksi menyebabkan circular loop pada topologi graf tiang
         if ($this->topologyService->wouldCreateCycle($sourceId, $targetId)) {
+            $cyclePath = $this->topologyService->findCyclePath($sourceId, $targetId);
+            $pathStr = '';
+            if (!empty($cyclePath)) {
+                $pathStr = implode(' ➔ ', array_map(fn($p) => $p['nama_asset'] ?? "Tiang #{$p['id']}", $cyclePath));
+            } else {
+                $pathStr = "[{$sourceAsset['nama_asset']}] ➔ [{$targetAsset['nama_asset']}]";
+            }
+
+            $srcDisplayName = $sourceAsset['nama_asset'];
+            $tgtDisplayName = $resolvedTargetPole ? "{$resolvedTargetPole['nama_asset']} (tiang tumpu {$targetAsset['nama_asset']})" : $targetAsset['nama_asset'];
+
             return $this->response->setStatusCode(400)->setJSON([
-                'status'  => 'error',
-                'message' => 'Penambahan relasi ditolak: Terdeteksi circular topology (loop tertutup) antar-tiang JTM!'
+                'status'               => 'error',
+                'error_code'           => 'CIRCULAR_TOPOLOGY',
+                'message'              => "Penambahan relasi ditolak: Menghubungkan tiang [{$srcDisplayName}] ke [{$tgtDisplayName}] membentuk loop tertutup (circular topology) pada graf jaringan! Jalur loop: {$pathStr}.",
+                'source_asset'         => $sourceAsset,
+                'target_asset'         => $targetAsset,
+                'resolved_target_pole' => $resolvedTargetPole,
+                'resolved_source_pole' => $resolvedSourcePole,
+                'cycle_path'           => $cyclePath,
             ]);
         }
 
@@ -1561,8 +1610,8 @@ class GisController extends BaseController
 
         if ($resolvedTargetPole || $resolvedSourcePole) {
             $notes = [];
-            if ($resolvedSourcePole) $notes[] = "Sumber [{$sourceAsset['kode_asset']}] dihubungkan melalui tiang [{$resolvedSourcePole['kode_asset']}]";
-            if ($resolvedTargetPole) $notes[] = "Target [{$targetAsset['kode_asset']}] dihubungkan melalui tiang [{$resolvedTargetPole['kode_asset']}]";
+            if ($resolvedSourcePole) $notes[] = "Sumber [{$sourceAsset['nama_asset']}] dihubungkan melalui tiang [{$resolvedSourcePole['nama_asset']}]";
+            if ($resolvedTargetPole) $notes[] = "Target [{$targetAsset['nama_asset']}] dihubungkan melalui tiang [{$resolvedTargetPole['nama_asset']}]";
             $result['message'] = ($result['message'] ?? 'Transline tersimpan.') . ' (' . implode('; ', $notes) . ')';
         }
 

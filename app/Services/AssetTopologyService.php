@@ -115,6 +115,104 @@ class AssetTopologyService
     }
 
     /**
+     * Find cycle path if adding sourceId -> targetId would create a cycle.
+     * Returns an array of assets forming the cycle: [source, target, ..., source]
+     */
+    public function findCyclePath(int $sourceId, int $targetId): ?array
+    {
+        if ($sourceId === $targetId) {
+            $src = $this->assetModel->find($sourceId);
+            $info = [
+                'id'         => $sourceId,
+                'nama_asset' => $src['nama_asset'] ?? "Tiang #{$sourceId}",
+                'kode_asset' => $src['kode_asset'] ?? '',
+            ];
+            return [$info, $info];
+        }
+
+        $visited = [];
+        $parentPointer = [];
+        $queue = [$targetId];
+
+        $found = false;
+        while (!empty($queue)) {
+            $currentId = array_shift($queue);
+
+            if ($currentId === $sourceId) {
+                $found = true;
+                break;
+            }
+
+            if (isset($visited[$currentId])) {
+                continue;
+            }
+            $visited[$currentId] = true;
+
+            $outgoingRels = $this->relationshipModel
+                ->where('parent_asset_id', $currentId)
+                ->where('is_active', 1)
+                ->findAll();
+
+            foreach ($outgoingRels as $rel) {
+                $nextId = (int)($rel['child_asset_id'] ?? $rel['target_asset_id'] ?? 0);
+                if ($nextId > 0 && !isset($visited[$nextId])) {
+                    if (!isset($parentPointer[$nextId])) {
+                        $parentPointer[$nextId] = $currentId;
+                    }
+                    $queue[] = $nextId;
+                }
+            }
+
+            $asset = $this->assetModel->find($currentId);
+            if ($asset && !empty($asset['parent_asset_id'])) {
+                $parentId = (int)$asset['parent_asset_id'];
+                if (!isset($visited[$parentId])) {
+                    if (!isset($parentPointer[$parentId])) {
+                        $parentPointer[$parentId] = $currentId;
+                    }
+                    $queue[] = $parentId;
+                }
+            }
+        }
+
+        if (!$found) {
+            return null;
+        }
+
+        // Reconstruct path from sourceId back to targetId
+        $pathIds = [$sourceId];
+        $curr = $sourceId;
+        $maxHops = 100;
+        while ($curr !== $targetId && isset($parentPointer[$curr]) && $maxHops-- > 0) {
+            $curr = $parentPointer[$curr];
+            $pathIds[] = $curr;
+        }
+
+        $pathIds = array_reverse($pathIds); // Now [targetId, ..., sourceId]
+        array_unshift($pathIds, $sourceId); // Now [sourceId, targetId, ..., sourceId]
+
+        $result = [];
+        foreach ($pathIds as $pid) {
+            $a = $this->assetModel->find($pid);
+            if ($a) {
+                $result[] = [
+                    'id'         => (int)$a['id'],
+                    'nama_asset' => $a['nama_asset'] ?? "Tiang #{$pid}",
+                    'kode_asset' => $a['kode_asset'] ?? '',
+                ];
+            } else {
+                $result[] = [
+                    'id'         => $pid,
+                    'nama_asset' => "Tiang #{$pid}",
+                    'kode_asset' => '',
+                ];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Non-destructive Candidate Engine with Multi-Candidate Ranking & Gap Score
      */
     public function generateFeederTopologyCandidates(int $penyulangId, ?int $userUlpId = null): array

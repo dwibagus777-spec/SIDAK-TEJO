@@ -1124,13 +1124,19 @@
         </div>
 
         <div class="card bg-light border-0 rounded-3 p-3 mb-3">
+            <div id="conn-equipment-alert" class="alert alert-info py-2 px-3 small mb-2 d-none">
+                <i class="fas fa-microchip me-1"></i> <span id="conn-equipment-text"></span>
+            </div>
+            <div id="conn-existing-alert" class="alert alert-warning py-2 px-3 small mb-2 d-none">
+                <i class="fas fa-link me-1"></i> <span id="conn-existing-text"></span>
+            </div>
             <div class="d-flex justify-content-between mb-1">
                 <span class="small text-muted">Aset Sumber:</span>
-                <span id="conn-source-name" class="small fw-bold text-dark text-truncate" style="max-width: 200px;">-</span>
+                <span id="conn-source-name" class="small fw-bold text-dark text-break" style="max-width: 65%; text-align: right;">-</span>
             </div>
             <div class="d-flex justify-content-between mb-1">
                 <span class="small text-muted">Aset Tujuan:</span>
-                <span id="conn-target-name" class="small fw-bold text-primary text-truncate" style="max-width: 200px;">-</span>
+                <span id="conn-target-name" class="small fw-bold text-primary text-break" style="max-width: 65%; text-align: right;">-</span>
             </div>
             <div class="d-flex justify-content-between border-top pt-1 mt-1 mb-2">
                 <span class="small text-muted">Estimasi Jarak:</span>
@@ -4043,13 +4049,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Case A: State is CHANGE_CONNECTION or ADD_CONNECTION -> Target Selected!
         if (translineEditor.state === TRANSLINE_STATE.CHANGE_CONNECTION || translineEditor.state === TRANSLINE_STATE.ADD_CONNECTION) {
-            if (translineEditor.sourceAsset && translineEditor.sourceAsset.id === clickedAsset.id) {
+            var src = translineEditor.sourceAsset;
+            if (src && Number(src.id) === Number(clickedAsset.id)) {
                 notifyGis('Silakan pilih tiang TUJUAN yang berbeda dengan tiang sumber!', 'warning');
                 return;
             }
 
+            // Check if clickedAsset is a non-pole equipment (e.g. PMCB, Recloser, LBS, Trafo, etc.)
+            if (isNonPoleEquipment(clickedAsset)) {
+                var pId = clickedAsset.parent_asset_id ? Number(clickedAsset.parent_asset_id) : 0;
+                var parentPole = null;
+                if (pId > 0 && currentData && Array.isArray(currentData.features)) {
+                    var pFeat = currentData.features.find(function(f) {
+                        return f.properties && Number(f.properties.id) === pId;
+                    });
+                    if (pFeat) parentPole = pFeat.properties;
+                }
+
+                if (!parentPole && !pId) {
+                    notifyGis('Aset [' + clickedAsset.nama_asset + '] merupakan peralatan (' + (clickedAsset.jenis_asset || 'perangkat') + ') dan belum terhubung ke tiang tumpu terdaftar. Silakan pilih tiang JTM tempat peralatan ini terpasang secara eksplisit.', 'warning', 'Peralatan Tanpa Tiang');
+                    return;
+                }
+
+                // If mounted on the source pole itself
+                if (parentPole && src && Number(parentPole.id) === Number(src.id)) {
+                    notifyGis('Perangkat [' + clickedAsset.nama_asset + '] sudah terpasang pada tiang ini (' + src.nama_asset + '). Perangkat telah terhubung ke jaringan melalui tiang tumpunya (tidak memerlukan transline tambahan).', 'info', 'Perangkat Terpasang');
+                    setEditorState(TRANSLINE_STATE.IDLE);
+                    return;
+                }
+
+                var effectiveTarget = parentPole || clickedAsset;
+                translineEditor.targetAsset = effectiveTarget;
+                translineEditor.targetEquipment = clickedAsset;
+                previewNewConnectionLine(src, effectiveTarget, clickedAsset);
+                return;
+            }
+
             translineEditor.targetAsset = clickedAsset;
-            previewNewConnectionLine(translineEditor.sourceAsset, translineEditor.targetAsset);
+            translineEditor.targetEquipment = null;
+            previewNewConnectionLine(src, clickedAsset);
             return;
         }
 
@@ -5034,6 +5072,13 @@ document.addEventListener("DOMContentLoaded", function () {
         setEditorState(TRANSLINE_STATE.CHANGE_CONNECTION, `SENTUH TIANG TUJUAN KONEKSI (Sumber: ${translineEditor.sourceAsset ? translineEditor.sourceAsset.nama_asset : ''})`);
     }, 'ACTION_CHANGE_CONNECTION');
 
+    function isNonPoleEquipment(asset) {
+        if (!asset) return false;
+        var jenis = String(asset.jenis_asset || asset.asset_type || '').toUpperCase();
+        var nonPolePatterns = ['POHON', 'ROW', 'GARDU', 'GTT', 'TRAFO', 'RECLOSER', 'LBS', 'LBSM', 'PMCB', 'GH', 'ASS', 'SECTIONALIZER', 'KONDUKTOR', 'KABEL', 'GI'];
+        return nonPolePatterns.some(function(pat) { return jenis.indexOf(pat) !== -1; });
+    }
+
     // ========================================================
     // 🔀 WORKFLOW 2: TAMBAH SAMBUNGAN
     // ========================================================
@@ -5042,7 +5087,7 @@ document.addEventListener("DOMContentLoaded", function () {
         setEditorState(TRANSLINE_STATE.ADD_CONNECTION, `SENTUH TIANG TUJUAN SAMBUNGAN BARU (Sumber: ${translineEditor.sourceAsset ? translineEditor.sourceAsset.nama_asset : ''})`);
     }, 'ACTION_ADD_CONNECTION');
 
-    function previewNewConnectionLine(sourceAsset, targetAsset) {
+    function previewNewConnectionLine(sourceAsset, targetAsset, equipment) {
         if (!previewConnectionLayer) return;
         previewConnectionLayer.clearLayers();
 
@@ -5068,6 +5113,42 @@ document.addEventListener("DOMContentLoaded", function () {
 
         map.fitBounds(poly.getBounds(), { padding: [60, 60] });
 
+        // Check if connection already exists between these two poles!
+        var existingTl = resolveTranslinePair(Number(sourceAsset.id), Number(targetAsset.id));
+
+        var eqAlert = document.getElementById('conn-equipment-alert');
+        var eqText = document.getElementById('conn-equipment-text');
+        if (equipment) {
+            if (eqAlert && eqText) {
+                eqText.textContent = `Perangkat [${equipment.nama_asset}] terpasang pada tiang tujuan ini (${targetAsset.nama_asset}). Transline resmi menghubungkan antar-tiang JTM.`;
+                eqAlert.classList.remove('d-none');
+            }
+        } else {
+            if (eqAlert) eqAlert.classList.add('d-none');
+        }
+
+        var exAlert = document.getElementById('conn-existing-alert');
+        var exText = document.getElementById('conn-existing-text');
+        var submitBtn = document.getElementById('btn-submit-connection');
+        if (existingTl) {
+            if (exAlert && exText) {
+                exText.textContent = `Sambungan transline resmi sudah aktif (${existingTl.transline_code}). Perangkat telah terhubung ke jaringan melalui tiang tumpunya.`;
+                exAlert.classList.remove('d-none');
+            }
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-eye me-1"></i> Lihat Segmen Aktif';
+                submitBtn.dataset.mode = 'VIEW_EXISTING';
+                submitBtn.dataset.translineId = existingTl.id || '';
+            }
+        } else {
+            if (exAlert) exAlert.classList.add('d-none');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> ' + (IS_ADMIN ? 'Terapkan Langsung' : 'Kirim Usulan');
+                submitBtn.dataset.mode = 'APPLY';
+                submitBtn.dataset.translineId = '';
+            }
+        }
+
         // Open Confirmation Sheet with Conductor Attributes
         document.getElementById('conn-source-name').textContent = `${sourceAsset.nama_asset} (${sourceAsset.kode_asset || ''})`;
         document.getElementById('conn-target-name').textContent = `${targetAsset.nama_asset} (${targetAsset.kode_asset || ''})`;
@@ -5078,6 +5159,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     bindPointerSafeTap('btn-submit-connection', function () {
         if (!translineEditor.sourceAsset || !translineEditor.targetAsset) return;
+
+        var submitBtn = document.getElementById('btn-submit-connection');
+        if (submitBtn && submitBtn.dataset.mode === 'VIEW_EXISTING') {
+            safeHideOffcanvas('offcanvas-confirm-connection-sheet');
+            setEditorState(TRANSLINE_STATE.IDLE);
+            if (previewConnectionLayer) previewConnectionLayer.clearLayers();
+            if (submitBtn.dataset.translineId) {
+                var tId = Number(submitBtn.dataset.translineId);
+                var entry = (window.allTranslineEntries || []).find(function(e) { return Number(e.id) === tId; });
+                if (entry && entry.hitPoly) {
+                    var latlngs = entry.hitPoly.getLatLngs();
+                    var center = (Array.isArray(latlngs) && latlngs.length > 0) ? (latlngs[Math.floor(latlngs.length / 2)] || latlngs[0]) : null;
+                    if (center && map) map.panTo(center);
+                    entry.hitPoly.fire('click', { latlng: center || (map ? map.getCenter() : null) });
+                }
+            }
+            return;
+        }
 
         var mode = (translineEditor.state === TRANSLINE_STATE.CHANGE_CONNECTION) ? 'REPLACE' : 'ADD';
         var cType = document.getElementById('conn-conductor-type').value;
@@ -5094,7 +5193,6 @@ document.addEventListener("DOMContentLoaded", function () {
             installation_type: (cType === 'XLPE') ? 'UNDERGROUND' : ((cType === 'A3CS') ? 'OVERHEAD_INSULATED' : 'OVERHEAD')
         };
 
-        var submitBtn = document.getElementById('btn-submit-connection');
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
@@ -5112,6 +5210,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
             safeHideOffcanvas('offcanvas-confirm-connection-sheet');
             setEditorState(TRANSLINE_STATE.IDLE);
+            if (previewConnectionLayer) previewConnectionLayer.clearLayers();
+
+            if (res.duplicate) {
+                notifyGis(res.message, 'info', 'Koneksi Sudah Aktif');
+                return;
+            }
+
+            if (res.is_equipment_mounted) {
+                notifyGis(res.message, 'success', 'Perangkat Terpasang');
+                return;
+            }
 
             // Reconcile and redraw GIS layer immediately
             if (currentData) {
@@ -5137,6 +5246,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             }
         })
+        .catch(err => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
+            }
+            notifyGis(err.message, 'error', 'Peringatan Koneksi');
+        });
+    }, 'SUBMIT_CONNECTION');
         .catch(err => {
             if (submitBtn) {
                 submitBtn.disabled = false;

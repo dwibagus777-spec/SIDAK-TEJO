@@ -302,7 +302,7 @@ class GisTranslineService
                 'source_asset'            => $asset,
                 'anchor_pole_asset'       => $nearestConnectedPole,
                 'distance_to_pole_meters' => round($minConnectedDist, 2),
-                'verified'                => true,
+                'verified'                => false,
             ];
         }
 
@@ -313,7 +313,7 @@ class GisTranslineService
                 'source_asset'            => $asset,
                 'anchor_pole_asset'       => $nearestPole,
                 'distance_to_pole_meters' => round($minDist, 2),
-                'verified'                => true,
+                'verified'                => false,
             ];
         }
 

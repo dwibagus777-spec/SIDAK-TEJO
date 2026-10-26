@@ -13,12 +13,14 @@ class FaultLocatorController extends BaseController
     protected $service;
     protected $calibrationService;
     protected $readinessService;
+    protected $db;
 
     public function __construct()
     {
         $this->service = new FaultLocatorWorkspaceService();
         $this->calibrationService = new FaultFeedbackCalibrationService();
         $this->readinessService = new FeederNetworkReadinessService();
+        $this->db = \Config\Database::connect();
     }
 
     /**
@@ -37,24 +39,51 @@ class FaultLocatorController extends BaseController
                 $defaultUlpId = $resolved;
             }
         }
+
+        $requestedCaseId = $this->request->getGet('case_id');
+        $loadedCase = null;
+        if ($requestedCaseId !== null && (int)$requestedCaseId > 0) {
+            $loadedCase = $this->service->getCaseDetails((int)$requestedCaseId);
+            if ($loadedCase) {
+                if (!empty($loadedCase['ulp_id'])) {
+                    $defaultUlpId = (int)$loadedCase['ulp_id'];
+                }
+                if (!empty($loadedCase['penyulang_id'])) {
+                    $defaultFeederId = (int)$loadedCase['penyulang_id'];
+                }
+            }
+        }
+
+        $requestedFeeder = $this->request->getGet('feeder_id');
+        if ($loadedCase === null && $requestedFeeder !== null && $requestedFeeder !== '') {
+            $fRow = $this->db->table('penyulang')->where('id', (int)$requestedFeeder)->get()->getRowArray();
+            if ($fRow) {
+                $defaultFeederId = (int)$fRow['id'];
+                if ($defaultUlpId === null && !empty($fRow['ulp_id'])) {
+                    $defaultUlpId = (int)$fRow['ulp_id'];
+                }
+            }
+        }
+
         if ($defaultUlpId === null) {
             $defaultUlpId = !empty($ulps) ? (int)$ulps[0]['id'] : null;
         }
 
         $feeders = $this->service->getFeeders($defaultUlpId);
 
-        $requestedFeeder = $this->request->getGet('feeder_id');
-        $defaultFeederId = null;
-        if ($requestedFeeder !== null && $requestedFeeder !== '') {
-            foreach ($feeders as $f) {
-                if ($f['id'] == $requestedFeeder) {
-                    $defaultFeederId = (int)$f['id'];
-                    break;
+        if ($loadedCase === null && empty($defaultFeederId)) {
+            $defaultFeederId = null;
+            if ($requestedFeeder !== null && $requestedFeeder !== '') {
+                foreach ($feeders as $f) {
+                    if ($f['id'] == $requestedFeeder) {
+                        $defaultFeederId = (int)$f['id'];
+                        break;
+                    }
                 }
             }
-        }
-        if ($defaultFeederId === null) {
-            $defaultFeederId = !empty($feeders) ? (int)$feeders[0]['id'] : 1;
+            if ($defaultFeederId === null) {
+                $defaultFeederId = !empty($feeders) ? (int)$feeders[0]['id'] : 1;
+            }
         }
 
         $protectionDevices = $this->service->getProtectionDevices($defaultFeederId);
@@ -63,22 +92,32 @@ class FaultLocatorController extends BaseController
         $defaultTelemetry = [
             'ulp_id'               => $defaultUlpId,
             'feeder_id'            => $defaultFeederId,
-            'source_type'          => $this->request->getGet('source_type') ?: 'GI',
-            'protection_device_id' => !empty($protectionDevices) ? $protectionDevices[0]['id'] : null,
-            'fault_time'           => date('Y-m-d H:i:s'),
-            'current_r'            => $this->request->getGet('current_r') !== null ? (float)$this->request->getGet('current_r') : 1450.0,
-            'current_s'            => $this->request->getGet('current_s') !== null ? (float)$this->request->getGet('current_s') : 1420.0,
-            'current_t'            => $this->request->getGet('current_t') !== null ? (float)$this->request->getGet('current_t') : 1440.0,
-            'current_n'            => $this->request->getGet('current_n') !== null ? (float)$this->request->getGet('current_n') : 15.0,
-            'voltage_r_kv'         => ($this->request->getGet('voltage_r_kv') !== null && $this->request->getGet('voltage_r_kv') !== '') ? (float)$this->request->getGet('voltage_r_kv') : null,
-            'voltage_s_kv'         => ($this->request->getGet('voltage_s_kv') !== null && $this->request->getGet('voltage_s_kv') !== '') ? (float)$this->request->getGet('voltage_s_kv') : null,
-            'voltage_t_kv'         => ($this->request->getGet('voltage_t_kv') !== null && $this->request->getGet('voltage_t_kv') !== '') ? (float)$this->request->getGet('voltage_t_kv') : null,
-            'relay_distance_m'     => ($this->request->getGet('relay_distance_m') !== null && $this->request->getGet('relay_distance_m') !== '') ? (float)$this->request->getGet('relay_distance_m') : null,
+            'source_type'          => $loadedCase ? ($loadedCase['source_type'] ?: 'GI') : ($this->request->getGet('source_type') ?: 'GI'),
+            'protection_device_id' => $loadedCase ? ($loadedCase['protection_device_id'] ?? null) : (!empty($protectionDevices) ? $protectionDevices[0]['id'] : null),
+            'fault_time'           => $loadedCase['created_at'] ?? date('Y-m-d H:i:s'),
+            'current_r'            => $loadedCase ? (float)($loadedCase['current_r'] ?? 0) : ($this->request->getGet('current_r') !== null ? (float)$this->request->getGet('current_r') : 1450.0),
+            'current_s'            => $loadedCase ? (float)($loadedCase['current_s'] ?? 0) : ($this->request->getGet('current_s') !== null ? (float)$this->request->getGet('current_s') : 1420.0),
+            'current_t'            => $loadedCase ? (float)($loadedCase['current_t'] ?? 0) : ($this->request->getGet('current_t') !== null ? (float)$this->request->getGet('current_t') : 1440.0),
+            'current_n'            => $loadedCase ? (float)($loadedCase['current_n'] ?? 0) : ($this->request->getGet('current_n') !== null ? (float)$this->request->getGet('current_n') : 15.0),
+            'voltage_r_kv'         => $loadedCase ? $loadedCase['voltage_r_kv'] : (($this->request->getGet('voltage_r_kv') !== null && $this->request->getGet('voltage_r_kv') !== '') ? (float)$this->request->getGet('voltage_r_kv') : null),
+            'voltage_s_kv'         => $loadedCase ? $loadedCase['voltage_s_kv'] : (($this->request->getGet('voltage_s_kv') !== null && $this->request->getGet('voltage_s_kv') !== '') ? (float)$this->request->getGet('voltage_s_kv') : null),
+            'voltage_t_kv'         => $loadedCase ? $loadedCase['voltage_t_kv'] : (($this->request->getGet('voltage_t_kv') !== null && $this->request->getGet('voltage_t_kv') !== '') ? (float)$this->request->getGet('voltage_t_kv') : null),
+            'relay_distance_m'     => $loadedCase ? $loadedCase['relay_measured_distance_m'] : (($this->request->getGet('relay_distance_m') !== null && $this->request->getGet('relay_distance_m') !== '') ? (float)$this->request->getGet('relay_distance_m') : null),
             'relay_type'           => 'OCR_GFR',
-            'conductor_type'       => $this->request->getGet('conductor_type') ?: null,
+            'conductor_type'       => $loadedCase ? ($loadedCase['conductor_type'] ?? null) : ($this->request->getGet('conductor_type') ?: null),
         ];
 
         $initialResult = $this->service->locateFault($defaultTelemetry);
+        if ($loadedCase) {
+            $initialResult['case_id'] = (int)$loadedCase['id'];
+            $initialResult['case_number'] = $loadedCase['case_number'];
+            $initialResult['case_uuid'] = $loadedCase['case_uuid'] ?? null;
+            $initialResult['follow_up_status'] = $loadedCase['follow_up_status'] ?? null;
+            if (!empty($loadedCase['findings_history'])) {
+                $initialResult['latest_finding'] = $loadedCase['findings_history'][0];
+                $initialResult['actual_finding'] = $loadedCase['findings_history'][0];
+            }
+        }
         $caseHistory = $this->service->getCaseHistory(null, 15);
         $calibrationSummary = $this->calibrationService->getFeedbackDatasetSummary();
         $readinessSummary = $this->readinessService->auditAllFeeders($defaultUlpId);

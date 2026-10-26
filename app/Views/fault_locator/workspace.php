@@ -255,10 +255,70 @@
         animation: flPoleHighlightPulse 1.8s infinite ease-in-out;
         pointer-events: none;
     }
+    @keyframes flPoleSelectPulse {
+        0% {
+            box-shadow: 0 0 0 2px #f59e0b, 0 0 0 6px rgba(245, 158, 11, 0.45);
+            transform: scale(1);
+        }
+        50% {
+            box-shadow: 0 0 0 4px #d97706, 0 0 0 16px rgba(245, 158, 11, 0.2);
+            transform: scale(1.22);
+        }
+        100% {
+            box-shadow: 0 0 0 2px #f59e0b, 0 0 0 6px rgba(245, 158, 11, 0.45);
+            transform: scale(1);
+        }
+    }
+    .fl-pole-selected-marker {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(245, 158, 11, 0.4);
+        border: 3px solid #d97706;
+        animation: flPoleSelectPulse 1.6s infinite ease-in-out;
+        pointer-events: none;
+    }
+    .fl-actual-finding-marker {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #10b981;
+        border: 3px solid #ffffff;
+        box-shadow: 0 0 0 3px #059669, 0 4px 10px rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .fl-actual-callout-wrapper {
+        pointer-events: none;
+    }
+    .fl-actual-callout-icon {
+        background: #059669;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.72rem;
+        padding: 3px 8px;
+        border-radius: 6px;
+        border: 1px solid #ffffff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+    }
+    .fl-interactive-pole-node {
+        cursor: pointer !important;
+        transition: transform 0.15s ease;
+    }
+    .fl-interactive-pole-node:hover {
+        transform: scale(1.3);
+    }
     @media (prefers-reduced-motion: reduce) {
         .fl-target-pulse-marker,
         .fl-candidate-corridor-flow path,
-        .fl-pole-highlight-marker {
+        .fl-pole-highlight-marker,
+        .fl-pole-selected-marker {
             animation: none !important;
             transition: none !important;
         }
@@ -415,15 +475,16 @@
                         <label class="form-label text-dark small fw-bold mb-2">
                             <i class="fas fa-map-pin text-danger me-1"></i> SUMBER ACUAN AWAL GANGGUAN
                         </label>
+                        <?php $isProtection = (($telemetry['source_type'] ?? 'GI') === 'PROTECTION'); ?>
                         <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="sourceType" id="srcGI" value="GI" checked>
+                            <input class="form-check-input" type="radio" name="sourceType" id="srcGI" value="GI" <?= !$isProtection ? 'checked' : '' ?>>
                             <label class="form-check-label text-dark small" for="srcGI">
                                 <strong>Dari Gardu Induk (GI)</strong>
                                 <div class="text-muted" style="font-size:0.75rem;">Perhitungan berawal dari tiang JTM pertama di pangkal penyulang.</div>
                             </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="sourceType" id="srcProtection" value="PROTECTION">
+                            <input class="form-check-input" type="radio" name="sourceType" id="srcProtection" value="PROTECTION" <?= $isProtection ? 'checked' : '' ?>>
                             <label class="form-check-label text-dark small" for="srcProtection" id="srcProtectionLabel">
                                 <strong>Dari Peralatan Proteksi (Recloser / PMCB / LBS)</strong>
                                 <div class="text-muted" style="font-size:0.75rem;">Berawal dari tiang JTM tempat peralatan proteksi terpasang (perangkat bukan node transline).</div>
@@ -436,13 +497,13 @@
                         </div>
 
                         <!-- Dropdown Peralatan Proteksi (Visible if PROTECTION chosen) -->
-                        <div class="mt-3" id="protectionDeviceContainer" style="display: none;">
+                        <div class="mt-3" id="protectionDeviceContainer" style="<?= $isProtection ? '' : 'display: none;' ?>">
                             <label class="form-label text-muted small">PILIH PERALATAN PROTEKSI</label>
                             <select class="form-select border-warning" id="protectionDeviceId">
                                 <option value="">-- Pilih Perangkat Proteksi --</option>
                                 <?php if (!empty($protectionDevices)): ?>
                                     <?php foreach ($protectionDevices as $dev): ?>
-                                        <option value="<?= esc($dev['id']) ?>">
+                                        <option value="<?= esc($dev['id']) ?>" <?= (!empty($telemetry['protection_device_id']) && (int)$telemetry['protection_device_id'] === (int)$dev['id']) ? 'selected' : '' ?>>
                                             <?= esc($dev['kode_asset']) ?> - <?= esc($dev['nama_asset']) ?> (<?= esc($dev['jenis_asset']) ?>)
                                         </option>
                                     <?php endforeach; ?>
@@ -994,9 +1055,12 @@
                         <span class="badge bg-danger text-white me-2"><i class="fas fa-truck-fast"></i> FIELD DISPATCH</span>
                         <strong class="text-dark">Teruskan Hasil Gangguan ke Tim Lapangan &amp; GIS</strong>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-warning btn-sm fw-bold text-dark" id="btnRecordOutcomeCurrentCase" title="Rekam hasil temuan pemeriksaan patroli di lapangan">
-                            <i class="fas fa-clipboard-check me-1"></i> Rekam Hasil Lapangan
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-light text-dark border py-2 px-3 small d-inline-flex align-items-center">
+                            <i class="fas fa-hand-pointer text-primary me-1"></i> Klik tiang di peta untuk rekam temuan
+                        </span>
+                        <button class="btn btn-outline-secondary btn-sm fw-bold" id="btnRecordNihilOutcome" title="Catat hasil penelusuran jika gangguan tidak ditemukan di lapangan (Nihil)">
+                            <i class="fas fa-circle-xmark text-danger me-1"></i> Catat Hasil Nihil
                         </button>
                         <button class="btn btn-success btn-sm fw-bold" id="btnSaveCase">
                             <i class="fas fa-floppy-disk me-1"></i> Simpan Kasus
@@ -1117,8 +1181,34 @@
                     <span class="fl-map-legend-item">
                         <span class="fl-legend-dot" style="background:#ef4444;"></span> Estimasi Titik Gangguan (✕)
                     </span>
+                    <span class="fl-map-legend-item">
+                        <span class="fl-legend-dot" style="background:#10b981; border: 2px solid #ffffff; box-shadow: 0 0 0 1px #059669;"></span> Temuan Lapangan Aktual (✓)
+                    </span>
+                    <span class="fl-map-legend-item">
+                        <span class="fl-legend-dot" style="background:#f59e0b; border: 2px solid #ffffff;"></span> Tiang Terpilih
+                    </span>
                 </div>
                 <div id="miniMap"></div>
+
+                <!-- Contextual Pole Selection Bar for Field Recording -->
+                <div id="activePoleInspectionBar" class="alert alert-warning border border-warning shadow-sm py-2 px-3 mt-2 mb-2 rounded-3 align-items-center justify-content-between flex-wrap gap-2" style="display: none;">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-warning text-dark fw-bold"><i class="fas fa-tower-broadcast me-1"></i>TIANG TERPILIH</span>
+                        <strong class="font-monospace text-dark fs-6" id="barSelectedPoleKode">-</strong>
+                        <span class="text-dark small" id="barSelectedPoleName">-</span>
+                        <span class="badge bg-light text-dark border font-monospace small" id="barSelectedPoleDist">- m</span>
+                        <span class="text-muted small font-monospace" id="barSelectedPoleCoords">-</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-warning btn-sm fw-bold text-dark shadow-sm" id="btnRecordOutcomeFromBar">
+                            <i class="fas fa-clipboard-check me-1"></i> Rekam Hasil Penelusuran
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2" id="btnDeselectPole" title="Batalkan pilihan tiang">
+                            <i class="fas fa-times me-1"></i> Batal
+                        </button>
+                    </div>
+                </div>
+
                 <div id="faultPathSequenceStrip" class="fl-seq-strip" style="display:none;"></div>
             </div>
         </div>
@@ -1406,6 +1496,7 @@
                                         </td>
                                         <td>
                                             <div class="d-flex flex-wrap gap-1">
+                                                <?php $lf = $c['latest_finding'] ?? null; ?>
                                                 <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 btn-review-case"
                                                     data-case-id="<?= esc($c['id']) ?>"
                                                     data-case-number="<?= esc($c['case_number']) ?>"
@@ -1421,10 +1512,25 @@
                                                     data-voltage-s="<?= $vS !== null ? esc(number_format((float)$vS, 2, '.', '')) : '' ?>"
                                                     data-voltage-t="<?= $vT !== null ? esc(number_format((float)$vT, 2, '.', '')) : '' ?>"
                                                     data-relay-distance="<?= !empty($c['relay_measured_distance_m']) ? esc(number_format((float)$c['relay_measured_distance_m'], 1, '.', '')) : '' ?>"
-                                                    title="Muat kembali nilai arus dan tegangan kasus ini untuk ditinjau">
+                                                    data-finding-type="<?= esc($lf['outcome_type'] ?? '') ?>"
+                                                    data-finding-pole="<?= esc($lf['found_pole_kode'] ?? ($lf['kode_asset'] ?? '')) ?>"
+                                                    data-finding-lat="<?= esc($lf['actual_latitude'] ?? '') ?>"
+                                                    data-finding-lng="<?= esc($lf['actual_longitude'] ?? '') ?>"
+                                                    data-finding-dist="<?= esc($lf['actual_observed_distance_m'] ?? '') ?>"
+                                                    data-finding-delta="<?= esc($lf['distance_error_meters'] ?? '') ?>"
+                                                    data-finding-cause="<?= esc($lf['cause_category_code'] ?? '') ?>"
+                                                    data-finding-damage="<?= esc($lf['component_damaged'] ?? '') ?>"
+                                                    data-finding-tech="<?= esc($lf['technician_name'] ?? '') ?>"
+                                                    data-finding-time="<?= esc($lf['inspected_at'] ?? '') ?>"
+                                                    data-finding-notes="<?= esc($lf['finding_notes'] ?? '') ?>"
+                                                    title="Muat kembali kasus ini ke peta untuk ditinjau">
                                                     <i class="fas fa-eye me-1"></i> Tinjau
                                                 </button>
-                                                <button type="button" class="btn btn-outline-warning btn-sm py-0 px-2 btn-record-outcome" data-case-id="<?= esc($c['id']) ?>" data-case-number="<?= esc($c['case_number']) ?>" data-feeder-name="<?= esc($c['nama_penyulang'] ?? '') ?>">
+                                                <button type="button" class="btn btn-outline-warning btn-sm py-0 px-2 btn-record-outcome"
+                                                    data-case-id="<?= esc($c['id']) ?>"
+                                                    data-case-number="<?= esc($c['case_number']) ?>"
+                                                    data-feeder-name="<?= esc($c['nama_penyulang'] ?? '') ?>"
+                                                    title="Pilih tiang pada peta untuk merekam hasil temuan kasus ini">
                                                     <i class="fas fa-clipboard-check me-1"></i> Catat
                                                 </button>
                                             </div>
@@ -1452,7 +1558,7 @@
         <div class="modal-content card-modern shadow">
             <div class="modal-header border-bottom py-3">
                 <h5 class="modal-title font-weight-bold text-dark" id="modalRecordOutcomeLabel">
-                    <i class="fas fa-clipboard-check text-warning me-2"></i> Rekam Hasil Patroli Lapangan
+                    <i class="fas fa-clipboard-check text-warning me-2"></i> Rekam Hasil Penelusuran Lapangan
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -1513,36 +1619,47 @@
                             </div>
                         </div>
 
-                        <!-- Candidate Pole Select & ID -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-7">
-                                <label class="form-label text-dark small fw-bold">PILIH TIANG JTM TEMUAN (KANDIDAT ATAU DAFTAR TIANG)</label>
-                                <select class="form-select" id="modalFoundAssetSelect">
-                                    <option value="">-- Pilih dari Kandidat / Tiang Jalur --</option>
-                                </select>
-                                <div class="form-text text-muted" style="font-size:0.69rem;">Memilih tiang akan otomatis mengisi Asset ID, estimasi jarak, dan koordinat.</div>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label text-dark small fw-bold">ID ASET TIANG (MANUAL / OTOMATIS)</label>
-                                <input type="number" class="form-control" id="modalFoundAssetId" placeholder="Asset ID (opsional)">
+                        <!-- Selected Pole Information (Read-Only from Master Asset) -->
+                        <div class="card bg-light border-0 mb-3 shadow-none">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                    <span class="badge bg-success text-white fw-bold"><i class="fas fa-tower-broadcast me-1"></i> ASET TIANG JTM TERPILIH DI PETA (MASTER LAPANGAN)</span>
+                                    <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 fw-bold" id="btnChangeFoundPole" title="Tutup form dan klik tiang lain pada peta">
+                                        <i class="fas fa-map-location-dot me-1"></i> Ganti Titik di Peta
+                                    </button>
+                                </div>
+                                <div class="row g-2 small">
+                                    <div class="col-md-4">
+                                        <span class="text-muted">Kode Tiang:</span>
+                                        <div><strong class="font-monospace text-dark fs-6" id="modalReadOnlyKode">-</strong></div>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <span class="text-muted">Nama Aset:</span>
+                                        <div id="modalReadOnlyNama" class="text-truncate">-</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="text-muted">Jarak dari Acuan:</span>
+                                        <div><strong class="font-monospace text-primary" id="modalReadOnlyDist">- m</strong></div>
+                                    </div>
+                                    <div class="col-12 mt-2 pt-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <div>
+                                            <span class="text-muted me-1">Koordinat Master:</span>
+                                            <code class="text-dark fw-bold" id="modalReadOnlyCoords">-</code>
+                                            <span class="badge bg-secondary-subtle text-secondary border ms-2">Read-Only</span>
+                                        </div>
+                                        <div class="text-muted small" style="font-size:0.7rem;">
+                                            <i class="fas fa-lock me-1"></i>Terkunci dari master GIS
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Actual Coordinates & Measured Distance -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label text-dark small fw-bold">JARAK DARI ACUAN (METER)</label>
-                                <input type="number" step="0.1" class="form-control fw-bold" id="modalActualDistanceM" placeholder="Jarak kumulatif (m)">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label text-dark small fw-bold">LATITUDE AKTUAL</label>
-                                <input type="number" step="0.00000001" class="form-control font-monospace" id="modalActualLatitude" placeholder="-7.45xxxxxx">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label text-dark small fw-bold">LONGITUDE AKTUAL</label>
-                                <input type="number" step="0.00000001" class="form-control font-monospace" id="modalActualLongitude" placeholder="112.71xxxxxx">
-                            </div>
-                        </div>
+                        <!-- Hidden fields holding clicked pole master data -->
+                        <input type="hidden" id="modalFoundAssetId" name="found_asset_id">
+                        <input type="hidden" id="modalActualDistanceM" name="actual_distance_m">
+                        <input type="hidden" id="modalActualLatitude" name="actual_latitude">
+                        <input type="hidden" id="modalActualLongitude" name="actual_longitude">
 
                         <div class="mb-3">
                             <div class="form-check">
@@ -1556,6 +1673,9 @@
 
                     <!-- Bagian Jika Tidak Ditemukan (NOT_FOUND) -->
                     <div id="sectionNotFound" style="display: none;">
+                        <div class="alert alert-info border small py-2 px-3 mb-3">
+                            <i class="fas fa-info-circle me-1"></i>Pencatatan nihil untuk kasus di mana gangguan temporer telah hilang sendiri atau tidak ditemukan bukti fisik kerusakan pada tiang JTM. Pilihan tiang tidak diwajibkan.
+                        </div>
                         <div class="mb-3">
                             <label class="form-label text-dark small fw-bold">JALUR / BENTANG YANG TELAH DISISIR</label>
                             <textarea class="form-control" id="modalInspectedAreaNotes" rows="2" placeholder="Catat tiang awal sampai tiang akhir yang telah dipatroli secara visual"></textarea>
@@ -1656,6 +1776,7 @@
     let currentLat = <?= (!empty($result['fault_point']['lat']) && !empty($result['candidate_assets'])) ? (float)$result['fault_point']['lat'] : -7.4478 ?>;
     let currentLng = <?= (!empty($result['fault_point']['lng']) && !empty($result['candidate_assets'])) ? (float)$result['fault_point']['lng'] : 112.7183 ?>;
     let lastCalculatedResult = <?= json_encode($result) ?>;
+    window.lastCalculatedResult = lastCalculatedResult;
 
     // Initialize Leaflet Map
     const map = L.map('miniMap').setView([currentLat, currentLng], 15);
@@ -1667,6 +1788,10 @@
     window.miniMap = map;
     window.miniMapLayerGroup = miniMapLayerGroup;
     window.flActiveHighlightLayer = null;
+    window.flActiveSelectionLayer = null;
+    window.flSelectedFoundPole = null;
+    window.flCurrentPoleMap = new Map();
+    window.flActualFindingLayerGroup = L.layerGroup().addTo(map);
     window.flCachedCandidates = <?= !empty($result['candidate_assets']) ? json_encode($result['candidate_assets']) : '[]' ?>;
     window.flCachedCandidateZone = <?= !empty($result['candidate_zone']) ? json_encode($result['candidate_zone']) : 'null' ?>;
     window.flCachedIsSinglePoint = <?= !empty($result['candidate_zone']['is_single_point']) ? 'true' : 'false' ?>;
@@ -1689,44 +1814,118 @@
         return `<span class="text-dark small">${escapeHtml(rawName)}</span>`;
     }
 
-    window.flFocusPole = function(lat, lng, kode, cumMeters, assetName) {
-        if (!map || lat === null || lng === null || isNaN(Number(lat)) || isNaN(Number(lng))) return;
+    // Select a valid active JTM pole for contextual outcome recording
+    window.flSelectPoleForInspection = function(pole, feederName) {
+        if (!pole || !pole.id || !pole.kode) return;
 
-        if (window.flActiveHighlightLayer) {
-            miniMapLayerGroup.removeLayer(window.flActiveHighlightLayer);
-            window.flActiveHighlightLayer = null;
+        window.flSelectedFoundPole = pole;
+
+        if (window.flActiveSelectionLayer) {
+            miniMapLayerGroup.removeLayer(window.flActiveSelectionLayer);
+            window.flActiveSelectionLayer = null;
         }
 
-        const targetCoord = [Number(lat), Number(lng)];
-
-        const ringIcon = L.divIcon({
-            className: 'fl-pole-highlight-wrapper',
-            html: '<div class="fl-pole-highlight-marker"></div>',
-            iconSize: [26, 26],
-            iconAnchor: [13, 13]
+        const targetCoord = [Number(pole.lat), Number(pole.lng)];
+        const selectIcon = L.divIcon({
+            className: 'fl-pole-select-wrapper',
+            html: '<div class="fl-pole-selected-marker"></div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
         });
 
-        window.flActiveHighlightLayer = L.marker(targetCoord, { icon: ringIcon, zIndexOffset: 1200 }).addTo(miniMapLayerGroup);
-        map.setView(targetCoord, 18, { animate: true });
+        window.flActiveSelectionLayer = L.marker(targetCoord, { icon: selectIcon, zIndexOffset: 1250 }).addTo(miniMapLayerGroup);
 
-        const cumStr = (cumMeters !== null && cumMeters !== undefined && !isNaN(Number(cumMeters)))
-            ? `Jarak Kumulatif dari Acuan: <b>${Number(cumMeters).toFixed(1)} m (${(Number(cumMeters) / 1000).toFixed(2)} km)</b><br>`
-            : '';
-        const rawName = String(assetName || '').trim();
-        const isUnverified = !rawName || rawName.toUpperCase().startsWith('NEW_INGESTED_ASSET_') || rawName === String(kode || '').trim();
+        // Update active pole inspection bar
+        const bar = document.getElementById('activePoleInspectionBar');
+        if (bar) {
+            const bKode = document.getElementById('barSelectedPoleKode');
+            const bName = document.getElementById('barSelectedPoleName');
+            const bDist = document.getElementById('barSelectedPoleDist');
+            const bCoords = document.getElementById('barSelectedPoleCoords');
+
+            if (bKode) bKode.innerText = pole.kode;
+            if (bName) bName.innerHTML = formatAssetDisplayName(pole.kode, pole.nama);
+            if (bDist) bDist.innerText = (pole.cum_m !== null && !isNaN(pole.cum_m)) ? Number(pole.cum_m).toFixed(1) + ' m' : '-';
+            if (bCoords) bCoords.innerText = Number(pole.lat).toFixed(6) + ', ' + Number(pole.lng).toFixed(6);
+            bar.style.display = 'flex';
+        }
+
+        const fName = feederName || lastCalculatedResult?.feeder_name || '';
+        const rawName = String(pole.nama || '').trim();
+        const isUnverified = !rawName || rawName.toUpperCase().startsWith('NEW_INGESTED_ASSET_') || rawName === String(pole.kode || '').trim();
         const nameDisplay = isUnverified
             ? '<span class="badge bg-secondary-subtle text-secondary border mb-1">Nama aset belum terverifikasi</span><br>'
             : `Nama Aset: <b>${escapeHtml(rawName)}</b><br>`;
 
+        const cumStr = (pole.cum_m !== null && !isNaN(Number(pole.cum_m)))
+            ? `Jarak Kumulatif dari Acuan: <b>${Number(pole.cum_m).toFixed(1)} m (${(Number(pole.cum_m) / 1000).toFixed(2)} km)</b><br>`
+            : '';
+
         L.popup({ offset: [0, -10] })
             .setLatLng(targetCoord)
             .setContent(
-                `<b>Tiang JTM Terpilih: ${escapeHtml(kode)}</b><br>` +
+                `<div class="p-1" style="min-width: 220px;">` +
+                `<div class="d-flex align-items-center justify-content-between mb-1 pb-1 border-bottom">` +
+                `<strong class="text-dark"><i class="fas fa-tower-broadcast text-primary me-1"></i>${escapeHtml(pole.kode)}</strong>` +
+                `<span class="badge bg-primary text-white" style="font-size:0.65rem;">Tiang JTM</span>` +
+                `</div>` +
                 nameDisplay +
+                (fName ? `<div class="small text-muted mb-1">Penyulang: <b>${escapeHtml(fName)}</b></div>` : '') +
                 cumStr +
-                `Koordinat: <code>${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}</code>`
+                `<div class="font-monospace text-muted mb-2" style="font-size:0.75rem;">Koordinat: <code>${Number(pole.lat).toFixed(6)}, ${Number(pole.lng).toFixed(6)}</code></div>` +
+                `<button type="button" class="btn btn-warning btn-sm w-100 fw-bold text-dark shadow-sm" onclick="window.flOpenRecordOutcomeForPole(${pole.id})">` +
+                `<i class="fas fa-clipboard-check me-1"></i> Rekam Hasil Penelusuran` +
+                `</button>` +
+                `</div>`
             )
             .openOn(map);
+    };
+
+    // Deselect pole inspection when clicking background/empty map area
+    window.flDeselectPoleInspection = function() {
+        window.flSelectedFoundPole = null;
+        if (window.flActiveSelectionLayer) {
+            miniMapLayerGroup.removeLayer(window.flActiveSelectionLayer);
+            window.flActiveSelectionLayer = null;
+        }
+        const bar = document.getElementById('activePoleInspectionBar');
+        if (bar) bar.style.display = 'none';
+        map.closePopup();
+    };
+
+    // Map background click deselects active pole inspection
+    map.on('click', function() {
+        window.flDeselectPoleInspection();
+    });
+
+    window.flFocusPole = function(lat, lng, kode, cumMeters, assetName) {
+        if (!map || lat === null || lng === null || isNaN(Number(lat)) || isNaN(Number(lng))) return;
+
+        const targetCoord = [Number(lat), Number(lng)];
+        map.setView(targetCoord, 18, { animate: true });
+
+        // Find pole in current pole map
+        let foundPole = null;
+        if (window.flCurrentPoleMap) {
+            for (const p of window.flCurrentPoleMap.values()) {
+                if (p.kode === kode || (Math.abs(p.lat - Number(lat)) < 0.00005 && Math.abs(p.lng - Number(lng)) < 0.00005)) {
+                    foundPole = p;
+                    break;
+                }
+            }
+        }
+        if (!foundPole) {
+            foundPole = {
+                id: 0,
+                kode: kode,
+                nama: assetName,
+                lat: Number(lat),
+                lng: Number(lng),
+                cum_m: cumMeters !== null ? Number(cumMeters) : 0
+            };
+        }
+
+        window.flSelectPoleForInspection(foundPole, lastCalculatedResult?.feeder_name);
     };
 
     window.flFocusFromModal = function(lat, lng, kode, cumM, assetName) {
@@ -2335,6 +2534,7 @@
                     poleMap.set(seg.from_pole_id, {
                         id: seg.from_pole_id,
                         kode: seg.from_pole_kode,
+                        nama: seg.from_pole_nama || seg.from_pole_kode,
                         lat: Number(seg.from_coords.lat),
                         lng: Number(seg.from_coords.lng),
                         cum_m: existingFrom ? Math.min(existingFrom.cum_m, Number(seg.cum_start_meters || 0)) : Number(seg.cum_start_meters || 0),
@@ -2346,6 +2546,7 @@
                     poleMap.set(seg.to_pole_id, {
                         id: seg.to_pole_id,
                         kode: seg.to_pole_kode,
+                        nama: seg.to_pole_nama || seg.to_pole_kode,
                         lat: Number(seg.to_coords.lat),
                         lng: Number(seg.to_coords.lng),
                         cum_m: Number(seg.cumulative_meters || 0),
@@ -2355,6 +2556,41 @@
             });
         }
 
+        // Also add upstream segments poles to poleMap so any feeder pole can be selected
+        upstreamSegs.forEach(uSeg => {
+            if (uSeg.from_coords && uSeg.from_coords.lat && uSeg.from_coords.lng && uSeg.from_pole_id) {
+                if (!poleMap.has(uSeg.from_pole_id)) {
+                    poleMap.set(uSeg.from_pole_id, {
+                        id: uSeg.from_pole_id,
+                        kode: uSeg.from_pole_kode,
+                        nama: uSeg.from_pole_nama || uSeg.from_pole_kode,
+                        lat: Number(uSeg.from_coords.lat),
+                        lng: Number(uSeg.from_coords.lng),
+                        cum_m: 0,
+                        on_path: false,
+                        is_upstream: true
+                    });
+                }
+            }
+            if (uSeg.to_coords && uSeg.to_coords.lat && uSeg.to_coords.lng && uSeg.to_pole_id) {
+                if (!poleMap.has(uSeg.to_pole_id)) {
+                    poleMap.set(uSeg.to_pole_id, {
+                        id: uSeg.to_pole_id,
+                        kode: uSeg.to_pole_kode,
+                        nama: uSeg.to_pole_nama || uSeg.to_pole_kode,
+                        lat: Number(uSeg.to_coords.lat),
+                        lng: Number(uSeg.to_coords.lng),
+                        cum_m: 0,
+                        on_path: false,
+                        is_upstream: true
+                    });
+                }
+            }
+        });
+
+        // Cache globally for interactive inspection lookups
+        window.flCurrentPoleMap = poleMap;
+
         // 3. Render Pole Node Markers (Normal #10b981, Zona #f59e0b, Acuan #8b5cf6)
         const anchorPoleId = Number(resultObj.anchor_pole?.id || 0);
         poleMap.forEach(pole => {
@@ -2363,43 +2599,53 @@
             const isAnchor = (pole.id === anchorPoleId);
             if (!pole.lat || !pole.lng) return;
 
+            let marker;
             if (isZonePole) {
-                L.circleMarker([pole.lat, pole.lng], {
+                marker = L.circleMarker([pole.lat, pole.lng], {
                     radius: 7,
                     fillColor: '#ef4444',
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.95
+                    fillOpacity: 0.95,
+                    className: 'fl-interactive-pole-node'
                 }).bindTooltip(
-                    '<b>' + escapeHtml(pole.kode) + '</b> (Segmen Gangguan Terdekat &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km)',
+                    '<b>' + escapeHtml(pole.kode) + '</b> (Segmen Gangguan Terdekat &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km)<br><span class="text-warning">Klik untuk pilih tiang temuan</span>',
                     { direction: 'top', offset: [0, -6] }
                 ).addTo(miniMapLayerGroup);
             } else if (pole.on_path || isAnchor) {
-                L.circleMarker([pole.lat, pole.lng], {
+                marker = L.circleMarker([pole.lat, pole.lng], {
                     radius: isAnchor ? 7 : 4.5,
                     fillColor: isAnchor ? '#8b5cf6' : '#10b981',
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.95
+                    fillOpacity: 0.95,
+                    className: 'fl-interactive-pole-node'
                 }).bindTooltip(
-                    '<b>' + escapeHtml(pole.kode) + '</b> &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km (' + pole.cum_m.toFixed(0) + ' m)' + (isAnchor ? ' <span class="badge bg-purple text-white">Titik Acuan</span>' : ''),
+                    '<b>' + escapeHtml(pole.kode) + '</b> &bull; ' + (pole.cum_m / 1000).toFixed(2) + ' km (' + pole.cum_m.toFixed(0) + ' m)' + (isAnchor ? ' <span class="badge bg-purple text-white">Titik Acuan</span>' : '') + '<br><span class="text-warning">Klik untuk pilih tiang temuan</span>',
                     { direction: 'top', offset: [0, -5] }
                 ).addTo(miniMapLayerGroup);
             } else {
-                L.circleMarker([pole.lat, pole.lng], {
-                    radius: 3.5,
+                marker = L.circleMarker([pole.lat, pole.lng], {
+                    radius: 4,
                     fillColor: '#10b981',
                     color: '#ffffff',
-                    weight: 1,
+                    weight: 1.5,
                     opacity: 0.85,
-                    fillOpacity: 0.8
+                    fillOpacity: 0.8,
+                    className: 'fl-interactive-pole-node'
                 }).bindTooltip(
-                    escapeHtml(pole.kode) + ' (' + pole.cum_m.toFixed(0) + ' m)',
+                    escapeHtml(pole.kode) + ' (' + pole.cum_m.toFixed(0) + ' m)<br><span class="text-warning">Klik untuk pilih tiang temuan</span>',
                     { direction: 'top' }
                 ).addTo(miniMapLayerGroup);
             }
+
+            // Click on pole marker selects it for inspection recording
+            marker.on('click', function(e) {
+                L.DomEvent.stopPropagation(e);
+                window.flSelectPoleForInspection(pole, feederName);
+            });
         });
 
         // 4. Render Source Anchor Callout Badge (0.0 km at Mounting Pole of Recloser/PMCB or GI Pangkal)
@@ -2526,6 +2772,90 @@
 
         // 8. Render the linear pole sequence strip below #miniMap
         renderFaultPathSequenceStrip(resultObj);
+
+        // 9. Render Actual Field Finding if present
+        const actFinding = resultObj.actual_finding || resultObj.latest_finding;
+        if (actFinding) {
+            renderActualFindingOnMap(actFinding, resultObj);
+        } else if (window.flActualFindingLayerGroup) {
+            window.flActualFindingLayerGroup.clearLayers();
+        }
+    }
+
+    // Render Actual Field Inspection Finding on the Leaflet Map
+    function renderActualFindingOnMap(finding, resultObj) {
+        if (!window.flActualFindingLayerGroup) {
+            window.flActualFindingLayerGroup = L.layerGroup().addTo(map);
+        }
+        window.flActualFindingLayerGroup.clearLayers();
+
+        if (!finding) return;
+        if (finding.outcome_type !== 'CONFIRMED' || !finding.actual_latitude || !finding.actual_longitude) {
+            return;
+        }
+
+        const aLat = Number(finding.actual_latitude);
+        const aLng = Number(finding.actual_longitude);
+        if (isNaN(aLat) || isNaN(aLng) || aLat === 0 || aLng === 0) return;
+
+        const actIcon = L.divIcon({
+            className: 'fl-actual-finding-wrapper',
+            html: `<div class="fl-actual-finding-marker" title="Titik Temuan Aktual Lapangan">&#10003;</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        const poleLabel = finding.found_pole_kode || finding.kode_asset || ('Aset #' + finding.found_asset_id);
+        const errM = (finding.distance_error_meters !== null && finding.distance_error_meters !== undefined)
+            ? Number(finding.distance_error_meters).toFixed(1)
+            : null;
+        const errText = errM ? ` &bull; &Delta; ${errM} m` : '';
+
+        const actMarker = L.marker([aLat, aLng], { icon: actIcon, zIndexOffset: 1100 }).addTo(window.flActualFindingLayerGroup);
+
+        const findingNotesHtml = finding.finding_notes ? `Catatan: <i>${escapeHtml(finding.finding_notes)}</i><br>` : '';
+
+        actMarker.bindPopup(
+            `<div class="p-1" style="min-width: 220px;">` +
+            `<div class="d-flex align-items-center gap-1 mb-1 pb-1 border-bottom">` +
+            `<span class="badge bg-success text-white fw-bold"><i class="fas fa-check-circle me-1"></i>TEMUAN AKTUAL LAPANGAN</span>` +
+            `</div>` +
+            `Tiang Temuan: <strong class="font-monospace text-dark">${escapeHtml(poleLabel)}</strong><br>` +
+            `Penyebab: <b class="text-danger">${escapeHtml(finding.cause_category_code || '-')}</b><br>` +
+            (finding.component_damaged ? `Kerusakan: <b>${escapeHtml(finding.component_damaged)}</b><br>` : '') +
+            (finding.actual_distance_m ? `Jarak dari Acuan: <b>${Number(finding.actual_distance_m).toFixed(1)} m</b><br>` : '') +
+            (errM ? `Selisih Estimasi Sistem: <b class="text-primary">${errM} m</b><br>` : '') +
+            findingNotesHtml +
+            (finding.technician_name ? `Petugas Patroli: ${escapeHtml(finding.technician_name)}<br>` : '') +
+            `Koordinat: <code>${aLat.toFixed(6)}, ${aLng.toFixed(6)}</code>` +
+            `</div>`
+        );
+
+        const calloutIcon = L.divIcon({
+            className: 'fl-actual-callout-wrapper',
+            html: `<div class="fl-actual-callout-icon">&#10003; Temuan Lapangan: ${escapeHtml(poleLabel)}${errText}</div>`,
+            iconSize: null,
+            iconAnchor: [-16, 14]
+        });
+        L.marker([aLat, aLng], { icon: calloutIcon, zIndexOffset: 1050, interactive: false }).addTo(window.flActualFindingLayerGroup);
+
+        // Connect with dashed line to system estimate point
+        if (window.flFaultPointCoord) {
+            L.polyline([window.flFaultPointCoord, [aLat, aLng]], {
+                color: '#059669',
+                weight: 3,
+                opacity: 0.9,
+                dashArray: '5, 6'
+            }).bindTooltip(
+                `<b>Selisih Lokasi (&Delta;): ${errM || '?'} m</b> (Estimasi Sistem &rarr; Temuan Lapangan)`,
+                { sticky: true }
+            ).addTo(window.flActualFindingLayerGroup);
+
+            const bounds = L.latLngBounds([window.flFaultPointCoord, [aLat, aLng]]);
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
+            }
+        }
     }
 
     // Attach listeners for Focus / Reset Map View buttons
@@ -2555,9 +2885,11 @@
 
     // Initial map state
     if (lastCalculatedResult && ((lastCalculatedResult.fault_point && lastCalculatedResult.fault_point.lat) || (Array.isArray(lastCalculatedResult.pole_sequence) && lastCalculatedResult.pole_sequence.length > 0))) {
-        const initLat = (lastCalculatedResult.fault_point && lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets.length > 0) ? lastCalculatedResult.fault_point.lat : null;
-        const initLng = (lastCalculatedResult.fault_point && lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets.length > 0) ? lastCalculatedResult.fault_point.lng : null;
-        const initLabel = (lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets.length > 0) ? lastCalculatedResult.candidate_assets[0].kode_asset : '';
+        const initLat = (lastCalculatedResult.fault_point && lastCalculatedResult.fault_point.lat) ? lastCalculatedResult.fault_point.lat : null;
+        const initLng = (lastCalculatedResult.fault_point && lastCalculatedResult.fault_point.lng) ? lastCalculatedResult.fault_point.lng : null;
+        const initLabel = (lastCalculatedResult.candidate_assets && lastCalculatedResult.candidate_assets.length > 0)
+            ? lastCalculatedResult.candidate_assets[0].kode_asset
+            : (lastCalculatedResult.fault_point?.nearest_pole_kode || '');
         updateMiniMap(
             initLat,
             initLng,
@@ -2683,6 +3015,7 @@
         }
         locateFetchSeq++;
         lastCalculatedResult = null;
+        window.lastCalculatedResult = null;
         currentCaseUuid = '';
         window.flCachedCandidates = [];
         window.flCachedCandidateZone = null;
@@ -3201,6 +3534,7 @@
                     return;
                 }
                 lastCalculatedResult = data.data;
+                window.lastCalculatedResult = data.data;
                 currentCaseUuid = data.data.case_uuid;
                 updateResultsUI(data.data);
             } else {
@@ -3431,131 +3765,160 @@
         }
     });
 
-    // Populate Candidate Poles Select in the Outcome Modal
-    function populateOutcomeModalCandidates(resultData) {
-        const selectEl = document.getElementById('modalFoundAssetSelect');
-        if (!selectEl) return;
-
-        selectEl.innerHTML = '<option value="">-- Pilih Tiang JTM Temuan / Kandidat --</option>';
-
-        const seenIds = new Set();
-        const addPoleOption = (id, kode, cumDist, lat, lng, isCand = false) => {
-            if (!id || seenIds.has(Number(id))) return;
-            seenIds.add(Number(id));
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.dataset.assetId = id;
-            opt.dataset.kode = kode;
-            opt.dataset.cumDist = (cumDist !== null && cumDist !== undefined) ? Number(cumDist).toFixed(1) : '';
-            opt.dataset.lat = (lat !== null && lat !== undefined) ? Number(lat).toFixed(6) : '';
-            opt.dataset.lng = (lng !== null && lng !== undefined) ? Number(lng).toFixed(6) : '';
-
-            const distStr = opt.dataset.cumDist ? ` (+${opt.dataset.cumDist}m)` : '';
-            const tagStr = isCand ? ' [KANDIDAT UTAMA]' : '';
-            opt.innerText = `${kode}${distStr}${tagStr}`;
-            selectEl.appendChild(opt);
-        };
-
-        // 1. Primary candidate assets
-        if (Array.isArray(resultData?.candidate_assets)) {
-            resultData.candidate_assets.forEach(ca => {
-                addPoleOption(ca.id, ca.kode_asset, resultData.calculated_distance_m, ca.latitude, ca.longitude, true);
-            });
+    // Open Outcome Recording Modal for an actively selected JTM pole
+    window.flOpenRecordOutcomeForPole = async function(poleId) {
+        let pole = window.flCurrentPoleMap?.get(poleId) || (window.flSelectedFoundPole?.id === poleId ? window.flSelectedFoundPole : null);
+        if (!pole) {
+            alert('Aset tiang tidak ditemukan pada peta penyulang aktif.');
+            return;
         }
 
-        // 2. Candidate Zone poles
-        if (Array.isArray(resultData?.candidate_zone?.candidate_poles)) {
-            resultData.candidate_zone.candidate_poles.forEach(cp => {
-                addPoleOption(cp.id, cp.kode_asset || cp.kode_tiang, cp.cumulative_meters, cp.latitude, cp.longitude, true);
-            });
+        if (!lastCalculatedResult) {
+            alert('Silakan lakukan analisis gangguan terlebih dahulu sebelum merekam hasil penelusuran.');
+            return;
         }
 
-        // 3. Downstream sequence poles
-        if (Array.isArray(resultData?.pole_sequence)) {
-            resultData.pole_sequence.forEach(ps => {
-                if (ps.to_pole_id) {
-                    addPoleOption(ps.to_pole_id, ps.to_pole_kode, ps.cumulative_meters, ps.to_coords?.lat, ps.to_coords?.lng, Boolean(ps.is_fault_zone || ps.is_candidate_zone));
+        try {
+            let caseId = lastCalculatedResult.case_id;
+            let caseNum = lastCalculatedResult.case_number || lastCalculatedResult.case_uuid;
+
+            if (!caseId) {
+                const saveRes = await fetch('<?= site_url('api/fault-locator/save-case') ?>', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(lastCalculatedResult)
+                });
+                const saveData = await saveRes.json();
+                if (saveData.status === 'success' && saveData.case_id) {
+                    caseId = saveData.case_id;
+                    caseNum = saveData.case_number;
+                    lastCalculatedResult.case_id = caseId;
+                    lastCalculatedResult.case_number = caseNum;
                 }
-            });
+            }
+
+            document.getElementById('modalCaseId').value = caseId || '';
+            document.getElementById('modalCaseNumberDisplay').innerText = caseNum || '-';
+            document.getElementById('modalFeederDisplay').innerText = lastCalculatedResult.feeder_name || '-';
+
+            // Select CONFIRMED outcome
+            const outConf = document.getElementById('outConfirmed');
+            if (outConf) outConf.checked = true;
+            document.getElementById('sectionConfirmed').style.display = 'block';
+            document.getElementById('sectionNotFound').style.display = 'none';
+
+            // Populate Read-Only Master Asset fields
+            document.getElementById('modalFoundAssetId').value = pole.id;
+            document.getElementById('modalActualLatitude').value = Number(pole.lat).toFixed(6);
+            document.getElementById('modalActualLongitude').value = Number(pole.lng).toFixed(6);
+            document.getElementById('modalActualDistanceM').value = (pole.cum_m !== null && !isNaN(pole.cum_m)) ? Number(pole.cum_m).toFixed(1) : '';
+
+            const rKode = document.getElementById('modalReadOnlyKode');
+            if (rKode) rKode.innerText = pole.kode;
+            const rNama = document.getElementById('modalReadOnlyNama');
+            if (rNama) rNama.innerHTML = formatAssetDisplayName(pole.kode, pole.nama);
+            const rDist = document.getElementById('modalReadOnlyDist');
+            if (rDist) rDist.innerText = (pole.cum_m !== null && !isNaN(pole.cum_m)) ? Number(pole.cum_m).toFixed(1) + ' m' : '-';
+            const rCoords = document.getElementById('modalReadOnlyCoords');
+            if (rCoords) rCoords.innerText = Number(pole.lat).toFixed(6) + ', ' + Number(pole.lng).toFixed(6);
+
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRecordOutcome'));
+            modal.show();
+        } catch (err) {
+            console.error('Error opening outcome modal for pole:', err);
+            alert('Gagal menyiapkan form rekam hasil penelusuran.');
         }
-    }
+    };
 
-    // Auto-fill coordinates and distance when a candidate pole is selected in modal
-    const foundAssetSelect = document.getElementById('modalFoundAssetSelect');
-    if (foundAssetSelect) {
-        foundAssetSelect.addEventListener('change', function() {
-            const opt = this.options[this.selectedIndex];
-            if (!opt || !opt.value) return;
+    // Open Outcome Recording Modal for Negative / Nihil finding (without selecting any pole)
+    window.flOpenRecordOutcomeForNihil = async function() {
+        if (!lastCalculatedResult) {
+            alert('Silakan lakukan analisis gangguan terlebih dahulu sebelum merekam hasil penelusuran.');
+            return;
+        }
 
-            const assetIdInput = document.getElementById('modalFoundAssetId');
-            if (assetIdInput && opt.dataset.assetId) assetIdInput.value = opt.dataset.assetId;
+        try {
+            let caseId = lastCalculatedResult.case_id;
+            let caseNum = lastCalculatedResult.case_number || lastCalculatedResult.case_uuid;
 
-            const distInput = document.getElementById('modalActualDistanceM');
-            if (distInput && opt.dataset.cumDist) distInput.value = opt.dataset.cumDist;
+            if (!caseId) {
+                const saveRes = await fetch('<?= site_url('api/fault-locator/save-case') ?>', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(lastCalculatedResult)
+                });
+                const saveData = await saveRes.json();
+                if (saveData.status === 'success' && saveData.case_id) {
+                    caseId = saveData.case_id;
+                    caseNum = saveData.case_number;
+                    lastCalculatedResult.case_id = caseId;
+                    lastCalculatedResult.case_number = caseNum;
+                }
+            }
 
-            const latInput = document.getElementById('modalActualLatitude');
-            if (latInput && opt.dataset.lat) latInput.value = opt.dataset.lat;
+            document.getElementById('modalCaseId').value = caseId || '';
+            document.getElementById('modalCaseNumberDisplay').innerText = caseNum || '-';
+            document.getElementById('modalFeederDisplay').innerText = lastCalculatedResult.feeder_name || '-';
 
-            const lngInput = document.getElementById('modalActualLongitude');
-            if (lngInput && opt.dataset.lng) lngInput.value = opt.dataset.lng;
+            // Select NOT_FOUND outcome
+            const outNot = document.getElementById('outNotFound');
+            if (outNot) outNot.checked = true;
+            document.getElementById('sectionConfirmed').style.display = 'none';
+            document.getElementById('sectionNotFound').style.display = 'block';
+
+            // Clear pole data
+            document.getElementById('modalFoundAssetId').value = '';
+            document.getElementById('modalActualLatitude').value = '';
+            document.getElementById('modalActualLongitude').value = '';
+            document.getElementById('modalActualDistanceM').value = '';
+
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRecordOutcome'));
+            modal.show();
+        } catch (err) {
+            console.error('Error opening nihil outcome modal:', err);
+            alert('Gagal menyiapkan form pencatatan nihil.');
+        }
+    };
+
+    // Button event listeners
+    const btnNihil = document.getElementById('btnRecordNihilOutcome');
+    if (btnNihil) {
+        btnNihil.addEventListener('click', function() {
+            window.flOpenRecordOutcomeForNihil();
         });
     }
 
-    // Trigger Outcome Modal for Current Active Calculated Case
-    const btnRecordCurrentCase = document.getElementById('btnRecordOutcomeCurrentCase');
-    if (btnRecordCurrentCase) {
-        btnRecordCurrentCase.addEventListener('click', async function() {
-            if (!lastCalculatedResult) {
-                alert('Silakan lakukan analisis gangguan terlebih dahulu sebelum mencatat hasil patroli.');
-                return;
+    const btnBarRecord = document.getElementById('btnRecordOutcomeFromBar');
+    if (btnBarRecord) {
+        btnBarRecord.addEventListener('click', function() {
+            if (window.flSelectedFoundPole) {
+                window.flOpenRecordOutcomeForPole(window.flSelectedFoundPole.id);
             }
+        });
+    }
 
-            const btn = this;
-            btn.disabled = true;
+    const btnDeselect = document.getElementById('btnDeselectPole');
+    if (btnDeselect) {
+        btnDeselect.addEventListener('click', function(e) {
+            e.stopPropagation();
+            window.flDeselectPoleInspection();
+        });
+    }
 
-            try {
-                // If case has not been saved yet, auto-save to get official case_id and case_number
-                let caseId = lastCalculatedResult.case_id;
-                let caseNum = lastCalculatedResult.case_number || lastCalculatedResult.case_uuid;
-
-                if (!caseId) {
-                    const saveRes = await fetch('<?= site_url('api/fault-locator/save-case') ?>', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(lastCalculatedResult)
-                    });
-                    const saveData = await saveRes.json();
-                    if (saveData.status === 'success' && saveData.case_id) {
-                        caseId = saveData.case_id;
-                        caseNum = saveData.case_number;
-                        lastCalculatedResult.case_id = caseId;
-                        lastCalculatedResult.case_number = caseNum;
-                    }
-                }
-
-                document.getElementById('modalCaseId').value = caseId || '';
-                document.getElementById('modalCaseNumberDisplay').innerText = caseNum || '-';
-                document.getElementById('modalFeederDisplay').innerText = lastCalculatedResult.feeder_name || '-';
-
-                populateOutcomeModalCandidates(lastCalculatedResult);
-
-                // If single point fault point exists, pre-fill distance & coordinates
-                if (lastCalculatedResult.fault_point && lastCalculatedResult.calculated_distance_m > 0) {
-                    const latIn = document.getElementById('modalActualLatitude');
-                    const lngIn = document.getElementById('modalActualLongitude');
-                    const distIn = document.getElementById('modalActualDistanceM');
-                    if (latIn && !latIn.value) latIn.value = Number(lastCalculatedResult.fault_point.lat).toFixed(6);
-                    if (lngIn && !lngIn.value) lngIn.value = Number(lastCalculatedResult.fault_point.lng).toFixed(6);
-                    if (distIn && !distIn.value) distIn.value = Number(lastCalculatedResult.calculated_distance_m).toFixed(1);
-                }
-
-                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRecordOutcome'));
-                modal.show();
-            } catch (err) {
-                console.error('Error preparing outcome recording:', err);
-                alert('Gagal menyiapkan form rekam hasil lapangan.');
-            } finally {
-                btn.disabled = false;
+    const btnChangePole = document.getElementById('btnChangeFoundPole');
+    if (btnChangePole) {
+        btnChangePole.addEventListener('click', function() {
+            const modalEl = document.getElementById('modalRecordOutcome');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            if (window.flSelectedFoundPole) {
+                window.flFocusPole(
+                    window.flSelectedFoundPole.lat,
+                    window.flSelectedFoundPole.lng,
+                    window.flSelectedFoundPole.kode,
+                    window.flSelectedFoundPole.cum_m,
+                    window.flSelectedFoundPole.nama
+                );
             }
         });
     }
@@ -3567,20 +3930,19 @@
             const caseNum = this.getAttribute('data-case-number');
             const feederName = this.getAttribute('data-feeder-name');
 
-            document.getElementById('modalCaseId').value = caseId;
-            document.getElementById('modalCaseNumberDisplay').innerText = caseNum;
-            document.getElementById('modalFeederDisplay').innerText = feederName;
-
-            // Load candidate list from last calculated result if matches, or clear
-            if (lastCalculatedResult && String(lastCalculatedResult.case_id) === String(caseId)) {
-                populateOutcomeModalCandidates(lastCalculatedResult);
-            } else {
-                const selectEl = document.getElementById('modalFoundAssetSelect');
-                if (selectEl) selectEl.innerHTML = '<option value="">-- Masukkan Asset ID manual di samping --</option>';
+            // Find matching review button in same row to load case
+            const tr = this.closest('tr');
+            const revBtn = tr ? tr.querySelector('.btn-review-case') : null;
+            if (revBtn) {
+                revBtn.click();
             }
 
-            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRecordOutcome'));
-            modal.show();
+            const statusBanner = document.getElementById('saveCaseStatusBanner');
+            if (statusBanner) {
+                statusBanner.className = 'alert alert-info border py-2 px-3 mb-3 small';
+                statusBanner.innerHTML = `<i class="fas fa-hand-pointer text-primary me-1"></i>Kasus <strong>${escapeHtml(caseNum)}</strong> dimuat di peta. Klik tiang JTM tempat temuan berada untuk merekam hasil penelusuran, atau klik <strong>Catat Hasil Nihil</strong>.`;
+                statusBanner.style.display = 'block';
+            }
         });
     });
 
@@ -3600,6 +3962,51 @@
             }
         });
     });
+
+    function updateCaseHistoryRowWithFinding(caseId, data) {
+        const tbody = document.getElementById('caseHistoryBody');
+        if (!tbody) return;
+
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(tr => {
+            const reviewBtn = tr.querySelector('.btn-review-case');
+            if (reviewBtn && String(reviewBtn.getAttribute('data-case-id')) === String(caseId)) {
+                // Update status cell (column index 4)
+                const statusCell = tr.cells[4];
+                if (statusCell) {
+                    const st = data.follow_up_status || 'GANGGUAN_DITEMUKAN';
+                    const badgeClass = (st === 'GANGGUAN_DITEMUKAN') ? 'bg-success' : (st === 'TIDAK_DITEMUKAN' ? 'bg-danger' : 'bg-warning text-dark');
+                    statusCell.innerHTML = `<span class="badge ${badgeClass} small">${escapeHtml(st.replace(/_/g, ' '))}</span>`;
+                }
+
+                // Update finding cell (column index 5)
+                const findingCell = tr.cells[5];
+                if (findingCell && data.actual_finding) {
+                    const af = data.actual_finding;
+                    if (af.outcome_type === 'CONFIRMED') {
+                        findingCell.innerHTML = `<strong class="text-success"><i class="fas fa-check me-1"></i>${escapeHtml(af.component_damaged || af.found_pole_kode || 'Ditemukan')}</strong><div class="text-muted" style="font-size:0.7rem;">&Delta; Jarak: ${af.distance_error_meters ?? '-'}m &bull; ${escapeHtml(af.cause_category_code || '')}</div>`;
+                    } else if (af.outcome_type === 'NOT_FOUND') {
+                        findingCell.innerHTML = `<strong class="text-danger"><i class="fas fa-xmark me-1"></i>Tidak Ditemukan</strong><div class="text-muted" style="font-size:0.7rem;">${escapeHtml(af.not_found_reason || 'Penyisiran nihil')}</div>`;
+                    }
+                }
+
+                // Update data attributes on reviewBtn
+                if (data.actual_finding) {
+                    const af = data.actual_finding;
+                    reviewBtn.setAttribute('data-finding-type', af.outcome_type || '');
+                    reviewBtn.setAttribute('data-finding-pole', af.found_pole_kode || '');
+                    reviewBtn.setAttribute('data-finding-lat', af.actual_latitude || '');
+                    reviewBtn.setAttribute('data-finding-lng', af.actual_longitude || '');
+                    reviewBtn.setAttribute('data-finding-dist', af.actual_distance_m || '');
+                    reviewBtn.setAttribute('data-finding-delta', af.distance_error_meters || '');
+                    reviewBtn.setAttribute('data-finding-cause', af.cause_category_code || '');
+                    reviewBtn.setAttribute('data-finding-damage', af.component_damaged || '');
+                    reviewBtn.setAttribute('data-finding-tech', af.technician_name || '');
+                    reviewBtn.setAttribute('data-finding-time', af.inspected_at || '');
+                }
+            }
+        });
+    }
 
     document.getElementById('btnSubmitOutcome').addEventListener('click', async function() {
         const caseId = document.getElementById('modalCaseId').value;
@@ -3645,8 +4052,29 @@
             if (data.status === 'success') {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('modalRecordOutcome'));
                 if (modal) modal.hide();
-                alert('Hasil pemeriksaan lapangan berhasil direkam. Dataset kalibrasi & riwayat kasus telah diperbarui.');
-                location.reload();
+
+                // 1. Update active case state
+                if (data.actual_finding) {
+                    lastCalculatedResult.actual_finding = data.actual_finding;
+                    lastCalculatedResult.latest_finding = data.actual_finding;
+                    window.lastCalculatedResult = lastCalculatedResult;
+                    renderActualFindingOnMap(data.actual_finding, lastCalculatedResult);
+                }
+
+                // 2. Clear selected pole inspection state
+                window.flDeselectPoleInspection();
+
+                // 3. Show non-blocking feedback alert
+                const statusBanner = document.getElementById('saveCaseStatusBanner');
+                if (statusBanner) {
+                    statusBanner.className = 'alert alert-success border py-2 px-3 mb-3 small';
+                    const poleName = data.actual_finding?.found_pole_kode ? `pada Tiang <strong>${escapeHtml(data.actual_finding.found_pole_kode)}</strong>` : '(Nihil)';
+                    statusBanner.innerHTML = `<i class="fas fa-circle-check text-success me-1"></i>Hasil penelusuran lapangan berhasil direkam ${poleName}. Titik aktual dan estimasi sistem tersimpan terpisah.`;
+                    statusBanner.style.display = 'block';
+                }
+
+                // 4. Update the case history row dynamically if exists
+                updateCaseHistoryRowWithFinding(caseId, data);
             } else {
                 alert('Gagal menyimpan hasil: ' + (data.message || ''));
             }

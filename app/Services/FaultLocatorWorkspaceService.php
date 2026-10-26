@@ -2705,6 +2705,28 @@ class FaultLocatorWorkspaceService
             'updated_at'       => $now,
         ]);
 
+        $actualFindingData = [
+            'id'                    => $findingId,
+            'fault_case_id'         => $caseId,
+            'revision_no'           => $revisionNo,
+            'outcome_type'          => $outcomeType,
+            'found_asset_id'        => $foundAssetId,
+            'found_pole_kode'       => !empty($foundAsset['kode_asset']) ? $foundAsset['kode_asset'] : null,
+            'found_pole_nama'       => !empty($foundAsset['nama_asset']) ? $foundAsset['nama_asset'] : null,
+            'cause_category_code'   => $causeCategoryCode,
+            'component_damaged'     => $componentDamaged,
+            'actual_latitude'       => $actualLat,
+            'actual_longitude'      => $actualLng,
+            'actual_distance_m'     => $actualObservedDist,
+            'distance_error_meters' => $distErrorMeters,
+            'is_location_match'     => $isLocationMatch,
+            'technician_name'       => $technicianName,
+            'finding_notes'         => $findingNotes,
+            'inspected_area_notes'  => $inspectedAreaNotes,
+            'not_found_reason'      => $notFoundReason,
+            'inspected_at'          => $inspectedAt,
+        ];
+
         return [
             'status'                => 'success',
             'finding_id'            => $findingId,
@@ -2712,6 +2734,7 @@ class FaultLocatorWorkspaceService
             'follow_up_status'      => $newFollowUpStatus,
             'is_location_match'     => $isLocationMatch,
             'distance_error_meters' => $distErrorMeters,
+            'actual_finding'        => $actualFindingData,
             'message'               => 'Hasil pemeriksaan lapangan berhasil dicatat.'
         ];
     }
@@ -3096,6 +3119,8 @@ class FaultLocatorWorkspaceService
 
         $case['candidates'] = $candidates;
         $case['findings_history'] = $findings;
+        $case['latest_finding'] = !empty($findings) ? $findings[0] : null;
+        $case['actual_finding'] = !empty($findings) ? $findings[0] : null;
 
         return $case;
     }

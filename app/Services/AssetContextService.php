@@ -240,11 +240,17 @@ class AssetContextService
             $finalStatus             = $pickerResult['status'];
             $finalMessage            = $pickerResult['message'];
         } else {
-            $pickerResult = $this->pickerService->resolvePicker($assetId, $effectiveSectionId ?? 0);
-            $finalStatus  = $pickerResult['status'] ?? 'INVALID_ASSET';
-            $finalMessage = $pickerResult['message'] ?? '';
+            if ($authoritativeConstructionId) {
+                $pickerResult = $this->pickerService->resolveBomByConstructionTypeId($authoritativeConstructionId);
+                $finalStatus  = $pickerResult['status'] ?? 'SUCCESS';
+                $finalMessage = $pickerResult['message'] ?? '';
+            } else {
+                $pickerResult = $this->pickerService->resolvePicker($assetId, $effectiveSectionId ?? 0);
+                $finalStatus  = $pickerResult['status'] ?? 'NO_CONSTRUCTION';
+                $finalMessage = $pickerResult['message'] ?? 'Konstruksi belum terpetakan.';
+            }
 
-            if ($pickerResult['construction']) {
+            if (!empty($pickerResult['construction'])) {
                 $constructionSource      = 'SYSTEM';
                 $constructionStatusBadge = 'TERVERIFIKASI_SISTEM';
             } else {

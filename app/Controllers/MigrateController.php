@@ -792,6 +792,22 @@ class MigrateController extends BaseController
             }
             $executed[] = 'equipment_standards_registered';
 
+            // Phase 2B: Register Gardu Distribution Standards (Kubikel & Konvensional)
+            $garduStandards = [
+                ['code' => 'GARDU_KUBIKEL',      'name' => 'Gardu Kubikel',      'family' => 'GARDU', 'domain' => 'GARDU', 'cat' => 'GARDU', 'order' => 46, 'desc' => 'Standar Konstruksi Gardu Distribusi Kubikel 20kV', 'ref' => 'Buku Standar Konstruksi Gardu Distribusi PLN - Kubikel'],
+                ['code' => 'GARDU_KONVENSIONAL',  'name' => 'Gardu Konvensional',  'family' => 'GARDU', 'domain' => 'GARDU', 'cat' => 'GARDU', 'order' => 47, 'desc' => 'Standar Konstruksi Gardu Distribusi Konvensional 20kV', 'ref' => 'Buku Standar Konstruksi Gardu Distribusi PLN - Konvensional'],
+            ];
+            foreach ($garduStandards as $gs) {
+                $chk = $db->query("SELECT id FROM construction_types WHERE construction_code = '{$gs['code']}' OR code = '{$gs['code']}' LIMIT 1")->getRowArray();
+                if ($chk) {
+                    $cId = (int)$chk['id'];
+                    $db->query("UPDATE construction_types SET code = '{$gs['code']}', name = '{$gs['name']}', construction_code = '{$gs['code']}', construction_name = '{$gs['name']}', construction_family = '{$gs['family']}', asset_category = '{$gs['cat']}', asset_domain = '{$gs['domain']}', approval_status = 'ACTIVE', voltage_level = '20kV', description = '{$gs['desc']}', standard_reference = '{$gs['ref']}', is_active = 1 WHERE id = {$cId}");
+                } else {
+                    $db->query("INSERT INTO construction_types (code, name, construction_code, construction_name, construction_family, network_type, asset_category, asset_domain, approval_status, voltage_level, description, standard_reference, is_active, sort_order, created_at, updated_at) VALUES ('{$gs['code']}', '{$gs['name']}', '{$gs['code']}', '{$gs['name']}', '{$gs['family']}', 'JTM', '{$gs['cat']}', '{$gs['domain']}', 'ACTIVE', '20kV', '{$gs['desc']}', '{$gs['ref']}', 1, {$gs['order']}, NOW(), NOW())");
+                }
+            }
+            $executed[] = 'gardu_standards_registered';
+
             // Link existing equipment assets
             if ($db->tableExists('assets') && $db->fieldExists('construction_type_id', 'assets')) {
                 foreach (['LBSM', 'PMCB', 'LBS', 'ASS', 'AVS', 'RECLOSER'] as $eqCode) {

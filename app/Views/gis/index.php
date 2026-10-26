@@ -4119,6 +4119,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // ========================================================
     let currentAssetContextId = null;
     let currentAssetContextName = null;
+    let currentAssetContextJenis = null;
+    let currentAssetContextProps = null;
     let currentAssetAuthoritativePenyulangId = null;
     let currentWorkingSectionId = null;
     let currentWorkingConstructionId = null;
@@ -4126,6 +4128,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let cachedConstructionsList = null;
 
     function openAssetContextDrawer(assetId, fallbackProps, svgPath, coords) {
+        window.openAssetContextDrawer = openAssetContextDrawer;
         if (!assetId || isNaN(assetId) || assetId <= 0) {
             console.warn('[MAP-02C] Invalid assetId for context drawer:', assetId);
             return;
@@ -4133,6 +4136,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         currentAssetContextId = assetId;
         currentAssetContextName = (fallbackProps && fallbackProps.nama_asset) ? fallbackProps.nama_asset : '';
+        currentAssetContextJenis = (fallbackProps && fallbackProps.jenis_asset) ? fallbackProps.jenis_asset : '';
+        currentAssetContextProps = fallbackProps || {};
         currentWorkingSectionId = null;
         currentWorkingConstructionId = null;
         currentAssetAuthoritativePenyulangId = null;
@@ -4155,6 +4160,7 @@ document.addEventListener("DOMContentLoaded", function () {
         safeShowOffcanvas('offcanvas-asset-context-drawer');
         fetchAssetContextWithWorking();
     }
+    window.openAssetContextDrawer = openAssetContextDrawer;
 
     function fetchAssetContextWithWorking() {
         if (!currentAssetContextId) return;
@@ -4202,6 +4208,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 // 1. Asset Identity
                 const a = res.asset || {};
                 currentAssetContextName = a.nama_asset || '';
+                currentAssetContextJenis = a.jenis_asset || '';
+                currentAssetContextProps = a;
                 document.getElementById('ctx-drawer-title').textContent = a.nama_asset || ('Asset #' + currentAssetContextId);
                 document.getElementById('ctx-drawer-code').textContent = a.kode_asset || ('ID: ' + currentAssetContextId);
                 document.getElementById('ctx-drawer-jenis').textContent = a.jenis_asset || '-';
@@ -4326,6 +4334,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     asset_id:      currentAssetContextId,
                     nama_asset:    res.asset ? res.asset.nama_asset   : '',
                     kode_asset:    res.asset ? res.asset.kode_asset   : '',
+                    jenis_asset:   res.asset ? res.asset.jenis_asset  : '',
                     ulp_id:        ulpBlock.id         || '',
                     nama_ulp:      ulpBlock.nama_ulp   || '',
                     penyulang_id:  penyulangBlock.id   || '',
@@ -4605,20 +4614,77 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        const aJenis = String(currentAssetContextJenis || (currentAssetContextProps && currentAssetContextProps.jenis_asset) || '').toLowerCase();
+        const aName = String(currentAssetContextName || '').toLowerCase();
+        const aKode = String((currentAssetContextProps && currentAssetContextProps.kode_asset) || '').toUpperCase();
+        const isGarduAsset = aJenis.includes('gardu') || aName.includes('gardu') || aKode.startsWith('GD') || aKode.startsWith('GTT');
+
+        function isGarduConst(c) {
+            const stdCode = String(c.standard_code || c.code || '').toUpperCase();
+            const techName = String(c.technical_name || c.name || '').toUpperCase();
+            const family = String(c.family || c.construction_family || '').toUpperCase();
+            const domain = String(c.asset_domain || '').toUpperCase();
+            const cat = String(c.asset_category || '').toUpperCase();
+
+            return (
+                domain === 'GARDU' || 
+                family === 'GARDU' || 
+                cat === 'GARDU' || 
+                stdCode.startsWith('GARDU_') || 
+                stdCode.startsWith('GD_') || 
+                stdCode.startsWith('GTT') || 
+                stdCode === 'TM-8' || 
+                stdCode === 'TM-9' || 
+                stdCode === 'TM8' || 
+                stdCode === 'TM9' ||
+                techName.includes('GARDU')
+            );
+        }
+
+        function isEquipmentConst(c) {
+            const stdCode = String(c.standard_code || c.code || '').toUpperCase();
+            const domain = String(c.asset_domain || '').toUpperCase();
+            return (domain === 'EQUIPMENT' || ['LBS', 'LBSM', 'PMCB', 'RECLOSER', 'REC', 'ASS', 'AVS'].includes(stdCode));
+        }
+
+        // Sort items: if Gardu asset, prioritize Gardu constructions first!
+        const sortedList = [...constructions].sort(function(a, b) {
+            if (isGarduAsset) {
+                const aGardu = isGarduConst(a);
+                const bGardu = isGarduConst(b);
+                if (aGardu && !bGardu) return -1;
+                if (!aGardu && bGardu) return 1;
+            }
+            return (a.sort_order || 999) - (b.sort_order || 999);
+        });
+
         let html = '';
-        constructions.forEach(function(c) {
+        sortedList.forEach(function(c) {
             const isSelected = (currentWorkingConstructionId && currentWorkingConstructionId == c.id);
             const stdCode = c.standard_code || c.code || '';
             const techName = c.technical_name || c.name || '';
             const family = c.family || c.construction_family || 'JTM';
             const domain = c.asset_domain || 'TIANG';
             const desc = c.description || '';
-            const isEquip = (domain === 'EQUIPMENT' || ['LBS', 'LBSM', 'PMCB', 'RECLOSER', 'REC', 'ASS', 'AVS'].includes(stdCode.toUpperCase()));
-            
-            // Searchable token string (dash normalized also handled in search func)
-            const searchTokens = [c.code, stdCode, c.name, techName, family, domain, desc].filter(Boolean).join(' ').toLowerCase();
+            const isEquip = isEquipmentConst(c);
+            const isGardu = isGarduConst(c);
 
-            html += `<button type="button" class="list-group-item list-group-item-action py-2 px-3 d-flex justify-content-between align-items-center btn-select-const-item" 
+            // If in Gardu asset context and item is Equipment, exclude from default view
+            const isExcludedForGardu = (isGarduAsset && isEquip && !isGardu);
+
+            // Searchable token string (dash normalized also handled in search func)
+            const searchTokens = [c.code, stdCode, c.name, techName, family, domain, c.asset_category, desc].filter(Boolean).join(' ').toLowerCase();
+
+            let domainBadge = '';
+            if (isGardu) {
+                domainBadge = '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size: 9px;"><i class="fas fa-warehouse me-1"></i>GARDU</span>';
+            } else if (isEquip) {
+                domainBadge = '<span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="fas fa-bolt me-1"></i>EQUIPMENT</span>';
+            } else {
+                domainBadge = '<span class="badge bg-secondary-subtle text-secondary" style="font-size: 9px;"><i class="fas fa-tower-broadcast me-1"></i>TIANG</span>';
+            }
+
+            html += `<button type="button" class="list-group-item list-group-item-action py-2 px-3 justify-content-between align-items-center btn-select-const-item ${isExcludedForGardu ? 'd-none' : ''}" 
                 data-id="${c.id}" 
                 data-code="${c.code || ''}" 
                 data-standard-code="${stdCode}"
@@ -4626,12 +4692,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 data-tech-name="${techName}"
                 data-family="${family}"
                 data-domain="${domain}"
+                data-is-gardu="${isGardu ? '1' : '0'}"
+                data-is-equip="${isEquip ? '1' : '0'}"
                 data-search="${searchTokens}"
-                style="min-height: 44px; font-size: 12px;">
+                style="display: ${isExcludedForGardu ? 'none' : 'flex'}; min-height: 44px; font-size: 12px;">
                 <div class="pe-2 text-start">
                     <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
                         <span class="badge bg-primary font-monospace">${stdCode}</span>
-                        ${isEquip ? '<span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="fas fa-bolt me-1"></i>EQUIPMENT</span>' : '<span class="badge bg-secondary-subtle text-secondary" style="font-size: 9px;"><i class="fas fa-tower-broadcast me-1"></i>TIANG</span>'}
+                        ${domainBadge}
                     </div>
                     <div class="fw-bold text-dark text-break">${techName}</div>
                     <div class="text-muted text-break" style="font-size: 10px;">${family} • ${domain} • ${c.voltage_level || '20kV'}</div>
@@ -4661,30 +4729,49 @@ document.addEventListener("DOMContentLoaded", function () {
         const tokens = rawQ.split(/\s+/).filter(Boolean);
         let matchCount = 0;
 
+        const aJenis = String(currentAssetContextJenis || (currentAssetContextProps && currentAssetContextProps.jenis_asset) || '').toLowerCase();
+        const aName = String(currentAssetContextName || '').toLowerCase();
+        const isGarduAsset = aJenis.includes('gardu') || aName.includes('gardu');
+
         $('#const-options-list .btn-select-const-item').each(function() {
             const $item = $(this);
             const searchData = ($item.attr('data-search') || '').toLowerCase();
             const code = ($item.attr('data-code') || '').toLowerCase();
             const normalizedCode = code.replace(/[\s\-_]+/g, '');
-            const activeAssetName = (currentAssetContextName || '').toLowerCase();
+            const isEquip = ($item.attr('data-is-equip') === '1');
+            const isGardu = ($item.attr('data-is-gardu') === '1');
 
             if (!rawQ) {
-                $item.show();
-                matchCount++;
+                if (isGarduAsset && isEquip && !isGardu) {
+                    $item.addClass('d-none').css('display', 'none');
+                } else {
+                    $item.removeClass('d-none').css('display', 'flex');
+                    matchCount++;
+                }
                 return;
             }
 
-            // Check normalized match (e.g. "tm-1" vs "tm1", "pmcb" vs "pmcb")
+            // Check normalized match (e.g. "tm-1" vs "tm1", "gardu_kubikel" vs "gardukubikel")
             const normalizedMatch = (normalizedQ.length > 0 && normalizedCode.indexOf(normalizedQ) > -1);
             
             // Check all tokens match search data
             const allTokensMatch = (tokens.length > 0 && tokens.every(function(t) { return searchData.indexOf(t) > -1; }));
 
+            // For Gardu asset, prevent Equipment options unless the query specifically has equipment keywords
+            if (isGarduAsset && isEquip && !isGardu) {
+                const equipKeywords = ['avs', 'recloser', 'pmcb', 'lbs', 'lbsm', 'ass', 'switch', 'sakelar', 'breaker'];
+                const queryHasEquipWord = tokens.some(function(t) { return equipKeywords.indexOf(t) > -1; });
+                if (!queryHasEquipWord) {
+                    $item.addClass('d-none').css('display', 'none');
+                    return;
+                }
+            }
+
             if (normalizedMatch || allTokensMatch) {
-                $item.show();
+                $item.removeClass('d-none').css('display', 'flex');
                 matchCount++;
             } else {
-                $item.hide();
+                $item.addClass('d-none').css('display', 'none');
             }
         });
 
@@ -4710,6 +4797,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const constName = $(this).data('tech-name') || $(this).data('name') || '';
         const domain = $(this).data('domain') || '';
         const isEquip = (domain === 'EQUIPMENT' || ['LBS', 'LBSM', 'PMCB', 'RECLOSER', 'REC', 'ASS', 'AVS'].includes(constCode.toUpperCase()));
+        const isGardu = ($(this).data('is-gardu') === '1');
 
         // Highlight selection
         $('.btn-select-const-item').removeClass('border-primary bg-primary-subtle');
@@ -4717,6 +4805,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Current asset name prefilled
         const currentName = currentAssetContextName || '';
+
+        let domainBadgeConfirm = '';
+        if (isGardu) {
+            domainBadgeConfirm = '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size: 9px;"><i class="fas fa-warehouse me-1"></i>GARDU</span>';
+        } else if (isEquip) {
+            domainBadgeConfirm = '<span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="fas fa-bolt me-1"></i>EQUIPMENT</span>';
+        }
 
         $('#const-confirm-box').remove();
         const confirmHtml = `
@@ -4729,7 +4824,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <div class="mb-2 p-2 bg-light rounded border">
                     <div class="d-flex align-items-center gap-1 mb-1">
                         <span class="badge bg-primary font-monospace">${constCode}</span>
-                        ${isEquip ? '<span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="fas fa-bolt me-1"></i>EQUIPMENT</span>' : ''}
+                        ${domainBadgeConfirm}
                         <span class="small fw-bold text-dark text-truncate">${constName}</span>
                     </div>
                     <div class="text-muted" style="font-size: 10px;">Standar teknis ini akan menentukan katalog material (BOM).</div>
@@ -4739,9 +4834,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     <label for="input-edit-asset-name" class="form-label text-dark fw-bold mb-1" style="font-size: 11px;">
                         Nama Operasional Asset: <span class="text-danger">*</span>
                     </label>
-                    <input type="text" id="input-edit-asset-name" class="form-control form-control-sm" value="${$('<div>').text(currentName).html()}" placeholder="Contoh: LBS BULOG, PMCB ROYAL INDAH...">
+                    <input type="text" id="input-edit-asset-name" class="form-control form-control-sm" value="${$('<div>').text(currentName).html()}" placeholder="Contoh: Gardu PA192, LBS BULOG...">
                     <div class="form-text text-muted" style="font-size: 10px;">
-                        ${isEquip ? '💡 <strong>Equipment PLN:</strong> Bedakan standar (contoh: <code>' + constCode + '</code>) dengan nama operasional di lapangan (contoh: <code>' + (currentName || constCode + ' OPERASIONAL') + '</code>).' : 'Nama operasional asset di lapangan.'}
+                        ${isGardu ? '💡 <strong>Standar Gardu PLN:</strong> Standar konstruksi gardu distribusi (contoh: <code>' + constCode + '</code>) untuk aset <code>' + (currentName || constCode) + '</code>.' : (isEquip ? '💡 <strong>Equipment PLN:</strong> Bedakan standar (contoh: <code>' + constCode + '</code>) dengan nama operasional di lapangan (contoh: <code>' + (currentName || constCode + ' OPERASIONAL') + '</code>).' : 'Nama operasional asset di lapangan.')}
                     </div>
                 </div>
 

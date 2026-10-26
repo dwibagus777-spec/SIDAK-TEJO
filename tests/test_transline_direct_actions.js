@@ -107,13 +107,23 @@ async function run() {
     const targetUrl = process.argv[2] || 'http://localhost:8080/gis?penyulang_id=15';
     console.log('[TEST-TL] Navigating to ' + targetUrl + '...');
     await cdp.send('Page.navigate', { url: targetUrl });
-    await sleep(3500);
+    
+    // Wait for challenge if any
+    for (let i = 0; i < 30; i++) {
+        await sleep(1500);
+        const t = await cdp.evaluate('document.title');
+        console.log(`[TEST-TL] Check ${i}: Title = "${t}"`);
+        if (t && !t.includes('Checking your browser')) {
+            break;
+        }
+    }
+    await sleep(2000);
 
     let title = await cdp.evaluate('document.title');
     let currentHref = await cdp.evaluate('window.location.href');
     console.log('[TEST-TL] Initial page:', title, currentHref);
 
-    if (title && title.includes('Login') || (currentHref && currentHref.includes('/login'))) {
+    if ((title && title.includes('Login')) || (currentHref && currentHref.includes('/login'))) {
         console.log('[TEST-TL] Logging in as admin / admin123...');
         await cdp.evaluate(`(() => {
             const u = document.querySelector('input[name="username"]') || document.getElementById('username');
@@ -127,10 +137,27 @@ async function run() {
                 if (f) f.submit();
             }
         })()`);
-        await sleep(4000);
+        
+        for (let i = 0; i < 20; i++) {
+            await sleep(1500);
+            const h = await cdp.evaluate('window.location.href');
+            const t = await cdp.evaluate('document.title');
+            if (h && !h.includes('/login') && t && !t.includes('Checking your browser')) {
+                break;
+            }
+        }
+        await sleep(2000);
         console.log('[TEST-TL] Post-login URL:', await cdp.evaluate('window.location.href'));
         console.log('[TEST-TL] Re-navigating to ' + targetUrl + '...');
         await cdp.send('Page.navigate', { url: targetUrl });
+        
+        for (let i = 0; i < 30; i++) {
+            await sleep(1500);
+            const t = await cdp.evaluate('document.title');
+            if (t && !t.includes('Checking your browser')) {
+                break;
+            }
+        }
         await sleep(4000);
     }
 
@@ -165,8 +192,11 @@ async function run() {
             return null;
         }
         
-        // Find 3327 or first entry
-        const entry = entries.find(e => (e.data && e.data.transline_code && e.data.transline_code.includes('3327'))) || entries[0];
+        const filterArg = '${process.argv[3] || '33157'}';
+        const entry = entries.find(e => (e.data && e.data.transline_code && e.data.transline_code.includes(filterArg)))
+            || entries.find(e => (e.data && e.data.transline_code && e.data.transline_code.includes('33157')))
+            || entries.find(e => (e.data && e.data.transline_code && e.data.transline_code.includes('3327')))
+            || entries[0];
         return {
             id: entry.id,
             code: entry.data ? entry.data.transline_code : null,
@@ -181,9 +211,10 @@ async function run() {
         const popupOpened = await cdp.evaluate(`(() => {
             const entry = (window.allTranslineEntries || []).find(e => Number(e.id) === ${translineInfo.id});
             if (entry && entry.hitPoly) {
-                entry.hitPoly.fire('click', {
-                    latlng: entry.hitPoly.getLatLngs()[0]
-                });
+                const latlngs = entry.hitPoly.getLatLngs();
+                const center = (Array.isArray(latlngs) && latlngs.length > 0) ? (latlngs[Math.floor(latlngs.length / 2)] || latlngs[0]) : null;
+                if (!center) return false;
+                entry.hitPoly.fire('click', { latlng: center });
                 return true;
             }
             return false;
@@ -207,8 +238,9 @@ async function run() {
                 preview: text.substring(0, 150)
             };
         })()`);
+        const prefix = targetUrl.includes('sidaktejo.site') ? 'prod_' : 'test_';
         console.log('[TEST-TL] Popup verification:', JSON.stringify(popupCheck, null, 2));
-        await cdp.captureScreenshot(path.join(ARTIFACT_DIR, 'test_transline_popup_actions.png'));
+        await cdp.captureScreenshot(path.join(ARTIFACT_DIR, prefix + 'transline_popup_actions.png'));
 
         // Test Edit Transline from popup
         console.log('[TEST-TL] Calling window.editTranslineFromPopup(' + translineInfo.id + ')...');
@@ -226,7 +258,7 @@ async function run() {
             };
         })()`);
         console.log('[TEST-TL] Edit Conductor Sheet check:', JSON.stringify(editSheetCheck, null, 2));
-        await cdp.captureScreenshot(path.join(ARTIFACT_DIR, 'test_transline_edit_sheet.png'));
+        await cdp.captureScreenshot(path.join(ARTIFACT_DIR, prefix + 'transline_edit_sheet.png'));
 
         // Close edit sheet
         await cdp.evaluate(`(() => {
@@ -257,7 +289,7 @@ async function run() {
             };
         })()`);
         console.log('[TEST-TL] Delete Sheet check:', JSON.stringify(delSheetCheck, null, 2));
-        await cdp.captureScreenshot(path.join(ARTIFACT_DIR, 'test_transline_delete_confirm_sheet.png'));
+        await cdp.captureScreenshot(path.join(ARTIFACT_DIR, prefix + 'transline_delete_confirm_sheet.png'));
 
         // Close sheet
         await cdp.evaluate(`(() => {

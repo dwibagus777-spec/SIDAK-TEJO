@@ -542,7 +542,48 @@ class GisTranslineService
             $builder->where('penyulang_id', $penyulangId);
         }
 
-        return $builder->get()->getRowArray();
+        $row = $builder->get()->getRowArray();
+        if ($row) {
+            return $row;
+        }
+
+        // Spatial proximity fallback for co-located or alias markers
+        $assetB = $this->db->table('assets')->select('latitude, longitude')->where('id', $assetBId)->get()->getRowArray();
+        if ($assetB && !empty($assetB['latitude']) && !empty($assetB['longitude'])) {
+            $lat = (float)$assetB['latitude'];
+            $lng = (float)$assetB['longitude'];
+            $coAssets = $this->db->table('assets')
+                ->select('id')
+                ->where('penyulang_id', $penyulangId)
+                ->where('id !=', $assetBId)
+                ->where('latitude >=', $lat - 0.00015)
+                ->where('latitude <=', $lat + 0.00015)
+                ->where('longitude >=', $lng - 0.00015)
+                ->where('longitude <=', $lng + 0.00015)
+                ->get()
+                ->getResultArray();
+
+            $coIds = array_column($coAssets, 'id');
+            if (!empty($coIds)) {
+                $builder2 = $this->db->table('gis_translines')
+                    ->where('is_active', 1)
+                    ->where('penyulang_id', $penyulangId)
+                    ->groupStart()
+                        ->groupStart()
+                            ->where('source_asset_id', $assetAId)->whereIn('target_asset_id', $coIds)
+                        ->groupEnd()
+                        ->orGroupStart()
+                            ->whereIn('source_asset_id', $coIds)->where('target_asset_id', $assetAId)
+                        ->groupEnd()
+                    ->groupEnd();
+                $coRow = $builder2->get()->getRowArray();
+                if ($coRow) {
+                    return $coRow;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

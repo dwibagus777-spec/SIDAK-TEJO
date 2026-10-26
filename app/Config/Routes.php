@@ -742,10 +742,10 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     $routes->get('gis/export-conductor-analytics', 'GisController::exportConductorAnalytics');
     $routes->post('gis/export-conductor-analytics', 'GisController::exportConductorAnalytics');
     $routes->get('gis/api-generate-candidates', 'GisController::apiGenerateCandidates');
-    $routes->post('gis/api-connect-topology', 'GisController::apiConnectTopology');
-    $routes->post('gis/api-disconnect-topology', 'GisController::apiDisconnectTopology');
-    $routes->post('gis/api-update-segment', 'GisController::apiUpdateSegmentGeometry');
-    $routes->post('gis/api-update-conductor', 'GisController::apiUpdateConductorSpecification');
+    $routes->post('gis/api-connect-topology', 'GisController::apiConnectTopology', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
+    $routes->post('gis/api-disconnect-topology', 'GisController::apiDisconnectTopology', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
+    $routes->post('gis/api-update-segment', 'GisController::apiUpdateSegmentGeometry', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
+    $routes->post('gis/api-update-conductor', 'GisController::apiUpdateConductorSpecification', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
     $routes->get('gis/api-data', 'GisController::apiData');
     $routes->get('master-assets/geojson', 'GisController::geoJson');
     $routes->get('master-assets/feeder-network', 'GisController::feederNetwork');
@@ -837,9 +837,9 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     $routes->get('gis/api-proposal-exception-queue', 'GisController::apiProposalExceptionQueue');
 
     // Batch Transline Validation & Single Segment Persistence
-    $routes->get('gis/api-batch-transline/dry-run', 'GisController::apiBatchTranslineDryRun');
-    $routes->post('gis/api-batch-transline/execute', 'GisController::apiBatchTranslineExecute');
-    $routes->post('gis/api-validate-transline-segment', 'GisController::apiValidateTranslineSegment');
+    $routes->get('gis/api-batch-transline/dry-run', 'GisController::apiBatchTranslineDryRun', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
+    $routes->post('gis/api-batch-transline/execute', 'GisController::apiBatchTranslineExecute', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
+    $routes->post('gis/api-validate-transline-segment', 'GisController::apiValidateTranslineSegment', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
 
     // Phase 19 - AI Predictive Maintenance & Decision Support
     $routes->get('ai-predictive', 'AiPredictiveController::index');

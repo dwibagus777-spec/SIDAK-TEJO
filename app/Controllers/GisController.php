@@ -1463,6 +1463,14 @@ class GisController extends BaseController
 
     public function apiConnectTopology(): ResponseInterface
     {
+        $actor = $this->getActor();
+        if (!$this->isActorAdmin($actor)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Akses ditolak. Operasi sambung transline hanya dapat dilakukan oleh Admin.'
+            ]);
+        }
+
         $payload = $this->getRequestPayload();
         
         $sourceId = (int)($payload['source_asset_id'] ?? $payload['parent_id'] ?? 0);
@@ -1563,8 +1571,15 @@ class GisController extends BaseController
 
     public function apiDisconnectTopology(): ResponseInterface
     {
-        $payload = $this->getRequestPayload();
         $actor = $this->getActor();
+        if (!$this->isActorAdmin($actor)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Akses ditolak. Operasi hapus transline hanya dapat dilakukan oleh Admin.'
+            ]);
+        }
+
+        $payload = $this->getRequestPayload();
         $translineId = (int)($payload['transline_id'] ?? 0);
         if ($translineId > 0) {
             $result = $this->translineService->deleteTransline($translineId, $actor);
@@ -1573,32 +1588,23 @@ class GisController extends BaseController
 
         $sourceId = (int)($payload['source_asset_id'] ?? 0);
         $targetId = (int)($payload['target_asset_id'] ?? 0);
+        $penyulangId = (int)($payload['penyulang_id'] ?? 0);
 
         if ($sourceId <= 0 || $targetId <= 0) {
             return $this->response->setStatusCode(422)->setJSON([
                 'status'  => 'error',
-                'message' => 'Kedua ID aset yang terhubung wajib disertakan.'
+                'message' => 'ID transline atau kedua ID aset yang terhubung wajib disertakan.'
             ]);
         }
 
-        $db = \Config\Database::connect();
-        $row = $db->table('gis_translines')
-            ->groupStart()
-                ->where('source_asset_id', $sourceId)->where('target_asset_id', $targetId)
-            ->groupEnd()
-            ->orGroupStart()
-                ->where('source_asset_id', $targetId)->where('target_asset_id', $sourceId)
-            ->groupEnd()
-            ->where('is_active', 1)
-            ->get()
-            ->getRowArray();
-
-        if ($row) {
-            $result = $this->translineService->deleteTransline((int)$row['id'], $actor);
-            return $this->response->setJSON($result);
+        // 1. Try deleting by pair directly via service (handles bidirectional & co-located fallback)
+        $pairResult = $this->translineService->deleteTranslineByPair($penyulangId, $sourceId, $targetId, $actor);
+        if ($pairResult['status'] === 'success') {
+            return $this->response->setJSON($pairResult);
         }
 
-        // Fallback if not yet in gis_translines
+        // 2. Fallback if not yet in gis_translines (e.g. legacy asset_relationships)
+        $db = \Config\Database::connect();
         $db->table('asset_relationships')
             ->groupStart()
                 ->where('parent_asset_id', $sourceId)->where('child_asset_id', $targetId)
@@ -1608,8 +1614,8 @@ class GisController extends BaseController
             ->groupEnd()
             ->delete();
         $db->table('assets')->where('id', $targetId)->where('parent_asset_id', $sourceId)->update(['parent_asset_id' => null]);
+        $db->table('assets')->where('id', $sourceId)->where('parent_asset_id', $targetId)->update(['parent_asset_id' => null]);
         
-        $penyulangId = (int)($payload['penyulang_id'] ?? 0);
         $freshTopology = $penyulangId > 0 ? $this->translineService->rebuildFeederTopologySnapshot($penyulangId, $actor['name'] ?? 'SYSTEM') : [];
 
         return $this->response->setJSON([
@@ -1621,8 +1627,15 @@ class GisController extends BaseController
 
     public function apiUpdateConductorSpecification(): ResponseInterface
     {
-        $payload = $this->getRequestPayload();
         $actor = $this->getActor();
+        if (!$this->isActorAdmin($actor)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Akses ditolak. Operasi edit spesifikasi konduktor hanya dapat dilakukan oleh Admin.'
+            ]);
+        }
+
+        $payload = $this->getRequestPayload();
         $result = $this->translineService->saveTransline($payload, $actor);
 
         return $this->response->setJSON($result);
@@ -1694,6 +1707,14 @@ class GisController extends BaseController
 
     public function apiUpdateSegmentGeometry(): ResponseInterface
     {
+        $actor = $this->getActor();
+        if (!$this->isActorAdmin($actor)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Akses ditolak. Operasi edit bentuk segmen hanya dapat dilakukan oleh Admin.'
+            ]);
+        }
+
         $payload = $this->getRequestPayload();
         
         $penyulangId = (int)($payload['penyulang_id'] ?? 0);
@@ -1747,6 +1768,18 @@ class GisController extends BaseController
             'status' => 'success',
             'data'   => $route
         ]);
+    }
+
+    /**
+     * Helper to verify if actor has admin authority
+     */
+    private function isActorAdmin(?array $actor = null): bool
+    {
+        $actor = $actor ?? $this->getActor();
+        $userRole = strtolower(trim((string)($actor['role'] ?? '')));
+        return in_array($userRole, ['administrator', 'admin', 'admin_pusat', 'admin_ulp'], true)
+            || str_contains($userRole, 'admin')
+            || in_array($userRole, ['super_admin', 'superadmin', 'dalops', 'manajer'], true);
     }
 
     /**
@@ -2016,6 +2049,9 @@ class GisController extends BaseController
      */
     public function apiBatchTranslineDryRun(): ResponseInterface
     {
+        if (!$this->isActorAdmin()) {
+            return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
+        }
         $penyulangId = (int)($this->request->getGet('penyulang_id') ?? 0);
         $service = new \App\Services\BatchTranslineValidationService();
         $summary = $service->dryRun($penyulangId > 0 ? $penyulangId : null);
@@ -2031,6 +2067,9 @@ class GisController extends BaseController
      */
     public function apiBatchTranslineExecute(): ResponseInterface
     {
+        if (!$this->isActorAdmin()) {
+            return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
+        }
         $penyulangId = (int)($this->request->getPost('penyulang_id') ?? 0);
         $actor = session()->get('username') ?? 'ADMIN_UI';
 
@@ -2055,6 +2094,9 @@ class GisController extends BaseController
      */
     public function apiValidateTranslineSegment(): ResponseInterface
     {
+        if (!$this->isActorAdmin()) {
+            return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
+        }
         $sourceAssetId = (int)($this->request->getPost('source_asset_id') ?? 0);
         $targetAssetId = (int)($this->request->getPost('target_asset_id') ?? 0);
         $conductorType = (string)($this->request->getPost('conductor_type') ?? 'AAACS');

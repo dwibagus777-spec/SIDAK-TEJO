@@ -1199,11 +1199,11 @@
         <div class="card bg-light border-0 rounded-3 p-3 mb-3">
             <div class="d-flex justify-content-between mb-1">
                 <span class="small text-muted">Titik 1 (Sumber):</span>
-                <span id="spec-source-name" class="small fw-bold text-dark text-truncate" style="max-width: 200px;">-</span>
+                <span id="spec-source-name" class="small fw-bold text-dark text-break" style="max-width: 65%; text-align: right;">-</span>
             </div>
             <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
                 <span class="small text-muted">Titik 2 (Tujuan):</span>
-                <span id="spec-target-name" class="small fw-bold text-primary text-truncate" style="max-width: 200px;">-</span>
+                <span id="spec-target-name" class="small fw-bold text-primary text-break" style="max-width: 65%; text-align: right;">-</span>
             </div>
             <input type="hidden" id="spec-transline-id" value="" />
             <input type="hidden" id="spec-source-id" value="" />
@@ -1264,11 +1264,11 @@
         <div class="card bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 p-3 mb-3">
             <div class="d-flex justify-content-between mb-1">
                 <span class="small text-muted">Titik 1 (Sumber):</span>
-                <span id="del-source-name" class="small fw-bold text-dark text-truncate" style="max-width: 200px;">-</span>
+                <span id="del-source-name" class="small fw-bold text-dark text-break" style="max-width: 65%; text-align: right;">-</span>
             </div>
             <div class="d-flex justify-content-between mb-1">
                 <span class="small text-muted">Titik 2 (Tujuan):</span>
-                <span id="del-target-name" class="small fw-bold text-danger text-truncate" style="max-width: 200px;">-</span>
+                <span id="del-target-name" class="small fw-bold text-danger text-break" style="max-width: 65%; text-align: right;">-</span>
             </div>
             <div class="d-flex justify-content-between border-top border-danger border-opacity-25 pt-1 mt-1 mb-1">
                 <span class="small text-muted">Kode Segmen:</span>
@@ -3113,6 +3113,8 @@ document.addEventListener("DOMContentLoaded", function () {
     var currentUlpRequestId = 0;
     var activeAssetProps = null;
     var masterConductorsList = [];
+    const IS_ADMIN = <?= !empty($isAdmin) ? 'true' : 'false' ?>;
+    window.IS_ADMIN = IS_ADMIN;
 
     // Toast & Inline Accessible Notification Helper (Replacing Native Alert)
     function notifyGis(message, type, title) {
@@ -3173,6 +3175,32 @@ document.addEventListener("DOMContentLoaded", function () {
             var active = (tl.is_active === undefined || Number(tl.is_active) === 1);
             return active && ((s === aId && t === bId) || (s === bId && t === aId));
         });
+
+        // Spatial proximity fallback for co-located or duplicate markers (e.g. Co-Brand)
+        if (matching.length === 0 && currentData && Array.isArray(currentData.features)) {
+            var targetFeat = currentData.features.find(function (f) { return f.properties && Number(f.properties.id) === bId; });
+            if (targetFeat && targetFeat.geometry && Array.isArray(targetFeat.geometry.coordinates)) {
+                var tCoord = targetFeat.geometry.coordinates; // [lng, lat]
+                var coLocatedAssetIds = currentData.features.filter(function (f) {
+                    if (!f.properties || Number(f.properties.id) === bId) return false;
+                    if (!f.geometry || !Array.isArray(f.geometry.coordinates)) return false;
+                    var c = f.geometry.coordinates;
+                    return Math.abs(c[0] - tCoord[0]) < 0.00015 && Math.abs(c[1] - tCoord[1]) < 0.00015;
+                }).map(function (f) { return Number(f.properties.id); });
+
+                if (coLocatedAssetIds.length > 0) {
+                    matching = list.filter(function (tl) {
+                        var s = Number(tl.source_asset_id || tl.from_asset_id);
+                        var t = Number(tl.target_asset_id || tl.to_asset_id);
+                        var active = (tl.is_active === undefined || Number(tl.is_active) === 1);
+                        return active && (
+                            (s === aId && coLocatedAssetIds.indexOf(t) !== -1) ||
+                            (t === aId && coLocatedAssetIds.indexOf(s) !== -1)
+                        );
+                    });
+                }
+            }
+        }
 
         if (matching.length === 0) return null;
         return matching[0];
@@ -5280,11 +5308,19 @@ document.addEventListener("DOMContentLoaded", function () {
             safeHideOffcanvas('offcanvas-delete-connection-sheet');
             setEditorState(TRANSLINE_STATE.IDLE);
 
-            // Directly remove the specific segment from Leaflet map without full wipe
+            // Directly remove the specific segment and hitPoly from Leaflet map without full wipe
             if (tId && window.translineLayers && window.translineLayers.has(tId)) {
                 var layer = window.translineLayers.get(tId);
-                if (translinePolylineLayer) translinePolylineLayer.removeLayer(layer);
+                if (layer && layer._hitPoly && translinePolylineLayer) {
+                    translinePolylineLayer.removeLayer(layer._hitPoly);
+                }
+                if (translinePolylineLayer && layer) {
+                    translinePolylineLayer.removeLayer(layer);
+                }
                 window.translineLayers.delete(tId);
+            }
+            if (Array.isArray(window.allTranslineEntries)) {
+                window.allTranslineEntries = window.allTranslineEntries.filter(function(e) { return Number(e.id) !== tId; });
             }
 
             if (currentData) {
@@ -5954,17 +5990,21 @@ document.addEventListener("DOMContentLoaded", function () {
                             : `<span class="badge bg-secondary" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i>OTORITATIF MANUAL</span>`));
 
                 var popupContent = `
-                    <div style="min-width: 280px; font-family: system-ui, -apple-system, sans-serif;">
-                        <div class="d-flex align-items-center justify-content-between border-bottom pb-1 mb-2">
-                            <strong style="color: ${lineColor}; font-size: 13px;">⚡ ${translineCode}</strong>
-                            ${originBadge}
+                    <div style="min-width: 280px; max-width: 350px; font-family: system-ui, -apple-system, sans-serif;">
+                        <div class="border-bottom pb-2 mb-2" style="padding-right: 22px;">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                                <span style="color: ${lineColor}; font-size: 13px; font-weight: 700; word-break: break-all; letter-spacing: 0.2px;">
+                                    ⚡ ${translineCode}
+                                </span>
+                                ${originBadge}
+                            </div>
                         </div>
                         <div class="small text-muted mb-2" style="font-size: 11px; line-height: 1.4;">
                             <div><strong>ULP:</strong> <span class="text-dark">${tl.nama_ulp || (currentData.meta ? (currentData.meta.nama_ulp || currentData.meta.ulp_name) : '') || 'PLN UID Jatim'}</span></div>
                             <div><strong>Penyulang:</strong> <span class="text-dark">${feederName}</span></div>
                             <div><strong>Section:</strong> <span class="text-dark">${sectionName}</span></div>
-                            <div><strong>Titik A (Dari):</strong> <span class="text-dark">${fromName}</span></div>
-                            <div><strong>Titik B (Ke):</strong> <span class="text-dark">${toName}</span></div>
+                            <div class="text-break"><strong>Titik A (Dari):</strong> <span class="text-dark">${fromName}</span></div>
+                            <div class="text-break"><strong>Titik B (Ke):</strong> <span class="text-dark">${toName}</span></div>
                             <div class="d-flex align-items-center gap-1"><strong>Konduktor:</strong> <span class="text-dark fw-bold">${conductorLabel}</span> <img src="${condImgUrl}" alt="Conductor" style="height: 12px; max-width: 45px; object-fit: contain;"></div>
                             <div><strong>Panjang:</strong> <span class="text-dark fw-bold font-monospace">${Number(lengthMeter).toFixed(1)} meter</span></div>
                             <div><strong>Status:</strong> <span class="badge bg-success" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i>✓ TRANSLINE RESMI</span></div>
@@ -5975,6 +6015,16 @@ document.addEventListener("DOMContentLoaded", function () {
                                 🟢 TRANSLINE OTORITATIF JTM (PERSISTED)
                             </span>
                         </div>
+                        ${IS_ADMIN ? `
+                            <div class="d-flex gap-1 mt-2 pt-2 border-top">
+                                <button type="button" class="btn btn-sm btn-outline-primary flex-fill fw-bold py-1 px-2 text-nowrap" onclick="window.editTranslineFromPopup(${Number(tId)})" style="font-size: 11px;">
+                                    <i class="fas fa-edit me-1"></i> Edit Transline
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger flex-fill fw-bold py-1 px-2 text-nowrap" onclick="window.deleteTranslineFromPopup(${Number(tId)})" style="font-size: 11px;">
+                                    <i class="fas fa-trash-alt me-1"></i> Hapus Transline
+                                </button>
+                            </div>
+                        ` : ''}
                         ${(() => {
                             var hasActiveCoating = tl.captive_coating && tl.captive_coating.status === 'POTENSI';
                             var isCoatingCompleted = (tl.captive_coating && tl.captive_coating.status === 'SELESAI') || (tl.conductor_type && tl.conductor_type.toUpperCase().includes('COATING'));
@@ -6482,6 +6532,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var cachedEntry = window.SIDAK_GIS_NETWORK_CACHE_BY_FEEDER.get(fKey);
         if (cachedEntry && cachedEntry.data) {
             currentData = cachedEntry.data;
+            window.currentGisData = currentData;
             window.SIDAK_GIS_NETWORK_CACHE = cachedEntry;
             renderFilteredLayers(autoFitBounds);
             fetchPendingBadgeCount();
@@ -6523,6 +6574,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 if (res && res.status === 'success' && res.data) {
                     currentData = res.data;
+                    window.currentGisData = currentData;
 
                     // Build canonical in-memory index
                     var indexes = buildNetworkIndexes(currentData);
@@ -7059,6 +7111,79 @@ document.addEventListener("DOMContentLoaded", function () {
             window.applyGisConductorFilter(val);
         });
     });
+
+    // Global Popup Actions for Transline Edit & Delete (Admin Only)
+    window.deleteTranslineFromPopup = function(translineId) {
+        if (!IS_ADMIN) {
+            notifyGis('Akses ditolak: Operasi hapus transline hanya dapat dilakukan oleh Admin.', 'error');
+            return;
+        }
+
+        var tId = Number(translineId);
+        var entry = (window.allTranslineEntries || []).find(function(e) { return Number(e.id) === tId; });
+        var tl = entry ? entry.data : ((currentData && Array.isArray(currentData.translines)) ? currentData.translines.find(function(t) { return Number(t.id) === tId; }) : null);
+        if (!tl) {
+            notifyGis('Data transline #' + tId + ' tidak ditemukan.', 'error');
+            return;
+        }
+
+        if (map) map.closePopup();
+
+        var sId = tl.source_asset_id || tl.from_asset_id;
+        var tTargetId = tl.target_asset_id || tl.to_asset_id;
+
+        var sAsset = (window.SIDAK_GIS_NETWORK_CACHE && window.SIDAK_GIS_NETWORK_CACHE.indexes)
+            ? window.SIDAK_GIS_NETWORK_CACHE.indexes.assetById.get(String(sId))
+            : (currentData && currentData.features ? currentData.features.find(function(f) { return f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === String(sId); }) : null);
+        var tAsset = (window.SIDAK_GIS_NETWORK_CACHE && window.SIDAK_GIS_NETWORK_CACHE.indexes)
+            ? window.SIDAK_GIS_NETWORK_CACHE.indexes.assetById.get(String(tTargetId))
+            : (currentData && currentData.features ? currentData.features.find(function(f) { return f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === String(tTargetId); }) : null);
+
+        var sourceObj = (sAsset && sAsset.properties) ? sAsset.properties : (tl.source_asset || { id: sId, nama_asset: `Asset #${sId}`, kode_asset: '' });
+        var targetObj = (tAsset && tAsset.properties) ? tAsset.properties : (tl.target_asset || { id: tTargetId, nama_asset: `Asset #${tTargetId}`, kode_asset: '' });
+
+        translineEditor.sourceAsset = sourceObj;
+        translineEditor.targetAsset = targetObj;
+        translineEditor.activeSegment = tl;
+
+        openPairDeleteConfirmSheet(sourceObj, targetObj, tl);
+    };
+
+    window.editTranslineFromPopup = function(translineId) {
+        if (!IS_ADMIN) {
+            notifyGis('Akses ditolak: Operasi edit transline hanya dapat dilakukan oleh Admin.', 'error');
+            return;
+        }
+
+        var tId = Number(translineId);
+        var entry = (window.allTranslineEntries || []).find(function(e) { return Number(e.id) === tId; });
+        var tl = entry ? entry.data : ((currentData && Array.isArray(currentData.translines)) ? currentData.translines.find(function(t) { return Number(t.id) === tId; }) : null);
+        if (!tl) {
+            notifyGis('Data transline #' + tId + ' tidak ditemukan.', 'error');
+            return;
+        }
+
+        if (map) map.closePopup();
+
+        var sId = tl.source_asset_id || tl.from_asset_id;
+        var tTargetId = tl.target_asset_id || tl.to_asset_id;
+
+        var sAsset = (window.SIDAK_GIS_NETWORK_CACHE && window.SIDAK_GIS_NETWORK_CACHE.indexes)
+            ? window.SIDAK_GIS_NETWORK_CACHE.indexes.assetById.get(String(sId))
+            : (currentData && currentData.features ? currentData.features.find(function(f) { return f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === String(sId); }) : null);
+        var tAsset = (window.SIDAK_GIS_NETWORK_CACHE && window.SIDAK_GIS_NETWORK_CACHE.indexes)
+            ? window.SIDAK_GIS_NETWORK_CACHE.indexes.assetById.get(String(tTargetId))
+            : (currentData && currentData.features ? currentData.features.find(function(f) { return f.properties && f.properties.entity_type === 'ASSET' && String(f.properties.id) === String(tTargetId); }) : null);
+
+        var sourceObj = (sAsset && sAsset.properties) ? sAsset.properties : (tl.source_asset || { id: sId, nama_asset: `Asset #${sId}`, kode_asset: '' });
+        var targetObj = (tAsset && tAsset.properties) ? tAsset.properties : (tl.target_asset || { id: tTargetId, nama_asset: `Asset #${tTargetId}`, kode_asset: '' });
+
+        translineEditor.sourceAsset = sourceObj;
+        translineEditor.targetAsset = targetObj;
+        translineEditor.activeSegment = tl;
+
+        openPairConductorSpecSheet(sourceObj, targetObj, tl);
+    };
 
     // Conductor Coating Confirmation Action
     window.confirmCoatingCompleted = function(translineId, captiveId) {

@@ -210,9 +210,9 @@
                         <label for="filter_status" class="small font-weight-bold">Status</label>
                         <select id="filter_status" class="form-control form-control-sm select2">
                             <option value="">-- Semua Status --</option>
-                            <option value="BELUM">BELUM SELESAI</option>
-                            <option value="PROSES">DALAM PROSES</option>
-                            <option value="SELESAI">SUDAH SELESAI</option>
+                            <option value="BELUM" <?= (strtoupper((string)($selectedStatus ?? '')) === 'BELUM') ? 'selected' : '' ?>>BELUM SELESAI</option>
+                            <option value="PROSES" <?= (strtoupper((string)($selectedStatus ?? '')) === 'PROSES') ? 'selected' : '' ?>>DALAM PROSES</option>
+                            <option value="SELESAI" <?= (strtoupper((string)($selectedStatus ?? '')) === 'SELESAI') ? 'selected' : '' ?>>SUDAH SELESAI</option>
                         </select>
                     </div>
 

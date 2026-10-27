@@ -9,10 +9,11 @@ class GISService
     private AssetRepository $assetRepository;
     private AssetVisualRegistryService $visualRegistry;
 
-    public function __construct()
+    public function __construct(?AssetRepository $assetRepository = null)
     {
-        $this->assetRepository = new AssetRepository();
+        $this->assetRepository = $assetRepository ?? new AssetRepository();
         $this->visualRegistry  = new AssetVisualRegistryService();
+        helper('url');
     }
 
     /**
@@ -70,6 +71,13 @@ class GISService
                 'icon_class' => 'fa-toggle-on',
                 'color'      => '#7c3aed',
                 'label'      => $jenis
+            ];
+        } elseif ($jenis === 'POHON_ROW' || $jenis === 'ROW' || str_contains($jenis, 'POHON') || str_contains($jenis, 'ROW')) {
+            $legacy = [
+                'shape'      => 'tree',
+                'icon_class' => 'fa-tree',
+                'color'      => '#16a34a',
+                'label'      => 'ASET ROW'
             ];
         } elseif (str_contains($type, 'PMS') || str_contains($type, 'PEMISAH')) {
             $legacy = [
@@ -129,7 +137,7 @@ class GISService
         $filters['penyulang_ids'] = $penyulangIds;
 
         $zoom        = (int)($filters['zoom'] ?? 14);
-        $layerFilter = $filters['layers'] ?? ['JTM', 'GARDU', 'TRAFO', 'SWITCH'];
+        $layerFilter = $filters['layers'] ?? ['JTM', 'GARDU', 'TRAFO', 'SWITCH', 'TRANSLINE', 'ROW'];
 
         if ($userUlpId !== null && $userUlpId > 0) {
             $filters['ulp_id'] = $userUlpId;
@@ -238,6 +246,7 @@ class GISService
             'gardu_count'                => 0,
             'trafo_count'                => 0,
             'switch_count'               => 0,
+            'row_count'                  => 0,
             'temuan_count'               => 0,
             'rejected_cross_feeder'      => 0,
             'rejected_cross_ulp'         => ($feederUlpId > 0 && $db->tableExists('assets'))
@@ -286,12 +295,17 @@ class GISService
             $isTrafo = in_array($jenis, ['TRAFO', 'TRANSFORMER', 'JTM_TRAFO', 'TRANSFORMATOR'])
                 || str_contains($constrName, 'DISTRIBUSI') || str_contains($constrName, 'TRAFO');
 
+            $isRow = in_array($jenis, ['ROW', 'POHON_ROW', 'POHON', 'VEGETASI', 'VEGETATION'])
+                || str_contains($jenis, 'POHON') || str_contains($jenis, 'ROW') || str_contains($constrName, 'POHON') || str_contains($constrName, 'ROW');
+
             if ($isSwitch) {
                 $stats['switch_count']++;
             } elseif ($isGardu) {
                 $stats['gardu_count']++;
             } elseif ($isTrafo) {
                 $stats['trafo_count']++;
+            } elseif ($isRow) {
+                $stats['row_count']++;
             } else {
                 $stats['jtm_count']++;
             }
@@ -355,23 +369,26 @@ class GISService
         if (in_array('TEMUAN', $layerFilter) && $penyulangId > 0) {
             $db = \Config\Database::connect();
             if ($db->tableExists('temuan')) {
-                $temuanRows = $db->table('temuan t')
-                    ->select('t.*, u.nama_ulp, p.nama_penyulang, s.nama_section')
+                $temuanBuilder = $db->table('temuan t')
+                    ->select('t.*, u.nama_ulp, p.nama_penyulang, s.nama_section, a.latitude as asset_lat, a.longitude as asset_lng')
                     ->join('ulps u', 't.ulp_id = u.id', 'left')
                     ->join('penyulang p', 't.penyulang_id = p.id', 'left')
                     ->join('sections s', 't.section_id = s.id', 'left')
-                    ->where('t.penyulang_id', $penyulangId)
-                    ->where('t.deleted_at IS NULL')
-                    ->where('t.latitude !=', 0)
-                    ->where('t.longitude !=', 0)
-                    ->where('t.latitude IS NOT NULL')
-                    ->where('t.longitude IS NOT NULL')
-                    ->get()
-                    ->getResultArray();
+                    ->join('assets a', 't.asset_id = a.id', 'left')
+                    ->where('t.deleted_at IS NULL');
+
+                if (!empty($penyulangIds)) {
+                    $temuanBuilder->whereIn('t.penyulang_id', $penyulangIds);
+                } else {
+                    $temuanBuilder->where('t.penyulang_id', $penyulangId);
+                }
+
+                $temuanRows = $temuanBuilder->get()->getResultArray();
 
                 foreach ($temuanRows as $t) {
-                    $tLat = (float)$t['latitude'];
-                    $tLng = (float)$t['longitude'];
+                    $tLat = (float)($t['latitude'] ?: ($t['asset_lat'] ?? 0));
+                    $tLng = (float)($t['longitude'] ?: ($t['asset_lng'] ?? 0));
+                    if ($tLat == 0.0 || $tLng == 0.0) continue;
                     $stats['temuan_count']++;
 
                     $severityColor = '#eab308'; // Default NORMAL/MEDIUM
@@ -464,7 +481,9 @@ class GISService
                 'topology_count'                => $isAuthoritative ? count($segmentData['edges'] ?? []) : 0,
                 'authoritative_transline_count' => $networkTruth['authoritative_transline_count'] ?? 0,
                 'preview_segments_count'        => $networkTruth['preview_segments_count'] ?? 0,
+                'row_count'                     => $stats['row_count'] ?? 0,
                 'temuan_count'                  => $stats['temuan_count'],
+                'loaded_layers'                 => $layerFilter,
                 'has_master_assets'             => $hasMasterAssets,
                 'has_feeder_assets'             => $hasFeederAssets,
                 'has_topology'                  => $hasTopology,

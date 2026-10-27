@@ -113,6 +113,22 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(0,0,0,0.06);
     }
+    .dah-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    @media (min-width: 768px) {
+        .dah-kpi-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+    @media (min-width: 1200px) {
+        .dah-kpi-grid {
+            grid-template-columns: repeat(7, 1fr);
+        }
+    }
     .dah-kpi-icon {
         width: 38px;
         height: 38px;
@@ -499,119 +515,129 @@
     </div>
   </div>
 </div>
-<!-- 3. TOP 6 BENTO KPI CARDS (MATCHING REFERENCE IMAGE) -->
-    <div class="row g-3 mb-4">
+<!-- 3. TOP BENTO KPI CARDS (TEMUAN & FEEDER HEALTH MONITORING) -->
+    <div class="dah-kpi-grid">
         <!-- 1. Total Temuan -->
-        <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #0284c7; cursor: pointer;" onclick="window.location.href='<?= site_url('temuan') ?>'" title="Klik untuk membuka seluruh data temuan">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div class="dah-kpi-icon bg-info-subtle text-info mb-0">
-                            <i class="fas fa-file-lines"></i>
-                        </div>
-                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
+        <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #0284c7; cursor: pointer;" onclick="window.location.href='<?= site_url('temuan' . (!empty($selectedUlpId) ? '?ulp_id=' . (int)$selectedUlpId : '')) ?>'" title="Klik untuk membuka seluruh data temuan">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="dah-kpi-icon bg-info-subtle text-info mb-0">
+                        <i class="fas fa-file-lines"></i>
                     </div>
-                    <div class="dah-kpi-val text-dark"><?= number_format($totalTemuan) ?></div>
-                    <div class="dah-kpi-lbl">Total Temuan</div>
+                    <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                 </div>
-                <div class="dah-kpi-sub <?= $temuanChangeClass ?>">
-                    <?= $temuanChangeText ?>
-                </div>
+                <div class="dah-kpi-val text-dark"><?= number_format($totalTemuan) ?></div>
+                <div class="dah-kpi-lbl">Total Temuan</div>
+            </div>
+            <div class="dah-kpi-sub <?= $temuanChangeClass ?>">
+                <?= $temuanChangeText ?>
             </div>
         </div>
 
-        <!-- 2. Penyulang Sehat -->
-        <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #22c55e; cursor: pointer;" onclick="showFeederListByStatus('SEHAT')" title="Klik untuk membuka rincian penyulang sehat (0 Emergency)">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div class="dah-kpi-icon bg-success-subtle text-success mb-0">
-                            <i class="fas fa-circle-check"></i>
-                        </div>
-                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
+        <!-- 2. Temuan Selesai / Ditindaklanjuti -->
+        <?php
+            $selesaiTemuan = (int)($stats['selesai'] ?? 0);
+            $selesaiPct = ($totalTemuan > 0) ? round(($selesaiTemuan / $totalTemuan) * 100, 1) : 0;
+            $selesaiUrl = site_url('temuan?status=SELESAI' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : ''));
+        ?>
+        <div class="dah-kpi-card shadow-sm" id="card-dashboard-temuan-selesai" style="border-top: 3px solid #10b981; cursor: pointer;" onclick="window.location.href='<?= $selesaiUrl ?>'" title="Klik untuk membuka daftar temuan yang sudah ditindaklanjuti / selesai">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="dah-kpi-icon bg-success-subtle text-success mb-0">
+                        <i class="fas fa-circle-check"></i>
                     </div>
-                    <div class="dah-kpi-val text-success"><?= number_format($sehatCount) ?></div>
-                    <div class="dah-kpi-lbl">Penyulang Sehat</div>
+                    <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                 </div>
-                <div class="dah-kpi-sub text-success">
-                    <span><?= $sehatPct ?>%</span> (0 Emergency aktif)
-                </div>
+                <div class="dah-kpi-val text-success"><?= number_format($selesaiTemuan) ?></div>
+                <div class="dah-kpi-lbl">Temuan Selesai</div>
+            </div>
+            <div class="dah-kpi-sub text-success">
+                <span><i class="fas fa-check-double me-1"></i><?= $selesaiPct ?>%</span> Ditindaklanjuti
             </div>
         </div>
 
-        <!-- 3. Penyulang Kronis -->
-        <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #f59e0b; cursor: pointer;" onclick="showFeederListByStatus('KRONIS')" title="Klik untuk membuka rincian penyulang kronis (1 Emergency aktif)">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div class="dah-kpi-icon bg-warning-subtle text-warning mb-0">
-                            <i class="fas fa-triangle-exclamation"></i>
-                        </div>
-                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
+        <!-- 3. Penyulang Sehat -->
+        <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #22c55e; cursor: pointer;" onclick="showFeederListByStatus('SEHAT')" title="Klik untuk membuka rincian penyulang sehat (0 Emergency)">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="dah-kpi-icon bg-success-subtle text-success mb-0">
+                        <i class="fas fa-shield-heart"></i>
                     </div>
-                    <div class="dah-kpi-val text-warning"><?= number_format($kronisCount) ?></div>
-                    <div class="dah-kpi-lbl">Penyulang Kronis</div>
+                    <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                 </div>
-                <div class="dah-kpi-sub text-warning">
-                    <span><?= $kronisPct ?>%</span> (1 Emergency aktif)
-                </div>
+                <div class="dah-kpi-val text-success"><?= number_format($sehatCount) ?></div>
+                <div class="dah-kpi-lbl">Penyulang Sehat</div>
+            </div>
+            <div class="dah-kpi-sub text-success">
+                <span><?= $sehatPct ?>%</span> (0 Emergency aktif)
             </div>
         </div>
 
-        <!-- 4. Penyulang Sakit -->
-        <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #f97316; cursor: pointer;" onclick="showFeederListByStatus('SAKIT')" title="Klik untuk membuka rincian penyulang sakit (2 Emergency aktif)">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div class="dah-kpi-icon bg-danger-subtle text-danger mb-0">
-                            <i class="fas fa-heart-pulse"></i>
-                        </div>
-                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
+        <!-- 4. Penyulang Kronis -->
+        <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #f59e0b; cursor: pointer;" onclick="showFeederListByStatus('KRONIS')" title="Klik untuk membuka rincian penyulang kronis (1 Emergency aktif)">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="dah-kpi-icon bg-warning-subtle text-warning mb-0">
+                        <i class="fas fa-triangle-exclamation"></i>
                     </div>
-                    <div class="dah-kpi-val text-danger"><?= number_format($sakitCount) ?></div>
-                    <div class="dah-kpi-lbl">Penyulang Sakit</div>
+                    <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                 </div>
-                <div class="dah-kpi-sub text-danger">
-                    <span><?= $sakitPct ?>%</span> (2 Emergency aktif)
-                </div>
+                <div class="dah-kpi-val text-warning"><?= number_format($kronisCount) ?></div>
+                <div class="dah-kpi-lbl">Penyulang Kronis</div>
+            </div>
+            <div class="dah-kpi-sub text-warning">
+                <span><?= $kronisPct ?>%</span> (1 Emergency aktif)
             </div>
         </div>
 
-        <!-- 5. Penyulang Kritis -->
-        <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #ef4444; cursor: pointer;" onclick="showFeederListByStatus('KRITIS')" title="Klik untuk membuka rincian penyulang kritis (≥ 3 Emergency aktif)">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div class="dah-kpi-icon bg-danger-subtle text-danger mb-0">
-                            <i class="fas fa-bell"></i>
-                        </div>
-                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
+        <!-- 5. Penyulang Sakit -->
+        <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #f97316; cursor: pointer;" onclick="showFeederListByStatus('SAKIT')" title="Klik untuk membuka rincian penyulang sakit (2 Emergency aktif)">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="dah-kpi-icon bg-danger-subtle text-danger mb-0">
+                        <i class="fas fa-heart-pulse"></i>
                     </div>
-                    <div class="dah-kpi-val text-danger"><?= number_format($kritisCount) ?></div>
-                    <div class="dah-kpi-lbl">Penyulang Kritis</div>
+                    <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                 </div>
-                <div class="dah-kpi-sub text-danger">
-                    <span><?= $kritisPct ?>%</span> (≥ 3 Emergency aktif)
-                </div>
+                <div class="dah-kpi-val text-danger"><?= number_format($sakitCount) ?></div>
+                <div class="dah-kpi-lbl">Penyulang Sakit</div>
+            </div>
+            <div class="dah-kpi-sub text-danger">
+                <span><?= $sakitPct ?>%</span> (2 Emergency aktif)
             </div>
         </div>
 
-        <!-- 6. Health Index Sistem -->
-        <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-            <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #06b6d4; cursor: pointer;" onclick="showFeederListByStatus('ALL')" title="Klik untuk melihat skor & rincian seluruh penyulang">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div class="dah-kpi-icon bg-info-subtle text-info mb-0">
-                            <i class="fas fa-chart-column"></i>
-                        </div>
-                        <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
+        <!-- 6. Penyulang Kritis -->
+        <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #ef4444; cursor: pointer;" onclick="showFeederListByStatus('KRITIS')" title="Klik untuk membuka rincian penyulang kritis (≥ 3 Emergency aktif)">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="dah-kpi-icon bg-danger-subtle text-danger mb-0">
+                        <i class="fas fa-bell"></i>
                     </div>
-                    <div class="dah-kpi-val text-info"><?= $avgHealth ?>%</div>
-                    <div class="dah-kpi-lbl">Health Index Sistem</div>
+                    <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                 </div>
-                <div class="dah-kpi-sub text-info">
-                    Avg score <?= number_format($totalFeeders) ?> penyulang
+                <div class="dah-kpi-val text-danger"><?= number_format($kritisCount) ?></div>
+                <div class="dah-kpi-lbl">Penyulang Kritis</div>
+            </div>
+            <div class="dah-kpi-sub text-danger">
+                <span><?= $kritisPct ?>%</span> (≥ 3 Emergency aktif)
+            </div>
+        </div>
+
+        <!-- 7. Health Index Sistem -->
+        <div class="dah-kpi-card shadow-sm" style="border-top: 3px solid #06b6d4; cursor: pointer;" onclick="showFeederListByStatus('ALL')" title="Klik untuk melihat skor & rincian seluruh penyulang">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="dah-kpi-icon bg-info-subtle text-info mb-0">
+                        <i class="fas fa-chart-column"></i>
+                    </div>
+                    <i class="fas fa-arrow-up-right-from-square text-muted opacity-50" style="font-size: 11px;"></i>
                 </div>
+                <div class="dah-kpi-val text-info"><?= $avgHealth ?>%</div>
+                <div class="dah-kpi-lbl">Health Index Sistem</div>
+            </div>
+            <div class="dah-kpi-sub text-info">
+                Avg score <?= number_format($totalFeeders) ?> penyulang
             </div>
         </div>
     </div>

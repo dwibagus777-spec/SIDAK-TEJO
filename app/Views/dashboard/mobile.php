@@ -450,7 +450,7 @@ $authorizedMenuItems = $sidakMenuRegistry['items'];
         <!-- 5. RESPONSIVE 2-COLUMN KPI GRID (Replaces single-column stack) -->
         <div class="kpi-mobile-grid">
             <!-- 1. Total Temuan -->
-            <a href="<?= site_url('temuan') ?>" class="kpi-m-card border-primary-subtle">
+            <a href="<?= site_url('temuan' . (!empty($selectedUlpId) ? '?ulp_id=' . (int)$selectedUlpId : '')) ?>" class="kpi-m-card border-primary-subtle">
                 <div>
                     <div class="kpi-m-card-icon bg-primary-subtle text-primary">
                         <i class="fas fa-tasks"></i>
@@ -461,8 +461,20 @@ $authorizedMenuItems = $sidakMenuRegistry['items'];
                 <div class="kpi-m-card-sub">Semua status temuan &rarr;</div>
             </a>
 
-            <!-- 2. Emergency -->
-            <a href="<?= site_url('temuan?prioritas=EMERGENCY') ?>" class="kpi-m-card border-danger-subtle">
+            <!-- 2. Sudah Selesai -->
+            <a href="<?= site_url('temuan?status=SELESAI' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="kpi-m-card border-success-subtle">
+                <div>
+                    <div class="kpi-m-card-icon bg-success-subtle text-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="kpi-m-card-title text-success">Sudah Selesai</div>
+                    <div class="kpi-m-card-value text-success"><?= number_format($stats['selesai'] ?? 0) ?></div>
+                </div>
+                <div class="kpi-m-card-sub text-success">Pekerjaan closed &rarr;</div>
+            </a>
+
+            <!-- 3. Emergency -->
+            <a href="<?= site_url('temuan?prioritas=EMERGENCY' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="kpi-m-card border-danger-subtle">
                 <div>
                     <div class="kpi-m-card-icon bg-danger-subtle text-danger">
                         <i class="fas fa-exclamation-triangle"></i>
@@ -473,8 +485,8 @@ $authorizedMenuItems = $sidakMenuRegistry['items'];
                 <div class="kpi-m-card-sub text-danger font-weight-bold">Perlu aksi segera &rarr;</div>
             </a>
 
-            <!-- 3. Belum Selesai -->
-            <a href="<?= site_url('temuan?status=BELUM') ?>" class="kpi-m-card border-warning-subtle">
+            <!-- 4. Belum Selesai -->
+            <a href="<?= site_url('temuan?status=BELUM' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="kpi-m-card border-warning-subtle">
                 <div>
                     <div class="kpi-m-card-icon bg-warning-subtle text-warning">
                         <i class="fas fa-clock"></i>
@@ -483,18 +495,6 @@ $authorizedMenuItems = $sidakMenuRegistry['items'];
                     <div class="kpi-m-card-value text-warning"><?= number_format($stats['belum'] ?? 0) ?></div>
                 </div>
                 <div class="kpi-m-card-sub">Antrean eksekusi &rarr;</div>
-            </a>
-
-            <!-- 4. Sudah Selesai -->
-            <a href="<?= site_url('temuan?status=SELESAI') ?>" class="kpi-m-card border-success-subtle">
-                <div>
-                    <div class="kpi-m-card-icon bg-success-subtle text-success">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="kpi-m-card-title">Sudah Selesai</div>
-                    <div class="kpi-m-card-value text-success"><?= number_format($stats['selesai'] ?? 0) ?></div>
-                </div>
-                <div class="kpi-m-card-sub">Pekerjaan closed &rarr;</div>
             </a>
 
             <!-- 5. Total Aset Unik -->

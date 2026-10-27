@@ -686,6 +686,22 @@
                             </label>
                         </div>
                     </div>
+                    <div class="col-6">
+                        <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
+                            <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-transline" value="TRANSLINE" checked>
+                            <label class="form-check-label small fw-bold text-dark ms-2 mb-0" for="setup-layer-transline">
+                                <i class="fas fa-route text-primary me-1"></i> Aset Transline
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
+                            <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-row" value="ROW" checked>
+                            <label class="form-check-label small fw-bold text-dark ms-2 mb-0" for="setup-layer-row">
+                                <i class="fas fa-tree text-success me-1"></i> Aset ROW
+                            </label>
+                        </div>
+                    </div>
                     <div class="col-12">
                         <div class="form-check p-2 bg-light rounded-3 border d-flex align-items-center">
                             <input class="form-check-input setup-layer-toggle ms-1 mt-0" type="checkbox" id="setup-layer-temuan" value="TEMUAN">
@@ -1773,6 +1789,22 @@
                     <div class="form-check p-2 bg-light rounded-3 border">
                         <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-switch" value="SWITCH" checked>
                         <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-switch">Aset Keypoint (Recloser, PMCB, GH, LBS)</label>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="form-check p-2 bg-light rounded-3 border">
+                        <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-transline" value="TRANSLINE" checked>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-transline">
+                            <i class="fas fa-route text-primary me-1"></i> Aset Transline
+                        </label>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="form-check p-2 bg-light rounded-3 border">
+                        <input class="form-check-input drawer-layer-toggle ms-1" type="checkbox" id="drawer-layer-row" value="ROW" checked>
+                        <label class="form-check-label small fw-bold text-dark ms-2" for="drawer-layer-row">
+                            <i class="fas fa-tree text-success me-1"></i> Aset ROW
+                        </label>
                     </div>
                 </div>
                 <div class="col-12">
@@ -3486,6 +3518,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var setupFeederLoading = document.getElementById('setup-feeder-loading');
 
     function loadPenyulangsForUlp(ulpId, autoSelectFirst) {
+        window.loadPenyulangsForUlp = loadPenyulangsForUlp;
         setupFeederSelect.innerHTML = '<option value="">-- Memuat Penyulang... --</option>';
         setupFeederLoading.style.display = 'inline-block';
         var thisUlpRequestId = ++currentUlpRequestId;
@@ -3544,7 +3577,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var initUrlLayers = initUrlParams.get('layers');
     if (initUrlLayers) {
         var layerArr = initUrlLayers.split(',').map(function (s) { return s.trim().toUpperCase(); });
-        ['jtm', 'gardu', 'trafo', 'switch', 'temuan'].forEach(function (lId) {
+        ['jtm', 'gardu', 'trafo', 'switch', 'transline', 'row', 'temuan'].forEach(function (lId) {
             var chk = document.getElementById('setup-layer-' + lId);
             if (chk) chk.checked = layerArr.includes(chk.value.toUpperCase());
             var dChk = document.getElementById('drawer-layer-' + lId);
@@ -3642,6 +3675,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (document.getElementById('setup-layer-gardu') && document.getElementById('setup-layer-gardu').checked) layers.push('GARDU');
         if (document.getElementById('setup-layer-trafo') && document.getElementById('setup-layer-trafo').checked) layers.push('TRAFO');
         if (document.getElementById('setup-layer-switch') && document.getElementById('setup-layer-switch').checked) layers.push('SWITCH');
+        if (document.getElementById('setup-layer-transline') && document.getElementById('setup-layer-transline').checked) layers.push('TRANSLINE');
+        if (document.getElementById('setup-layer-row') && document.getElementById('setup-layer-row').checked) layers.push('ROW');
         if (document.getElementById('setup-layer-temuan') && document.getElementById('setup-layer-temuan').checked) layers.push('TEMUAN');
         return layers;
     }
@@ -3691,6 +3726,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         translinePolylineLayer = L.featureGroup().addTo(map);
+        window.translinePolylineLayer = translinePolylineLayer;
         previewPolylineLayer = L.featureGroup().addTo(map);
         previewConnectionLayer = L.featureGroup().addTo(map);
         segmentEditLayer = L.featureGroup().addTo(map);
@@ -3698,6 +3734,8 @@ document.addEventListener("DOMContentLoaded", function () {
         window.equipmentLinkLayer = equipmentLinkLayer;
         proposalsPreviewLayer = L.featureGroup().addTo(map);
         findingLayer = L.featureGroup().addTo(map);
+        window.findingLayer = findingLayer;
+        window.markerCluster = markerCluster;
 
         map.on('click', function () {
             if (translineEditor.state === TRANSLINE_STATE.IDLE) {
@@ -3978,19 +4016,23 @@ document.addEventListener("DOMContentLoaded", function () {
         if (feature) feature._renderedLatLng = [lat, lng];
         var assetId = props.id ? String(props.id) : null;
 
+        var isRowAsset = ['ROW', 'POHON_ROW', 'POHON', 'VEGETASI', 'VEGETATION'].includes(rawJ) || rawJ.includes('ROW') || rawJ.includes('POHON');
         var resolved = resolveAssetIcon(props, visual);
         var iconUrl = resolved.iconUrl;
-        var ringClass = overlay.ring_class || 'asset-ring-good';
+        var ringClass = overlay.ring_class || (isRowAsset ? 'asset-ring-row' : 'asset-ring-good');
         var symbolKey = resolved.iconKey || visual.symbol_key || props.jenis_asset || 'ASET';
 
         // 1. Icon Caching: Reuse cached L.divIcon instance per icon+ring+symbol
         var iconKey = `${iconUrl}|${ringClass}|${symbolKey}`;
         var customIcon = GIS_ICON_CACHE.get(iconKey);
         if (!customIcon) {
+            var iconContent = isRowAsset 
+                ? `<div style="width:30px;height:30px;background:#16a34a;border:2px solid #ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ffffff;box-shadow:0 3px 8px rgba(0,0,0,0.3);"><i class="fas fa-tree" style="font-size:14px;"></i></div>`
+                : `<img src="${iconUrl}" alt="${symbolKey}" class="asset-flat-svg" />`;
             var iconHtml = `
-                <div class="asset-network-marker-wrap" id="marker-asset-${props.id}" title="${props.nama_asset || ''} (${resolved.semanticRole || symbolKey})">
+                <div class="asset-network-marker-wrap ${isRowAsset ? 'asset-row-wrap' : ''}" id="marker-asset-${props.id}" title="${props.nama_asset || ''} (${resolved.semanticRole || symbolKey})">
                     <span class="asset-condition-halo ${ringClass}"></span>
-                    <img src="${iconUrl}" alt="${symbolKey}" class="asset-flat-svg" />
+                    ${iconContent}
                 </div>
             `;
 
@@ -5903,6 +5945,12 @@ document.addEventListener("DOMContentLoaded", function () {
         window.previewLayers = new Map();
         window.activeTranslines = [];
 
+        var activeLayers = getSelectedSetupLayers();
+        if (!activeLayers.includes('TRANSLINE')) {
+            // Aset Transline unchecked: keep polyline layer empty
+            return;
+        }
+
         if (!currentData) return;
 
         var networkTruth = currentData.network_truth || (currentData.meta && currentData.meta.network_truth) || null;
@@ -6442,15 +6490,17 @@ document.addEventListener("DOMContentLoaded", function () {
             var constr = (props.construction_type || '').toUpperCase();
             var scope = props.asset_scope || 'FEEDER';
 
+            var isRowType    = ['ROW', 'POHON_ROW', 'POHON', 'VEGETASI', 'VEGETATION'].includes(jenis) || strContainsAny(jenis, ['ROW', 'POHON', 'VEGETASI']) || strContainsAny(constr, ['ROW', 'POHON', 'VEGETASI']);
             var isSwitchType = ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION', 'PMCB', 'GH', 'ASS', 'KEYPOINT', 'JTM_PMCB', 'JTM_RECLOSER', 'RECLOSER_LBS'].includes(jenis) || strContainsAny(constr, ['PMS', 'PMT', 'LBS', 'REC', 'PMCB', 'GH']) || strContainsAny(jenis, ['REC', 'PMCB', 'LBS', 'SWITCH', 'KEYPOINT', 'ASS', 'GH']);
             var isGarduType  = ['GARDU', 'SUBSTATION', 'JTM_GARDU', 'GARDU_DISTRIBUSI_PORTAL', 'GARDU_CANTOL', 'GARDU_PORTAL'].includes(jenis) || strContainsAny(constr, ['TM-8', 'TM-9', 'GTT', 'GARDU']) || strContainsAny(jenis, ['GARDU']);
             var isTrafoType  = ['TRAFO', 'TRANSFORMER', 'JTM_TRAFO', 'TRANSFORMATOR'].includes(jenis) || strContainsAny(constr, ['DISTRIBUSI', 'TRAFO']) || strContainsAny(jenis, ['TRAFO']);
-            var isJtmType    = !isSwitchType && !isGarduType && !isTrafoType;
+            var isJtmType    = !isSwitchType && !isGarduType && !isTrafoType && !isRowType;
 
             var shouldRender = false;
             if (isSwitchType && activeLayers.includes('SWITCH')) shouldRender = true;
             else if (isGarduType && activeLayers.includes('GARDU')) shouldRender = true;
             else if (isTrafoType && activeLayers.includes('TRAFO')) shouldRender = true;
+            else if (isRowType && activeLayers.includes('ROW')) shouldRender = true;
             else if (isJtmType && activeLayers.includes('JTM')) shouldRender = true;
 
             if (shouldRender && geom.coordinates && isValidLatLng(geom.coordinates[1], geom.coordinates[0])) {
@@ -6470,6 +6520,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (isGarduType) renderedGardu++;
                     else if (isTrafoType) renderedTrafo++;
                     else if (isSwitchType) renderedSwitch++;
+                    else if (isRowType) { /* row counted */ }
                     else renderedJtm++;
 
                     if ((isSwitchType || isGarduType || isTrafoType) && props.parent_asset_id) {
@@ -6637,15 +6688,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var fKey = String(currentFeederId);
 
-        // 1. In-Memory Cache Check: If feeder data already in memory, render immediately with 0 network calls!
+        // 1. In-Memory Cache Check: If feeder data already in memory and contains requested layers, render immediately!
         var cachedEntry = window.SIDAK_GIS_NETWORK_CACHE_BY_FEEDER.get(fKey);
-        if (cachedEntry && cachedEntry.data) {
+        var activeLayers = getSelectedSetupLayers();
+        var cacheHasTemuan = cachedEntry && cachedEntry.data && Array.isArray(cachedEntry.data.features) && cachedEntry.data.features.some(f => (f.properties && f.properties.entity_type === 'TEMUAN'));
+        var cacheMissingTemuan = activeLayers.includes('TEMUAN') && !cacheHasTemuan && !(cachedEntry && cachedEntry.data && cachedEntry.data.meta && cachedEntry.data.meta.temuan_count === 0);
+
+        if (cachedEntry && cachedEntry.data && !cacheMissingTemuan) {
             currentData = cachedEntry.data;
             window.currentGisData = currentData;
             window.SIDAK_GIS_NETWORK_CACHE = cachedEntry;
             renderFilteredLayers(autoFitBounds);
             fetchPendingBadgeCount();
             loadGisProposalsOnDemand();
+            if (activeLayers.includes('TEMUAN')) {
+                var findingCount = findingLayer ? findingLayer.getLayers().length : 0;
+                if (findingCount > 0) {
+                    notifyGis('Menampilkan ' + findingCount + ' temuan inspeksi pada peta.', 'info');
+                } else {
+                    notifyGis('Tidak ada temuan inspeksi aktif untuk penyulang ini.', 'warning');
+                }
+            }
             if (typeof callback === 'function') callback();
             return;
         }
@@ -6780,7 +6843,13 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('drawer-layer-trafo').checked = document.getElementById('setup-layer-trafo').checked;
         }
         if (document.getElementById('drawer-layer-switch') && document.getElementById('setup-layer-switch')) {
-            document.getElementById('setup-layer-switch').checked = document.getElementById('drawer-layer-switch').checked;
+            document.getElementById('drawer-layer-switch').checked = document.getElementById('setup-layer-switch').checked;
+        }
+        if (document.getElementById('drawer-layer-transline') && document.getElementById('setup-layer-transline')) {
+            document.getElementById('drawer-layer-transline').checked = document.getElementById('setup-layer-transline').checked;
+        }
+        if (document.getElementById('drawer-layer-row') && document.getElementById('setup-layer-row')) {
+            document.getElementById('drawer-layer-row').checked = document.getElementById('setup-layer-row').checked;
         }
         if (document.getElementById('drawer-layer-temuan') && document.getElementById('setup-layer-temuan')) {
             document.getElementById('drawer-layer-temuan').checked = document.getElementById('setup-layer-temuan').checked;
@@ -6823,16 +6892,48 @@ document.addEventListener("DOMContentLoaded", function () {
         if (document.getElementById('drawer-layer-switch') && document.getElementById('setup-layer-switch')) {
             document.getElementById('setup-layer-switch').checked = document.getElementById('drawer-layer-switch').checked;
         }
+        if (document.getElementById('drawer-layer-transline') && document.getElementById('setup-layer-transline')) {
+            document.getElementById('setup-layer-transline').checked = document.getElementById('drawer-layer-transline').checked;
+        }
+        if (document.getElementById('drawer-layer-row') && document.getElementById('setup-layer-row')) {
+            document.getElementById('setup-layer-row').checked = document.getElementById('drawer-layer-row').checked;
+        }
         if (document.getElementById('drawer-layer-temuan') && document.getElementById('setup-layer-temuan')) {
             document.getElementById('setup-layer-temuan').checked = document.getElementById('drawer-layer-temuan').checked;
         }
 
         safeHideOffcanvas('offcanvas-filter-sheet');
         var fKey = String(currentFeederId);
-        if (window.SIDAK_GIS_NETWORK_CACHE && window.SIDAK_GIS_NETWORK_CACHE.feederId === fKey) {
+        var activeLayers = getSelectedSetupLayers();
+        var cachedEntry = window.SIDAK_GIS_NETWORK_CACHE_BY_FEEDER.get(fKey);
+        var cacheHasTemuan = cachedEntry && cachedEntry.data && Array.isArray(cachedEntry.data.features) && cachedEntry.data.features.some(f => (f.properties && f.properties.entity_type === 'TEMUAN'));
+        var cacheMissingTemuan = activeLayers.includes('TEMUAN') && !cacheHasTemuan && !(cachedEntry && cachedEntry.data && cachedEntry.data.meta && cachedEntry.data.meta.temuan_count === 0);
+
+        if (!cacheMissingTemuan && cachedEntry && cachedEntry.data) {
+            currentData = cachedEntry.data;
             renderFilteredLayers(false);
+            if (activeLayers.includes('TEMUAN')) {
+                var findingCount = findingLayer ? findingLayer.getLayers().length : 0;
+                if (findingCount > 0) {
+                    notifyGis('Menampilkan ' + findingCount + ' temuan inspeksi pada peta.', 'info');
+                } else {
+                    notifyGis('Tidak ada temuan inspeksi aktif untuk penyulang ini.', 'warning');
+                }
+            }
         } else {
-            loadGisNetworkOnDemand(true);
+            if (activeLayers.includes('TEMUAN')) {
+                notifyGis('Memuat layer temuan inspeksi...', 'info');
+            }
+            loadGisNetworkOnDemand(false, function() {
+                if (activeLayers.includes('TEMUAN')) {
+                    var findingCount = findingLayer ? findingLayer.getLayers().length : 0;
+                    if (findingCount > 0) {
+                        notifyGis('Menampilkan ' + findingCount + ' temuan inspeksi pada peta.', 'info');
+                    } else {
+                        notifyGis('Tidak ada temuan inspeksi aktif untuk penyulang ini.', 'warning');
+                    }
+                }
+            });
         }
     }, 'APPLY_DRAWER_FILTER');
 

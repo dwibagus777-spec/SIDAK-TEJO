@@ -20,6 +20,28 @@ class AssetVisualRegistryService
      */
     public const SYMBOLS = [
         // ==========================================================
+        // 0. ROW & VEGETATION FAMILY
+        // ==========================================================
+        'POHON_ROW' => [
+            'symbol_key'         => 'POHON_ROW',
+            'label'              => 'Aset ROW (Pohon & Vegetasi)',
+            'category'           => 'vegetation',
+            'family'             => 'ROW',
+            'visual_family'      => 'ENVIRONMENTAL_HAZARD',
+            'transline_behavior' => 'PROXIMITY_HAZARD',
+            'svg_file'           => 'tree.svg',
+            'svg_path'           => '/assets/icons/network/tree.svg',
+            'png_file'           => 'tree.png',
+            'png_path'           => '/assets/gis/icons/tree.png',
+            'color'              => '#16a34a',
+            'shape'              => 'tree',
+            'map_priority'       => 20,
+            'marker_anchor'      => [16, 16],
+            'popup_anchor'       => [0, -16],
+            'description'        => 'Titik vegetasi atau pohon yang berada dalam jarak bebas (ROW) jaringan SUTM 20kV',
+        ],
+
+        // ==========================================================
         // 1. TM CONSTRUCTION FAMILY (Canonical Donut Ring Silhouette)
         // ==========================================================
         'TM_1' => [
@@ -459,6 +481,9 @@ class AssetVisualRegistryService
             // Fault Passage Indicators
             str_contains($c, 'FPI_3') || str_contains($c, 'I3') || in_array($j, ['I3', 'INDIKATOR_3', 'FAULT_INDICATOR_3', 'FPI_3'], true) => 'I3',
             str_contains($c, 'FPI_2') || str_contains($c, 'I2') || in_array($j, ['I2', 'INDIKATOR_2', 'FAULT_INDICATOR_2', 'FPI_2'], true) => 'I2',
+
+            // ROW / Pohon / Vegetasi
+            in_array($j, ['ROW', 'POHON_ROW', 'POHON', 'VEGETASI', 'VEGETATION'], true) || str_contains($c, 'ROW') || str_contains($c, 'POHON') || str_contains($j, 'ROW') || str_contains($j, 'POHON') => 'POHON_ROW',
 
             // Explicit Category Fallbacks
             in_array($j, ['DISTRIBUSI', 'TRAFO', 'TRAFO_DISTRIBUSI', 'GARDU', 'GARDU_DISTRIBUSI', 'TRANSFORMER'], true) || str_contains($c, 'TRAFO') || str_starts_with($k, 'SDJ-') || str_starts_with($k, 'GD-') || str_starts_with($k, 'TR-') => 'GARDU_GTT1_DIST',

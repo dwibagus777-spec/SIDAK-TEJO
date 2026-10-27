@@ -231,7 +231,7 @@ class GisController extends BaseController
 
         $layers = (string)(
             (method_exists($this->request, 'getGet') ? $this->request->getGet('layers') : null)
-            ?? ($_GET['layers'] ?? 'JTM,GARDU,TRAFO,SWITCH')
+            ?? ($_GET['layers'] ?? 'JTM,GARDU,TRAFO,SWITCH,TRANSLINE,ROW,TEMUAN')
         );
 
         $filters = [

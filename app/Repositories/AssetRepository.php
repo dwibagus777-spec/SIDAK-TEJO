@@ -812,6 +812,9 @@ return [
                 $includeSwitchEquipment = true;
                 $allowedJenisList = array_merge($allowedJenisList, ['SWITCH', 'LBS', 'LBSM', 'RECLOSER', 'SECTIONALIZER', 'PROTECTION', 'RECLOSER_LBS', 'SAKLAR_FUSE_CUTOUT', 'PMCB', 'GH', 'ASS', 'KEYPOINT', 'jtm_pmcb', 'jtm_recloser']);
             }
+            if (in_array('ROW', $layers)) {
+                $allowedJenisList = array_merge($allowedJenisList, ['ROW', 'POHON_ROW', 'POHON', 'VEGETASI', 'VEGETATION', 'POHON_JTM']);
+            }
 
             if (empty($allowedJenisList)) {
                 return [];

@@ -198,9 +198,10 @@
                         <label for="filter_prioritas" class="small font-weight-bold">Prioritas</label>
                         <select id="filter_prioritas" class="form-control form-control-sm select2">
                             <option value="">-- Semua Prioritas --</option>
-                            <option value="EMERGENCY">EMERGENCY</option>
-                            <option value="HIGH">HIGH</option>
-                            <option value="MEDIUM">MEDIUM</option>
+                            <option value="EMERGENCY" <?= (!empty($selectedPrioritas) && strtoupper($selectedPrioritas) === 'EMERGENCY') ? 'selected' : '' ?>>EMERGENCY</option>
+                            <option value="HIGH" <?= (!empty($selectedPrioritas) && strtoupper($selectedPrioritas) === 'HIGH') ? 'selected' : '' ?>>HIGH</option>
+                            <option value="MEDIUM" <?= (!empty($selectedPrioritas) && strtoupper($selectedPrioritas) === 'MEDIUM') ? 'selected' : '' ?>>MEDIUM</option>
+                            <option value="LOW" <?= (!empty($selectedPrioritas) && strtoupper($selectedPrioritas) === 'LOW') ? 'selected' : '' ?>>LOW</option>
                         </select>
                     </div>
 
@@ -240,6 +241,7 @@
 <!-- TABEL DATA TEMUAN -->
 <div class="row">
     <div class="col-12">
+        <div id="temuan-empty-filter-notice" class="alert alert-info py-2 px-3 small d-none mb-3 shadow-sm"><i class="fas fa-info-circle me-1"></i> Tidak ditemukan data temuan yang cocok dengan filter yang diterapkan. Filter tetap dipertahankan.</div>
         <div class="card card-modern">
             <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center py-3">
                 <h3 class="card-title text-dark font-weight-bold"><i class="fas fa-list-check text-primary mr-1"></i> Tabel Temuan Inspeksi</h3>
@@ -415,7 +417,7 @@
     $(function () {
         // 1. Ambil URL parameters untuk pre-populate filter dari dashboard redirect
         const urlParams = new URLSearchParams(window.location.search);
-        const urlQ = urlParams.get('q') || urlParams.get('query') || urlParams.get('penyulang') || urlParams.get('jenis') || urlParams.get('search') || '';
+        const urlQ = urlParams.get('q') || urlParams.get('query') || urlParams.get('search') || '';
         const urlPelaksana = urlParams.get('pelaksana');
         const urlPrioritas = urlParams.get('prioritas') || '<?= esc($selectedPrioritas ?? '', 'js') ?>';
         const urlStatus = urlParams.get('status') || '<?= esc($selectedStatus ?? '', 'js') ?>';
@@ -506,6 +508,16 @@
             "responsive": false,
             "autoWidth": false,
             "language": window.SIDAK_DATATABLES_ID
+        });
+
+        table.on("xhr", function() {
+            const json = table.ajax.json();
+            const isFiltered = Boolean($("#filter_prioritas").val() || $("#filter_penyulang_id").val() || $("#filter_ulp_id").val() || $("#filter_status").val());
+            if (json && json.recordsFiltered === 0 && isFiltered) {
+                $("#temuan-empty-filter-notice").removeClass("d-none");
+            } else {
+                $("#temuan-empty-filter-notice").addClass("d-none");
+            }
         });
 
         // 3. Trigger reload table on filter change

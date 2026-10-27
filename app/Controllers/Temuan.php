@@ -211,6 +211,18 @@ class Temuan extends BaseController
         $selectedStatus      = $this->request->getGet('status') ? (string)$this->request->getGet('status') : null;
         $selectedPrioritas   = $this->request->getGet('prioritas') ? (string)$this->request->getGet('prioritas') : null;
 
+        // Name-based feeder fallback: if feeder name was passed (e.g. ?penyulang=BANJAR+KEMANTREN)
+        if (!$selectedPenyulangId && ($feederName = $this->request->getGet('penyulang') ?: $this->request->getGet('feeder'))) {
+            $db = \Config\Database::connect();
+            $pRow = $db->table('penyulang')->like('nama_penyulang', trim((string)$feederName))->get()->getRowArray();
+            if (!empty($pRow['id'])) {
+                $selectedPenyulangId = (int)$pRow['id'];
+                if (!$selectedUlpId && !empty($pRow['ulp_id'])) {
+                    $selectedUlpId = (int)$pRow['ulp_id'];
+                }
+            }
+        }
+
         // Auto-align ULP if penyulang is selected without ulp_id
         if ($selectedPenyulangId && !$selectedUlpId && !$isRestricted) {
             $db = \Config\Database::connect();

@@ -73,7 +73,50 @@ class VoiceAIService
         $actionType   = 'NONE';
 
         // 4. Intent Execution Switch
-        if ($intent === 'NAVIGATE_PAGE') {
+        if ($intent === 'NAVIGATE_TEMUAN') {
+            $actionType = 'NAVIGATE';
+            $prio       = $intentResult['params']['prioritas'] ?? null;
+            $feederId   = $intentResult['params']['penyulang_id'] ?? null;
+            $ulpId      = $intentResult['params']['ulp_id'] ?? null;
+            $feederName = $intentResult['params']['nama_penyulang'] ?? null;
+
+            $queryParams = [];
+            $descParts   = [];
+
+            if ($prio !== null) {
+                $queryParams['prioritas'] = $prio;
+                $descParts[] = "prioritas {$prio}";
+            }
+            if ($feederId !== null) {
+                $queryParams['penyulang_id'] = $feederId;
+                if ($ulpId !== null) {
+                    $queryParams['ulp_id'] = $ulpId;
+                }
+                $descParts[] = "penyulang " . ($feederName ?: $feederId);
+            }
+
+            $targetUrl = site_url('temuan');
+            if (!empty($queryParams)) {
+                $targetUrl .= '?' . http_build_query($queryParams);
+            }
+
+            if (!empty($descParts)) {
+                $responseText = "Siap, membuka daftar temuan dengan " . implode(' dan ', $descParts) . ".";
+            } else {
+                $responseText = "Siap, membuka halaman Data Temuan.";
+            }
+
+            $action = [
+                'type'    => 'NAVIGATE',
+                'url'     => $targetUrl,
+                'filters' => [
+                    'prioritas'      => $prio,
+                    'penyulang_id'   => $feederId,
+                    'ulp_id'         => $ulpId,
+                    'nama_penyulang' => $feederName
+                ]
+            ];
+        } elseif ($intent === 'NAVIGATE_PAGE') {
             $actionType   = 'NAVIGATE';
             $targetPage   = $intentResult['params']['target_page'] ?? 'Data Temuan';
             $targetUrl    = $intentResult['params']['url'] ?? site_url('temuan');

@@ -76,7 +76,15 @@ class IntentEngine
             ];
         }
 
-        // 3. Navigation Keyword Check
+        // 3. Specific Temuan Query / Filter Intent
+        if (str_contains($lowerText, 'temuan')) {
+            $temuanIntent = $this->parseTemuanNavigation($lowerText);
+            if ($temuanIntent !== null) {
+                return $temuanIntent;
+            }
+        }
+
+        // 4. Navigation Keyword Check
         if (str_starts_with($lowerText, 'buka ') || str_starts_with($lowerText, 'open ') || str_starts_with($lowerText, 'go to ')) {
             $target = $this->extractNavigationTarget($lowerText);
             return [
@@ -86,7 +94,7 @@ class IntentEngine
             ];
         }
 
-        // 4. Quick Keyword Search / SLA / Summary Check
+        // 5. Quick Keyword Search / SLA / Summary Check
         foreach ($this->definedIntents as $intentKey => $def) {
             foreach ($def['keywords'] as $kw) {
                 if (str_contains($lowerText, $kw)) {
@@ -155,5 +163,72 @@ class IntentEngine
             return ['page' => 'Executive KPI', 'url' => site_url('executive-dashboard#tab-executive')];
         }
         return ['page' => 'Data Temuan', 'url' => site_url('temuan')];
+    }
+
+    /**
+     * Parse explicit temuan navigation intent with strict priority & location/feeder filters.
+     */
+    public function parseTemuanNavigation(string $text): ?array
+    {
+        $prioritas = null;
+        if (preg_match('/\b(emergency|darurat|kritis)\b/i', $text)) {
+            $prioritas = 'EMERGENCY';
+        } elseif (preg_match('/\b(high|tinggi|urgent)\b/i', $text)) {
+            $prioritas = 'HIGH';
+        } elseif (preg_match('/\b(medium|sedang)\b/i', $text)) {
+            $prioritas = 'MEDIUM';
+        } elseif (preg_match('/\b(low|rendah)\b/i', $text)) {
+            $prioritas = 'LOW';
+        }
+
+        $penyulangId = null;
+        $ulpId = null;
+        $namaPenyulang = null;
+
+        try {
+            $db = \Config\Database::connect();
+            $feeders = $db->table('penyulang')
+                ->select('id, nama_penyulang, ulp_id')
+                ->get()
+                ->getResultArray();
+
+            // Match longest feeder name first to prevent substring collision
+            usort($feeders, function ($a, $b) {
+                return strlen($b['nama_penyulang']) - strlen($a['nama_penyulang']);
+            });
+
+            foreach ($feeders as $f) {
+                $fName = strtolower(trim((string)$f['nama_penyulang']));
+                if (empty($fName)) continue;
+                $fRegex = preg_quote($fName, '/');
+                $fRegex = preg_replace('/\s+/', '\s*', $fRegex);
+                if (preg_match('/\b' . $fRegex . '\b/i', $text)) {
+                    $penyulangId = (int)$f['id'];
+                    $ulpId = !empty($f['ulp_id']) ? (int)$f['ulp_id'] : null;
+                    $namaPenyulang = $f['nama_penyulang'];
+                    break;
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', '[IntentEngine] Feeder lookup failed: ' . $e->getMessage());
+        }
+
+        // Dedicated fallback for known Banjar Kemantren variations if DB query was unavailable
+        if (!$penyulangId && preg_match('/banjar\s*kemantren/i', $text)) {
+            $penyulangId = 15;
+            $ulpId = 1;
+            $namaPenyulang = 'BANJAR KEMANTREN';
+        }
+
+        return [
+            'intent'     => 'NAVIGATE_TEMUAN',
+            'params'     => [
+                'prioritas'      => $prioritas,
+                'penyulang_id'   => $penyulangId,
+                'ulp_id'         => $ulpId,
+                'nama_penyulang' => $namaPenyulang
+            ],
+            'confidence' => 0.99
+        ];
     }
 }

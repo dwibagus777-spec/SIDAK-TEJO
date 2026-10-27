@@ -3138,6 +3138,42 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             let recognition = null;
             let isListening = false;
             let isContinuous = false; // Only continuous when explicitly active
+            let voiceRestartTimer = null;
+
+            window.isVoiceSessionActive = function() {
+                return Boolean(isListening || isContinuous || $('#btn-global-mic').hasClass('listening'));
+            };
+
+            window.stopGlobalVoiceSession = function() {
+                if (voiceRestartTimer) {
+                    clearTimeout(voiceRestartTimer);
+                    voiceRestartTimer = null;
+                }
+                isContinuous = false;
+                isListening = false;
+
+                if (recognition) {
+                    try { recognition.abort(); } catch(e) {}
+                    try { recognition.stop(); } catch(e) {}
+                }
+
+                if ('speechSynthesis' in window) {
+                    try { window.speechSynthesis.cancel(); } catch(e) {}
+                }
+
+                if (window.activeMicStream) {
+                    try {
+                        window.activeMicStream.getTracks().forEach(function(track) {
+                            try { track.stop(); } catch(te) {}
+                        });
+                    } catch(se) {}
+                    window.activeMicStream = null;
+                }
+
+                $('#btn-global-mic').removeClass('listening');
+                $('#global-voice-bubble').addClass('d-none');
+                $('#global-voice-text').text('');
+            };
 
             // Load Proactive Smart Notifications on page load (FITUR 8)
             // fetchSmartNotifications();
@@ -3163,10 +3199,13 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             function initSpeechRecognition() {
                 if (!SpeechRecognition) return;
                 try {
+                    if (recognition) {
+                        try { recognition.abort(); } catch(e) {}
+                    }
                     recognition = new SpeechRecognition();
                     recognition.lang = 'id-ID';
                     recognition.interimResults = false;
-                    recognition.continuous = isContinuous;
+                    recognition.continuous = false; // Discrete recognition segments prevent unstopped mic buffers
 
                     recognition.onstart = function() {
                         isListening = true;
@@ -3176,34 +3215,42 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                     };
 
                     recognition.onerror = function(event) {
-                        isListening = false;
-                        $('#btn-global-mic').removeClass('listening');
                         console.warn('[VOICE_AI] SpeechRecognition error:', event.error);
-                        if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
-                            isContinuous = false;
-                            var friendlyMsg = (event.error === 'audio-capture') 
-                                ? 'Perangkat mikrofon fisik tidak dapat menangkap suara.' 
-                                : 'Izin akses mikrofon belum diberikan pada browser ini.';
-                            if (typeof Swal !== 'undefined') {
-                                Swal.fire({ toast: true, position: 'top', icon: 'warning', title: 'Perintah Suara', text: friendlyMsg, showConfirmButton: false, timer: 3500 });
+                        if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture' || event.error === 'aborted') {
+                            window.stopGlobalVoiceSession();
+                            if (event.error !== 'aborted') {
+                                var friendlyMsg = (event.error === 'audio-capture') 
+                                    ? 'Perangkat mikrofon fisik tidak dapat menangkap suara.' 
+                                    : 'Izin akses mikrofon belum diberikan pada browser ini.';
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire({ toast: true, position: 'top', icon: 'warning', title: 'Perintah Suara', text: friendlyMsg, showConfirmButton: false, timer: 3500 });
+                                }
                             }
                         }
                     };
 
                     recognition.onend = function() {
                         isListening = false;
-                        $('#btn-global-mic').removeClass('listening');
-                        if (isContinuous) {
-                            setTimeout(() => { 
+                        if (!isContinuous) {
+                            $('#btn-global-mic').removeClass('listening');
+                            $('#global-voice-bubble').addClass('d-none');
+                        } else {
+                            if (voiceRestartTimer) clearTimeout(voiceRestartTimer);
+                            voiceRestartTimer = setTimeout(() => { 
                                 if (isContinuous && recognition) {
-                                    try { recognition.start(); } catch(e) { isContinuous = false; }
+                                    try {
+                                        recognition.start();
+                                    } catch(e) {
+                                        window.stopGlobalVoiceSession();
+                                    }
                                 }
-                            }, 1000);
+                            }, 800);
                         }
                     };
 
-
                     recognition.onresult = function(event) {
+                        if (!window.isVoiceSessionActive()) return;
+
                         const lastIndex = event.results.length - 1;
                         const resultText = event.results[lastIndex][0].transcript.toLowerCase().trim();
                         
@@ -3211,7 +3258,9 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                         $('#global-voice-text').html('<i class="fas fa-quote-left me-1 text-warning"></i> "' + resultText + '"');
                         
                         setTimeout(function() {
-                            $('#global-voice-bubble').addClass('d-none');
+                            if (!window.isVoiceSessionActive()) {
+                                $('#global-voice-bubble').addClass('d-none');
+                            }
                         }, 4000);
 
                         // Wake Word Detector ("Halo SIDAK", "Hai SIDAK", "SIDAK") (FITUR 1)
@@ -3467,6 +3516,13 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             });
 
             window.triggerGlobalVoiceMic = async function() {
+                // Symmetrical Toggle: If active, STOP IMMEDIATELY (no await, instant clean shutdown)
+                if (window.isVoiceSessionActive()) {
+                    window.stopGlobalVoiceSession();
+                    return;
+                }
+
+                // If inactive, run preflight diagnostic & start
                 const diag = await runVoiceDiagnostic(false);
                 if (!diag.hasSpeech) {
                     Swal.fire({
@@ -3488,29 +3544,46 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                     return;
                 }
 
-                if (!recognition) {
-                    initSpeechRecognition();
-                }
+                initSpeechRecognition();
 
-                if (!isListening) {
-                    isContinuous = true;
-                    try { recognition.start(); } catch(err) {
-                        try { recognition.stop(); setTimeout(() => recognition.start(), 150); } catch(ex) {}
-                    }
-                } else {
-                    isContinuous = false;
-                    try { recognition.stop(); } catch(err) {}
+                isContinuous = true;
+                try {
+                    recognition.start();
+                } catch(err) {
+                    try {
+                        recognition.abort();
+                        setTimeout(() => { if (isContinuous && recognition) recognition.start(); }, 150);
+                    } catch(ex) {}
                 }
             };
 
             let lastMicTap = 0;
-            $(document).on('click touchstart', '#btn-global-mic', function(e) {
+            $(document).off('click', '#btn-global-mic').on('click', '#btn-global-mic', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 const now = Date.now();
-                if (now - lastMicTap < 400) return;
+                if (now - lastMicTap < 300) return;
                 lastMicTap = now;
                 window.triggerGlobalVoiceMic();
+            });
+
+            // Clean shutdown on page unload / navigation
+            window.addEventListener('beforeunload', function() {
+                window.stopGlobalVoiceSession();
+            });
+
+            // Clean shutdown when document hidden / app minimized
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    window.stopGlobalVoiceSession();
+                }
+            });
+
+            // Suppress and clean voice session when modal is opened
+            $(document).on('show.bs.modal', function(e) {
+                if (e.target && e.target.id !== 'modalVoiceDiagnostic') {
+                    window.stopGlobalVoiceSession();
+                }
             });
 
             function speakAiFeedback(msg) {
@@ -3528,18 +3601,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             function executeAiCommand(text) {
                 if (!text || text.length < 2) return;
 
-                // 1. Smart DataTable Filter Integration (FITUR 6)
-                if (window.location.href.includes('/temuan') && $.fn.DataTable && $.fn.DataTable.isDataTable('#tableTemuan')) {
-                    if (text.includes('minggu ini') || text.includes('hari ini') || text.includes('belum selesai') || text.includes('emergency') || text.includes('hotspot') || text.includes('row')) {
-                        const table = $('#tableTemuan').DataTable();
-                        table.search(text).draw();
-                        speakAiFeedback("Memfilter tabel data temuan untuk kata kunci " + text);
-                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Smart DataTable Filter', text: 'Tabel difilter: "' + text + '"', showConfirmButton: false, timer: 2500 });
-                        return;
-                    }
-                }
-
-                // 2. Send command to backend AI API
+                // Send command to backend AI API
                 $.ajax({
                     url: "<?= site_url('api/v1/voice-ai/process') ?>",
                     type: "POST",
@@ -3553,7 +3615,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                 toast: true,
                                 position: 'top',
                                 icon: 'info',
-                                title: 'ðŸ¤– SIDAK AI Assistant',
+                                title: 'SIDAK AI Assistant',
                                 text: res.response_text,
                                 showConfirmButton: false,
                                 timer: 4500,
@@ -3563,7 +3625,24 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                             // Action Handling
                             if (res.action) {
                                 if (res.action.type === 'NAVIGATE' && res.action.url) {
-                                    setTimeout(() => window.location.href = res.action.url, 1200);
+                                    // If already on /temuan page, apply filters directly without full reload
+                                    if (window.location.pathname.includes('/temuan') && !window.location.pathname.includes('/create') && res.action.filters) {
+                                        if (res.action.filters.prioritas) {
+                                            $('#filter_prioritas').val(res.action.filters.prioritas.toUpperCase()).trigger('change.select2');
+                                        }
+                                        if (res.action.filters.penyulang_id) {
+                                            $('#filter_penyulang_id').val(res.action.filters.penyulang_id).trigger('change.select2');
+                                        }
+                                        if (res.action.filters.ulp_id) {
+                                            $('#filter_ulp_id').val(res.action.filters.ulp_id).trigger('change.select2');
+                                        }
+                                        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#table-temuan')) {
+                                            $('#table-temuan').DataTable().ajax.reload();
+                                        }
+                                        try { window.history.pushState(null, '', res.action.url); } catch(e) {}
+                                    } else {
+                                        setTimeout(() => { window.location.href = res.action.url; }, 1000);
+                                    }
                                 }
                             }
                         }
@@ -3577,6 +3656,38 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
 
             function processVoiceCommandFallback(text) {
                 text = text.toLowerCase().trim();
+
+                // Direct Temuan Filter Fallback
+                if (text.includes('temuan')) {
+                    let prio = null;
+                    if (/\b(high|tinggi|urgent)\b/i.test(text)) prio = 'HIGH';
+                    else if (/\b(emergency|darurat|kritis)\b/i.test(text)) prio = 'EMERGENCY';
+                    else if (/\b(medium|sedang)\b/i.test(text)) prio = 'MEDIUM';
+                    else if (/\b(low|rendah)\b/i.test(text)) prio = 'LOW';
+
+                    let feederParam = '';
+                    if (/banjar\s*kemantren/i.test(text)) {
+                        feederParam = 'penyulang=BANJAR+KEMANTREN';
+                    }
+
+                    let q = [];
+                    let desc = [];
+                    if (prio) {
+                        q.push('prioritas=' + prio);
+                        desc.push('prioritas ' + prio);
+                    }
+                    if (feederParam) {
+                        q.push(feederParam);
+                        desc.push('penyulang Banjar Kemantren');
+                    }
+
+                    let url = '<?= site_url("temuan") ?>' + (q.length ? '?' + q.join('&') : '');
+                    let msg = desc.length ? ('Membuka data temuan dengan ' + desc.join(' dan ')) : 'Membuka data temuan';
+                    speakAiFeedback(msg);
+                    setTimeout(() => window.location.href = url, 800);
+                    return;
+                }
+
                 let rawTokens = text.replace(/\b(tolong|mohon|coba|tampilkan|lihat|buka|cari|temukan|filter|saring|data|tabel|daftar)\b/gi, '').trim();
 
                 if (rawTokens.includes('dashboard')) {

@@ -5254,14 +5254,6 @@ document.addEventListener("DOMContentLoaded", function () {
             notifyGis(err.message, 'error', 'Peringatan Koneksi');
         });
     }, 'SUBMIT_CONNECTION');
-        .catch(err => {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> <?= !empty($isAdmin) ? 'Terapkan Langsung' : 'Kirim Usulan' ?>';
-            }
-            notifyGis('Gagal memperbarui koneksi: ' + err.message, 'error');
-        });
-    }, 'SUBMIT_CONNECTION');
 
     // ========================================================
     // ⚡ WORKFLOW 3: SPESIFIKASI KONDUKTOR SEGMEN (Pair A -> B)

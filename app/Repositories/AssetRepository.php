@@ -74,6 +74,14 @@ class AssetRepository
         return $res['data'] ?? [];
     }
 
+    public function countFilteredAssets(array $filters = [], ?int $userUlpId = null): int
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('assets a');
+        $this->applyAssetFilters($builder, $filters, $userUlpId);
+        return (int)$builder->countAllResults();
+    }
+
     private function applyAssetFilters($builder, array $filters = [], ?int $userUlpId = null): void
     {
         $builder->where('a.deleted_at IS NULL');
@@ -237,10 +245,14 @@ return [
             }
 
             $updateData = [
-                'deleted_at'     => date('Y-m-d H:i:s'),
-                'deleted_by'     => $userId > 0 ? $userId : null,
-                'deleted_reason' => $reason,
+                'deleted_at' => date('Y-m-d H:i:s'),
             ];
+            if ($db->fieldExists('deleted_by', 'assets')) {
+                $updateData['deleted_by'] = $userId > 0 ? $userId : null;
+            }
+            if ($db->fieldExists('deleted_reason', 'assets')) {
+                $updateData['deleted_reason'] = $reason;
+            }
 
             $builder->update($updateData);
             return $db->affectedRows();
@@ -269,10 +281,14 @@ return [
             }
 
             $updateData = [
-                'deleted_at'     => date('Y-m-d H:i:s'),
-                'deleted_by'     => $userId > 0 ? $userId : null,
-                'deleted_reason' => $reason,
+                'deleted_at' => date('Y-m-d H:i:s'),
             ];
+            if ($db->fieldExists('deleted_by', 'assets')) {
+                $updateData['deleted_by'] = $userId > 0 ? $userId : null;
+            }
+            if ($db->fieldExists('deleted_reason', 'assets')) {
+                $updateData['deleted_reason'] = $reason;
+            }
 
             $builder->update($updateData);
             return $db->affectedRows();

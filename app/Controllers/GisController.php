@@ -2167,6 +2167,116 @@ class GisController extends BaseController
 
         return $this->response->setStatusCode(422)->setJSON($result);
     }
+
+    /**
+     * Soft Delete Asset directly from GIS with Role Scoping & Pre-checks
+     * POST /gis/api-delete-asset/{id}
+     */
+    public function apiDeleteAsset(int $id): ResponseInterface
+    {
+        $session = session();
+        $userRole = strtolower((string)$session->get('user_role'));
+        $allowedRoles = ['administrator', 'admin', 'admin_pusat', 'admin_ulp'];
+
+        if (!in_array($userRole, $allowedRoles, true)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Akses ditolak. Hanya administrator dan Admin ULP yang berwenang menghapus aset.'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $asset = $db->table('assets')->where('id', $id)->where('deleted_at IS NULL')->get()->getRowArray();
+        if (!$asset) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'success' => false,
+                'message' => 'Aset tidak ditemukan atau sudah dihapus.'
+            ]);
+        }
+
+        // Role Scoping: Admin ULP only within their own ULP
+        if ($userRole === 'admin_ulp') {
+            $userUlpId = (int)$session->get('user_ulp_id');
+            if ((int)$asset['ulp_id'] !== $userUlpId) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'success' => false,
+                    'message' => 'Akses ditolak. Admin ULP hanya dapat menghapus aset di wilayah kerja ULP-nya sendiri.'
+                ]);
+            }
+        }
+
+        $reason = trim((string)$this->request->getPost('reason'));
+        if (empty($reason)) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'success' => false,
+                'message' => 'Alasan penghapusan aset wajib diisi.'
+            ]);
+        }
+
+        // Integrity Pre-check 1: Active Transline connections
+        $activeTranslines = $db->table('gis_translines')
+            ->groupStart()
+                ->where('source_asset_id', $id)
+                ->orWhere('target_asset_id', $id)
+            ->groupEnd()
+            ->where('deleted_at IS NULL')
+            ->countAllResults();
+        if ($activeTranslines > 0) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'success' => false,
+                'message' => "Penghapusan diblokir: Aset terhubung dengan {$activeTranslines} segmen jalur transline aktif. Putuskan atau pindahkan sambungan transline di GIS terlebih dahulu."
+            ]);
+        }
+
+        // Integrity Pre-check 2: Equipment mounting relationships
+        if ($db->tableExists('asset_relationships')) {
+            $activeRels = $db->table('asset_relationships')
+                ->groupStart()
+                    ->where('parent_asset_id', $id)
+                    ->orWhere('child_asset_id', $id)
+                ->groupEnd()
+                ->countAllResults();
+            if ($activeRels > 0) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'success' => false,
+                    'message' => "Penghapusan diblokir: Aset memiliki {$activeRels} relasi mounting/peralatan terpasang. Lepaskan relasi peralatan di master asset terlebih dahulu."
+                ]);
+            }
+        }
+
+        // Integrity Pre-check 3: Active inspection findings
+        if ($db->tableExists('temuan')) {
+            $activeTemuan = $db->table('temuan')
+                ->where('asset_id', $id)
+                ->whereNotIn('status', ['SELESAI', 'CLOSED', 'RESOLVED'])
+                ->where('deleted_at IS NULL')
+                ->countAllResults();
+            if ($activeTemuan > 0) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'success' => false,
+                    'message' => "Penghapusan diblokir: Aset memiliki {$activeTemuan} temuan inspeksi aktif yang belum diselesaikan. Selesaikan atau tutup temuan terkait terlebih dahulu."
+                ]);
+            }
+        }
+
+        // Execute Soft Delete
+        $now = date('Y-m-d H:i:s');
+        $userId = (int)$session->get('user_id');
+        $db->table('assets')->where('id', $id)->update([
+            'deleted_at' => $now,
+            'status'     => 'DELETED',
+            'updated_at' => $now
+        ]);
+
+        log_activity('DELETE_ASSET_GIS', "Soft delete aset GIS ID {$id} [{$asset['kode_asset']}] {$asset['nama_asset']}. Alasan: {$reason}", $userId);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'success'    => true,
+            'message'    => "Aset {$asset['nama_asset']} ({$asset['kode_asset']}) berhasil di-soft delete.",
+            'asset_id'   => $id,
+            'kode_asset' => $asset['kode_asset']
+        ]);
+    }
 }
 
 

@@ -162,7 +162,7 @@ $loginHtml = view('layouts/auth');
 assertCheck("Halaman login memiliki landmark root <main>", str_contains($loginHtml, '<main class="auth-viewport-wrapper"') && str_contains($loginHtml, '</main>'));
 assertCheck("Warna status dot 'Sistem Aktif' menggunakan #0F766E (kontras 5.1:1 >= 4.5:1 WCAG AA)", str_contains($loginHtml, 'color: #0F766E;'));
 assertCheck("Warna footer build menggunakan #475569 (kontras 5.25:1 >= 4.5:1 WCAG AA)", str_contains($loginHtml, 'color: #475569;'));
-assertCheck("Tombol CTA submit menggunakan kontras gradient #0D9488 ke #0F766E (kontras >= 4.5:1)", str_contains($loginHtml, '#0D9488 0%, #0F766E 100%'));
+assertCheck("Tombol CTA submit menggunakan kontras gradient #0F766E ke #115E59 (kontras >= 5.25:1 WCAG AA)", str_contains($loginHtml, '#0F766E 0%, #115E59 100%'));
 assertCheck("Toggle password menggunakan elemen <button type=\"button\"> dengan aria-label", str_contains($loginHtml, '<button type="button" class="pw-toggle-btn"') && str_contains($loginHtml, 'aria-label="Tampilkan atau sembunyikan password"'));
 assertCheck("CSS pihak ketiga dimuat non-render-blocking dengan media=\"print\" onload", str_contains($loginHtml, 'media="print" onload="this.media=\'all\'"'));
 assertCheck("Gambar emblem memiliki atribut width='286' dan height='260' (pencegahan CLS)", str_contains($loginHtml, 'width="286"') && str_contains($loginHtml, 'height="260"'));

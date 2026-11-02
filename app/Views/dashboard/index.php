@@ -423,7 +423,7 @@
 
 <!-- ASSET SUMMARY PANEL (STRUCTURED MODULE) -->
 <?php
-    $topSelectedUlpLabel = 'Semua ULP (UP3 Sidoarjo)';
+    $topSelectedUlpLabel = 'Semua ULP';
     if (!empty($selectedUlpId) && !empty($ulpsList)) {
         foreach ($ulpsList as $u) {
             if ((int)$u['id'] === (int)$selectedUlpId) {
@@ -440,7 +440,7 @@
     <div class="d-flex align-items-center gap-2">
       <span class="badge bg-primary-subtle text-primary p-2 rounded-2"><i class="fas fa-layer-group"></i></span>
       <div>
-        <h6 class="fw-bold mb-0 text-dark" style="font-size: 13.5px;">Ringkasan Aset &amp; Infrastruktur UP3 Sidoarjo</h6>
+        <h6 class="fw-bold mb-0 text-dark" style="font-size: 13.5px;">Ringkasan Aset &amp; Infrastruktur Distribusi</h6>
         <small class="text-muted" style="font-size: 11px;">Cakupan aktif: <strong class="text-primary"><?= esc($topSelectedUlpLabel) ?></strong> &bull; <?= (int)$topUlpCount ?> ULP &bull; <?= number_format($topPenyulangCount) ?> Penyulang</small>
       </div>
     </div>
@@ -451,7 +451,7 @@
           <option value="<?= (int)$u['id'] ?>" <?= ((int)($selectedUlpId ?? 0) === (int)$u['id']) ? 'selected' : '' ?>><?= esc($u['nama_ulp']) ?></option>
         <?php endforeach; ?>
       </select>
-      <a href="<?= site_url('assets' . (!empty($selectedUlpId) ? '?ulp_id=' . (int)$selectedUlpId : '')) ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3" style="font-size: 11.5px;">
+      <a href="<?= site_url('master-assets' . (!empty($selectedUlpId) ? '?ulp_id=' . (int)$selectedUlpId : '?show_all=1')) ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3" style="font-size: 11.5px;">
         <i class="fas fa-boxes-stacked me-1"></i>Lihat Semua Aset
       </a>
     </div>
@@ -459,58 +459,70 @@
   <div class="card-body py-3 px-3 bg-light-subtle">
     <div class="row g-2">
       <div class="col-xl-2 col-md-4 col-6">
-        <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5">
-          <div class="rounded-2 bg-dark-subtle text-dark d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-cubes"></i></div>
-          <div>
-            <div class="fw-bold fs-5 text-dark lh-1 font-monospace"><?= number_format($assetSummary['total'] ?? 0) ?></div>
-            <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Total Aset</div>
+        <a href="<?= site_url('master-assets?show_all=1' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="text-decoration-none">
+          <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5 hover-elevate transition-all" style="cursor: pointer;">
+            <div class="rounded-2 bg-dark-subtle text-dark d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-cubes"></i></div>
+            <div>
+              <div class="fw-bold fs-5 text-dark lh-1 font-monospace"><?= number_format($assetSummary['total'] ?? 0) ?></div>
+              <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Total Aset</div>
+            </div>
           </div>
-        </div>
+        </a>
       </div>
       <div class="col-xl-2 col-md-4 col-6">
-        <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5">
-          <div class="rounded-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-tower-observation"></i></div>
-          <div>
-            <div class="fw-bold fs-5 text-primary lh-1 font-monospace"><?= number_format($assetSummary['jtm'] ?? 0) ?></div>
-            <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Tiang JTM</div>
+        <a href="<?= site_url('master-assets?jenis_asset=JTM' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="text-decoration-none">
+          <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5 hover-elevate transition-all" style="cursor: pointer;">
+            <div class="rounded-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-tower-observation"></i></div>
+            <div>
+              <div class="fw-bold fs-5 text-primary lh-1 font-monospace"><?= number_format($assetSummary['jtm'] ?? 0) ?></div>
+              <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Tiang JTM</div>
+            </div>
           </div>
-        </div>
+        </a>
       </div>
       <div class="col-xl-2 col-md-4 col-6">
-        <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5">
-          <div class="rounded-2 bg-info-subtle text-info d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-toggle-on"></i></div>
-          <div>
-            <div class="fw-bold fs-5 text-info lh-1 font-monospace"><?= number_format($assetSummary['keypoint'] ?? 0) ?></div>
-            <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Keypoint (LBS/Rec)</div>
+        <a href="<?= site_url('master-assets?jenis_asset=LBS' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="text-decoration-none">
+          <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5 hover-elevate transition-all" style="cursor: pointer;">
+            <div class="rounded-2 bg-info-subtle text-info d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-toggle-on"></i></div>
+            <div>
+              <div class="fw-bold fs-5 text-info lh-1 font-monospace"><?= number_format($assetSummary['keypoint'] ?? 0) ?></div>
+              <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Keypoint (LBS/Rec)</div>
+            </div>
           </div>
-        </div>
+        </a>
       </div>
       <div class="col-xl-2 col-md-4 col-6">
-        <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5">
-          <div class="rounded-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-building-shield"></i></div>
-          <div>
-            <div class="fw-bold fs-5 text-warning lh-1 font-monospace"><?= number_format($assetSummary['gardu'] ?? 0) ?></div>
-            <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Gardu</div>
+        <a href="<?= site_url('master-assets?jenis_asset=Gardu' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="text-decoration-none">
+          <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5 hover-elevate transition-all" style="cursor: pointer;">
+            <div class="rounded-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-building-shield"></i></div>
+            <div>
+              <div class="fw-bold fs-5 text-warning lh-1 font-monospace"><?= number_format($assetSummary['gardu'] ?? 0) ?></div>
+              <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Gardu</div>
+            </div>
           </div>
-        </div>
+        </a>
       </div>
       <div class="col-xl-2 col-md-4 col-6">
-        <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5">
-          <div class="rounded-2 bg-success-subtle text-success d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-bolt-lightning"></i></div>
-          <div>
-            <div class="fw-bold fs-5 text-success lh-1 font-monospace"><?= number_format($assetSummary['trafo'] ?? 0) ?></div>
-            <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Trafo</div>
+        <a href="<?= site_url('master-assets?jenis_asset=Trafo' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="text-decoration-none">
+          <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5 hover-elevate transition-all" style="cursor: pointer;">
+            <div class="rounded-2 bg-success-subtle text-success d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-bolt-lightning"></i></div>
+            <div>
+              <div class="fw-bold fs-5 text-success lh-1 font-monospace"><?= number_format($assetSummary['trafo'] ?? 0) ?></div>
+              <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Trafo</div>
+            </div>
           </div>
-        </div>
+        </a>
       </div>
       <div class="col-xl-2 col-md-4 col-6">
-        <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5">
-          <div class="rounded-2 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-tree"></i></div>
-          <div>
-            <div class="fw-bold fs-5 text-secondary lh-1 font-monospace"><?= number_format($assetSummary['pohon'] ?? 0) ?></div>
-            <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Pohon (ROW)</div>
+        <a href="<?= site_url('master-assets?jenis_asset=ROW' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="text-decoration-none">
+          <div class="p-2.5 rounded-3 bg-white border shadow-2xs h-100 d-flex align-items-center gap-2.5 hover-elevate transition-all" style="cursor: pointer;">
+            <div class="rounded-2 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"><i class="fas fa-tree"></i></div>
+            <div>
+              <div class="fw-bold fs-5 text-secondary lh-1 font-monospace"><?= number_format($assetSummary['pohon'] ?? 0) ?></div>
+              <div class="text-muted fw-semibold mt-1" style="font-size: 11px;">Pohon (ROW)</div>
+            </div>
           </div>
-        </div>
+        </a>
       </div>
     </div>
   </div>
@@ -639,6 +651,97 @@
             <div class="dah-kpi-sub text-info">
                 Avg score <?= number_format($totalFeeders) ?> penyulang
             </div>
+        </div>
+    </div>
+
+
+    <!-- 3B. SCOPED TEMUAN EMERGENCY AKTIF (ROLE-BASED GOVERNANCE) -->
+    <div class="card dah-card shadow-sm border mb-4 border-danger-subtle overflow-hidden">
+        <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-danger text-white p-2 rounded-2"><i class="fas fa-triangle-exclamation"></i></span>
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 13.5px;">Temuan Emergency Aktif</h6>
+                        <span class="badge bg-danger rounded-pill px-2.5" style="font-size: 11px;"><?= count($emergencyFindings ?? []) ?> Temuan Kritis</span>
+                    </div>
+                    <small class="text-muted" style="font-size: 11px;">
+                        Cakupan peran: <strong class="text-danger"><?= esc(ucwords(str_replace('_', ' ', $userRole ?? 'Petugas'))) ?></strong>
+                        &bull; Unit: <strong><?= esc($topSelectedUlpLabel ?? 'Semua ULP') ?></strong>
+                        &bull; Wajib ditindaklanjuti segera (&lt; 24 jam)
+                    </small>
+                </div>
+            </div>
+            <a href="<?= site_url('temuan?prioritas=EMERGENCY&status=BELUM' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="btn btn-sm btn-outline-danger rounded-pill px-3" style="font-size: 11.5px;">
+                <i class="fas fa-list-check me-1"></i>Lihat Semua Emergency
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <?php if (!empty($emergencyFindings)): ?>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 12.5px;">
+                    <thead class="bg-light-subtle text-secondary" style="font-size: 11.5px;">
+                        <tr>
+                            <th class="ps-3 py-2" style="width: 140px;">No. Temuan</th>
+                            <th class="py-2" style="width: 160px;">Penyulang / ULP</th>
+                            <th class="py-2">Detail Temuan &amp; Anomali</th>
+                            <th class="py-2" style="width: 130px;">Pelaksana</th>
+                            <th class="py-2" style="width: 120px;">Tgl / Waktu</th>
+                            <th class="text-center pe-3 py-2" style="width: 90px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($emergencyFindings as $ef): ?>
+                        <tr>
+                            <td class="ps-3">
+                                <a href="<?= site_url('temuan/detail/' . $ef['id']) ?>" class="fw-bold text-danger text-decoration-none">
+                                    <i class="fas fa-bolt me-1"></i><?= esc($ef['nomor_temuan']) ?>
+                                </a>
+                                <div class="small text-muted" style="font-size: 10px;">ID #<?= $ef['id'] ?></div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark text-truncate" style="max-width: 150px;"><?= esc($ef['nama_penyulang'] ?? '-') ?></div>
+                                <small class="text-muted"><?= esc($ef['nama_ulp'] ?? '-') ?></small>
+                            </td>
+                            <td>
+                                <div class="text-dark fw-medium text-truncate" style="max-width: 380px;" title="<?= esc($ef['detail_temuan'] ?? '', 'attr') ?>">
+                                    <?= esc($ef['detail_temuan'] ?? 'Anomali jaringan distribusi prioritas emergency') ?>
+                                </div>
+                                <div class="d-flex align-items-center gap-1 mt-0.5">
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 10px;"><?= esc($ef['jenis_temuan'] ?? 'JARINGAN') ?></span>
+                                    <?php if (!empty($ef['kode_asset'])): ?>
+                                        <span class="badge bg-light text-muted border" style="font-size: 10px;"><?= esc($ef['kode_asset']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary border font-monospace" style="font-size: 10.5px;">
+                                    <?= esc($ef['pelaksana'] ?? 'YANTEK') ?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="text-dark small fw-medium"><?= date('d/m/Y', strtotime($ef['created_at'] ?? $ef['tanggal_temuan'] ?? 'now')) ?></div>
+                                <small class="text-danger fw-bold" style="font-size: 10px;"><i class="fas fa-clock me-1"></i>SLA &lt;24 Jam</small>
+                            </td>
+                            <td class="text-center pe-3">
+                                <a href="<?= site_url('temuan/detail/' . $ef['id']) ?>" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-1" style="font-size: 11px;" title="Buka Detail Temuan">
+                                    <i class="fas fa-arrow-up-right-from-square me-1"></i>Buka
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php else: ?>
+            <div class="py-4 px-3 text-center bg-white">
+                <i class="fas fa-circle-check text-success fa-2x mb-2 d-block"></i>
+                <div class="fw-bold text-dark" style="font-size: 13.5px;">Tidak Ada Temuan Emergency Aktif</div>
+                <small class="text-muted" style="max-width: 480px; display: inline-block;">
+                    Seluruh anomali prioritas emergency dalam cakupan wilayah kewenangan Anda telah diselesaikan atau belum ada anomali kritis yang tercatat.
+                </small>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 

@@ -155,25 +155,25 @@ class AssetController extends BaseController
         if ($deleteType === 'feeder') {
             $penyulangId = (int)$this->request->getPost('penyulang_id');
             if ($penyulangId <= 0) {
-                return redirect()->back()->with('error', 'Pilih penyulang terlebih dahulu untuk menghapus aset penyulang.');
+                return redirect()->to($this->getPreservedRedirectUrl())->with('error', 'Pilih penyulang terlebih dahulu untuk menghapus aset penyulang.');
             }
             if ($confirmTxt !== 'HAPUS') {
-                return redirect()->back()->with('error', 'Konfirmasi gagal. Anda harus mengetik kata "HAPUS" untuk mengonfirmasi hapus massal penyulang.');
+                return redirect()->to($this->getPreservedRedirectUrl())->with('error', 'Konfirmasi gagal. Anda harus mengetik kata "HAPUS" untuk mengonfirmasi hapus massal penyulang.');
             }
 
             $filters = ['penyulang_id' => $penyulangId];
             $affected = $this->repository->bulkSoftDeleteByFilter($filters, $ulpScope, $userId, 'MASS_FEEDER_DELETE');
-            return redirect()->back()->with('success', "Berhasil melakukan Soft Delete massal pada penyulang. Total {$affected} aset berhasil di-soft delete secara aman.");
+            return redirect()->to($this->getPreservedRedirectUrl())->with('success', "Berhasil melakukan Soft Delete massal pada penyulang. Total {$affected} aset berhasil di-soft delete secara aman.");
         } elseif ($deleteType === 'selected') {
             if (empty($assetIds)) {
-                return redirect()->back()->with('error', 'Pilih minimal satu aset untuk dihapus.');
+                return redirect()->to($this->getPreservedRedirectUrl())->with('error', 'Pilih minimal satu aset untuk dihapus.');
             }
 
             $affected = $this->repository->bulkSoftDeleteByIds($assetIds, $ulpScope, $userId, 'MASS_SELECTED_DELETE');
-            return redirect()->back()->with('success', "Berhasil melakukan Soft Delete massal. Total {$affected} aset terpilih berhasil dihapus secara aman.");
+            return redirect()->to($this->getPreservedRedirectUrl())->with('success', "Berhasil melakukan Soft Delete massal. Total {$affected} aset terpilih berhasil dihapus secara aman.");
         }
 
-        return redirect()->back()->with('error', 'Metode hapus massal tidak valid.');
+        return redirect()->to($this->getPreservedRedirectUrl())->with('error', 'Metode hapus massal tidak valid.');
     }
 
     public function debugSql()
@@ -579,6 +579,61 @@ class AssetController extends BaseController
     }
 
     /**
+     * Helper to compute redirect URL that preserves all query filters, search, sorting,
+     * and auto-clamps page if the last asset of the current page was deleted.
+     */
+    public function getPreservedRedirectUrl(): string
+    {
+        $rawQuery = (string)($this->request->getPost('return_query') ?? $this->request->getGet('return_query') ?? $_POST['return_query'] ?? $_GET['return_query'] ?? '');
+        if (empty($rawQuery)) {
+            $referer = $this->request->getServer('HTTP_REFERER');
+            if ($referer) {
+                $parsed = parse_url($referer);
+                $rawQuery = $parsed['query'] ?? '';
+            }
+        }
+
+        parse_str($rawQuery, $params);
+
+        $allowedKeys = [
+            'ulp_id', 'penyulang_id', 'section_id', 'jenis_asset',
+            'status', 'search', 'sort_by', 'sort_order', 'per_page', 'show_all'
+        ];
+        $queryParams = [];
+        $filterCriteria = [];
+        foreach ($allowedKeys as $key) {
+            if (isset($params[$key]) && $params[$key] !== '') {
+                $queryParams[$key] = $params[$key];
+                if (!in_array($key, ['sort_by', 'sort_order', 'per_page', 'show_all'])) {
+                    $filterCriteria[$key] = $params[$key];
+                }
+            }
+        }
+
+        $currentPage = max(1, (int)($params['page'] ?? 1));
+        $perPage = max(1, (int)($params['per_page'] ?? 50));
+
+        $session = session();
+        $userRole = strtolower((string)$session->get('user_role'));
+        $userUlpId = $session->get('user_ulp_id');
+        $ulpScope = !in_array($userRole, ['administrator', 'admin_pusat']) ? (int)$userUlpId : null;
+
+        $totalRemaining = $this->repository->countFilteredAssets($filterCriteria, $ulpScope);
+        $maxPage = max(1, (int)ceil($totalRemaining / $perPage));
+
+        if ($currentPage > $maxPage) {
+            $currentPage = $maxPage;
+        }
+
+        if ($currentPage > 1) {
+            $queryParams['page'] = $currentPage;
+        }
+
+        $queryString = http_build_query($queryParams);
+        return site_url('master-assets' . ($queryString ? '?' . $queryString : ''));
+    }
+
+    /**
      * Soft Delete Asset with Mandatory Reason
      */
     public function softDelete(int $id)
@@ -592,13 +647,13 @@ class AssetController extends BaseController
             if ($this->request->isAJAX()) {
                 return $this->jsonResponse(['success' => true, 'message' => 'Master Asset berhasil di-soft delete.']);
             }
-            return redirect()->to(site_url('master-assets'))->with('success', 'Master Asset berhasil di-soft delete.');
+            return redirect()->to($this->getPreservedRedirectUrl())->with('success', 'Master Asset berhasil di-soft delete.');
         }
 
         if ($this->request->isAJAX()) {
             return $this->jsonResponse(['success' => false, 'message' => 'Gagal menghapus asset.'], 400);
         }
-        return redirect()->to(site_url('master-assets'))->with('error', 'Gagal menghapus asset.');
+        return redirect()->to($this->getPreservedRedirectUrl())->with('error', 'Gagal menghapus asset.');
     }
 
     /**

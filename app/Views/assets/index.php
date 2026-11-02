@@ -387,6 +387,7 @@ $pagination = $pagination ?? null;
             <div class="modal-body p-4">
                 <form action="<?= site_url('master-assets/bulk-delete') ?>" method="POST" id="formBulkDelete">
                     <?= csrf_field() ?>
+                    <input type="hidden" name="return_query" class="asset-return-query" value="<?= esc($_SERVER['QUERY_STRING'] ?? '') ?>">
                     <input type="hidden" name="selected_ids" id="selected_ids">
                     <div class="mb-3">
                         <label class="form-label fw-bold">Pilih Mode Hapus Massal:</label>
@@ -437,6 +438,7 @@ $pagination = $pagination ?? null;
             </div>
             <form id="formSoftDeleteAsset" action="" method="POST">
                 <?= csrf_field() ?>
+                <input type="hidden" name="return_query" class="asset-return-query" value="<?= esc($_SERVER['QUERY_STRING'] ?? '') ?>">
                 <div class="modal-body p-4">
                     <div class="alert alert-light border rounded-3 p-3 mb-3">
                         <div class="row g-2 small">
@@ -514,6 +516,7 @@ function toggleBulkDeleteMode(val) {
             });
 
             $('#formBulkDelete').on('submit', function(e) {
+                $('.asset-return-query').val(window.location.search.replace(/^\?/, ''));
                 var deleteType = $('#delete_type_select').val();
                 if (deleteType === 'selected') {
                     var selectedIds = [];
@@ -535,6 +538,7 @@ function toggleBulkDeleteMode(val) {
                 var nama = $(this).data('nama');
                 var sn = $(this).data('sn');
 
+                $('.asset-return-query').val(window.location.search.replace(/^\?/, ''));
                 $('#delKodeAsset').text(kode);
                 $('#delNamaAsset').text(nama);
                 $('#delSnAsset').text(sn);

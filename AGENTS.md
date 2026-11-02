@@ -2,7 +2,7 @@
 
 Skills in `.kilo/skills/` (16 folders). Select only what the current task requires and read its `SKILL.md` before acting.
 
-## Inventory (16 Skills)
+## Inventory (17 Skills)
 
 - [code-graph-rag](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\code-graph-rag\SKILL.md): Use when a SIDAK TEJO change spans files or you need lightweight repository tracing across routes, controllers, services, models, views, or tests before editing.
 - [context7-cli](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\context7-cli\SKILL.md): Use when the user mentions `ctx7` or `context7`, needs current external library documentation via the `ctx7` CLI, or wants to configure Context7 MCP.
@@ -13,6 +13,7 @@ Skills in `.kilo/skills/` (16 folders). Select only what the current task requir
 - [kilo-ssh-triage](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\kilo-ssh-triage\SKILL.md): Use when Kilo Code reports HTTP 499 or upstream-provider errors, VS Code Remote-SSH hangs/fails, SSH port forwarding is refused, or a task cannot reach the remote workspace.
 - [mattpocock](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\mattpocock\SKILL.md): Use when implementing, reviewing, or debugging TypeScript files, TypeScript API boundaries, or typed UI state in SIDAK TEJO.
 - [omniroute](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\omniroute\SKILL.md): Use when adding or changing CodeIgniter 4 routes (`app/Config/Routes.php`), authentication filters, role access (`role:`), or diagnosing unauthorized route access.
+- [performance-security](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\PERFORMANCE_SECURITY\SKILL.md): Use when auditing web performance (Core Web Vitals, unused CSS/JS, caching, render-blocking) or backend/network security (DDoS, rate limiting, security headers, SQLi/XSS prevention).
 - [playwright-cli](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\playwright-cli\SKILL.md): Use when automating browser interactions, verifying rendered UI/viewports, or running/debugging Playwright tests.
 - [ponytail](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\ponytail\SKILL.md): Use for lazy senior dev mode: making the smallest complete code change without bloat or unrequested abstractions, and ending replies with skipped checks and risks.
 - [prime-agent](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\prime-agent\SKILL.md): Use when creating or maintaining a skill for the Prime Agent runtime or adapting a Prime Agent skill for Kilo Code.

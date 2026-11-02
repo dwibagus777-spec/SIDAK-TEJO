@@ -140,14 +140,19 @@ class AssetLifecycleService
         $oldStatus = $asset['status'] ?? AssetStatus::NORMAL;
         $newStatus = AssetStatus::DIHAPUS;
 
-        // Soft Delete Record
-        $db->table('assets')->where('id', $assetId)->update([
-            'status'         => $newStatus,
-            'deleted_at'     => date('Y-m-d H:i:s'),
-            'deleted_by'     => $userId,
-            'deleted_reason' => trim($reason),
-            'updated_at'     => date('Y-m-d H:i:s'),
-        ]);
+        // Soft Delete Record with schema-aware column safety
+        $updatePayload = [
+            'status'     => $newStatus,
+            'deleted_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+        if ($db->fieldExists('deleted_by', 'assets')) {
+            $updatePayload['deleted_by'] = $userId;
+        }
+        if ($db->fieldExists('deleted_reason', 'assets')) {
+            $updatePayload['deleted_reason'] = trim($reason);
+        }
+        $db->table('assets')->where('id', $assetId)->update($updatePayload);
 
         // Record Audit History
         $this->historyService->logEvent(
@@ -175,14 +180,19 @@ class AssetLifecycleService
         $oldStatus = $asset['status'] ?? AssetStatus::DIHAPUS;
         $newStatus = AssetStatus::NORMAL;
 
-        // Restore Record
-        $db->table('assets')->where('id', $assetId)->update([
-            'status'         => $newStatus,
-            'deleted_at'     => null,
-            'deleted_by'     => null,
-            'deleted_reason' => null,
-            'updated_at'     => date('Y-m-d H:i:s'),
-        ]);
+        // Restore Record with schema-aware column safety
+        $updatePayload = [
+            'status'     => $newStatus,
+            'deleted_at' => null,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+        if ($db->fieldExists('deleted_by', 'assets')) {
+            $updatePayload['deleted_by'] = null;
+        }
+        if ($db->fieldExists('deleted_reason', 'assets')) {
+            $updatePayload['deleted_reason'] = null;
+        }
+        $db->table('assets')->where('id', $assetId)->update($updatePayload);
 
         // Record Audit History
         $this->historyService->logEvent(

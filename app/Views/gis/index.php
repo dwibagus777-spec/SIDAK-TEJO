@@ -1560,6 +1560,62 @@
             <a id="btn-context-drawer-view-temuan" href="#" target="_blank" class="btn btn-outline-info flex-fill fw-bold rounded-pill py-2 shadow-sm d-flex justify-content-center align-items-center gap-1" style="font-size: 13px;">
                 <i class="fas fa-clipboard-list"></i> Lihat Temuan (<span id="ctx-drawer-findings-count">0</span>)
             </a>
+            <?php if (check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp'])): ?>
+            <button id="btn-context-drawer-delete-asset" type="button"
+                class="btn btn-outline-danger fw-bold rounded-pill px-3 py-2 shadow-sm d-flex justify-content-center align-items-center gap-1" style="font-size: 13px;" title="Hapus Aset Langsung dari GIS">
+                <i class="fas fa-trash-alt"></i> Hapus
+            </button>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     MODAL KONFIRMASI SOFT DELETE ASET DARI GIS (ROLE SCOPED & PRE-CHECKED)
+     ======================================================== -->
+<div class="modal fade" id="modal-gis-delete-asset" tabindex="-1" aria-hidden="true" style="z-index: 2100;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white border-0 rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-trash-alt me-2"></i> Konfirmasi Hapus Aset GIS</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="form-gis-delete-asset">
+                <input type="hidden" id="gis-del-asset-id" name="asset_id" value="">
+                <div class="modal-body p-4">
+                    <div id="gis-del-alert" class="alert alert-danger py-2 px-3 small mb-3" style="display: none;"></div>
+                    
+                    <div class="alert alert-light border rounded-3 p-3 mb-3">
+                        <div class="row g-2 small">
+                            <div class="col-4 text-muted">Kode Asset:</div>
+                            <div class="col-8 font-monospace fw-bold text-primary" id="gis-del-kode">-</div>
+                            <div class="col-4 text-muted">Nama Asset:</div>
+                            <div class="col-8 fw-bold" id="gis-del-nama">-</div>
+                            <div class="col-4 text-muted">Jenis Asset:</div>
+                            <div class="col-8" id="gis-del-jenis">-</div>
+                            <div class="col-4 text-muted">Wilayah / ULP:</div>
+                            <div class="col-8" id="gis-del-ulp">-</div>
+                            <div class="col-4 text-muted">Koordinat GPS:</div>
+                            <div class="col-8 font-monospace text-secondary" id="gis-del-coords">-</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-danger">Alasan Penghapusan (Wajib) <span class="text-danger">*</span></label>
+                        <textarea id="gis-del-reason" name="reason" class="form-control" rows="3" placeholder="Contoh: Tiang dibongkar karena relokasi jalan / unit dilepas..." required></textarea>
+                    </div>
+                    
+                    <small class="text-muted d-block">
+                        <i class="fas fa-shield-alt text-success me-1"></i> Aset akan di-soft delete secara aman dan marker akan dihapus langsung dari peta tanpa perlu reload.
+                    </small>
+                </div>
+                <div class="modal-footer bg-light border-0 rounded-bottom-4">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" id="btn-confirm-gis-delete" class="btn btn-danger font-weight-bold px-4 rounded-pill">
+                        <i class="fas fa-trash me-1"></i> Hapus Aset Sekarang
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -4566,6 +4622,128 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+
+    // ========================================================
+    // 🗑 GIS ASSET DIRECT SOFT DELETE HANDLER (ROLE SCOPED)
+    // ========================================================
+    $(document).on('click', '#btn-context-drawer-delete-asset', function() {
+        if (!currentAssetContextId) {
+            alert('Aset belum dipilih.');
+            return;
+        }
+
+        const props = currentAssetContextProps || {};
+        $('#gis-del-asset-id').val(currentAssetContextId);
+        $('#gis-del-kode').text(props.kode_asset || currentAssetContextName || '-');
+        $('#gis-del-nama').text(props.nama_asset || currentAssetContextName || '-');
+        $('#gis-del-jenis').text(props.jenis_asset || currentAssetContextJenis || '-');
+        $('#gis-del-ulp').text(props.ulp_name || props.nama_ulp || 'Sidoarjo Kota');
+        
+        let coordsTxt = '-';
+        if (props.latitude && props.longitude) {
+            coordsTxt = `${Number(props.latitude).toFixed(6)}, ${Number(props.longitude).toFixed(6)}`;
+        }
+        $('#gis-del-coords').text(coordsTxt);
+        $('#gis-del-reason').val('');
+        $('#gis-del-alert').hide().text('');
+        $('#btn-confirm-gis-delete').prop('disabled', false).html('<i class="fas fa-trash me-1"></i> Hapus Aset Sekarang');
+
+        const modalEl = document.getElementById('modal-gis-delete-asset');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    });
+
+    $(document).on('submit', '#form-gis-delete-asset', function(e) {
+        e.preventDefault();
+        const assetId = parseInt($('#gis-del-asset-id').val(), 10);
+        const reason = $.trim($('#gis-del-reason').val());
+        const $alert = $('#gis-del-alert');
+        const $btn = $('#btn-confirm-gis-delete');
+
+        if (!assetId || assetId <= 0) {
+            $alert.text('ID aset tidak valid.').show();
+            return;
+        }
+        if (!reason) {
+            $alert.text('Alasan penghapusan wajib diisi.').show();
+            return;
+        }
+
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Memproses...');
+        $alert.hide().text('');
+
+        const fd = new FormData();
+        fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+        fd.append('reason', reason);
+
+        $.ajax({
+            url: '<?= site_url('gis/api-delete-asset') ?>/' + assetId,
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
+            },
+            success: function(res) {
+                $btn.prop('disabled', false).html('<i class="fas fa-trash me-1"></i> Hapus Aset Sekarang');
+                
+                // 1. Close Modal & Drawer
+                const modalEl = document.getElementById('modal-gis-delete-asset');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                }
+                safeHideOffcanvas('offcanvas-asset-context-drawer');
+
+                // 2. Remove Marker from Leaflet Map in real-time
+                if (typeof markerByAssetId !== 'undefined' && markerByAssetId.has(assetId)) {
+                    const m = markerByAssetId.get(assetId);
+                    if (typeof markerCluster !== 'undefined' && markerCluster && typeof markerCluster.removeLayer === 'function') {
+                        markerCluster.removeLayer(m);
+                    }
+                    if (typeof map !== 'undefined' && map && typeof map.removeLayer === 'function') {
+                        map.removeLayer(m);
+                    }
+                    markerByAssetId.delete(assetId);
+                }
+
+                // 3. Remove from currentData features cache
+                if (typeof currentData !== 'undefined' && currentData && Array.isArray(currentData.features)) {
+                    currentData.features = currentData.features.filter(function(f) {
+                        return (f && f.properties && f.properties.id !== assetId && f.id !== assetId);
+                    });
+                }
+
+                // 4. Notify user
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Aset Dihapus',
+                        text: res.message || 'Aset berhasil di-soft delete.',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                } else if (typeof notifyGis === 'function') {
+                    notifyGis(res.message || 'Aset berhasil di-soft delete.', 'success');
+                } else {
+                    alert(res.message || 'Aset berhasil di-soft delete.');
+                }
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).html('<i class="fas fa-trash me-1"></i> Hapus Aset Sekarang');
+                let errMsg = 'Gagal menghapus aset.';
+                try {
+                    const json = JSON.parse(xhr.responseText);
+                    if (json && json.message) errMsg = json.message;
+                } catch (e) {}
+                $alert.text(errMsg).show();
+            }
+        });
+    });
 
     // MAP-02C Section Correction Event Handlers
     $(document).on('click', '#btn-correct-section', function() {

@@ -59,12 +59,25 @@
 </IfModule>
 
 <IfModule mod_headers.c>
-    # Disable caching for dynamic PHP/HTML pages to prevent serving old layout
+    # Security Headers per PERFORMANCE_SECURITY checklist
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Disable caching only for dynamic PHP/HTML pages to ensure fresh data and CSRF tokens
     <FilesMatch "\.(php|html)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0"
         Header set Pragma "no-cache"
         Header set Expires "0"
         Header set X-LiteSpeed-Purge "*"
+    </FilesMatch>
+
+    # Explicit long-term caching for static assets (CSS, JS, Fonts, Images)
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+    <FilesMatch "\.(ico|jpg|jpeg|png|gif|webp|svg|woff2)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
 </IfModule>
 

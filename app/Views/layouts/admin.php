@@ -2422,7 +2422,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                             <span><i class="fas fa-database me-1 text-success"></i> DATA & MASTER REFERENSI</span>
                             <i class="fas fa-chevron-down chevron-icon" style="font-size: 9px;"></i>
                         </li>
-                        <div class="collapse <?= (url_is('asset-corpus*') || url_is('master*') || url_is('asset*') || url_is('eviden*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*')) ? 'show' : '' ?>" id="group-data">
+                        <div class="collapse <?= (url_is('asset-corpus*') || url_is('master*') || url_is('data-uid*') || url_is('data-up*') || url_is('asset*') || url_is('eviden*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*')) ? 'show' : '' ?>" id="group-data">
                             <li class="nav-item <?= url_is('asset-corpus*') ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('asset-corpus/workspace') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-file-csv text-success"></i></span>
@@ -2441,6 +2441,20 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                     <span class="nav-link-title">Master Asset PLN</span>
                                 </a>
                             </li>
+                            <?php if (check_role(['administrator', 'admin_pusat'])): ?>
+                            <li class="nav-item <?= (url_is('master-uid*') || url_is('data-uid*')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('master-uid') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-sitemap text-primary"></i></span>
+                                    <span class="nav-link-title">Data UID</span>
+                                </a>
+                            </li>
+                            <li class="nav-item <?= (url_is('master-up3*') || url_is('data-up*')) ? 'active' : '' ?>">
+                                <a class="nav-link" href="<?= site_url('master-up3') ?>">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-building text-info"></i></span>
+                                    <span class="nav-link-title">Data UP</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
                             <li class="nav-item <?= url_is('temuan/terdekat') ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('temuan/terdekat') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-location-crosshairs text-danger"></i></span>
@@ -5447,8 +5461,8 @@ $sidakMenuData = [
                 ['href' => site_url('asset-corpus/workspace'), 'icon' => 'fas fa-file-csv', 'text' => 'Asset Corpus', 'active' => (bool)url_is('asset-corpus*')],
                 ['href' => site_url('asset-health'), 'icon' => 'fas fa-heart-pulse', 'text' => 'Asset Health Index', 'active' => (bool)url_is('asset-health*')],
                 ['href' => site_url('master-assets'), 'icon' => 'fas fa-boxes-stacked', 'text' => 'Master Asset PLN', 'active' => (bool)url_is('master-assets*')],
-                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-uid'), 'icon' => 'fas fa-sitemap', 'text' => 'Master UID', 'active' => (bool)url_is('master-uid*')] : null,
-                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-up3'), 'icon' => 'fas fa-building', 'text' => 'Master UP3', 'active' => (bool)url_is('master-up3*')] : null,
+                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-uid'), 'icon' => 'fas fa-sitemap', 'text' => 'Data UID', 'active' => (bool)(url_is('master-uid*') || url_is('data-uid*'))] : null,
+                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-up3'), 'icon' => 'fas fa-building', 'text' => 'Data UP', 'active' => (bool)(url_is('master-up3*') || url_is('data-up*'))] : null,
                 check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-hierarchy/unconnected'), 'icon' => 'fas fa-link-slash', 'text' => 'Audit Unlinked', 'active' => (bool)url_is('master-hierarchy*')] : null,
                 ['href' => site_url('master-gi'), 'icon' => 'fas fa-charging-station', 'text' => 'Gardu Induk (GI)', 'active' => (bool)url_is('master-gi*')],
                 check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('ulps'), 'icon' => 'fas fa-building', 'text' => 'Data ULP', 'active' => (bool)url_is('ulps*')] : null,

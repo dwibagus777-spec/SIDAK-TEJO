@@ -498,7 +498,7 @@ $authorizedMenuItems = $sidakMenuRegistry['items'];
             </a>
 
             <!-- 5. Total Aset Unik -->
-            <a href="<?= site_url('master-assets') ?>" class="kpi-m-card">
+            <a href="<?= site_url('master-assets?show_all=1' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="kpi-m-card">
                 <div>
                     <div class="kpi-m-card-icon bg-secondary-subtle text-secondary">
                         <i class="fas fa-boxes"></i>
@@ -520,6 +520,47 @@ $authorizedMenuItems = $sidakMenuRegistry['items'];
                 </div>
                 <div class="kpi-m-card-sub">Skor kesehatan sistem &rarr;</div>
             </a>
+        </div>
+
+        <!-- TEMUAN EMERGENCY AKTIF (MOBILE SCOPED LIST) -->
+        <div class="emc-m-card border-danger-subtle mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex align-items-center gap-1.5">
+                    <span class="badge bg-danger text-white p-1 rounded"><i class="fas fa-triangle-exclamation" style="font-size: 10px;"></i></span>
+                    <h6 class="fw-bold text-dark mb-0" style="font-size: 12px;">Temuan Emergency Aktif</h6>
+                </div>
+                <span class="badge bg-danger rounded-pill" style="font-size: 10px;"><?= count($emergencyFindings ?? []) ?> Temuan</span>
+            </div>
+            <?php if (!empty($emergencyFindings)): ?>
+                <div class="d-flex flex-column gap-2 mt-2">
+                    <?php foreach (array_slice($emergencyFindings, 0, 5) as $mEf): ?>
+                    <div class="p-2.5 rounded-3 bg-light border border-danger-subtle d-flex justify-content-between align-items-center">
+                        <div style="max-width: 75%;">
+                            <div class="d-flex align-items-center gap-1 mb-1">
+                                <span class="badge bg-danger text-white font-monospace" style="font-size: 9px;"><?= esc($mEf['nomor_temuan']) ?></span>
+                                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 9px;"><?= esc($mEf['pelaksana'] ?? 'YANTEK') ?></span>
+                            </div>
+                            <div class="fw-bold text-dark text-truncate small" style="font-size: 11px;"><?= esc($mEf['nama_penyulang'] ?? '-') ?> &bull; <?= esc($mEf['nama_ulp'] ?? '-') ?></div>
+                            <div class="text-muted text-truncate" style="font-size: 10px;"><?= esc($mEf['detail_temuan'] ?? '') ?></div>
+                        </div>
+                        <a href="<?= site_url('temuan/detail/' . $mEf['id']) ?>" class="btn btn-sm btn-outline-danger py-1 px-2.5 rounded-pill" style="font-size: 11px;">
+                            Buka
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php if (count($emergencyFindings) > 5): ?>
+                <div class="text-center mt-2">
+                    <a href="<?= site_url('temuan?prioritas=EMERGENCY&status=BELUM' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="small text-danger fw-bold text-decoration-none" style="font-size: 11px;">
+                        Lihat semua <?= count($emergencyFindings) ?> temuan emergency &rarr;
+                    </a>
+                </div>
+                <?php endif; ?>
+            <?php else: ?>
+                <div class="text-center py-2 text-muted" style="font-size: 11px;">
+                    <i class="fas fa-check-circle text-success me-1"></i> Tidak ada temuan emergency aktif di wilayah tugas Anda.
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- 6. MINI MAP MONITORING -->

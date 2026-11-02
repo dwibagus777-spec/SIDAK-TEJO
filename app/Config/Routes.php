@@ -746,6 +746,7 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     $routes->post('gis/api-disconnect-topology', 'GisController::apiDisconnectTopology', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
     $routes->post('gis/api-update-segment', 'GisController::apiUpdateSegmentGeometry', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
     $routes->post('gis/api-update-conductor', 'GisController::apiUpdateConductorSpecification', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
+    $routes->post('gis/api-delete-asset/(:num)', 'GisController::apiDeleteAsset/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp']);
     $routes->get('gis/api-data', 'GisController::apiData');
     $routes->get('master-assets/geojson', 'GisController::geoJson');
     $routes->get('master-assets/feeder-network', 'GisController::feederNetwork');
@@ -991,6 +992,7 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     $routes->post('temuan/ajax-datatables', 'Temuan::ajaxDataTables');
 
     // Master Data UID (Unit Induk Distribusi)
+    $routes->get('data-uid', 'UidController::index', ['filter' => 'role:administrator,admin,admin_pusat']);
     $routes->group('master-uid', ['filter' => 'role:administrator,admin,admin_pusat'], function ($routes) {
         $routes->get('/', 'UidController::index');
         $routes->get('create', 'UidController::create');
@@ -1001,6 +1003,7 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     });
 
     // Master Data UP / UP3 (Unit Pelaksana)
+    $routes->get('data-up', 'Up3Controller::index', ['filter' => 'role:administrator,admin,admin_pusat']);
     $routes->group('master-up3', ['filter' => 'role:administrator,admin,admin_pusat'], function ($routes) {
         $routes->get('/', 'Up3Controller::index');
         $routes->get('create', 'Up3Controller::create');

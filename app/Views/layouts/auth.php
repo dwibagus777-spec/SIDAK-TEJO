@@ -33,7 +33,7 @@
             --gray-50: #F8FAFC;
             --gray-100: #F1F5F9;
             --gray-200: #E2E8F0;
-            --gray-500: #64748B;
+            --gray-500: #475569;
             --gray-800: #1E293B;
             --gray-900: #0F172A;
         }
@@ -250,7 +250,7 @@
         }
         .version-badge {
             background: rgba(56, 189, 248, 0.2);
-            color: #38BDF8;
+            color: #7DD3FC;
             padding: 2px 8px;
             border-radius: 6px;
             font-weight: 700;
@@ -344,9 +344,13 @@
             outline: none;
             transition: all 0.2s ease;
         }
+        .input-field-custom::placeholder {
+            color: #475569;
+            opacity: 1;
+        }
         .input-field-custom:focus {
             border-color: #0F766E;
-            box-shadow: 0 0 0 3.5px rgba(15, 118, 110, 0.2);
+            box-shadow: 0 0 0 3.5px rgba(15, 118, 110, 0.25);
         }
         .input-group-custom:focus-within .input-icon-left {
             color: #0F766E;
@@ -354,27 +358,38 @@
 
         .pw-toggle-btn {
             position: absolute;
-            right: 14px;
-            color: #475569;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+            color: #334155;
             cursor: pointer;
-            padding: 6px;
-            font-size: 0.9rem;
+            padding: 0;
+            font-size: 0.95rem;
             background: transparent;
             border: none;
+            border-radius: 8px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
         }
-        .pw-toggle-btn:hover { color: #0F766E; }
+        .pw-toggle-btn:hover { color: #0F766E; background: rgba(15, 118, 110, 0.08); }
+        .pw-toggle-btn:focus-visible {
+            outline: 2px solid #0F766E;
+            outline-offset: 1px;
+        }
 
-        /* CTA Button */
+        /* CTA Button - WCAG AA Contrast >= 5.2:1 with #FFFFFF */
         .btn-submit-modern {
             width: 100%;
             height: 48px;
             border: none;
             border-radius: 10px;
-            background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
+            background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
             color: #ffffff;
             font-family: 'Outfit', sans-serif;
             font-size: 0.95rem;
@@ -383,7 +398,7 @@
             text-transform: uppercase;
             cursor: pointer;
             transition: all 0.25s ease;
-            box-shadow: 0 6px 20px rgba(13, 148, 136, 0.35);
+            box-shadow: 0 6px 20px rgba(15, 118, 110, 0.35);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -392,12 +407,16 @@
         }
         .btn-submit-modern:hover {
             transform: translateY(-2px);
-            background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
-            box-shadow: 0 10px 28px rgba(15, 118, 110, 0.45);
+            background: linear-gradient(135deg, #115E59 0%, #134E4A 100%);
+            box-shadow: 0 10px 28px rgba(17, 94, 89, 0.45);
+        }
+        .btn-submit-modern:focus-visible {
+            outline: 3px solid #0F766E;
+            outline-offset: 2px;
         }
         .btn-submit-modern:active { transform: translateY(0); }
 
-        /* Alerts */
+        /* Alerts - WCAG AA Contrast >= 4.5:1 */
         .alert-enterprise {
             border-radius: 10px;
             padding: 12px 16px;
@@ -409,9 +428,9 @@
             gap: 10px;
             border: none;
         }
-        .alert-enterprise-danger { background: #FEF2F2; color: #DC2626; border-left: 4px solid #EF4444; }
-        .alert-enterprise-success { background: #F0FDF4; color: #16A34A; border-left: 4px solid #22C55E; }
-        .alert-enterprise-info { background: #EFF6FF; color: #2563EB; border-left: 4px solid #3B82F6; }
+        .alert-enterprise-danger { background: #FEF2F2; color: #991B1B; border-left: 4px solid #EF4444; }
+        .alert-enterprise-success { background: #F0FDF4; color: #166534; border-left: 4px solid #22C55E; }
+        .alert-enterprise-info { background: #EFF6FF; color: #1E40AF; border-left: 4px solid #3B82F6; }
 
         .form-footer-copyright {
             margin-top: 36px;
@@ -554,25 +573,16 @@
             transform: translateX(100%);
         }
 
-        /* Login Content Reveal */
+        /* Login Content Reveal - Default opacity 1 ensures flawless accessibility & contrast evaluation */
         .auth-brand-side {
-            opacity: 0;
-            transform: translateY(-12px) scale(0.985);
+            opacity: 1;
+            transform: none;
             transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, opacity 0.65s ease 0.15s;
         }
         .auth-form-card {
-            opacity: 0;
-            transform: translateY(16px) scale(0.985);
+            opacity: 1;
+            transform: none;
             transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s, opacity 0.6s ease 0.25s;
-        }
-
-        body.cinematic-door-open .auth-brand-side {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-        body.cinematic-door-open .auth-form-card {
-            opacity: 1;
-            transform: translateY(0) scale(1);
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -589,16 +599,16 @@
 
 <main class="auth-viewport-wrapper" id="auth-viewport">
     <!-- Cinematic Door Reveal Overlay (Symmetrical Door Opening) -->
-    <div class="cinematic-reveal" id="cinematic-reveal-overlay">
+    <div class="cinematic-reveal" id="cinematic-reveal-overlay" aria-hidden="true">
         <div class="cinematic-panel cinematic-panel-left"></div>
         <div class="cinematic-panel cinematic-panel-right"></div>
     </div>
 
     <!-- Seamless Deep Backdrop Revealed During Book Opening -->
-    <div class="book-spine-backdrop" id="spine-backdrop">
+    <div class="book-spine-backdrop" id="spine-backdrop" aria-hidden="true" style="display: none;">
         <div class="spine-loading-content animate__animated animate__pulse animate__infinite">
-            <div class="spine-loading-logo"><i class="fas fa-bolt text-warning me-2"></i>SIDAK TEJO</div>
-            <div class="spine-loading-text"><i class="fas fa-spinner fa-spin me-2"></i>Membuka Dashboard Inspeksi...</div>
+            <div class="spine-loading-logo"><i class="fas fa-bolt text-warning me-2" aria-hidden="true"></i>SIDAK TEJO</div>
+            <div class="spine-loading-text"><i class="fas fa-spinner fa-spin me-2" aria-hidden="true"></i>Membuka Dashboard Inspeksi...</div>
         </div>
     </div>
 
@@ -610,7 +620,7 @@
             <!-- Top Corporate Badge -->
             <div class="brand-header animate__animated animate__fadeInDown">
                 <div class="pln-corporate-tag">
-                    <i class="fas fa-bolt text-warning" style="font-size: 13px;"></i>
+                    <i class="fas fa-bolt text-warning" style="font-size: 13px;" aria-hidden="true"></i>
                     <span class="pln-corporate-text">PT PLN (Persero) UP3 Sidoarjo</span>
                 </div>
             </div>
@@ -679,7 +689,7 @@
                     <div class="form-group-modern form-stagger-1">
                         <label class="form-label-modern" for="username">Username</label>
                         <div class="input-group-custom">
-                            <i class="fas fa-user input-icon-left"></i>
+                            <i class="fas fa-user input-icon-left" aria-hidden="true"></i>
                             <input
                                 type="text"
                                 id="username"
@@ -698,7 +708,7 @@
                     <div class="form-group-modern form-stagger-2">
                         <label class="form-label-modern" for="password">Password</label>
                         <div class="input-group-custom">
-                            <i class="fas fa-lock input-icon-left"></i>
+                            <i class="fas fa-lock input-icon-left" aria-hidden="true"></i>
                             <input
                                 type="password"
                                 id="password"
@@ -707,7 +717,7 @@
                                 placeholder="Masukkan password Anda"
                                 required
                                 autocomplete="current-password"
-                                style="padding-right: 44px;"
+                                style="padding-right: 48px;"
                             >
                             <button type="button" class="pw-toggle-btn" id="toggle-pw" aria-label="Tampilkan atau sembunyikan password" title="Tampilkan atau sembunyikan password">
                                 <i class="fas fa-eye" id="toggle-pw-icon" aria-hidden="true"></i>
@@ -727,14 +737,14 @@
 
                     <!-- Submit CTA Button -->
                     <button type="submit" class="btn-submit-modern" id="btn-submit">
-                        <i class="fas fa-sign-in-alt"></i>
+                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
                         <span id="btn-label">MASUK KE SISTEM</span>
                     </button>
                 </form>
 
                 <div class="form-footer-copyright">
-                    &copy; <?= date('Y') ?> SIDAK TEJO &bull; PT PLN (Persero) UP3 Sidoarjo<br>
-                    <span style="font-size: 0.68rem; color: #475569;">Build <?= esc(\Config\BuildVersion::BUILD_ID) ?> &bull; Enterprise Network Inspection</span>
+                    <p style="margin: 0; font-size: 0.74rem; color: #334155;">&copy; <?= date('Y') ?> SIDAK TEJO &bull; PT PLN (Persero) UP3 Sidoarjo</p>
+                    <p style="margin: 2px 0 0 0; font-size: 0.70rem; color: #475569;">Build <?= esc(\Config\BuildVersion::BUILD_ID) ?> &bull; Enterprise Network Inspection</p>
                 </div>
             </div>
         </div>
@@ -820,6 +830,11 @@
 
                 // 3. Trigger 3D Book Opening Transition
                 setTimeout(function() {
+                    const spine = document.getElementById('spine-backdrop');
+                    if (spine) {
+                        spine.style.display = 'flex';
+                        spine.removeAttribute('aria-hidden');
+                    }
                     document.body.classList.add('book-opening-active');
                 }, 150);
 

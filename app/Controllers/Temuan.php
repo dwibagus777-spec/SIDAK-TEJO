@@ -709,13 +709,19 @@ class Temuan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
+        $userUp3Id = $session->get('user_up3_id');
 
         $ulpIdFilter = null;
         if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
             $ulpIdFilter = (int)$userUlpId;
         }
 
-        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter);
+        $up3IdFilter = null;
+        if ($role === 'supervisor_up3' && $userUp3Id !== null) {
+            $up3IdFilter = (int)$userUp3Id;
+        }
+
+        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter);
         if (!$temuan) {
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses ke data tersebut.');
         }
@@ -913,13 +919,19 @@ class Temuan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
+        $userUp3Id = $session->get('user_up3_id');
 
         $ulpIdFilter = null;
         if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
             $ulpIdFilter = (int)$userUlpId;
         }
 
-        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter);
+        $up3IdFilter = null;
+        if ($role === 'supervisor_up3' && $userUp3Id !== null) {
+            $up3IdFilter = (int)$userUp3Id;
+        }
+
+        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter);
         if (!$temuan) {
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses.');
         }
@@ -958,13 +970,19 @@ class Temuan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
+        $userUp3Id = $session->get('user_up3_id');
 
         $ulpIdFilter = null;
         if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
             $ulpIdFilter = (int)$userUlpId;
         }
 
-        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter);
+        $up3IdFilter = null;
+        if ($role === 'supervisor_up3' && $userUp3Id !== null) {
+            $up3IdFilter = (int)$userUp3Id;
+        }
+
+        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter);
         if (!$temuan) {
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses.');
         }

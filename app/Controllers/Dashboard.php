@@ -362,6 +362,10 @@ class Dashboard extends BaseController
         // Phase 2: Penyulang Emergency Ranking
         $penyulangRanking = $this->temuanRepository->getPenyulangEmergencyRanking($ulpIdFilter, 5);
 
+        // Phase 3: Scoped Temuan Emergency (Strict role & organizational hierarchy)
+        $userUp3Id = $session->get('user_up3_id');
+        $emergencyFindings = $this->temuanRepository->getEmergencyFindings($role, $ulpIdFilter, $userUp3Id, 10);
+
         // Distribution network summary from master feeder/GI relations.
         $giMapRows = $db->tableExists('gardu_induk')
             ? $db->query("SELECT UPPER(TRIM(p.nama_penyulang)) AS fdr, MAX(gi.nama_gi) AS gi_name FROM penyulang p LEFT JOIN gardu_induk gi ON gi.id = p.gi_id GROUP BY UPPER(TRIM(p.nama_penyulang))")->getResultArray()
@@ -1306,6 +1310,7 @@ class Dashboard extends BaseController
             'causeBreakdownByYear'       => $causeBreakdownByYear,
             'topFeedersGangguan'    => $topFeedersGangguanRows,
             'topInspeksiPenyulang'  => $topInspeksiPenyulang,
+            'emergencyFindings'     => $emergencyFindings,
             'temuanMaterialMatrix'  => $temuanMaterialMatrix,
             'coatingSummary'        => $coatingSummary,
         ];

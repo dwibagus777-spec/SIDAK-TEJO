@@ -137,11 +137,12 @@ class TemuanRepository extends BaseRepository
 
     /**
      * Detail Temuan dengan Join ULP, Penyulang, Section, Assets, User Pembuat/Pengupdate
+     * Dilengkapi proteksi scope ganda: ULP dan UP3 untuk mencegah cross-unit access leak.
      */
-    public function getDetail(int $id, ?int $ulpIdFilter = null): ?array
+    public function getDetail(int $id, ?int $ulpIdFilter = null, ?int $up3IdFilter = null): ?array
     {
         $builder = $this->getJoinedBuilder(true)
-            ->select('temuan.*, ulps.nama_ulp, penyulang.nama_penyulang, sections.nama_section, 
+            ->select('temuan.*, ulps.nama_ulp, ulps.up3_id, penyulang.nama_penyulang, sections.nama_section, 
                       assets.kode_asset, assets.nama_asset, assets.jenis_asset, assets.latitude as asset_latitude, assets.longitude as asset_longitude,
                       c.nama as creator_name, u.nama as updater_name')
             ->where('temuan.id', $id);
@@ -150,7 +151,73 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.ulp_id', $ulpIdFilter);
         }
 
+        if ($up3IdFilter !== null) {
+            $builder->where('ulps.up3_id', $up3IdFilter);
+        }
+
         return self::safeRow($builder, 'TemuanRepository::getDetail');
+    }
+
+    /**
+     * Dapatkan daftar Temuan Emergency aktif tersaring sesuai role & kewenangan organisasi
+     */
+    public function getEmergencyFindings(string $role, ?int $userUlpId = null, ?int $userUp3Id = null, int $limit = 10): array
+    {
+        try {
+            $db = \Config\Database::connect();
+            if (!$db->tableExists('temuan')) {
+                return [];
+            }
+
+            $builder = $this->getJoinedBuilder(false)
+                ->select('temuan.id, temuan.nomor_temuan, temuan.detail_temuan, temuan.jenis_temuan, 
+                          temuan.prioritas, temuan.status, temuan.pelaksana, temuan.tanggal_temuan, temuan.created_at,
+                          ulps.nama_ulp, ulps.up3_id, penyulang.nama_penyulang, sections.nama_section,
+                          assets.kode_asset, assets.nama_asset')
+                ->where('temuan.deleted_at IS NULL')
+                ->where('temuan.prioritas', 'EMERGENCY')
+                ->where('temuan.status !=', 'SELESAI');
+
+            // Scoping per role:
+            $roleLower = strtolower($role);
+            if (in_array($roleLower, ['administrator', 'admin', 'admin_pusat'])) {
+                // National / all units access
+            } elseif ($roleLower === 'supervisor_up3') {
+                if ($userUp3Id !== null) {
+                    $builder->where('ulps.up3_id', (int)$userUp3Id);
+                }
+            } elseif (in_array($roleLower, ['supervisor_ulp', 'admin_ulp'])) {
+                if ($userUlpId !== null) {
+                    $builder->where('temuan.ulp_id', (int)$userUlpId);
+                }
+            } else {
+                // Operational roles: inspeksi, yantek, pdkb, har_*
+                if ($userUlpId !== null) {
+                    $builder->where('temuan.ulp_id', (int)$userUlpId);
+                }
+                if ($roleLower === 'pdkb') {
+                    $builder->like('temuan.pelaksana', 'PDKB');
+                } elseif ($roleLower === 'yantek') {
+                    $builder->like('temuan.pelaksana', 'YANTEK');
+                } elseif ($roleLower === 'har_gardu') {
+                    $builder->groupStart()->like('temuan.pelaksana', 'GARDU')->orLike('temuan.pelaksana', 'HAR_GARDU')->groupEnd();
+                } elseif ($roleLower === 'har_konstruksi') {
+                    $builder->groupStart()->like('temuan.pelaksana', 'KONSTRUKSI')->orLike('temuan.pelaksana', 'HAR_KONSTRUKSI')->groupEnd();
+                } elseif ($roleLower === 'har_row') {
+                    $builder->groupStart()->like('temuan.pelaksana', 'ROW')->orLike('temuan.pelaksana', 'RABAS')->groupEnd();
+                } elseif ($roleLower === 'har_crane') {
+                    $builder->groupStart()->like('temuan.pelaksana', 'CRANE')->orLike('temuan.pelaksana', 'HAR_CRANE')->groupEnd();
+                }
+            }
+
+            $builder->orderBy('temuan.created_at', 'DESC');
+            $builder->limit($limit);
+
+            return $builder->get()->getResultArray() ?: [];
+        } catch (\Throwable $e) {
+            log_message('error', '[TemuanRepository::getEmergencyFindings] ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**

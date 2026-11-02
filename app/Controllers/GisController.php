@@ -556,10 +556,16 @@ class GisController extends BaseController
     public function apiProposalExceptionQueue(): ResponseInterface
     {
         try {
-            $penyulangId = (int)(
-                (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
-                ?? ($_GET['penyulang_id'] ?? 0)
-            );
+            $rawPenyulang = (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_id') : null)
+                ?? ($_GET['penyulang_id'] ?? null)
+                ?? (method_exists($this->request, 'getGet') ? $this->request->getGet('penyulang_ids') : null)
+                ?? ($_GET['penyulang_ids'] ?? null);
+            $penyulangIds = [];
+            if (is_array($rawPenyulang)) {
+                $penyulangIds = array_values(array_filter(array_map('intval', $rawPenyulang)));
+            } elseif (is_string($rawPenyulang) || is_numeric($rawPenyulang)) {
+                $penyulangIds = array_values(array_filter(array_map('intval', explode(',', (string)$rawPenyulang))));
+            }
 
             $state = (string)(
                 (method_exists($this->request, 'getGet') ? $this->request->getGet('state') : null)
@@ -571,7 +577,7 @@ class GisController extends BaseController
 
             $reviewService = new \App\Services\TranslineProposalReviewService();
             $result = $reviewService->getExceptionReviewQueue(
-                $penyulangId > 0 ? $penyulangId : null,
+                !empty($penyulangIds) ? $penyulangIds : null,
                 $state !== '' ? $state : null,
                 $userUlpId
             );

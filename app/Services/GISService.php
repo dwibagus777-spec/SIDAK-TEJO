@@ -153,9 +153,18 @@ class GISService
             $db = \Config\Database::connect();
             $candidateIds = [];
             if ($db->tableExists('captive_non_penugasan')) {
-                $candidateIds = array_map('intval', array_column($db->table('captive_non_penugasan')
-                    ->select('transline_id')->where('penyulang_id', $penyulangId)->where('jenis', 'COATING')
-                    ->where('status', 'POTENSI')->where('deleted_at IS NULL')->where('transline_id IS NOT NULL')->get()->getResultArray(), 'transline_id'));
+                $cQuery = $db->table('captive_non_penugasan')
+                    ->select('transline_id')
+                    ->where('jenis', 'COATING')
+                    ->where('status', 'POTENSI')
+                    ->where('deleted_at IS NULL')
+                    ->where('transline_id IS NOT NULL');
+                if (count($penyulangIds) > 1) {
+                    $cQuery->whereIn('penyulang_id', $penyulangIds);
+                } else {
+                    $cQuery->where('penyulang_id', $penyulangId);
+                }
+                $candidateIds = array_map('intval', array_column($cQuery->get()->getResultArray(), 'transline_id'));
             }
             if (!empty($candidateIds)) {
                 $segmentData['edges'] = array_values(array_filter($segmentData['edges'] ?? [], static fn($edge) => in_array((int)($edge['transline_id'] ?? 0), $candidateIds, true)));
@@ -226,12 +235,15 @@ class GISService
 
         // 2. Fetch Master Asset Features (Strictly from assets table only)
         $db = \Config\Database::connect();
-        $feederUlpId = (int)($filters['ulp_id'] ?? $userUlpId ?? 0);
-        if ($penyulangId > 0 && $feederUlpId <= 0 && $db->tableExists('penyulang')) {
-            $fRow = $db->table('penyulang')->select('ulp_id')->where('id', $penyulangId)->get()->getRowArray();
-            if (!empty($fRow['ulp_id'])) {
-                $feederUlpId = (int)$fRow['ulp_id'];
-            }
+        $feederUlpIds = [];
+        if (!empty($penyulangIds) && $db->tableExists('penyulang')) {
+            $fRows = $db->table('penyulang')->select('ulp_id')->whereIn('id', $penyulangIds)->get()->getResultArray();
+            $feederUlpIds = array_values(array_unique(array_filter(array_map('intval', array_column($fRows, 'ulp_id')))));
+        }
+        $feederUlpId = !empty($feederUlpIds) ? $feederUlpIds[0] : (int)($filters['ulp_id'] ?? $userUlpId ?? 0);
+        if ($userUlpId !== null && $userUlpId > 0) {
+            $feederUlpIds = [$userUlpId];
+            $feederUlpId  = $userUlpId;
         }
 
         $assets = $this->assetRepository->getGisNetworkAssets($filters, $userUlpId);
@@ -249,8 +261,8 @@ class GISService
             'row_count'                  => 0,
             'temuan_count'               => 0,
             'rejected_cross_feeder'      => 0,
-            'rejected_cross_ulp'         => ($feederUlpId > 0 && $db->tableExists('assets'))
-                ? $db->table('assets')->where('ulp_id !=', $feederUlpId)->where('deleted_at IS NULL')->countAllResults()
+            'rejected_cross_ulp'         => (!empty($feederUlpIds) && $db->tableExists('assets'))
+                ? $db->table('assets')->whereNotIn('ulp_id', $feederUlpIds)->where('deleted_at IS NULL')->countAllResults()
                 : 0,
         ];
 
@@ -262,19 +274,22 @@ class GISService
             $assetPenyulangId = !empty($asset['penyulang_id']) ? (int)$asset['penyulang_id'] : null;
             $assetUlpId       = (int)($asset['ulp_id'] ?? 0);
 
+            $isFeederMatch = (!empty($penyulangIds) && in_array($assetPenyulangId, $penyulangIds, true));
+            $isUlpMatch    = (empty($feederUlpIds) || in_array($assetUlpId, $feederUlpIds, true));
+
             // Scope Classification
-            if ($penyulangId > 0 && $assetPenyulangId === $penyulangId) {
+            if ($isFeederMatch && ($userUlpId === null || $assetUlpId === 0 || $assetUlpId === $userUlpId)) {
                 $assetScope = 'FEEDER';
                 $isFeederAsset = true;
                 $stats['feeder_asset_count']++;
-            } elseif ($feederUlpId > 0 && $assetUlpId === $feederUlpId && ($assetPenyulangId === null || $assetPenyulangId === 0)) {
+            } elseif ($isUlpMatch && ($assetPenyulangId === null || $assetPenyulangId === 0)) {
                 $assetScope = 'ULP_UNASSIGNED';
                 $isFeederAsset = false;
                 $stats['unassigned_ulp_asset_count']++;
-            } elseif ($penyulangId > 0 && $assetPenyulangId !== null && $assetPenyulangId > 0 && $assetPenyulangId !== $penyulangId) {
+            } elseif (!empty($penyulangIds) && $assetPenyulangId !== null && $assetPenyulangId > 0 && !$isFeederMatch) {
                 $stats['rejected_cross_feeder']++;
                 continue;
-            } elseif ($feederUlpId > 0 && $assetUlpId > 0 && $assetUlpId !== $feederUlpId) {
+            } elseif (!empty($feederUlpIds) && $assetUlpId > 0 && !$isUlpMatch) {
                 $stats['rejected_cross_ulp']++;
                 continue;
             } else {
@@ -473,7 +488,8 @@ class GISService
             'zoom'      => $zoom,
             'legend'    => $this->visualRegistry->getLegendItems(),
             'meta'      => [
-                'selected_penyulang_id'         => $penyulangId,
+                'selected_penyulang_id'         => count($penyulangIds) === 1 ? $penyulangIds[0] : implode(',', $penyulangIds),
+                'selected_penyulang_ids'        => $penyulangIds,
                 'selected_ulp_id'               => $feederUlpId,
                 'feeder_asset_count'            => $stats['feeder_asset_count'],
                 'unassigned_ulp_asset_count'    => $stats['unassigned_ulp_asset_count'],

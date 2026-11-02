@@ -28,6 +28,15 @@ class PenyulangRepository extends BaseRepository
             ->findAll();
     }
 
+    public function getActivePenyulangsByGi(int $giId): array
+    {
+        return $this->model
+            ->where('gi_id', $giId)
+            ->where('status', 'AKTIF')
+            ->orderBy('nama_penyulang', 'ASC')
+            ->findAll();
+    }
+
     public function getAllWithUlp(): array
     {
         return $this->getJoinedWithUlp()

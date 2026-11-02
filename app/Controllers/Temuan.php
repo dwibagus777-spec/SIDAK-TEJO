@@ -40,7 +40,7 @@ class Temuan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
-        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'har_crane', 'pdkb', 'inspeksi']));
+        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']));
 
         if ($isRestricted) {
             $ulps = [$this->ulpRepository->find($userUlpId)];
@@ -668,7 +668,7 @@ class Temuan extends BaseController
         $userUlpId = $session->get('user_ulp_id');
 
         $ulpIdFilter = null;
-        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'har_crane', 'inspeksi']) && $userUlpId !== null) {
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
             $ulpIdFilter = (int)$userUlpId;
         }
 
@@ -711,7 +711,7 @@ class Temuan extends BaseController
         $userUlpId = $session->get('user_ulp_id');
 
         $ulpIdFilter = null;
-        if ($role !== 'administrator' && $role !== 'har_crane' && $role !== 'inspeksi' && $userUlpId !== null) {
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
             $ulpIdFilter = (int)$userUlpId;
         }
 
@@ -840,7 +840,7 @@ class Temuan extends BaseController
                 'temuan'    => $temuan,
                 'sla'       => $sla,
                 'history'   => $history,
-                'canEdit'   => in_array($role, ['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek']),
+                'canEdit'   => in_array($role, ['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'har_trafo', 'yantek']),
                 'canDelete' => in_array($role, ['administrator', 'admin', 'admin_pusat', 'admin_ulp']),
                 'editUrl'   => site_url('temuan/edit/' . $id),
                 'detailUrl' => site_url('temuan/detail/' . $id),
@@ -861,7 +861,7 @@ class Temuan extends BaseController
         $userUlpId = $session->get('user_ulp_id');
 
         $ulpIdFilter = null;
-        if ($role !== 'administrator' && $role !== 'har_crane' && $role !== 'inspeksi' && $userUlpId !== null) {
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
             $ulpIdFilter = (int)$userUlpId;
         }
 
@@ -915,7 +915,7 @@ class Temuan extends BaseController
         $userUlpId = $session->get('user_ulp_id');
 
         $ulpIdFilter = null;
-        if ($role === 'admin_ulp' && $userUlpId !== null) {
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
             $ulpIdFilter = (int)$userUlpId;
         }
 
@@ -960,7 +960,7 @@ class Temuan extends BaseController
         $userUlpId = $session->get('user_ulp_id');
 
         $ulpIdFilter = null;
-        if ($role === 'admin_ulp' && $userUlpId !== null) {
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
             $ulpIdFilter = (int)$userUlpId;
         }
 
@@ -1159,6 +1159,14 @@ class Temuan extends BaseController
             $session = session();
             $role = strtolower((string)$session->get('user_role'));
             $userUlpId = $session->get('user_ulp_id');
+
+            if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'admin_ulp'])) {
+                log_message('warning', "[DELETE_TEMUAN] Akses ditolak untuk role {$role} | ID: {$id}");
+                if ($isAjax) {
+                    return $this->jsonResponse(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data temuan.'], 403);
+                }
+                return redirect()->to(site_url('temuan'))->with('error', 'Anda tidak memiliki hak akses.');
+            }
 
             if ($role === 'admin_ulp' && $userUlpId !== null && (int)$temuan['ulp_id'] !== (int)$userUlpId) {
                 log_message('warning', "[DELETE_TEMUAN] Akses ditolak untuk role admin_ulp | User ULP: {$userUlpId} | Temuan ULP: {$temuan['ulp_id']}");
@@ -1389,7 +1397,7 @@ class Temuan extends BaseController
         $role = (string)$session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
         $ulpIdFilter = null;
-        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'har_crane', 'inspeksi']) && $userUlpId !== null) {
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
             $ulpIdFilter = (int)$userUlpId;
         }
 

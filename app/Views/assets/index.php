@@ -179,6 +179,7 @@ $pagination = $pagination ?? null;
                             'LBS'           => 'LBS / LBSM',
                             'Recloser'      => 'Recloser',
                             'Sectionalizer' => 'Sectionalizer',
+                            'ROW'           => 'Aset ROW (Pohon/Vegetasi)',
                             'JTR'           => 'JTR',
                         ];
                         foreach ($jenisOptions as $val => $label): ?>

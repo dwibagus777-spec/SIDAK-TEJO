@@ -645,7 +645,7 @@
                 <select id="setup-feeder-select" class="form-select form-select-sm fw-bold border-primary text-primary rounded-3 py-2">
                     <option value="">-- Pilih ULP Terlebih Dahulu --</option>
                 </select>
-                <small id="setup-multi-feeder-hint" class="text-muted d-none" style="font-size: 10px;">Tekan Ctrl/Cmd untuk memilih lebih dari 1 penyulang sekaligus.</small>
+                <small id="setup-multi-feeder-hint" class="text-primary d-none" style="font-size: 10px;"><i class="fas fa-check-double me-1"></i>Klik penyulang untuk memilih atau membatalkan pilihan.</small>
             </div>
 
             <!-- Step 4: Layer Aset yang Dimuat -->
@@ -1752,7 +1752,7 @@
             <select id="drawer-feeder-select" class="form-select form-select-sm fw-bold border-primary text-primary">
                 <!-- Dynamically cloned -->
             </select>
-            <small id="drawer-multi-feeder-hint" class="text-muted d-none" style="font-size: 10px;">Tekan Ctrl/Cmd untuk memilih lebih dari 1 penyulang sekaligus.</small>
+            <small id="drawer-multi-feeder-hint" class="text-primary d-none" style="font-size: 10px;"><i class="fas fa-check-double me-1"></i>Klik penyulang untuk memilih atau membatalkan pilihan.</small>
         </div>
         <div class="mb-3">
             <label class="small text-muted font-weight-bold d-block mb-1"><i class="fas fa-wave-square text-info me-1"></i> Filter Jenis Konduktor Transline:</label>
@@ -3598,6 +3598,21 @@ document.addEventListener("DOMContentLoaded", function () {
         loadPenyulangsForUlp(setupUlpSelect.value, true);
     }
 
+    function bindIntuitiveMultiSelect(selectEl) {
+        if (!selectEl) return;
+        selectEl.addEventListener('mousedown', function (e) {
+            if (!this.multiple) return;
+            var opt = e.target;
+            if (opt && opt.tagName === 'OPTION') {
+                e.preventDefault();
+                if (!opt.value) return;
+                opt.selected = !opt.selected;
+                this.dispatchEvent(new Event('change'));
+                this.focus();
+            }
+        });
+    }
+
     var setupMultiToggle = document.getElementById('setup-multi-feeder-toggle');
     var setupMultiHint = document.getElementById('setup-multi-feeder-hint');
     if (setupMultiToggle) {
@@ -3605,20 +3620,35 @@ document.addEventListener("DOMContentLoaded", function () {
             setupFeederSelect.multiple = this.checked;
             setupFeederSelect.size = this.checked ? 5 : 1;
             if (setupMultiHint) setupMultiHint.classList.toggle('d-none', !this.checked);
+            if (!this.checked) {
+                var selected = Array.from(setupFeederSelect.selectedOptions || []).filter(o => o.value);
+                if (selected.length > 0) {
+                    setupFeederSelect.value = selected[0].value;
+                }
+            }
         });
     }
+    bindIntuitiveMultiSelect(setupFeederSelect);
+
     var drawerMultiToggle = document.getElementById('drawer-multi-feeder-toggle');
     var drawerMultiHint = document.getElementById('drawer-multi-feeder-hint');
+    var drawerSelect = document.getElementById('drawer-feeder-select');
     if (drawerMultiToggle) {
         drawerMultiToggle.addEventListener('change', function() {
-            var drawerSelect = document.getElementById('drawer-feeder-select');
             if (drawerSelect) {
                 drawerSelect.multiple = this.checked;
                 drawerSelect.size = this.checked ? 5 : 1;
+                if (!this.checked) {
+                    var selected = Array.from(drawerSelect.selectedOptions || []).filter(o => o.value);
+                    if (selected.length > 0) {
+                        drawerSelect.value = selected[0].value;
+                    }
+                }
             }
             if (drawerMultiHint) drawerMultiHint.classList.toggle('d-none', !this.checked);
         });
     }
+    bindIntuitiveMultiSelect(drawerSelect);
 
     // ========================================================
     // STAGE 2: TRANSITION FROM SETUP TO FULL MAP WORKSPACE
@@ -3638,6 +3668,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
         document.getElementById('topbar-feeder-title').textContent = currentFeederName;
         document.getElementById('topbar-ulp-subtitle').textContent = currentUlpName;
+
+        // Sync selection to drawer select
+        var dSelect = document.getElementById('drawer-feeder-select');
+        if (dSelect) {
+            var isMulti = (selectedOpts.length > 1) || (setupMultiToggle && setupMultiToggle.checked);
+            dSelect.multiple = isMulti;
+            dSelect.size = isMulti ? 5 : 1;
+            if (drawerMultiToggle) drawerMultiToggle.checked = isMulti;
+            if (drawerMultiHint) drawerMultiHint.classList.toggle('d-none', !isMulti);
+            Array.from(dSelect.options).forEach(opt => {
+                opt.selected = selectedOpts.some(s => String(s.value) === String(opt.value));
+            });
+        }
 
         document.getElementById('gis-setup-screen').style.display = 'none';
         document.getElementById('gis-workspace-screen').style.display = 'block';
@@ -6821,7 +6864,9 @@ document.addEventListener("DOMContentLoaded", function () {
         var drawerSelect = document.getElementById('drawer-feeder-select');
         var feederIds = String(currentFeederId || '').split(',').map(s => s.trim()).filter(Boolean);
         if (drawerSelect) {
-            if (feederIds.length > 1) {
+            var setupMulti = document.getElementById('setup-multi-feeder-toggle');
+            var isMulti = (feederIds.length > 1) || (setupMulti && setupMulti.checked);
+            if (isMulti) {
                 drawerSelect.multiple = true;
                 drawerSelect.size = 5;
                 var drawerMultiToggle = document.getElementById('drawer-multi-feeder-toggle');
@@ -6874,6 +6919,11 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('topbar-feeder-title').textContent = currentFeederName;
             // Sync with setup select
             if (setupFeederSelect) {
+                var isMulti = (selectedOpts.length > 1) || (drawerMultiToggle && drawerMultiToggle.checked);
+                setupFeederSelect.multiple = isMulti;
+                setupFeederSelect.size = isMulti ? 5 : 1;
+                if (setupMultiToggle) setupMultiToggle.checked = isMulti;
+                if (setupMultiHint) setupMultiHint.classList.toggle('d-none', !isMulti);
                 Array.from(setupFeederSelect.options).forEach(opt => {
                     opt.selected = selectedOpts.some(s => String(s.value) === String(opt.value));
                 });
@@ -6911,6 +6961,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!cacheMissingTemuan && cachedEntry && cachedEntry.data) {
             currentData = cachedEntry.data;
+            markerByAssetId.clear();
             renderFilteredLayers(false);
             if (activeLayers.includes('TEMUAN')) {
                 var findingCount = findingLayer ? findingLayer.getLayers().length : 0;
@@ -6921,6 +6972,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         } else {
+            markerByAssetId.clear();
             if (activeLayers.includes('TEMUAN')) {
                 notifyGis('Memuat layer temuan inspeksi...', 'info');
             }

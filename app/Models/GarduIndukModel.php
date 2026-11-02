@@ -12,6 +12,7 @@ class GarduIndukModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $allowedFields    = [
+        'up3_id',
         'kode_gi',
         'nama_gi',
         'lokasi',

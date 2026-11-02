@@ -2323,7 +2323,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                     <span class="nav-link-title">Riwayat Saya</span>
                                 </a>
                             </li>
-<?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
+<?php if (check_role(['administrator', 'admin_ulp', 'inspeksi', 'yantek'])): ?>
                               <li class="nav-item <?= url_is('temuan/create') ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('temuan/create') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-plus-circle text-success"></i></span>
@@ -2349,7 +2349,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                     <span class="nav-link-title">Smart WO Center</span>
                                 </a>
                             </li>
-                            <?php if (!check_role(['supervisor_up3'])): ?>
+                            <?php if (check_role(['administrator', 'admin_ulp', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'har_trafo', 'yantek'])): ?>
                             <li class="nav-item <?= url_is('temuan/update-pekerjaan') ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('temuan/update-pekerjaan') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-pen-to-square text-warning"></i></span>
@@ -2462,14 +2462,19 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                 </div>
                             </li>
                             <?php endif; ?>
-                              <?php if (check_role(['administrator', 'admin_ulp'])): ?>
-                            <li class="nav-item dropdown <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show active' : '') ?>">
+                              <?php if (check_role(['administrator', 'admin_ulp', 'admin_pusat'])): ?>
+                            <li class="nav-item dropdown <?= (url_is('master-uid*') || url_is('master-up3*') || url_is('master-hierarchy*') || url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show active' : '') ?>">
                                 <a class="nav-link dropdown-toggle" href="#menu-master" data-bs-toggle="collapse" role="button">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-layer-group text-info"></i></span>
                                     <span class="nav-link-title">Master Referensi</span>
                                 </a>
-                                <div class="collapse <?= (url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show' : '') ?>" id="menu-master">
+                                <div class="collapse <?= (url_is('master-uid*') || url_is('master-up3*') || url_is('master-hierarchy*') || url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show' : '') ?>" id="menu-master">
                                     <ul class="navbar-nav">
+                                        <?php if (check_role(['administrator', 'admin_pusat'])): ?>
+                                        <li><a class="dropdown-item <?= url_is('master-uid*') ? 'active' : '' ?>" href="<?= site_url('master-uid') ?>"><i class="fas fa-sitemap me-1 text-primary"></i> Master UID</a></li>
+                                        <li><a class="dropdown-item <?= url_is('master-up3*') ? 'active' : '' ?>" href="<?= site_url('master-up3') ?>"><i class="fas fa-building me-1 text-info"></i> Master UP / UP3</a></li>
+                                        <li><a class="dropdown-item <?= url_is('master-hierarchy*') ? 'active' : '' ?>" href="<?= site_url('master-hierarchy/unconnected') ?>"><i class="fas fa-link-slash me-1 text-warning"></i> Audit Relasi Unlinked</a></li>
+                                        <?php endif; ?>
                                         <li><a class="dropdown-item <?= url_is('master-gi*') ? 'active' : '' ?>" href="<?= site_url('master-gi') ?>"><i class="fas fa-charging-station me-1 text-primary"></i> Gardu Induk (GI)</a></li>
                                         <?php if (check_role(['administrator'])): ?>
                                         <li><a class="dropdown-item <?= url_is('ulps*') ? 'active' : '' ?>" href="<?= site_url('ulps') ?>">Data ULP</a></li>
@@ -2719,7 +2724,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 <span>Tugas</span>
             </a>
             <!-- Slot 4: Center FAB (+) Input Temuan -->
-            <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi'])): ?>
+            <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi', 'yantek'])): ?>
             <a href="<?= site_url('temuan/create') ?>" class="sidak-dock-fab" title="Input Temuan Baru Lapangan">
                 <div class="sidak-fab-circle">
                     <i class="fas fa-plus"></i>
@@ -5397,9 +5402,9 @@ $sidakMenuData = [
                 ['href' => site_url('planning'), 'icon' => 'fas fa-clipboard-list', 'text' => 'Planning Inspeksi', 'active' => (bool)url_is('planning*')],
                 ['href' => site_url('my-inspections'), 'icon' => 'fas fa-tasks', 'text' => 'Tugas Inspeksi Saya', 'active' => (bool)url_is('my-inspections*')],
                 ['href' => site_url('my-history'), 'icon' => 'fas fa-history', 'text' => 'Riwayat Saya', 'active' => (bool)url_is('my-history*')],
-                check_role(['administrator','admin_ulp','inspeksi']) ? ['href' => site_url('temuan/create'), 'icon' => 'fas fa-plus-circle', 'text' => 'Input Temuan Baru', 'active' => (bool)url_is('temuan/create')] : null,
+                check_role(['administrator','admin_ulp','inspeksi','yantek']) ? ['href' => site_url('temuan/create'), 'icon' => 'fas fa-plus-circle', 'text' => 'Input Temuan Baru', 'active' => (bool)url_is('temuan/create')] : null,
                 ['href' => site_url('temuan'), 'icon' => 'fas fa-list-check', 'text' => 'Daftar Semua Temuan', 'active' => (bool)(url_is('temuan') && !url_is('temuan/terdekat') && !url_is('temuan/create') && !url_is('temuan/update-pekerjaan'))],
-                check_role(['administrator','admin_ulp','pdkb','har_gardu','har_konstruksi','har_row','har_crane','yantek']) ? ['href' => site_url('temuan/update-pekerjaan'), 'icon' => 'fas fa-wrench', 'text' => 'Update Pekerjaan (HAR)', 'active' => (bool)url_is('temuan/update-pekerjaan*')] : null,
+                check_role(['administrator','admin_ulp','pdkb','har_gardu','har_konstruksi','har_row','har_crane','har_trafo','yantek']) ? ['href' => site_url('temuan/update-pekerjaan'), 'icon' => 'fas fa-wrench', 'text' => 'Update Pekerjaan (HAR)', 'active' => (bool)url_is('temuan/update-pekerjaan*')] : null,
                 ['href' => site_url('temuan/terdekat'), 'icon' => 'fas fa-location-crosshairs', 'text' => 'Temuan Terdekat', 'active' => (bool)url_is('temuan/terdekat*')],
                 ['href' => site_url('work-orders'), 'icon' => 'fas fa-file-signature', 'text' => 'Work Orders (WO)', 'active' => (bool)url_is('work-orders*')],
             ]))
@@ -5442,8 +5447,11 @@ $sidakMenuData = [
                 ['href' => site_url('asset-corpus/workspace'), 'icon' => 'fas fa-file-csv', 'text' => 'Asset Corpus', 'active' => (bool)url_is('asset-corpus*')],
                 ['href' => site_url('asset-health'), 'icon' => 'fas fa-heart-pulse', 'text' => 'Asset Health Index', 'active' => (bool)url_is('asset-health*')],
                 ['href' => site_url('master-assets'), 'icon' => 'fas fa-boxes-stacked', 'text' => 'Master Asset PLN', 'active' => (bool)url_is('master-assets*')],
+                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-uid'), 'icon' => 'fas fa-sitemap', 'text' => 'Master UID', 'active' => (bool)url_is('master-uid*')] : null,
+                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-up3'), 'icon' => 'fas fa-building', 'text' => 'Master UP3', 'active' => (bool)url_is('master-up3*')] : null,
+                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-hierarchy/unconnected'), 'icon' => 'fas fa-link-slash', 'text' => 'Audit Unlinked', 'active' => (bool)url_is('master-hierarchy*')] : null,
                 ['href' => site_url('master-gi'), 'icon' => 'fas fa-charging-station', 'text' => 'Gardu Induk (GI)', 'active' => (bool)url_is('master-gi*')],
-                check_role(['administrator']) ? ['href' => site_url('ulps'), 'icon' => 'fas fa-building', 'text' => 'Data ULP', 'active' => (bool)url_is('ulps*')] : null,
+                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('ulps'), 'icon' => 'fas fa-building', 'text' => 'Data ULP', 'active' => (bool)url_is('ulps*')] : null,
                 ['href' => site_url('penyulang'), 'icon' => 'fas fa-route', 'text' => 'Data Penyulang', 'active' => (bool)url_is('penyulang*')],
                 ['href' => site_url('sections'), 'icon' => 'fas fa-map-pin', 'text' => 'Data Section', 'active' => (bool)url_is('sections*')],
                 ['href' => site_url('users'), 'icon' => 'fas fa-users', 'text' => 'Data User', 'active' => (bool)url_is('users*')],

@@ -11,7 +11,7 @@ class UlpModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $allowedFields    = ['kode_ulp', 'nama_ulp', 'status'];
+    protected $allowedFields    = ['up3_id', 'kode_ulp', 'nama_ulp', 'status'];
     
     // Timestamps
     protected $useTimestamps = true;

@@ -2386,21 +2386,37 @@ class TranslineProposalReviewService
      * @param int|null $userUlpId
      * @return array<string, mixed>
      */
-    public function getExceptionReviewQueue(?int $penyulangId = null, ?string $filterState = null, ?int $userUlpId = null): array
+    public function getExceptionReviewQueue($penyulangId = null, ?string $filterState = null, ?int $userUlpId = null): array
     {
         $rawProposals = [];
+        $penyulangIds = [];
+        if (is_array($penyulangId)) {
+            $penyulangIds = array_values(array_filter(array_map('intval', $penyulangId)));
+        } elseif (is_string($penyulangId) && str_contains($penyulangId, ',')) {
+            $penyulangIds = array_values(array_filter(array_map('intval', explode(',', $penyulangId))));
+        } elseif ($penyulangId !== null && (int)$penyulangId > 0) {
+            $penyulangIds = [(int)$penyulangId];
+        }
 
         if (!$this->db->tableExists('gis_transline_proposals')) {
             $canonicalMap = $this->getCanonicalBaselineProposals();
             $rawProposals = array_values($canonicalMap);
-            if ($penyulangId !== null && $penyulangId > 0) {
-                $rawProposals = array_values(array_filter($rawProposals, fn($p) => (int)$p['penyulang_id'] === $penyulangId || (int)$p['penyulang_id'] === 10 || (int)$p['penyulang_id'] === 15));
+            if (!empty($penyulangIds)) {
+                $rawProposals = array_values(array_filter($rawProposals, fn($p) => in_array((int)$p['penyulang_id'], $penyulangIds, true) || (int)$p['penyulang_id'] === 10 || (int)$p['penyulang_id'] === 15));
             }
         } else {
             // Query all active proposals
-            $builder = $this->db->table('gis_transline_proposals')->where('deleted_at IS NULL');
-            if ($penyulangId !== null && $penyulangId > 0) {
-                $builder->where('penyulang_id', $penyulangId);
+            $builder = $this->db->table('gis_transline_proposals');
+            $feederCol = $this->db->fieldExists('feeder_id', 'gis_transline_proposals') ? 'feeder_id' : 'penyulang_id';
+            if ($this->db->fieldExists('deleted_at', 'gis_transline_proposals')) {
+                $builder->where('deleted_at IS NULL');
+            }
+            if (!empty($penyulangIds)) {
+                if (count($penyulangIds) > 1) {
+                    $builder->whereIn($feederCol, $penyulangIds);
+                } else {
+                    $builder->where($feederCol, $penyulangIds[0]);
+                }
             }
 
             // Enforce ULP filter if provided
@@ -2412,7 +2428,7 @@ class TranslineProposalReviewService
                 if (empty($feederIds)) {
                     $builder->where('1 = 0');
                 } else {
-                    $builder->whereIn('penyulang_id', $feederIds);
+                    $builder->whereIn($feederCol, $feederIds);
                 }
             }
 

@@ -47,7 +47,7 @@ class Laporan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
-        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'har_crane', 'pdkb', 'inspeksi']));
+        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']));
 
         if ($isRestricted) {
             $ulps = [$this->ulpRepository->find($userUlpId)];
@@ -599,7 +599,7 @@ class Laporan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
-        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'har_crane', 'pdkb', 'inspeksi']));
+        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']));
 
         if ($isRestricted) {
             $ulps = [$this->ulpRepository->find($userUlpId)];
@@ -1007,7 +1007,7 @@ class Laporan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
-        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'har_crane', 'pdkb', 'inspeksi']));
+        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']));
 
         if ($isRestricted) {
             $ulps = [$this->ulpRepository->find($userUlpId)];

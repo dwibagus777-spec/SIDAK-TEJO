@@ -68,6 +68,7 @@ class AssetTopologyService
 
     /**
      * Circular Topology Guard: Cek apakah penambahan relasi sourceId -> targetId menyebabkan cycle (A -> B -> C -> A)
+     * Hanya memeriksa jalur hilir (downstream outgoing edges). Tidak menelusuri ke atas (parent mounting).
      */
     public function wouldCreateCycle(int $sourceId, int $targetId): bool
     {
@@ -77,6 +78,7 @@ class AssetTopologyService
 
         $visited = [];
         $queue = [$targetId];
+        $db = \Config\Database::connect();
 
         while (!empty($queue)) {
             $currentId = array_shift($queue);
@@ -90,6 +92,7 @@ class AssetTopologyService
             }
             $visited[$currentId] = true;
 
+            // 1. Outgoing dari asset_relationships (parent_asset_id -> child_asset_id)
             $outgoingRels = $this->relationshipModel
                 ->where('parent_asset_id', $currentId)
                 ->where('is_active', 1)
@@ -102,11 +105,35 @@ class AssetTopologyService
                 }
             }
 
-            $asset = $this->assetModel->find($currentId);
-            if ($asset && !empty($asset['parent_asset_id'])) {
-                $parentId = (int)$asset['parent_asset_id'];
-                if (!isset($visited[$parentId])) {
-                    $queue[] = $parentId;
+            // 2. Outgoing dari gis_translines (source_asset_id -> target_asset_id)
+            if ($db->tableExists('gis_translines')) {
+                $tlEdges = $db->table('gis_translines')
+                    ->select('target_asset_id')
+                    ->where('source_asset_id', $currentId)
+                    ->where('deleted_at IS NULL')
+                    ->get()
+                    ->getResultArray();
+                foreach ($tlEdges as $tl) {
+                    $nextId = (int)($tl['target_asset_id'] ?? 0);
+                    if ($nextId > 0 && !isset($visited[$nextId])) {
+                        $queue[] = $nextId;
+                    }
+                }
+            }
+
+            // 3. Outgoing anak dari tabel assets (assets dengan parent_asset_id = currentId)
+            $childAssets = $this->assetModel
+                ->select('id, jenis_asset')
+                ->where('parent_asset_id', $currentId)
+                ->where('id !=', $currentId)
+                ->where('deleted_at IS NULL')
+                ->findAll();
+
+            foreach ($childAssets as $ca) {
+                // Keypoint / non-pole leaf equipment tidak melanjutkan jalur transmisi utama
+                $nextId = (int)$ca['id'];
+                if ($nextId > 0 && !isset($visited[$nextId])) {
+                    $queue[] = $nextId;
                 }
             }
         }
@@ -133,6 +160,7 @@ class AssetTopologyService
         $visited = [];
         $parentPointer = [];
         $queue = [$targetId];
+        $db = \Config\Database::connect();
 
         $found = false;
         while (!empty($queue)) {
@@ -148,6 +176,7 @@ class AssetTopologyService
             }
             $visited[$currentId] = true;
 
+            // 1. Outgoing dari asset_relationships
             $outgoingRels = $this->relationshipModel
                 ->where('parent_asset_id', $currentId)
                 ->where('is_active', 1)
@@ -163,14 +192,40 @@ class AssetTopologyService
                 }
             }
 
-            $asset = $this->assetModel->find($currentId);
-            if ($asset && !empty($asset['parent_asset_id'])) {
-                $parentId = (int)$asset['parent_asset_id'];
-                if (!isset($visited[$parentId])) {
-                    if (!isset($parentPointer[$parentId])) {
-                        $parentPointer[$parentId] = $currentId;
+            // 2. Outgoing dari gis_translines
+            if ($db->tableExists('gis_translines')) {
+                $tlEdges = $db->table('gis_translines')
+                    ->select('target_asset_id')
+                    ->where('source_asset_id', $currentId)
+                    ->where('deleted_at IS NULL')
+                    ->get()
+                    ->getResultArray();
+                foreach ($tlEdges as $tl) {
+                    $nextId = (int)($tl['target_asset_id'] ?? 0);
+                    if ($nextId > 0 && !isset($visited[$nextId])) {
+                        if (!isset($parentPointer[$nextId])) {
+                            $parentPointer[$nextId] = $currentId;
+                        }
+                        $queue[] = $nextId;
                     }
-                    $queue[] = $parentId;
+                }
+            }
+
+            // 3. Outgoing anak dari tabel assets
+            $childAssets = $this->assetModel
+                ->select('id, jenis_asset')
+                ->where('parent_asset_id', $currentId)
+                ->where('id !=', $currentId)
+                ->where('deleted_at IS NULL')
+                ->findAll();
+
+            foreach ($childAssets as $ca) {
+                $nextId = (int)$ca['id'];
+                if ($nextId > 0 && !isset($visited[$nextId])) {
+                    if (!isset($parentPointer[$nextId])) {
+                        $parentPointer[$nextId] = $currentId;
+                    }
+                    $queue[] = $nextId;
                 }
             }
         }

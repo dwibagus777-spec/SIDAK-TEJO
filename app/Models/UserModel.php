@@ -11,7 +11,7 @@ class UserModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $allowedFields    = ['nama', 'nama_pegawai', 'nip', 'username', 'password', 'role', 'ulp_id', 'ulp', 'status', 'last_login'];
+    protected $allowedFields    = ['nama', 'nama_pegawai', 'nip', 'username', 'password', 'role', 'uid_id', 'up3_id', 'ulp_id', 'ulp', 'status', 'last_login'];
 
     // Timestamps
     protected $useTimestamps = true;

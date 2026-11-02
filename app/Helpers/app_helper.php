@@ -98,6 +98,7 @@ if (!function_exists('get_role_label')) {
             'yantek' => 'Yantek',
             'supervisor_ulp' => 'Supervisor ULP',
             'supervisor_up3' => 'Supervisor UP3',
+            'har_trafo' => 'HAR Trafo',
             'beyond_kwh' => 'Beyond KWH',
         ];
 
@@ -118,7 +119,7 @@ if (!function_exists('apply_role_scoping')) {
             $userRole = strtolower($userRole);
         }
         if (!$userUlpId) {
-            $userUlpId = $session->get('ulp_id');
+            $userUlpId = $session->get('user_ulp_id') ?: $session->get('ulp_id');
         }
 
         // Full access roles across all ULPs & Pelaksana
@@ -127,7 +128,7 @@ if (!function_exists('apply_role_scoping')) {
         }
 
         // Filter ULP (jika user memiliki ulp_id)
-        if (!empty($userUlpId) && in_array($userRole, ['admin_ulp', 'inspeksi', 'yantek', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'supervisor_ulp'])) {
+        if (!empty($userUlpId) && in_array($userRole, ['admin_ulp', 'inspeksi', 'yantek', 'har_gardu', 'har_konstruksi', 'har_row', 'har_trafo', 'supervisor_ulp'])) {
             $builder->where('temuan.ulp_id', $userUlpId);
         }
 
@@ -142,6 +143,11 @@ if (!function_exists('apply_role_scoping')) {
             $builder->where('temuan.pelaksana', 'HAR ROW');
         } elseif ($userRole === 'har_crane') {
             $builder->where('temuan.pelaksana', 'HAR CRANE');
+        } elseif ($userRole === 'har_trafo') {
+            $builder->groupStart()
+                ->where('temuan.pelaksana', 'HAR TRAFO')
+                ->orWhere('temuan.pelaksana', 'HAR GARDU')
+                ->groupEnd();
         }
 
         return $builder;
@@ -262,13 +268,13 @@ if (!function_exists('get_user_role_scoping')) {
     {
         $session = session();
         $role = strtolower((string)$session->get('user_role'));
-        $userUlpId = $session->get('user_ulp_id');
+        $userUlpId = $session->get('user_ulp_id') ?: $session->get('ulp_id');
 
         $ulpIdFilter = null;
         $jenisTemuanFilter = null;
 
         // Cross-ULP roles: administrator, pdkb, har_crane
-        if (!in_array($role, ['administrator', 'pdkb', 'har_crane'])) {
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane'])) {
             if ($userUlpId !== null) {
                 $ulpIdFilter = (int)$userUlpId;
             }
@@ -310,7 +316,7 @@ if (!function_exists('check_photo_access')) {
         $userUlpId = $scope['ulp_id'];
 
         // Cross-ULP roles from get_user_role_scoping(): administrator, pdkb, har_crane
-        $crossUlpRoles = ['administrator', 'pdkb', 'har_crane'];
+        $crossUlpRoles = ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane'];
 
         // Normalize the relative path (decode URL, convert separators, remove traversal attempts)
         $cleanRelativePath = str_replace('\\', '/', rawurldecode(trim($photoRelativePath)));

@@ -124,6 +124,15 @@ class AssetRepository
                     ->orLike('a.jenis_asset', 'LBSM')
                     ->orLike('a.jenis_asset', 'Switch')
                 ->groupEnd();
+            } elseif (in_array(strtoupper($jVal), ['ROW', 'POHON_ROW', 'POHON', 'VEGETASI', 'VEGETATION'])) {
+                $builder->groupStart()
+                    ->like('a.jenis_asset', 'ROW')
+                    ->orLike('a.jenis_asset', 'POHON')
+                    ->orLike('a.jenis_asset', 'VEGETASI')
+                    ->orLike('a.jenis_asset', 'VEGETATION')
+                    ->orLike('a.nama_asset', 'ROW')
+                    ->orLike('a.nama_asset', 'POHON')
+                ->groupEnd();
             } else {
                 $builder->like('a.jenis_asset', $jVal);
             }

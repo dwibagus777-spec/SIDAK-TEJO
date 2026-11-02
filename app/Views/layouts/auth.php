@@ -12,12 +12,14 @@
 
     <!-- Local Fonts: Outfit & Inter -->
     <link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
-    <!-- Font Awesome Local -->
-    <link rel="stylesheet" href="<?= base_url('plugins/fontawesome-free/css/all.min.css') ?>">
     <!-- Bootstrap Local -->
     <link rel="stylesheet" href="<?= base_url('plugins/bootstrap/css/bootstrap.min.css') ?>">
-    <!-- Animate.css -->
-    <link rel="stylesheet" href="<?= base_url('plugins/animate.min.css') ?>">
+    <!-- Font Awesome Local (Non-render-blocking) -->
+    <link rel="stylesheet" href="<?= base_url('plugins/fontawesome-free/css/all.min.css') ?>" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="<?= base_url('plugins/fontawesome-free/css/all.min.css') ?>"></noscript>
+    <!-- Animate.css (Non-render-blocking) -->
+    <link rel="stylesheet" href="<?= base_url('plugins/animate.min.css') ?>" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="<?= base_url('plugins/animate.min.css') ?>"></noscript>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -243,16 +245,16 @@
             justify-content: center;
             gap: 10px;
             font-size: 0.72rem;
-            color: rgba(255, 255, 255, 0.5);
+            color: #CBD5E1;
             font-family: monospace;
         }
         .version-badge {
-            background: rgba(0, 181, 184, 0.2);
-            color: var(--brand-teal);
+            background: rgba(56, 189, 248, 0.2);
+            color: #38BDF8;
             padding: 2px 8px;
             border-radius: 6px;
             font-weight: 700;
-            border: 1px solid rgba(0, 181, 184, 0.4);
+            border: 1px solid rgba(56, 189, 248, 0.4);
         }
 
         /* ── Right Column: Compact Login Form ────────── */
@@ -333,7 +335,7 @@
         .input-field-custom {
             width: 100%;
             height: 48px;
-            border: 1.5px solid var(--gray-200);
+            border: 1.5px solid #94A3B8;
             border-radius: 10px;
             padding: 0 16px 0 46px;
             font-size: 0.92rem;
@@ -343,23 +345,28 @@
             transition: all 0.2s ease;
         }
         .input-field-custom:focus {
-            border-color: var(--brand-teal);
-            box-shadow: 0 0 0 3.5px rgba(0, 181, 184, 0.15);
+            border-color: #0F766E;
+            box-shadow: 0 0 0 3.5px rgba(15, 118, 110, 0.2);
         }
         .input-group-custom:focus-within .input-icon-left {
-            color: var(--brand-teal);
+            color: #0F766E;
         }
 
         .pw-toggle-btn {
             position: absolute;
             right: 14px;
-            color: #94A3B8;
+            color: #475569;
             cursor: pointer;
             padding: 6px;
             font-size: 0.9rem;
+            background: transparent;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: color 0.2s ease;
         }
-        .pw-toggle-btn:hover { color: var(--brand-teal); }
+        .pw-toggle-btn:hover { color: #0F766E; }
 
         /* CTA Button */
         .btn-submit-modern {
@@ -367,7 +374,7 @@
             height: 48px;
             border: none;
             border-radius: 10px;
-            background: linear-gradient(135deg, var(--brand-teal) 0%, #00878A 100%);
+            background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
             color: #ffffff;
             font-family: 'Outfit', sans-serif;
             font-size: 0.95rem;
@@ -376,7 +383,7 @@
             text-transform: uppercase;
             cursor: pointer;
             transition: all 0.25s ease;
-            box-shadow: 0 6px 20px rgba(0, 181, 184, 0.3);
+            box-shadow: 0 6px 20px rgba(13, 148, 136, 0.35);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -385,7 +392,8 @@
         }
         .btn-submit-modern:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 28px rgba(0, 181, 184, 0.45);
+            background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
+            box-shadow: 0 10px 28px rgba(15, 118, 110, 0.45);
         }
         .btn-submit-modern:active { transform: translateY(0); }
 
@@ -579,7 +587,7 @@
 </head>
 <body>
 
-<div class="auth-viewport-wrapper" id="auth-viewport">
+<main class="auth-viewport-wrapper" id="auth-viewport">
     <!-- Cinematic Door Reveal Overlay (Symmetrical Door Opening) -->
     <div class="cinematic-reveal" id="cinematic-reveal-overlay">
         <div class="cinematic-panel cinematic-panel-left"></div>
@@ -610,7 +618,7 @@
             <!-- Prominent Center Logo Emblem & Titles -->
             <div class="brand-body animate__animated animate__zoomIn">
                 <div class="hero-emblem-wrapper">
-                    <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Enterprise Emblem" class="emblem-img-prominent">
+                    <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" alt="SIDAK TEJO Enterprise Emblem" class="emblem-img-prominent" width="286" height="260" fetchpriority="high">
                 </div>
                 <h1 class="brand-title-prominent">SIDAK <span>TEJO</span></h1>
                 <div class="brand-subtitle-prominent">Sistem Data &amp; Tindak Lanjut Temuan Inspeksi Sidoarjo</div>
@@ -630,7 +638,7 @@
             <div class="auth-form-card animate__animated animate__fadeInRight" id="form-card">
                 
                 <div class="form-title-wrap">
-                    <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--brand-teal);">
+                    <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #0F766E;">
                         <span class="status-dot-online"></span> Sistem Aktif &amp; Terbuka
                     </div>
                     <h2 class="form-header-heading">Selamat Datang 👋</h2>
@@ -701,9 +709,9 @@
                                 autocomplete="current-password"
                                 style="padding-right: 44px;"
                             >
-                            <span class="pw-toggle-btn" id="toggle-pw" title="Tampilkan/sembunyikan password">
-                                <i class="fas fa-eye" id="toggle-pw-icon"></i>
-                            </span>
+                            <button type="button" class="pw-toggle-btn" id="toggle-pw" aria-label="Tampilkan atau sembunyikan password" title="Tampilkan atau sembunyikan password">
+                                <i class="fas fa-eye" id="toggle-pw-icon" aria-hidden="true"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -726,17 +734,17 @@
 
                 <div class="form-footer-copyright">
                     &copy; <?= date('Y') ?> SIDAK TEJO &bull; PT PLN (Persero) UP3 Sidoarjo<br>
-                    <span style="font-size: 0.68rem; color: #94A3B8;">Build <?= esc(\Config\BuildVersion::BUILD_ID) ?> &bull; Enterprise Network Inspection</span>
+                    <span style="font-size: 0.68rem; color: #475569;">Build <?= esc(\Config\BuildVersion::BUILD_ID) ?> &bull; Enterprise Network Inspection</span>
                 </div>
             </div>
         </div>
 
     </div>
-</div>
+</main>
 
 <!-- Scripts -->
-<script src="<?= base_url('plugins/jquery/jquery.min.js') ?>"></script>
-<script src="<?= base_url('plugins/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
+<script src="<?= base_url('plugins/jquery/jquery.min.js') ?>" defer></script>
+<script src="<?= base_url('plugins/bootstrap/js/bootstrap.bundle.min.js') ?>" defer></script>
 
 <script>
     // Password visibility toggle

@@ -894,23 +894,23 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
 
     // Temuan & AJAX Cascades
     $routes->get('temuan', 'Temuan::index');
-    $routes->get('captive-non-penugasan', 'CaptiveNonPenugasanController::index', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
-    $routes->post('captive-non-penugasan/store', 'CaptiveNonPenugasanController::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
-    $routes->post('captive-non-penugasan/complete/(:num)', 'CaptiveNonPenugasanController::complete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->get('captive-non-penugasan', 'CaptiveNonPenugasanController::index', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('captive-non-penugasan/store', 'CaptiveNonPenugasanController::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('captive-non-penugasan/complete/(:num)', 'CaptiveNonPenugasanController::complete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/terdekat', 'Temuan::terdekat');
     $routes->get('temuan/ajax-terdekat', 'Temuan::ajaxTerdekat');
     $routes->get('temuan/ajax-detail/(:num)', 'Temuan::ajaxDetail/$1');
-    $routes->get('temuan/create', 'Temuan::create', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
-    $routes->post('temuan/store', 'Temuan::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->get('temuan/create', 'Temuan::create', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('temuan/store', 'Temuan::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/lookup', 'Temuan::lookup');
     $routes->get('temuan/detail/(:num)', 'Temuan::detail/$1');
-    $routes->post('temuan/link-asset', 'Temuan::linkAsset', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
-    $routes->post('temuan/sync-bom/(:num)', 'Temuan::syncBom/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('temuan/link-asset', 'Temuan::linkAsset', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('temuan/sync-bom/(:num)', 'Temuan::syncBom/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/candidates/(:num)', 'Temuan::getCandidateAssets/$1');
-    $routes->post('temuan/tindak-lanjut/(:num)', 'Temuan::tindakLanjut/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
-    $routes->match(['GET', 'POST'], 'temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
-    $routes->get('temuan/edit/(:num)', 'Temuan::edit/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
-    $routes->post('temuan/update/(:num)', 'Temuan::update/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('temuan/tindak-lanjut/(:num)', 'Temuan::tindakLanjut/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->match(['GET', 'POST'], 'temuan/delete/(:num)', 'Temuan::delete/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->get('temuan/edit/(:num)', 'Temuan::edit/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
+    $routes->post('temuan/update/(:num)', 'Temuan::update/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/update-pekerjaan', 'Temuan::updatePekerjaan');
     $routes->post('temuan/ajax-update-pekerjaan', 'Temuan::ajaxUpdatePekerjaan');
 
@@ -934,6 +934,13 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
 
     // MNF-01: Shared Master Network Fabric Lookup API (Canonical 4-Level Master Fabric)
     $routes->group('ajax/network', static function ($routes) {
+        $routes->get('uid', 'Ajax\NetworkLookup::uid');
+        $routes->get('up3/(:num)', 'Ajax\NetworkLookup::up3/$1');
+        $routes->get('up3', 'Ajax\NetworkLookup::up3');
+        $routes->get('gardu-induk/(:num)', 'Ajax\NetworkLookup::garduInduk/$1');
+        $routes->get('gardu-induk', 'Ajax\NetworkLookup::garduInduk');
+        $routes->get('penyulang-by-gi/(:num)', 'Ajax\NetworkLookup::penyulangByGi/$1');
+        $routes->get('penyulang-by-gi', 'Ajax\NetworkLookup::penyulangByGi');
         $routes->get('ulp', 'Ajax\NetworkLookup::ulp');
         $routes->get('penyulang/(:num)', 'Ajax\NetworkLookup::penyulang/$1');
         $routes->get('penyulang', 'Ajax\NetworkLookup::penyulang');
@@ -966,6 +973,12 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     $routes->post('api/correct-construction', 'Ajax\NetworkLookup::correctConstruction');
 
     $routes->group('api/master-network', static function ($routes) {
+        $routes->get('uids', 'Ajax\NetworkLookup::uid');
+        $routes->get('up3s', 'Ajax\NetworkLookup::up3');
+        $routes->get('up3s/(:num)', 'Ajax\NetworkLookup::up3/$1');
+        $routes->get('gardu-induks', 'Ajax\NetworkLookup::garduInduk');
+        $routes->get('gardu-induks/(:num)', 'Ajax\NetworkLookup::garduInduk/$1');
+        $routes->get('penyulangs-by-gi/(:num)', 'Ajax\NetworkLookup::penyulangByGi/$1');
         $routes->get('ulps', 'Ajax\NetworkLookup::ulp');
         $routes->get('penyulangs', 'Ajax\NetworkLookup::penyulang');
         $routes->get('penyulangs/(:num)', 'Ajax\NetworkLookup::penyulang/$1');
@@ -976,6 +989,34 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     });
 
     $routes->post('temuan/ajax-datatables', 'Temuan::ajaxDataTables');
+
+    // Master Data UID (Unit Induk Distribusi)
+    $routes->group('master-uid', ['filter' => 'role:administrator,admin,admin_pusat'], function ($routes) {
+        $routes->get('/', 'UidController::index');
+        $routes->get('create', 'UidController::create');
+        $routes->post('store', 'UidController::store');
+        $routes->get('edit/(:num)', 'UidController::edit/$1');
+        $routes->post('update/(:num)', 'UidController::update/$1');
+        $routes->match(['GET', 'POST'], 'delete/(:num)', 'UidController::delete/$1');
+    });
+
+    // Master Data UP / UP3 (Unit Pelaksana)
+    $routes->group('master-up3', ['filter' => 'role:administrator,admin,admin_pusat'], function ($routes) {
+        $routes->get('/', 'Up3Controller::index');
+        $routes->get('create', 'Up3Controller::create');
+        $routes->post('store', 'Up3Controller::store');
+        $routes->get('edit/(:num)', 'Up3Controller::edit/$1');
+        $routes->post('update/(:num)', 'Up3Controller::update/$1');
+        $routes->match(['GET', 'POST'], 'delete/(:num)', 'Up3Controller::delete/$1');
+    });
+
+    // Audit & Perapian Relasi Hierarki Unconnected
+    $routes->group('master-hierarchy', ['filter' => 'role:administrator,admin,admin_pusat'], function ($routes) {
+        $routes->get('unconnected', 'MasterHierarchyController::index');
+        $routes->post('assign-asset-feeder', 'MasterHierarchyController::assignAssetFeeder');
+        $routes->post('assign-feeder-gi', 'MasterHierarchyController::assignFeederGi');
+        $routes->post('assign-ulp-up3', 'MasterHierarchyController::assignUlpUp3');
+    });
 
     // Master Data ULP (Admin & Admin ULP saja)
     $routes->group('ulps', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp'], function ($routes) {

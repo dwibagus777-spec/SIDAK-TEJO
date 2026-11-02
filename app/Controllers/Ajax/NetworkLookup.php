@@ -24,6 +24,84 @@ class NetworkLookup extends BaseController
     }
 
     /**
+     * Level 0a: Get active UIDs (Induk)
+     * GET /ajax/network/uid
+     */
+    public function uid(): ResponseInterface
+    {
+        try {
+            $data = $this->service->getUids();
+            return $this->response->setStatusCode(200)->setContentType('application/json')->setJSON($data);
+        } catch (\Throwable $e) {
+            log_message('error', '[NETWORK LOOKUP UID] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setContentType('application/json')->setJSON([
+                'success' => false,
+                'message' => 'Failed to load UID data: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Level 0b: Get active UP3s by UID ID
+     * GET /ajax/network/up3 or /ajax/network/up3/{uidId}
+     */
+    public function up3($uidId = null): ResponseInterface
+    {
+        try {
+            $id = (int)($uidId ?? $this->request->getGet('uid_id') ?? ($_GET['uid_id'] ?? 0));
+            $data = $this->service->getUp3s($id);
+            return $this->response->setStatusCode(200)->setContentType('application/json')->setJSON($data);
+        } catch (\Throwable $e) {
+            log_message('error', '[NETWORK LOOKUP UP3] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setContentType('application/json')->setJSON([
+                'success' => false,
+                'message' => 'Failed to load UP3 data: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Level 0c: Get active Gardu Induk by UP3 ID
+     * GET /ajax/network/gardu-induk or /ajax/network/gardu-induk/{up3Id}
+     */
+    public function garduInduk($up3Id = null): ResponseInterface
+    {
+        try {
+            $id = (int)($up3Id ?? $this->request->getGet('up3_id') ?? ($_GET['up3_id'] ?? 0));
+            $data = $this->service->getGarduInduk($id);
+            return $this->response->setStatusCode(200)->setContentType('application/json')->setJSON($data);
+        } catch (\Throwable $e) {
+            log_message('error', '[NETWORK LOOKUP GARDU INDUK] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setContentType('application/json')->setJSON([
+                'success' => false,
+                'message' => 'Failed to load Gardu Induk data: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Level 2a: Get active Penyulangs by Gardu Induk (GI) ID
+     * GET /ajax/network/penyulang-by-gi/{giId}
+     */
+    public function penyulangByGi($giId = null): ResponseInterface
+    {
+        try {
+            $id = (int)($giId ?? $this->request->getGet('gi_id') ?? ($_GET['gi_id'] ?? 0));
+            if ($id <= 0) {
+                return $this->response->setStatusCode(200)->setContentType('application/json')->setJSON([]);
+            }
+            $data = $this->service->getPenyulangsByGi($id);
+            return $this->response->setStatusCode(200)->setContentType('application/json')->setJSON($data);
+        } catch (\Throwable $e) {
+            log_message('error', '[NETWORK LOOKUP PENYULANG BY GI] {message}', ['message' => $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setContentType('application/json')->setJSON([
+                'success' => false,
+                'message' => 'Failed to load feeder data by GI: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Level 1: Get all active ULPs.
      * GET /ajax/network/ulp
      */

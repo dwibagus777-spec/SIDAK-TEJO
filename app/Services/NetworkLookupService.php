@@ -6,10 +6,14 @@ use App\Repositories\UlpRepository;
 use App\Repositories\PenyulangRepository;
 use App\Repositories\SectionRepository;
 use App\Repositories\AssetRepository;
+use App\Models\UidModel;
+use App\Models\Up3Model;
+use App\Models\GarduIndukModel;
 
 /**
  * MNF-01: Master Network Fabric Domain Service
- * Canonical 4-level network hierarchy service: ULP -> PENYULANG -> SECTION -> ASSET
+ * Canonical hierarchy service: UID -> UP3 -> GARDU INDUK -> PENYULANG -> SECTION -> ASSET
+ * Also supports administrative hierarchy: UID -> UP3 -> ULP -> PENYULANG -> SECTION -> ASSET
  */
 class NetworkLookupService
 {
@@ -17,6 +21,9 @@ class NetworkLookupService
     protected PenyulangRepository $penyulangRepository;
     protected SectionRepository $sectionRepository;
     protected AssetRepository $assetRepository;
+    protected ?UidModel $uidModel = null;
+    protected ?Up3Model $up3Model = null;
+    protected ?GarduIndukModel $garduIndukModel = null;
 
     public function __construct()
     {
@@ -27,15 +34,66 @@ class NetworkLookupService
     }
 
     /**
-     * Level 1: Get all active ULPs
+     * Level 0a: Get active UIDs (Induk)
      */
-    public function getUlps(): array
+    public function getUids(): array
     {
+        if ($this->uidModel === null) {
+            $this->uidModel = new UidModel();
+        }
+        return $this->uidModel->getActiveUids();
+    }
+
+    /**
+     * Level 0b: Get active UP3s by UID ID
+     */
+    public function getUp3s(int $uidId = 0): array
+    {
+        if ($this->up3Model === null) {
+            $this->up3Model = new Up3Model();
+        }
+        return $this->up3Model->getActiveUp3sByUid($uidId);
+    }
+
+    /**
+     * Level 0c: Get active Gardu Induk by UP3 ID
+     */
+    public function getGarduInduk(int $up3Id = 0): array
+    {
+        if ($this->garduIndukModel === null) {
+            $this->garduIndukModel = new GarduIndukModel();
+        }
+        $builder = $this->garduIndukModel->where('status', 'AKTIF')->orWhere('status', 'ACTIVE');
+        if ($up3Id > 0) {
+            $builder->where('up3_id', $up3Id);
+        }
+        return $builder->orderBy('nama_gi', 'ASC')->findAll();
+    }
+
+    /**
+     * Level 1: Get all active ULPs (optionally filtered by UP3)
+     */
+    public function getUlps(int $up3Id = 0): array
+    {
+        if ($up3Id > 0) {
+            return $this->ulpRepository->where('up3_id', $up3Id)->where('status', 'AKTIF')->findAll();
+        }
         return $this->ulpRepository->getActiveUlps();
     }
 
     /**
-     * Level 2: Get active Penyulangs by ULP ID
+     * Level 2a: Get active Penyulangs by Gardu Induk (GI) ID
+     */
+    public function getPenyulangsByGi(int $giId): array
+    {
+        if ($giId <= 0) {
+            return [];
+        }
+        return $this->penyulangRepository->getActivePenyulangsByGi($giId);
+    }
+
+    /**
+     * Level 2b: Get active Penyulangs by ULP ID
      */
     public function getPenyulangsByUlp(int $ulpId): array
     {

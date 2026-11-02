@@ -114,6 +114,19 @@ test("Supervisor UP3 receives findings scoped to UP3 1", is_array($up3Findings))
 $pdkbFindings = $temuanRepo->getEmergencyFindings('pdkb', 1, null, 10);
 test("PDKB role receives findings scoped to PDKB specialization", is_array($pdkbFindings));
 
+$gttFindings = $temuanRepo->getEmergencyFindings('har_gtt', null, null, 20);
+test("HAR GTT role receives findings scoped to GTT/Trafo specialization", is_array($gttFindings) && count($gttFindings) > 0);
+
+// Check that Klurak Bali or other feeders with GTT emergency findings are included
+$hasGttPelaksana = false;
+foreach ($adminFindings as $af) {
+    if (strpos(strtoupper($af['pelaksana'] ?? ''), 'GTT') !== false) {
+        $hasGttPelaksana = true;
+        break;
+    }
+}
+test("Admin emergency findings list includes operational task performers (HAR GTT)", $hasGttPelaksana);
+
 // Test detail scope security: attempting to access finding belonging to foreign ULP must return null
 $dummyFinding = $db->table('temuan')->where('deleted_at IS NULL')->orderBy('id', 'DESC')->get()->getRowArray();
 if ($dummyFinding) {
@@ -170,6 +183,10 @@ test("Auth brand side defaults to opacity: 1 (no invisible DOM text)", strpos($a
 test("Overlay and spine backdrop have aria-hidden='true'", strpos($authLayout, 'id="cinematic-reveal-overlay" aria-hidden="true"') !== false);
 test("Password toggle button has 44x44px minimum touch target", strpos($authLayout, 'width: 44px;') !== false && strpos($authLayout, 'height: 44px;') !== false);
 test("Alert colors meet WCAG AA high-contrast criteria (#991B1B, #166534, #1E40AF)", strpos($authLayout, 'color: #991B1B;') !== false && strpos($authLayout, 'color: #166534;') !== false);
+test("Document contains explicit main landmark with role='main'", strpos($authLayout, '<main class="auth-viewport-wrapper" id="auth-viewport" role="main">') !== false);
+test("Accessible skip-link is provided for keyboard users and screen readers", strpos($authLayout, 'class="skip-to-content"') !== false);
+test("Status badge uses WCAG AAA high-contrast teal #115E59 (>= 7.5:1)", strpos($authLayout, 'color: #115E59;') !== false);
+test("Footer build info uses WCAG AAA high-contrast slate #334155 (>= 10.3:1)", strpos($authLayout, 'color: #334155;') !== false);
 
 echo "\n=================================================================\n";
 echo "RESULT: PASS: $pass | FAIL: $fail\n";

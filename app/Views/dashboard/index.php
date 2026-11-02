@@ -700,8 +700,12 @@
                                 <div class="small text-muted" style="font-size: 10px;">ID #<?= $ef['id'] ?></div>
                             </td>
                             <td>
-                                <div class="fw-semibold text-dark text-truncate" style="max-width: 150px;"><?= esc($ef['nama_penyulang'] ?? '-') ?></div>
-                                <small class="text-muted"><?= esc($ef['nama_ulp'] ?? '-') ?></small>
+                                <div class="fw-semibold text-dark text-truncate" style="max-width: 170px;" title="<?= esc($ef['nama_penyulang'] ?? '-') ?>">
+                                    <i class="fas fa-network-wired text-muted me-1" style="font-size: 11px;"></i><?= esc($ef['nama_penyulang'] ?? '-') ?>
+                                </div>
+                                <small class="text-muted d-block text-truncate" style="max-width: 170px; font-size: 10.5px;">
+                                    <?= esc($ef['nama_ulp'] ?? '-') ?><?= !empty($ef['nama_up3']) ? ' &bull; ' . esc($ef['nama_up3']) : '' ?>
+                                </small>
                             </td>
                             <td>
                                 <div class="text-dark fw-medium text-truncate" style="max-width: 380px;" title="<?= esc($ef['detail_temuan'] ?? '', 'attr') ?>">
@@ -715,7 +719,21 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="badge bg-secondary-subtle text-secondary border font-monospace" style="font-size: 10.5px;">
+                                <?php
+                                    $pUpper = strtoupper(trim((string)($ef['pelaksana'] ?? '')));
+                                    if (strpos($pUpper, 'PDKB') !== false) {
+                                        $badgeClass = 'bg-danger text-white';
+                                    } elseif (strpos($pUpper, 'GTT') !== false || strpos($pUpper, 'TRAFO') !== false) {
+                                        $badgeClass = 'bg-warning text-dark';
+                                    } elseif (strpos($pUpper, 'KONSTRUKSI') !== false) {
+                                        $badgeClass = 'bg-info text-dark';
+                                    } elseif (strpos($pUpper, 'GARDU') !== false) {
+                                        $badgeClass = 'bg-primary text-white';
+                                    } else {
+                                        $badgeClass = 'bg-secondary-subtle text-secondary border font-monospace';
+                                    }
+                                ?>
+                                <span class="badge <?= $badgeClass ?>" style="font-size: 10.5px;">
                                     <?= esc($ef['pelaksana'] ?? 'YANTEK') ?>
                                 </span>
                             </td>

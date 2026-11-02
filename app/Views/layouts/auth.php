@@ -50,6 +50,26 @@
             overflow: hidden;
         }
 
+        /* ── Skip to Main Content Link for Keyboard Accessibility ── */
+        .skip-to-content {
+            position: absolute;
+            top: -100px;
+            left: 16px;
+            background: #0F766E;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 9999999;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: top 0.2s ease;
+        }
+        .skip-to-content:focus {
+            top: 16px;
+            outline: 3px solid #38BDF8;
+        }
+
         /* ── 3D Viewport Wrapper for Book Opening Animation ── */
         .auth-viewport-wrapper {
             position: relative;
@@ -303,7 +323,7 @@
         }
         .form-header-subtext {
             font-size: 0.88rem;
-            color: var(--gray-500);
+            color: #334155;
             margin-top: 4px;
         }
 
@@ -328,7 +348,7 @@
         .input-icon-left {
             position: absolute;
             left: 16px;
-            color: #94A3B8;
+            color: #475569;
             font-size: 0.95rem;
             transition: color 0.2s ease;
         }
@@ -597,7 +617,10 @@
 </head>
 <body>
 
-<main class="auth-viewport-wrapper" id="auth-viewport">
+<!-- Accessible Skip-Link for Screen Readers & Keyboard Navigation -->
+<a href="#login-form" class="skip-to-content">Lewati ke Form Login</a>
+
+<main class="auth-viewport-wrapper" id="auth-viewport" role="main">
     <!-- Cinematic Door Reveal Overlay (Symmetrical Door Opening) -->
     <div class="cinematic-reveal" id="cinematic-reveal-overlay" aria-hidden="true">
         <div class="cinematic-panel cinematic-panel-left"></div>
@@ -616,7 +639,7 @@
     <div class="auth-container" id="book-container">
 
         <!-- ──────────── LEFT COLUMN: HIGH-VISIBILITY BRAND IDENTITY ──────────── -->
-        <div class="auth-brand-side" id="left-cover">
+        <div class="auth-brand-side" id="left-cover" role="region" aria-label="Identitas Sistem SIDAK TEJO">
             <!-- Top Corporate Badge -->
             <div class="brand-header animate__animated animate__fadeInDown">
                 <div class="pln-corporate-tag">
@@ -637,48 +660,48 @@
             <!-- System Version Fingerprint Footer -->
             <div class="brand-fingerprint animate__animated animate__fadeInUp">
                 <span class="version-badge"><?= esc(\Config\BuildVersion::SYSTEM_VERSION) ?></span>
-                <span>Build: <?= esc(\Config\BuildVersion::BUILD_ID) ?></span>
-                <span>•</span>
-                <span>Commit: <?= esc(\Config\BuildVersion::COMMIT_ID) ?></span>
+                <span style="color: #E2E8F0;">Build: <?= esc(\Config\BuildVersion::BUILD_ID) ?></span>
+                <span style="color: #94A3B8;">&bull;</span>
+                <span style="color: #E2E8F0;">Commit: <?= esc(\Config\BuildVersion::COMMIT_ID) ?></span>
             </div>
         </div>
 
         <!-- ──────────── RIGHT COLUMN: COMPACT LOGIN FORM ──────────── -->
-        <div class="auth-form-side" id="right-cover">
+        <div class="auth-form-side" id="right-cover" role="region" aria-label="Area Masuk Pengguna">
             <div class="auth-form-card animate__animated animate__fadeInRight" id="form-card">
                 
                 <div class="form-title-wrap">
-                    <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #0F766E;">
-                        <span class="status-dot-online"></span> Sistem Aktif &amp; Terbuka
+                    <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #115E59;">
+                        <span class="status-dot-online" aria-hidden="true"></span> Sistem Aktif &amp; Terbuka
                     </div>
                     <h2 class="form-header-heading">Selamat Datang 👋</h2>
                     <p class="form-header-subtext">Masuk dengan akun SIDAK TEJO Anda untuk melanjutkan.</p>
                 </div>
 
                 <!-- Ajax & Server Message Container -->
-                <div id="ajax-alert" style="display: none;"></div>
+                <div id="ajax-alert" role="alert" style="display: none;"></div>
 
                 <?php if (isset($error)): ?>
-                <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX">
-                    <i class="fas fa-exclamation-circle"></i> <?= esc($error) ?>
+                <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX" role="alert">
+                    <i class="fas fa-exclamation-circle" aria-hidden="true"></i> <?= esc($error) ?>
                 </div>
                 <?php endif; ?>
 
                 <?php if (session()->getFlashdata('error')): ?>
-                <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX">
-                    <i class="fas fa-exclamation-circle"></i> <?= esc(session()->getFlashdata('error')) ?>
+                <div class="alert-enterprise alert-enterprise-danger animate__animated animate__shakeX" role="alert">
+                    <i class="fas fa-exclamation-circle" aria-hidden="true"></i> <?= esc(session()->getFlashdata('error')) ?>
                 </div>
                 <?php endif; ?>
 
                 <?php if (session()->getFlashdata('success')): ?>
-                <div class="alert-enterprise alert-enterprise-success">
-                    <i class="fas fa-check-circle"></i> <?= esc(session()->getFlashdata('success')) ?>
+                <div class="alert-enterprise alert-enterprise-success" role="alert">
+                    <i class="fas fa-check-circle" aria-hidden="true"></i> <?= esc(session()->getFlashdata('success')) ?>
                 </div>
                 <?php endif; ?>
 
                 <?php if (isset($_GET['session_expired']) && $_GET['session_expired'] === 'build_update'): ?>
-                <div class="alert-enterprise alert-enterprise-info">
-                    <i class="fas fa-info-circle"></i> Sesi Anda diperbarui untuk rilis versi sistem terbaru. Silakan login kembali.
+                <div class="alert-enterprise alert-enterprise-info" role="alert">
+                    <i class="fas fa-info-circle" aria-hidden="true"></i> Sesi Anda diperbarui untuk rilis versi sistem terbaru. Silakan login kembali.
                 </div>
                 <?php endif; ?>
 
@@ -719,7 +742,7 @@
                                 autocomplete="current-password"
                                 style="padding-right: 48px;"
                             >
-                            <button type="button" class="pw-toggle-btn" id="toggle-pw" aria-label="Tampilkan atau sembunyikan password" title="Tampilkan atau sembunyikan password">
+                            <button type="button" class="pw-toggle-btn" id="toggle-pw" aria-label="Tampilkan atau sembunyikan password" title="Tampilkan atau sembunyikan password" aria-controls="password">
                                 <i class="fas fa-eye" id="toggle-pw-icon" aria-hidden="true"></i>
                             </button>
                         </div>
@@ -729,7 +752,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="remember_me" checked style="cursor: pointer;">
-                            <label class="form-check-label text-dark font-weight-bold small ms-1" for="remember_me" style="cursor: pointer; font-size: 13px;">
+                            <label class="form-check-label font-weight-bold small ms-1" for="remember_me" style="cursor: pointer; font-size: 13px; color: #0F172A;">
                                 Ingat Saya (Aktif 30 Hari)
                             </label>
                         </div>
@@ -743,8 +766,8 @@
                 </form>
 
                 <div class="form-footer-copyright">
-                    <p style="margin: 0; font-size: 0.74rem; color: #334155;">&copy; <?= date('Y') ?> SIDAK TEJO &bull; PT PLN (Persero) UP3 Sidoarjo</p>
-                    <p style="margin: 2px 0 0 0; font-size: 0.70rem; color: #475569;">Build <?= esc(\Config\BuildVersion::BUILD_ID) ?> &bull; Enterprise Network Inspection</p>
+                    <p style="margin: 0; font-size: 0.74rem; color: #1E293B;">&copy; <?= date('Y') ?> SIDAK TEJO &bull; PT PLN (Persero) UP3 Sidoarjo</p>
+                    <p style="margin: 2px 0 0 0; font-size: 0.70rem; color: #334155;">Build <?= esc(\Config\BuildVersion::BUILD_ID) ?> &bull; Enterprise Network Inspection</p>
                 </div>
             </div>
         </div>

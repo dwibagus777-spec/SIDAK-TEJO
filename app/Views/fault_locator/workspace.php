@@ -1402,17 +1402,17 @@
                 </span>
             </div>
             <div class="card-body p-4">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-sm align-middle mb-0" id="tableCaseHistory">
+                <div class="table-responsive shadow-none border rounded" style="overflow-x: auto; -webkit-overflow-scrolling: touch; min-height: 200px;">
+                    <table class="table table-bordered table-hover table-sm align-middle mb-0" id="tableCaseHistory" style="min-width: 980px; width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 13%">No. Kasus</th>
-                                <th style="width: 16%">Penyulang &amp; Sumber</th>
-                                <th style="width: 18%">Arus (A) &amp; Tegangan (kV)</th>
-                                <th style="width: 13%">Jarak (Topologi / Relay)</th>
-                                <th style="width: 13%">Status Patroli</th>
-                                <th style="width: 14%">Hasil Temuan Lapangan</th>
-                                <th style="width: 13%">Aksi</th>
+                                <th style="width: 140px; min-width: 130px;">No. Kasus</th>
+                                <th style="width: 180px; min-width: 160px;">Penyulang &amp; Sumber</th>
+                                <th style="width: 200px; min-width: 180px;">Arus (A) &amp; Tegangan (kV)</th>
+                                <th style="width: 140px; min-width: 130px;">Jarak (Topologi / Relay)</th>
+                                <th style="width: 160px; min-width: 150px;">Status Patroli</th>
+                                <th style="min-width: 180px;">Hasil Temuan Lapangan</th>
+                                <th style="width: 100px; min-width: 90px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="caseHistoryBody">
@@ -1481,7 +1481,7 @@
                                                     if (empty($rawSt)) $st = 'MENUNGGU_PEMERIKSAAN';
                                                 }
                                             ?>
-                                            <span class="badge <?= $badgeClass ?> px-2 py-1 fw-semibold" style="font-size: 11px;"><?= esc(str_replace('_', ' ', $st)) ?></span>
+                                            <span class="badge <?= $badgeClass ?> text-white px-2 py-1 fw-semibold shadow-xs" style="font-size: 11px;"><?= esc(str_replace('_', ' ', $st)) ?></span>
                                         </td>
                                         <td class="small" style="min-width: 160px; white-space: normal; word-break: break-word;">
                                             <?php if (!empty($c['latest_finding'])): ?>
@@ -3712,7 +3712,7 @@
                             ${topoLen !== null && topoLen !== undefined ? `<div class="text-success fw-semibold">Jalur: ${Number(topoLen).toFixed(1)} m</div>` : ''}
                             ${relayDist !== null && relayDist !== undefined ? `<div class="text-primary fw-bold">Relay: ${Number(relayDist).toFixed(1)} m</div>` : `<div class="text-muted">Relay: -</div>`}
                         </td>
-                        <td><span class="badge bg-secondary small">MENUNGGU PEMERIKSAAN</span></td>
+                        <td><span class="badge bg-secondary text-white small px-2 py-1">MENUNGGU PEMERIKSAAN</span></td>
                         <td class="small"><span class="text-muted">Belum ada inspeksi</span></td>
                         <td>
                             <div class="d-flex flex-wrap gap-1">

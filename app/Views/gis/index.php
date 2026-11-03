@@ -14,14 +14,15 @@
         --gis-mob-bottom-nav: 62px;
     }
 
-    /* Captive AAAC Candidate Transline Pulse (Reduced-Motion Compliant) */
+    /* Captive AAAC Candidate Transline Pulse (Chromium GPU Composite Safe, No drop-shadow filter) */
     @keyframes captivePulseGlow {
-        0% { stroke: #f59e0b; stroke-opacity: 0.95; stroke-width: 5.5px; filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.6)); }
-        50% { stroke: #d97706; stroke-opacity: 0.60; stroke-width: 7.5px; filter: drop-shadow(0 0 7px rgba(217, 119, 6, 0.9)); }
-        100% { stroke: #f59e0b; stroke-opacity: 0.95; stroke-width: 5.5px; filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.6)); }
+        0% { stroke: #f59e0b; stroke-opacity: 0.95; stroke-width: 5.5px; }
+        50% { stroke: #fbbf24; stroke-opacity: 0.65; stroke-width: 7.0px; }
+        100% { stroke: #f59e0b; stroke-opacity: 0.95; stroke-width: 5.5px; }
     }
     .transline-captive-pulse {
-        animation: captivePulseGlow 2.2s infinite ease-in-out;
+        animation: captivePulseGlow 2.0s infinite ease-in-out;
+        stroke: #f59e0b !important;
     }
     @media (prefers-reduced-motion: reduce) {
         .transline-captive-pulse {
@@ -4645,8 +4646,17 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         $('#gis-del-coords').text(coordsTxt);
         $('#gis-del-reason').val('');
-        $('#gis-del-alert').hide().text('');
-        $('#btn-confirm-gis-delete').prop('disabled', false).html('<i class="fas fa-trash me-1"></i> Hapus Aset Sekarang');
+        const temuanCount = parseInt(props.temuan_count || props.total_temuan || 0, 10);
+        if (temuanCount > 0) {
+            $('#gis-del-alert').html(
+                '<div class="mb-1 fw-bold"><i class="fas fa-triangle-exclamation me-1"></i> Aset ini memiliki ' + temuanCount + ' temuan inspeksi aktif.</div>' +
+                '<div class="small">Penghapusan aset akan diblokir oleh sistem demi integritas data operasional hingga seluruh temuan diselesaikan atau ditutup.</div>'
+            ).show();
+            $('#btn-confirm-gis-delete').prop('disabled', true).addClass('opacity-50').html('<i class="fas fa-ban me-1"></i> Penghapusan Diblokir');
+        } else {
+            $('#gis-del-alert').hide().text('');
+            $('#btn-confirm-gis-delete').prop('disabled', false).removeClass('opacity-50').html('<i class="fas fa-trash me-1"></i> Hapus Aset Sekarang');
+        }
 
         const modalEl = document.getElementById('modal-gis-delete-asset');
         if (modalEl) {
@@ -4657,6 +4667,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     $(document).on('submit', '#form-gis-delete-asset', function(e) {
         e.preventDefault();
+        const $btn = $('#btn-confirm-gis-delete');
+        if ($btn.hasClass('opacity-50') && $btn.text().includes('Diblokir')) {
+            return false;
+        }
         const assetId = parseInt($('#gis-del-asset-id').val(), 10);
         const reason = $.trim($('#gis-del-reason').val());
         const $alert = $('#gis-del-alert');
@@ -6154,6 +6168,9 @@ document.addEventListener("DOMContentLoaded", function () {
         window.allTranslineEntries.forEach(function (entry) {
             var matches = (window.gisConductorFilter === 'ALL' || entry.condType === window.gisConductorFilter);
             if (matches) {
+                if (entry.casingPoly && !translinePolylineLayer.hasLayer(entry.casingPoly)) {
+                    translinePolylineLayer.addLayer(entry.casingPoly);
+                }
                 if (!translinePolylineLayer.hasLayer(entry.visiblePoly)) {
                     translinePolylineLayer.addLayer(entry.visiblePoly);
                 }
@@ -6163,6 +6180,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 visibleCount++;
                 visibleLengthM += entry.lengthMeter;
             } else {
+                if (entry.casingPoly && translinePolylineLayer.hasLayer(entry.casingPoly)) {
+                    translinePolylineLayer.removeLayer(entry.casingPoly);
+                }
                 if (translinePolylineLayer.hasLayer(entry.visiblePoly)) {
                     translinePolylineLayer.removeLayer(entry.visiblePoly);
                 }
@@ -6309,13 +6329,25 @@ document.addEventListener("DOMContentLoaded", function () {
             var isCaptiveView = new URLSearchParams(window.location.search).get('captive_only') === '1';
             var condTypeUpper = String(tl.conductor_type || '').toUpperCase();
             var isAaacCandidate = condTypeUpper.includes('AAAC') && !condTypeUpper.includes('AAACS');
-            var isCandidateCoating = isCaptiveView && isAaacCandidate;
+            var isCandidateCoating = (isCaptiveView || Boolean(tl.is_captive_candidate || tl.needs_coating)) && isAaacCandidate;
 
             var isTl04 = createdBy.includes('ENGINE=TL04') || createdBy.includes('TL-04');
             var isTl03 = !isTl04 && createdBy.includes('ENGINE=TL03');
             var isTl02 = !isTl04 && !isTl03 && (createdBy.includes('RUN:') || createdBy.includes('AI') || createdBy.includes('TL-02') || createdBy.includes('TL02'));
             var lineColor = isCandidateCoating ? '#f59e0b' : (isTl04 ? '#10b981' : (isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7')));
             var lineWeight = isCandidateCoating ? 5.5 : (isTl04 ? 4.5 : (isTl03 ? 4.0 : 3.5));
+
+            var casingPoly = null;
+            if (isCandidateCoating) {
+                casingPoly = L.polyline(latLngs, {
+                    color: '#0f172a',
+                    weight: 8.5,
+                    opacity: 0.9,
+                    lineJoin: 'round',
+                    interactive: false
+                });
+                translinePolylineLayer.addLayer(casingPoly);
+            }
 
             var visPolyOpts = {
                 color: lineColor,
@@ -6504,6 +6536,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 id: tId,
                 visiblePoly: visiblePoly,
                 hitPoly: hitPoly,
+                casingPoly: casingPoly,
                 condType: normCondType,
                 lengthMeter: Number(lengthMeter) || 0,
                 data: tl

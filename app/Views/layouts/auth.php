@@ -651,7 +651,10 @@
             <!-- Prominent Center Logo Emblem & Titles -->
             <div class="brand-body animate__animated animate__zoomIn">
                 <div class="hero-emblem-wrapper">
-                    <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" alt="SIDAK TEJO Enterprise Emblem" class="emblem-img-prominent" width="286" height="260" fetchpriority="high">
+                    <picture>
+                        <source srcset="<?= base_url('assets/img/logo_sidak_optimized.webp') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" type="image/webp">
+                        <img src="<?= base_url('assets/img/logo_sidak_optimized.jpg') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" alt="SIDAK TEJO Enterprise Emblem" class="emblem-img-prominent" width="286" height="260" fetchpriority="high" decoding="async" onerror="this.onerror=null; this.src='<?= base_url('assets/img/logo_sidak.png') ?>';">
+                    </picture>
                 </div>
                 <h1 class="brand-title-prominent">SIDAK <span>TEJO</span></h1>
                 <div class="brand-subtitle-prominent">Sistem Data &amp; Tindak Lanjut Temuan Inspeksi Sidoarjo</div>

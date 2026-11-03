@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sidak-tejo-v11-enterprise';
+const CACHE_NAME = 'sidak-tejo-v12-enterprise';
 const MAPS_CACHE_NAME = 'sidak-tejo-maps-v8';
 
 // Assets to cache on install
@@ -8,6 +8,8 @@ const PRECACHE_ASSETS = [
     'plugins/bootstrap/css/bootstrap.min.css',
     'plugins/fontawesome-free/css/all.min.css',
     'assets/fonts/fonts.css',
+    'assets/img/logo_sidak_optimized.webp',
+    'assets/img/logo_sidak_optimized.jpg',
     'assets/img/logo_sidak.png',
     'assets/img/no-image.png'
 ];
@@ -110,7 +112,7 @@ self.addEventListener('fetch', (event) => {
                     });
                 });
             }).catch(() => {
-                return fetch(event.request);
+                return fetch(event.request).catch(() => new Response('', { status: 504, statusText: 'Gateway Timeout' }));
             })
         );
         return;

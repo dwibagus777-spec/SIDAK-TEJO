@@ -56,15 +56,10 @@ class IntentEngine
     {
         $lowerText = strtolower(trim($userText));
 
-        // 1. Report Intent
-        if (str_contains($lowerText, 'laporan') || str_contains($lowerText, 'report')) {
-            if (str_contains($lowerText, 'buat') || str_contains($lowerText, 'generate') || str_contains($lowerText, 'cetak') || str_contains($lowerText, 'download')) {
-                return [
-                    'intent'     => 'GENERATE_REPORT',
-                    'params'     => ['query' => $userText],
-                    'confidence' => 0.98
-                ];
-            }
+        // 1. Explicit Report Generation Intent (e.g. "Cetak temuan PDKB Emergency penyulang Gedangan dalam bentuk PDF")
+        $reportIntent = $this->parseReportRequest($lowerText, $userText);
+        if ($reportIntent !== null) {
+            return $reportIntent;
         }
 
         // 2. Ranking Intent
@@ -227,6 +222,106 @@ class IntentEngine
                 'penyulang_id'   => $penyulangId,
                 'ulp_id'         => $ulpId,
                 'nama_penyulang' => $namaPenyulang
+            ],
+            'confidence' => 0.99
+        ];
+    }
+
+    /**
+     * Parse explicit report printing/exporting intent (e.g., "Cetak temuan PDKB Emergency penyulang Gedangan dalam bentuk PDF")
+     */
+    public function parseReportRequest(string $text, string $originalText = ''): ?array
+    {
+        if ($originalText === '') {
+            $originalText = $text;
+        }
+        $isReportCommand = preg_match('/\b(cetak|print|unduh|download|ekspor|export|buatkan|generate)\b/i', $text)
+            || (preg_match('/\b(pdf|excel|xlsx|csv|pptx)\b/i', $text) && preg_match('/\b(temuan|laporan)\b/i', $text));
+
+        if (!$isReportCommand) {
+            return null;
+        }
+
+        // Format
+        $format = 'PDF';
+        if (preg_match('/\b(excel|xlsx)\b/i', $text)) {
+            $format = 'EXCEL';
+        } elseif (preg_match('/\b(csv)\b/i', $text)) {
+            $format = 'CSV';
+        } elseif (preg_match('/\b(pptx|ppt|powerpoint)\b/i', $text)) {
+            $format = 'PPTX';
+        }
+
+        // Prioritas
+        $prioritas = null;
+        if (preg_match('/\b(emergency|darurat|kritis)\b/i', $text)) {
+            $prioritas = 'EMERGENCY';
+        } elseif (preg_match('/\b(high|tinggi|urgent)\b/i', $text)) {
+            $prioritas = 'HIGH';
+        } elseif (preg_match('/\b(medium|sedang)\b/i', $text)) {
+            $prioritas = 'MEDIUM';
+        } elseif (preg_match('/\b(low|rendah)\b/i', $text)) {
+            $prioritas = 'LOW';
+        }
+
+        // Pelaksana
+        $pelaksana = null;
+        if (preg_match('/\b(pdkb)\b/i', $text)) {
+            $pelaksana = 'PDKB';
+        } elseif (preg_match('/\b(har\s*gtt|gtt)\b/i', $text)) {
+            $pelaksana = 'HAR GTT';
+        } elseif (preg_match('/\b(har\s*gardu)\b/i', $text)) {
+            $pelaksana = 'HAR GARDU';
+        } elseif (preg_match('/\b(har\s*konstruksi|konstruksi)\b/i', $text)) {
+            $pelaksana = 'HAR KONSTRUKSI';
+        } elseif (preg_match('/\b(har\s*row|row|pohon|rabas)\b/i', $text)) {
+            $pelaksana = 'HAR ROW';
+        } elseif (preg_match('/\b(yantek|yan)\b/i', $text)) {
+            $pelaksana = 'YANTEK';
+        }
+
+        // Feeder lookup
+        $penyulangId = null;
+        $ulpId = null;
+        $namaPenyulang = null;
+
+        try {
+            $db = \Config\Database::connect();
+            $feeders = $db->table('penyulang')
+                ->select('id, nama_penyulang, ulp_id')
+                ->get()
+                ->getResultArray();
+
+            usort($feeders, function ($a, $b) {
+                return strlen($b['nama_penyulang']) - strlen($a['nama_penyulang']);
+            });
+
+            foreach ($feeders as $f) {
+                $fName = strtolower(trim((string)$f['nama_penyulang']));
+                if (empty($fName)) continue;
+                $fRegex = preg_quote($fName, '/');
+                $fRegex = preg_replace('/\s+/', '\s*', $fRegex);
+                if (preg_match('/\b' . $fRegex . '\b/i', $text)) {
+                    $penyulangId = (int)$f['id'];
+                    $ulpId = !empty($f['ulp_id']) ? (int)$f['ulp_id'] : null;
+                    $namaPenyulang = $f['nama_penyulang'];
+                    break;
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', '[IntentEngine] Feeder lookup failed: ' . $e->getMessage());
+        }
+
+        return [
+            'intent' => 'GENERATE_REPORT',
+            'params' => [
+                'format'         => $format,
+                'prioritas'      => $prioritas,
+                'pelaksana'      => $pelaksana,
+                'penyulang_id'   => $penyulangId,
+                'ulp_id'         => $ulpId,
+                'nama_penyulang' => $namaPenyulang,
+                'raw_query'      => $originalText
             ],
             'confidence' => 0.99
         ];

@@ -297,12 +297,15 @@ class ExecutiveDashboardController extends BaseController
         $tahunSel = ($rawTahun !== null && $rawTahun !== '') ? (int)$rawTahun : (int)date('Y');
 
         // Query metrics scoped to authorized filter
-        $kpi         = $this->dashboardRepository->getDashboardKpi($resolved['ulp_filter'], $bulanSel, $tahunSel);
-        $lineData    = $this->dashboardRepository->getLineChartData($resolved['ulp_filter'], $bulanSel, $tahunSel);
-        $ulpBar      = $this->dashboardRepository->getUlpBarChartData($bulanSel, $tahunSel, $scope['scope_level'] === 'GLOBAL' ? null : $scope['allowed_ulp_ids']);
-        $statusDonut = $this->dashboardRepository->getStatusDonutData($resolved['ulp_filter'], $bulanSel, $tahunSel);
-        $jenisPie    = $this->dashboardRepository->getJenisPieData($resolved['ulp_filter'], $bulanSel, $tahunSel);
-        $prioPie     = $this->dashboardRepository->getPrioritasPieData($resolved['ulp_filter'], $bulanSel, $tahunSel);
+        $kpi           = $this->dashboardRepository->getDashboardKpi($resolved['ulp_filter'], $bulanSel, $tahunSel);
+        $lineData      = $this->dashboardRepository->getLineChartData($resolved['ulp_filter'], $bulanSel, $tahunSel);
+        $ulpBar        = $this->dashboardRepository->getUlpBarChartData($bulanSel, $tahunSel, $scope['scope_level'] === 'GLOBAL' ? null : $scope['allowed_ulp_ids']);
+        $statusDonut   = $this->dashboardRepository->getStatusDonutData($resolved['ulp_filter'], $bulanSel, $tahunSel);
+        $jenisPie      = $this->dashboardRepository->getJenisPieData($resolved['ulp_filter'], $bulanSel, $tahunSel);
+        $prioPie       = $this->dashboardRepository->getPrioritasPieData($resolved['ulp_filter'], $bulanSel, $tahunSel);
+        $agingData     = $this->dashboardRepository->getSlaAgingBacklog($resolved['ulp_filter'], $bulanSel, $tahunSel);
+        $topFeeders    = $this->dashboardRepository->getTopCriticalFeeders($resolved['ulp_filter'], $bulanSel, $tahunSel);
+        $pelaksanaData = $this->dashboardRepository->getPelaksanaBreakdown($resolved['ulp_filter'], $bulanSel, $tahunSel);
 
         return view('dashboard/executive_enterprise', [
             'emptyUnitState'   => false,
@@ -325,6 +328,9 @@ class ExecutiveDashboardController extends BaseController
             'statusDonut'      => $statusDonut,
             'jenisPie'         => $jenisPie,
             'prioPie'          => $prioPie,
+            'agingData'        => $agingData,
+            'topFeeders'       => $topFeeders,
+            'pelaksanaData'    => $pelaksanaData,
         ]);
     }
 
@@ -356,12 +362,15 @@ class ExecutiveDashboardController extends BaseController
         $rawTahun = $this->request->getGet('tahun');
         $tahun    = ($rawTahun !== null && $rawTahun !== '') ? (int)$rawTahun : (int)date('Y');
 
-        $kpi         = $this->dashboardRepository->getDashboardKpi($resolved['ulp_filter'], $bulan, $tahun);
-        $lineData    = $this->dashboardRepository->getLineChartData($resolved['ulp_filter'], $bulan, $tahun);
-        $ulpBar      = $this->dashboardRepository->getUlpBarChartData($bulan, $tahun, $scope['scope_level'] === 'GLOBAL' ? null : $scope['allowed_ulp_ids']);
-        $statusDonut = $this->dashboardRepository->getStatusDonutData($resolved['ulp_filter'], $bulan, $tahun);
-        $jenisPie    = $this->dashboardRepository->getJenisPieData($resolved['ulp_filter'], $bulan, $tahun);
-        $prioPie     = $this->dashboardRepository->getPrioritasPieData($resolved['ulp_filter'], $bulan, $tahun);
+        $kpi           = $this->dashboardRepository->getDashboardKpi($resolved['ulp_filter'], $bulan, $tahun);
+        $lineData      = $this->dashboardRepository->getLineChartData($resolved['ulp_filter'], $bulan, $tahun);
+        $ulpBar        = $this->dashboardRepository->getUlpBarChartData($bulan, $tahun, $scope['scope_level'] === 'GLOBAL' ? null : $scope['allowed_ulp_ids']);
+        $statusDonut   = $this->dashboardRepository->getStatusDonutData($resolved['ulp_filter'], $bulan, $tahun);
+        $jenisPie      = $this->dashboardRepository->getJenisPieData($resolved['ulp_filter'], $bulan, $tahun);
+        $prioPie       = $this->dashboardRepository->getPrioritasPieData($resolved['ulp_filter'], $bulan, $tahun);
+        $agingData     = $this->dashboardRepository->getSlaAgingBacklog($resolved['ulp_filter'], $bulan, $tahun);
+        $topFeeders    = $this->dashboardRepository->getTopCriticalFeeders($resolved['ulp_filter'], $bulan, $tahun);
+        $pelaksanaData = $this->dashboardRepository->getPelaksanaBreakdown($resolved['ulp_filter'], $bulan, $tahun);
 
         return $this->response->setStatusCode(200)->setJSON([
             'success'          => true,
@@ -381,6 +390,9 @@ class ExecutiveDashboardController extends BaseController
             'status_donut'     => $statusDonut,
             'jenis_pie'        => $jenisPie,
             'prio_pie'         => $prioPie,
+            'aging'            => $agingData,
+            'top_feeders'      => $topFeeders,
+            'pelaksana'        => $pelaksanaData,
         ]);
     }
 

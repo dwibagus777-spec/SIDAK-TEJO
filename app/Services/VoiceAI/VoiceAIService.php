@@ -133,11 +133,74 @@ class VoiceAIService
                 'url'  => site_url('temuan/create')
             ];
         } elseif ($intent === 'GENERATE_REPORT') {
-            $actionType   = 'GENERATE_REPORT';
-            $responseText = "Menyiapkan dan membuka halaman laporan temuan.";
+            $actionType = 'CONFIRM_REPORT_GENERATION';
+            $params     = $intentResult['params'] ?? [];
+            $pelaksana  = $params['pelaksana'] ?? null;
+            $prioritas  = $params['prioritas'] ?? null;
+            $feederId   = $params['penyulang_id'] ?? null;
+            $feederName = $params['nama_penyulang'] ?? null;
+            $format     = strtoupper($params['format'] ?? 'PDF');
+            $ulpId      = $params['ulp_id'] ?? null;
+
+            // Apply strict role scoping
+            if (!in_array($userRole, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($userUlp)) {
+                $ulpId = (int)$userUlp;
+            }
+
+            // Query actual matching records in database
+            $db = \Config\Database::connect();
+            $builder = $db->table('temuan')->where('deleted_at IS NULL');
+            if (!empty($ulpId)) {
+                $builder->where('ulp_id', $ulpId);
+            }
+            if (!empty($feederId)) {
+                $builder->where('penyulang_id', $feederId);
+            }
+            if (!empty($prioritas)) {
+                $builder->where('prioritas', $prioritas);
+            }
+            if (!empty($pelaksana)) {
+                $builder->where('pelaksana', $pelaksana);
+            }
+            $matchCount = $builder->countAllResults();
+
+            $descParts = [];
+            if ($pelaksana) $descParts[] = "Pelaksana {$pelaksana}";
+            if ($prioritas) $descParts[] = "Prioritas {$prioritas}";
+            if ($feederName) $descParts[] = "Penyulang {$feederName}";
+
+            $filterDesc = !empty($descParts) ? implode(', ', $descParts) : "seluruh kriteria";
+
+            // Build official report URL
+            $urlEndpoint = ($format === 'EXCEL') ? 'laporan/excel' : 'laporan/print';
+            $reportQueryParams = array_filter([
+                'penyulang_id' => $feederId,
+                'ulp_id'       => $ulpId,
+                'prioritas'    => $prioritas,
+                'pelaksana'    => $pelaksana,
+            ]);
+            $reportUrl = site_url($urlEndpoint . (!empty($reportQueryParams) ? '?' . http_build_query($reportQueryParams) : ''));
+
+            if ($matchCount > 0) {
+                $responseText = "Ditemukan {$matchCount} temuan dengan kriteria {$filterDesc}. Siap mencetak laporan {$format}. Silakan konfirmasi untuk mengunduh.";
+            } else {
+                $responseText = "Tidak ditemukan data temuan aktif dengan kriteria {$filterDesc}. Laporan {$format} tetap dapat dibuka dalam status nihil.";
+            }
+
             $action = [
-                'type' => 'NAVIGATE',
-                'url'  => site_url('laporan')
+                'type'             => 'CONFIRM_REPORT_GENERATION',
+                'format'           => $format,
+                'filters'          => [
+                    'pelaksana'      => $pelaksana,
+                    'prioritas'      => $prioritas,
+                    'penyulang_id'   => $feederId,
+                    'nama_penyulang' => $feederName,
+                    'ulp_id'         => $ulpId,
+                ],
+                'match_count'      => $matchCount,
+                'download_url'     => $reportUrl,
+                'requires_confirm' => true,
+                'confirmation_prompt' => "Apakah Anda ingin melanjutkan pencetakan dokumen {$format} untuk {$matchCount} temuan ({$filterDesc})?"
             ];
         } elseif ($intent === 'GET_RANKING') {
             $actionType = 'RANKING';

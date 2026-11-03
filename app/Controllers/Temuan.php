@@ -923,6 +923,98 @@ class Temuan extends BaseController
     }
 
     /**
+     * API: Get Authoritative BOM Materials & Details for Dashboard Modal
+     * GET /temuan/bom-details/(:num)
+     */
+    public function apiBomDetails(int $id)
+    {
+        $session = session();
+        $role = strtolower((string)$session->get('user_role'));
+        $userUlpId = $session->get('user_ulp_id');
+        $userUp3Id = $session->get('user_up3_id');
+        $userId = (int)($session->get('user_id') ?? 0);
+
+        $ulpIdFilter = null;
+        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane'], true) && $userUlpId !== null) {
+            $ulpIdFilter = (int)$userUlpId;
+        }
+
+        $up3IdFilter = null;
+        if ($role === 'supervisor_up3' && $userUp3Id !== null) {
+            $up3IdFilter = (int)$userUp3Id;
+        }
+
+        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter, $userId ?: null);
+        if (!$temuan) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Temuan tidak ditemukan atau Anda tidak memiliki akses ke data tersebut.'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $materials = [];
+        if ($db->tableExists('temuan_materials')) {
+            $materials = $db->table('temuan_materials tm')
+                ->select('tm.id, tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot, tm.quantity, tm.used_quantity, tm.work_status, tm.conductor_type, tm.conductor_size, ct.construction_code, ct.construction_name')
+                ->join('construction_types ct', 'tm.construction_type_id = ct.id', 'left')
+                ->where('tm.temuan_id', $id)
+                ->orderBy('tm.id', 'ASC')
+                ->get()
+                ->getResultArray() ?: [];
+        }
+
+        // Fallback: parse text material string if structured table is empty
+        if (empty($materials) && !empty($temuan['material']) && $temuan['material'] !== '-' && $temuan['material'] !== 'Tidak ada spesifikasi material') {
+            $rawItems = explode(',', (string)$temuan['material']);
+            foreach ($rawItems as $idx => $rawItem) {
+                $rawItem = trim($rawItem);
+                if (empty($rawItem)) continue;
+                $materials[] = [
+                    'id'                      => $idx + 1,
+                    'canonical_code_snapshot' => '-',
+                    'canonical_name_snapshot' => $rawItem,
+                    'unit_snapshot'           => 'item',
+                    'quantity'                => 1.0,
+                    'used_quantity'           => 0.0,
+                    'work_status'             => 'PENDING',
+                    'conductor_type'          => $temuan['conductor_type'] ?? '-',
+                    'conductor_size'          => $temuan['conductor_size'] ?? '-',
+                    'construction_code'       => '-',
+                    'construction_name'       => '-'
+                ];
+            }
+        }
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'success' => true,
+            'data'    => [
+                'id'              => (int)$temuan['id'],
+                'nomor_temuan'    => $temuan['nomor_temuan'],
+                'pelaksana'       => $temuan['pelaksana'],
+                'jenis_temuan'    => $temuan['jenis_temuan'],
+                'prioritas'       => $temuan['prioritas'],
+                'status'          => $temuan['status'],
+                'tanggal_temuan'  => $temuan['tanggal_temuan'],
+                'detail_temuan'   => $temuan['detail_temuan'] ?? '',
+                'alamat'          => $temuan['alamat'] ?? '',
+                'conductor_type'  => $temuan['conductor_type'] ?? '-',
+                'conductor_size'  => $temuan['conductor_size'] ?? '-',
+                'nama_ulp'        => $temuan['nama_ulp'] ?? '-',
+                'nama_penyulang'  => $temuan['nama_penyulang'] ?? '-',
+                'penyulang_id'    => $temuan['penyulang_id'] ?? null,
+                'nama_section'    => $temuan['nama_section'] ?? '-',
+                'kode_asset'      => $temuan['kode_asset'] ?? '-',
+                'nama_asset'      => $temuan['nama_asset'] ?? '-',
+                'jenis_asset'     => $temuan['jenis_asset'] ?? '-',
+                'materials'       => $materials,
+                'total_materials' => count($materials),
+                'detail_url'      => site_url('temuan/detail/' . $id)
+            ]
+        ]);
+    }
+
+    /**
      * AJAX endpoint untuk modal detail cepat
      */
     public function ajaxDetail(int $id)

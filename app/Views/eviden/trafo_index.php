@@ -316,9 +316,12 @@
         });
 
         // Initialize select2
-        if ($('.select2').length) {
-            $('.select2').select2({
-                theme: 'bootstrap4'
+        if ($('select.select2').length) {
+            $('select.select2').each(function() {
+                var $el = $(this);
+                if (!$el.hasClass('select2-hidden-accessible') && !$el.data('select2')) {
+                    $el.select2({ theme: 'bootstrap4' });
+                }
             });
         }
 

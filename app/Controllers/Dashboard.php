@@ -908,7 +908,9 @@ class Dashboard extends BaseController
                 LEFT JOIN sections s ON s.id = t.section_id
                 LEFT JOIN ulps u ON u.id = t.ulp_id
                 WHERE t.deleted_at IS NULL
-                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI')
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE')
+                  AND t.pelaksana NOT LIKE '%ROW%'
+                  AND (t.asset_id IS NULL OR t.asset_id NOT IN (SELECT id FROM assets WHERE jenis_asset = 'ROW'))
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp, conductor_type, conductor_size
                 ORDER BY total_temuan DESC, p.nama_penyulang ASC, s.nama_section ASC
@@ -1005,6 +1007,66 @@ class Dashboard extends BaseController
             $temuanMaterialMatrix['gis_list'] = array_keys($gisSet);
             sort($temuanMaterialMatrix['gis_list']);
 
+            // Detailed Findings with Valid BOM Materials (PDKB, HAR KONSTRUKSI, HAR GARDU, HAR GTT, HAR CRANE, excluding ROW)
+            $bomFindingsSql = "
+                SELECT
+                    t.id,
+                    t.nomor_temuan,
+                    t.jenis_temuan,
+                    t.prioritas,
+                    t.status,
+                    REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') AS norm_pelaksana,
+                    t.penyulang_id,
+                    COALESCE(p.nama_penyulang, '-') AS nama_penyulang,
+                    t.section_id,
+                    COALESCE(s.nama_section, '-') AS nama_section,
+                    t.ulp_id,
+                    COALESCE(u.nama_ulp, '-') AS nama_ulp,
+                    t.asset_id,
+                    COALESCE(a.kode_asset, '-') AS kode_asset,
+                    COALESCE(a.nama_asset, '-') AS nama_asset,
+                    COALESCE(a.jenis_asset, '-') AS jenis_asset,
+                    {$condTypeExpr} AS conductor_type,
+                    {$condSizeExpr} AS conductor_size,
+                    t.tanggal_temuan,
+                    t.material,
+                    COUNT(tm.id) AS material_items_count,
+                    GROUP_CONCAT(DISTINCT CASE WHEN tm.canonical_code_snapshot NOT LIKE 'MAT-COND-%' AND COALESCE(tm.canonical_name_snapshot, '') NOT LIKE '%KONDUKTOR%' AND COALESCE(tm.canonical_name_snapshot, '') NOT LIKE '%KABEL%' THEN CONCAT(COALESCE(tm.canonical_name_snapshot, tm.canonical_code_snapshot), ' (', ROUND(tm.quantity, 0), ' ', tm.unit_snapshot, ')') END SEPARATOR ', ') AS rincian_material
+                FROM temuan t
+                LEFT JOIN temuan_materials tm ON tm.temuan_id = t.id
+                LEFT JOIN penyulang p ON p.id = t.penyulang_id
+                LEFT JOIN sections s ON s.id = t.section_id
+                LEFT JOIN ulps u ON u.id = t.ulp_id
+                LEFT JOIN assets a ON a.id = t.asset_id
+                WHERE t.deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE')
+                  AND t.pelaksana NOT LIKE '%ROW%'
+                  AND (a.jenis_asset IS NULL OR a.jenis_asset != 'ROW')
+                  AND (tm.id IS NOT NULL OR (t.material IS NOT NULL AND TRIM(t.material) != '' AND t.material != '-'))
+                " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
+                GROUP BY t.id
+                ORDER BY CASE t.prioritas WHEN 'EMERGENCY' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END, t.tanggal_temuan DESC, t.id DESC
+                LIMIT 25
+            ";
+            $bomFindingsQuery = $db->query($bomFindingsSql);
+            $bomFindingsList = ($bomFindingsQuery && is_object($bomFindingsQuery)) ? $bomFindingsQuery->getResultArray() : [];
+
+            $totalBomFindingsCount = (int)($db->query("
+                SELECT COUNT(DISTINCT t.id) AS cnt
+                FROM temuan t
+                LEFT JOIN temuan_materials tm ON tm.temuan_id = t.id
+                LEFT JOIN assets a ON a.id = t.asset_id
+                WHERE t.deleted_at IS NULL
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE')
+                  AND t.pelaksana NOT LIKE '%ROW%'
+                  AND (a.jenis_asset IS NULL OR a.jenis_asset != 'ROW')
+                  AND (tm.id IS NOT NULL OR (t.material IS NOT NULL AND TRIM(t.material) != '' AND t.material != '-'))
+                " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "")
+            )->getRow()->cnt ?? count($bomFindingsList));
+
+            $temuanMaterialMatrix['findings_list'] = $bomFindingsList;
+            $temuanMaterialMatrix['total_findings_count'] = $totalBomFindingsCount;
+
             // Aggregate totals by canonical BOM material code with demand vs usage tracking via rule engine
             $bomRuleService = new \App\Services\PlnStandardBomRuleService();
             $temuanMaterialMatrix['summary_by_mat'] = $bomRuleService->getCanonicalBomMaterialSummary($ulpIdFilter !== null ? (int)$ulpIdFilter : null);
@@ -1055,7 +1117,9 @@ class Dashboard extends BaseController
                 LEFT JOIN sections s ON s.id = t.section_id
                 LEFT JOIN ulps u ON u.id = t.ulp_id
                 WHERE t.deleted_at IS NULL
-                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI')
+                  AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE')
+                  AND t.pelaksana NOT LIKE '%ROW%'
+                  AND (t.asset_id IS NULL OR t.asset_id NOT IN (SELECT id FROM assets WHERE jenis_asset = 'ROW'))
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp
                 ORDER BY total_temuan DESC, p.nama_penyulang ASC, s.nama_section ASC

@@ -338,6 +338,112 @@ class FaultLocatorController extends BaseController
     }
 
     /**
+     * API: Update Case Notes & Details
+     * POST /api/fault-locator/update-case/(:num)
+     */
+    public function updateCase(int $id): ResponseInterface
+    {
+        $session = session();
+        $role = strtolower((string)$session->get('user_role'));
+        $allowedRoles = ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'supervisor_ulp', 'inspeksi'];
+        if (!in_array($role, $allowedRoles, true)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Akses ditolak. Anda tidak memiliki izin untuk mengedit kasus gangguan.'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $case = $db->table('fault_cases')->where('id', $id)->where('deleted_at IS NULL')->get()->getRowArray();
+        if (!$case) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 'error',
+                'message' => 'Data kasus gangguan tidak ditemukan atau sudah dihapus.'
+            ]);
+        }
+
+        if ($role === 'supervisor_ulp') {
+            $userUlp = (int)$session->get('user_ulp_id');
+            if ((int)$case['ulp_id'] !== $userUlp) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Akses ditolak. Anda hanya dapat mengedit kasus dalam wilayah ULP Anda.'
+                ]);
+            }
+        }
+
+        $json = $this->request->getJSON(true) ?? $this->request->getPost();
+        $notes = trim((string)($json['notes'] ?? $json['finding_notes'] ?? ''));
+        $status = trim((string)($json['follow_up_status'] ?? ''));
+
+        $updateData = ['updated_at' => date('Y-m-d H:i:s')];
+        if (!empty($notes)) {
+            $updateData['notes'] = $notes;
+        }
+        if (!empty($status) && in_array($status, ['MENUNGGU_PEMERIKSAAN', 'GANGGUAN_DITEMUKAN', 'TIDAK_DITEMUKAN', 'PERLU_VERIFIKASI'], true)) {
+            $updateData['follow_up_status'] = $status;
+        }
+
+        $db->table('fault_cases')->where('id', $id)->update($updateData);
+
+        log_activity('UPDATE_FAULT_CASE', "Memperbarui kasus gangguan #{$case['case_number']}: status={$status}");
+
+        return $this->response->setJSON([
+            'status'  => 'success',
+            'message' => "Kasus gangguan #{$case['case_number']} berhasil diperbarui."
+        ]);
+    }
+
+    /**
+     * API: Soft Delete Fault Case
+     * POST /api/fault-locator/delete-case/(:num)
+     */
+    public function deleteCase(int $id): ResponseInterface
+    {
+        $session = session();
+        $role = strtolower((string)$session->get('user_role'));
+        $allowedRoles = ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'supervisor_ulp'];
+        if (!in_array($role, $allowedRoles, true)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Akses ditolak. Anda tidak memiliki hak menghapus data kasus gangguan.'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $case = $db->table('fault_cases')->where('id', $id)->where('deleted_at IS NULL')->get()->getRowArray();
+        if (!$case) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 'error',
+                'message' => 'Kasus gangguan tidak ditemukan atau sudah dihapus.'
+            ]);
+        }
+
+        if ($role === 'supervisor_ulp') {
+            $userUlp = (int)$session->get('user_ulp_id');
+            if ((int)$case['ulp_id'] !== $userUlp) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Akses ditolak. Anda hanya berwenang menghapus kasus dalam ULP Anda.'
+                ]);
+            }
+        }
+
+        // Soft delete preserving audit lineage
+        $db->table('fault_cases')->where('id', $id)->update([
+            'deleted_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        log_activity('DELETE_FAULT_CASE', "Menghapus (soft delete) kasus gangguan #{$case['case_number']}");
+
+        return $this->response->setJSON([
+            'status'  => 'success',
+            'message' => "Kasus gangguan #{$case['case_number']} berhasil dihapus dari sistem."
+        ]);
+    }
+
+    /**
      * API: Controlled AI Feedback Calibration Status (Track B)
      */
     public function calibrationStatus(): ResponseInterface
@@ -383,5 +489,102 @@ class FaultLocatorController extends BaseController
         $isExecute = (bool)($this->request->getGetPost('execute') ?? false);
         $result = $this->service->archiveProtoTestCases($isExecute);
         return $this->response->setJSON($result);
+    }
+
+    /**
+     * API: Evaluate Proposed Calibration Model Against Physics Baseline (Track B)
+     * POST api/fault-locator/evaluate-calibration
+     */
+    public function evaluateCalibration(): ResponseInterface
+    {
+        $session = session();
+        $role = strtolower((string)$session->get('user_role'));
+        $allowedRoles = ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'supervisor_ulp'];
+        if (!in_array($role, $allowedRoles, true)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Akses ditolak. Anda tidak memiliki wewenang mengevaluasi kalibrasi model.'
+            ]);
+        }
+
+        $input = $this->request->getJSON(true) ?? $this->request->getPost();
+        $splitStrategy = $input['split_strategy'] ?? 'feeder_split';
+        $candidateParams = [
+            'global_distance_factor' => (float)($input['global_distance_factor'] ?? 1.0),
+            'conductor_factors'      => is_array($input['conductor_factors'] ?? null) ? $input['conductor_factors'] : []
+        ];
+
+        $comparison = $this->calibrationService->compareModelAgainstBaseline($candidateParams, $splitStrategy);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $comparison
+        ]);
+    }
+
+    /**
+     * API: Promote Calibrated Model with Expert Gate (Track B)
+     * POST api/fault-locator/promote-model
+     */
+    public function promoteModel(): ResponseInterface
+    {
+        $session = session();
+        $role = strtolower((string)$session->get('user_role'));
+        $allowedRoles = ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'supervisor_ulp'];
+        if (!in_array($role, $allowedRoles, true)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Akses ditolak. Anda tidak memiliki wewenang mempromosikan model kalibrasi.'
+            ]);
+        }
+
+        $input = $this->request->getJSON(true) ?? $this->request->getPost();
+        $evaluationPayload = $input['evaluation_result'] ?? [];
+        $reason = trim((string)($input['reason'] ?? 'Disetujui oleh Supervisor/Admin setelah validasi independen.'));
+
+        $approver = [
+            'username'  => $session->get('username') ?? 'SUPERVISOR',
+            'user_role' => $role,
+            'ulp_id'    => $session->get('user_ulp_id'),
+            'up3_id'    => $session->get('user_up3_id')
+        ];
+
+        $res = $this->calibrationService->promoteModel($evaluationPayload, $approver, $reason);
+        $status = ($res['success'] ?? false) ? 200 : 422;
+
+        return $this->response->setStatusCode($status)->setJSON($res);
+    }
+
+    /**
+     * API: Rollback Model to Previous Active Version (Track B)
+     * POST api/fault-locator/rollback-model
+     */
+    public function rollbackModel(): ResponseInterface
+    {
+        $session = session();
+        $role = strtolower((string)$session->get('user_role'));
+        $allowedRoles = ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'supervisor_ulp'];
+        if (!in_array($role, $allowedRoles, true)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Akses ditolak. Anda tidak memiliki wewenang melakukan rollback model kalibrasi.'
+            ]);
+        }
+
+        $input = $this->request->getJSON(true) ?? $this->request->getPost();
+        $targetVersion = trim((string)($input['target_version'] ?? 'CALIB-V1-PHYSICS-BASELINE'));
+        $reason = trim((string)($input['reason'] ?? 'Rollback via Command Center oleh Supervisor/Admin'));
+
+        $actor = [
+            'username'  => $session->get('username') ?? 'SUPERVISOR',
+            'user_role' => $role,
+            'ulp_id'    => $session->get('user_ulp_id'),
+            'up3_id'    => $session->get('user_up3_id')
+        ];
+
+        $res = $this->calibrationService->rollbackModel($targetVersion, $actor, $reason);
+        $status = ($res['success'] ?? false) ? 200 : 422;
+
+        return $this->response->setStatusCode($status)->setJSON($res);
     }
 }

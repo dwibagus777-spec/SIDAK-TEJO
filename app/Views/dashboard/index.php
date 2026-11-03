@@ -691,7 +691,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($emergencyFindings as $ef): ?>
+                        <?php foreach (array_slice($emergencyFindings, 0, 20) as $ef): ?>
                         <tr>
                             <td class="ps-3">
                                 <a href="<?= site_url('temuan/detail/' . $ef['id']) ?>" class="fw-bold text-danger text-decoration-none">
@@ -751,6 +751,16 @@
                     </tbody>
                 </table>
             </div>
+            <?php if (count($emergencyFindings) > 20): ?>
+            <div class="p-2.5 text-center bg-light border-top">
+                <small class="text-muted" style="font-size: 11.5px;">
+                    Menampilkan 20 dari <?= count($emergencyFindings) ?> temuan emergency teratas. 
+                    <a href="<?= site_url('temuan?prioritas=EMERGENCY&status=BELUM' . (!empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '')) ?>" class="fw-bold text-danger text-decoration-none">
+                        Buka Semua di Daftar Temuan &rarr;
+                    </a>
+                </small>
+            </div>
+            <?php endif; ?>
             <?php else: ?>
             <div class="py-4 px-3 text-center bg-white">
                 <i class="fas fa-circle-check text-success fa-2x mb-2 d-block"></i>
@@ -1186,6 +1196,8 @@
 
     <!-- 6B. TABEL TEMUAN DAN KEBUTUHAN MATERIAL (TEPAT DI BAWAH PENYULANG TEMUAN INSPEKSI TERBANYAK) -->
     <?php
+        $bomFindingsList    = $temuanMaterialMatrix['findings_list'] ?? [];
+        $totalBomFindingsCount = $temuanMaterialMatrix['total_findings_count'] ?? count($bomFindingsList);
         $bomMatrixRows      = $temuanMaterialMatrix['rows'] ?? [];
         $bomSummaryByMat    = $temuanMaterialMatrix['summary_by_mat'] ?? [];
         $bomConstructions   = $temuanMaterialMatrix['bom_constructions'] ?? [];
@@ -1222,14 +1234,19 @@
                     <div>
                         <h5 class="fw-bold text-dark mb-0" style="font-size: 14px;">Tabel Temuan dan Kebutuhan Material (Standar BOM Konstruksi PLN)</h5>
                         <div class="small text-muted" style="font-size: 11px;">
-                            Rekapitulasi temuan aktif khusus pelaksana <strong>PDKB</strong> &amp; <strong>HAR KONSTRUKSI</strong> per GI, ULP, Penyulang, Section, Spesifikasi Konduktor (<code>AAAC</code>, <code>AAACS</code>, <code>MVTIC</code>, <code>XLPE</code> &bull; <code>70</code>, <code>110</code>, <code>150</code>, <code>240 mm²</code>), serta rincian kebutuhan material BOM aktual
+                            Rekapitulasi temuan aktif khusus pelaksana <strong>PDKB</strong>, <strong>HAR KONSTRUKSI</strong>, <strong>HAR GARDU</strong>, <strong>HAR GTT</strong>, dan <strong>HAR CRANE</strong> (tanpa temuan ROW) per GI, ULP, Penyulang, Section, Spesifikasi Konduktor (<code>AAAC</code>, <code>AAACS</code>, <code>MVTIC</code>, <code>XLPE</code> &bull; <code>70</code>, <code>110</code>, <code>150</code>, <code>240 mm²</code>), serta rincian kebutuhan material BOM aktual
                         </div>
                     </div>
                 </div>
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <ul class="nav nav-pills nav-fill gap-1 bg-light p-1 rounded-pill border" id="bomModuleTabs" role="tablist" style="font-size: 11px;">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active rounded-pill py-1 px-2.5 fw-semibold" id="tab-bom-matrix-btn" data-bs-toggle="pill" data-bs-target="#pane-bom-matrix" type="button" role="tab">
+                            <button class="nav-link active rounded-pill py-1 px-2.5 fw-semibold" id="tab-bom-findings-btn" data-bs-toggle="pill" data-bs-target="#pane-bom-findings" type="button" role="tab">
+                                <i class="fas fa-list-check me-1"></i>Daftar Temuan BOM (<?= number_format($totalBomFindingsCount) ?>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill py-1 px-2.5 fw-semibold" id="tab-bom-matrix-btn" data-bs-toggle="pill" data-bs-target="#pane-bom-matrix" type="button" role="tab">
                                 <i class="fas fa-table me-1"></i>Matriks per Penyulang (<?= count($bomMatrixRows) ?>)
                             </button>
                         </li>
@@ -1301,8 +1318,114 @@
         </div>
 
         <div class="tab-content" id="bomModuleTabContent">
-            <!-- TAB 1: Matriks per GI, ULP, Penyulang, Section, Konduktor & Komponen BOM -->
-            <div class="tab-pane fade show active" id="pane-bom-matrix" role="tabpanel">
+            <!-- TAB 1: Daftar Temuan BOM (Standar Konstruksi PLN) -->
+            <div class="tab-pane fade show active" id="pane-bom-findings" role="tabpanel">
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="table table-sm table-hover table-bordered align-middle mb-0" style="font-size: 11.5px;" id="bomFindingsTable">
+                        <thead class="table-light sticky-top text-center" style="font-size: 10.5px; text-transform: uppercase;">
+                            <tr>
+                                <th style="width: 36px;">#</th>
+                                <th style="width: 140px;" class="text-start">No. Temuan</th>
+                                <th style="width: 90px;">Tanggal</th>
+                                <th class="text-start">Penyulang</th>
+                                <th class="text-start">ULP</th>
+                                <th>Pelaksana</th>
+                                <th>Prioritas</th>
+                                <th class="text-start">Aset / Titik</th>
+                                <th class="text-start" style="min-width: 200px;">Kebutuhan Material Standar BOM</th>
+                                <th style="width: 115px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!empty($bomFindingsList)): ?>
+                                <?php foreach ($bomFindingsList as $idx => $f): 
+                                    $prio = strtoupper((string)($f['prioritas'] ?? 'MEDIUM'));
+                                    $prioBadge = ($prio === 'EMERGENCY') ? 'badge bg-danger' : (($prio === 'HIGH') ? 'badge bg-warning text-dark' : (($prio === 'LOW') ? 'badge bg-success' : 'badge bg-info text-dark'));
+                                    $pelaksanaBadge = 'badge bg-primary';
+                                    if (strpos($f['norm_pelaksana'], 'GTT') !== false || strpos($f['norm_pelaksana'], 'GARDU') !== false) {
+                                        $pelaksanaBadge = 'badge bg-secondary text-white';
+                                    } elseif (strpos($f['norm_pelaksana'], 'KONSTRUKSI') !== false) {
+                                        $pelaksanaBadge = 'badge bg-info text-white';
+                                    } elseif (strpos($f['norm_pelaksana'], 'CRANE') !== false) {
+                                        $pelaksanaBadge = 'badge bg-warning text-dark';
+                                    }
+                                ?>
+                                <tr data-penyulang-id="<?= (int)$f['penyulang_id'] ?>" data-ulp-id="<?= (int)$f['ulp_id'] ?>" data-cond-type="<?= esc($f['conductor_type']) ?>" data-cond-size="<?= esc($f['conductor_size']) ?>">
+                                    <td class="text-center text-muted fw-bold"><?= $idx + 1 ?></td>
+                                    <td>
+                                        <a href="javascript:void(0)" class="fw-bold text-primary text-decoration-none btn-open-bom-modal" data-id="<?= (int)$f['id'] ?>" title="Klik untuk membuka ringkasan kebutuhan material BOM">
+                                            <i class="fas fa-boxes-stacked me-1 small"></i><?= esc($f['nomor_temuan'] ?: ('TEMUAN #' . $f['id'])) ?>
+                                        </a>
+                                        <?php if ($f['status'] === 'SELESAI'): ?>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;">Selesai</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill ms-1" style="font-size: 9px;">Aktif</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center text-muted small"><?= esc($f['tanggal_temuan'] ? date('d/m/Y', strtotime($f['tanggal_temuan'])) : '-') ?></td>
+                                    <td>
+                                        <a href="<?= site_url('temuan?penyulang_id=' . (int)$f['penyulang_id']) ?>" class="fw-semibold text-dark text-decoration-none hover-primary" title="Buka daftar temuan penyulang <?= esc($f['nama_penyulang']) ?>">
+                                            <i class="fas fa-filter text-muted me-1 small"></i><?= esc($f['nama_penyulang']) ?>
+                                        </a>
+                                        <?php if (!empty($f['nama_section']) && $f['nama_section'] !== '-'): ?>
+                                            <div class="text-muted text-truncate small" style="font-size: 10px; max-width: 140px;"><?= esc($f['nama_section']) ?></div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><span class="text-muted small"><?= esc($f['nama_ulp']) ?></span></td>
+                                    <td class="text-center">
+                                        <span class="<?= $pelaksanaBadge ?>" style="font-size: 10px;"><?= esc($f['norm_pelaksana']) ?></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="<?= $prioBadge ?>" style="font-size: 10px;"><?= esc($prio) ?></span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold text-dark small"><?= esc($f['nama_asset'] !== '-' ? $f['nama_asset'] : $f['kode_asset']) ?></span>
+                                        <?php if (!empty($f['jenis_asset']) && $f['jenis_asset'] !== '-'): ?>
+                                            <span class="badge bg-light text-muted border ms-1" style="font-size: 9.5px;"><?= esc($f['jenis_asset']) ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($f['rincian_material'])): ?>
+                                            <div class="small text-dark fw-semibold text-truncate" style="max-width: 280px;" title="<?= esc($f['rincian_material']) ?>">
+                                                <?= esc($f['rincian_material']) ?>
+                                            </div>
+                                            <div class="text-muted" style="font-size: 10px;">
+                                                <i class="fas fa-cubes me-1 text-primary"></i><?= (int)$f['material_items_count'] ?> item BOM terstruktur
+                                            </div>
+                                        <?php elseif (!empty($f['material'])): ?>
+                                            <div class="small text-muted text-truncate" style="max-width: 280px;" title="<?= esc($f['material']) ?>">
+                                                <?= esc($f['material']) ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="text-muted small fst-italic">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-1 btn-open-bom-modal" data-id="<?= (int)$f['id'] ?>" title="Lihat Ringkasan BOM">
+                                                <i class="fas fa-eye me-1"></i>BOM
+                                            </button>
+                                            <a href="<?= site_url('temuan/detail/' . (int)$f['id']) ?>" class="btn btn-xs btn-light border rounded-pill px-2 py-1 ms-1" title="Buka Detail Temuan" target="_blank">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted py-4 small">
+                                        <i class="fas fa-info-circle me-1"></i> Tidak ada temuan yang memerlukan material Standar BOM Konstruksi PLN pada filter saat ini.
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: Matriks per GI, ULP, Penyulang, Section, Konduktor & Komponen BOM -->
+            <div class="tab-pane fade" id="pane-bom-matrix" role="tabpanel">
                 <div class="table-responsive" style="max-height: 390px; overflow-y: auto;">
                     <table class="table table-sm table-hover table-bordered align-middle mb-0" style="font-size: 11.5px;" id="bomMatrixTable">
                         <thead class="table-light sticky-top text-center" style="font-size: 10.5px; text-transform: uppercase;">
@@ -2313,7 +2436,7 @@
                                     <td class="text-end fw-semibold font-monospace"><?= number_format((int)($nsRow['total_titik'] ?? 0)) ?> segmen</td>
                                     <td class="text-end fw-bold text-danger font-monospace"><?= number_format($nsKm, 2) ?> km <span class="text-muted fw-normal small">(<?= number_format((float)($nsRow['total_meter'] ?? 0), 0) ?> m)</span></td>
                                     <td class="text-center">
-                                        <a class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5" href="<?= site_url('gis?penyulang_id=' . (int)($nsRow['penyulang_id'] ?? 0)) ?>">
+                                        <a class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5" href="<?= site_url('gis?penyulang_id=' . (int)($nsRow['penyulang_id'] ?? 0) . '&nonstd_only=1') ?>">
                                             <i class="fas fa-map-location-dot me-1"></i> Lihat di GIS
                                         </a>
                                     </td>
@@ -2477,6 +2600,47 @@
                     <i class="fas fa-map-marked-alt me-1"></i>Fokus di GIS
                 </button>
                 <button type="button" class="btn btn-sm btn-secondary rounded-pill" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL RINGKASAN TEMUAN & KEBUTUHAN MATERIAL STANDAR BOM PLN -->
+<div class="modal fade" id="modalTemuanBomSummary" tabindex="-1" aria-labelledby="modalTemuanBomSummaryLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header border-bottom py-3 bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary-subtle text-primary p-2 rounded-2 fs-6">
+                        <i class="fas fa-boxes-stacked"></i>
+                    </span>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="modalTemuanBomSummaryLabel">
+                            Ringkasan Temuan &amp; Kebutuhan Material Standar BOM
+                        </h5>
+                        <small class="text-muted" id="bomModalSubtitle">Memuat data temuan...</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body p-4" id="bomModalBody">
+                <div class="text-center py-5" id="bomModalLoader">
+                    <div class="spinner-border text-primary mb-2" role="status">
+                        <span class="visually-hidden">Memuat...</span>
+                    </div>
+                    <div class="text-muted small">Mengambil rincian material BOM dari server...</div>
+                </div>
+            </div>
+            <div class="modal-footer py-2.5 border-top bg-light d-flex justify-content-between">
+                <div class="small text-muted" id="bomModalFooterInfo">
+                    <i class="fas fa-shield-alt text-primary me-1"></i> Standar BOM Konstruksi JTM PLN Distribusi
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="#" id="bomModalBtnDetailTemuan" class="btn btn-sm btn-outline-primary rounded-pill px-3" target="_blank">
+                        <i class="fas fa-arrow-up-right-from-square me-1"></i> Buka Temuan Utuh
+                    </a>
+                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
+                </div>
             </div>
         </div>
     </div>
@@ -3761,6 +3925,128 @@ document.addEventListener('DOMContentLoaded', function() {
         if (feederSelect) feederSelect.value = '';
         window.applyNetworkModuleFilter();
     };
+
+    // BOM Material Summary Modal Handler
+    $(document).on('click', '.btn-open-bom-modal', function(e) {
+        e.preventDefault();
+        var findingId = $(this).data('id');
+        if (!findingId) return;
+
+        var modalEl = document.getElementById('modalTemuanBomSummary');
+        if (!modalEl) return;
+
+        var subEl = document.getElementById('bomModalSubtitle');
+        var bodyEl = document.getElementById('bomModalBody');
+        var btnDetail = document.getElementById('bomModalBtnDetailTemuan');
+
+        if (subEl) subEl.textContent = 'Memuat temuan #' + findingId + '...';
+        if (btnDetail) btnDetail.href = '<?= site_url('temuan/detail/') ?>' + findingId;
+        if (bodyEl) {
+            bodyEl.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary mb-2" role="status"><span class="visually-hidden">Memuat...</span></div><div class="text-muted small">Mengambil rincian material BOM dari server...</div></div>';
+        }
+
+        var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        bsModal.show();
+
+        fetch('<?= site_url('temuan/bom-details/') ?>' + findingId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (!res || !res.success || !res.data) {
+                if (bodyEl) {
+                    bodyEl.innerHTML = '<div class="alert alert-warning m-2"><i class="fas fa-exclamation-triangle me-1"></i> ' + escHtml(res && res.message ? res.message : 'Data temuan tidak ditemukan atau tidak memiliki hak akses.') + '</div>';
+                }
+                return;
+            }
+            var d = res.data;
+            if (subEl) {
+                subEl.innerHTML = 'Nomor: <strong>' + escHtml(d.nomor_temuan || ('TEMUAN #' + d.id)) + '</strong> &bull; ' + escHtml(d.nama_penyulang || '-') + ' (' + escHtml(d.nama_ulp || '-') + ')';
+            }
+
+            var prioBadge = '<span class="badge bg-secondary">MEDIUM</span>';
+            if (d.prioritas === 'EMERGENCY') prioBadge = '<span class="badge bg-danger">EMERGENCY</span>';
+            else if (d.prioritas === 'HIGH') prioBadge = '<span class="badge bg-warning text-dark">HIGH</span>';
+            else if (d.prioritas === 'LOW') prioBadge = '<span class="badge bg-success">LOW</span>';
+
+            var statusBadge = d.status === 'SELESAI' 
+                ? '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Selesai</span>'
+                : '<span class="badge bg-danger"><i class="fas fa-clock me-1"></i>Belum Selesai</span>';
+
+            var matRowsHtml = '';
+            if (d.materials && d.materials.length > 0) {
+                d.materials.forEach(function(m, idx) {
+                    matRowsHtml += '<tr>' +
+                        '<td class="text-center text-muted fw-bold">' + (idx + 1) + '</td>' +
+                        '<td><span class="badge bg-light text-dark border font-monospace">' + escHtml(m.canonical_code_snapshot || m.kode_material || '-') + '</span></td>' +
+                        '<td class="fw-semibold text-dark">' + escHtml(m.canonical_name_snapshot || m.nama_material || '-') + '</td>' +
+                        '<td class="text-end fw-bold font-monospace text-primary">' + Number(m.quantity || 0).toLocaleString('id-ID') + ' <small class="text-muted fw-normal">' + escHtml(m.unit_snapshot || m.satuan || 'UNIT') + '</small></td>' +
+                        '<td class="text-muted small">' + escHtml(m.notes || m.category || '-') + '</td>' +
+                    '</tr>';
+                });
+            } else if (d.raw_material_text) {
+                matRowsHtml = '<tr><td colspan="5" class="p-3"><div class="alert alert-info mb-0 small"><strong>Catatan Kebutuhan Material:</strong><br>' + escHtml(d.raw_material_text) + '</div></td></tr>';
+            } else {
+                matRowsHtml = '<tr><td colspan="5" class="text-center text-muted py-3 small"><em>Belum ada rincian material terdaftar untuk temuan ini.</em></td></tr>';
+            }
+
+            if (bodyEl) {
+                bodyEl.innerHTML = '<div class="row g-2 mb-3">' +
+                    '<div class="col-md-3 col-6"><div class="p-2 border rounded-3 bg-light text-center h-100">' +
+                        '<span class="text-muted d-block" style="font-size: 10px;">ID &amp; Nomor</span>' +
+                        '<strong class="text-dark small d-block text-truncate">#' + d.id + ' &bull; ' + escHtml(d.nomor_temuan || '-') + '</strong>' +
+                    '</div></div>' +
+                    '<div class="col-md-3 col-6"><div class="p-2 border rounded-3 bg-light text-center h-100">' +
+                        '<span class="text-muted d-block" style="font-size: 10px;">Status &amp; Prioritas</span>' +
+                        '<div class="mt-1">' + statusBadge + ' ' + prioBadge + '</div>' +
+                    '</div></div>' +
+                    '<div class="col-md-3 col-6"><div class="p-2 border rounded-3 bg-light text-center h-100">' +
+                        '<span class="text-muted d-block" style="font-size: 10px;">Pelaksana</span>' +
+                        '<strong class="badge bg-primary text-white mt-1">' + escHtml(d.pelaksana || '-') + '</strong>' +
+                    '</div></div>' +
+                    '<div class="col-md-3 col-6"><div class="p-2 border rounded-3 bg-light text-center h-100">' +
+                        '<span class="text-muted d-block" style="font-size: 10px;">Aset / Titik</span>' +
+                        '<strong class="text-dark small d-block text-truncate">' + escHtml(d.nama_asset || d.kode_asset || 'Tiang/Gardu') + '</strong>' +
+                        '<small class="text-muted" style="font-size: 9px;">' + escHtml(d.jenis_asset || 'JTM') + '</small>' +
+                    '</div></div>' +
+                '</div>' +
+                '<div class="p-2.5 rounded-3 bg-light border mb-3 small">' +
+                    '<div class="row g-2">' +
+                        '<div class="col-sm-6">' +
+                            '<div><span class="text-muted">Penyulang:</span> <strong class="text-dark">' + escHtml(d.nama_penyulang || '-') + '</strong></div>' +
+                            '<div><span class="text-muted">Section:</span> <strong class="text-dark">' + escHtml(d.nama_section || '-') + '</strong></div>' +
+                            '<div><span class="text-muted">ULP:</span> <strong class="text-dark">' + escHtml(d.nama_ulp || '-') + '</strong></div>' +
+                        '</div>' +
+                        '<div class="col-sm-6">' +
+                            '<div><span class="text-muted">Tanggal:</span> <strong class="text-dark">' + escHtml(d.tanggal_temuan || '-') + '</strong></div>' +
+                            '<div><span class="text-muted">Konduktor:</span> <strong class="badge bg-info text-white">' + escHtml(d.conductor_type || 'AAAC') + ' ' + escHtml(d.conductor_size || '150') + ' mm²</strong></div>' +
+                            '<div><span class="text-muted">Catatan:</span> <span class="text-dark">' + escHtml(d.detail_temuan || '-') + '</span></div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<h6 class="fw-bold text-dark mb-2" style="font-size: 13px;"><i class="fas fa-clipboard-list text-primary me-1"></i>Rincian Item Material Standar BOM</h6>' +
+                '<div class="table-responsive border rounded-3">' +
+                    '<table class="table table-sm table-hover align-middle mb-0" style="font-size: 11.5px;">' +
+                        '<thead class="table-light sticky-top">' +
+                            '<tr>' +
+                                '<th style="width: 35px;" class="text-center">#</th>' +
+                                '<th style="width: 130px;">Kode Material</th>' +
+                                '<th>Nama Material Standar BOM</th>' +
+                                '<th style="width: 120px;" class="text-end">Kuantitas</th>' +
+                                '<th>Keterangan</th>' +
+                            '</tr>' +
+                        '</thead>' +
+                        '<tbody>' + matRowsHtml + '</tbody>' +
+                    '</table>' +
+                '</div>';
+            }
+        })
+        .catch(function(err) {
+            if (bodyEl) {
+                bodyEl.innerHTML = '<div class="alert alert-danger m-2"><i class="fas fa-times-circle me-1"></i> Gagal memuat data dari server.</div>';
+            }
+        });
+    });
 });
 </script>
 <?= $this->endSection() ?>

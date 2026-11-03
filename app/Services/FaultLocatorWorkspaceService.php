@@ -1661,6 +1661,10 @@ class FaultLocatorWorkspaceService
                 $cumX = 0.0;
                 $spanAccumulations = [];
 
+                $calibService = new FaultFeedbackCalibrationService($this->db);
+                $activeCalibModel = $calibService->getActiveModel();
+                $conductorFactors = $activeCalibModel['parameters']['conductor_factors'] ?? [];
+
                 foreach ($poleSequence as $sIdx => $seq) {
                     $sMeters = (float)($seq['span_meters'] ?? 0.0);
                     $sKm = $sMeters / 1000.0;
@@ -1671,10 +1675,15 @@ class FaultLocatorWorkspaceService
                         ? self::CONDUCTOR_CATALOG[$sCondKey]
                         : $condParams;
 
-                    $r1_k = (float)$sParams['r1_ohm_km'];
-                    $x1_k = (float)$sParams['x1_ohm_km'];
-                    $r0_k = (float)$sParams['r0_ohm_km'];
-                    $x0_k = (float)$sParams['x0_ohm_km'];
+                    $cFactor = 1.0;
+                    if ($sCondKey && isset($conductorFactors[$sCondKey])) {
+                        $cFactor = (float)$conductorFactors[$sCondKey];
+                    }
+
+                    $r1_k = (float)$sParams['r1_ohm_km'] * $cFactor;
+                    $x1_k = (float)$sParams['x1_ohm_km'] * $cFactor;
+                    $r0_k = (float)$sParams['r0_ohm_km'] * $cFactor;
+                    $x0_k = (float)$sParams['x0_ohm_km'] * $cFactor;
 
                     $rLoop_k = (2.0 * $r1_k + $r0_k) / 3.0;
                     $xLoop_k = (2.0 * $x1_k + $x0_k) / 3.0;
@@ -2278,6 +2287,9 @@ class FaultLocatorWorkspaceService
             'historical_priority_assets' => $historicalPriorityAssets,
             'has_physics_prediction'     => ($calculatedDistanceM > 0),
             'is_model_estimate'          => $isModelEstimate,
+            'active_model_version'       => $activeCalibModel['version'] ?? 'CALIB-V1-PHYSICS-BASELINE',
+            'active_model_type'          => $activeCalibModel['type'] ?? 'PHYSICS_BASELINE',
+            'uncertainty_radius_m'       => $uncertaintyRadiusM ?? ($branchAmbiguityDetected ? 150.0 : 100.0),
             'sensitivity_analysis'       => $sensitivityData,
             'transline_segment'          => $faultZoneSegment ? "TL-{$penyulangKode}-P{$faultZoneSegment['seq_no']}" : "TL-{$penyulangKode}-MAIN",
             'fault_point'                => $faultPointGeom,

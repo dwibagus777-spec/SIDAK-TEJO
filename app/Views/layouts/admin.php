@@ -57,9 +57,14 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script>
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('<?= base_url('sw.js') ?>').catch(function(err) {});
-        });
+        // Cleanly unregister any lingering legacy sw.js registrations
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (var reg of registrations) {
+                if (reg.active && reg.active.scriptURL.includes('sw.js')) {
+                    reg.unregister();
+                }
+            }
+        }).catch(function() {});
     }
     </script>
 
@@ -571,6 +576,11 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
 
         .badge-danger, .bg-danger, .badge.bg-danger {
             background-color: #EF4444 !important;
+            color: #ffffff !important;
+        }
+
+        .badge-secondary, .bg-secondary, .badge.bg-secondary {
+            background-color: #64748B !important;
             color: #ffffff !important;
         }
 
@@ -2195,7 +2205,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                     <a href="<?= site_url('dashboard') ?>" class="d-flex align-items-center text-white" style="text-decoration: none;">
                         <picture>
                             <source srcset="<?= base_url('assets/img/logo_sidak_optimized.webp') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" type="image/webp">
-                            <img src="<?= base_url('assets/img/logo_sidak_optimized.jpg') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" alt="SIDAK TEJO Emblem" class="navbar-brand-image me-2" style="max-height: 42px; border-radius: 8px;" width="42" height="42" loading="eager">
+                            <img src="<?= base_url('assets/img/logo_sidak_optimized.jpg') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" alt="SIDAK TEJO Emblem" class="navbar-brand-image me-2" style="max-height: 42px; border-radius: 8px;" width="42" height="42" loading="eager" onerror="this.onerror=null; this.src='<?= base_url('assets/img/logo_sidak.png') ?>';">
                         </picture>
                         <div class="text-start">
                             <div class="font-weight-black lh-1" style="font-size: 1.0rem; letter-spacing: 1.5px; background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SIDAK TEJO</div>
@@ -2889,7 +2899,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
         // Register Service Worker for caching maps & assets with auto-update
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=9-enterprise')
+                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=12-enterprise')
                     .then(function(registration) {
                         registration.update();
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
@@ -4719,7 +4729,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
         <div class="cinematic-logout-brand">
             <picture>
                 <source srcset="<?= base_url('assets/img/logo_sidak_optimized.webp') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" type="image/webp">
-                <img src="<?= base_url('assets/img/logo_sidak_optimized.jpg') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" alt="SIDAK TEJO Enterprise Emblem" class="cinematic-logout-logo shadow-lg" width="96" height="96" loading="lazy">
+                <img src="<?= base_url('assets/img/logo_sidak_optimized.jpg') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" alt="SIDAK TEJO Enterprise Emblem" class="cinematic-logout-logo shadow-lg" width="96" height="96" loading="lazy" onerror="this.onerror=null; this.src='<?= base_url('assets/img/logo_sidak.png') ?>';">
             </picture>
             <h4 class="font-weight-bold text-white mb-1" style="letter-spacing: 2px; font-family: 'Outfit', sans-serif; text-transform: uppercase;">SIDAK TEJO</h4>
             <p class="text-white-50 small mb-2 font-weight-bold" style="letter-spacing: 0.5px;">Mengakhiri sesi dengan aman...</p>

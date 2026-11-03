@@ -273,6 +273,180 @@
             </div>
         </div>
     </div>
+
+    <!-- SECTION 3: SLA AGING BACKLOG MONITORING -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white">
+                <div class="card-header bg-white py-3 px-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                        <i class="fas fa-hourglass-half text-danger me-2"></i> SLA Aging &amp; Backlog Temuan Belum Selesai
+                    </h6>
+                    <span class="badge bg-danger-subtle text-danger border" id="aging-total-badge"><?= number_format($agingData['total_open'] ?? 0) ?> Total Backlog</span>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <!-- > 30 Hari (Overdue) -->
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-danger fw-bold small">&gt; 30 HARI (KRITIS)</span>
+                                    <i class="fas fa-circle-exclamation text-danger fs-5"></i>
+                                </div>
+                                <h3 class="fw-bold text-danger mb-0" id="aging-over-30"><?= number_format($agingData['over_30'] ?? 0) ?></h3>
+                                <small class="text-muted">Lewat batas SLA perbaikan</small>
+                            </div>
+                        </div>
+                        <!-- 15 - 30 Hari -->
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-warning-emphasis fw-bold small">15 - 30 HARI</span>
+                                    <i class="fas fa-triangle-exclamation text-warning fs-5"></i>
+                                </div>
+                                <h3 class="fw-bold text-dark mb-0" id="aging-15-30"><?= number_format($agingData['days_15_30'] ?? 0) ?></h3>
+                                <small class="text-muted">Perlu percepatan WO</small>
+                            </div>
+                        </div>
+                        <!-- 8 - 14 Hari -->
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-25 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-info-emphasis fw-bold small">8 - 14 HARI</span>
+                                    <i class="fas fa-clock text-info fs-5"></i>
+                                </div>
+                                <h3 class="fw-bold text-dark mb-0" id="aging-8-14"><?= number_format($agingData['days_8_14'] ?? 0) ?></h3>
+                                <small class="text-muted">Dalam jadwal patroli/eksekusi</small>
+                            </div>
+                        </div>
+                        <!-- <= 7 Hari -->
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-success fw-bold small">&le; 7 HARI (BARU)</span>
+                                    <i class="fas fa-check-circle text-success fs-5"></i>
+                                </div>
+                                <h3 class="fw-bold text-success mb-0" id="aging-under-7"><?= number_format($agingData['under_7'] ?? 0) ?></h3>
+                                <small class="text-muted">Temuan inspeksi terbaru</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 4: TOP CRITICAL FEEDERS & PELAKSANA SUMMARY -->
+    <div class="row g-3 mb-4">
+        <!-- Top Critical Feeders -->
+        <div class="col-lg-7 col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100">
+                <div class="card-header bg-white py-3 px-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="fw-bold mb-0 text-primary d-flex align-items-center">
+                        <i class="fas fa-ranking-star text-warning me-2"></i> Top Penyulang Kritis (Backlog Tertinggi)
+                    </h6>
+                    <small class="text-muted">5 Penyulang Prioritas Penanganan</small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3" style="width: 50px;">No</th>
+                                    <th>Penyulang</th>
+                                    <th class="text-center" style="width: 90px;">Total</th>
+                                    <th class="text-center" style="width: 100px;">Backlog</th>
+                                    <th class="text-center" style="width: 100px;">Emergency</th>
+                                    <th class="text-end pe-3" style="width: 80px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topFeedersTableBody">
+                                <?php if (!empty($topFeeders)): ?>
+                                    <?php $rank = 1; foreach ($topFeeders as $tf): ?>
+                                        <tr>
+                                            <td class="ps-3 fw-bold text-muted"><?= $rank++ ?></td>
+                                            <td>
+                                                <div class="fw-bold text-dark"><?= esc($tf['nama_penyulang']) ?></div>
+                                                <small class="text-muted">ID: #<?= esc($tf['penyulang_id']) ?></small>
+                                            </td>
+                                            <td class="text-center fw-semibold"><?= number_format($tf['total_temuan']) ?></td>
+                                            <td class="text-center">
+                                                <span class="badge bg-danger-subtle text-danger border px-2 py-1 fw-bold"><?= number_format($tf['total_backlog']) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <?php if ((int)$tf['total_emergency'] > 0): ?>
+                                                    <span class="badge bg-danger text-white px-2 py-1 fw-bold"><?= number_format($tf['total_emergency']) ?> Emg</span>
+                                                <?php else: ?>
+                                                    <span class="text-muted small">-</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="text-end pe-3">
+                                                <a href="<?= site_url('temuan?penyulang_id=' . $tf['penyulang_id'] . (!empty($tf['ulp_id']) ? '&ulp_id=' . $tf['ulp_id'] : '') . '&status=BELUM_DITINDAK') ?>" class="btn btn-outline-primary btn-xs py-0 px-2 fw-semibold" style="font-size: 11px;">
+                                                    <i class="fas fa-arrow-up-right-from-square me-1"></i>Buka
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted small">
+                                            <i class="fas fa-circle-check text-success me-1"></i> Tidak ada data backlog temuan pada cakupan unit ini.
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pelaksana Summary -->
+        <div class="col-lg-5 col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100">
+                <div class="card-header bg-white py-3 px-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                        <i class="fas fa-users-gear text-info me-2"></i> Beban Kerja per Pelaksana
+                    </h6>
+                    <small class="text-muted">Realisasi per Regu</small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Pelaksana</th>
+                                    <th class="text-center" style="width: 75px;">Total</th>
+                                    <th class="text-center" style="width: 75px;">Selesai</th>
+                                    <th class="text-center" style="width: 75px;">Open</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pelaksanaTableBody">
+                                <?php if (!empty($pelaksanaData)): ?>
+                                    <?php foreach ($pelaksanaData as $pel): ?>
+                                        <tr>
+                                            <td class="ps-3">
+                                                <span class="badge bg-secondary-subtle text-dark border px-2 py-1 fw-bold"><?= esc($pel['pelaksana']) ?></span>
+                                            </td>
+                                            <td class="text-center fw-semibold"><?= number_format($pel['total']) ?></td>
+                                            <td class="text-center text-success fw-bold"><?= number_format($pel['selesai']) ?></td>
+                                            <td class="text-center text-danger fw-bold"><?= number_format($pel['open']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted small">
+                                            Tidak ada data temuan per pelaksana.
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 <?php endif; ?>
 
 </div>
@@ -280,7 +454,12 @@
 
 <?= $this->section('scripts') ?>
 <?php if (empty($emptyUnitState)): ?>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="<?= base_url('plugins/chart.js') ?>"></script>
+<script>
+if (typeof Chart === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>');
+}
+</script>
 <script>
 $(document).ready(function () {
     // Initial Datasets from Controller
@@ -544,6 +723,57 @@ $(document).ready(function () {
                     initBarChart(res.ulp_bar);
                     initJenisChart(res.jenis_pie);
                     initPrioChart(res.prio_pie);
+
+                    // Update SLA Aging Cards
+                    if (res.aging) {
+                        $('#aging-total-badge').text(Number(res.aging.total_open || 0).toLocaleString() + ' Total Backlog');
+                        $('#aging-over-30').text(Number(res.aging.over_30 || 0).toLocaleString());
+                        $('#aging-15-30').text(Number(res.aging.days_15_30 || 0).toLocaleString());
+                        $('#aging-8-14').text(Number(res.aging.days_8_14 || 0).toLocaleString());
+                        $('#aging-under-7').text(Number(res.aging.under_7 || 0).toLocaleString());
+                    }
+
+                    // Update Top Feeders Table
+                    if (Array.isArray(res.top_feeders)) {
+                        let fHtml = '';
+                        if (res.top_feeders.length > 0) {
+                            res.top_feeders.forEach(function(tf, idx) {
+                                const emgBadge = (parseInt(tf.total_emergency || 0, 10) > 0)
+                                    ? '<span class="badge bg-danger text-white px-2 py-1 fw-bold">' + tf.total_emergency + ' Emg</span>'
+                                    : '<span class="text-muted small">-</span>';
+                                const ulpParam = tf.ulp_id ? ('&ulp_id=' + tf.ulp_id) : '';
+                                fHtml += '<tr>' +
+                                    '<td class="ps-3 fw-bold text-muted">' + (idx + 1) + '</td>' +
+                                    '<td><div class="fw-bold text-dark">' + $('<div>').text(tf.nama_penyulang).html() + '</div><small class="text-muted">ID: #' + tf.penyulang_id + '</small></td>' +
+                                    '<td class="text-center fw-semibold">' + Number(tf.total_temuan).toLocaleString() + '</td>' +
+                                    '<td class="text-center"><span class="badge bg-danger-subtle text-danger border px-2 py-1 fw-bold">' + Number(tf.total_backlog).toLocaleString() + '</span></td>' +
+                                    '<td class="text-center">' + emgBadge + '</td>' +
+                                    '<td class="text-end pe-3"><a href="<?= site_url('temuan?status=BELUM_DITINDAK&penyulang_id=') ?>' + tf.penyulang_id + ulpParam + '" class="btn btn-outline-primary btn-xs py-0 px-2 fw-semibold" style="font-size: 11px;"><i class="fas fa-arrow-up-right-from-square me-1"></i>Buka</a></td>' +
+                                '</tr>';
+                            });
+                        } else {
+                            fHtml = '<tr><td colspan="6" class="text-center py-4 text-muted small"><i class="fas fa-circle-check text-success me-1"></i> Tidak ada data backlog temuan pada cakupan unit ini.</td></tr>';
+                        }
+                        $('#topFeedersTableBody').html(fHtml);
+                    }
+
+                    // Update Pelaksana Table
+                    if (Array.isArray(res.pelaksana)) {
+                        let pHtml = '';
+                        if (res.pelaksana.length > 0) {
+                            res.pelaksana.forEach(function(pel) {
+                                pHtml += '<tr>' +
+                                    '<td class="ps-3"><span class="badge bg-secondary-subtle text-dark border px-2 py-1 fw-bold">' + $('<div>').text(pel.pelaksana).html() + '</span></td>' +
+                                    '<td class="text-center fw-semibold">' + Number(pel.total).toLocaleString() + '</td>' +
+                                    '<td class="text-center text-success fw-bold">' + Number(pel.selesai).toLocaleString() + '</td>' +
+                                    '<td class="text-center text-danger fw-bold">' + Number(pel.open).toLocaleString() + '</td>' +
+                                '</tr>';
+                            });
+                        } else {
+                            pHtml = '<tr><td colspan="4" class="text-center py-4 text-muted small">Tidak ada data temuan per pelaksana.</td></tr>';
+                        }
+                        $('#pelaksanaTableBody').html(pHtml);
+                    }
 
                     $('#filter-status-text').html('<i class="fas fa-circle-check text-success me-1"></i> Data Diperbarui (' + res.timestamp + ')');
                 }

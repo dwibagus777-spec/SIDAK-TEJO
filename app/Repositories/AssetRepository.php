@@ -553,7 +553,7 @@ return [
                     $u = (int)$r['source_asset_id'];
                     $v = (int)$r['target_asset_id'];
 
-                    $geomStr = $r['geometry'] ?? '';
+                    $geomStr = !empty($r['geometry']) ? $r['geometry'] : (!empty($r['coordinates']) ? $r['coordinates'] : '');
                     $segCoords = !empty($geomStr) ? json_decode($geomStr, true) : null;
                     if (is_array($segCoords) && isset($segCoords['coordinates']) && is_array($segCoords['coordinates'])) {
                         $segCoords = $segCoords['coordinates'];

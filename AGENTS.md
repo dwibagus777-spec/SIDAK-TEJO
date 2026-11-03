@@ -1,8 +1,8 @@
 # SIDAK TEJO - Skills
 
-Skills in `.kilo/skills/` (21 folders). Select only what the current task requires and read its `SKILL.md` before acting.
+Skills in `.kilo/skills/` (22 folders). Select only what the current task requires and read its `SKILL.md` before acting.
 
-## Inventory (21 Skills)
+## Inventory (22 Skills)
 
 - [code-graph-rag](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\code-graph-rag\SKILL.md): Use when a SIDAK TEJO change spans files or you need lightweight repository tracing across routes, controllers, services, models, views, or tests before editing.
 - [context7-cli](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\context7-cli\SKILL.md): Use when the user mentions `ctx7` or `context7`, needs current external library documentation via the `ctx7` CLI, or wants to configure Context7 MCP.
@@ -18,6 +18,7 @@ Skills in `.kilo/skills/` (21 folders). Select only what the current task requir
 - [playwright-cli](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\playwright-cli\SKILL.md): Use when automating browser interactions, verifying rendered UI/viewports, or running/debugging Playwright tests.
 - [ponytail](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\ponytail\SKILL.md): Use for lazy senior dev mode: making the smallest complete code change without bloat or unrequested abstractions, and ending replies with skipped checks and risks.
 - [prime-agent](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\prime-agent\SKILL.md): Use when creating or maintaining a skill for the Prime Agent runtime or adapting a Prime Agent skill for Kilo Code.
+- [repository-hygiene](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\repository-hygiene\SKILL.md): Use when auditing repository file organization, decluttering root directory reports, planning safe file migrations without breaking CI/workflows, and safeguarding against credential/dump leakage.
 - [reverse-engineer-anything](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\reverse-engineer-anything\SKILL.md): Use when reverse engineering shipped binaries, APK/ASAR/packages, firmware, bytecode, recorded network/crash captures, or runtime targets with REA (skip for ordinary source-repo analysis).
 - [router](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\router\SKILL.md): Use only when a task spans several areas and it is unclear which SIDAK TEJO project skills to combine before acting.
 - [SECURITY-AUDIT](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\SECURITY-AUDIT\SKILL.md): Use when performing formal multi-phase codebase security audits following Cloudflare methodology (Reconnaissance, Coverage-Led Hunting, Adversarial Validation, Structured Verdicts, and Reporting).
@@ -44,9 +45,14 @@ When a task spans multiple layers (e.g. database + route + UI + QA verification)
    - Phase 2 (Load & Stress): [`K6`](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\K6\SKILL.md) (virtual users, SLO verification).
    - Phase 3 (Vulnerability & Pen-testing): [`SECURITY-AUDIT`](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\SECURITY-AUDIT\SKILL.md) or [`STRIX`](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\STRIX\SKILL.md).
 
+4. **Repository Hygiene & Safe Organization**:
+   - Phase 1 (Inventory & Pre-Move Dependency Grep): [`repository-hygiene`](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\repository-hygiene\SKILL.md) + [`code-graph-rag`](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\code-graph-rag\SKILL.md).
+   - Phase 2 (Impact Matrix & Staged Migration): [`repository-hygiene`](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\repository-hygiene\SKILL.md) + [`ponytail`](E:\XAMPP\htdocs\SIDAK TEJO\.kilo\skills\ponytail\SKILL.md).
+   - Phase 3 (Integrity Verification): Run test runner and check zero broken references.
+
 ## Token-Saving & Execution Rules
 
-1. **Select only relevant skills:** Activate only 1–3 skills strictly required for the active phase; never load all 21 `SKILL.md` files at once.
+1. **Select only relevant skills:** Activate only 1–3 skills strictly required for the active phase; never load all 22 `SKILL.md` files at once.
 2. **Read before use:** Read the selected `SKILL.md` once before applying its workflow; do not re-read or repeat instructions already in context.
 3. **Prefer the most specific skill when overlapping:**
    - For ordinary SIDAK TEJO cross-file tracing, use `code-graph-rag` (lightweight file/symbol tracing) instead of heavy `/graphify` builds or `reverse-engineer-anything`.

@@ -146,3 +146,12 @@ node_modules/
 edge_tmp_profile*
 /writable/audits/edge_tmp_profile*
 
+# Database dumps, raw telemetry CSV/XLSX, and scratch logs - NEVER commit to git
+*.sql
+*.sqlite
+/*.csv
+/*.xlsx
+/request_log.txt
+/test_output.txt
+
+

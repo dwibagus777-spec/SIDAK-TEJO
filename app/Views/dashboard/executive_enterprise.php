@@ -2,16 +2,42 @@
 
 <?= $this->section('content') ?>
 <div class="container-fluid py-3">
+
+<?php if (!empty($emptyUnitState)): ?>
+    <!-- EMPTY STATE: UNCONFIGURED OR INVALID UNIT -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-5 text-center my-4 border-start border-4 border-warning">
+        <div class="mb-3 text-warning">
+            <i class="fas fa-building-circle-exclamation" style="font-size: 3.5rem;"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-2">Unit Penugasan Tidak Valid atau Belum Dikonfigurasi</h4>
+        <p class="text-muted mb-4 mx-auto" style="max-width: 620px; font-size: 0.95rem; line-height: 1.6;">
+            <?= esc($emptyUnitMessage) ?>
+            <br><br>
+            Sistem SIDAK TEJO tidak menggunakan unit default otomatis demi menjaga integritas data dan isolasi wewenang operasional. Silakan hubungi Administrator atau periksa penugasan akun Anda di menu manajemen pengguna.
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="<?= site_url('dashboard') ?>" class="btn btn-outline-secondary btn-sm px-3">
+                <i class="fas fa-arrow-left me-1"></i> Kembali ke Dashboard Utama
+            </a>
+            <a href="<?= site_url('profile') ?>" class="btn btn-primary btn-sm px-3">
+                <i class="fas fa-user-gear me-1"></i> Lihat Profil Akun
+            </a>
+        </div>
+    </div>
+<?php else: ?>
+
     <!-- Top Header & Title -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom" style="gap: 12px;">
         <div>
-            <span class="badge bg-warning text-dark font-weight-bold mb-1" style="font-size: 11px;">Selamat Datang, <?= esc($userName) ?>!</span>
-            <h4 class="fw-bold mb-1 text-primary d-flex align-items-center" style="font-family: 'Outfit', sans-serif;">
+            <span class="badge bg-warning text-dark font-weight-bold mb-1" style="font-size: 11px;">Selamat Datang, <?= esc($userName) ?> (<?= esc(strtoupper($userRole)) ?>)!</span>
+            <h4 class="fw-bold mb-1 text-primary d-flex align-items-center flex-wrap" style="font-family: 'Outfit', sans-serif;">
                 <i class="fas fa-chart-pie text-warning me-2 fs-3"></i>
-                EXECUTIVE DASHBOARD ENTERPRISE (PLN UID SYSTEM)
-                <span class="badge bg-primary ms-2 rounded-pill font-weight-normal" style="font-size: 10px;">V18 ENTERPRISE</span>
+                <span id="executive-dashboard-title-text"><?= esc($scopeTitle) ?></span>
+                <span class="badge bg-primary ms-2 rounded-pill font-weight-normal" style="font-size: 10px;">ENTERPRISE ANALYTICS</span>
             </h4>
-            <p class="text-muted small mb-0">Executive Analytics, Monitoring Realtime, & Multi-Dimensional Data Visualization</p>
+            <p class="text-muted small mb-0">
+                Cakupan Wilayah: <strong id="scope-unit-subtitle" class="text-dark"><?= esc($unitScopeLabel) ?></strong> &bull; Multi-Dimensional Network Monitoring &amp; Temuan SLA Compliance
+            </p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <span id="live-clock" class="badge bg-white text-dark border p-2 font-monospace fw-bold shadow-xs">
@@ -33,20 +59,28 @@
                 <!-- 1. Filter ULP -->
                 <div class="col-md-4 col-sm-6">
                     <label for="filter_ulp" class="form-label small fw-bold text-dark mb-1">Unit ULP PLN</label>
-                    <select id="filter_ulp" class="form-select form-select-sm border-secondary-subtle font-weight-bold">
-                        <option value="">-- Semua ULP (UP3 Sidoarjo) --</option>
-                        <?php foreach ($ulps as $u): ?>
-                            <option value="<?= $u['id'] ?>" <?= (string)$ulpSel === (string)$u['id'] ? 'selected' : '' ?>>
-                                <?= esc($u['nama_ulp']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <?php if (!empty($isLockedUlp)): ?>
+                        <select id="filter_ulp" class="form-select form-select-sm border-secondary-subtle font-weight-bold bg-light" disabled>
+                            <option value="<?= esc($lockedUlpId) ?>" selected><?= esc($unitScopeLabel) ?></option>
+                        </select>
+                        <small class="text-muted d-block mt-1" style="font-size: 11px;"><i class="fas fa-lock text-warning me-1"></i> Terkunci pada ULP penugasan Anda</small>
+                    <?php else: ?>
+                        <select id="filter_ulp" class="form-select form-select-sm border-secondary-subtle font-weight-bold">
+                            <option value=""><?= esc($allOptionLabel) ?></option>
+                            <?php foreach ($ulps as $u): ?>
+                                <option value="<?= $u['id'] ?>" <?= (string)$ulpSel === (string)$u['id'] ? 'selected' : '' ?>>
+                                    <?= esc($u['nama_ulp']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    <?php endif; ?>
                 </div>
 
                 <!-- 2. Filter Bulan -->
                 <div class="col-md-3 col-sm-6">
                     <label for="filter_bulan" class="form-label small fw-bold text-dark mb-1">Bulan Inspeksi</label>
                     <select id="filter_bulan" class="form-select form-select-sm border-secondary-subtle font-weight-bold">
+                        <option value="" <?= empty($bulanSel) ? 'selected' : '' ?>>-- Semua Bulan (Tahunan) --</option>
                         <?php
                         $months = [
                             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -73,10 +107,13 @@
                     </select>
                 </div>
 
-                <!-- Button Reset -->
-                <div class="col-md-2 col-sm-6 d-grid">
-                    <button type="button" id="btn-reset-global-filter" class="btn btn-sm btn-outline-secondary font-weight-bold rounded-3">
-                        <i class="fas fa-undo me-1"></i> Reset Filter
+                <!-- Buttons: Reset & Export -->
+                <div class="col-md-2 col-sm-6 d-flex gap-2">
+                    <button type="button" id="btn-reset-global-filter" class="btn btn-sm btn-outline-secondary font-weight-bold rounded-3 flex-fill">
+                        <i class="fas fa-undo me-1"></i> Reset
+                    </button>
+                    <button type="button" id="btn-export-dashboard" class="btn btn-sm btn-outline-primary font-weight-bold rounded-3 flex-fill" title="Unduh Rincian Data Eksekutif (CSV)">
+                        <i class="fas fa-file-csv me-1"></i> Ekspor
                     </button>
                 </div>
             </form>
@@ -156,7 +193,7 @@
                     <h6 class="fw-bold mb-0 text-primary d-flex align-items-center">
                         <i class="fas fa-chart-line text-primary me-2"></i> Tren Temuan vs Realisasi Penyelesaian
                     </h6>
-                    <span class="badge bg-light text-primary border">Bulanan</span>
+                    <span class="badge bg-light text-primary border" id="line-chart-period-badge"><?= !empty($bulanSel) ? 'Bulanan' : 'Tahunan' ?></span>
                 </div>
                 <div class="card-body p-3">
                     <div style="position: relative; height: 320px;">
@@ -186,12 +223,12 @@
 
     <!-- CHARTS ROW 2: BAR CHART PERFORMA ULP & PIE CHARTS (JENIS & PRIORITAS) -->
     <div class="row g-3 mb-4">
-        <!-- Bar Chart: Performa per ULP (with numerical values on bar ends) -->
+        <!-- Bar Chart: Performa per ULP -->
         <div class="col-lg-6 col-12">
             <div class="card border-0 shadow-sm rounded-4 bg-white h-100">
                 <div class="card-header bg-white py-3 px-3 border-bottom">
                     <h6 class="fw-bold mb-0 text-primary d-flex align-items-center">
-                        <i class="fas fa-chart-bar text-warning me-2"></i> Performa Temuan per ULP Unit (PLN UP3 SIDOARJO)
+                        <i class="fas fa-chart-bar text-warning me-2"></i> Performa Temuan per ULP Unit <span id="bar-chart-unit-label" class="text-muted small fw-normal ms-1">(<?= esc($unitScopeLabel) ?>)</span>
                     </h6>
                 </div>
                 <div class="card-body p-3">
@@ -219,46 +256,55 @@
             </div>
         </div>
 
-        <!-- Pie Chart: Breakdown Prioritas -->
+        <!-- Pie Chart: Breakdown Prioritas SLA -->
         <div class="col-lg-3 col-md-6 col-12">
             <div class="card border-0 shadow-sm rounded-4 bg-white h-100">
                 <div class="card-header bg-white py-3 px-3 border-bottom">
                     <h6 class="fw-bold mb-0 text-dark d-flex align-items-center">
-                        <i class="fas fa-shield-cat text-warning me-2"></i> Prioritas Severity
+                        <i class="fas fa-shield-halved text-warning me-2"></i> Prioritas SLA
                     </h6>
                 </div>
                 <div class="card-body p-3">
                     <div style="position: relative; height: 220px;">
                         <canvas id="pieChartPrioritas"></canvas>
                     </div>
-                    <div id="prio-legend-container" class="mt-2 small"></div>
+                    <div id="prioritas-legend-container" class="mt-2 small"></div>
                 </div>
             </div>
         </div>
     </div>
+<?php endif; ?>
+
 </div>
+<?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<?php if (empty($emptyUnitState)): ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 $(document).ready(function () {
-    let chartLine = null;
+    // Initial Datasets from Controller
+    const initialLine   = <?= json_encode($lineData) ?>;
+    const initialStatus = <?= json_encode($statusDonut) ?>;
+    const initialBar    = <?= json_encode($ulpBar) ?>;
+    const initialJenis  = <?= json_encode($jenisPie) ?>;
+    const initialPrio   = <?= json_encode($prioPie) ?>;
+
+    const isLockedUlp   = <?= !empty($isLockedUlp) ? 'true' : 'false' ?>;
+    const lockedUlpId   = '<?= !empty($lockedUlpId) ? esc($lockedUlpId) : '' ?>';
+
+    let chartTemuanLine  = null;
     let chartStatusDonut = null;
-    let chartUlpBar = null;
-    let chartJenisPie = null;
-    let chartPrioPie = null;
+    let chartUlpBar      = null;
+    let chartJenisPie    = null;
+    let chartPrioPie     = null;
 
-    const initialLine     = <?= json_encode($lineData) ?>;
-    const initialBar      = <?= json_encode($ulpBar) ?>;
-    const initialStatus   = <?= json_encode($statusDonut) ?>;
-    const initialJenis    = <?= json_encode($jenisPie) ?>;
-    const initialPrio     = <?= json_encode($prioPie) ?>;
-
-    // 1. Initialize Line Chart (Temuan vs Selesai)
+    // 1. Initialize Line Chart (Tren Temuan vs Selesai)
     function initLineChart(data) {
         const ctx = document.getElementById('lineChartTemuan').getContext('2d');
-        if (chartLine) chartLine.destroy();
+        if (chartTemuanLine) chartTemuanLine.destroy();
 
-        chartLine = new Chart(ctx, {
+        chartTemuanLine = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: data.labels,
@@ -269,8 +315,9 @@ $(document).ready(function () {
                         borderColor: '#005eb8',
                         backgroundColor: 'rgba(0, 94, 184, 0.1)',
                         fill: true,
-                        tension: 0.3,
-                        pointRadius: 3
+                        tension: 0.35,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
                     },
                     {
                         label: 'Realisasi Selesai',
@@ -278,8 +325,9 @@ $(document).ready(function () {
                         borderColor: '#28a745',
                         backgroundColor: 'rgba(40, 167, 69, 0.1)',
                         fill: true,
-                        tension: 0.3,
-                        pointRadius: 3
+                        tension: 0.35,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
                     }
                 ]
             },
@@ -287,14 +335,7 @@ $(document).ready(function () {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'top' },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': ' + context.raw + ' Temuan';
-                            }
-                        }
-                    }
+                    legend: { position: 'top', align: 'end' }
                 },
                 scales: {
                     y: { beginAtZero: true, ticks: { precision: 0 } }
@@ -462,9 +503,9 @@ $(document).ready(function () {
 
     // 6. REALTIME AJAX REFRESH ON GLOBAL FILTER CHANGE
     function fetchDashboardData() {
-        const ulpId = $('#filter_ulp').val();
-        const bulan = $('#filter_bulan').val();
-        const tahun = $('#filter_tahun').val();
+        const ulpId = isLockedUlp ? lockedUlpId : ($('#filter_ulp').val() || '');
+        const bulan = $('#filter_bulan').val() || '';
+        const tahun = $('#filter_tahun').val() || '';
 
         $('#filter-status-text').html('<i class="fas fa-spinner fa-spin text-primary me-1"></i> Mengambil data...');
 
@@ -475,6 +516,21 @@ $(document).ready(function () {
             dataType: 'JSON',
             success: function (res) {
                 if (res.success) {
+                    // Update Header & Document Titles in real-time
+                    if (res.scope_title) {
+                        $('#executive-dashboard-title-text').text(res.scope_title);
+                    }
+                    if (res.browser_title) {
+                        document.title = res.browser_title;
+                    }
+                    if (res.unit_scope_label) {
+                        $('#scope-unit-subtitle').text(res.unit_scope_label);
+                        $('#bar-chart-unit-label').text('(' + res.unit_scope_label + ')');
+                    }
+
+                    // Update Badge Period
+                    $('#line-chart-period-badge').text(bulan ? 'Bulanan' : 'Tahunan');
+
                     // Update KPI Cards
                     $('#kpi-total').text(Number(res.kpi.total).toLocaleString());
                     $('#kpi-selesai').text(Number(res.kpi.selesai).toLocaleString());
@@ -492,8 +548,20 @@ $(document).ready(function () {
                     $('#filter-status-text').html('<i class="fas fa-circle-check text-success me-1"></i> Data Diperbarui (' + res.timestamp + ')');
                 }
             },
-            error: function () {
-                $('#filter-status-text').html('<i class="fas fa-exclamation-triangle text-danger me-1"></i> Gagal memperbarui data');
+            error: function (xhr) {
+                let msg = 'Gagal memperbarui data.';
+                try {
+                    const json = JSON.parse(xhr.responseText);
+                    if (json && json.message) msg = json.message;
+                } catch(e) {}
+                $('#filter-status-text').html('<i class="fas fa-exclamation-triangle text-danger me-1"></i> ' + msg);
+                if (xhr.status === 403 && typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Akses Ditolak',
+                        text: msg
+                    });
+                }
             }
         });
     }
@@ -503,12 +571,22 @@ $(document).ready(function () {
     });
 
     $('#btn-reset-global-filter').click(function () {
-        $('#filter_ulp').val('');
+        if (!isLockedUlp) {
+            $('#filter_ulp').val('');
+        }
         $('#filter_bulan').val('<?= date('n') ?>');
         $('#filter_tahun').val('<?= date('Y') ?>');
         fetchDashboardData();
     });
+
+    $('#btn-export-dashboard').click(function () {
+        const ulpId = isLockedUlp ? lockedUlpId : ($('#filter_ulp').val() || '');
+        const bulan = $('#filter_bulan').val() || '';
+        const tahun = $('#filter_tahun').val() || '';
+        window.location.href = '<?= site_url('executive-dashboard/export') ?>?ulp_id=' + encodeURIComponent(ulpId) + '&bulan=' + encodeURIComponent(bulan) + '&tahun=' + encodeURIComponent(tahun);
+    });
 });
 </script>
-<?= $this->endSection() ?>
+<?php endif; ?>
+
 <?= $this->endSection() ?>

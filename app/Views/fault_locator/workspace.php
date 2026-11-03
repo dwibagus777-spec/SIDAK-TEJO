@@ -1468,27 +1468,32 @@
                                                 <div class="text-muted">Relay: -</div>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
+                                        <td class="text-nowrap">
                                             <?php
-                                                $st = $c['follow_up_status'] ?? 'MENUNGGU_PEMERIKSAAN';
-                                                $badgeClass = 'bg-secondary';
-                                                if ($st === 'GANGGUAN_DITEMUKAN') $badgeClass = 'bg-success';
-                                                elseif ($st === 'TIDAK_DITEMUKAN') $badgeClass = 'bg-danger';
+                                                $rawSt = trim((string)($c['follow_up_status'] ?? ''));
+                                                $st = !empty($rawSt) ? $rawSt : 'MENUNGGU_PEMERIKSAAN';
+                                                $badgeClass = 'bg-secondary text-white';
+                                                if ($st === 'GANGGUAN_DITEMUKAN') $badgeClass = 'bg-success text-white';
+                                                elseif ($st === 'TIDAK_DITEMUKAN') $badgeClass = 'bg-danger text-white';
                                                 elseif ($st === 'PERLU_VERIFIKASI') $badgeClass = 'bg-warning text-dark';
+                                                else {
+                                                    $badgeClass = 'bg-secondary text-white';
+                                                    if (empty($rawSt)) $st = 'MENUNGGU_PEMERIKSAAN';
+                                                }
                                             ?>
-                                            <span class="badge <?= $badgeClass ?> small"><?= esc(str_replace('_', ' ', $st)) ?></span>
+                                            <span class="badge <?= $badgeClass ?> px-2 py-1 fw-semibold" style="font-size: 11px;"><?= esc(str_replace('_', ' ', $st)) ?></span>
                                         </td>
-                                        <td class="small">
+                                        <td class="small" style="min-width: 160px; white-space: normal; word-break: break-word;">
                                             <?php if (!empty($c['latest_finding'])): ?>
                                                 <?php $lf = $c['latest_finding']; ?>
                                                 <?php if ($lf['outcome_type'] === 'CONFIRMED'): ?>
-                                                    <strong class="text-success"><i class="fas fa-check me-1"></i><?= esc($lf['component_damaged'] ?: 'Ditemukan') ?></strong>
+                                                    <strong class="text-success d-block"><i class="fas fa-check me-1"></i><?= esc($lf['component_damaged'] ?: 'Ditemukan') ?></strong>
                                                     <div class="text-muted" style="font-size:0.7rem;">&Delta; Jarak: <?= esc($lf['distance_error_meters']) ?>m</div>
                                                 <?php elseif ($lf['outcome_type'] === 'NOT_FOUND'): ?>
-                                                    <strong class="text-danger"><i class="fas fa-xmark me-1"></i>Tidak Ditemukan</strong>
+                                                    <strong class="text-danger d-block"><i class="fas fa-xmark me-1"></i>Tidak Ditemukan</strong>
                                                     <div class="text-muted" style="font-size:0.7rem;"><?= esc($lf['not_found_reason'] ?: 'Penyisiran nihil') ?></div>
                                                 <?php else: ?>
-                                                    <span class="text-warning"><?= esc($lf['outcome_type']) ?></span>
+                                                    <span class="text-warning d-block"><?= esc($lf['outcome_type']) ?></span>
                                                 <?php endif; ?>
                                             <?php else: ?>
                                                 <span class="text-muted">Belum ada inspeksi</span>
@@ -1533,6 +1538,22 @@
                                                     title="Pilih tiang pada peta untuk merekam hasil temuan kasus ini">
                                                     <i class="fas fa-clipboard-check me-1"></i> Catat
                                                 </button>
+                                                <?php if (check_role(['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'supervisor_ulp'])): ?>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 btn-edit-case"
+                                                    data-case-id="<?= esc($c['id']) ?>"
+                                                    data-case-number="<?= esc($c['case_number']) ?>"
+                                                    data-status="<?= esc($c['follow_up_status'] ?? 'MENUNGGU_PEMERIKSAAN') ?>"
+                                                    data-notes="<?= esc($c['notes'] ?? ($lf['finding_notes'] ?? '')) ?>"
+                                                    title="Edit status atau catatan kasus gangguan">
+                                                    <i class="fas fa-pen-to-square me-1"></i> Edit
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 btn-delete-case"
+                                                    data-case-id="<?= esc($c['id']) ?>"
+                                                    data-case-number="<?= esc($c['case_number']) ?>"
+                                                    title="Hapus kasus gangguan (Soft Delete)">
+                                                    <i class="fas fa-trash me-1"></i> Hapus
+                                                </button>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>
@@ -3943,6 +3964,160 @@
                 statusBanner.innerHTML = `<i class="fas fa-hand-pointer text-primary me-1"></i>Kasus <strong>${escapeHtml(caseNum)}</strong> dimuat di peta. Klik tiang JTM tempat temuan berada untuk merekam hasil penelusuran, atau klik <strong>Catat Hasil Nihil</strong>.`;
                 statusBanner.style.display = 'block';
             }
+        });
+    });
+
+    // Edit Case Handler
+    document.querySelectorAll('.btn-edit-case').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const caseId = this.getAttribute('data-case-id');
+            const caseNumber = this.getAttribute('data-case-number');
+            const currentStatus = this.getAttribute('data-status') || 'MENUNGGU_PEMERIKSAAN';
+            const currentNotes = this.getAttribute('data-notes') || '';
+
+            if (typeof Swal === 'undefined') {
+                alert('Komponen modal tidak tersedia.');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Edit Status & Catatan Kasus',
+                html: `
+                    <div class="text-start mb-3">
+                        <div class="small text-muted mb-2 font-monospace fw-bold">${escapeHtml(caseNumber)}</div>
+                        <label class="form-label fw-semibold small mb-1">Status Patroli:</label>
+                        <select id="swalEditStatus" class="form-select form-select-sm mb-2">
+                            <option value="MENUNGGU_PEMERIKSAAN" ${currentStatus === 'MENUNGGU_PEMERIKSAAN' ? 'selected' : ''}>MENUNGGU PEMERIKSAAN</option>
+                            <option value="GANGGUAN_DITEMUKAN" ${currentStatus === 'GANGGUAN_DITEMUKAN' ? 'selected' : ''}>GANGGUAN DITEMUKAN</option>
+                            <option value="TIDAK_DITEMUKAN" ${currentStatus === 'TIDAK_DITEMUKAN' ? 'selected' : ''}>TIDAK DITEMUKAN</option>
+                            <option value="PERLU_VERIFIKASI" ${currentStatus === 'PERLU_VERIFIKASI' ? 'selected' : ''}>PERLU VERIFIKASI</option>
+                        </select>
+                        <label class="form-label fw-semibold small mb-1">Catatan Tambahan:</label>
+                        <textarea id="swalEditNotes" class="form-control form-control-sm" rows="3" placeholder="Masukkan catatan atau progress patroli...">${escapeHtml(currentNotes)}</textarea>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-save me-1"></i> Simpan Perubahan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#0d6efd',
+                preConfirm: () => {
+                    const status = document.getElementById('swalEditStatus').value;
+                    const notes = document.getElementById('swalEditNotes').value.trim();
+                    return { follow_up_status: status, notes: notes };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const postData = result.value;
+                    fetch(`<?= site_url('api/fault-locator/update-case') ?>/${caseId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
+                        },
+                        body: JSON.stringify(postData)
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil Diperbarui',
+                                text: res.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                            // Update row in DOM
+                            const tr = btn.closest('tr');
+                            if (tr) {
+                                btn.setAttribute('data-status', postData.follow_up_status);
+                                btn.setAttribute('data-notes', postData.notes);
+                                const statusCell = tr.cells[4];
+                                if (statusCell) {
+                                    let badgeClass = 'bg-secondary text-white';
+                                    if (postData.follow_up_status === 'GANGGUAN_DITEMUKAN') badgeClass = 'bg-success text-white';
+                                    else if (postData.follow_up_status === 'TIDAK_DITEMUKAN') badgeClass = 'bg-danger text-white';
+                                    else if (postData.follow_up_status === 'PERLU_VERIFIKASI') badgeClass = 'bg-warning text-dark';
+                                    else if (postData.follow_up_status === 'MENUNGGU_PEMERIKSAAN') badgeClass = 'bg-secondary text-white';
+                                    statusCell.innerHTML = `<span class="badge ${badgeClass} px-2 py-1 fw-semibold" style="font-size: 11px;">${escapeHtml(postData.follow_up_status.replace(/_/g, ' '))}</span>`;
+                                }
+                            }
+                        } else {
+                            Swal.fire('Gagal', res.message || 'Gagal memperbarui kasus.', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire('Error', 'Terjadi kesalahan sistem saat menghubungi server.', 'error');
+                    });
+                }
+            });
+        });
+    });
+
+    // Delete Case Handler (Soft Delete)
+    document.querySelectorAll('.btn-delete-case').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const caseId = this.getAttribute('data-case-id');
+            const caseNumber = this.getAttribute('data-case-number');
+
+            if (typeof Swal === 'undefined') {
+                if (confirm(`Yakin ingin menghapus kasus ${caseNumber}?`)) {
+                    // fallback
+                }
+                return;
+            }
+
+            Swal.fire({
+                title: 'Hapus Kasus Gangguan?',
+                text: `Kasus ${caseNumber} akan di-soft delete dan tidak ditampilkan lagi di riwayat aktif.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-trash me-1"></i> Ya, Hapus',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`<?= site_url('api/fault-locator/delete-case') ?>/${caseId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
+                        }
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Dihapus',
+                                text: res.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                            const tr = btn.closest('tr');
+                            if (tr) {
+                                tr.style.transition = 'opacity 0.4s';
+                                tr.style.opacity = '0';
+                                setTimeout(() => {
+                                    tr.remove();
+                                    const countBadge = document.getElementById('caseHistoryCount');
+                                    if (countBadge) {
+                                        const remaining = document.querySelectorAll('#caseHistoryBody tr').length;
+                                        countBadge.textContent = `${remaining} Kasus`;
+                                    }
+                                }, 400);
+                            }
+                        } else {
+                            Swal.fire('Gagal Menghapus', res.message || 'Gagal menghapus kasus gangguan.', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire('Error', 'Terjadi kesalahan sistem saat menghapus kasus.', 'error');
+                    });
+                }
+            });
         });
     });
 

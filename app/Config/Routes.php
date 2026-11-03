@@ -654,6 +654,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('operational-command-center', 'CommandCenterController::index');
     $routes->get('penyulang/health-index', 'AssetHealthController::index');
     $routes->get('executive-dashboard', 'ExecutiveDashboardController::index');
+    $routes->match(['GET', 'POST'], 'executive-dashboard/export', 'ExecutiveDashboardController::export');
+    $routes->get('executive-dashboard/chart-data', 'ExecutiveDashboardController::getChartData');
     $routes->get('dashboard/executive', 'ExecutiveDashboardController::index');
     $routes->get('dashboard/executive-api', 'Dashboard::executiveApi');
     $routes->get('dashboard/chart-data', 'ExecutiveDashboardController::getChartData');
@@ -905,6 +907,7 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     $routes->post('temuan/store', 'Temuan::store', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,har_gtt,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/lookup', 'Temuan::lookup');
     $routes->get('temuan/detail/(:num)', 'Temuan::detail/$1');
+    $routes->get('temuan/bom-details/(:num)', 'Temuan::apiBomDetails/$1');
     $routes->post('temuan/link-asset', 'Temuan::linkAsset', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,har_gtt,yantek,supervisor_ulp,supervisor_up3']);
     $routes->post('temuan/sync-bom/(:num)', 'Temuan::syncBom/$1', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,inspeksi,pdkb,har_gardu,har_konstruksi,har_row,har_crane,har_trafo,har_gtt,yantek,supervisor_ulp,supervisor_up3']);
     $routes->get('temuan/candidates/(:num)', 'Temuan::getCandidateAssets/$1');
@@ -1333,7 +1336,12 @@ $routes->post('api/fault-locator/save-case', 'FaultLocatorController::saveCase')
 $routes->post('api/fault-locator/record-outcome', 'FaultLocatorController::recordOutcome');
 $routes->get('api/fault-locator/case-history', 'FaultLocatorController::caseHistory');
 $routes->get('api/fault-locator/case-details/(:num)', 'FaultLocatorController::caseDetails/$1');
+$routes->post('api/fault-locator/update-case/(:num)', 'FaultLocatorController::updateCase/$1');
+$routes->post('api/fault-locator/delete-case/(:num)', 'FaultLocatorController::deleteCase/$1');
 $routes->get('api/fault-locator/calibration-status', 'FaultLocatorController::calibrationStatus');
+$routes->post('api/fault-locator/evaluate-calibration', 'FaultLocatorController::evaluateCalibration');
+$routes->post('api/fault-locator/promote-model', 'FaultLocatorController::promoteModel');
+$routes->post('api/fault-locator/rollback-model', 'FaultLocatorController::rollbackModel');
 $routes->get('api/fault-locator/feeder-readiness', 'FaultLocatorController::feederReadiness');
 $routes->get('api/fault-locator/feeder-network-context/(:num)', 'FaultLocatorController::feederNetworkContext/$1');
 $routes->match(['GET', 'POST'], 'api/fault-locator/archive-proto-cases', 'FaultLocatorController::archiveProtoCases');

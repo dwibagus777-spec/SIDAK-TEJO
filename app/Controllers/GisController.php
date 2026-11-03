@@ -2246,15 +2246,32 @@ class GisController extends BaseController
 
         // Integrity Pre-check 3: Active inspection findings
         if ($db->tableExists('temuan')) {
-            $activeTemuan = $db->table('temuan')
+            $activeTemuanRows = $db->table('temuan')
+                ->select('id, nomor_temuan, jenis_temuan, detail_temuan, prioritas, status, tanggal_temuan')
                 ->where('asset_id', $id)
                 ->whereNotIn('status', ['SELESAI', 'CLOSED', 'RESOLVED'])
                 ->where('deleted_at IS NULL')
-                ->countAllResults();
+                ->get()
+                ->getResultArray();
+            $activeTemuan = count($activeTemuanRows);
             if ($activeTemuan > 0) {
+                $blockers = array_map(function($t) {
+                    return [
+                        'id'           => (int)$t['id'],
+                        'nomor_temuan' => !empty($t['nomor_temuan']) ? $t['nomor_temuan'] : ('TEMUAN-' . $t['id']),
+                        'jenis_temuan' => !empty($t['jenis_temuan']) ? $t['jenis_temuan'] : 'Inspeksi',
+                        'detail'       => !empty($t['detail_temuan']) ? $t['detail_temuan'] : '',
+                        'prioritas'    => !empty($t['prioritas']) ? $t['prioritas'] : '-',
+                        'status'       => !empty($t['status']) ? $t['status'] : 'BELUM_DITINDAK',
+                        'url'          => site_url('temuan/detail/' . $t['id'])
+                    ];
+                }, $activeTemuanRows);
+
                 return $this->response->setStatusCode(400)->setJSON([
-                    'success' => false,
-                    'message' => "Penghapusan diblokir: Aset memiliki {$activeTemuan} temuan inspeksi aktif yang belum diselesaikan. Selesaikan atau tutup temuan terkait terlebih dahulu."
+                    'success'       => false,
+                    'message'       => "Penghapusan diblokir: Aset memiliki {$activeTemuan} temuan inspeksi aktif yang belum diselesaikan. Selesaikan atau tutup temuan terkait terlebih dahulu.",
+                    'blocker_count' => $activeTemuan,
+                    'blockers'      => $blockers
                 ]);
             }
         }

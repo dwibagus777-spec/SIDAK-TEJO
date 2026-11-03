@@ -152,8 +152,8 @@
         $('#ulp_id').change(function() {
             const ulpId = $(this).val();
             if (!ulpId) {
-                $('#penyulang_id').html('<option value="">-- Semua Penyulang --</option>');
-                $('#section_id').html('<option value="">-- Semua Section --</option>');
+                $('#penyulang_id').html('<option value="">-- Semua Penyulang --</option>').trigger('change');
+                $('#section_id').html('<option value="">-- Semua Section --</option>').trigger('change');
                 return;
             }
 
@@ -166,8 +166,8 @@
                     data.forEach(function(item) {
                         html += `<option value="${item.id}">${item.nama_penyulang}</option>`;
                     });
-                    $('#penyulang_id').html(html);
-                    $('#section_id').html('<option value="">-- Semua Section --</option>');
+                    $('#penyulang_id').html(html).trigger('change');
+                    $('#section_id').html('<option value="">-- Semua Section --</option>').trigger('change');
                 }
             });
         });
@@ -175,7 +175,7 @@
         $('#penyulang_id').change(function() {
             const penyulangId = $(this).val();
             if (!penyulangId) {
-                $('#section_id').html('<option value="">-- Semua Section --</option>');
+                $('#section_id').html('<option value="">-- Semua Section --</option>').trigger('change');
                 return;
             }
 
@@ -188,7 +188,7 @@
                     data.forEach(function(item) {
                         html += `<option value="${item.id}">${item.nama_section}</option>`;
                     });
-                    $('#section_id').html(html);
+                    $('#section_id').html(html).trigger('change');
                 }
             });
         });

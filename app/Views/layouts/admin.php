@@ -2193,7 +2193,10 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 <!-- Brand Logo & Identity -->
                 <h1 class="navbar-brand navbar-brand-autodark">
                     <a href="<?= site_url('dashboard') ?>" class="d-flex align-items-center text-white" style="text-decoration: none;">
-                        <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Emblem" class="navbar-brand-image me-2" style="max-height: 42px; border-radius: 8px;">
+                        <picture>
+                            <source srcset="<?= base_url('assets/img/logo_sidak_optimized.webp') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" type="image/webp">
+                            <img src="<?= base_url('assets/img/logo_sidak_optimized.jpg') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" alt="SIDAK TEJO Emblem" class="navbar-brand-image me-2" style="max-height: 42px; border-radius: 8px;" width="42" height="42" loading="eager">
+                        </picture>
                         <div class="text-start">
                             <div class="font-weight-black lh-1" style="font-size: 1.0rem; letter-spacing: 1.5px; background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SIDAK TEJO</div>
                             <div class="lh-1" style="font-size: 0.45rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: rgba(255,255,255,0.75); line-height: 1.3;">Sistem Data dan Tindak Lanjut<br>Temuan Inspeksi Sidoarjo</div>
@@ -2985,33 +2988,80 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 }
             });
 
+            // Guard $.fn.select2 to strictly prevent double-initialization on generated .select2-container spans
+            if ($.fn.select2 && !$.fn.select2.__sidakGuarded) {
+                var _origSelect2 = $.fn.select2;
+                $.fn.select2 = function() {
+                    var $selects = this.filter('select');
+                    if (this.length > 0 && $selects.length === 0) {
+                        if (typeof arguments[0] === 'string' && arguments[0] === 'close') {
+                            return _origSelect2.apply(this, arguments);
+                        }
+                        return this; // Silently ignore calls on non-select elements (such as container spans)
+                    }
+                    return _origSelect2.apply($selects, arguments);
+                };
+                $.fn.select2.__sidakGuarded = true;
+                $.fn.select2.amd = _origSelect2.amd;
+                $.fn.select2.defaults = _origSelect2.defaults;
+            }
+
             function initSidakSelect2($context) {
-                var $target = $context ? $context.find('.select2') : $('.select2');
+                var $target = $context ? $context.find('select.select2') : $('select.select2');
                 $target.each(function() {
                     var $el = $(this);
-                    if (!$el.data('select2')) {
-                        var optionCount = $el.children('option').length;
-                        // Short lists (<= 8 options) do not need search, preventing virtual keyboard popup
-                        var disableSearch = (optionCount <= 8) && !$el.data('search');
-                        $el.select2({
-                            theme: 'bootstrap4',
-                            width: '100%',
-                            minimumResultsForSearch: disableSearch ? Infinity : 0
-                        });
+                    if (!$el.is('select') || $el.hasClass('select2-hidden-accessible') || $el.data('select2')) {
+                        return;
                     }
+                    var optionCount = $el.children('option').length;
+                    // Short lists (<= 8 options) do not need search, preventing virtual keyboard popup
+                    var disableSearch = (optionCount <= 8) && !$el.data('search');
+                    var $closestModal = $el.closest('.modal');
+                    var s2Opts = {
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        minimumResultsForSearch: disableSearch ? Infinity : 0
+                    };
+                    if ($closestModal.length) {
+                        s2Opts.dropdownParent = $closestModal;
+                    }
+                    $el.select2(s2Opts);
                 });
             }
 
+            window.initSidakSelect2 = initSidakSelect2;
             initSidakSelect2();
 
             $(document).ajaxComplete(function() {
                 initSidakSelect2();
             });
 
-            // Close mobile bottom sheet on backdrop click
+            // Targeted Select2 accessibility lifecycle handlers:
+            // Select2 4.0.12 puts aria-hidden="true" on .dropdown-wrapper by default. When the dropdown opens
+            // and the search input inside is focused, Chromium reports "Blocked aria-hidden on an element
+            // because its descendant retained focus". We resolve this cleanly at the component level
+            // by removing aria-hidden on open and restoring it on close, without monkey-patching DOM prototypes.
+            $(document).on('select2:open', function(e) {
+                var $select = $(e.target);
+                var s2 = $select.data('select2');
+                if (s2 && s2.$container) {
+                    s2.$container.find('.dropdown-wrapper').removeAttr('aria-hidden');
+                    s2.$container.removeAttr('aria-hidden').removeClass('select2-hidden-accessible');
+                }
+            });
+
+            $(document).on('select2:close', function(e) {
+                var $select = $(e.target);
+                var s2 = $select.data('select2');
+                if (s2 && s2.$container) {
+                    s2.$container.find('.dropdown-wrapper').attr('aria-hidden', 'true');
+                }
+            });
+
+            // Close mobile bottom sheet on backdrop click (outside dropdown AND outside selection)
             $(document).on('click', '.select2-container--open', function(e) {
-                if (!$(e.target).closest('.select2-dropdown').length) {
-                    $('.select2-hidden-accessible').select2('close');
+                if (window.innerWidth <= 768 && !$(e.target).closest('.select2-dropdown').length && !$(e.target).closest('.select2-selection').length) {
+                    $('select.select2-hidden-accessible').select2('close');
                 }
             });
         });
@@ -3686,6 +3736,21 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                     } else {
                                         setTimeout(() => { window.location.href = res.action.url; }, 1000);
                                     }
+                                } else if (res.action.type === 'CONFIRM_REPORT_GENERATION' && res.action.download_url) {
+                                    Swal.fire({
+                                        title: 'Konfirmasi Cetak Laporan',
+                                        text: res.action.confirmation_prompt || res.response_text,
+                                        icon: 'question',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#0F766E',
+                                        cancelButtonColor: '#6c757d',
+                                        confirmButtonText: '<i class="fas fa-file-pdf me-1"></i> Cetak / Unduh Dokumen (' + res.action.format + ')',
+                                        cancelButtonText: 'Batal'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            window.open(res.action.download_url, '_blank');
+                                        }
+                                    });
                                 }
                             }
                         }
@@ -4652,7 +4717,10 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
         <div class="cinematic-panel cinematic-panel-left"></div>
         <div class="cinematic-panel cinematic-panel-right"></div>
         <div class="cinematic-logout-brand">
-            <img src="<?= base_url('assets/img/logo_sidak_hd.jpg') ?>?v=<?= time() ?>" alt="SIDAK TEJO Enterprise Emblem" class="cinematic-logout-logo shadow-lg">
+            <picture>
+                <source srcset="<?= base_url('assets/img/logo_sidak_optimized.webp') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" type="image/webp">
+                <img src="<?= base_url('assets/img/logo_sidak_optimized.jpg') ?>?v=<?= esc(\Config\BuildVersion::COMMIT_ID) ?>" alt="SIDAK TEJO Enterprise Emblem" class="cinematic-logout-logo shadow-lg" width="96" height="96" loading="lazy">
+            </picture>
             <h4 class="font-weight-bold text-white mb-1" style="letter-spacing: 2px; font-family: 'Outfit', sans-serif; text-transform: uppercase;">SIDAK TEJO</h4>
             <p class="text-white-50 small mb-2 font-weight-bold" style="letter-spacing: 0.5px;">Mengakhiri sesi dengan aman...</p>
             <div class="logout-word-art mt-3 px-3 py-2 rounded-3">
@@ -4892,7 +4960,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
         
     /* ===== MOBILE BOTTOM SHEET SELECT2 PICKER ===== */
     @media (max-width: 768px), (pointer: coarse) and (max-width: 991.98px) {
-        .select2-container--open {
+        body > .select2-container--open {
             position: fixed !important;
             inset: 0 !important;
             width: 100vw !important;
@@ -4904,7 +4972,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             justify-content: flex-end !important;
         }
 
-        .select2-container--open::before {
+        body > .select2-container--open::before {
             content: "" !important;
             position: fixed !important;
             inset: 0 !important;
@@ -4915,7 +4983,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             animation: sidakFadeIn 0.2s ease-out !important;
         }
 
-        .select2-container--open .select2-dropdown {
+        body > .select2-container--open .select2-dropdown {
             position: fixed !important;
             bottom: 0 !important;
             top: auto !important;

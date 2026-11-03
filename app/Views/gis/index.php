@@ -1033,7 +1033,7 @@
         <div id="asset-quick-card" class="gis-asset-quick-card">
             <div class="quick-card-header">
                 <div class="d-flex align-items-center gap-2" style="min-width: 0;">
-                    <img id="quick-card-img" src="" alt="Icon" class="flex-shrink-0" style="width: 28px; height: 28px; object-fit: contain;">
+                    <img id="quick-card-img" src="" alt="Icon" class="flex-shrink-0" style="width: 28px; height: 28px; object-fit: contain;" onerror="this.onerror=null;this.src='<?= base_url('assets/icons/network/generic-network-asset.svg') ?>';">
                     <div style="min-width: 0; line-height: 1.15;">
                         <h6 id="quick-card-name" class="fw-bold mb-0 text-dark text-truncate" style="font-size: 13px;">-</h6>
                         <span id="quick-card-code" class="text-primary font-monospace small d-block text-truncate" style="font-size: 11px; color: #0284c7 !important;">-</span>
@@ -1590,11 +1590,11 @@
                             <div class="col-4 text-muted">Kode Asset:</div>
                             <div class="col-8 font-monospace fw-bold text-primary" id="gis-del-kode">-</div>
                             <div class="col-4 text-muted">Nama Asset:</div>
-                            <div class="col-8 fw-bold" id="gis-del-nama">-</div>
+                            <div class="col-8 fw-bold text-dark" id="gis-del-nama">-</div>
                             <div class="col-4 text-muted">Jenis Asset:</div>
-                            <div class="col-8" id="gis-del-jenis">-</div>
+                            <div class="col-8 text-dark" id="gis-del-jenis">-</div>
                             <div class="col-4 text-muted">Wilayah / ULP:</div>
-                            <div class="col-8" id="gis-del-ulp">-</div>
+                            <div class="col-8 text-dark" id="gis-del-ulp">-</div>
                             <div class="col-4 text-muted">Koordinat GPS:</div>
                             <div class="col-8 font-monospace text-secondary" id="gis-del-coords">-</div>
                         </div>
@@ -4736,11 +4736,41 @@ document.addEventListener("DOMContentLoaded", function () {
             error: function(xhr) {
                 $btn.prop('disabled', false).html('<i class="fas fa-trash me-1"></i> Hapus Aset Sekarang');
                 let errMsg = 'Gagal menghapus aset.';
+                let blockersHtml = '';
                 try {
                     const json = JSON.parse(xhr.responseText);
                     if (json && json.message) errMsg = json.message;
+                    if (json && Array.isArray(json.blockers) && json.blockers.length > 0) {
+                        blockersHtml = '<div class="mt-2 pt-2 border-top border-danger-subtle text-start">' +
+                            '<div class="fw-bold mb-1 text-danger small"><i class="fas fa-shield-halved me-1"></i>Temuan Aktif Terkait (Harap Diselesaikan/Dialihkan):</div>' +
+                            '<div class="list-group list-group-flush small" style="max-height: 180px; overflow-y: auto;">';
+                        json.blockers.forEach(function(b) {
+                            const bNo = $('<div>').text(b.nomor_temuan || ('#' + b.id)).html();
+                            const bJenis = $('<div>').text(b.jenis_temuan || 'Temuan').html();
+                            const bPrio = $('<div>').text(b.prioritas || '-').html();
+                            const bUrl = b.url || ('<?= site_url('temuan/detail/') ?>' + b.id);
+                            blockersHtml += '<div class="list-group-item px-2 py-1 d-flex justify-content-between align-items-center bg-transparent border-bottom">' +
+                                '<div>' +
+                                    '<span class="fw-bold text-dark">' + bNo + '</span> ' +
+                                    '<span class="badge bg-secondary-subtle text-secondary border px-1" style="font-size: 10px;">' + bJenis + '</span> ' +
+                                    '<span class="badge bg-warning-subtle text-dark border px-1" style="font-size: 10px;">' + bPrio + '</span>' +
+                                '</div>' +
+                                '<a href="' + bUrl + '" target="_blank" class="btn btn-outline-danger btn-xs py-0 px-2 fw-semibold" style="font-size: 11px;">' +
+                                    '<i class="fas fa-arrow-up-right-from-square me-1"></i>Buka' +
+                                '</a>' +
+                            '</div>';
+                        });
+                        blockersHtml += '</div></div>';
+                    }
                 } catch (e) {}
-                $alert.text(errMsg).show();
+
+                if (blockersHtml) {
+                    $alert.html('<div class="mb-1">' + $('<div>').text(errMsg).html() + '</div>' + blockersHtml).show();
+                    $btn.prop('disabled', true).addClass('opacity-50').html('<i class="fas fa-ban me-1"></i> Penghapusan Diblokir');
+                } else {
+                    $alert.text(errMsg).show();
+                    $btn.prop('disabled', false).removeClass('opacity-50').html('<i class="fas fa-trash me-1"></i> Hapus Aset Sekarang');
+                }
             }
         });
     });
@@ -6307,6 +6337,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     transline_code: translineCode,
                     source_asset_id: fromId,
                     target_asset_id: toId,
+                    conductor_type: tl.conductor_type,
+                    conductor_size: tl.conductor_size,
                     is_tl04: isTl04,
                     is_tl03: isTl03,
                     is_tl02: isTl02,
@@ -6366,6 +6398,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         : (isTl02
                             ? `<span class="badge bg-info text-dark" style="font-size: 9px;"><i class="fas fa-bolt text-warning me-1"></i>TL-02 AI AUTO-COMPLETED</span>`
                             : `<span class="badge bg-secondary" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i>OTORITATIF MANUAL</span>`));
+
+                var clickLat = (evt && evt.latlng) ? evt.latlng.lat : (latLngs[0] ? latLngs[0][0] : null);
+                var clickLng = (evt && evt.latlng) ? evt.latlng.lng : (latLngs[0] ? latLngs[0][1] : null);
+                var gmapsNavUrl = (clickLat !== null && clickLng !== null && !isNaN(clickLat) && !isNaN(clickLng))
+                    ? `https://www.google.com/maps/dir/?api=1&destination=${Number(clickLat).toFixed(6)},${Number(clickLng).toFixed(6)}`
+                    : '';
 
                 var popupContent = `
                     <div style="min-width: 280px; max-width: 350px; font-family: system-ui, -apple-system, sans-serif;">
@@ -6434,6 +6472,15 @@ document.addEventListener("DOMContentLoaded", function () {
                             }
                             return '';
                         })()}
+                        ${gmapsNavUrl ? `
+                            <div class="mt-2 pt-2 border-top">
+                                <a href="${gmapsNavUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success w-100 fw-bold py-1 px-2 d-flex align-items-center justify-content-center gap-1.5" style="font-size: 11px; text-decoration: none;">
+                                    <i class="fas fa-diamond-turn-right text-success"></i>
+                                    <span>Petunjuk Arah Google Maps</span>
+                                    <i class="fas fa-external-link-alt small text-muted ms-1" style="font-size: 9px;"></i>
+                                </a>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
 
@@ -6837,14 +6884,73 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (autoFitBounds && map) {
-            if (markerCluster && markerCluster.getLayers().length > 0) {
-                map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
-            } else if (translinePolylineLayer && translinePolylineLayer.getLayers().length > 0) {
-                map.fitBounds(translinePolylineLayer.getBounds(), { padding: [40, 40] });
-            } else if (previewPolylineLayer && previewPolylineLayer.getLayers().length > 0) {
-                map.fitBounds(previewPolylineLayer.getBounds(), { padding: [40, 40] });
-            } else if (findingLayer && findingLayer.getLayers().length > 0) {
-                map.fitBounds(findingLayer.getBounds(), { padding: [40, 40] });
+            var urlParams = new URLSearchParams(window.location.search);
+            var targetTranslineId = urlParams.get('transline_id');
+            var isCaptiveView = urlParams.get('captive_only') === '1';
+            var isNonStdView = urlParams.get('nonstd_only') === '1';
+
+            var focusedTarget = false;
+
+            // 1. If explicit transline_id is requested, focus directly on it
+            if (targetTranslineId) {
+                var targetLayers = [];
+                translinePolylineLayer.eachLayer(function(l) {
+                    if (l.feature && l.feature.properties && String(l.feature.properties.transline_id) === String(targetTranslineId)) {
+                        targetLayers.push(l);
+                    }
+                });
+                if (targetLayers.length > 0) {
+                    var group = L.featureGroup(targetLayers);
+                    map.fitBounds(group.getBounds(), { padding: [60, 60], maxZoom: 18 });
+                    if (targetLayers[0]._hitPoly) {
+                        targetLayers[0]._hitPoly.fire('click');
+                    }
+                    focusedTarget = true;
+                }
+            }
+
+            // 2. If captive coating candidates view is requested, focus on candidate translines
+            if (!focusedTarget && isCaptiveView) {
+                var captiveLayers = [];
+                translinePolylineLayer.eachLayer(function(l) {
+                    if (l.options && l.options.className === 'transline-captive-pulse') {
+                        captiveLayers.push(l);
+                    }
+                });
+                if (captiveLayers.length > 0) {
+                    var cGroup = L.featureGroup(captiveLayers);
+                    map.fitBounds(cGroup.getBounds(), { padding: [60, 60], maxZoom: 18 });
+                    focusedTarget = true;
+                }
+            }
+
+            // 3. If non-standard conductors view is requested, focus on < 150 mm² translines
+            if (!focusedTarget && isNonStdView) {
+                var nonStdLayers = [];
+                translinePolylineLayer.eachLayer(function(l) {
+                    var cSize = parseInt(l.feature && l.feature.properties ? l.feature.properties.conductor_size : 0, 10);
+                    if (cSize > 0 && cSize < 150) {
+                        nonStdLayers.push(l);
+                    }
+                });
+                if (nonStdLayers.length > 0) {
+                    var nsGroup = L.featureGroup(nonStdLayers);
+                    map.fitBounds(nsGroup.getBounds(), { padding: [60, 60], maxZoom: 18 });
+                    focusedTarget = true;
+                }
+            }
+
+            // 4. Default fallback: cluster bounds or layer bounds
+            if (!focusedTarget) {
+                if (markerCluster && markerCluster.getLayers().length > 0) {
+                    map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
+                } else if (translinePolylineLayer && translinePolylineLayer.getLayers().length > 0) {
+                    map.fitBounds(translinePolylineLayer.getBounds(), { padding: [40, 40] });
+                } else if (previewPolylineLayer && previewPolylineLayer.getLayers().length > 0) {
+                    map.fitBounds(previewPolylineLayer.getBounds(), { padding: [40, 40] });
+                } else if (findingLayer && findingLayer.getLayers().length > 0) {
+                    map.fitBounds(findingLayer.getBounds(), { padding: [40, 40] });
+                }
             }
         }
     }

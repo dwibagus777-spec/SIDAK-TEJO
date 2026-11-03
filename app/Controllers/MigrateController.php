@@ -193,6 +193,15 @@ class MigrateController extends BaseController
                 $executed[] = 'add_actual_coordinates_to_fault_actual_findings';
             }
 
+            // Run CreateUidAndUp3HierarchySchema Migration (Release v2.4.0 Dynamic UID & UP3 Hierarchy)
+            $uidUp3MigFile = APPPATH . 'Database/Migrations/2026-11-02-000001_CreateUidAndUp3HierarchySchema.php';
+            if (file_exists($uidUp3MigFile)) {
+                require_once $uidUp3MigFile;
+                $uidUp3Mig = new \App\Database\Migrations\CreateUidAndUp3HierarchySchema();
+                $uidUp3Mig->up();
+                $executed[] = 'create_uid_and_up3_hierarchy_schema';
+            }
+
             // Phase D3 Hotfix: Archive Proto Dummy Test Cases (FLI-1.0.0 with 0 currents & null feeder)
             try {
                 $flSvc = new \App\Services\FaultLocatorWorkspaceService();

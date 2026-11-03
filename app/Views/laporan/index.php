@@ -73,10 +73,12 @@
                             <select name="pelaksana" id="pelaksana" class="form-control select2">
                                 <option value="">-- Semua Pelaksana --</option>
                                 <option value="PDKB">PDKB</option>
+                                <option value="HAR GARDU">HAR GARDU</option>
                                 <option value="HAR GTT">HAR GTT</option>
                                 <option value="HAR KONSTRUKSI">HAR KONSTRUKSI</option>
                                 <option value="HAR ROW">HAR ROW</option>
                                 <option value="HAR CRANE">HAR CRANE</option>
+                                <option value="YANTEK">YANTEK</option>
                             </select>
                         </div>
                     </div>

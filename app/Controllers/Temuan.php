@@ -63,7 +63,7 @@ class Temuan extends BaseController
             'penyulang_id'     => 'required|is_not_unique[penyulang.id]',
             'section_id'       => 'required|is_not_unique[sections.id]',
             'jenis_temuan'     => 'required|in_list[KONSTRUKSI,HOTSPOT,ROW]',
-            'pelaksana'        => 'required|in_list[PDKB,HAR GARDU,HAR GTT,HAR KONSTRUKSI,HAR ROW,HAR CRANE]',
+            'pelaksana'        => 'required|in_list[PDKB,HAR GARDU,HAR GTT,HAR KONSTRUKSI,HAR ROW,HAR CRANE,YANTEK]',
             'prioritas'        => 'required|in_list[EMERGENCY,HIGH,MEDIUM]',
             'potensi_gangguan' => 'required|in_list[DGR,OCR,OCRDGR]',
             'konduktor'        => 'required|max_length[100]',
@@ -206,6 +206,7 @@ class Temuan extends BaseController
 
         $selectedPenyulangId = $this->request->getGet('penyulang_id') ? (int)$this->request->getGet('penyulang_id') : null;
         $selectedUlpId       = $this->request->getGet('ulp_id') ? (int)$this->request->getGet('ulp_id') : null;
+        $selectedPelaksana   = $this->request->getGet('pelaksana') ? trim((string)$this->request->getGet('pelaksana')) : null;
         $selectedMonth       = $this->request->getGet('month') ? (int)$this->request->getGet('month') : null;
         $selectedYear        = $this->request->getGet('year') ? (int)$this->request->getGet('year') : null;
         $selectedStatus      = $this->request->getGet('status') ? (string)$this->request->getGet('status') : null;
@@ -238,6 +239,7 @@ class Temuan extends BaseController
             'isRestricted'        => $isRestricted,
             'selectedPenyulangId' => $selectedPenyulangId,
             'selectedUlpId'       => $selectedUlpId,
+            'selectedPelaksana'   => $selectedPelaksana,
             'selectedMonth'       => $selectedMonth,
             'selectedYear'        => $selectedYear,
             'selectedStatus'      => $selectedStatus,
@@ -285,9 +287,7 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
 
-        $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-            ? [$this->ulpRepository->find($userUlpId)]
-            : $this->ulpRepository->getActiveUlps();
+        [$ulps, , $isRestricted] = $this->getScopedUlpsAndPenyulangs();
 
         $serverToday = date('Y-m-d');
 
@@ -339,6 +339,7 @@ class Temuan extends BaseController
 
         return view('temuan/create', [
             'ulps'                => $ulps,
+            'isRestricted'        => $isRestricted,
             'defaultTanggal'      => $defaultTanggal,
             'isValidationReturn'  => $isValidationReturn,
             'serverToday'         => $serverToday,
@@ -354,9 +355,7 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
 
-        $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-            ? [$this->ulpRepository->find($userUlpId)]
-            : $this->ulpRepository->getActiveUlps();
+        [$ulps, , $isRestricted] = $this->getScopedUlpsAndPenyulangs();
 
         $serverToday = date('Y-m-d');
         $txService = new \App\Services\MaterialTransactionService();
@@ -368,6 +367,7 @@ class Temuan extends BaseController
 
             return view('temuan/create', [
                 'ulps'                => $ulps,
+                'isRestricted'        => $isRestricted,
                 'validation'          => $this->validator,
                 'defaultTanggal'      => $defaultTanggal,
                 'isValidationReturn'  => true,
@@ -382,6 +382,7 @@ class Temuan extends BaseController
             $this->validator->setError('tanggal_temuan', 'Tanggal temuan tidak boleh melebihi tanggal hari ini (' . date('d/m/Y') . ').');
             return view('temuan/create', [
                 'ulps'                => $ulps,
+                'isRestricted'        => $isRestricted,
                 'validation'          => $this->validator,
                 'defaultTanggal'      => $tanggalTemuan,
                 'isValidationReturn'  => true,
@@ -396,7 +397,7 @@ class Temuan extends BaseController
         }
 
         $ulpIdInput = (int)$this->request->getPost('ulp_id');
-        if ($role === 'admin_ulp' && $userUlpId !== null && (int)$userUlpId !== $ulpIdInput) {
+        if ($isRestricted && $userUlpId !== null && (int)$userUlpId !== $ulpIdInput) {
             return redirect()->to(site_url('temuan/create'))->with('error', 'Anda hanya diizinkan menginput temuan untuk ULP Anda.');
         }
 
@@ -674,7 +675,8 @@ class Temuan extends BaseController
 
         // 1. If numeric ID passed directly
         if (is_numeric($code) && (int)$code > 0) {
-            $t = $this->temuanRepository->getDetail((int)$code, $ulpIdFilter);
+            $userId = (int)($session->get('user_id') ?? 0);
+            $t = $this->temuanRepository->getDetail((int)$code, $ulpIdFilter, null, $userId ?: null);
             if ($t) {
                 return redirect()->to(site_url('temuan/detail/' . $t['id']));
             }
@@ -710,6 +712,7 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
         $userUp3Id = $session->get('user_up3_id');
+        $userId = (int)($session->get('user_id') ?? 0);
 
         $ulpIdFilter = null;
         if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
@@ -721,7 +724,7 @@ class Temuan extends BaseController
             $up3IdFilter = (int)$userUp3Id;
         }
 
-        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter);
+        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter, $userId ?: null);
         if (!$temuan) {
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses ke data tersebut.');
         }
@@ -865,6 +868,7 @@ class Temuan extends BaseController
         $session = session();
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
+        $userId = (int)($session->get('user_id') ?? 0);
 
         $ulpIdFilter = null;
         if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
@@ -873,7 +877,7 @@ class Temuan extends BaseController
 
         $isAjax = $this->request->isAJAX();
 
-        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter);
+        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, null, $userId ?: null);
         if (!$temuan) {
             if ($isAjax) {
                 return $this->jsonResponse(['success' => false, 'message' => 'Temuan tidak ditemukan atau Anda tidak memiliki akses.']);
@@ -920,6 +924,7 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
         $userUp3Id = $session->get('user_up3_id');
+        $userId = (int)($session->get('user_id') ?? 0);
 
         $ulpIdFilter = null;
         if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
@@ -931,14 +936,12 @@ class Temuan extends BaseController
             $up3IdFilter = (int)$userUp3Id;
         }
 
-        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter);
+        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter, $userId ?: null);
         if (!$temuan) {
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses.');
         }
 
-        $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-            ? [$this->ulpRepository->find($userUlpId)]
-            : $this->ulpRepository->getActiveUlps();
+        [$ulps, , $isRestricted] = $this->getScopedUlpsAndPenyulangs();
 
         $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
         $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
@@ -958,6 +961,7 @@ class Temuan extends BaseController
         return view('temuan/edit', [
             'temuan'                      => $temuan,
             'ulps'                        => $ulps,
+            'isRestricted'                => $isRestricted,
             'penyulangs'                  => $penyulangs,
             'sections'                    => $sections,
             'bomMaterialsCatalog'         => $bomMaterialsCatalog,
@@ -971,6 +975,7 @@ class Temuan extends BaseController
         $role = $session->get('user_role');
         $userUlpId = $session->get('user_ulp_id');
         $userUp3Id = $session->get('user_up3_id');
+        $userId = (int)($session->get('user_id') ?? 0);
 
         $ulpIdFilter = null;
         if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']) && $userUlpId !== null) {
@@ -982,9 +987,15 @@ class Temuan extends BaseController
             $up3IdFilter = (int)$userUp3Id;
         }
 
-        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter);
+        $temuan = $this->temuanRepository->getDetail($id, $ulpIdFilter, $up3IdFilter, $userId ?: null);
         if (!$temuan) {
             return redirect()->to(site_url('temuan'))->with('error', 'Temuan tidak ditemukan atau Anda tidak memiliki akses.');
+        }
+
+        [$ulps, , $isRestricted] = $this->getScopedUlpsAndPenyulangs();
+        $ulpIdInput = (int)$this->request->getPost('ulp_id');
+        if ($isRestricted && $userUlpId !== null && (int)$userUlpId !== $ulpIdInput) {
+            return redirect()->to(site_url('temuan/edit/' . $id))->with('error', 'Anda hanya diizinkan mengubah temuan pada ULP Anda.');
         }
 
         $txService = new \App\Services\MaterialTransactionService();
@@ -1000,16 +1011,13 @@ class Temuan extends BaseController
         }
 
         if (!$this->validate($this->getTemuanFormRules())) {
-            $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-                ? [$this->ulpRepository->find($userUlpId)]
-                : $this->ulpRepository->getActiveUlps();
-
             $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
             $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
 
             return view('temuan/edit', [
                 'temuan'                      => $temuan,
                 'ulps'                        => $ulps,
+                'isRestricted'                => $isRestricted,
                 'penyulangs'                  => $penyulangs,
                 'sections'                    => $sections,
                 'bomMaterialsCatalog'         => $bomMaterialsCatalog,
@@ -1022,10 +1030,6 @@ class Temuan extends BaseController
         $tanggalTemuan = (string)$this->request->getPost('tanggal_temuan');
         $serverToday   = date('Y-m-d');
         if ($tanggalTemuan > $serverToday) {
-            $ulps = ($role === 'admin_ulp' && $userUlpId !== null)
-                ? [$this->ulpRepository->find($userUlpId)]
-                : $this->ulpRepository->getActiveUlps();
-
             $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($temuan['ulp_id']);
             $sections   = $this->sectionRepository->getActiveSectionsByPenyulang($temuan['penyulang_id']);
 
@@ -1033,6 +1037,7 @@ class Temuan extends BaseController
             return view('temuan/edit', [
                 'temuan'                      => $temuan,
                 'ulps'                        => $ulps,
+                'isRestricted'                => $isRestricted,
                 'penyulangs'                  => $penyulangs,
                 'sections'                    => $sections,
                 'bomMaterialsCatalog'         => $bomMaterialsCatalog,
@@ -1641,6 +1646,7 @@ class Temuan extends BaseController
         $rolePelaksanaMap = [
             'pdkb'           => 'PDKB',
             'har_gardu'      => 'HAR GARDU',
+            'har_gtt'        => 'HAR GTT',
             'har_row'        => 'HAR ROW',
             'har_crane'      => 'HAR CRANE',
             'har_konstruksi' => 'HAR KONSTRUKSI',
@@ -1673,6 +1679,7 @@ class Temuan extends BaseController
         $rolePelaksanaMap = [
             'pdkb'           => 'PDKB',
             'har_gardu'      => 'HAR GARDU',
+            'har_gtt'        => 'HAR GTT',
             'har_row'        => 'HAR ROW',
             'har_crane'      => 'HAR CRANE',
             'har_konstruksi' => 'HAR KONSTRUKSI',

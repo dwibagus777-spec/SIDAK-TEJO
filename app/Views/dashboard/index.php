@@ -678,9 +678,9 @@
         </div>
         <div class="card-body p-0">
             <?php if (!empty($emergencyFindings)): ?>
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                 <table class="table table-hover align-middle mb-0" style="font-size: 12.5px;">
-                    <thead class="bg-light-subtle text-secondary" style="font-size: 11.5px;">
+                    <thead class="table-light sticky-top" style="font-size: 11.5px; z-index: 1;">
                         <tr>
                             <th class="ps-3 py-2" style="width: 140px;">No. Temuan</th>
                             <th class="py-2" style="width: 160px;">Penyulang / ULP</th>
@@ -933,9 +933,9 @@
                                         <div class="d-flex align-items-center gap-1 flex-wrap mt-1">
                                             <?php foreach (array_slice($r['pelaksana_breakdown'], 0, 3) as $pb): ?>
                                                 <?php if ($pb['belum_selesai'] > 0): ?>
-                                                    <span class="badge bg-light text-secondary border rounded-pill px-1" style="font-size: 8.5px;" title="<?= esc($pb['pelaksana']) ?>: <?= $pb['belum_selesai'] ?> belum selesai (EMG: <?= $pb['emg'] ?>, HIGH: <?= $pb['high'] ?>, MED: <?= $pb['med'] ?>)">
+                                                    <a href="<?= site_url('temuan') ?>?penyulang_id=<?= $r['id'] ?>&ulp_id=<?= $r['ulp_id'] ?? '' ?>&pelaksana=<?= urlencode($pb['pelaksana']) ?>&status=BELUM_SELESAI" class="badge bg-light text-secondary border rounded-pill px-1 text-decoration-none" style="font-size: 8.5px;" title="<?= esc($pb['pelaksana']) ?>: <?= $pb['belum_selesai'] ?> belum selesai (EMG: <?= $pb['emg'] ?>, HIGH: <?= $pb['high'] ?>, MED: <?= $pb['med'] ?>)">
                                                         <?= esc($pb['pelaksana']) ?>: <?= $pb['belum_selesai'] ?>
-                                                    </span>
+                                                    </a>
                                                 <?php endif; ?>
                                             <?php endforeach; ?>
                                             <?php if (count($r['pelaksana_breakdown']) > 3): ?>
@@ -2886,7 +2886,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     var highBadge = p.high > 0 ? '<span class="badge bg-warning text-dark rounded-pill px-1">' + p.high + '</span>' : '<span class="text-muted">-</span>';
                     var medBadge = p.med > 0 ? '<span class="badge bg-info-subtle text-info border rounded-pill px-1">' + p.med + '</span>' : '<span class="text-muted">-</span>';
                     var lowBadge = p.low > 0 ? '<span class="badge bg-secondary-subtle text-secondary rounded-pill px-1">' + p.low + '</span>' : '<span class="text-muted">-</span>';
-                    var drillUrl = '<?= site_url('temuan') ?>?penyulang_id=' + f.id + '&pelaksana=' + encodeURIComponent(p.pelaksana) + '&status=BELUM_SELESAI';
+                    var drillUrl = '<?= site_url('temuan') ?>?penyulang_id=' + f.id + (f.ulp_id ? '&ulp_id=' + f.ulp_id : '') + '&pelaksana=' + encodeURIComponent(p.pelaksana) + '&status=BELUM_SELESAI';
                     tr.innerHTML = '<td><span class="fw-semibold text-dark">' + escHtml(p.pelaksana) + '</span></td>' +
                         '<td class="text-center">' + emgBadge + '</td>' +
                         '<td class="text-center">' + highBadge + '</td>' +

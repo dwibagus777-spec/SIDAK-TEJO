@@ -92,6 +92,7 @@ if (!function_exists('get_role_label')) {
             'inspeksi' => 'Inspeksi',
             'pdkb' => 'PDKB',
             'har_gardu' => 'HAR Gardu',
+            'har_gtt' => 'HAR GTT',
             'har_konstruksi' => 'HAR Konstruksi',
             'har_row' => 'HAR ROW',
             'har_crane' => 'HAR Crane',
@@ -128,7 +129,7 @@ if (!function_exists('apply_role_scoping')) {
         }
 
         // Filter ULP (jika user memiliki ulp_id)
-        if (!empty($userUlpId) && in_array($userRole, ['admin_ulp', 'inspeksi', 'yantek', 'har_gardu', 'har_konstruksi', 'har_row', 'har_trafo', 'supervisor_ulp'])) {
+        if (!empty($userUlpId) && in_array($userRole, ['admin_ulp', 'inspeksi', 'yantek', 'har_gardu', 'har_konstruksi', 'har_row', 'har_trafo', 'har_gtt', 'supervisor_ulp'])) {
             $builder->where('temuan.ulp_id', $userUlpId);
         }
 
@@ -137,6 +138,8 @@ if (!function_exists('apply_role_scoping')) {
             $builder->where('temuan.pelaksana', 'PDKB');
         } elseif ($userRole === 'har_gardu') {
             $builder->where('temuan.pelaksana', 'HAR GARDU');
+        } elseif ($userRole === 'har_gtt') {
+            $builder->where('temuan.pelaksana', 'HAR GTT');
         } elseif ($userRole === 'har_konstruksi') {
             $builder->where('temuan.pelaksana', 'HAR KONSTRUKSI');
         } elseif ($userRole === 'har_row') {
@@ -936,7 +939,7 @@ if (!function_exists('get_sidak_menu_registry')) {
                 'icon'      => 'fas fa-plus-circle',
                 'active'    => (bool)url_is('temuan/create'),
                 'inRail'    => true,
-                'roles'     => ['administrator', 'admin_ulp', 'inspeksi'],
+                'roles'     => ['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'supervisor_ulp', 'supervisor_up3', 'yantek', 'pdkb', 'har_row', 'har_konstruksi', 'har_gtt', 'har_gardu', 'har_trafo', 'har_crane'],
             ],
             [
                 'id'        => 'daftar-temuan',
@@ -969,7 +972,7 @@ if (!function_exists('get_sidak_menu_registry')) {
                 'icon'      => 'fas fa-wrench',
                 'active'    => (bool)url_is('temuan/update-pekerjaan*'),
                 'inRail'    => true,
-                'roles'     => ['administrator', 'admin_ulp', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'yantek'],
+                'roles'     => ['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'pdkb', 'har_gardu', 'har_konstruksi', 'har_row', 'har_crane', 'har_gtt', 'har_trafo', 'yantek', 'supervisor_ulp', 'supervisor_up3'],
             ],
             [
                 'id'        => 'temuan-terdekat',
@@ -1208,7 +1211,7 @@ if (!function_exists('get_sidak_menu_registry')) {
                 'icon'      => 'fas fa-file-excel',
                 'active'    => (bool)url_is('import*'),
                 'inRail'    => false,
-                'roles'     => ['administrator', 'admin_ulp', 'inspeksi'],
+                'roles'     => ['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'supervisor_ulp', 'supervisor_up3', 'yantek', 'pdkb', 'har_row', 'har_konstruksi', 'har_gtt', 'har_gardu', 'har_trafo', 'har_crane'],
             ],
 
             // SYSTEM

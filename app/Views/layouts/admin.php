@@ -2323,7 +2323,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                     <span class="nav-link-title">Riwayat Saya</span>
                                 </a>
                             </li>
-<?php if (check_role(['administrator', 'admin_ulp', 'inspeksi', 'yantek'])): ?>
+<?php if (check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'yantek', 'pdkb', 'har_row', 'har_konstruksi', 'har_gtt', 'har_gardu', 'har_trafo', 'har_crane', 'supervisor_ulp', 'supervisor_up3'])): ?>
                               <li class="nav-item <?= url_is('temuan/create') ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('temuan/create') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-plus-circle text-success"></i></span>
@@ -2738,7 +2738,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 <span>Tugas</span>
             </a>
             <!-- Slot 4: Center FAB (+) Input Temuan -->
-            <?php if (check_role(['administrator', 'admin_ulp', 'inspeksi', 'yantek'])): ?>
+            <?php if (check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'inspeksi', 'yantek', 'pdkb', 'har_row', 'har_konstruksi', 'har_gtt', 'har_gardu', 'har_trafo', 'har_crane', 'supervisor_ulp', 'supervisor_up3'])): ?>
             <a href="<?= site_url('temuan/create') ?>" class="sidak-dock-fab" title="Input Temuan Baru Lapangan">
                 <div class="sidak-fab-circle">
                     <i class="fas fa-plus"></i>
@@ -2985,11 +2985,35 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                 }
             });
 
-            if ($('.select2').length) {
-                $('.select2').select2({
-                    theme: 'bootstrap4'
+            function initSidakSelect2($context) {
+                var $target = $context ? $context.find('.select2') : $('.select2');
+                $target.each(function() {
+                    var $el = $(this);
+                    if (!$el.data('select2')) {
+                        var optionCount = $el.children('option').length;
+                        // Short lists (<= 8 options) do not need search, preventing virtual keyboard popup
+                        var disableSearch = (optionCount <= 8) && !$el.data('search');
+                        $el.select2({
+                            theme: 'bootstrap4',
+                            width: '100%',
+                            minimumResultsForSearch: disableSearch ? Infinity : 0
+                        });
+                    }
                 });
             }
+
+            initSidakSelect2();
+
+            $(document).ajaxComplete(function() {
+                initSidakSelect2();
+            });
+
+            // Close mobile bottom sheet on backdrop click
+            $(document).on('click', '.select2-container--open', function(e) {
+                if (!$(e.target).closest('.select2-dropdown').length) {
+                    $('.select2-hidden-accessible').select2('close');
+                }
+            });
         });
 
         // Inisialisasi Notifikasi Swal / Toast
@@ -4864,6 +4888,136 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
         #sidak-mobile-dock {
             display: flex !important;
         }
+
+        
+    /* ===== MOBILE BOTTOM SHEET SELECT2 PICKER ===== */
+    @media (max-width: 768px), (pointer: coarse) and (max-width: 991.98px) {
+        .select2-container--open {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100% !important;
+            z-index: 10050 !important;
+            pointer-events: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-end !important;
+        }
+
+        .select2-container--open::before {
+            content: "" !important;
+            position: fixed !important;
+            inset: 0 !important;
+            background: rgba(15, 23, 42, 0.55) !important;
+            backdrop-filter: blur(2px) !important;
+            -webkit-backdrop-filter: blur(2px) !important;
+            z-index: 10051 !important;
+            animation: sidakFadeIn 0.2s ease-out !important;
+        }
+
+        .select2-container--open .select2-dropdown {
+            position: fixed !important;
+            bottom: 0 !important;
+            top: auto !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+            max-height: 70vh !important;
+            max-height: 70dvh !important;
+            background: #ffffff !important;
+            border: none !important;
+            border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+            border-radius: 20px 20px 0 0 !important;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35) !important;
+            z-index: 10060 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+            animation: sidakSheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            overflow: hidden !important;
+        }
+
+        .select2-container--open .select2-dropdown::before {
+            content: "" !important;
+            display: block !important;
+            width: 44px !important;
+            height: 5px !important;
+            background: #cbd5e1 !important;
+            border-radius: 3px !important;
+            margin: 12px auto 8px auto !important;
+            flex-shrink: 0 !important;
+        }
+
+        .select2-container--open .select2-search--dropdown {
+            padding: 8px 16px 12px 16px !important;
+            background: #ffffff !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            flex-shrink: 0 !important;
+        }
+
+        .select2-container--open .select2-search__field {
+            width: 100% !important;
+            height: 44px !important;
+            font-size: 16px !important;
+            border-radius: 12px !important;
+            border: 1.5px solid #cbd5e1 !important;
+            padding: 8px 14px !important;
+            outline: none !important;
+            box-sizing: border-box !important;
+        }
+
+        .select2-container--open .select2-search__field:focus {
+            border-color: #005eb8 !important;
+            box-shadow: 0 0 0 3px rgba(0, 94, 184, 0.15) !important;
+        }
+
+        .select2-container--open .select2-results {
+            flex: 1 1 auto !important;
+            max-height: calc(70dvh - 100px) !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding: 4px 0 !important;
+        }
+
+        .select2-container--open .select2-results__options {
+            max-height: none !important;
+            overflow-y: visible !important;
+        }
+
+        .select2-container--open .select2-results__option {
+            min-height: 48px !important;
+            padding: 12px 20px !important;
+            font-size: 15px !important;
+            display: flex !important;
+            align-items: center !important;
+            line-height: 1.4 !important;
+            border-bottom: 1px solid #f8fafc !important;
+            color: #1e293b !important;
+        }
+
+        .select2-container--open .select2-results__option--highlighted {
+            background-color: #e0f2fe !important;
+            color: #0369a1 !important;
+            font-weight: 600 !important;
+        }
+
+        .select2-container--open .select2-results__option[aria-selected="true"] {
+            background-color: #f0fdf4 !important;
+            color: #15803d !important;
+            font-weight: 700 !important;
+        }
+    }
+
+    @keyframes sidakSheetSlideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+
+    @keyframes sidakFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
 
         /* 4. Table responsive touch scroll */
         .table-responsive {

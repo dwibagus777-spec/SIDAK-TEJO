@@ -1,0 +1,94 @@
+name: Automated QA & Performance Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        type: choice
+        description: 'Target Environment'
+        options:
+          - 'staging'
+          - 'local_dev'
+          - 'production'
+        default: 'staging'
+      target_url:
+        description: 'Explicit Target URL'
+        required: false
+        default: ''
+      confirm_production:
+        description: 'Type "CONFIRM_PRODUCTION" if targeting production environment'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  qa-performance-audit:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Validate Target Environment and Credentials Guard
+      env:
+        ENV_CHOICE: ${{ github.event.inputs.target_environment }}
+        TARGET_URL_INPUT: ${{ github.event.inputs.target_url }}
+        CONFIRM_PROD: ${{ github.event.inputs.confirm_production }}
+        QA_USER: ${{ secrets.QA_USERNAME }}
+        QA_PASS: ${{ secrets.QA_PASSWORD }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "$ENV_CHOICE" = "production" ]; then
+          if [ "$CONFIRM_PROD" != "CONFIRM_PRODUCTION" ]; then
+            echo "::error::Targeting production requires explicit confirmation. Please specify confirm_production='CONFIRM_PRODUCTION'."
+            exit 1
+          fi
+          RESOLVED_URL="${TARGET_URL_INPUT:-https://sidaktejo.site}"
+        elif [ "$ENV_CHOICE" = "staging" ]; then
+          if [ -z "$TARGET_URL_INPUT" ]; then
+            echo "::error::Staging target URL is required when environment is 'staging'. Please provide target_url input."
+            exit 1
+          fi
+          RESOLVED_URL="$TARGET_URL_INPUT"
+        else
+          RESOLVED_URL="${TARGET_URL_INPUT:-http://localhost:8080}"
+        fi
+
+        if [ -z "$QA_USER" ] || [ -z "$QA_PASS" ]; then
+          echo "::error::QA Credentials (secrets.QA_USERNAME and secrets.QA_PASSWORD) are not configured. Halting execution to prevent unauthenticated/anonymous crawling."
+          exit 1
+        fi
+
+        echo "RESOLVED_BASE_URL=$RESOLVED_URL" >> "$GITHUB_ENV"
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Install dependencies
+      run: |
+        npm install @playwright/test
+        npm install -g lighthouse
+
+    - name: Install Playwright Browsers
+      run: npx playwright install chromium
+
+    - name: Run Functional QA Audit
+      env:
+        BASE_URL: ${{ env.RESOLVED_BASE_URL }}
+        QA_USERNAME: ${{ secrets.QA_USERNAME }}
+        QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+      run: npx playwright test --config=.kilo/skills/sidaktejo-qa-automation-package/playwright.config.js
+
+    - name: Upload Audit Reports Artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: qa-audit-reports
+        path: |
+          qa_reports/
+          playwright-report/

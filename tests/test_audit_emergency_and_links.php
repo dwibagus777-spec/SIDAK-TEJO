@@ -102,7 +102,7 @@ test("Route alias /data-up mapped and guarded by role filter", strpos($routesCon
 echo "\n--- 3. Temuan Emergency: Role Scoping & Anti-Leak Protection ---\n";
 test("getEmergencyFindings() method exists", method_exists($temuanRepo, 'getEmergencyFindings'));
 
-$adminFindings = $temuanRepo->getEmergencyFindings('administrator', null, null, 10);
+$adminFindings = $temuanRepo->getEmergencyFindings('administrator', null, null, 250);
 test("Administrator receives cross-unit findings", is_array($adminFindings));
 
 $ulpFindings = $temuanRepo->getEmergencyFindings('supervisor_ulp', 1, null, 10);
@@ -126,6 +126,44 @@ foreach ($adminFindings as $af) {
     }
 }
 test("Admin emergency findings list includes operational task performers (HAR GTT)", $hasGttPelaksana);
+
+// Reproduction of Screenshot Condition & Feeder Badge Tracing:
+// Top 10 feeders with EMG badge (e.g. Klurak Bali, Banjar Kemantren) must trace to source records and appear in card
+$adminFindingIds = array_column($adminFindings, 'id');
+$klurakEmergencyDb = $db->table('temuan')
+    ->select('id, nomor_temuan, pelaksana, status')
+    ->where('penyulang_id', 31) // KLURAK BALI
+    ->where('prioritas', 'EMERGENCY')
+    ->where('status !=', 'SELESAI')
+    ->where('deleted_at IS NULL')
+    ->get()->getResultArray();
+$klurakDbIds = array_column($klurakEmergencyDb, 'id');
+$klurakInCard = array_intersect($klurakDbIds, $adminFindingIds);
+test("Feeder KLURAK BALI has active EMERGENCY records in DB (" . count($klurakDbIds) . " items)", count($klurakDbIds) > 0);
+test("Feeder KLURAK BALI active EMERGENCY records trace to card output (" . count($klurakInCard) . "/" . count($klurakDbIds) . " present)", count($klurakInCard) === count($klurakDbIds));
+
+$banjarEmergencyDb = $db->table('temuan')
+    ->select('id, nomor_temuan, pelaksana, status')
+    ->where('penyulang_id', 15) // BANJAR KEMANTREN
+    ->where('prioritas', 'EMERGENCY')
+    ->where('status !=', 'SELESAI')
+    ->where('deleted_at IS NULL')
+    ->get()->getResultArray();
+$banjarDbIds = array_column($banjarEmergencyDb, 'id');
+$banjarInCard = array_intersect($banjarDbIds, $adminFindingIds);
+test("Feeder BANJAR KEMANTREN has active EMERGENCY records in DB (" . count($banjarDbIds) . " items)", count($banjarDbIds) > 0);
+test("Feeder BANJAR KEMANTREN active EMERGENCY records trace to card output (" . count($banjarInCard) . "/" . count($banjarDbIds) . " present)", count($banjarInCard) === count($banjarDbIds));
+
+// Verify Schema Resilience: getEmergencyFindings works without throw even when dynamic tables exist
+test("getEmergencyFindings() returns non-empty result array with zero exceptions", is_array($adminFindings) && count($adminFindings) > 0);
+
+// Verify MigrateController registers CreateUidAndUp3HierarchySchema
+$migrateSrc = file_get_contents(APPPATH . 'Controllers/MigrateController.php');
+test("MigrateController autoMigrate registers CreateUidAndUp3HierarchySchema", strpos($migrateSrc, 'CreateUidAndUp3HierarchySchema') !== false);
+
+// Verify AuthService session includes user_up3_id and user_uid_id
+$authSrc = file_get_contents(APPPATH . 'Services/AuthService.php');
+test("AuthService session sets user_uid_id and user_up3_id on login", strpos($authSrc, "'user_uid_id'") !== false && strpos($authSrc, "'user_up3_id'") !== false);
 
 // Test detail scope security: attempting to access finding belonging to foreign ULP must return null
 $dummyFinding = $db->table('temuan')->where('deleted_at IS NULL')->orderBy('id', 'DESC')->get()->getRowArray();

@@ -33,10 +33,16 @@
                         <!-- ULP Selection -->
                         <div class="col-md-6 form-group mb-3">
                             <label for="ulp_id">Unit Layanan Pelanggan (ULP) <span class="text-danger">*</span></label>
+                            <?php 
+                                $singleUlp = (count($ulps) === 1) ? reset($ulps) : null;
+                                $selectedUlpId = old('ulp_id', $temuan['ulp_id'] ?? ($singleUlp ? $singleUlp['id'] : ''));
+                            ?>
                             <select name="ulp_id" id="ulp_id" class="form-control select2 <?= ($validation && $validation->hasError('ulp_id')) ? 'is-invalid' : '' ?>" required>
-                                <option value="">-- Pilih ULP --</option>
+                                <?php if (!$singleUlp): ?>
+                                    <option value="">-- Pilih ULP --</option>
+                                <?php endif; ?>
                                 <?php foreach ($ulps as $ulp): ?>
-                                    <option value="<?= $ulp['id'] ?>" <?= (old('ulp_id', $temuan['ulp_id']) == $ulp['id']) ? 'selected' : '' ?>><?= esc($ulp['nama_ulp']) ?></option>
+                                    <option value="<?= $ulp['id'] ?>" <?= (string)$selectedUlpId === (string)$ulp['id'] ? 'selected' : '' ?>><?= esc($ulp['nama_ulp']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <?php if ($validation && $validation->hasError('ulp_id')): ?>
@@ -98,10 +104,12 @@
                                 <option value="">-- Pilih Pelaksana --</option>
                                 <?php $pl = old('pelaksana', $temuan['pelaksana']); ?>
                                 <option value="PDKB"          <?= $pl === 'PDKB'          ? 'selected' : '' ?>>PDKB</option>
-                                <option value="HAR GTT"        <?= ($pl === 'HAR GTT' || $pl === 'HAR GARDU') ? 'selected' : '' ?>>HAR GTT</option>
+                                <option value="HAR GARDU"      <?= $pl === 'HAR GARDU'      ? 'selected' : '' ?>>HAR GARDU</option>
+                                <option value="HAR GTT"        <?= $pl === 'HAR GTT'        ? 'selected' : '' ?>>HAR GTT</option>
                                 <option value="HAR KONSTRUKSI" <?= $pl === 'HAR KONSTRUKSI' ? 'selected' : '' ?>>HAR KONSTRUKSI</option>
                                 <option value="HAR ROW"        <?= $pl === 'HAR ROW'        ? 'selected' : '' ?>>HAR ROW</option>
                                 <option value="HAR CRANE"      <?= $pl === 'HAR CRANE'      ? 'selected' : '' ?>>HAR CRANE</option>
+                                <option value="YANTEK"         <?= $pl === 'YANTEK'         ? 'selected' : '' ?>>YANTEK</option>
                             </select>
                             <?php if ($validation && $validation->hasError('pelaksana')): ?>
                                 <div class="invalid-feedback"><?= $validation->getError('pelaksana') ?></div>

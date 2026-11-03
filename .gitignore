@@ -137,3 +137,12 @@ public/uploads/*
 # Scratch debugging and local analysis scripts
 /scratch/*
 
+# QA Automation & Test Artifacts
+/qa_reports/*
+!/qa_reports/.gitkeep
+/playwright-report/*
+/test-results/*
+node_modules/
+edge_tmp_profile*
+/writable/audits/edge_tmp_profile*
+

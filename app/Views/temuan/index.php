@@ -184,12 +184,13 @@
                         <label for="filter_pelaksana" class="small font-weight-bold">Pelaksana</label>
                         <select id="filter_pelaksana" class="form-control form-control-sm select2">
                             <option value="">-- Semua Pelaksana --</option>
-                            <option value="PDKB">PDKB</option>
-                            <option value="HAR GTT">HAR GTT</option>
-                            <option value="HAR KONSTRUKSI">HAR KONSTRUKSI</option>
-                            <option value="HAR ROW">HAR ROW</option>
-                            <option value="HAR CRANE">HAR CRANE</option>
-                            <option value="YANTEK">YANTEK</option>
+                            <option value="PDKB" <?= (strtoupper((string)($selectedPelaksana ?? '')) === 'PDKB') ? 'selected' : '' ?>>PDKB</option>
+                            <option value="HAR GARDU" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR GARDU', 'HAR_GARDU'], true)) ? 'selected' : '' ?>>HAR GARDU</option>
+                            <option value="HAR GTT" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR GTT', 'HAR_GTT'], true)) ? 'selected' : '' ?>>HAR GTT</option>
+                            <option value="HAR KONSTRUKSI" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR KONSTRUKSI', 'HAR_KONSTRUKSI'], true)) ? 'selected' : '' ?>>HAR KONSTRUKSI</option>
+                            <option value="HAR ROW" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR ROW', 'HAR_ROW'], true)) ? 'selected' : '' ?>>HAR ROW</option>
+                            <option value="HAR CRANE" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR CRANE', 'HAR_CRANE'], true)) ? 'selected' : '' ?>>HAR CRANE</option>
+                            <option value="YANTEK" <?= (strtoupper((string)($selectedPelaksana ?? '')) === 'YANTEK') ? 'selected' : '' ?>>YANTEK</option>
                         </select>
                     </div>
 
@@ -210,7 +211,7 @@
                         <label for="filter_status" class="small font-weight-bold">Status</label>
                         <select id="filter_status" class="form-control form-control-sm select2">
                             <option value="">-- Semua Status --</option>
-                            <option value="BELUM" <?= (strtoupper((string)($selectedStatus ?? '')) === 'BELUM') ? 'selected' : '' ?>>BELUM SELESAI</option>
+                            <option value="BELUM" <?= (in_array(strtoupper((string)($selectedStatus ?? '')), ['BELUM', 'BELUM_SELESAI', 'BELUM SELESAI'], true)) ? 'selected' : '' ?>>BELUM SELESAI</option>
                             <option value="PROSES" <?= (strtoupper((string)($selectedStatus ?? '')) === 'PROSES') ? 'selected' : '' ?>>DALAM PROSES</option>
                             <option value="SELESAI" <?= (strtoupper((string)($selectedStatus ?? '')) === 'SELESAI') ? 'selected' : '' ?>>SUDAH SELESAI</option>
                         </select>
@@ -418,7 +419,7 @@
         // 1. Ambil URL parameters untuk pre-populate filter dari dashboard redirect
         const urlParams = new URLSearchParams(window.location.search);
         const urlQ = urlParams.get('q') || urlParams.get('query') || urlParams.get('search') || '';
-        const urlPelaksana = urlParams.get('pelaksana');
+        const urlPelaksana = urlParams.get('pelaksana') || '<?= esc($selectedPelaksana ?? \'\', \'js\') ?>';
         const urlPrioritas = urlParams.get('prioritas') || '<?= esc($selectedPrioritas ?? '', 'js') ?>';
         const urlStatus = urlParams.get('status') || '<?= esc($selectedStatus ?? '', 'js') ?>';
         const urlPenyulangId = urlParams.get('penyulang_id') || '<?= $selectedPenyulangId ?? '' ?>';
@@ -446,7 +447,8 @@
             $('#filter_penyulang_id').val(urlPenyulangId).trigger('change.select2');
         }
         if (urlPelaksana) {
-            $('#filter_pelaksana').val(urlPelaksana.toUpperCase()).trigger('change.select2');
+            const cleanPelaksana = urlPelaksana.toUpperCase().replace(/_/g, ' ');
+            $('#filter_pelaksana').val(cleanPelaksana).trigger('change.select2');
         }
         if (urlPrioritas) {
             $('#filter_prioritas').val(urlPrioritas.toUpperCase()).trigger('change.select2');
@@ -480,9 +482,11 @@
                     d.ulp_id = $('#filter_ulp_id').val() || urlUlpId || '';
                     d.penyulang_id = $('#filter_penyulang_id').val() || urlPenyulangId || '';
                     d.section_id = $('#filter_section_id').val();
-                    d.pelaksana = $('#filter_pelaksana').val();
+                    const activePel = $('#filter_pelaksana').val() || (urlPelaksana ? urlPelaksana.toUpperCase().replace(/_/g, ' ') : '');
+                    d.pelaksana = activePel || '';
                     d.prioritas = $('#filter_prioritas').val();
-                    d.status = $('#filter_status').val();
+                    const activeStat = $('#filter_status').val() || (urlStatus ? (urlStatus.toUpperCase() === 'BELUM_SELESAI' ? 'BELUM' : urlStatus) : '');
+                    d.status = activeStat || '';
                     d.start_date = $('#filter_start_date').val();
                     d.end_date = $('#filter_end_date').val();
                     d.asset_id = urlParams.get('asset_id') || '';

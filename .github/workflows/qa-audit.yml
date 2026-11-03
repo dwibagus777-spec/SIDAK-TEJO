@@ -1,0 +1,124 @@
+name: Automated QA & Performance Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        type: choice
+        description: 'Target Environment'
+        options:
+          - 'staging'
+          - 'local_dev'
+          - 'production'
+        default: 'staging'
+      target_url:
+        description: 'Explicit Target URL (required if staging, optional override for others)'
+        required: false
+        default: ''
+      confirm_production:
+        description: 'Type "CONFIRM_PRODUCTION" if targeting production environment'
+        required: false
+        default: ''
+      run_lighthouse:
+        description: 'Execute Lighthouse performance audit'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  qa-performance-audit:
+    name: Run Playwright Crawl & Optional Lighthouse
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate Target Environment and Credentials Guard
+        env:
+          ENV_CHOICE: ${{ github.event.inputs.target_environment }}
+          TARGET_URL_INPUT: ${{ github.event.inputs.target_url }}
+          CONFIRM_PROD: ${{ github.event.inputs.confirm_production }}
+          QA_USER: ${{ secrets.QA_USERNAME }}
+          QA_PASS: ${{ secrets.QA_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # 1. Evaluate Target URL with safety guards
+          if [ "$ENV_CHOICE" = "production" ]; then
+            if [ "$CONFIRM_PROD" != "CONFIRM_PRODUCTION" ]; then
+              echo "::error::Targeting production requires explicit confirmation. Please specify confirm_production='CONFIRM_PRODUCTION'."
+              exit 1
+            fi
+            RESOLVED_URL="${TARGET_URL_INPUT:-https://sidaktejo.site}"
+          elif [ "$ENV_CHOICE" = "staging" ]; then
+            if [ -z "$TARGET_URL_INPUT" ]; then
+              echo "::error::Staging target URL is required when environment is 'staging'. Please provide target_url input."
+              exit 1
+            fi
+            RESOLVED_URL="$TARGET_URL_INPUT"
+          else
+            RESOLVED_URL="${TARGET_URL_INPUT:-http://localhost:8080}"
+          fi
+
+          # 2. Check QA Credentials - Prevent anonymous crawling
+          if [ -z "$QA_USER" ] || [ -z "$QA_PASS" ]; then
+            echo "::error::QA Credentials (secrets.QA_USERNAME and secrets.QA_PASSWORD) are not configured in repository secrets. Halting execution to prevent unauthenticated/anonymous crawling."
+            exit 1
+          fi
+
+          echo "RESOLVED_BASE_URL=$RESOLVED_URL" >> "$GITHUB_ENV"
+          echo "Target Environment: $ENV_CHOICE"
+          echo "Resolved Target URL: $RESOLVED_URL"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: 'package*.json'
+
+      - name: Install dependencies
+        run: |
+          npm install @playwright/test
+          if [ "${{ github.event.inputs.run_lighthouse }}" = "true" ]; then
+            npm install -g lighthouse
+          fi
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Run Functional QA Crawl Audit
+        env:
+          BASE_URL: ${{ env.RESOLVED_BASE_URL }}
+          QA_USERNAME: ${{ secrets.QA_USERNAME }}
+          QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+        run: |
+          mkdir -p qa_reports/screenshots
+          npx playwright test --config=.kilo/skills/sidaktejo-qa-automation-package/playwright.config.js
+
+      - name: Run Lighthouse Performance Audit (Optional)
+        if: ${{ github.event.inputs.run_lighthouse == 'true' }}
+        env:
+          TARGET_URL: ${{ env.RESOLVED_BASE_URL }}
+        run: |
+          mkdir -p qa_reports
+          lighthouse "$TARGET_URL" \
+            --output json \
+            --output-path ./qa_reports/lighthouse-report.json \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage"
+
+      - name: Upload Audit Reports Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-audit-reports
+          path: |
+            qa_reports/
+            playwright-report/
+          retention-days: 14

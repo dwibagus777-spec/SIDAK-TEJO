@@ -364,7 +364,7 @@ class Dashboard extends BaseController
 
         // Phase 3: Scoped Temuan Emergency (Strict role & organizational hierarchy)
         $userUp3Id = $session->get('user_up3_id');
-        $emergencyFindings = $this->temuanRepository->getEmergencyFindings($role, $ulpIdFilter, $userUp3Id, 50);
+        $emergencyFindings = $this->temuanRepository->getEmergencyFindings($role, $ulpIdFilter, $userUp3Id, 250);
 
         // Distribution network summary from master feeder/GI relations.
         $giMapRows = $db->tableExists('gardu_induk')

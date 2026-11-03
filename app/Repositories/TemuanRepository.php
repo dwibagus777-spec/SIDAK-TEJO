@@ -51,7 +51,8 @@ class TemuanRepository extends BaseRepository
         }
 
         if (!empty($filters['pelaksana'])) {
-            $builder->where('temuan.pelaksana', $filters['pelaksana']);
+            $pelClean = str_replace('_', ' ', strtoupper(trim((string)$filters['pelaksana'])));
+            $builder->where('REPLACE(UPPER(TRIM(temuan.pelaksana)), "_", " ") =', $pelClean);
         }
 
         if (!empty($filters['prioritas'])) {
@@ -102,10 +103,10 @@ class TemuanRepository extends BaseRepository
         }
 
         if (!empty($filters['status'])) {
-            $statusVal = strtoupper($filters['status']);
-            if ($statusVal === 'BELUM SELESAI' || $statusVal === 'BELUM') {
+            $statusVal = strtoupper(trim((string)$filters['status']));
+            if ($statusVal === 'BELUM SELESAI' || $statusVal === 'BELUM' || $statusVal === 'BELUM_SELESAI') {
                 $builder->where('temuan.status !=', 'SELESAI');
-            } elseif ($statusVal === 'SUDAH SELESAI' || $statusVal === 'SELESAI') {
+            } elseif ($statusVal === 'SUDAH SELESAI' || $statusVal === 'SELESAI' || $statusVal === 'SUDAH_SELESAI') {
                 $builder->where('temuan.status', 'SELESAI');
             } elseif ($statusVal === 'PROSES' || $statusVal === 'DALAM_PROSES' || $statusVal === 'DALAM PROSES') {
                 $builder->whereIn('temuan.status', ['PROSES', 'DALAM_PROSES', 'TINDAK_LANJUT', 'PROSES PEKERJAAN']);
@@ -137,22 +138,41 @@ class TemuanRepository extends BaseRepository
 
     /**
      * Detail Temuan dengan Join ULP, Penyulang, Section, Assets, User Pembuat/Pengupdate
-     * Dilengkapi proteksi scope ganda: ULP dan UP3 untuk mencegah cross-unit access leak.
+     * Dilengkapi proteksi scope ganda: ULP dan UP3 untuk mencegah cross-unit access leak,
+     * serta skema toleran (resilient bila kolom up3_id belum termigrasi) dan creator grace access.
      */
-    public function getDetail(int $id, ?int $ulpIdFilter = null, ?int $up3IdFilter = null): ?array
+    public function getDetail(int $id, ?int $ulpIdFilter = null, ?int $up3IdFilter = null, ?int $createdByUserId = null): ?array
     {
+        $db = \Config\Database::connect();
+        $hasUlpUp3 = $db->tableExists('ulps') && $db->fieldExists('up3_id', 'ulps');
+        $up3Select = $hasUlpUp3 ? 'ulps.up3_id,' : 'NULL as up3_id,';
+
         $builder = $this->getJoinedBuilder(true)
-            ->select('temuan.*, ulps.nama_ulp, ulps.up3_id, penyulang.nama_penyulang, sections.nama_section, 
+            ->select("temuan.*, ulps.nama_ulp, {$up3Select} penyulang.nama_penyulang, sections.nama_section, 
                       assets.kode_asset, assets.nama_asset, assets.jenis_asset, assets.latitude as asset_latitude, assets.longitude as asset_longitude,
-                      c.nama as creator_name, u.nama as updater_name')
+                      c.nama as creator_name, u.nama as updater_name")
             ->where('temuan.id', $id);
 
         if ($ulpIdFilter !== null) {
-            $builder->where('temuan.ulp_id', $ulpIdFilter);
+            if ($createdByUserId !== null) {
+                $builder->groupStart()
+                    ->where('temuan.ulp_id', $ulpIdFilter)
+                    ->orWhere('temuan.created_by', $createdByUserId)
+                    ->groupEnd();
+            } else {
+                $builder->where('temuan.ulp_id', $ulpIdFilter);
+            }
         }
 
-        if ($up3IdFilter !== null) {
-            $builder->where('ulps.up3_id', $up3IdFilter);
+        if ($up3IdFilter !== null && $hasUlpUp3) {
+            if ($createdByUserId !== null) {
+                $builder->groupStart()
+                    ->where('ulps.up3_id', $up3IdFilter)
+                    ->orWhere('temuan.created_by', $createdByUserId)
+                    ->groupEnd();
+            } else {
+                $builder->where('ulps.up3_id', $up3IdFilter);
+            }
         }
 
         return self::safeRow($builder, 'TemuanRepository::getDetail');
@@ -161,7 +181,7 @@ class TemuanRepository extends BaseRepository
     /**
      * Dapatkan daftar Temuan Emergency aktif tersaring sesuai role & kewenangan organisasi
      */
-    public function getEmergencyFindings(string $role, ?int $userUlpId = null, ?int $userUp3Id = null, int $limit = 50): array
+    public function getEmergencyFindings(string $role, ?int $userUlpId = null, ?int $userUp3Id = null, int $limit = 250): array
     {
         try {
             $db = \Config\Database::connect();
@@ -169,14 +189,35 @@ class TemuanRepository extends BaseRepository
                 return [];
             }
 
-            $builder = $this->getJoinedBuilder(false)
-                ->join('up3s', 'up3s.id = ulps.up3_id', 'left')
-                ->join('uids', 'uids.id = up3s.uid_id', 'left')
-                ->select('temuan.id, temuan.nomor_temuan, temuan.detail_temuan, temuan.jenis_temuan, 
-                          temuan.prioritas, temuan.status, temuan.pelaksana, temuan.tanggal_temuan, temuan.created_at,
-                          ulps.nama_ulp, ulps.up3_id, up3s.nama_up3, uids.nama_uid,
-                          penyulang.nama_penyulang, sections.nama_section,
-                          assets.kode_asset, assets.nama_asset')
+            $builder = $this->getJoinedBuilder(false);
+
+            $hasUp3Col = $db->fieldExists('up3_id', 'ulps');
+            $hasUp3Table = $db->tableExists('up3s');
+            $hasUidTable = $db->tableExists('uids');
+            $canJoinUp3 = $hasUp3Col && $hasUp3Table;
+            $canJoinUid = $canJoinUp3 && $hasUidTable && $db->fieldExists('uid_id', 'up3s');
+
+            $selectFields = [
+                'temuan.id', 'temuan.nomor_temuan', 'temuan.detail_temuan', 'temuan.jenis_temuan', 
+                'temuan.prioritas', 'temuan.status', 'temuan.pelaksana', 'temuan.tanggal_temuan', 'temuan.created_at',
+                'ulps.nama_ulp', 'penyulang.nama_penyulang', 'sections.nama_section',
+                'assets.kode_asset', 'assets.nama_asset'
+            ];
+
+            if ($canJoinUp3) {
+                $builder->join('up3s', 'up3s.id = ulps.up3_id', 'left');
+                $selectFields[] = 'ulps.up3_id';
+                $selectFields[] = 'up3s.nama_up3';
+            } elseif ($hasUp3Col) {
+                $selectFields[] = 'ulps.up3_id';
+            }
+
+            if ($canJoinUid) {
+                $builder->join('uids', 'uids.id = up3s.uid_id', 'left');
+                $selectFields[] = 'uids.nama_uid';
+            }
+
+            $builder->select(implode(', ', $selectFields))
                 ->where('temuan.deleted_at IS NULL')
                 ->where('temuan.prioritas', 'EMERGENCY')
                 ->where('temuan.status !=', 'SELESAI');
@@ -189,7 +230,7 @@ class TemuanRepository extends BaseRepository
                     $builder->where('temuan.ulp_id', (int)$userUlpId);
                 }
             } elseif ($roleLower === 'supervisor_up3') {
-                if ($userUp3Id !== null) {
+                if ($userUp3Id !== null && $canJoinUp3) {
                     $builder->where('ulps.up3_id', (int)$userUp3Id);
                 }
                 if ($userUlpId !== null) {
@@ -224,12 +265,19 @@ class TemuanRepository extends BaseRepository
             }
 
             // Order by network hierarchy: UID -> UP3 -> ULP -> Feeder -> Timestamp
-            $builder->orderBy('uids.id', 'ASC')
-                    ->orderBy('up3s.id', 'ASC')
-                    ->orderBy('ulps.id', 'ASC')
+            if ($canJoinUid) {
+                $builder->orderBy('uids.id', 'ASC');
+            }
+            if ($canJoinUp3) {
+                $builder->orderBy('up3s.id', 'ASC');
+            }
+            $builder->orderBy('ulps.id', 'ASC')
                     ->orderBy('penyulang.nama_penyulang', 'ASC')
                     ->orderBy('temuan.created_at', 'DESC');
-            $builder->limit($limit);
+
+            if ($limit > 0) {
+                $builder->limit($limit);
+            }
 
             return $builder->get()->getResultArray() ?: [];
         } catch (\Throwable $e) {

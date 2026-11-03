@@ -182,10 +182,16 @@
                         <!-- ULP Selection -->
                         <div class="col-md-6 form-group mb-3">
                             <label for="ulp_id">Unit Layanan Pelanggan (ULP) <span class="text-danger">*</span></label>
+                            <?php 
+                                $singleUlp = (count($ulps) === 1) ? reset($ulps) : null;
+                                $selectedUlpId = old('ulp_id', $singleUlp ? $singleUlp['id'] : '');
+                            ?>
                             <select name="ulp_id" id="ulp_id" class="form-control select2 <?= ($validation && $validation->hasError('ulp_id')) ? 'is-invalid' : '' ?>" required>
-                                <option value="">-- Pilih ULP --</option>
+                                <?php if (!$singleUlp): ?>
+                                    <option value="">-- Pilih ULP --</option>
+                                <?php endif; ?>
                                 <?php foreach ($ulps as $ulp): ?>
-                                    <option value="<?= $ulp['id'] ?>" <?= old('ulp_id') == $ulp['id'] ? 'selected' : '' ?>><?= esc($ulp['nama_ulp']) ?></option>
+                                    <option value="<?= $ulp['id'] ?>" <?= (string)$selectedUlpId === (string)$ulp['id'] ? 'selected' : '' ?>><?= esc($ulp['nama_ulp']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <?php if ($validation && $validation->hasError('ulp_id')): ?>
@@ -250,10 +256,12 @@
                             <select name="pelaksana" id="pelaksana" class="form-control select2 <?= ($validation && $validation->hasError('pelaksana')) ? 'is-invalid' : '' ?>" required>
                                 <option value="">-- Pilih Pelaksana --</option>
                                 <option value="PDKB" <?= old('pelaksana') === 'PDKB' ? 'selected' : '' ?>>PDKB</option>
-                                <option value="HAR GTT" <?= (old('pelaksana') === 'HAR GTT' || old('pelaksana') === 'HAR GARDU') ? 'selected' : '' ?>>HAR GTT</option>
+                                <option value="HAR GARDU" <?= old('pelaksana') === 'HAR GARDU' ? 'selected' : '' ?>>HAR GARDU</option>
+                                <option value="HAR GTT" <?= old('pelaksana') === 'HAR GTT' ? 'selected' : '' ?>>HAR GTT</option>
                                 <option value="HAR KONSTRUKSI" <?= old('pelaksana') === 'HAR KONSTRUKSI' ? 'selected' : '' ?>>HAR KONSTRUKSI</option>
                                 <option value="HAR ROW" <?= old('pelaksana') === 'HAR ROW' ? 'selected' : '' ?>>HAR ROW</option>
                                 <option value="HAR CRANE" <?= old('pelaksana') === 'HAR CRANE' ? 'selected' : '' ?>>HAR CRANE</option>
+                                <option value="YANTEK" <?= old('pelaksana') === 'YANTEK' ? 'selected' : '' ?>>YANTEK</option>
                             </select>
                             <?php if ($validation && $validation->hasError('pelaksana')): ?>
                                 <div class="invalid-feedback"><?= $validation->getError('pelaksana') ?></div>
@@ -959,6 +967,7 @@
             const urlUlpId = (preselectedAsset ? preselectedAsset.ulp_id : '') || urlParams.get('ulp_id') || "";
             let penyulangRequestToken = 0;
             let sectionRequestToken = 0;
+            var isMaterialFlowActive = false;
 
             function refreshSelect2($element) {
                 if ($.fn.select2 && $element.hasClass('select2-hidden-accessible')) {
@@ -968,10 +977,25 @@
                 }
             }
 
+            function clearAssetSelection() {
+                const $assetSelect = $('#mr01_asset_id');
+                $assetSelect.html('<option value="">-- Tidak dipilih / Opsional --</option>');
+                refreshSelect2($assetSelect);
+                $('#mr01_bom_preview_container').hide();
+                $('#mr01_bom_chips_container').empty();
+                $('#structured_materials_json').val('');
+                $('#material-hidden-field').val('Tidak ada spesifikasi material');
+                if (typeof isMaterialFlowActive !== 'undefined' && isMaterialFlowActive) {
+                    $('#mr01_empty_asset_state').show();
+                }
+            }
+
             function loadPenyulang(ulpId, callback) {
                 const $penyulang = $('#penyulang_id');
                 const $section = $('#section_id');
                 const currentToken = ++penyulangRequestToken;
+
+                clearAssetSelection();
 
                 if (!ulpId) {
                     $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>');
@@ -1023,6 +1047,7 @@
             const $section = $('#section_id');
 
             console.log("[SIDAK TEJO] Penyulang berubah:", penyulangId);
+            clearAssetSelection();
 
             if (!penyulangId) {
                 $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
@@ -1124,7 +1149,7 @@
         // State D: MATERIAL_SELECTION (BOM whitelist loaded, user selects materials)
         // State E: MATERIAL_CONFIRMED (quantities verified, ready to submit)
         // ====================================================================
-        let isMaterialFlowActive = false;
+        // isMaterialFlowActive is hoisted at top of function scope
 
         function setMaterialFlowState(active, autoFocusAsset = false) {
             isMaterialFlowActive = !!active;

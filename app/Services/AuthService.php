@@ -69,6 +69,8 @@ class AuthService
             'nama_pegawai'  => !empty($user['nama_pegawai']) ? $user['nama_pegawai'] : $user['nama'],
             'nip'           => $user['nip'] ?? '',
             'user_role'     => strtolower($user['role']),
+            'user_uid_id'   => $user['uid_id'] ?? null,
+            'user_up3_id'   => $user['up3_id'] ?? null,
             'user_ulp_id'   => $user['ulp_id'],
             'ulp_id'        => $user['ulp_id'],
             'user_ulp'      => $user['ulp'] ?? '',

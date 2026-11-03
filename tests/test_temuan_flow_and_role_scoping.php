@@ -188,7 +188,7 @@ echo "\n--- DOMAIN 5: Cascading Dropdowns & Asset Reset Verification ---\n";
 $createViewSrc = file_get_contents(APPPATH . 'Views/temuan/create.php');
 
 // 5.1: clearAssetSelection() exists in create.php
-assertTest(strpos($createViewSrc, 'function clearAssetSelection()') !== false,
+assertTest(strpos($createViewSrc, 'function clearAssetSelection') !== false,
            "clearAssetSelection() is defined to reset #mr01_asset_id during cascading changes", $passCount, $failCount);
 
 // 5.2: loadPenyulang calls clearAssetSelection()

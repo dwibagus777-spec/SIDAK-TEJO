@@ -43,8 +43,9 @@ class Temuan extends BaseController
         $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']));
 
         if ($isRestricted) {
-            $ulps = [$this->ulpRepository->find($userUlpId)];
-            $penyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($userUlpId);
+            $ulp = $this->ulpRepository->find($userUlpId);
+            $ulps = $ulp ? [$ulp] : [];
+            $penyulangs = $userUlpId ? $this->penyulangRepository->getActivePenyulangsByUlp($userUlpId) : [];
         } else {
             $ulps = $this->ulpRepository->getActiveUlps();
             $penyulangs = $this->penyulangRepository->getActivePenyulangs();
@@ -284,8 +285,8 @@ class Temuan extends BaseController
     public function create()
     {
         $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
+        $role = strtolower((string)($session->get('user_role') ?? $session->get('role') ?? 'guest'));
+        $userUlpId = $session->get('user_ulp_id') ?? $session->get('ulp_id');
 
         [$ulps, , $isRestricted] = $this->getScopedUlpsAndPenyulangs();
 
@@ -303,13 +304,22 @@ class Temuan extends BaseController
         if ($queryAssetId > 0) {
             $db = \Config\Database::connect();
             $assetRow = $db->table('assets a')
-                ->select('a.id, a.kode_asset, a.nama_asset, a.jenis_asset, a.latitude, a.longitude, a.ulp_id, a.penyulang_id, a.section_id, u.nama_ulp, p.nama_penyulang, s.nama_section')
-                ->join('ulps u', 'u.id = a.ulp_id', 'left')
+                ->select('a.id, a.kode_asset, a.nama_asset, a.status, a.jenis_asset, a.latitude, a.longitude, COALESCE(a.ulp_id, p.ulp_id) AS ulp_id, a.penyulang_id, a.section_id, u.nama_ulp, p.nama_penyulang, s.nama_section')
                 ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+                ->join('ulps u', 'u.id = COALESCE(a.ulp_id, p.ulp_id)', 'left')
                 ->join('sections s', 's.id = a.section_id', 'left')
                 ->where('a.id', $queryAssetId)
+                ->where('a.deleted_at IS NULL')
                 ->get()
                 ->getRowArray();
+
+            if ($assetRow) {
+                // Security Scope Check: Restricted users cannot preselect assets outside their ULP
+                if ($isRestricted && $userUlpId !== null && (int)$assetRow['ulp_id'] !== (int)$userUlpId) {
+                    $assetRow = null;
+                }
+            }
+
             if ($assetRow) {
                 $hasCoords = ($assetRow['latitude'] !== null && $assetRow['longitude'] !== null && (float)$assetRow['latitude'] != 0.0 && (float)$assetRow['longitude'] != 0.0);
                 $preselectedAsset = [
@@ -330,6 +340,46 @@ class Temuan extends BaseController
             }
         }
 
+        // Context cascade resolution from authoritative asset and query params
+        if ($isRestricted && !empty($userUlpId)) {
+            $selectedUlpId = (int)$userUlpId;
+        } else {
+            $selectedUlpId = (int)(old('ulp_id') ?: ($preselectedAsset['ulp_id'] ?? 0) ?: $this->request->getGet('ulp_id') ?: 0);
+        }
+
+        $selectedPenyulangId = (int)(old('penyulang_id') ?: ($preselectedAsset['penyulang_id'] ?? 0) ?: $this->request->getGet('penyulang_id') ?: 0);
+        $selectedSectionId = (int)(old('section_id') ?: ($preselectedAsset['section_id'] ?? 0) ?: $this->request->getGet('section_id') ?: 0);
+        $selectedAssetId = (int)(old('asset_id') ?: ($preselectedAsset['id'] ?? 0) ?: $queryAssetId ?: 0);
+
+        // Ensure target ULP is present in options for unrestricted administrators when opening an asset
+        if (!$isRestricted && !empty($selectedUlpId)) {
+            $hasUlp = false;
+            foreach ($ulps as $u) {
+                if ((int)($u['id'] ?? 0) === $selectedUlpId) {
+                    $hasUlp = true;
+                    break;
+                }
+            }
+            if (!$hasUlp) {
+                $targetUlp = $this->ulpRepository->find($selectedUlpId);
+                if ($targetUlp) {
+                    $ulps[] = $targetUlp;
+                }
+            }
+        }
+
+        // Server-side preloading of cascading dropdown options
+        $preloadedPenyulangs = [];
+        if ($selectedUlpId > 0) {
+            $preloadedPenyulangs = $this->penyulangRepository->getActivePenyulangsByUlp($selectedUlpId);
+        }
+
+        $preloadedSections = [];
+        if ($selectedPenyulangId > 0) {
+            $sectionRepo = new \App\Repositories\SectionRepository();
+            $preloadedSections = $sectionRepo->getActiveSectionsByPenyulang($selectedPenyulangId);
+        }
+
         // CR-HOTFIX-02 Part C: Active Master JTM / Conductor Accessories Catalog
         $accService = new \App\Services\JtmAccessoryService();
         $jtmAccessories = $accService->getActiveAccessories();
@@ -344,6 +394,12 @@ class Temuan extends BaseController
             'isValidationReturn'  => $isValidationReturn,
             'serverToday'         => $serverToday,
             'preselectedAsset'    => $preselectedAsset,
+            'selectedUlpId'       => $selectedUlpId ?: null,
+            'selectedPenyulangId' => $selectedPenyulangId ?: null,
+            'selectedSectionId'   => $selectedSectionId ?: null,
+            'selectedAssetId'     => $selectedAssetId ?: null,
+            'preloadedPenyulangs' => $preloadedPenyulangs,
+            'preloadedSections'   => $preloadedSections,
             'jtmAccessories'      => $jtmAccessories,
             'bomMaterialsCatalog' => $bomMaterialsCatalog,
         ]);
@@ -352,8 +408,8 @@ class Temuan extends BaseController
     public function store()
     {
         $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
+        $role = strtolower((string)($session->get('user_role') ?? $session->get('role') ?? 'guest'));
+        $userUlpId = $session->get('user_ulp_id') ?? $session->get('ulp_id');
 
         [$ulps, , $isRestricted] = $this->getScopedUlpsAndPenyulangs();
 
@@ -397,6 +453,7 @@ class Temuan extends BaseController
         }
 
         $ulpIdInput = (int)$this->request->getPost('ulp_id');
+        $rawAuthoritativeId = trim((string)($this->request->getPost('authoritative_asset_id') ?? ''));
         if ($isRestricted && $userUlpId !== null && (int)$userUlpId !== $ulpIdInput) {
             return redirect()->to(site_url('temuan/create'))->with('error', 'Anda hanya diizinkan menginput temuan untuk ULP Anda.');
         }
@@ -495,19 +552,57 @@ class Temuan extends BaseController
             }
         }
 
-        // INVARIANT 2: If asset_id is provided, conditionally validate existence and topological compatibility
+        $db = \Config\Database::connect();
+
+        // Security & Topology Verification: Feeder must belong to ULP
+        if (!empty($data['penyulang_id'])) {
+            $feederCheck = $db->table('penyulang')->where('id', (int)$data['penyulang_id'])->get()->getRowArray();
+            if (!$feederCheck || (int)$feederCheck['ulp_id'] !== $ulpIdInput) {
+                return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Penyulang yang dipilih tidak berada dalam ULP yang dipilih.');
+            }
+        }
+
+        // Security & Topology Verification: Section must belong to Feeder
+        if (!empty($data['section_id'])) {
+            $sectionCheck = $db->table('sections')->where('id', (int)$data['section_id'])->get()->getRowArray();
+            if (!$sectionCheck || (int)$sectionCheck['penyulang_id'] !== (int)$data['penyulang_id']) {
+                return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Section yang dipilih tidak berada dalam penyulang yang dipilih.');
+            }
+        }
+
+        // INVARIANT 2: If asset_id is provided, strictly validate existence, active status, scope, and topological compatibility
         if ($assetId !== null && $assetId > 0) {
-            $db = \Config\Database::connect();
             if ($db->tableExists('assets')) {
-                $assetRow = $db->table('assets')->where('id', $assetId)->get()->getRowArray();
+                $assetRow = $db->table('assets a')
+                    ->select('a.id, a.kode_asset, a.nama_asset, a.status, a.latitude, a.longitude, COALESCE(a.ulp_id, p.ulp_id) AS ulp_id, a.penyulang_id, a.section_id')
+                    ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
+                    ->where('a.id', $assetId)
+                    ->where('a.deleted_at IS NULL')
+                    ->get()
+                    ->getRowArray();
+
                 if (!$assetRow) {
-                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak ditemukan.');
+                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak ditemukan atau sudah tidak aktif.');
                 }
-                if (isset($assetRow['section_id']) && (int)$assetRow['section_id'] !== (int)$data['section_id']) {
-                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam section yang sesuai.');
+
+                // Scope authorization: Restricted role cannot create finding for asset outside their ULP
+                if ($isRestricted && $userUlpId !== null && (int)$assetRow['ulp_id'] !== (int)$userUlpId) {
+                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Anda tidak memiliki hak akses untuk menginput temuan pada aset di luar ULP Anda.');
                 }
-                if (isset($assetRow['penyulang_id']) && (int)$assetRow['penyulang_id'] !== (int)$data['penyulang_id']) {
+
+                // Topological ULP alignment: Asset ULP must match selected ULP
+                if ((int)$assetRow['ulp_id'] !== $ulpIdInput) {
+                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam ULP yang sesuai.');
+                }
+
+                // Topological Feeder alignment (if asset has feeder assigned)
+                if (!empty($assetRow['penyulang_id']) && (int)$assetRow['penyulang_id'] !== (int)$data['penyulang_id']) {
                     return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam penyulang yang sesuai.');
+                }
+
+                // Topological Section alignment (if asset has section assigned)
+                if (!empty($assetRow['section_id']) && (int)$assetRow['section_id'] !== (int)$data['section_id']) {
+                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam section yang sesuai.');
                 }
 
                 // CR-HOTFIX-02 PART B: COORDINATE INVARIANT ENFORCEMENT

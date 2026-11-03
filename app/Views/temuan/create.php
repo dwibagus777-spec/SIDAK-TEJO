@@ -184,14 +184,14 @@
                             <label for="ulp_id">Unit Layanan Pelanggan (ULP) <span class="text-danger">*</span></label>
                             <?php 
                                 $singleUlp = (count($ulps) === 1) ? reset($ulps) : null;
-                                $selectedUlpId = old('ulp_id', $singleUlp ? $singleUlp['id'] : '');
+                                $activeUlpId = old('ulp_id', $selectedUlpId ?? ($singleUlp ? $singleUlp['id'] : ''));
                             ?>
                             <select name="ulp_id" id="ulp_id" class="form-control select2 <?= ($validation && $validation->hasError('ulp_id')) ? 'is-invalid' : '' ?>" required>
                                 <?php if (!$singleUlp): ?>
                                     <option value="">-- Pilih ULP --</option>
                                 <?php endif; ?>
                                 <?php foreach ($ulps as $ulp): ?>
-                                    <option value="<?= $ulp['id'] ?>" <?= (string)$selectedUlpId === (string)$ulp['id'] ? 'selected' : '' ?>><?= esc($ulp['nama_ulp']) ?></option>
+                                    <option value="<?= $ulp['id'] ?>" <?= (string)$activeUlpId === (string)$ulp['id'] ? 'selected' : '' ?>><?= esc($ulp['nama_ulp']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <?php if ($validation && $validation->hasError('ulp_id')): ?>
@@ -202,8 +202,19 @@
                         <!-- Penyulang Selection (Cascaded) -->
                         <div class="col-md-6 form-group mb-3">
                             <label for="penyulang_id">Penyulang <span class="text-danger">*</span></label>
+                            <?php
+                                $activePenyulangId = old('penyulang_id', $selectedPenyulangId ?? '');
+                                $hasPreloadedPenyulang = !empty($preloadedPenyulangs);
+                            ?>
                             <select name="penyulang_id" id="penyulang_id" class="form-control select2 <?= ($validation && $validation->hasError('penyulang_id')) ? 'is-invalid' : '' ?>" required>
-                                <option value="">-- Pilih ULP Dahulu --</option>
+                                <?php if (!$hasPreloadedPenyulang): ?>
+                                    <option value="">-- Pilih ULP Dahulu --</option>
+                                <?php else: ?>
+                                    <option value="">-- Pilih Penyulang --</option>
+                                    <?php foreach ($preloadedPenyulangs as $p): ?>
+                                        <option value="<?= $p['id'] ?>" <?= (string)$activePenyulangId === (string)$p['id'] ? 'selected' : '' ?>><?= esc($p['nama_penyulang']) ?></option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </select>
                             <?php if ($validation && $validation->hasError('penyulang_id')): ?>
                                 <div class="invalid-feedback"><?= $validation->getError('penyulang_id') ?></div>
@@ -215,8 +226,19 @@
                         <!-- Section Selection (Cascaded) -->
                         <div class="col-md-6 form-group mb-3">
                             <label for="section_id">Section / Ruas <span class="text-danger">*</span></label>
+                            <?php
+                                $activeSectionId = old('section_id', $selectedSectionId ?? '');
+                                $hasPreloadedSections = !empty($preloadedSections);
+                            ?>
                             <select name="section_id" id="section_id" class="form-control select2 <?= ($validation && $validation->hasError('section_id')) ? 'is-invalid' : '' ?>" required>
-                                <option value="">-- Pilih Penyulang Dahulu --</option>
+                                <?php if (!$hasPreloadedSections): ?>
+                                    <option value="">-- Pilih Penyulang Dahulu --</option>
+                                <?php else: ?>
+                                    <option value="">-- Pilih Section --</option>
+                                    <?php foreach ($preloadedSections as $s): ?>
+                                        <option value="<?= $s['id'] ?>" <?= (string)$activeSectionId === (string)$s['id'] ? 'selected' : '' ?>><?= esc($s['nama_section']) ?></option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </select>
                             <?php if ($validation && $validation->hasError('section_id')): ?>
                                 <div class="invalid-feedback"><?= $validation->getError('section_id') ?></div>
@@ -228,6 +250,9 @@
                             <label for="mr01_asset_id" id="mr01_asset_label">Aset Jaringan (Opsional) <span id="mr01_asset_req_indicator"><span class="badge bg-light text-muted border ms-1 fw-normal" style="font-size: 11px;">Opsional</span></span></label>
                             <select name="asset_id" id="mr01_asset_id" class="form-control select2">
                                 <option value="">-- Tidak dipilih / Opsional --</option>
+                                <?php if (!empty($preselectedAsset)): ?>
+                                    <option value="<?= $preselectedAsset['id'] ?>" selected><?= esc('[' . ($preselectedAsset['kode_asset'] ?? 'AST-' . $preselectedAsset['id']) . '] ' . ($preselectedAsset['nama_asset'] ?? 'Asset #' . $preselectedAsset['id'])) ?></option>
+                                <?php endif; ?>
                             </select>
                             <small class="text-muted d-block mt-1" id="mr01_asset_help_text">
                                 Aset jaringan tidak wajib diisi. Hanya diperlukan jika menambahkan kebutuhan material konstruksi.
@@ -969,18 +994,21 @@
             let sectionRequestToken = 0;
             var isMaterialFlowActive = false;
 
-            function refreshSelect2($element) {
+            function refreshSelect2($element, isInit = false) {
                 if ($.fn.select2 && $element.hasClass('select2-hidden-accessible')) {
-                    $element.trigger('change.select2');
+                    $element.trigger('change', [isInit]);
                 } else {
-                    $element.trigger('change');
+                    $element.trigger('change', [isInit]);
                 }
             }
 
-            function clearAssetSelection() {
+            function clearAssetSelection(preserveAuthoritative = false) {
+                if (preserveAuthoritative && preselectedAsset && preselectedAsset.id) {
+                    return;
+                }
                 const $assetSelect = $('#mr01_asset_id');
                 $assetSelect.html('<option value="">-- Tidak dipilih / Opsional --</option>');
-                refreshSelect2($assetSelect);
+                refreshSelect2($assetSelect, true);
                 $('#mr01_bom_preview_container').hide();
                 $('#mr01_bom_chips_container').empty();
                 $('#structured_materials_json').val('');
@@ -995,18 +1023,20 @@
                 const $section = $('#section_id');
                 const currentToken = ++penyulangRequestToken;
 
-                clearAssetSelection();
+                if (!preselectedAsset || String(ulpId) !== String(preselectedAsset.ulp_id)) {
+                    clearAssetSelection();
+                }
 
                 if (!ulpId) {
                     $penyulang.html('<option value="">-- Pilih ULP Dahulu --</option>');
                     $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
-                    refreshSelect2($penyulang);
-                    refreshSelect2($section);
+                    refreshSelect2($penyulang, true);
+                    refreshSelect2($section, true);
                     return;
                 }
 
                 $penyulang.html('<option value="">Sedang memuat...</option>');
-                refreshSelect2($penyulang);
+                refreshSelect2($penyulang, true);
 
                 const requestUrl = "<?= site_url('ajax/network/penyulang') ?>/" + ulpId;
 
@@ -1028,17 +1058,17 @@
                             html = '<option value="">-- Tidak ada penyulang aktif --</option>';
                         }
                         $penyulang.html(html);
-                        refreshSelect2($penyulang);
+                        refreshSelect2($penyulang, true);
 
                         $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
-                        refreshSelect2($section);
+                        refreshSelect2($section, true);
 
                         if (callback) callback();
                     },
                     error: function(xhr, status, err) {
                         if (currentToken !== penyulangRequestToken) return;
                         $penyulang.html('<option value="">Gagal memuat penyulang (Status: ' + xhr.status + ')</option>');
-                        refreshSelect2($penyulang);
+                        refreshSelect2($penyulang, true);
                     }
                 });
             }
@@ -1047,16 +1077,18 @@
             const $section = $('#section_id');
 
             console.log("[SIDAK TEJO] Penyulang berubah:", penyulangId);
-            clearAssetSelection();
+            if (!preselectedAsset || String(penyulangId) !== String(preselectedAsset.penyulang_id)) {
+                clearAssetSelection();
+            }
 
             if (!penyulangId) {
                 $section.html('<option value="">-- Pilih Penyulang Dahulu --</option>');
-                refreshSelect2($section);
+                refreshSelect2($section, true);
                 return;
             }
 
             $section.html('<option value="">Sedang memuat...</option>');
-            refreshSelect2($section);
+            refreshSelect2($section, true);
 
             const requestUrl = "<?= site_url('ajax/network/section') ?>/" + penyulangId;
             console.log("[SIDAK TEJO] Request AJAX Section URL:", requestUrl);
@@ -1080,7 +1112,7 @@
                         html = '<option value="">-- Tidak ada section aktif --</option>';
                     }
                     $section.html(html);
-                    refreshSelect2($section);
+                    refreshSelect2($section, true);
 
                     if (callback) callback();
                 },
@@ -1093,17 +1125,19 @@
                         error: err
                     });
                     $section.html('<option value="">Gagal memuat section (Status: ' + xhr.status + ')</option>');
-                    refreshSelect2($section);
+                    refreshSelect2($section, true);
                 }
             });
         }
 
-        // Dropdown triggers
-        $('#ulp_id').on('change', function() {
+        // Dropdown triggers with guard against initial programmatic changes
+        $('#ulp_id').on('change', function(e, isInit) {
+            if (isInit) return;
             loadPenyulang($(this).val());
         });
 
-        $('#penyulang_id').on('change', function() {
+        $('#penyulang_id').on('change', function(e, isInit) {
+            if (isInit) return;
             loadSection($(this).val());
         });
 
@@ -1111,24 +1145,51 @@
         let initialUlpId = $('#ulp_id').val();
         if (!initialUlpId && urlUlpId) {
             $('#ulp_id').val(urlUlpId);
-            refreshSelect2($('#ulp_id'));
+            refreshSelect2($('#ulp_id'), true);
             initialUlpId = urlUlpId;
         }
 
-        if (initialUlpId) {
+        const hasPreloadedPenyulang = $('#penyulang_id option[value!=""]').length > 0;
+        const hasPreloadedSection = $('#section_id option[value!=""]').length > 0;
+
+        if (hasPreloadedPenyulang && oldPenyulangId) {
+            $('#penyulang_id').val(oldPenyulangId);
+            refreshSelect2($('#penyulang_id'), true);
+
+            if (hasPreloadedSection && oldSectionId) {
+                $('#section_id').val(oldSectionId);
+                refreshSelect2($('#section_id'), true);
+                if (oldAssetId) {
+                    $('#mr01_asset_id').val(oldAssetId);
+                    refreshSelect2($('#mr01_asset_id'), true);
+                }
+            } else if (oldPenyulangId && !hasPreloadedSection) {
+                loadSection(oldPenyulangId, function() {
+                    if (oldSectionId) {
+                        $('#section_id').val(oldSectionId);
+                        refreshSelect2($('#section_id'), true);
+                        loadAssetsForSection(oldSectionId, function() {
+                            if (oldAssetId) {
+                                $('#mr01_asset_id').val(oldAssetId);
+                                refreshSelect2($('#mr01_asset_id'), true);
+                            }
+                        });
+                    }
+                });
+            }
+        } else if (initialUlpId) {
             loadPenyulang(initialUlpId, function() {
                 if (oldPenyulangId) {
                     $('#penyulang_id').val(oldPenyulangId);
-                    refreshSelect2($('#penyulang_id'));
+                    refreshSelect2($('#penyulang_id'), true);
                     loadSection(oldPenyulangId, function() {
                         if (oldSectionId) {
                             $('#section_id').val(oldSectionId);
-                            refreshSelect2($('#section_id'));
+                            refreshSelect2($('#section_id'), true);
                             loadAssetsForSection(oldSectionId, function() {
                                 if (oldAssetId) {
                                     $('#mr01_asset_id').val(oldAssetId);
-                                    refreshSelect2($('#mr01_asset_id'));
-                                    $('#mr01_asset_id').trigger('change');
+                                    refreshSelect2($('#mr01_asset_id'), true);
                                 }
                             });
                         }
@@ -1231,14 +1292,19 @@
             $('#material-hidden-field').val('Tidak ada spesifikasi material');
 
             if (!sectionId) {
+                if (preselectedAsset && preselectedAsset.id) {
+                    if (callback) callback();
+                    return;
+                }
                 $assetSelect.html('<option value="">-- Tidak dipilih / Opsional --</option>');
-                refreshSelect2($assetSelect);
+                refreshSelect2($assetSelect, true);
                 if (isMaterialFlowActive) $emptyState.show();
+                if (callback) callback();
                 return;
             }
 
             $assetSelect.html('<option value="">Sedang memuat aset...</option>');
-            refreshSelect2($assetSelect);
+            refreshSelect2($assetSelect, true);
 
             $.ajax({
                 url: "<?= site_url('ajax/network/asset') ?>/" + sectionId,
@@ -1247,29 +1313,45 @@
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(data) {
                     let html = '<option value="">-- Tidak dipilih / Opsional --</option>';
+                    let hasPreselectedInList = false;
                     if (Array.isArray(data) && data.length > 0) {
                         data.forEach(function(a) {
+                            if (preselectedAsset && String(a.id) === String(preselectedAsset.id)) {
+                                hasPreselectedInList = true;
+                            }
                             const label = (a.kode_asset ? `[${a.kode_asset}] ` : '') + (a.nama_asset || 'Asset #' + a.id);
                             html += `<option value="${a.id}">${label}</option>`;
                         });
-                    } else {
-                        html = '<option value="">-- Tidak ada aset pada section ini --</option>';
+                    }
+                    if (preselectedAsset && !hasPreselectedInList && preselectedAsset.id) {
+                        const pLabel = (preselectedAsset.kode_asset ? `[${preselectedAsset.kode_asset}] ` : '') + (preselectedAsset.nama_asset || 'Asset #' + preselectedAsset.id);
+                        html += `<option value="${preselectedAsset.id}">${pLabel}</option>`;
                     }
                     $assetSelect.html(html);
-                    refreshSelect2($assetSelect);
+                    if (preselectedAsset && preselectedAsset.id) {
+                        $assetSelect.val(preselectedAsset.id);
+                    }
+                    refreshSelect2($assetSelect, true);
                     if (isMaterialFlowActive && !$assetSelect.val()) {
                         $emptyState.show();
                     }
                     if (callback) callback();
                 },
                 error: function() {
-                    $assetSelect.html('<option value="">-- Tidak dipilih / Opsional --</option>');
-                    refreshSelect2($assetSelect);
+                    let html = '<option value="">-- Tidak dipilih / Opsional --</option>';
+                    if (preselectedAsset && preselectedAsset.id) {
+                        const pLabel = (preselectedAsset.kode_asset ? `[${preselectedAsset.kode_asset}] ` : '') + (preselectedAsset.nama_asset || 'Asset #' + preselectedAsset.id);
+                        html += `<option value="${preselectedAsset.id}" selected>${pLabel}</option>`;
+                    }
+                    $assetSelect.html(html);
+                    refreshSelect2($assetSelect, true);
+                    if (callback) callback();
                 }
             });
         }
 
-        $('#section_id').on('change', function() {
+        $('#section_id').on('change', function(e, isInit) {
+            if (isInit) return;
             loadAssetsForSection($(this).val());
         });
 

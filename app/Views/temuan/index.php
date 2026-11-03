@@ -148,7 +148,7 @@
                         <label for="filter_ulp_id" class="small font-weight-bold">ULP</label>
                         <?php if ($isRestricted): ?>
                             <select id="filter_ulp_id" class="form-control form-control-sm" disabled autocomplete="off">
-                                <option value="<?= $ulps[0]['id'] ?>"><?= esc($ulps[0]['nama_ulp']) ?></option>
+                                <option value="<?= !empty($ulps[0]['id']) ? $ulps[0]['id'] : '' ?>"><?= esc(!empty($ulps[0]['nama_ulp']) ? $ulps[0]['nama_ulp'] : '-') ?></option>
                             </select>
                         <?php else: ?>
                             <select id="filter_ulp_id" class="form-control form-control-sm select2" autocomplete="off">
@@ -419,7 +419,7 @@
         // 1. Ambil URL parameters untuk pre-populate filter dari dashboard redirect
         const urlParams = new URLSearchParams(window.location.search);
         const urlQ = urlParams.get('q') || urlParams.get('query') || urlParams.get('search') || '';
-        const urlPelaksana = urlParams.get('pelaksana') || '<?= esc($selectedPelaksana ?? \'\', \'js\') ?>';
+        const urlPelaksana = urlParams.get('pelaksana') || '<?= esc($selectedPelaksana ?? '', 'js') ?>';
         const urlPrioritas = urlParams.get('prioritas') || '<?= esc($selectedPrioritas ?? '', 'js') ?>';
         const urlStatus = urlParams.get('status') || '<?= esc($selectedStatus ?? '', 'js') ?>';
         const urlPenyulangId = urlParams.get('penyulang_id') || '<?= $selectedPenyulangId ?? '' ?>';

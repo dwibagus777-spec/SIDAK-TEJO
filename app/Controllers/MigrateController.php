@@ -7,12 +7,50 @@ use Config\Services;
 
 class MigrateController extends BaseController
 {
+    public function _remap(string $method, ...$params)
+    {
+        if (!method_exists($this, $method)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        if ($method !== 'translineAudit') {
+            if ($denied = $this->checkMigrationAccess()) {
+                return $denied;
+            }
+        }
+        return $this->{$method}(...$params);
+    }
+
+    protected function checkMigrationAccess()
+    {
+        if (is_cli()) {
+            return null;
+        }
+        if (function_exists('check_role') && check_role(['administrator', 'admin', 'admin_pusat'])) {
+            return null;
+        }
+        $reqKey = $this->request->getGet('key')
+            ?? ($_GET['key'] ?? null)
+            ?? $this->request->getHeaderLine('X-Audit-Key')
+            ?? $this->request->getHeaderLine('Authorization');
+        $envKey = env('AUDIT_SECRET_KEY', '');
+        if (!empty($reqKey) && !empty($envKey) && hash_equals((string)$envKey, trim((string)$reqKey))) {
+            return null;
+        }
+        return $this->response->setStatusCode(403)->setJSON([
+            'status'  => 'error',
+            'message' => 'Akses ditolak: Endpoint migrasi hanya diizinkan untuk Administrator.'
+        ]);
+    }
+
     /**
      * Production Migration & Catalog Seeder Runner
      * Executes DB table creation DDLs and seeds initial catalogs safely.
      */
     public function autoMigrate()
     {
+        if ($denied = $this->checkMigrationAccess()) {
+            return $denied;
+        }
         $db = Database::connect();
         $executed = [];
 

@@ -18,7 +18,7 @@ $routes->match(['GET', 'POST'], 'backup/cron', 'Backup::cron');
 // Background Queue Worker Cron (Hostinger cron, token secured)
 $routes->get('queue/run', 'QueueWorker::run');
 
-// Production Database DDL Auto-Migrate & Catalog Seeder Route (Publicly callable for deployment sync)
+// Production Database DDL Auto-Migrate & Catalog Seeder Routes (Protected via MigrateController::_remap)
 $routes->get('master-assets/auto-migrate', 'MigrateController::autoMigrate');
 $routes->get('master-assets/auto-deploy', 'MigrateController::autoDeploy');
 $routes->get('auto-deploy', 'MigrateController::autoDeploy');

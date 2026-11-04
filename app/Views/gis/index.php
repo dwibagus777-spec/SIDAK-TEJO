@@ -3812,6 +3812,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         L.control.zoom({ position: 'topright' }).addTo(map);
 
+        if (typeof map.createPane === 'function') {
+            var coatingPane = map.createPane('captiveCoatingPane');
+            coatingPane.style.zIndex = 650;
+            var badgePane = map.createPane('captiveBadgePane');
+            badgePane.style.zIndex = 665;
+        }
+
         if (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function') {
             markerCluster = L.markerClusterGroup({
                 chunkedLoading: true,
@@ -6258,6 +6265,8 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         window.allTranslineEntries = [];
+        var coatingSeq = 0;
+        var coatingNavItems = [];
 
         activeTranslines.forEach(function (tl) {
             var tId = tl.id || tl.transline_id || tl.edge_id;
@@ -6333,19 +6342,28 @@ document.addEventListener("DOMContentLoaded", function () {
             var isAaacCandidate = condTypeUpper.includes('AAAC') && !condTypeUpper.includes('AAACS');
             var isCandidateCoating = (isCaptiveView || Boolean(tl.is_captive_candidate || tl.needs_coating)) && (isCaptiveView || isAaacCandidate);
 
+            var currentCoatingNum = 0;
+            if (isCandidateCoating) {
+                coatingSeq++;
+                currentCoatingNum = coatingSeq;
+            }
+
             var isTl04 = createdBy.includes('ENGINE=TL04') || createdBy.includes('TL-04');
             var isTl03 = !isTl04 && createdBy.includes('ENGINE=TL03');
             var isTl02 = !isTl04 && !isTl03 && (createdBy.includes('RUN:') || createdBy.includes('AI') || createdBy.includes('TL-02') || createdBy.includes('TL02'));
-            var lineColor = isCandidateCoating ? '#f59e0b' : (isTl04 ? '#10b981' : (isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7')));
-            var lineWeight = isCandidateCoating ? 5.5 : (isTl04 ? 4.5 : (isTl03 ? 4.0 : 3.5));
+            var coatingStrokeColor = (currentCoatingNum % 2 === 1) ? '#f59e0b' : '#f97316';
+            var lineColor = isCandidateCoating ? coatingStrokeColor : (isTl04 ? '#10b981' : (isTl03 ? '#06b6d4' : (isTl02 ? '#2563eb' : '#0284c7')));
+            var lineWeight = isCandidateCoating ? 6.0 : (isTl04 ? 4.5 : (isTl03 ? 4.0 : 3.5));
+            var targetPane = (isCandidateCoating && map && map.getPane && map.getPane('captiveCoatingPane')) ? 'captiveCoatingPane' : 'overlayPane';
 
             var casingPoly = null;
             if (isCandidateCoating) {
                 // Outer warm golden glow halo for contrast across dark, light, or satellite map tiles
                 var glowPoly = L.polyline(latLngs, {
+                    pane: targetPane,
                     color: '#d97706',
-                    weight: 10,
-                    opacity: 0.35,
+                    weight: 11,
+                    opacity: 0.4,
                     lineJoin: 'round',
                     interactive: false
                 });
@@ -6353,9 +6371,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // Crisp outline preventing black mudding while keeping separation
                 casingPoly = L.polyline(latLngs, {
-                    color: '#1e293b',
-                    weight: 7.0,
-                    opacity: 0.55,
+                    pane: targetPane,
+                    color: '#0f172a',
+                    weight: 8.0,
+                    opacity: 0.75,
                     lineJoin: 'round',
                     interactive: false
                 });
@@ -6363,6 +6382,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             var visPolyOpts = {
+                pane: targetPane,
                 color: lineColor,
                 weight: lineWeight,
                 opacity: 1.0,
@@ -6384,6 +6404,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     target_asset_id: toId,
                     conductor_type: tl.conductor_type,
                     conductor_size: tl.conductor_size,
+                    coating_seq: currentCoatingNum,
                     is_tl04: isTl04,
                     is_tl03: isTl03,
                     is_tl02: isTl02,
@@ -6392,7 +6413,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             var condImgUrl = resolveConductorPng(tl.conductor_type, tl.conductor_size);
 
-            visiblePoly.bindTooltip(`⚡ <strong>${conductorLabel}</strong> (${Number(lengthMeter).toFixed(1)}m)`, {
+            visiblePoly.bindTooltip(`⚡ <strong>${currentCoatingNum ? ('#' + currentCoatingNum + ' · ') : ''}${conductorLabel}</strong> (${Number(lengthMeter).toFixed(1)}m)`, {
                 sticky: true,
                 className: 'font-monospace small'
             });
@@ -6403,13 +6424,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Invisible hit-layer for touch / mouse target (24px width)
             var hitPolyOpts = {
+                pane: targetPane,
                 color: lineColor,
                 weight: 24,
                 opacity: 0.001,
                 lineJoin: 'round',
                 interactive: true
             };
-            if (gisCanvasRenderer) hitPolyOpts.renderer = gisCanvasRenderer;
+            if (!isCandidateCoating && gisCanvasRenderer) hitPolyOpts.renderer = gisCanvasRenderer;
             var hitPoly = L.polyline(latLngs, hitPolyOpts);
 
             hitPoly.on('click', function (evt) {
@@ -6547,6 +6569,61 @@ document.addEventListener("DOMContentLoaded", function () {
             hitPoly._visiblePoly = visiblePoly;
 
             translinePolylineLayer.addLayer(hitPoly);
+
+            if (isCandidateCoating && currentCoatingNum > 0) {
+                var badgePaneName = (map && map.getPane && map.getPane('captiveBadgePane')) ? 'captiveBadgePane' : targetPane;
+                var startPt = latLngs[0];
+                var endPt = latLngs[latLngs.length - 1];
+                [startPt, endPt].forEach(function (pt) {
+                    if (!pt || pt.length < 2) return;
+                    var jointNode = L.circleMarker(pt, {
+                        pane: targetPane,
+                        radius: 4.5,
+                        color: '#ffffff',
+                        weight: 2,
+                        fillColor: '#0f172a',
+                        fillOpacity: 1,
+                        interactive: false
+                    });
+                    translinePolylineLayer.addLayer(jointNode);
+                });
+
+                var midLat = (startPt[0] + endPt[0]) / 2;
+                var midLng = (startPt[1] + endPt[1]) / 2;
+                if (latLngs.length > 2) {
+                    var midIdx = Math.floor(latLngs.length / 2);
+                    midLat = latLngs[midIdx][0];
+                    midLng = latLngs[midIdx][1];
+                }
+                var badgeIcon = L.divIcon({
+                    className: 'captive-segment-badge-marker',
+                    html: `<div data-coating-seq="${currentCoatingNum}" data-transline-id="${tId}" style="background:${lineColor};color:#0f172a;border:2px solid #ffffff;border-radius:999px;padding:1px 6px;font-size:10px;font-weight:800;font-family:monospace;box-shadow:0 2px 6px rgba(15,23,42,0.45);white-space:nowrap;line-height:1.2;cursor:pointer;">#${currentCoatingNum}</div>`,
+                    iconSize: [28, 18],
+                    iconAnchor: [14, 9]
+                });
+                var badgeMarker = L.marker([midLat, midLng], {
+                    pane: badgePaneName,
+                    icon: badgeIcon,
+                    interactive: true
+                });
+                badgeMarker.on('click', function () {
+                    hitPoly.fire('click', { latlng: L.latLng(midLat, midLng) });
+                });
+                translinePolylineLayer.addLayer(badgeMarker);
+
+                coatingNavItems.push({
+                    seq: currentCoatingNum,
+                    id: tId,
+                    code: translineCode,
+                    lengthMeter: Number(lengthMeter) || 0,
+                    midLat: midLat,
+                    midLng: midLng,
+                    latLngs: latLngs,
+                    hitPoly: hitPoly,
+                    color: lineColor
+                });
+            }
+
             window.translineLayers.set(tId, visiblePoly);
             window.allTranslineEntries.push({
                 id: tId,
@@ -6558,6 +6635,51 @@ document.addEventListener("DOMContentLoaded", function () {
                 data: tl
             });
         });
+
+        var existingCaptiveNav = document.getElementById('gis-captive-segment-nav');
+        if (existingCaptiveNav) existingCaptiveNav.remove();
+        var isCaptiveOnlyUrl = new URLSearchParams(window.location.search).get('captive_only') === '1';
+        if (isCaptiveOnlyUrl && coatingNavItems.length > 0) {
+            window._gisCoatingNavItems = coatingNavItems;
+            window.focusCaptiveSegment = function (seqOrAll) {
+                if (!map || !Array.isArray(window._gisCoatingNavItems)) return;
+                if (seqOrAll === 'ALL') {
+                    var allPts = [];
+                    window._gisCoatingNavItems.forEach(function (it) {
+                        (it.latLngs || []).forEach(function (p) { allPts.push(p); });
+                    });
+                    if (allPts.length > 0) {
+                        map.fitBounds(L.latLngBounds(allPts), { padding: [45, 45], maxZoom: 18 });
+                    }
+                    return;
+                }
+                var target = window._gisCoatingNavItems.find(function (it) { return Number(it.seq) === Number(seqOrAll); });
+                if (target) {
+                    var b = L.latLngBounds(target.latLngs);
+                    map.fitBounds(b, { padding: [60, 60], maxZoom: 19 });
+                    if (target.hitPoly) {
+                        target.hitPoly.fire('click', { latlng: L.latLng(target.midLat, target.midLng) });
+                    }
+                }
+            };
+
+            var mapHost = document.getElementById('gisMap') ? document.getElementById('gisMap').parentElement : document.body;
+            var navEl = document.createElement('div');
+            navEl.id = 'gis-captive-segment-nav';
+            navEl.style.cssText = 'position:absolute;bottom:52px;left:12px;right:68px;z-index:1040;background:rgba(15,23,42,0.92);color:#fff;border:1px solid rgba(245,158,11,0.6);border-radius:12px;padding:6px 10px;box-shadow:0 6px 20px rgba(0,0,0,0.35);display:flex;align-items:center;gap:6px;overflow-x:auto;font-family:system-ui,sans-serif;';
+            var pillsHtml = `<span style="font-size:11px;font-weight:700;color:#fbbf24;white-space:nowrap;margin-right:4px;"><i class="fas fa-highlighter me-1"></i>Potensi Coating (${coatingNavItems.length} Transline):</span>`;
+            pillsHtml += `<button type="button" onclick="window.focusCaptiveSegment('ALL')" style="background:#fbbf24;color:#0f172a;border:none;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;">Semua (${coatingNavItems.length})</button>`;
+            coatingNavItems.forEach(function (it) {
+                pillsHtml += `<button type="button" data-captive-pill="${it.seq}" onclick="window.focusCaptiveSegment(${it.seq})" style="background:#1e293b;color:#f8fafc;border:1px solid ${it.color};border-radius:999px;padding:2px 8px;font-size:10.5px;font-weight:700;font-family:monospace;white-space:nowrap;cursor:pointer;" title="Transline #${it.id} (${it.lengthMeter.toFixed(1)}m)">#${it.seq} TL-${it.id} (${it.lengthMeter.toFixed(0)}m)</button>`;
+            });
+            navEl.innerHTML = pillsHtml;
+            if (mapHost) {
+                if (window.getComputedStyle(mapHost).position === 'static') {
+                    mapHost.style.position = 'relative';
+                }
+                mapHost.appendChild(navEl);
+            }
+        }
 
         if (window.gisConductorFilter && window.gisConductorFilter !== 'ALL') {
             window.applyGisConductorFilter(window.gisConductorFilter);
@@ -9749,10 +9871,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 600);
     }
 
-});
-</script>
-
-<script>
 // =====================================================================
 // CR-GIS-FIX-05: GIS Quick Temuan Modal Controller
 // Handles in-page AJAX submission so operator stays on the map.
@@ -9761,6 +9879,18 @@ document.addEventListener("DOMContentLoaded", function () {
     'use strict';
 
     // Set today's date as default when modal opens
+    const quickTemuanModalEl = document.getElementById('modal-gis-quick-temuan');
+    if (quickTemuanModalEl) {
+        quickTemuanModalEl.querySelectorAll('[data-bs-dismiss="modal"]').forEach(function(dismissBtn) {
+            dismissBtn.addEventListener('click', function() {
+                const inst = bootstrap.Modal.getInstance(quickTemuanModalEl) || bootstrap.Modal.getOrCreateInstance(quickTemuanModalEl);
+                if (inst) {
+                    inst._isTransitioning = false;
+                    inst.hide();
+                }
+            });
+        });
+    }
     document.getElementById('modal-gis-quick-temuan').addEventListener('show.bs.modal', function() {
         const today = new Date().toISOString().substring(0, 10);
         const tanggalInput = document.getElementById('gis-modal-tanggal');
@@ -10016,5 +10146,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 })();
+});
 </script>
 <?= $this->endSection() ?>

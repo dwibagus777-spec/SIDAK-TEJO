@@ -247,6 +247,25 @@ class GISService
         }
 
         $assets = $this->assetRepository->getGisNetworkAssets($filters, $userUlpId);
+        if (!empty($filters['captive_only']) && !empty($segmentData['translines'])) {
+            $captiveAssetIds = [];
+            foreach ($segmentData['translines'] as $tlRow) {
+                if (!empty($tlRow['source_asset_id'])) {
+                    $captiveAssetIds[(int)$tlRow['source_asset_id']] = true;
+                }
+                if (!empty($tlRow['target_asset_id'])) {
+                    $captiveAssetIds[(int)$tlRow['target_asset_id']] = true;
+                }
+            }
+            if (!empty($filters['asset_id'])) {
+                $captiveAssetIds[(int)$filters['asset_id']] = true;
+            }
+            if (!empty($captiveAssetIds)) {
+                $assets = array_values(array_filter($assets, static function ($a) use ($captiveAssetIds) {
+                    return isset($captiveAssetIds[(int)($a['id'] ?? 0)]);
+                }));
+            }
+        }
 
         $assetFeatures   = [];
         $findingFeatures = [];

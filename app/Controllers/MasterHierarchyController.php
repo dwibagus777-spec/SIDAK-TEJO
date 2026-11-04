@@ -7,6 +7,17 @@ use App\Models\Up3Model;
 
 class MasterHierarchyController extends BaseController
 {
+    private function safeGetRows($builder): array
+    {
+        try {
+            $res = $builder->get();
+            return ($res !== false && is_object($res)) ? $res->getResultArray() : [];
+        } catch (\Throwable $e) {
+            log_message('error', '[MasterHierarchyController] Query error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function index()
     {
         if (!check_role(['administrator', 'admin', 'admin_pusat'])) {
@@ -14,77 +25,99 @@ class MasterHierarchyController extends BaseController
         }
 
         $db = \Config\Database::connect();
+        $feederTable = $db->tableExists('penyulang') ? 'penyulang' : ($db->tableExists('penyulangs') ? 'penyulangs' : null);
 
         // 1. Audit Unconnected Data
-        $unlinkedAssets = $db->table('assets')
-            ->select('id, asset_id, nama_asset, jenis_asset, latitude, longitude, created_at')
-            ->groupStart()
-                ->where('penyulang_id IS NULL')
-                ->orWhere('penyulang_id', 0)
-            ->groupEnd()
-            ->where('status !=', 'DELETED')
-            ->limit(100)
-            ->get()
-            ->getResultArray();
-        $totalUnlinkedAssets = $db->table('assets')
-            ->groupStart()
-                ->where('penyulang_id IS NULL')
-                ->orWhere('penyulang_id', 0)
-            ->groupEnd()
-            ->where('status !=', 'DELETED')
-            ->countAllResults();
+        $unlinkedAssets = [];
+        $totalUnlinkedAssets = 0;
+        if ($db->tableExists('assets')) {
+            $assetBuilder = $db->table('assets')
+                ->select('id, kode_asset AS asset_id, kode_asset, nama_asset, jenis_asset, latitude, longitude, created_at')
+                ->groupStart()
+                    ->where('penyulang_id IS NULL')
+                    ->orWhere('penyulang_id', 0)
+                ->groupEnd()
+                ->where('status !=', 'DELETED');
+            if ($db->fieldExists('deleted_at', 'assets')) {
+                $assetBuilder->where('deleted_at IS NULL');
+            }
+            $unlinkedAssets = $this->safeGetRows($assetBuilder->limit(100));
 
-        $unlinkedFeedersGi = $db->table('penyulangs')
-            ->select('id, kode_penyulang, nama_penyulang, ulp_id')
-            ->groupStart()
-                ->where('gi_id IS NULL')
-                ->orWhere('gi_id', 0)
-            ->groupEnd()
-            ->get()
-            ->getResultArray();
+            $countBuilder = $db->table('assets')
+                ->groupStart()
+                    ->where('penyulang_id IS NULL')
+                    ->orWhere('penyulang_id', 0)
+                ->groupEnd()
+                ->where('status !=', 'DELETED');
+            if ($db->fieldExists('deleted_at', 'assets')) {
+                $countBuilder->where('deleted_at IS NULL');
+            }
+            try {
+                $totalUnlinkedAssets = (int)$countBuilder->countAllResults();
+            } catch (\Throwable $e) {
+                $totalUnlinkedAssets = count($unlinkedAssets);
+            }
+        }
 
-        $unlinkedFeedersUlp = $db->table('penyulangs')
-            ->select('id, kode_penyulang, nama_penyulang, gi_id')
-            ->groupStart()
-                ->where('ulp_id IS NULL')
-                ->orWhere('ulp_id', 0)
-            ->groupEnd()
-            ->get()
-            ->getResultArray();
+        $unlinkedFeedersGi = [];
+        $unlinkedFeedersUlp = [];
+        $penyulangs = [];
+        if ($feederTable) {
+            $unlinkedFeedersGi = $this->safeGetRows(
+                $db->table($feederTable)
+                    ->select('id, kode_penyulang, nama_penyulang, ulp_id')
+                    ->groupStart()
+                        ->where('gi_id IS NULL')
+                        ->orWhere('gi_id', 0)
+                    ->groupEnd()
+            );
 
-        $unlinkedUlps = $db->table('ulps')
-            ->select('id, kode_ulp, nama_ulp')
-            ->groupStart()
-                ->where('up3_id IS NULL')
-                ->orWhere('up3_id', 0)
-            ->groupEnd()
-            ->get()
-            ->getResultArray();
+            $unlinkedFeedersUlp = $this->safeGetRows(
+                $db->table($feederTable)
+                    ->select('id, kode_penyulang, nama_penyulang, gi_id')
+                    ->groupStart()
+                        ->where('ulp_id IS NULL')
+                        ->orWhere('ulp_id', 0)
+                    ->groupEnd()
+            );
 
-        $unlinkedGi = $db->table('gardu_induk')
-            ->select('id, kode_gi, nama_gi')
-            ->groupStart()
-                ->where('up3_id IS NULL')
-                ->orWhere('up3_id', 0)
-            ->groupEnd()
-            ->get()
-            ->getResultArray();
+            $penyulangs = $this->safeGetRows(
+                $db->table($feederTable)->orderBy('nama_penyulang')
+            );
+        }
 
-        $unlinkedUp3 = $db->table('up3s')
-            ->select('id, kode_up3, nama_up3')
-            ->groupStart()
-                ->where('uid_id IS NULL')
-                ->orWhere('uid_id', 0)
-            ->groupEnd()
-            ->get()
-            ->getResultArray();
+        $unlinkedUlps = $db->tableExists('ulps') ? $this->safeGetRows(
+            $db->table('ulps')
+                ->select('id, kode_ulp, nama_ulp')
+                ->groupStart()
+                    ->where('up3_id IS NULL')
+                    ->orWhere('up3_id', 0)
+                ->groupEnd()
+        ) : [];
+
+        $unlinkedGi = $db->tableExists('gardu_induk') ? $this->safeGetRows(
+            $db->table('gardu_induk')
+                ->select('id, kode_gi, nama_gi')
+                ->groupStart()
+                    ->where('up3_id IS NULL')
+                    ->orWhere('up3_id', 0)
+                ->groupEnd()
+        ) : [];
+
+        $unlinkedUp3 = $db->tableExists('up3s') ? $this->safeGetRows(
+            $db->table('up3s')
+                ->select('id, kode_up3, nama_up3')
+                ->groupStart()
+                    ->where('uid_id IS NULL')
+                    ->orWhere('uid_id', 0)
+                ->groupEnd()
+        ) : [];
 
         // Master lists for quick assignment
-        $uids = $db->table('uids')->where('status', 'AKTIF')->orderBy('nama_uid')->get()->getResultArray();
-        $up3s = $db->table('up3s')->where('status', 'AKTIF')->orderBy('nama_up3')->get()->getResultArray();
-        $garduInduk = $db->table('gardu_induk')->orderBy('nama_gi')->get()->getResultArray();
-        $ulps = $db->table('ulps')->where('status', 'AKTIF')->orderBy('nama_ulp')->get()->getResultArray();
-        $penyulangs = $db->table('penyulangs')->orderBy('nama_penyulang')->get()->getResultArray();
+        $uids = $db->tableExists('uids') ? $this->safeGetRows($db->table('uids')->where('status', 'AKTIF')->orderBy('nama_uid')) : [];
+        $up3s = $db->tableExists('up3s') ? $this->safeGetRows($db->table('up3s')->where('status', 'AKTIF')->orderBy('nama_up3')) : [];
+        $garduInduk = $db->tableExists('gardu_induk') ? $this->safeGetRows($db->table('gardu_induk')->orderBy('nama_gi')) : [];
+        $ulps = $db->tableExists('ulps') ? $this->safeGetRows($db->table('ulps')->where('status', 'AKTIF')->orderBy('nama_ulp')) : [];
 
         return view('master_hierarchy/unconnected', [
             'title'               => 'Audit & Perapian Relasi Hierarki Jaringan',
@@ -117,7 +150,9 @@ class MasterHierarchyController extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $penyulang = $db->table('penyulangs')->where('id', $penyulangId)->get()->getRowArray();
+        $feederTable = $db->tableExists('penyulang') ? 'penyulang' : 'penyulangs';
+        $q = $db->table($feederTable)->where('id', $penyulangId)->get();
+        $penyulang = ($q !== false && is_object($q)) ? $q->getRowArray() : null;
         if (!$penyulang) {
             return $this->response->setJSON(['success' => false, 'message' => 'Penyulang tidak ditemukan.'])->setStatusCode(404);
         }
@@ -150,7 +185,8 @@ class MasterHierarchyController extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $db->table('penyulangs')->where('id', $penyulangId)->update(['gi_id' => $giId]);
+        $feederTable = $db->tableExists('penyulang') ? 'penyulang' : 'penyulangs';
+        $db->table($feederTable)->where('id', $penyulangId)->update(['gi_id' => $giId]);
         log_activity('RECONCILE_FEEDER', "Menautkan Penyulang ID {$penyulangId} ke GI ID {$giId}");
 
         return $this->response->setJSON([

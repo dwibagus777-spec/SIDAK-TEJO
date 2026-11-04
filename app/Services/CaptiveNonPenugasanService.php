@@ -43,13 +43,45 @@ class CaptiveNonPenugasanService
             }
         }
         $builder = $this->db->table('captive_non_penugasan c')
-            ->select('c.*, u.nama_ulp, p.nama_penyulang')
-            ->join('ulps u', 'u.id = c.ulp_id', 'left')
+            ->select(
+                'c.*, ' .
+                'COALESCE(c.ulp_id, p.ulp_id) AS resolved_ulp_id, ' .
+                'u.nama_ulp, p.nama_penyulang, ' .
+                'COALESCE(NULLIF(c.source_label, \'\'), CONCAT_WS(\' \', sa.kode_asset, sa.nama_asset)) AS resolved_source_label, ' .
+                'COALESCE(NULLIF(c.target_label, \'\'), CONCAT_WS(\' \', ta.kode_asset, ta.nama_asset)) AS resolved_target_label, ' .
+                'COALESCE(c.distance_meters, gt.distance_meters) AS resolved_distance_meters'
+            )
             ->join('penyulang p', 'p.id = c.penyulang_id', 'left')
+            ->join('ulps u', 'u.id = COALESCE(c.ulp_id, p.ulp_id)', 'left')
+            ->join('gis_translines gt', 'gt.id = c.transline_id', 'left')
+            ->join('assets sa', 'sa.id = COALESCE(c.source_asset_id, gt.source_asset_id)', 'left')
+            ->join('assets ta', 'ta.id = COALESCE(c.target_asset_id, gt.target_asset_id)', 'left')
             ->where('c.deleted_at IS NULL')
-            ->orderBy('c.created_at', 'DESC');
-        if ($ulpId) $builder->where('c.ulp_id', $ulpId);
-        return $builder->get()->getResultArray();
+            ->orderBy('c.created_at', 'DESC')
+            ->orderBy('c.id', 'ASC');
+        if ($ulpId) {
+            $builder->groupStart()
+                ->where('c.ulp_id', $ulpId)
+                ->orWhere('p.ulp_id', $ulpId)
+            ->groupEnd();
+        }
+        $rows = $builder->get()->getResultArray();
+        foreach ($rows as &$r) {
+            if (empty($r['ulp_id']) && !empty($r['resolved_ulp_id'])) {
+                $r['ulp_id'] = (int)$r['resolved_ulp_id'];
+            }
+            if (empty($r['source_label']) && !empty($r['resolved_source_label'])) {
+                $r['source_label'] = trim((string)$r['resolved_source_label']);
+            }
+            if (empty($r['target_label']) && !empty($r['resolved_target_label'])) {
+                $r['target_label'] = trim((string)$r['resolved_target_label']);
+            }
+            if ($r['distance_meters'] === null && $r['resolved_distance_meters'] !== null) {
+                $r['distance_meters'] = (float)$r['resolved_distance_meters'];
+            }
+        }
+        unset($r);
+        return $rows;
     }
 
     public function create(array $input, int $userId, string $userName, ?int $userUlpId): int
@@ -159,7 +191,12 @@ class CaptiveNonPenugasanService
         try {
             $item = $db->table('captive_non_penugasan')->where('id', $id)->where('deleted_at IS NULL')->get()->getRowArray();
             if (!$item) throw new RuntimeException('Catatan tidak ditemukan.');
-            if ($userUlpId && (int)$item['ulp_id'] !== $userUlpId) throw new RuntimeException('Catatan di luar cakupan akses Anda.');
+            $effectiveUlpId = (int)($item['ulp_id'] ?? 0);
+            if ($effectiveUlpId <= 0 && !empty($item['penyulang_id']) && $db->tableExists('penyulang')) {
+                $fRow = $db->table('penyulang')->select('ulp_id')->where('id', (int)$item['penyulang_id'])->get()->getRowArray();
+                $effectiveUlpId = (int)($fRow['ulp_id'] ?? 0);
+            }
+            if ($userUlpId && $effectiveUlpId > 0 && $effectiveUlpId !== $userUlpId) throw new RuntimeException('Catatan di luar cakupan akses Anda.');
             if ($item['status'] === 'SELESAI') { $db->transCommit(); return; }
             if ($item['jenis'] === 'COATING' && !empty($item['transline_id'])) {
                 $line = $db->table('gis_translines')->where('id', $item['transline_id'])->where('is_active', 1)->where('status', 'ACTIVE')->where('deleted_at IS NULL')->get()->getRowArray();

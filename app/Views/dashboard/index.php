@@ -1364,7 +1364,7 @@
                                     </td>
                                     <td class="text-center text-muted small"><?= esc($f['tanggal_temuan'] ? date('d/m/Y', strtotime($f['tanggal_temuan'])) : '-') ?></td>
                                     <td>
-                                        <a href="<?= site_url('temuan?penyulang_id=' . (int)$f['penyulang_id']) ?>" class="fw-semibold text-dark text-decoration-none hover-primary" title="Buka daftar temuan penyulang <?= esc($f['nama_penyulang']) ?>">
+                                        <a href="<?= site_url('temuan?penyulang_id=' . (int)$f['penyulang_id'] . '&bom_only=1') ?>" class="fw-semibold text-dark text-decoration-none hover-primary" title="Buka daftar temuan material BOM penyulang <?= esc($f['nama_penyulang']) ?>">
                                             <i class="fas fa-filter text-muted me-1 small"></i><?= esc($f['nama_penyulang']) ?>
                                         </a>
                                         <?php if (!empty($f['nama_section']) && $f['nama_section'] !== '-'): ?>
@@ -1499,7 +1499,7 @@
                                                 <i class="fas fa-chevron-right" style="font-size: 9px;"></i>
                                             </button>
                                         <?php endif; ?>
-                                        <a href="<?= site_url('temuan?penyulang_id=' . $fId) ?>" class="fw-bold text-dark text-decoration-none">
+                                        <a href="<?= site_url('temuan?penyulang_id=' . $fId . '&bom_only=1') ?>" class="fw-bold text-dark text-decoration-none" title="Buka daftar temuan material BOM penyulang">
                                             <?= esc($bRow['nama_penyulang'] ?? '-') ?>
                                         </a>
                                     </div>

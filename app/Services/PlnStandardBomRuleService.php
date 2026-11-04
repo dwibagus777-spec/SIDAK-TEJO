@@ -687,8 +687,8 @@ class PlnStandardBomRuleService
         $summary = [];
         $unmappedCount = 0;
         $pelaksanaClause = $onlyQualifyingPelaksana
-            ? " AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI') "
-            : "";
+            ? " AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE') AND t.jenis_temuan != 'ROW' AND t.pelaksana NOT LIKE '%ROW%' "
+            : " AND t.jenis_temuan != 'ROW' AND t.pelaksana NOT LIKE '%ROW%' ";
 
         if ($hasMaterialsTable && $materialsCount > 0) {
             $sql = "
@@ -728,9 +728,12 @@ class PlnStandardBomRuleService
 
         if (empty($summary)) {
             // Dynamic evaluation fallback directly from findings
-            $builder = $this->db->table('temuan')->where('deleted_at IS NULL');
+            $builder = $this->db->table('temuan')
+                ->where('deleted_at IS NULL')
+                ->where('jenis_temuan !=', 'ROW')
+                ->where('pelaksana NOT LIKE', '%ROW%');
             if ($onlyQualifyingPelaksana) {
-                $builder->whereIn("REPLACE(UPPER(TRIM(COALESCE(pelaksana, ''))), '_', ' ')", ['PDKB', 'HAR KONSTRUKSI']);
+                $builder->whereIn("REPLACE(UPPER(TRIM(COALESCE(pelaksana, ''))), '_', ' ')", ['PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE']);
             }
             if ($ulpId !== null && $ulpId > 0) {
                 $builder->where('ulp_id', $ulpId);

@@ -75,6 +75,18 @@ class TemuanRepository extends BaseRepository
             $builder->where('temuan.asset_id', (int)$filters['asset_id']);
         }
 
+        if (!empty($filters['bom_only'])) {
+            // Standar BOM PLN: Hanya temuan PDKB / HAR KONSTRUKSI / HAR GARDU / HAR GTT / HAR CRANE yang berpotensi memiliki kebutuhan material
+            // Temuan ROW, pelaksana ROW, dan aset ROW secara tegas dikecualikan.
+            $builder->where('temuan.jenis_temuan !=', 'ROW');
+            $builder->where('temuan.pelaksana NOT LIKE', '%ROW%');
+            $builder->whereIn("REPLACE(UPPER(TRIM(temuan.pelaksana)), '_', ' ')", ['PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE']);
+            $builder->groupStart()
+                ->where('assets.jenis_asset IS NULL')
+                ->orWhere('assets.jenis_asset !=', 'ROW')
+            ->groupEnd();
+        }
+
         if (!empty($filters['start_date'])) {
             $builder->where('temuan.created_at >=', $filters['start_date'] . (strlen($filters['start_date']) === 10 ? ' 00:00:00' : ''));
         }

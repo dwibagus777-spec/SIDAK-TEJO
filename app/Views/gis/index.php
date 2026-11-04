@@ -16,19 +16,21 @@
 
     /* Captive AAAC Candidate Transline Pulse (Chromium GPU Composite Safe, No drop-shadow filter) */
     @keyframes captivePulseGlow {
-        0% { stroke: #f59e0b; stroke-opacity: 0.95; stroke-width: 5.5px; }
-        50% { stroke: #fbbf24; stroke-opacity: 0.65; stroke-width: 7.0px; }
-        100% { stroke: #f59e0b; stroke-opacity: 0.95; stroke-width: 5.5px; }
+        0% { stroke: #f59e0b; stroke-opacity: 1.0; stroke-width: 5.5px; }
+        50% { stroke: #fbbf24; stroke-opacity: 1.0; stroke-width: 7.0px; }
+        100% { stroke: #f59e0b; stroke-opacity: 1.0; stroke-width: 5.5px; }
     }
     .transline-captive-pulse {
         animation: captivePulseGlow 2.0s infinite ease-in-out;
         stroke: #f59e0b !important;
+        stroke-opacity: 1.0 !important;
     }
     @media (prefers-reduced-motion: reduce) {
         .transline-captive-pulse {
             animation: none !important;
-            stroke: #d97706 !important;
-            stroke-width: 5.5px !important;
+            stroke: #f59e0b !important;
+            stroke-opacity: 1.0 !important;
+            stroke-width: 6.0px !important;
         }
     }
 
@@ -620,7 +622,7 @@
                     <option value="">-- Pilih ULP --</option>
                     <?php if (!empty($ulps)): ?>
                         <?php
-                            $effectiveSetupUlpId = !empty($selectedUlpId) ? (int)$selectedUlpId : (($selectedPenyulangId === 0) ? 1 : 0);
+                            $effectiveSetupUlpId = !empty($selectedUlpId) ? (int)$selectedUlpId : 1;
                         ?>
                         <?php foreach ($ulps as $u): ?>
                             <option value="<?= $u['id'] ?>" <?= ((int)$u['id'] === (int)$effectiveSetupUlpId) ? 'selected' : '' ?>>
@@ -3651,8 +3653,9 @@ document.addEventListener("DOMContentLoaded", function () {
         loadPenyulangsForUlp(ulpId, true);
     });
 
-    if (setupUlpSelect.value) {
-        loadPenyulangsForUlp(setupUlpSelect.value, true);
+    if (setupUlpSelect && setupUlpSelect.value) {
+        console.log('[GIS SETUP INIT] Auto-loading penyulangs for preselected ULP:', setupUlpSelect.value);
+        loadPenyulangsForUlp(setupUlpSelect.value, false);
     }
 
     function bindIntuitiveMultiSelect(selectEl) {
@@ -4674,7 +4677,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const assetId = parseInt($('#gis-del-asset-id').val(), 10);
         const reason = $.trim($('#gis-del-reason').val());
         const $alert = $('#gis-del-alert');
-        const $btn = $('#btn-confirm-gis-delete');
 
         if (!assetId || assetId <= 0) {
             $alert.text('ID aset tidak valid.').show();
@@ -6329,7 +6331,7 @@ document.addEventListener("DOMContentLoaded", function () {
             var isCaptiveView = new URLSearchParams(window.location.search).get('captive_only') === '1';
             var condTypeUpper = String(tl.conductor_type || '').toUpperCase();
             var isAaacCandidate = condTypeUpper.includes('AAAC') && !condTypeUpper.includes('AAACS');
-            var isCandidateCoating = (isCaptiveView || Boolean(tl.is_captive_candidate || tl.needs_coating)) && isAaacCandidate;
+            var isCandidateCoating = (isCaptiveView || Boolean(tl.is_captive_candidate || tl.needs_coating)) && (isCaptiveView || isAaacCandidate);
 
             var isTl04 = createdBy.includes('ENGINE=TL04') || createdBy.includes('TL-04');
             var isTl03 = !isTl04 && createdBy.includes('ENGINE=TL03');
@@ -6339,10 +6341,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
             var casingPoly = null;
             if (isCandidateCoating) {
+                // Outer warm golden glow halo for contrast across dark, light, or satellite map tiles
+                var glowPoly = L.polyline(latLngs, {
+                    color: '#d97706',
+                    weight: 10,
+                    opacity: 0.35,
+                    lineJoin: 'round',
+                    interactive: false
+                });
+                translinePolylineLayer.addLayer(glowPoly);
+
+                // Crisp outline preventing black mudding while keeping separation
                 casingPoly = L.polyline(latLngs, {
-                    color: '#0f172a',
-                    weight: 8.5,
-                    opacity: 0.9,
+                    color: '#1e293b',
+                    weight: 7.0,
+                    opacity: 0.55,
                     lineJoin: 'round',
                     interactive: false
                 });
@@ -6352,7 +6365,7 @@ document.addEventListener("DOMContentLoaded", function () {
             var visPolyOpts = {
                 color: lineColor,
                 weight: lineWeight,
-                opacity: isCandidateCoating ? 0.95 : 0.85,
+                opacity: 1.0,
                 lineJoin: 'round',
                 interactive: false
             };
@@ -6384,6 +6397,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 className: 'font-monospace small'
             });
             translinePolylineLayer.addLayer(visiblePoly);
+            if (isCandidateCoating && typeof visiblePoly.bringToFront === 'function') {
+                try { visiblePoly.bringToFront(); } catch(e) {}
+            }
 
             // Invisible hit-layer for touch / mouse target (24px width)
             var hitPolyOpts = {

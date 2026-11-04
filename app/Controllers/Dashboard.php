@@ -908,9 +908,11 @@ class Dashboard extends BaseController
                 LEFT JOIN sections s ON s.id = t.section_id
                 LEFT JOIN ulps u ON u.id = t.ulp_id
                 WHERE t.deleted_at IS NULL
+                  AND t.jenis_temuan != 'ROW'
+                  AND t.jenis_temuan NOT LIKE '%ROW%'
                   AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE')
                   AND t.pelaksana NOT LIKE '%ROW%'
-                  AND (t.asset_id IS NULL OR t.asset_id NOT IN (SELECT id FROM assets WHERE jenis_asset = 'ROW'))
+                  AND (t.asset_id IS NULL OR t.asset_id NOT IN (SELECT id FROM assets WHERE jenis_asset = 'ROW' OR kode_asset LIKE 'AST-ROW-%'))
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp, conductor_type, conductor_size
                 ORDER BY total_temuan DESC, p.nama_penyulang ASC, s.nama_section ASC
@@ -1039,9 +1041,11 @@ class Dashboard extends BaseController
                 LEFT JOIN ulps u ON u.id = t.ulp_id
                 LEFT JOIN assets a ON a.id = t.asset_id
                 WHERE t.deleted_at IS NULL
+                  AND t.jenis_temuan != 'ROW'
+                  AND t.jenis_temuan NOT LIKE '%ROW%'
                   AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE')
                   AND t.pelaksana NOT LIKE '%ROW%'
-                  AND (a.jenis_asset IS NULL OR a.jenis_asset != 'ROW')
+                  AND (a.jenis_asset IS NULL OR (a.jenis_asset != 'ROW' AND a.kode_asset NOT LIKE 'AST-ROW-%'))
                   AND (tm.id IS NOT NULL OR (t.material IS NOT NULL AND TRIM(t.material) != '' AND t.material != '-'))
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY t.id
@@ -1057,9 +1061,11 @@ class Dashboard extends BaseController
                 LEFT JOIN temuan_materials tm ON tm.temuan_id = t.id
                 LEFT JOIN assets a ON a.id = t.asset_id
                 WHERE t.deleted_at IS NULL
+                  AND t.jenis_temuan != 'ROW'
+                  AND t.jenis_temuan NOT LIKE '%ROW%'
                   AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE')
                   AND t.pelaksana NOT LIKE '%ROW%'
-                  AND (a.jenis_asset IS NULL OR a.jenis_asset != 'ROW')
+                  AND (a.jenis_asset IS NULL OR (a.jenis_asset != 'ROW' AND a.kode_asset NOT LIKE 'AST-ROW-%'))
                   AND (tm.id IS NOT NULL OR (t.material IS NOT NULL AND TRIM(t.material) != '' AND t.material != '-'))
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "")
             )->getRow()->cnt ?? count($bomFindingsList));
@@ -1117,9 +1123,11 @@ class Dashboard extends BaseController
                 LEFT JOIN sections s ON s.id = t.section_id
                 LEFT JOIN ulps u ON u.id = t.ulp_id
                 WHERE t.deleted_at IS NULL
+                  AND t.jenis_temuan != 'ROW'
+                  AND t.jenis_temuan NOT LIKE '%ROW%'
                   AND REPLACE(UPPER(TRIM(COALESCE(t.pelaksana, ''))), '_', ' ') IN ('PDKB', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR GTT', 'HAR CRANE')
                   AND t.pelaksana NOT LIKE '%ROW%'
-                  AND (t.asset_id IS NULL OR t.asset_id NOT IN (SELECT id FROM assets WHERE jenis_asset = 'ROW'))
+                  AND (t.asset_id IS NULL OR t.asset_id NOT IN (SELECT id FROM assets WHERE jenis_asset = 'ROW' OR kode_asset LIKE 'AST-ROW-%'))
                 " . ($ulpIdFilter !== null ? " AND t.ulp_id = " . (int)$ulpIdFilter : "") . "
                 GROUP BY t.penyulang_id, p.nama_penyulang, t.section_id, s.nama_section, t.ulp_id, u.nama_ulp
                 ORDER BY total_temuan DESC, p.nama_penyulang ASC, s.nama_section ASC

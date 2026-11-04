@@ -24,6 +24,7 @@ class VoiceAIService
         SpeechTTSInterface $ttsProvider,
         SearchProviderInterface $searchProvider
     ) {
+        helper(['url', 'form']);
         $this->aiProvider     = $aiProvider;
         $this->sttProvider    = $sttProvider;
         $this->ttsProvider    = $ttsProvider;
@@ -41,10 +42,10 @@ class VoiceAIService
         $channel   = $params['channel'] ?? 'voice';
 
         $session  = session();
-        $userId   = $session->get('user_id') ?: 1;
-        $userName = $session->get('user_name') ?: 'User';
-        $userRole = strtolower((string)($session->get('user_role') ?: 'administrator'));
-        $userUlp  = $session->get('user_ulp_id');
+        $userId   = $params['user_id'] ?? ($session->get('user_id') ?: 1);
+        $userName = $params['user_name'] ?? ($session->get('user_name') ?: 'User');
+        $userRole = strtolower((string)($params['user_role'] ?? ($session->get('user_role') ?: 'administrator')));
+        $userUlp  = $params['user_ulp_id'] ?? $session->get('user_ulp_id');
 
         // 1. Voice-to-Text (STT) if audio uploaded
         if (!empty($audioFile)) {
@@ -142,9 +143,26 @@ class VoiceAIService
             $format     = strtoupper($params['format'] ?? 'PDF');
             $ulpId      = $params['ulp_id'] ?? null;
 
-            // Apply strict role scoping
-            if (!in_array($userRole, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($userUlp)) {
-                $ulpId = (int)$userUlp;
+            // Apply strict role scoping & reject cross-unit operational requests
+            $isCrossUnitRole = in_array($userRole, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3'], true);
+            if (!$isCrossUnitRole && !empty($userUlp)) {
+                $userUlpInt = (int)$userUlp;
+                if (!empty($feederId)) {
+                    $dbScopeCheck = \Config\Database::connect();
+                    $feederRow = $dbScopeCheck->table('penyulang')->select('ulp_id, nama_penyulang')->where('id', $feederId)->get()->getRowArray();
+                    if ($feederRow && !empty($feederRow['ulp_id']) && (int)$feederRow['ulp_id'] !== $userUlpInt) {
+                        return [
+                            'response' => "Permintaan ditolak: Penyulang {$feederName} berada di luar wewenang operasional unit ULP Anda.",
+                            'action'   => [
+                                'type'    => 'REJECTED_OUT_OF_SCOPE',
+                                'reason'  => "Penyulang {$feederName} bukan milik ULP Anda.",
+                                'user_ulp'=> $userUlpInt
+                            ],
+                            'speech'   => "Permintaan tidak dapat diproses karena penyulang berada di luar wilayah penugasan Anda."
+                        ];
+                    }
+                }
+                $ulpId = $userUlpInt;
             }
 
             // Query actual matching records in database

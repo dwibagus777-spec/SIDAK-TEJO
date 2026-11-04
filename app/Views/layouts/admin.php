@@ -2454,7 +2454,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                     <span class="nav-link-title">Master Asset PLN</span>
                                 </a>
                             </li>
-                            <?php if (check_role(['administrator', 'admin_pusat'])): ?>
+                            <?php if (check_role(['administrator', 'admin', 'admin_pusat'])): ?>
                             <li class="nav-item <?= (url_is('master-uid*') || url_is('data-uid*')) ? 'active' : '' ?>">
                                 <a class="nav-link" href="<?= site_url('master-uid') ?>">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="nav-icon fas fa-sitemap text-primary"></i></span>
@@ -2497,7 +2497,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                                 </a>
                                 <div class="collapse <?= (url_is('master-uid*') || url_is('master-up3*') || url_is('master-hierarchy*') || url_is('master-gi*') || url_is('ulps*') || url_is('penyulang*') || url_is('sections*') || url_is('users*') || url_is('import*') ? 'show' : '') ?>" id="menu-master">
                                     <ul class="navbar-nav">
-                                        <?php if (check_role(['administrator', 'admin_pusat'])): ?>
+                                        <?php if (check_role(['administrator', 'admin', 'admin_pusat'])): ?>
                                         <li><a class="dropdown-item <?= url_is('master-uid*') ? 'active' : '' ?>" href="<?= site_url('master-uid') ?>"><i class="fas fa-sitemap me-1 text-primary"></i> Master UID</a></li>
                                         <li><a class="dropdown-item <?= url_is('master-up3*') ? 'active' : '' ?>" href="<?= site_url('master-up3') ?>"><i class="fas fa-building me-1 text-info"></i> Master UP / UP3</a></li>
                                         <li><a class="dropdown-item <?= url_is('master-hierarchy*') ? 'active' : '' ?>" href="<?= site_url('master-hierarchy/unconnected') ?>"><i class="fas fa-link-slash me-1 text-warning"></i> Audit Relasi Unlinked</a></li>
@@ -2899,6 +2899,17 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
         // Register Service Worker for caching maps & assets with auto-update
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
+                // Decommission deprecated transition worker (sw.js)
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for (var r of registrations) {
+                        if (r.active && r.active.scriptURL && r.active.scriptURL.includes('/sw.js')) {
+                            r.unregister().then(function() {
+                                console.log('[ServiceWorker] Successfully unregistered deprecated sw.js');
+                            });
+                        }
+                    }
+                }).catch(function(e) { /* ignore */ });
+
                 navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=12-enterprise')
                     .then(function(registration) {
                         registration.update();
@@ -3049,8 +3060,8 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             // Targeted Select2 accessibility lifecycle handlers:
             // Select2 4.0.12 puts aria-hidden="true" on .dropdown-wrapper by default. When the dropdown opens
             // and the search input inside is focused, Chromium reports "Blocked aria-hidden on an element
-            // because its descendant retained focus". We resolve this cleanly at the component level
-            // by removing aria-hidden on open and restoring it on close, without monkey-patching DOM prototypes.
+            // because its descendant retained focus". We resolve this cleanly by removing aria-hidden
+            // on open and avoiding setting aria-hidden on containers that hold focused descendants.
             $(document).on('select2:open', function(e) {
                 var $select = $(e.target);
                 var s2 = $select.data('select2');
@@ -3058,13 +3069,17 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                     s2.$container.find('.dropdown-wrapper').removeAttr('aria-hidden');
                     s2.$container.removeAttr('aria-hidden').removeClass('select2-hidden-accessible');
                 }
+                if (s2 && s2.$dropdown) {
+                    s2.$dropdown.removeAttr('aria-hidden');
+                }
             });
 
-            $(document).on('select2:close', function(e) {
+            $(document).on('select2:select select2:unselect select2:close', function(e) {
                 var $select = $(e.target);
                 var s2 = $select.data('select2');
                 if (s2 && s2.$container) {
-                    s2.$container.find('.dropdown-wrapper').attr('aria-hidden', 'true');
+                    s2.$container.removeAttr('aria-hidden').removeClass('select2-hidden-accessible');
+                    s2.$container.find('.dropdown-wrapper').removeAttr('aria-hidden');
                 }
             });
 
@@ -5693,11 +5708,11 @@ $sidakMenuData = [
                 ['href' => site_url('asset-corpus/workspace'), 'icon' => 'fas fa-file-csv', 'text' => 'Asset Corpus', 'active' => (bool)url_is('asset-corpus*')],
                 ['href' => site_url('asset-health'), 'icon' => 'fas fa-heart-pulse', 'text' => 'Asset Health Index', 'active' => (bool)url_is('asset-health*')],
                 ['href' => site_url('master-assets'), 'icon' => 'fas fa-boxes-stacked', 'text' => 'Master Asset PLN', 'active' => (bool)url_is('master-assets*')],
-                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-uid'), 'icon' => 'fas fa-sitemap', 'text' => 'Data UID', 'active' => (bool)(url_is('master-uid*') || url_is('data-uid*'))] : null,
-                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-up3'), 'icon' => 'fas fa-building', 'text' => 'Data UP', 'active' => (bool)(url_is('master-up3*') || url_is('data-up*'))] : null,
-                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('master-hierarchy/unconnected'), 'icon' => 'fas fa-link-slash', 'text' => 'Audit Unlinked', 'active' => (bool)url_is('master-hierarchy*')] : null,
+                check_role(['administrator', 'admin', 'admin_pusat']) ? ['href' => site_url('master-uid'), 'icon' => 'fas fa-sitemap', 'text' => 'Data UID', 'active' => (bool)(url_is('master-uid*') || url_is('data-uid*'))] : null,
+                check_role(['administrator', 'admin', 'admin_pusat']) ? ['href' => site_url('master-up3'), 'icon' => 'fas fa-building', 'text' => 'Data UP', 'active' => (bool)(url_is('master-up3*') || url_is('data-up*'))] : null,
+                check_role(['administrator', 'admin', 'admin_pusat']) ? ['href' => site_url('master-hierarchy/unconnected'), 'icon' => 'fas fa-link-slash', 'text' => 'Audit Unlinked', 'active' => (bool)url_is('master-hierarchy*')] : null,
                 ['href' => site_url('master-gi'), 'icon' => 'fas fa-charging-station', 'text' => 'Gardu Induk (GI)', 'active' => (bool)url_is('master-gi*')],
-                check_role(['administrator', 'admin_pusat']) ? ['href' => site_url('ulps'), 'icon' => 'fas fa-building', 'text' => 'Data ULP', 'active' => (bool)url_is('ulps*')] : null,
+                check_role(['administrator', 'admin', 'admin_pusat']) ? ['href' => site_url('ulps'), 'icon' => 'fas fa-building', 'text' => 'Data ULP', 'active' => (bool)url_is('ulps*')] : null,
                 ['href' => site_url('penyulang'), 'icon' => 'fas fa-route', 'text' => 'Data Penyulang', 'active' => (bool)url_is('penyulang*')],
                 ['href' => site_url('sections'), 'icon' => 'fas fa-map-pin', 'text' => 'Data Section', 'active' => (bool)url_is('sections*')],
                 ['href' => site_url('users'), 'icon' => 'fas fa-users', 'text' => 'Data User', 'active' => (bool)url_is('users*')],

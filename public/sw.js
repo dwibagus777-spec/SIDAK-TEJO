@@ -1,5 +1,6 @@
 // SIDAK TEJO Enterprise - Transition Worker
-// Safely unregisters legacy sw.js to prevent 'TypeError: Failed to convert value to Response'
+// Decommissions and immediately unregisters legacy sw.js
+// NO fetch event listener to ensure zero request interference or Response conversion errors
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -10,9 +11,4 @@ self.addEventListener('activate', (event) => {
       return self.clients.claim();
     })
   );
-});
-
-self.addEventListener('fetch', () => {
-  // Pass-through without trapping or rejecting
-  return;
 });

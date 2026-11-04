@@ -1403,16 +1403,16 @@
             </div>
             <div class="card-body p-4">
                 <div class="table-responsive shadow-none border rounded" style="overflow-x: auto; -webkit-overflow-scrolling: touch; min-height: 200px;">
-                    <table class="table table-bordered table-hover table-sm align-middle mb-0" id="tableCaseHistory" style="min-width: 980px; width: 100%;">
+                    <table class="table table-bordered table-hover table-sm align-middle mb-0" id="tableCaseHistory" style="min-width: 840px; width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 140px; min-width: 130px;">No. Kasus</th>
-                                <th style="width: 180px; min-width: 160px;">Penyulang &amp; Sumber</th>
-                                <th style="width: 200px; min-width: 180px;">Arus (A) &amp; Tegangan (kV)</th>
-                                <th style="width: 140px; min-width: 130px;">Jarak (Topologi / Relay)</th>
-                                <th style="width: 160px; min-width: 150px;">Status Patroli</th>
-                                <th style="min-width: 180px;">Hasil Temuan Lapangan</th>
-                                <th style="width: 100px; min-width: 90px;">Aksi</th>
+                                <th style="width: 120px; min-width: 110px;">No. Kasus</th>
+                                <th style="width: 160px; min-width: 140px;">Penyulang &amp; Sumber</th>
+                                <th style="width: 170px; min-width: 150px;">Arus (A) &amp; Tegangan (kV)</th>
+                                <th style="width: 120px; min-width: 110px;">Jarak (Topologi / Relay)</th>
+                                <th style="width: 150px; min-width: 140px;">Status Patroli</th>
+                                <th style="min-width: 150px;">Hasil Temuan Lapangan</th>
+                                <th style="width: 120px; min-width: 110px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="caseHistoryBody">
@@ -1472,16 +1472,22 @@
                                             <?php
                                                 $rawSt = trim((string)($c['follow_up_status'] ?? ''));
                                                 $st = !empty($rawSt) ? $rawSt : 'MENUNGGU_PEMERIKSAAN';
-                                                $badgeClass = 'bg-secondary text-white';
-                                                if ($st === 'GANGGUAN_DITEMUKAN') $badgeClass = 'bg-success text-white';
-                                                elseif ($st === 'TIDAK_DITEMUKAN') $badgeClass = 'bg-danger text-white';
-                                                elseif ($st === 'PERLU_VERIFIKASI') $badgeClass = 'bg-warning text-dark';
-                                                else {
-                                                    $badgeClass = 'bg-secondary text-white';
-                                                    if (empty($rawSt)) $st = 'MENUNGGU_PEMERIKSAAN';
+                                                $badgeStyle = 'background-color: #475569 !important; color: #f8fafc !important; font-weight: 600; border: 1px solid #334155;';
+                                                $label = 'MENUNGGU PEMERIKSAAN';
+                                                if ($st === 'GANGGUAN_DITEMUKAN') {
+                                                    $badgeStyle = 'background-color: #16a34a !important; color: #ffffff !important; font-weight: 700;';
+                                                    $label = 'GANGGUAN DITEMUKAN';
+                                                } elseif ($st === 'TIDAK_DITEMUKAN') {
+                                                    $badgeStyle = 'background-color: #dc2626 !important; color: #ffffff !important; font-weight: 700;';
+                                                    $label = 'TIDAK DITEMUKAN';
+                                                } elseif ($st === 'PERLU_VERIFIKASI') {
+                                                    $badgeStyle = 'background-color: #d97706 !important; color: #ffffff !important; font-weight: 700;';
+                                                    $label = 'PERLU VERIFIKASI';
                                                 }
                                             ?>
-                                            <span class="badge <?= $badgeClass ?> text-white px-2 py-1 fw-semibold shadow-xs" style="font-size: 11px;"><?= esc(str_replace('_', ' ', $st)) ?></span>
+                                            <span class="badge px-2 py-1 shadow-xs" style="<?= $badgeStyle ?> font-size: 11px; letter-spacing: 0.3px; display: inline-block;">
+                                                <?= esc($label) ?>
+                                            </span>
                                         </td>
                                         <td class="small" style="min-width: 160px; white-space: normal; word-break: break-word;">
                                             <?php if (!empty($c['latest_finding'])): ?>

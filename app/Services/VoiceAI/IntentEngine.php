@@ -71,22 +71,22 @@ class IntentEngine
             ];
         }
 
-        // 3. Specific Temuan Query / Filter Intent
-        if (str_contains($lowerText, 'temuan')) {
-            $temuanIntent = $this->parseTemuanNavigation($lowerText);
-            if ($temuanIntent !== null) {
-                return $temuanIntent;
-            }
-        }
-
-        // 4. Navigation Keyword Check
-        if (str_starts_with($lowerText, 'buka ') || str_starts_with($lowerText, 'open ') || str_starts_with($lowerText, 'go to ')) {
+        // 3. Navigation Keyword Check (e.g. "Buka menu input temuan", "buka dashboard")
+        if (str_starts_with($lowerText, 'buka ') || str_starts_with($lowerText, 'open ') || str_starts_with($lowerText, 'go to ') || str_contains($lowerText, 'menu ') || str_contains($lowerText, 'halaman ')) {
             $target = $this->extractNavigationTarget($lowerText);
             return [
                 'intent'     => 'NAVIGATE_PAGE',
                 'params'     => ['target_page' => $target['page'], 'url' => $target['url']],
                 'confidence' => 0.98
             ];
+        }
+
+        // 4. Specific Temuan Query / Filter Intent
+        if (str_contains($lowerText, 'temuan')) {
+            $temuanIntent = $this->parseTemuanNavigation($lowerText);
+            if ($temuanIntent !== null) {
+                return $temuanIntent;
+            }
         }
 
         // 5. Quick Keyword Search / SLA / Summary Check

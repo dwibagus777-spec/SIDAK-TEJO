@@ -10,6 +10,7 @@ class AuthService
 
     public function __construct()
     {
+        helper(['app', 'auth']);
         $this->userRepository = new UserRepository();
     }
 

@@ -40,7 +40,7 @@
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <small class="text-muted">Setiap UP (UP1, UP2, UP3, UP4, UP2D, dll) terikat secara hierarki ke UID induknya.</small>
+                        <small class="text-muted">Setiap Unit Pelaksana (UP3 / UP2D) terikat secara hierarki ke UID induknya.</small>
                     </div>
 
                     <div class="mb-3">

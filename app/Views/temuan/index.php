@@ -242,6 +242,17 @@
 <!-- TABEL DATA TEMUAN -->
 <div class="row">
     <div class="col-12">
+        <?php if (!empty($_GET['bom_only'])): ?>
+        <div id="bom-filter-banner" class="alert alert-warning py-2 px-3 small d-flex justify-content-between align-items-center mb-3 shadow-sm border border-warning-subtle">
+            <div>
+                <i class="fas fa-boxes-stacked me-2 text-warning"></i>
+                <strong>Filter Kebutuhan Material (BOM) Aktif:</strong> Menampilkan temuan pemeliharaan konstruksi dengan kebutuhan material (Temuan & Pelaksana ROW dikecualikan).
+            </div>
+            <a href="<?= site_url('temuan' . (!empty($_GET['penyulang_id']) ? '?penyulang_id=' . (int)$_GET['penyulang_id'] : '')) ?>" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1">
+                <i class="fas fa-times me-1"></i> Tampilkan Semua (Termasuk ROW)
+            </a>
+        </div>
+        <?php endif; ?>
         <div id="temuan-empty-filter-notice" class="alert alert-info py-2 px-3 small d-none mb-3 shadow-sm"><i class="fas fa-info-circle me-1"></i> Tidak ditemukan data temuan yang cocok dengan filter yang diterapkan. Filter tetap dipertahankan.</div>
         <div class="card card-modern">
             <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center py-3">
@@ -490,6 +501,7 @@
                     d.start_date = $('#filter_start_date').val();
                     d.end_date = $('#filter_end_date').val();
                     d.asset_id = urlParams.get('asset_id') || '';
+                    d.bom_only = urlParams.get('bom_only') || '';
                     if (urlQ && (!d.search || !d.search.value)) {
                         if (!d.search) d.search = {};
                         d.search.value = urlQ;

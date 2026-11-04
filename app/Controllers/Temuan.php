@@ -986,13 +986,51 @@ class Temuan extends BaseController
             // 4. Fetch Materials defensively
             $materials = [];
             if ($db->tableExists('temuan_materials')) {
-                $materials = $db->table('temuan_materials tm')
-                    ->select('tm.id, tm.canonical_code_snapshot, tm.canonical_name_snapshot, tm.unit_snapshot, tm.quantity, tm.used_quantity, tm.work_status, tm.conductor_type, tm.conductor_size, ct.construction_code, ct.construction_name')
-                    ->join('construction_types ct', 'tm.construction_type_id = ct.id', 'left')
-                    ->where('tm.temuan_id', $id)
-                    ->orderBy('tm.id', 'ASC')
-                    ->get()
-                    ->getResultArray() ?: [];
+                try {
+                    $tmFields = (array)$db->getFieldNames('temuan_materials');
+                    $selectCols = ['tm.id'];
+                    $candidateCols = ['canonical_code_snapshot', 'canonical_name_snapshot', 'unit_snapshot', 'quantity', 'used_quantity', 'work_status', 'conductor_type', 'conductor_size'];
+                    foreach ($candidateCols as $cCol) {
+                        if (in_array($cCol, $tmFields, true)) {
+                            $selectCols[] = 'tm.' . $cCol;
+                        }
+                    }
+
+                    $builder = $db->table('temuan_materials tm')
+                        ->where('tm.temuan_id', $id)
+                        ->orderBy('tm.id', 'ASC');
+
+                    if ($db->tableExists('construction_types') && in_array('construction_type_id', $tmFields, true)) {
+                        $ctFields = (array)$db->getFieldNames('construction_types');
+                        $builder->join('construction_types ct', 'tm.construction_type_id = ct.id', 'left');
+                        if (in_array('construction_code', $ctFields, true)) $selectCols[] = 'ct.construction_code';
+                        if (in_array('construction_name', $ctFields, true)) $selectCols[] = 'ct.construction_name';
+                    }
+
+                    $builder->select(implode(', ', $selectCols));
+                    $query = $builder->get();
+                    if ($query && is_object($query) && method_exists($query, 'getResultArray')) {
+                        $rawRows = $query->getResultArray() ?: [];
+                        foreach ($rawRows as $r) {
+                            $materials[] = [
+                                'id'                      => (int)($r['id'] ?? 0),
+                                'canonical_code_snapshot' => $r['canonical_code_snapshot'] ?? '-',
+                                'canonical_name_snapshot' => $r['canonical_name_snapshot'] ?? '-',
+                                'unit_snapshot'           => $r['unit_snapshot'] ?? 'item',
+                                'quantity'                => (float)($r['quantity'] ?? 1.0),
+                                'used_quantity'           => (float)($r['used_quantity'] ?? 0.0),
+                                'work_status'             => $r['work_status'] ?? 'PENDING',
+                                'conductor_type'          => $r['conductor_type'] ?? ($temuan['conductor_type'] ?? '-'),
+                                'conductor_size'          => $r['conductor_size'] ?? ($temuan['conductor_size'] ?? '-'),
+                                'construction_code'       => $r['construction_code'] ?? '-',
+                                'construction_name'       => $r['construction_name'] ?? '-'
+                            ];
+                        }
+                    }
+                } catch (\Throwable $eTm) {
+                    log_message('warning', '[BOM_DETAILS_TM_ERROR] ' . $eTm->getMessage());
+                    $materials = [];
+                }
             }
 
             // Fallback: parse text material string if structured table is empty

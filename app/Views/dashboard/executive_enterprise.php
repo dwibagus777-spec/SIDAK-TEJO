@@ -456,11 +456,6 @@
 <?php if (empty($emptyUnitState)): ?>
 <script src="<?= base_url('plugins/chart.js') ?>"></script>
 <script>
-if (typeof Chart === 'undefined') {
-    document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>');
-}
-</script>
-<script>
 $(document).ready(function () {
     // Initial Datasets from Controller
     const initialLine   = <?= json_encode($lineData) ?>;

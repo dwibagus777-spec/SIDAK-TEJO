@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sidak-tejo-v12-enterprise';
-const MAPS_CACHE_NAME = 'sidak-tejo-maps-v8';
+const CACHE_NAME = 'sidak-tejo-v13-enterprise';
+const MAPS_CACHE_NAME = 'sidak-tejo-maps-v9';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -41,39 +41,45 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    const url = event.request.url;
-
-    // Hard Rule: NEVER intercept any API or asset-corpus requests (network only directly to Hostinger)
-    if (url.includes('/api/') || url.includes('/asset-corpus/')) {
+    // Only intercept GET requests
+    if (event.request.method !== 'GET') {
         return;
     }
 
-    // Do NOT intercept navigation, HTML, JSON, or dynamic API/AJAX requests
-    // Always fetch fresh data directly from server
-    const isDynamicApi =
+    const url = event.request.url;
+
+    // Hard Rule: NEVER intercept HTML navigations, dynamic endpoints, APIs, or asset corpus
+    if (
         event.request.mode === 'navigate' ||
-        url.includes('/temuan/') ||
+        url.includes('/api/') ||
+        url.includes('/asset-corpus/') ||
+        url.includes('/ajax') ||
+        url.includes('/temuan') ||
         url.includes('/dashboard') ||
-        url.includes('/ecc') ||
+        url.includes('/gis') ||
+        url.includes('/master-') ||
+        url.includes('/fault-locator') ||
+        url.includes('/executive-dashboard') ||
         url.includes('/laporan') ||
         url.includes('/documents') ||
-        url.includes('/ajax/') ||
-        url.includes('/ajax-') ||
-        url.includes('/temuan/ajax-') ||
-        url.includes('/temuan/api/') ||
-        url.endsWith('.json') ||
-        url.includes('/i18n/') ||
-        (event.request.headers.get('accept') && (
-            event.request.headers.get('accept').includes('text/html') ||
-            event.request.headers.get('accept').includes('application/json')
-        ));
+        url.includes('/login')
+    ) {
+        return;
+    }
 
-    if (isDynamicApi) {
+    // Only intercept map tiles, /plugins/, /assets/, /dist/
+    const isMapTile = url.includes('basemaps.cartocdn.com') ||
+                      url.includes('openstreetmap.org') ||
+                      url.includes('raw.githubusercontent.com/pointhi/leaflet-color-markers') ||
+                      url.includes('arcgisonline.com');
+    const isStaticAsset = url.includes('/plugins/') || url.includes('/assets/') || url.includes('/dist/');
+
+    if (!isMapTile && !isStaticAsset) {
         return;
     }
 
     // Cache strategy for Map Tiles
-    if (url.includes('basemaps.cartocdn.com') || url.includes('openstreetmap.org') || url.includes('raw.githubusercontent.com/pointhi/leaflet-color-markers') || url.includes('arcgisonline.com')) {
+    if (isMapTile) {
         event.respondWith(
             caches.open(MAPS_CACHE_NAME).then((cache) => {
                 return cache.match(event.request).then((cachedResponse) => {

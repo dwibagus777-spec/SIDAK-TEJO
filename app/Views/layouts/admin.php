@@ -76,8 +76,9 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         <?php $fileVer = @filemtime(FCPATH . $file) ?: '20260913_bento'; ?>
         <link rel="stylesheet" href="<?= base_url($file) ?>?v=<?= $fileVer ?>">
     <?php endforeach; ?>
-    <!-- Font Awesome 6 Compatibility Layer -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Font Awesome 6 Compatibility Layer (Non-render-blocking) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" /></noscript>
 
     <style>
         :root {
@@ -2910,7 +2911,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
                     }
                 }).catch(function(e) { /* ignore */ });
 
-                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=12-enterprise')
+                navigator.serviceWorker.register('<?= base_url("service-worker.js") ?>?v=13-enterprise')
                     .then(function(registration) {
                         registration.update();
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
@@ -3875,7 +3876,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             }
         });
 
-        // Global DataTables & DOM Accessibility Hygiene (Fix <label for="..."> and missing id/name)
+        // Global DataTables & DOM Accessibility Hygiene (Fix label for attribute and missing id/name)
         $(document).on('init.dt', function (e, settings) {
             try {
                 var api = new $.fn.dataTable.Api(settings);
@@ -3906,19 +3907,49 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             } catch (err) {}
         });
 
-        // Global DOM Cleanup for Orphan Labels
+        // Global Form Accessibility & DOM Hygiene (Eliminates orphan labels & missing id/name/aria-label)
+        function sanitizeFormAccessibility(root) {
+            try {
+                var $root = root ? $(root) : $(document);
+                $root.find('label[for]').each(function() {
+                    var forId = $(this).attr('for');
+                    if (forId && !document.getElementById(forId)) {
+                        $(this).removeAttr('for');
+                    }
+                });
+
+                $root.find('input, select, textarea').each(function() {
+                    var $el = $(this);
+                    var id = $el.attr('id');
+                    var name = $el.attr('name');
+                    if (!id && name) {
+                        $el.attr('id', name);
+                        id = name;
+                    } else if (!id && !name) {
+                        var genId = 'input_' + Math.random().toString(36).substr(2, 8);
+                        $el.attr('id', genId).attr('name', genId);
+                        id = genId;
+                    } else if (id && !name) {
+                        $el.attr('name', id);
+                    }
+
+                    if (!$el.attr('aria-label') && !$el.attr('aria-labelledby')) {
+                        var $parentLabel = $el.closest('label');
+                        var hasForLabel = id && $('label[for="' + id + '"]').length > 0;
+                        if ((!$parentLabel || !$parentLabel.length) && !hasForLabel) {
+                            var fallbackLabel = $el.attr('placeholder') || $el.attr('title') || name || id || 'Field Input';
+                            $el.attr('aria-label', fallbackLabel);
+                        }
+                    }
+                });
+            } catch (eSanitize) {}
+        }
+
         $(document).ready(function() {
-            $('label[for]').each(function() {
-                var forId = $(this).attr('for');
-                if (forId && !document.getElementById(forId)) {
-                    $(this).removeAttr('for');
-                }
-            });
-            $('input, select, textarea').each(function() {
-                if (!$(this).attr('id') && $(this).attr('name')) {
-                    $(this).attr('id', $(this).attr('name'));
-                }
-            });
+            sanitizeFormAccessibility(document);
+        });
+        $(document).on('shown.bs.modal select2:open ajaxComplete init.dt', function(e) {
+            sanitizeFormAccessibility(e.target || document);
         });
 
         $.ajaxSetup({

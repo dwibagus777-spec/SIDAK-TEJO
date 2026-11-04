@@ -157,6 +157,15 @@ class MigrateController extends BaseController
                 $executed[] = 'enhance_temuan_material_bom_and_conductor';
             }
 
+            // Run AddUsedQuantityToTemuanMaterials Migration
+            $addUsedQtyMigFile = APPPATH . 'Database/Migrations/2026-10-21-000003_AddUsedQuantityToTemuanMaterials.php';
+            if (file_exists($addUsedQtyMigFile)) {
+                require_once $addUsedQtyMigFile;
+                $usedQtyMig = new \App\Database\Migrations\AddUsedQuantityToTemuanMaterials();
+                $usedQtyMig->up();
+                $executed[] = 'add_used_quantity_to_temuan_materials';
+            }
+
             // Run EnhanceFaultCasesAndActualFindings Migration (Track A & B Fault Locator telemetry & outcomes)
             $enhanceFaultMigFile = APPPATH . 'Database/Migrations/2026-10-21-000004_EnhanceFaultCasesAndActualFindings.php';
             if (file_exists($enhanceFaultMigFile)) {

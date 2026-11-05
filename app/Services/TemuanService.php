@@ -14,6 +14,7 @@ class TemuanService
 
     public function __construct()
     {
+        helper(['app']);
         $this->temuanRepository = new TemuanRepository();
         $this->tindakLanjutRepository = new TindakLanjutRepository();
     }
@@ -210,9 +211,21 @@ class TemuanService
         $session = session();
         $data['nomor_temuan'] = $nomorTemuan;
         $data['status'] = 'BELUM';
-        $data['created_by'] = $session->get('user_id');
-        $data['created_by_name'] = $session->get('nama_pegawai') ?: $session->get('user_name');
-        $data['created_by_nip'] = $session->get('nip') ?: '';
+
+        $rawUserId = $session->get('user_id');
+        $data['created_by'] = (!empty($rawUserId) && is_numeric($rawUserId)) ? (int)$rawUserId : null;
+
+        $rawCreatorName = $session->get('nama_pegawai') ?: $session->get('user_name');
+        $data['created_by_name'] = !empty($rawCreatorName) ? trim((string)$rawCreatorName) : null;
+
+        $rawCreatorNip = $session->get('nip');
+        $data['created_by_nip'] = !empty($rawCreatorNip) ? trim((string)$rawCreatorNip) : null;
+
+        // Tolerant schema check: if creator metadata columns do not exist in current DB, omit them to avoid 1054 errors
+        $db = \Config\Database::connect();
+        if ($db->tableExists('temuan') && !$db->fieldExists('created_by_name', 'temuan')) {
+            unset($data['created_by_name'], $data['created_by_nip'], $data['updated_by_name'], $data['updated_by_nip']);
+        }
 
         $uploadResult = $this->uploadMultiplePhotos($files, $photoRequired);
         if (!$uploadResult['success']) {
@@ -235,18 +248,35 @@ class TemuanService
             ])
         );
 
-        try {
-            $insertId = $this->temuanRepository->insert($data);
-        } catch (\Throwable $e) {
-            log_message('error', '[createTemuan] Exception saat insert ke database: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Gagal menyimpan temuan ke database.'
-            ];
+        $insertId = false;
+        $maxRetries = 3;
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $insertId = $this->temuanRepository->insert($data);
+                if ($insertId) {
+                    break;
+                }
+                $model = $this->temuanRepository->getModel();
+                log_message('error', '[createTemuan] Insert returned falsy (attempt ' . $attempt . '). DB Error: ' . json_encode($model->db->error()) . ' | Model Errors: ' . json_encode($model->errors()));
+            } catch (\Throwable $e) {
+                log_message('error', '[createTemuan] Exception saat insert ke database (attempt ' . $attempt . '): ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+                // Handle duplicate entry collision on unique nomor_temuan key safely
+                if ($attempt < $maxRetries && (str_contains($e->getMessage(), 'nomor_temuan') || str_contains($e->getMessage(), 'Duplicate entry') || $e->getCode() == 1062)) {
+                    $nomorTemuan = $this->temuanRepository->generateNomorTemuan();
+                    $data['nomor_temuan'] = $nomorTemuan;
+                    continue;
+                }
+                return [
+                    'success' => false,
+                    'message' => 'Gagal menyimpan temuan ke database.'
+                ];
+            }
         }
 
         if ($insertId) {
-            log_activity('CREATE_TEMUAN', 'Menambahkan temuan baru: ' . $nomorTemuan);
+            if (function_exists('log_activity')) {
+                log_activity('CREATE_TEMUAN', 'Menambahkan temuan baru: ' . $nomorTemuan);
+            }
             
             // Enterprise Asset Lifecycle Hook: Update Asset Status to BERMASALAH & log history
             try {
@@ -298,7 +328,20 @@ class TemuanService
             return ['success' => false, 'message' => 'Temuan tidak ditemukan.'];
         }
 
-        $data['updated_by'] = session()->get('user_id');
+        $session = session();
+        $rawUpdateUserId = $session->get('user_id');
+        $data['updated_by'] = (!empty($rawUpdateUserId) && is_numeric($rawUpdateUserId)) ? (int)$rawUpdateUserId : null;
+
+        $rawUpdaterName = $session->get('nama_pegawai') ?: $session->get('user_name');
+        $data['updated_by_name'] = !empty($rawUpdaterName) ? trim((string)$rawUpdaterName) : null;
+
+        $rawUpdaterNip = $session->get('nip');
+        $data['updated_by_nip'] = !empty($rawUpdaterNip) ? trim((string)$rawUpdaterNip) : null;
+
+        $db = \Config\Database::connect();
+        if ($db->tableExists('temuan') && !$db->fieldExists('updated_by_name', 'temuan')) {
+            unset($data['updated_by_name'], $data['updated_by_nip']);
+        }
 
         // Decode foto lama yang saat ini ada di DB
         $existingPhotos = [];

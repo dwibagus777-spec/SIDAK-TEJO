@@ -168,6 +168,15 @@ class MigrateController extends BaseController
                 $executed[] = 'add_transline_to_temuan_captive_k2k3';
             }
 
+            // Add creator metadata fields required by TemuanModel / TemuanService writes.
+            $creatorMetadataMigFile = APPPATH . 'Database/Migrations/2026-11-05-000001_AddTemuanCreatorMetadata.php';
+            if (file_exists($creatorMetadataMigFile)) {
+                require_once $creatorMetadataMigFile;
+                $creatorMetadataMig = new \App\Database\Migrations\AddTemuanCreatorMetadata();
+                $creatorMetadataMig->up();
+                $executed[] = 'add_temuan_creator_metadata';
+            }
+
             // Run CreateTemuanMaterialsTable Migration
             $createTmMatMigFile = APPPATH . 'Database/Migrations/2026-09-02-000001_CreateTemuanMaterialsTable.php';
             if (file_exists($createTmMatMigFile)) {
@@ -4150,6 +4159,43 @@ class MigrateController extends BaseController
             'surrounding_ids'          => $temuanSurrounding,
             'related_table_references' => $references,
             'backup_log_matches'       => $backupMatches,
+        ]);
+    }
+
+    /**
+     * Safe, targeted idempotent runner for Temuan Creator Metadata migration
+     * Adds only nullable creator audit fields without executing full autoMigrate suite.
+     */
+    public function migrateTemuanCreatorMetadata()
+    {
+        if ($denied = $this->checkMigrationAccess()) {
+            return $denied;
+        }
+
+        $migrationFile = APPPATH . 'Database/Migrations/2026-11-05-000001_AddTemuanCreatorMetadata.php';
+        if (!file_exists($migrationFile)) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 'error',
+                'message' => 'File migrasi AddTemuanCreatorMetadata tidak ditemukan.'
+            ]);
+        }
+
+        require_once $migrationFile;
+        $migration = new \App\Database\Migrations\AddTemuanCreatorMetadata();
+        $migration->up();
+
+        $db = Database::connect();
+        $fields = ['created_by_name', 'created_by_nip', 'updated_by_name', 'updated_by_nip'];
+        $columnStatus = [];
+        foreach ($fields as $f) {
+            $columnStatus[$f] = $db->fieldExists($f, 'temuan');
+        }
+
+        return $this->response->setJSON([
+            'status'         => 'success',
+            'action'         => 'migrate_temuan_creator_metadata',
+            'columns_status' => $columnStatus,
+            'timestamp'      => date('Y-m-d H:i:s'),
         ]);
     }
 

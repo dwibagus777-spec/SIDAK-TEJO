@@ -32,6 +32,7 @@ $routes->match(['GET', 'POST'], 'master-assets/execute-global-dedup', 'MigrateCo
 $routes->match(['GET', 'POST'], 'master-assets/reconcile-non-pole-translines', 'MigrateController::reconcileNonPoleTranslinesAction');
 $routes->get('master-assets/direct-audit-summary', 'MigrateController::directAuditSummary');
 $routes->get('master-assets/audit-temuan-forensics', 'MigrateController::auditTemuanForensics');
+$routes->match(['GET', 'POST'], 'master-assets/migrate-temuan-creator-metadata', 'MigrateController::migrateTemuanCreatorMetadata');
 $routes->get('master-assets/audit-synthetic-duplicates', 'MigrateController::auditSyntheticDuplicates');
 $routes->match(['GET', 'POST'], 'master-assets/execute-synthetic-dedup', 'MigrateController::executeSyntheticDedup');
 $routes->get('master-assets/audit-row-bom', 'MigrateController::auditRowAndBomProduction');

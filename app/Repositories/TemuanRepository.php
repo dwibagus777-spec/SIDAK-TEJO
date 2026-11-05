@@ -132,20 +132,45 @@ class TemuanRepository extends BaseRepository
 
     /**
      * Dapatkan nomor temuan berikutnya berdasarkan tahun (Contoh: STJ-2026-000001)
+     * Resilient terhadap soft-deleted records, imported records, dan non-sequential IDs
      */
     public function generateNomorTemuan(): string
     {
         $year = date('Y');
         $prefix = "STJ-" . $year . "-";
-        
-        $lastTemuan = $this->model
+        $db = \Config\Database::connect();
+        $prefixLen = strlen($prefix);
+
+        // 1. Scan across ALL records in table temuan (including soft-deleted) for maximum numeric suffix
+        $row = $db->query(
+            "SELECT MAX(CAST(SUBSTRING(nomor_temuan, ?) AS UNSIGNED)) AS max_num 
+             FROM temuan 
+             WHERE nomor_temuan LIKE ?",
+            [$prefixLen + 1, $prefix . '%']
+        )->getRowArray();
+
+        $maxNum = !empty($row['max_num']) ? (int)$row['max_num'] : 0;
+
+        // Also check withDeleted() on model as defense-in-depth
+        $fallback = $this->model->withDeleted()
             ->select('nomor_temuan')
             ->like('nomor_temuan', $prefix, 'after')
             ->orderBy('id', 'DESC')
             ->first();
+        if ($fallback && preg_match('/(\d+)$/', (string)$fallback['nomor_temuan'], $m)) {
+            $maxNum = max($maxNum, (int)$m[1]);
+        }
 
-        $nextNum = $lastTemuan ? ((int)substr($lastTemuan['nomor_temuan'], -6)) + 1 : 1;
-        return $prefix . str_pad((string)$nextNum, 6, '0', STR_PAD_LEFT);
+        $nextNum = $maxNum + 1;
+        $candidate = $prefix . str_pad((string)$nextNum, 6, '0', STR_PAD_LEFT);
+
+        // Fail-safe collision avoidance: verify uniqueness against both active and deleted records
+        while ($db->query("SELECT 1 FROM temuan WHERE nomor_temuan = ? LIMIT 1", [$candidate])->getRow()) {
+            $nextNum++;
+            $candidate = $prefix . str_pad((string)$nextNum, 6, '0', STR_PAD_LEFT);
+        }
+
+        return $candidate;
     }
 
     /**
